@@ -195,12 +195,24 @@ pub fn run(root: &Path) -> Result<(), RunnerError> {
         }
     }
 
-    // The assembled context is the prompt
-    cmd.arg(&assembled_context);
+    // Pass the assembled context via stdin (avoids OS arg length limits
+    // and ensures Claude CLI reads it correctly when not on a tty)
+    cmd.stdin(process::Stdio::piped());
+    cmd.stdout(process::Stdio::piped());
+    cmd.stderr(process::Stdio::piped());
 
     log(&log_file, "Running LLM...")?;
 
-    let output = cmd.output()?;
+    let mut child = cmd.spawn()?;
+
+    // Write prompt to stdin
+    if let Some(mut stdin) = child.stdin.take() {
+        use std::io::Write;
+        stdin.write_all(assembled_context.as_bytes())?;
+        // stdin is dropped here, closing the pipe
+    }
+
+    let output = child.wait_with_output()?;
     let exit_code = output.status.code().unwrap_or(-1);
 
     let stdout = String::from_utf8_lossy(&output.stdout);
