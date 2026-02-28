@@ -46,8 +46,7 @@ pub fn remember(
     content: &str,
     tags: &[String],
 ) -> Result<PathBuf, BrocaError> {
-    let entry_type = EntryType::from_str(entry_type)
-        .ok_or_else(|| BrocaError::Parse(format!("Unknown entry type: {entry_type}")))?;
+    let entry_type: EntryType = entry_type.parse().map_err(BrocaError::Parse)?;
 
     let knowledge_dir = memory_dir.join("knowledge");
     fs::create_dir_all(&knowledge_dir)?;

@@ -18,6 +18,7 @@ pub struct ScoredEntry {
     pub tags: Vec<String>,
     pub content: String,
     pub relevance_score: f64,
+    pub superseded_by: Option<String>,
 }
 
 impl From<&Entry> for ScoredEntry {
@@ -30,6 +31,7 @@ impl From<&Entry> for ScoredEntry {
             tags: entry.tags.clone(),
             content: entry.content.clone(),
             relevance_score: 0.0,
+            superseded_by: entry.superseded_by.clone(),
         }
     }
 }

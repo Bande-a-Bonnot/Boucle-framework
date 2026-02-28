@@ -14,7 +14,7 @@ pub struct Config {
     #[serde(default)]
     pub memory: MemoryConfig,
 
-    #[serde(default)]
+    #[serde(default, rename = "loop")]
     pub loop_config: LoopConfig,
 
     #[serde(default)]
