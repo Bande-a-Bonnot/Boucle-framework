@@ -7,7 +7,7 @@
 mod context;
 mod hooks;
 
-use crate::config::{self, Config};
+use crate::config;
 use chrono::Utc;
 use std::path::{Path, PathBuf};
 use std::{fmt, fs, io, process};
@@ -436,7 +436,7 @@ fn generate_launchd_plist(name: &str, binary: &Path, root: &Path, interval_secs:
 
 fn generate_cron_entry(binary: &Path, root: &Path, interval_secs: u64) -> String {
     let minutes = interval_secs / 60;
-    let cron_expr = if minutes <= 0 {
+    let cron_expr = if minutes == 0 {
         "* * * * *".to_string() // Every minute
     } else if minutes < 60 {
         format!("*/{minutes} * * * *")

@@ -1,6 +1,7 @@
 //! Memory entry types and parsing.
 
 use std::path::Path;
+use std::str::FromStr;
 use std::{fmt, fs};
 
 use super::BrocaError;
@@ -15,15 +16,17 @@ pub enum EntryType {
     Procedure,
 }
 
-impl EntryType {
-    pub fn from_str(s: &str) -> Option<Self> {
+impl FromStr for EntryType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "fact" => Some(EntryType::Fact),
-            "decision" => Some(EntryType::Decision),
-            "observation" => Some(EntryType::Observation),
-            "error" => Some(EntryType::Error),
-            "procedure" => Some(EntryType::Procedure),
-            _ => None,
+            "fact" => Ok(EntryType::Fact),
+            "decision" => Ok(EntryType::Decision),
+            "observation" => Ok(EntryType::Observation),
+            "error" => Ok(EntryType::Error),
+            "procedure" => Ok(EntryType::Procedure),
+            _ => Err(format!("Unknown entry type: {s}")),
         }
     }
 }
@@ -82,8 +85,9 @@ impl Entry {
         let content = raw[end + 6..].trim().to_string();
 
         let entry_type = extract_field(frontmatter, "type")
-            .and_then(|t| EntryType::from_str(&t))
-            .ok_or_else(|| BrocaError::Parse(format!("Missing or invalid type in {filename}")))?;
+            .ok_or_else(|| BrocaError::Parse(format!("Missing type in {filename}")))?
+            .parse::<EntryType>()
+            .map_err(|e| BrocaError::Parse(format!("{e} in {filename}")))?;
 
         let title = extract_field(frontmatter, "title")
             .map(|t| t.trim_matches('"').to_string())
@@ -180,9 +184,9 @@ mod tests {
 
     #[test]
     fn test_entry_type_from_str() {
-        assert_eq!(EntryType::from_str("fact"), Some(EntryType::Fact));
-        assert_eq!(EntryType::from_str("DECISION"), Some(EntryType::Decision));
-        assert_eq!(EntryType::from_str("invalid"), None);
+        assert_eq!("fact".parse::<EntryType>(), Ok(EntryType::Fact));
+        assert_eq!("DECISION".parse::<EntryType>(), Ok(EntryType::Decision));
+        assert!("invalid".parse::<EntryType>().is_err());
     }
 
     #[test]

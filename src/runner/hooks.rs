@@ -33,19 +33,17 @@ pub fn run_hook(hooks_dir: &Path, hook_name: &str, working_dir: &Path) -> Result
     };
 
     // Detect interpreter from shebang
-    let content = fs::read_to_string(&hook_path).map_err(|e| RunnerError::Io(e))?;
+    let content = fs::read_to_string(&hook_path)?;
     let interpreter = detect_shebang(&content);
 
     let output = match interpreter {
         Some(interp) => process::Command::new(interp)
             .arg(&hook_path)
             .current_dir(working_dir)
-            .output()
-            .map_err(|e| RunnerError::Io(e))?,
+            .output()?,
         None => process::Command::new(&hook_path)
             .current_dir(working_dir)
-            .output()
-            .map_err(|e| RunnerError::Io(e))?,
+            .output()?,
     };
 
     if !output.status.success() {
