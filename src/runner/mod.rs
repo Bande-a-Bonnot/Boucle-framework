@@ -236,7 +236,15 @@ pub fn run(root: &Path) -> Result<(), RunnerError> {
         let commit_msg = format!("Loop iteration: {timestamp}");
         process::Command::new("git")
             .current_dir(root)
-            .args(["commit", "-m", &commit_msg])
+            .args([
+                "-c",
+                &format!("user.name={}", cfg.git.commit_name),
+                "-c",
+                &format!("user.email={}", cfg.git.commit_email),
+                "commit",
+                "-m",
+                &commit_msg,
+            ])
             .output()?;
 
         log(&log_file, "Committed.")?;

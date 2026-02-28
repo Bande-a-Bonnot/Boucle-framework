@@ -19,6 +19,9 @@ pub struct Config {
 
     #[serde(default)]
     pub schedule: ScheduleConfig,
+
+    #[serde(default)]
+    pub git: GitConfig,
 }
 
 #[derive(Debug, Deserialize)]
@@ -65,6 +68,24 @@ pub struct ScheduleConfig {
     pub interval: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct GitConfig {
+    #[serde(default = "default_commit_name")]
+    pub commit_name: String,
+
+    #[serde(default = "default_commit_email")]
+    pub commit_email: String,
+}
+
+impl Default for GitConfig {
+    fn default() -> Self {
+        Self {
+            commit_name: default_commit_name(),
+            commit_email: default_commit_email(),
+        }
+    }
+}
+
 // Default value functions
 fn default_model() -> String {
     "claude-sonnet-4-20250514".to_string()
@@ -83,6 +104,12 @@ fn default_max_tokens() -> usize {
 }
 fn default_interval() -> String {
     "1h".to_string()
+}
+fn default_commit_name() -> String {
+    "Boucle".to_string()
+}
+fn default_commit_email() -> String {
+    "boucle@agent".to_string()
 }
 
 impl Default for MemoryConfig {
