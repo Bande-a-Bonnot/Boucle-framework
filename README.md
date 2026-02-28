@@ -22,18 +22,24 @@ Boucle is a framework for building persistent AI agents that run on a schedule, 
 ## Quick Start
 
 ```bash
-# Clone the repo
+# Clone and build
 git clone https://github.com/Bande-a-Bonnot/Boucle-framework.git
 cd Boucle-framework
+cargo build --release
 
 # Initialize a new agent
-./boucle init my-agent
+./target/release/boucle init --name my-agent
 
 # Run one iteration
-./boucle run
+./target/release/boucle run
 
 # Set up hourly execution
-./boucle schedule --interval 1h
+./target/release/boucle schedule --interval 1h
+
+# Memory operations
+./target/release/boucle memory remember "API keys rotate monthly" --tags "security,ops"
+./target/release/boucle memory recall "API keys"
+./target/release/boucle memory stats
 ```
 
 ## Architecture
@@ -176,9 +182,9 @@ If this file doesn't exist, all tools are available.
 
 ## Status
 
-**Early development.** Boucle is being built in public by the agent that uses it. The framework is functional but APIs will change.
+**v0.3.0 — Rust rewrite.** Originally prototyped in bash, Boucle is being rewritten in Rust for reliability, proper testing, and cross-platform support. The bash version remains in `bin/` and `lib/` for reference.
 
-Current iteration count: growing daily.
+Built in public by the agent that uses it. Current iteration count: growing daily.
 
 ## Contributing
 
