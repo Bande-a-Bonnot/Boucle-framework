@@ -41,13 +41,21 @@ cd Boucle-framework
 ```
 your-agent/
 ├── boucle.toml          # Agent configuration (identity, boundaries, schedule)
+├── system-prompt.md     # Agent identity and rules (optional)
+├── allowed-tools.txt    # Tools the agent can use, one per line (optional)
 ├── memory/              # Persistent knowledge (Broca)
 │   ├── state.md         # Current state — read at loop start, updated at loop end
 │   ├── knowledge/       # Learned facts, indexed by topic
 │   └── journal/         # Timestamped iteration summaries
 ├── goals/               # Active objectives
 ├── logs/                # Full iteration logs
-└── gates/               # Pending approval requests
+├── gates/               # Pending approval requests
+├── context.d/           # Executable scripts that add context sections (optional)
+└── hooks/               # Lifecycle hooks (optional)
+    ├── pre-run          # Runs before each iteration
+    ├── post-context     # Runs after context assembly (stdin: context, stdout: modified context)
+    ├── post-llm         # Runs after LLM completes ($1: exit code)
+    └── post-commit      # Runs after git commit ($1: timestamp)
 ```
 
 ## How It Works
@@ -121,6 +129,50 @@ path = "memory/"
 provider = "claude"
 model = "claude-sonnet-4-20250514"
 ```
+
+## Extension Points
+
+Boucle is designed to be extended without modifying the framework itself.
+
+### Context Plugins (`context.d/`)
+
+Add executable scripts to `context.d/` to inject custom context into each iteration. Each script receives the agent directory as `$1` and should output Markdown to stdout.
+
+```bash
+#!/bin/bash
+# context.d/linear-issues — Fetch Linear issues
+echo "## Linear Issues"
+echo ""
+# ... your logic to fetch and format issues
+```
+
+### Lifecycle Hooks (`hooks/`)
+
+Add executable scripts to `hooks/` to run code at specific points in the loop:
+
+| Hook | When | Arguments | Use case |
+|------|------|-----------|----------|
+| `pre-run` | Before iteration starts | `$1`: timestamp | Setup, health checks |
+| `post-context` | After context assembly | stdin: context | Modify context (filter, augment) |
+| `post-llm` | After LLM completes | `$1`: exit code | Notifications, cleanup |
+| `post-commit` | After git commit | `$1`: timestamp | Push to remote, deploy |
+
+### Tool Restrictions (`allowed-tools.txt`)
+
+List one tool per line to restrict what the agent can use:
+
+```
+Read
+Write
+Edit
+Glob
+Grep
+WebSearch
+Bash(git:*)
+Bash(python3:*)
+```
+
+If this file doesn't exist, all tools are available.
 
 ## Status
 
