@@ -19,11 +19,27 @@ pub fn assemble(
 ) -> Result<String, io::Error> {
     let mut sections: Vec<String> = Vec::new();
 
-    // 1. Goals (if goals file exists)
+    // 1. Goals (single file or directory of files)
     let goals_path = root.join("GOALS.md");
+    let goals_dir = root.join("goals");
     if goals_path.exists() {
         let goals = fs::read_to_string(&goals_path)?;
         sections.push(format!("## Current Goals\n\n{goals}"));
+    } else if goals_dir.is_dir() {
+        let mut goal_files: Vec<_> = fs::read_dir(&goals_dir)?
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().extension().is_some_and(|ext| ext == "md"))
+            .collect();
+        goal_files.sort_by_key(|e| e.file_name());
+        if !goal_files.is_empty() {
+            let mut goal_text = String::new();
+            for gf in goal_files {
+                let content = fs::read_to_string(gf.path())?;
+                goal_text.push_str(&content);
+                goal_text.push_str("\n\n---\n\n");
+            }
+            sections.push(format!("## Current Goals\n\n{goal_text}"));
+        }
     }
 
     // 2. Memory state
@@ -33,6 +49,25 @@ pub fn assemble(
     if state_path.exists() {
         let state = fs::read_to_string(&state_path)?;
         sections.push(format!("## Memory\n\n{state}"));
+    }
+
+    // 2b. Pending actions (if actions/ directory exists)
+    let actions_dir = root.join("actions");
+    if actions_dir.is_dir() {
+        let mut action_files: Vec<_> = fs::read_dir(&actions_dir)?
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().extension().is_some_and(|ext| ext == "md"))
+            .collect();
+        action_files.sort_by_key(|e| e.file_name());
+        if !action_files.is_empty() {
+            let mut actions_text = String::from("## Pending Actions (awaiting approval)\n\n");
+            for af in &action_files {
+                let content = fs::read_to_string(af.path())?;
+                actions_text.push_str(&content);
+                actions_text.push_str("\n\n---\n\n");
+            }
+            sections.push(actions_text);
+        }
     }
 
     // 3. Context plugins
@@ -136,6 +171,22 @@ fn gather_system_status(root: &Path) -> Result<String, io::Error> {
         }
     }
 
+    // Loop iteration count (from log files)
+    let log_dir = root.join("logs");
+    if log_dir.is_dir() {
+        if let Ok(entries) = fs::read_dir(&log_dir) {
+            let count = entries
+                .filter_map(|e| e.ok())
+                .filter(|e| {
+                    e.path()
+                        .extension()
+                        .is_some_and(|ext| ext == "log" || ext == "md")
+                })
+                .count();
+            status.push(format!("- Loop iterations so far: {count}"));
+        }
+    }
+
     // Git status
     let git_status = process::Command::new("git")
         .args(["status", "--porcelain"])
@@ -170,7 +221,11 @@ fn get_last_log(log_dir: &Path) -> Result<Option<String>, io::Error> {
 
     let mut logs: Vec<_> = fs::read_dir(log_dir)?
         .filter_map(|e| e.ok())
-        .filter(|e| e.path().extension().is_some_and(|ext| ext == "log"))
+        .filter(|e| {
+            e.path()
+                .extension()
+                .is_some_and(|ext| ext == "log" || ext == "md")
+        })
         .collect();
 
     if logs.is_empty() {
@@ -249,5 +304,47 @@ mod tests {
 
         assert!(result.contains("Current Goals"));
         assert!(result.contains("Build something"));
+    }
+
+    #[test]
+    fn test_assemble_with_goals_dir() {
+        let dir = tempfile::tempdir().unwrap();
+        runner::init(dir.path(), "test-agent").unwrap();
+        fs::create_dir_all(dir.path().join("goals")).unwrap();
+        fs::write(
+            dir.path().join("goals/001-first.md"),
+            "# Goal 1\nFirst goal.",
+        )
+        .unwrap();
+        fs::write(
+            dir.path().join("goals/002-second.md"),
+            "# Goal 2\nSecond goal.",
+        )
+        .unwrap();
+
+        let cfg = config::load(dir.path()).unwrap();
+        let result = assemble(dir.path(), &cfg, None).unwrap();
+
+        assert!(result.contains("Current Goals"));
+        assert!(result.contains("First goal"));
+        assert!(result.contains("Second goal"));
+    }
+
+    #[test]
+    fn test_assemble_with_actions() {
+        let dir = tempfile::tempdir().unwrap();
+        runner::init(dir.path(), "test-agent").unwrap();
+        fs::create_dir_all(dir.path().join("actions")).unwrap();
+        fs::write(
+            dir.path().join("actions/001-action.md"),
+            "# Action\nDo something.",
+        )
+        .unwrap();
+
+        let cfg = config::load(dir.path()).unwrap();
+        let result = assemble(dir.path(), &cfg, None).unwrap();
+
+        assert!(result.contains("Pending Actions"));
+        assert!(result.contains("Do something"));
     }
 }
