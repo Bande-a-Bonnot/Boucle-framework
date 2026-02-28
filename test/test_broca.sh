@@ -159,6 +159,131 @@ test_state_missing_file() {
     teardown_test_agent "$tmpdir"
 }
 
+# --- Test: broca_recall returns ranked results ---
+test_recall_ranked() {
+    local tmpdir
+    tmpdir=$(setup_test_agent)
+
+    broca_remember "$tmpdir/memory" "fact" "Python packaging" "Python uses pyproject.toml for packaging." "python" "packaging" >/dev/null
+    broca_remember "$tmpdir/memory" "fact" "Bash scripting" "Bash is good for scripting." "bash" >/dev/null
+    broca_remember "$tmpdir/memory" "fact" "Python testing" "Python uses pytest for testing." "python" "testing" >/dev/null
+
+    local results
+    results=$(broca_recall "$tmpdir/memory" "python")
+
+    # Should find python entries but not bash
+    assert_contains "$results" "python" "Should find python entries" &&
+    assert_not_contains "$results" "bash-scripting" "Should not include bash entry"
+
+    teardown_test_agent "$tmpdir"
+}
+
+# --- Test: broca_recall returns nothing for no match ---
+test_recall_no_match() {
+    local tmpdir
+    tmpdir=$(setup_test_agent)
+
+    broca_remember "$tmpdir/memory" "fact" "Bash scripting" "Bash is useful." "bash" >/dev/null
+
+    local results
+    results=$(broca_recall "$tmpdir/memory" "nonexistent")
+
+    assert_equals "" "$results" "Should return empty for no matches"
+
+    teardown_test_agent "$tmpdir"
+}
+
+# --- Test: broca_recall handles empty knowledge dir ---
+test_recall_empty() {
+    local tmpdir
+    tmpdir=$(setup_test_agent)
+
+    local results
+    results=$(broca_recall "$tmpdir/memory" "anything")
+
+    assert_equals "" "$results" "Should return empty for empty knowledge"
+
+    teardown_test_agent "$tmpdir"
+}
+
+# --- Test: broca_show displays content without frontmatter ---
+test_show_strips_frontmatter() {
+    local tmpdir
+    tmpdir=$(setup_test_agent)
+
+    local filepath
+    filepath=$(broca_remember "$tmpdir/memory" "fact" "Visible Content" "This should be visible.")
+
+    local result
+    result=$(broca_show "$filepath")
+
+    assert_contains "$result" "Visible Content" "Should show title" &&
+    assert_contains "$result" "This should be visible" "Should show content" &&
+    assert_not_contains "$result" "type: fact" "Should not show frontmatter"
+
+    teardown_test_agent "$tmpdir"
+}
+
+# --- Test: broca_update_confidence changes confidence ---
+test_update_confidence() {
+    local tmpdir
+    tmpdir=$(setup_test_agent)
+
+    local filepath
+    filepath=$(broca_remember "$tmpdir/memory" "fact" "Changeable" "Content." "test")
+
+    broca_update_confidence "$filepath" "0.95" >/dev/null
+
+    local content
+    content=$(cat "$filepath")
+
+    assert_contains "$content" "confidence: 0.95" "Should have updated confidence" &&
+    assert_not_contains "$content" "confidence: 0.8" "Should not have old confidence"
+
+    teardown_test_agent "$tmpdir"
+}
+
+# --- Test: broca_index generates index file ---
+test_index_generation() {
+    local tmpdir
+    tmpdir=$(setup_test_agent)
+
+    broca_remember "$tmpdir/memory" "fact" "Index Test" "Testing the index." "test" >/dev/null
+    broca_remember "$tmpdir/memory" "decision" "Another Entry" "More content." "test" >/dev/null
+
+    local index_path
+    index_path=$(broca_index "$tmpdir/memory")
+
+    assert_file_exists "$index_path" "Index file should exist" &&
+
+    local content
+    content=$(cat "$index_path")
+    assert_contains "$content" "Index Test" "Should contain first entry title" &&
+    assert_contains "$content" "Another Entry" "Should contain second entry title" &&
+    assert_contains "$content" "entries:" "Should have entries key"
+
+    teardown_test_agent "$tmpdir"
+}
+
+# --- Test: broca_stats shows distribution ---
+test_stats_output() {
+    local tmpdir
+    tmpdir=$(setup_test_agent)
+
+    broca_remember "$tmpdir/memory" "fact" "Stat Test 1" "Content." "tag1" >/dev/null
+    broca_remember "$tmpdir/memory" "decision" "Stat Test 2" "Content." "tag2" >/dev/null
+    broca_journal "$tmpdir/memory" "Test journal entry" >/dev/null
+
+    local result
+    result=$(broca_stats "$tmpdir/memory")
+
+    assert_contains "$result" "Knowledge entries: 2" "Should show 2 knowledge entries" &&
+    assert_contains "$result" "Journal entries: 1" "Should show 1 journal entry" &&
+    assert_contains "$result" "By type:" "Should show type breakdown"
+
+    teardown_test_agent "$tmpdir"
+}
+
 # --- Run all tests ---
 run_test "broca_remember creates file" test_remember_creates_file
 run_test "broca_remember has correct frontmatter" test_remember_frontmatter
@@ -169,5 +294,12 @@ run_test "broca_search_tag finds by tag" test_search_tag
 run_test "broca_recent returns entries" test_recent_returns_entries
 run_test "broca_state reads file" test_state_reads_file
 run_test "broca_state handles missing file" test_state_missing_file
+run_test "broca_recall returns ranked results" test_recall_ranked
+run_test "broca_recall returns nothing for no match" test_recall_no_match
+run_test "broca_recall handles empty knowledge dir" test_recall_empty
+run_test "broca_show strips frontmatter" test_show_strips_frontmatter
+run_test "broca_update_confidence changes value" test_update_confidence
+run_test "broca_index generates index file" test_index_generation
+run_test "broca_stats shows distribution" test_stats_output
 
 print_summary
