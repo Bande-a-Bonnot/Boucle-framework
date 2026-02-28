@@ -77,7 +77,13 @@ interval = "1h"
     fs::write(root.join("boucle.toml"), config_content)?;
 
     // Create directories
-    for dir in &["memory/knowledge", "memory/journal", "context.d", "hooks", "logs"] {
+    for dir in &[
+        "memory/knowledge",
+        "memory/journal",
+        "context.d",
+        "hooks",
+        "logs",
+    ] {
         fs::create_dir_all(root.join(dir))?;
     }
 
@@ -114,32 +120,36 @@ pub fn run(root: &Path) -> Result<(), RunnerError> {
     let _lock_guard = LockGuard(lock_path.clone());
 
     let timestamp = Utc::now().format("%Y-%m-%d_%H-%M-%S").to_string();
-    let log_dir = root.join(cfg.loop_config.log_dir.as_deref().unwrap_or(LOG_DIR_DEFAULT));
+    let log_dir = root.join(
+        cfg.loop_config
+            .log_dir
+            .as_deref()
+            .unwrap_or(LOG_DIR_DEFAULT),
+    );
     fs::create_dir_all(&log_dir)?;
     let log_file = log_dir.join(format!("{timestamp}.log"));
 
     log(&log_file, &format!("=== Boucle loop: {timestamp} ==="))?;
     log(&log_file, &format!("Agent: {}", cfg.agent.name))?;
+    log(
+        &log_file,
+        &format!("Max tokens: {}", cfg.loop_config.max_tokens),
+    )?;
 
     // Run pre-run hook
-    let hooks_dir = cfg
-        .loop_config
-        .hooks_dir
-        .as_deref()
-        .map(|d| root.join(d));
+    let hooks_dir = cfg.loop_config.hooks_dir.as_deref().map(|d| root.join(d));
     if let Some(ref hooks) = hooks_dir {
         hooks::run_hook(hooks, "pre-run", root)?;
     }
 
     // Assemble context
-    let context_dir = cfg
-        .loop_config
-        .context_dir
-        .as_deref()
-        .map(|d| root.join(d));
+    let context_dir = cfg.loop_config.context_dir.as_deref().map(|d| root.join(d));
     let assembled_context = context::assemble(root, &cfg, context_dir.as_deref())?;
 
-    log(&log_file, &format!("Context assembled: {} bytes", assembled_context.len()))?;
+    log(
+        &log_file,
+        &format!("Context assembled: {} bytes", assembled_context.len()),
+    )?;
 
     // Run post-context hook
     if let Some(ref hooks) = hooks_dir {
@@ -166,14 +176,22 @@ pub fn run(root: &Path) -> Result<(), RunnerError> {
         cmd.arg(&system_prompt);
     }
 
-    // Load allowed tools
+    // Load allowed tools (file takes precedence, then config)
     let tools_file = root.join("allowed-tools.txt");
     if tools_file.exists() {
         let tools = fs::read_to_string(&tools_file)?;
-        let tool_list: Vec<&str> = tools.lines().filter(|l| !l.trim().is_empty() && !l.starts_with('#')).collect();
+        let tool_list: Vec<&str> = tools
+            .lines()
+            .filter(|l| !l.trim().is_empty() && !l.starts_with('#'))
+            .collect();
         if !tool_list.is_empty() {
             cmd.arg("--allowed-tools");
             cmd.arg(tool_list.join(","));
+        }
+    } else if let Some(ref tools) = cfg.agent.allowed_tools {
+        if !tools.is_empty() {
+            cmd.arg("--allowed-tools");
+            cmd.arg(tools);
         }
     }
 
@@ -232,7 +250,9 @@ pub fn run(root: &Path) -> Result<(), RunnerError> {
     log(&log_file, "=== Loop complete ===")?;
 
     if exit_code != 0 {
-        return Err(RunnerError::Llm(format!("Claude exited with code {exit_code}")));
+        return Err(RunnerError::Llm(format!(
+            "Claude exited with code {exit_code}"
+        )));
     }
 
     Ok(())
@@ -267,7 +287,12 @@ pub fn status(root: &Path) -> Result<(), RunnerError> {
     }
 
     // Show last log
-    let log_dir = root.join(cfg.loop_config.log_dir.as_deref().unwrap_or(LOG_DIR_DEFAULT));
+    let log_dir = root.join(
+        cfg.loop_config
+            .log_dir
+            .as_deref()
+            .unwrap_or(LOG_DIR_DEFAULT),
+    );
     if log_dir.exists() {
         let mut logs: Vec<_> = fs::read_dir(&log_dir)?
             .filter_map(|e| e.ok())
@@ -275,7 +300,10 @@ pub fn status(root: &Path) -> Result<(), RunnerError> {
             .collect();
         logs.sort_by_key(|e| e.file_name());
         if let Some(last) = logs.last() {
-            println!("Last run: {}", last.file_name().to_string_lossy().trim_end_matches(".log"));
+            println!(
+                "Last run: {}",
+                last.file_name().to_string_lossy().trim_end_matches(".log")
+            );
         }
     }
 
@@ -285,7 +313,12 @@ pub fn status(root: &Path) -> Result<(), RunnerError> {
 /// Show loop log history.
 pub fn show_log(root: &Path, count: usize) -> Result<(), RunnerError> {
     let cfg = config::load(root)?;
-    let log_dir = root.join(cfg.loop_config.log_dir.as_deref().unwrap_or(LOG_DIR_DEFAULT));
+    let log_dir = root.join(
+        cfg.loop_config
+            .log_dir
+            .as_deref()
+            .unwrap_or(LOG_DIR_DEFAULT),
+    );
 
     if !log_dir.exists() {
         println!("No logs yet.");
@@ -322,24 +355,31 @@ pub fn show_log(root: &Path, count: usize) -> Result<(), RunnerError> {
 
 /// Set up scheduling.
 pub fn schedule(root: &Path, interval: &str) -> Result<(), RunnerError> {
-    let seconds = config::parse_interval(interval)
-        .map_err(|e| RunnerError::Io(io::Error::new(io::ErrorKind::InvalidInput, e)))?;
-
     let cfg = config::load(root)?;
-    let boucle_path = std::env::current_exe()
-        .unwrap_or_else(|_| PathBuf::from("boucle"));
+
+    // Use provided interval, or fall back to config
+    let effective_interval = if interval.is_empty() {
+        &cfg.schedule.interval
+    } else {
+        interval
+    };
+
+    let seconds = config::parse_interval(effective_interval)
+        .map_err(|e| RunnerError::Io(io::Error::new(io::ErrorKind::InvalidInput, e)))?;
+    let boucle_path = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("boucle"));
 
     if cfg!(target_os = "macos") {
-        let plist = generate_launchd_plist(
-            &cfg.agent.name,
-            &boucle_path,
-            root,
-            seconds,
+        let plist = generate_launchd_plist(&cfg.agent.name, &boucle_path, root, seconds);
+        println!(
+            "# Save this as ~/Library/LaunchAgents/com.boucle.{}.plist",
+            cfg.agent.name
         );
-        println!("# Save this as ~/Library/LaunchAgents/com.boucle.{}.plist", cfg.agent.name);
         println!("{plist}");
         println!("\n# Then run:");
-        println!("# launchctl load ~/Library/LaunchAgents/com.boucle.{}.plist", cfg.agent.name);
+        println!(
+            "# launchctl load ~/Library/LaunchAgents/com.boucle.{}.plist",
+            cfg.agent.name
+        );
     } else {
         let cron = generate_cron_entry(&boucle_path, root, seconds);
         println!("# Add this to your crontab (crontab -e):");

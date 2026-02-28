@@ -72,9 +72,7 @@ impl Entry {
     /// Parse a memory entry from its content string.
     pub fn parse(filename: &str, raw: &str) -> Result<Self, BrocaError> {
         if !raw.starts_with("---") {
-            return Err(BrocaError::Parse(format!(
-                "No frontmatter in {filename}"
-            )));
+            return Err(BrocaError::Parse(format!("No frontmatter in {filename}")));
         }
 
         let end = raw[3..]

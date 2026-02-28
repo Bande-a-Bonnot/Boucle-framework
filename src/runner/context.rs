@@ -27,7 +27,9 @@ pub fn assemble(
     }
 
     // 2. Memory state
-    let state_path = root.join(&config.memory.dir).join(&config.memory.state_file);
+    let state_path = root
+        .join(&config.memory.dir)
+        .join(&config.memory.state_file);
     if state_path.exists() {
         let state = fs::read_to_string(&state_path)?;
         sections.push(format!("## Memory\n\n{state}"));
@@ -58,9 +60,7 @@ pub fn assemble(
 fn run_context_plugins(context_dir: &Path, root: &Path) -> Result<Vec<String>, io::Error> {
     let mut outputs = Vec::new();
 
-    let mut entries: Vec<_> = fs::read_dir(context_dir)?
-        .filter_map(|e| e.ok())
-        .collect();
+    let mut entries: Vec<_> = fs::read_dir(context_dir)?.filter_map(|e| e.ok()).collect();
     entries.sort_by_key(|e| e.file_name());
 
     for entry in entries {
@@ -73,17 +73,13 @@ fn run_context_plugins(context_dir: &Path, root: &Path) -> Result<Vec<String>, i
         let interpreter = detect_interpreter(&path)?;
 
         let output = match interpreter {
-            Some(interp) => {
-                process::Command::new(interp)
-                    .arg(&path)
-                    .current_dir(root)
-                    .output()?
-            }
+            Some(interp) => process::Command::new(interp)
+                .arg(&path)
+                .current_dir(root)
+                .output()?,
             None => {
                 // Try running directly (requires +x)
-                process::Command::new(&path)
-                    .current_dir(root)
-                    .output()?
+                process::Command::new(&path).current_dir(root).output()?
             }
         };
 
@@ -102,7 +98,7 @@ fn detect_interpreter(path: &Path) -> Result<Option<String>, io::Error> {
     let first_line = content.lines().next().unwrap_or("");
 
     if let Some(shebang) = first_line.strip_prefix("#!") {
-        let parts: Vec<&str> = shebang.trim().split_whitespace().collect();
+        let parts: Vec<&str> = shebang.split_whitespace().collect();
         if let Some(interpreter) = parts.first() {
             // Handle /usr/bin/env python3 style
             if interpreter.ends_with("/env") {
@@ -194,8 +190,8 @@ fn get_last_log(log_dir: &Path) -> Result<Option<String>, io::Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runner;
     use crate::config;
+    use crate::runner;
 
     #[test]
     fn test_detect_interpreter_bash() {

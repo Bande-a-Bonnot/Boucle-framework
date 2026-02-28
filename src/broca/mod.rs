@@ -207,11 +207,8 @@ pub fn build_index(memory_dir: &Path) -> Result<usize, BrocaError> {
 
     for entry in &entries {
         index.push_str(&format!(
-            "- **{}** [{}] (confidence: {:.1}) — {}\n",
-            entry.title,
-            entry.entry_type,
-            entry.confidence,
-            entry.filename
+            "- **{}** [{}] (confidence: {:.1}, created: {}) — {}\n",
+            entry.title, entry.entry_type, entry.confidence, entry.created, entry.filename
         ));
         if !entry.tags.is_empty() {
             index.push_str(&format!("  tags: {}\n", entry.tags.join(", ")));
@@ -222,7 +219,127 @@ pub fn build_index(memory_dir: &Path) -> Result<usize, BrocaError> {
     Ok(entries.len())
 }
 
+/// Update the confidence score of a memory entry.
+pub fn update_confidence(
+    memory_dir: &Path,
+    entry_name: &str,
+    new_confidence: f64,
+) -> Result<PathBuf, BrocaError> {
+    let knowledge_dir = memory_dir.join("knowledge");
+    let path = find_entry_by_name(&knowledge_dir, entry_name)?
+        .ok_or_else(|| BrocaError::Parse(format!("Entry not found: {entry_name}")))?;
+
+    let content = fs::read_to_string(&path)?;
+    let updated =
+        replace_frontmatter_field(&content, "confidence", &format!("{new_confidence:.1}"));
+    fs::write(&path, updated)?;
+    Ok(path)
+}
+
+/// Mark an entry as superseded by another.
+pub fn supersede(
+    memory_dir: &Path,
+    old_entry: &str,
+    new_entry: &str,
+) -> Result<PathBuf, BrocaError> {
+    let knowledge_dir = memory_dir.join("knowledge");
+    let path = find_entry_by_name(&knowledge_dir, old_entry)?
+        .ok_or_else(|| BrocaError::Parse(format!("Entry not found: {old_entry}")))?;
+
+    let content = fs::read_to_string(&path)?;
+
+    // Add superseded_by field to frontmatter
+    let updated = if content.contains("superseded_by:") {
+        replace_frontmatter_field(&content, "superseded_by", new_entry)
+    } else {
+        add_frontmatter_field(&content, "superseded_by", new_entry)
+    };
+
+    // Also lower the confidence
+    let updated = replace_frontmatter_field(&updated, "confidence", "0.3");
+    fs::write(&path, updated)?;
+    Ok(path)
+}
+
+/// Add a relationship between two entries.
+pub fn relate(
+    memory_dir: &Path,
+    entry_a: &str,
+    entry_b: &str,
+    relation_type: &str,
+) -> Result<(), BrocaError> {
+    let knowledge_dir = memory_dir.join("knowledge");
+
+    // Verify both entries exist
+    let path_a = find_entry_by_name(&knowledge_dir, entry_a)?
+        .ok_or_else(|| BrocaError::Parse(format!("Entry not found: {entry_a}")))?;
+    let path_b = find_entry_by_name(&knowledge_dir, entry_b)?
+        .ok_or_else(|| BrocaError::Parse(format!("Entry not found: {entry_b}")))?;
+
+    let name_a = path_a
+        .file_name()
+        .and_then(|f| f.to_str())
+        .unwrap_or(entry_a);
+    let name_b = path_b
+        .file_name()
+        .and_then(|f| f.to_str())
+        .unwrap_or(entry_b);
+
+    // Store relationships in a RELATIONS.md file
+    let relations_path = memory_dir.join("RELATIONS.md");
+    let relation_line = format!("{name_a} --[{relation_type}]--> {name_b}\n");
+
+    if relations_path.exists() {
+        let existing = fs::read_to_string(&relations_path)?;
+        if !existing.contains(relation_line.trim()) {
+            fs::write(&relations_path, format!("{existing}{relation_line}"))?;
+        }
+    } else {
+        fs::write(
+            &relations_path,
+            format!("# Broca Relations\n\n{relation_line}"),
+        )?;
+    }
+
+    Ok(())
+}
+
 // --- Helpers ---
+
+/// Replace a field value in frontmatter.
+fn replace_frontmatter_field(content: &str, key: &str, value: &str) -> String {
+    let mut lines: Vec<String> = content.lines().map(|l| l.to_string()).collect();
+    let mut found = false;
+
+    for line in &mut lines {
+        if line.trim().starts_with(&format!("{key}:")) {
+            *line = format!("{key}: {value}");
+            found = true;
+            break;
+        }
+    }
+
+    if !found {
+        // Key not found — no change
+        return content.to_string();
+    }
+
+    lines.join("\n") + "\n"
+}
+
+/// Add a new field to the frontmatter (before the closing ---).
+fn add_frontmatter_field(content: &str, key: &str, value: &str) -> String {
+    if let Some(pos) = content[3..].find("---") {
+        let insert_pos = pos + 3;
+        format!(
+            "{}{key}: {value}\n{}",
+            &content[..insert_pos],
+            &content[insert_pos..]
+        )
+    } else {
+        content.to_string()
+    }
+}
 
 /// Convert a title to a filename-safe slug.
 fn slugify(title: &str) -> String {
@@ -370,7 +487,14 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let memory_dir = dir.path();
 
-        remember(memory_dir, "fact", "Alpha", "Content A", &["tag1".to_string()]).unwrap();
+        remember(
+            memory_dir,
+            "fact",
+            "Alpha",
+            "Content A",
+            &["tag1".to_string()],
+        )
+        .unwrap();
         remember(memory_dir, "observation", "Beta", "Content B", &[]).unwrap();
 
         let count = build_index(memory_dir).unwrap();
@@ -400,5 +524,70 @@ mod tests {
         let results = search_tag(memory_dir, "important").unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].title, "Tagged");
+    }
+
+    #[test]
+    fn test_update_confidence() {
+        let dir = tempfile::tempdir().unwrap();
+        let memory_dir = dir.path();
+
+        let path = remember(memory_dir, "fact", "Confidence Test", "Content", &[]).unwrap();
+
+        // Original confidence is 0.8
+        let content = fs::read_to_string(&path).unwrap();
+        assert!(content.contains("confidence: 0.8"));
+
+        // Update to 0.95
+        update_confidence(memory_dir, "confidence-test", 0.95).unwrap();
+
+        let content = fs::read_to_string(&path).unwrap();
+        assert!(content.contains("confidence: 0.9")); // 0.95 formatted as 0.9 with .1 precision
+    }
+
+    #[test]
+    fn test_supersede() {
+        let dir = tempfile::tempdir().unwrap();
+        let memory_dir = dir.path();
+
+        remember(memory_dir, "fact", "Old Fact", "Old content", &[]).unwrap();
+        remember(memory_dir, "fact", "New Fact", "New content", &[]).unwrap();
+
+        supersede(memory_dir, "old-fact", "new-fact").unwrap();
+
+        // Old entry should have superseded_by and lower confidence
+        let entries = entry::load_all(&memory_dir.join("knowledge")).unwrap();
+        let old = entries.iter().find(|e| e.title == "Old Fact").unwrap();
+        assert_eq!(old.confidence, 0.3);
+        assert!(old.superseded_by.is_some());
+    }
+
+    #[test]
+    fn test_relate() {
+        let dir = tempfile::tempdir().unwrap();
+        let memory_dir = dir.path();
+
+        remember(memory_dir, "fact", "Entry A", "Content A", &[]).unwrap();
+        remember(memory_dir, "fact", "Entry B", "Content B", &[]).unwrap();
+
+        relate(memory_dir, "entry-a", "entry-b", "supports").unwrap();
+
+        let relations = fs::read_to_string(memory_dir.join("RELATIONS.md")).unwrap();
+        assert!(relations.contains("--[supports]-->"));
+    }
+
+    #[test]
+    fn test_replace_frontmatter_field() {
+        let content = "---\ntype: fact\nconfidence: 0.8\n---\n\nContent.";
+        let updated = replace_frontmatter_field(content, "confidence", "0.95");
+        assert!(updated.contains("confidence: 0.95"));
+        assert!(!updated.contains("confidence: 0.8"));
+    }
+
+    #[test]
+    fn test_add_frontmatter_field() {
+        let content = "---\ntype: fact\n---\n\nContent.";
+        let updated = add_frontmatter_field(content, "superseded_by", "new-entry.md");
+        assert!(updated.contains("superseded_by: new-entry.md"));
+        assert!(updated.contains("type: fact"));
     }
 }

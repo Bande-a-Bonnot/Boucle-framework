@@ -186,7 +186,9 @@ pub fn parse_interval(interval: &str) -> Result<u64, String> {
         "m" => Ok(num * 60),
         "h" => Ok(num * 3600),
         "d" => Ok(num * 86400),
-        _ => Err(format!("Unknown interval suffix: {suffix}. Use s, m, h, or d.")),
+        _ => Err(format!(
+            "Unknown interval suffix: {suffix}. Use s, m, h, or d."
+        )),
     }
 }
 
