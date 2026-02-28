@@ -1,0 +1,275 @@
+#!/bin/bash
+# Boucle CLI — the main entry point
+# Usage: boucle <command> [options]
+
+set -euo pipefail
+
+BOUCLE_VERSION="0.1.0"
+BOUCLE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
+# Source the core library
+source "$BOUCLE_DIR/lib/loop.sh"
+
+usage() {
+    cat <<EOF
+boucle v$BOUCLE_VERSION — autonomous agent loop framework
+
+Usage:
+    boucle <command> [options]
+
+Commands:
+    init <name>         Initialize a new agent in the current directory
+    run                 Run one loop iteration
+    schedule            Set up recurring execution (cron/launchd)
+    status              Show agent status
+    log                 Show recent iteration logs
+    help                Show this help message
+
+Options:
+    -v, --version       Show version
+    -h, --help          Show help
+
+Examples:
+    boucle init my-agent     Create a new agent
+    boucle run               Run one iteration
+    boucle status            Check current state
+
+EOF
+}
+
+cmd_init() {
+    local name="${1:-agent}"
+    local agent_dir="$(pwd)"
+
+    echo "Initializing Boucle agent: $name"
+
+    # Create directory structure
+    mkdir -p "$agent_dir/memory/journal"
+    mkdir -p "$agent_dir/memory/knowledge"
+    mkdir -p "$agent_dir/goals"
+    mkdir -p "$agent_dir/gates"
+    mkdir -p "$agent_dir/logs"
+
+    # Create initial config
+    if [ ! -f "$agent_dir/boucle.toml" ]; then
+        cat > "$agent_dir/boucle.toml" <<TOML
+# Boucle agent configuration
+
+[agent]
+name = "$name"
+description = "An autonomous AI agent"
+version = "0.1.0"
+
+[schedule]
+interval = "1h"
+method = "launchd"  # or "cron"
+
+[boundaries]
+# Actions the agent can take without human approval
+autonomous = ["read", "write", "research", "plan"]
+# Actions that require human approval
+requires_approval = ["spend_money", "post_publicly", "contact_people"]
+
+[memory]
+path = "memory/"
+
+[llm]
+provider = "claude"
+# Additional LLM settings can be added here
+TOML
+        echo "  Created boucle.toml"
+    fi
+
+    # Create initial state
+    if [ ! -f "$agent_dir/memory/state.md" ]; then
+        cat > "$agent_dir/memory/state.md" <<MD
+# Agent State
+
+## Identity
+I am $name, an autonomous agent powered by Boucle.
+
+## What I know
+- Initialized: $(date +%Y-%m-%d)
+
+## What I'm working on
+(Nothing yet. Waiting for goals.)
+
+## What I've learned
+(Nothing yet. This is my first iteration.)
+MD
+        echo "  Created memory/state.md"
+    fi
+
+    # Create system prompt
+    if [ ! -f "$agent_dir/system-prompt.md" ]; then
+        cat > "$agent_dir/system-prompt.md" <<MD
+You are $name, an autonomous AI agent running in a loop via Boucle.
+
+Each iteration, you:
+1. Read your current state (memory, goals, pending approvals)
+2. Decide what to do
+3. Execute your plan
+4. Update your memory with what you learned
+
+Rules:
+- You can read/write files, write code, and do research autonomously
+- Anything requiring money, public visibility, or contacting people needs human approval (write to gates/)
+- Always update memory/state.md at the end of each iteration
+- Be honest about what worked and what didn't
+MD
+        echo "  Created system-prompt.md"
+    fi
+
+    # Create .gitignore
+    if [ ! -f "$agent_dir/.gitignore" ]; then
+        cat > "$agent_dir/.gitignore" <<GI
+# Credentials and secrets
+credentials.*
+*.key
+*.pem
+.env
+
+# Lock files
+.boucle.lock
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*~
+GI
+        echo "  Created .gitignore"
+    fi
+
+    # Initialize git if needed
+    if [ ! -d "$agent_dir/.git" ]; then
+        git init "$agent_dir"
+        echo "  Initialized git repository"
+    fi
+
+    echo ""
+    echo "Agent '$name' initialized!"
+    echo ""
+    echo "Next steps:"
+    echo "  1. Edit boucle.toml to configure your agent"
+    echo "  2. Add goals to goals/"
+    echo "  3. Run: boucle run"
+}
+
+cmd_run() {
+    local agent_dir
+    agent_dir=$(find_agent_root "$(pwd)") || {
+        echo "ERROR: No boucle.toml found. Run 'boucle init' first." >&2
+        exit 1
+    }
+    run_iteration "$agent_dir"
+}
+
+cmd_status() {
+    local agent_dir
+    agent_dir=$(find_agent_root "$(pwd)") || {
+        echo "ERROR: No boucle.toml found. Run 'boucle init' first." >&2
+        exit 1
+    }
+
+    echo "=== Boucle Agent Status ==="
+    echo ""
+
+    # Agent name from config
+    if [ -f "$agent_dir/boucle.toml" ]; then
+        local name
+        name=$(grep '^name' "$agent_dir/boucle.toml" | head -1 | sed 's/.*= *"\(.*\)"/\1/')
+        echo "Agent: $name"
+    fi
+
+    echo "Directory: $agent_dir"
+    echo ""
+
+    # Iteration count
+    local count
+    count=$(ls "$agent_dir"/memory/journal/*.md 2>/dev/null | wc -l | tr -d ' ')
+    echo "Iterations: $count"
+
+    # Goals
+    local goals
+    goals=$(ls "$agent_dir"/goals/*.md 2>/dev/null | wc -l | tr -d ' ')
+    echo "Active goals: $goals"
+
+    # Pending approvals
+    local gates
+    gates=$(ls "$agent_dir"/gates/*.md 2>/dev/null | wc -l | tr -d ' ')
+    echo "Pending approvals: $gates"
+
+    # Lock status
+    if [ -f "$agent_dir/.boucle.lock" ]; then
+        local pid
+        pid=$(cat "$agent_dir/.boucle.lock")
+        if kill -0 "$pid" 2>/dev/null; then
+            echo "Status: RUNNING (PID $pid)"
+        else
+            echo "Status: STALE LOCK (PID $pid is dead)"
+        fi
+    else
+        echo "Status: IDLE"
+    fi
+
+    # Last iteration
+    local last_log
+    last_log=$(ls -t "$agent_dir"/logs/*.md 2>/dev/null | head -1)
+    if [ -n "${last_log:-}" ]; then
+        echo "Last iteration: $(basename "$last_log" .md)"
+    fi
+
+    # Git status
+    echo "Uncommitted changes: $(git -C "$agent_dir" status --porcelain 2>/dev/null | wc -l | tr -d ' ')"
+}
+
+cmd_log() {
+    local agent_dir
+    agent_dir=$(find_agent_root "$(pwd)") || {
+        echo "ERROR: No boucle.toml found." >&2
+        exit 1
+    }
+
+    local count="${1:-5}"
+    echo "=== Last $count iterations ==="
+    echo ""
+
+    ls -t "$agent_dir"/logs/*.md 2>/dev/null | head -"$count" | while read -r f; do
+        echo "--- $(basename "$f" .md) ---"
+        head -20 "$f"
+        echo "..."
+        echo ""
+    done
+}
+
+# --- Main dispatch ---
+case "${1:-help}" in
+    init)
+        shift
+        cmd_init "$@"
+        ;;
+    run)
+        cmd_run
+        ;;
+    status)
+        cmd_status
+        ;;
+    log|logs)
+        shift
+        cmd_log "$@"
+        ;;
+    -v|--version)
+        echo "boucle v$BOUCLE_VERSION"
+        ;;
+    -h|--help|help)
+        usage
+        ;;
+    *)
+        echo "Unknown command: $1"
+        usage
+        exit 1
+        ;;
+esac
