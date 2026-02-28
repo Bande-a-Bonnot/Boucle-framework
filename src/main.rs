@@ -105,6 +105,37 @@ enum MemoryCommands {
         content: String,
     },
 
+    /// Update confidence score for an entry
+    UpdateConfidence {
+        /// Entry filename or partial name
+        entry: String,
+
+        /// New confidence score (0.0 to 1.0)
+        confidence: f64,
+    },
+
+    /// Mark an entry as superseded by a newer one
+    Supersede {
+        /// Old entry filename or partial name
+        old_entry: String,
+
+        /// New entry filename or partial name
+        new_entry: String,
+    },
+
+    /// Add a relationship between two entries
+    Relate {
+        /// First entry filename or partial name
+        entry_a: String,
+
+        /// Second entry filename or partial name
+        entry_b: String,
+
+        /// Relationship type (e.g., "supports", "contradicts", "extends")
+        #[arg(short = 't', long, default_value = "related")]
+        relation_type: String,
+    },
+
     /// Show memory statistics
     Stats,
 
@@ -211,9 +242,18 @@ fn main() {
                                         entry.confidence,
                                         entry.relevance_score
                                     );
+                                    println!("   file: {}", entry.filename);
+                                    if let Some(ref sup) = entry.superseded_by {
+                                        println!("   ⚠ superseded by: {sup}");
+                                    }
                                     if !entry.tags.is_empty() {
                                         println!("   tags: {}", entry.tags.join(", "));
                                     }
+                                    // Show content preview (first 100 chars)
+                                    let preview: String = entry.content.chars().take(100).collect();
+                                    let ellipsis =
+                                        if entry.content.len() > 100 { "..." } else { "" };
+                                    println!("   {preview}{ellipsis}");
                                     println!();
                                 }
                             }
@@ -225,33 +265,29 @@ fn main() {
                     }
                 }
 
-                MemoryCommands::Show { entry } => {
-                    match broca::show(&memory_dir, &entry) {
-                        Ok(content) => print!("{content}"),
-                        Err(e) => {
-                            eprintln!("Error: {e}");
-                            process::exit(1);
-                        }
+                MemoryCommands::Show { entry } => match broca::show(&memory_dir, &entry) {
+                    Ok(content) => print!("{content}"),
+                    Err(e) => {
+                        eprintln!("Error: {e}");
+                        process::exit(1);
                     }
-                }
+                },
 
-                MemoryCommands::SearchTag { tag } => {
-                    match broca::search_tag(&memory_dir, &tag) {
-                        Ok(entries) => {
-                            if entries.is_empty() {
-                                println!("No entries with tag '{tag}'.");
-                            } else {
-                                for entry in &entries {
-                                    println!("[{}] {}", entry.entry_type, entry.title);
-                                }
+                MemoryCommands::SearchTag { tag } => match broca::search_tag(&memory_dir, &tag) {
+                    Ok(entries) => {
+                        if entries.is_empty() {
+                            println!("No entries with tag '{tag}'.");
+                        } else {
+                            for entry in &entries {
+                                println!("[{}] {}", entry.entry_type, entry.title);
                             }
                         }
-                        Err(e) => {
-                            eprintln!("Error: {e}");
-                            process::exit(1);
-                        }
                     }
-                }
+                    Err(e) => {
+                        eprintln!("Error: {e}");
+                        process::exit(1);
+                    }
+                },
 
                 MemoryCommands::Journal { content } => {
                     match broca::journal(&memory_dir, &content) {
@@ -263,9 +299,11 @@ fn main() {
                     }
                 }
 
-                MemoryCommands::Stats => {
-                    match broca::stats(&memory_dir) {
-                        Ok(s) => print!("{s}"),
+                MemoryCommands::UpdateConfidence { entry, confidence } => {
+                    match broca::update_confidence(&memory_dir, &entry, confidence) {
+                        Ok(path) => {
+                            println!("Updated confidence to {confidence:.1}: {}", path.display())
+                        }
                         Err(e) => {
                             eprintln!("Error: {e}");
                             process::exit(1);
@@ -273,15 +311,48 @@ fn main() {
                     }
                 }
 
-                MemoryCommands::Index => {
-                    match broca::build_index(&memory_dir) {
-                        Ok(count) => println!("Indexed {count} entries."),
-                        Err(e) => {
-                            eprintln!("Error: {e}");
-                            process::exit(1);
-                        }
+                MemoryCommands::Supersede {
+                    old_entry,
+                    new_entry,
+                } => match broca::supersede(&memory_dir, &old_entry, &new_entry) {
+                    Ok(path) => {
+                        println!("Marked as superseded: {}", path.display())
                     }
-                }
+                    Err(e) => {
+                        eprintln!("Error: {e}");
+                        process::exit(1);
+                    }
+                },
+
+                MemoryCommands::Relate {
+                    entry_a,
+                    entry_b,
+                    relation_type,
+                } => match broca::relate(&memory_dir, &entry_a, &entry_b, &relation_type) {
+                    Ok(()) => {
+                        println!("Relation added: {entry_a} --[{relation_type}]--> {entry_b}")
+                    }
+                    Err(e) => {
+                        eprintln!("Error: {e}");
+                        process::exit(1);
+                    }
+                },
+
+                MemoryCommands::Stats => match broca::stats(&memory_dir) {
+                    Ok(s) => print!("{s}"),
+                    Err(e) => {
+                        eprintln!("Error: {e}");
+                        process::exit(1);
+                    }
+                },
+
+                MemoryCommands::Index => match broca::build_index(&memory_dir) {
+                    Ok(count) => println!("Indexed {count} entries."),
+                    Err(e) => {
+                        eprintln!("Error: {e}");
+                        process::exit(1);
+                    }
+                },
             }
         }
     }

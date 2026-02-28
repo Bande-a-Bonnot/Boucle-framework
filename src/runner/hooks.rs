@@ -81,7 +81,7 @@ fn find_hook_script(hooks_dir: &Path, name: &str) -> Option<std::path::PathBuf> 
 fn detect_shebang(content: &str) -> Option<String> {
     let first_line = content.lines().next()?;
     let shebang = first_line.strip_prefix("#!")?;
-    let parts: Vec<&str> = shebang.trim().split_whitespace().collect();
+    let parts: Vec<&str> = shebang.split_whitespace().collect();
     let interpreter = parts.first()?;
 
     if interpreter.ends_with("/env") {
