@@ -71,12 +71,15 @@ fn is_office_hours() -> bool {
 
     // Sleep hours: 21:00 (9pm) to 06:00 (6am)
     // Awake hours: 06:00 to 21:00
+    // Sleep crosses midnight (21:00-06:00), so awake = [6, 21)
+    #[allow(clippy::manual_range_contains)]
     if SLEEP_START_HOUR < SLEEP_END_HOUR {
         // Normal case (e.g., 8am to 5pm) - doesn't apply here
         hour >= SLEEP_END_HOUR && hour < SLEEP_START_HOUR
     } else {
         // Sleep period crosses midnight (9pm to 6am)
-        !(hour >= SLEEP_START_HOUR || hour < SLEEP_END_HOUR)
+        // Awake when NOT in sleep hours: hour >= 6 AND hour < 21
+        hour >= SLEEP_END_HOUR && hour < SLEEP_START_HOUR
     }
 }
 
