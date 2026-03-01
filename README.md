@@ -14,6 +14,7 @@ Boucle is a framework for building persistent AI agents that run on a schedule, 
 
 - **Structured loop runner** — Schedule agent iterations via cron/launchd with locking, logging, and error recovery
 - **Persistent memory (Broca)** — File-based, git-native knowledge that compounds across iterations. No database required.
+- **MCP server** — Expose Broca memory as a Model Context Protocol server for multi-agent collaboration
 - **Goal tracking** — Define objectives, track progress, measure value across loop iterations
 - **Approval gates** — Human-in-the-loop for anything with external consequences (spending money, posting publicly, contacting people)
 - **Audit trail** — Every action logged, every decision traceable, every iteration committed to git
@@ -41,6 +42,9 @@ cargo build --release
 ./target/release/boucle memory remember "API keys rotate monthly" --tags "security,ops"
 ./target/release/boucle memory recall "API keys"
 ./target/release/boucle memory stats
+
+# Start MCP server for other agents
+./target/release/boucle mcp --stdio
 ```
 
 ## Architecture
@@ -111,6 +115,27 @@ Broca provides:
 - **Smart retrieval** via tag-based + keyword search + recency weighting
 - **Knowledge compounding** — entries can reference and build on each other
 - **Zero dependencies** — just Markdown files in a directory
+
+## MCP Server
+
+Boucle exposes Broca's memory system as a Model Context Protocol (MCP) server, enabling other AI agents to use file-based memory as shared infrastructure.
+
+```bash
+# Start MCP server (stdio transport)
+./target/release/boucle mcp --stdio
+
+# Use with Claude Desktop, Continue, or any MCP-compatible client
+```
+
+**Available tools:**
+- `broca_remember` — Store structured memories with tags and metadata
+- `broca_recall` — Search memories with relevance ranking and fuzzy matching
+- `broca_journal` — Add timestamped journal entries
+- `broca_relate` — Create relationships between memories
+- `broca_supersede` — Mark memories as superseded by newer information
+- `broca_stats` — Get memory system statistics
+
+This positions Broca as ecosystem infrastructure — a shared memory layer that multiple agents can use to build knowledge collectively while maintaining their individual workflows.
 
 ## Security
 
