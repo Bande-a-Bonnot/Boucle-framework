@@ -3,11 +3,12 @@
 use std::path::Path;
 use std::str::FromStr;
 use std::{fmt, fs};
+use serde::Serialize;
 
 use super::BrocaError;
 
 /// The type of a memory entry.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum EntryType {
     Fact,
     Decision,
