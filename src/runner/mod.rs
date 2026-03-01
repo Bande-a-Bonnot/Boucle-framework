@@ -4,13 +4,13 @@
 //!   context.d/  — Executable scripts that output extra context sections
 //!   hooks/      — Scripts at lifecycle points: pre-run, post-context, post-llm, post-commit
 
+pub(crate) mod builtin_plugins;
 pub(crate) mod context;
 mod hooks;
 pub(crate) mod plugins;
-pub(crate) mod builtin_plugins;
 
 use crate::config;
-use chrono::{Utc, FixedOffset, Timelike};
+use chrono::{FixedOffset, Timelike, Utc};
 use std::path::{Path, PathBuf};
 use std::{fmt, fs, io, process};
 
@@ -55,7 +55,7 @@ const LOG_DIR_DEFAULT: &str = "logs";
 
 /// Office hours: sleep from 9pm to 6am CET/CEST (UTC+1 in winter, UTC+2 in summer)
 const SLEEP_START_HOUR: u32 = 21; // 9pm
-const SLEEP_END_HOUR: u32 = 6;    // 6am
+const SLEEP_END_HOUR: u32 = 6; // 6am
 
 /// Check if we're currently in office hours (6am-9pm CET/CEST).
 /// Returns true if agent should be awake, false if in sleep period.
@@ -145,8 +145,11 @@ pub fn run(root: &Path) -> Result<(), RunnerError> {
         let cet_offset = FixedOffset::east_opt(3600).unwrap(); // UTC+1
         let local_time = utc_now.with_timezone(&cet_offset);
 
-        println!("😴 Sleep time (current: {}:{}). Office hours: 6am-9pm CET.",
-                local_time.hour(), local_time.minute());
+        println!(
+            "😴 Sleep time (current: {}:{}). Office hours: 6am-9pm CET.",
+            local_time.hour(),
+            local_time.minute()
+        );
         return Ok(());
     }
 
@@ -686,7 +689,7 @@ mod tests {
 
         // Note: These constants verify the logic is correct
         assert_eq!(SLEEP_START_HOUR, 21); // 9pm
-        assert_eq!(SLEEP_END_HOUR, 6);    // 6am
+        assert_eq!(SLEEP_END_HOUR, 6); // 6am
         assert!(SLEEP_START_HOUR > SLEEP_END_HOUR); // Sleep period spans midnight
     }
 }

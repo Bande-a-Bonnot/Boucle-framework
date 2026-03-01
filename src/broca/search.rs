@@ -29,13 +29,17 @@ fn levenshtein_distance(s1: &str, s2: &str) -> usize {
     // Fill the matrix
     for i in 1..=len1 {
         for j in 1..=len2 {
-            let cost = if s1_chars[i - 1] == s2_chars[j - 1] { 0 } else { 1 };
+            let cost = if s1_chars[i - 1] == s2_chars[j - 1] {
+                0
+            } else {
+                1
+            };
             matrix[i][j] = std::cmp::min(
                 std::cmp::min(
-                    matrix[i - 1][j] + 1,      // deletion
-                    matrix[i][j - 1] + 1       // insertion
+                    matrix[i - 1][j] + 1, // deletion
+                    matrix[i][j - 1] + 1, // insertion
                 ),
-                matrix[i - 1][j - 1] + cost    // substitution
+                matrix[i - 1][j - 1] + cost, // substitution
             );
         }
     }
@@ -128,7 +132,8 @@ pub fn recall(
                 // Fuzzy content matching (split content into words and check similarity)
                 for word in content_lower.split_whitespace() {
                     let similarity = fuzzy_similarity(keyword, word);
-                    if similarity >= 0.8 { // 80% similarity threshold
+                    if similarity >= 0.8 {
+                        // 80% similarity threshold
                         score += similarity * 0.5; // Lower weight than exact matches
                     }
                 }
@@ -358,15 +363,23 @@ mod tests {
             "Fuzzy test fact",
             "This contains words like trust and java concepts.",
             &["testing".to_string()],
-        ).unwrap();
+        )
+        .unwrap();
 
         // Should find "trust" with fuzzy match to "rust" (distance=1, similarity=0.8)
         let results = recall(dir.path(), "rust", 5).unwrap();
-        assert!(!results.is_empty(), "Should find fuzzy matches for 'rust' -> 'trust'");
+        assert!(
+            !results.is_empty(),
+            "Should find fuzzy matches for 'rust' -> 'trust'"
+        );
 
         // Verify fuzzy similarity calculation for our test case
         let similarity = fuzzy_similarity("rust", "trust");
-        assert!(similarity >= 0.8, "rust/trust similarity should be >= 0.8, got {}", similarity);
+        assert!(
+            similarity >= 0.8,
+            "rust/trust similarity should be >= 0.8, got {}",
+            similarity
+        );
     }
 
     #[test]
