@@ -4,7 +4,7 @@
 //!   context.d/  — Executable scripts that output extra context sections
 //!   hooks/      — Scripts at lifecycle points: pre-run, post-context, post-llm, post-commit
 
-mod context;
+pub(crate) mod context;
 mod hooks;
 
 use crate::config;
