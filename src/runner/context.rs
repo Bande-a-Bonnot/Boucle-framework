@@ -97,23 +97,11 @@ pub fn assemble(
         }
     }
 
-    // 4. Available plugins - TRUSTED
-    let plugins_dir = root.join("plugins");
-    if plugins_dir.is_dir() {
-        let plugin_list = discover_plugins(&plugins_dir)?;
-        if !plugin_list.is_empty() {
-            sections.push(format!(
-                "## Available Plugins [TRUSTED SYSTEM DATA]\n\n\
-                The following plugins are available as `boucle <name> [args]`:\n\n{plugin_list}"
-            ));
-        }
-    }
-
-    // 5. System status - TRUSTED
+    // 4. System status - TRUSTED
     let status = gather_system_status(root)?;
     sections.push(format!("## System Status [TRUSTED SYSTEM DATA]\n\n{status}"));
 
-    // 6. Last log entry - TRUSTED
+    // 5. Last log entry - TRUSTED
     let log_dir = root.join(config.loop_config.log_dir.as_deref().unwrap_or("logs"));
     if let Some(last_log) = get_last_log(&log_dir)? {
         sections.push(format!("## Last Log Entry [TRUSTED SYSTEM DATA]\n\n{last_log}"));
@@ -183,35 +171,6 @@ fn detect_interpreter(path: &Path) -> Result<Option<String>, io::Error> {
     }
 
     Ok(None)
-}
-
-/// Discover plugins and their descriptions from the plugins/ directory.
-fn discover_plugins(plugins_dir: &Path) -> Result<String, io::Error> {
-    let mut entries: Vec<_> = fs::read_dir(plugins_dir)?
-        .filter_map(|e| e.ok())
-        .filter(|e| e.path().is_file())
-        .collect();
-    entries.sort_by_key(|e| e.file_name());
-
-    let mut lines = Vec::new();
-    for entry in entries {
-        let path = entry.path();
-        let name = path
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or("?");
-        let desc = fs::read_to_string(&path)
-            .ok()
-            .and_then(|content| {
-                content
-                    .lines()
-                    .find(|l| l.starts_with("# description:"))
-                    .map(|l| l.trim_start_matches("# description:").trim().to_string())
-            })
-            .unwrap_or_default();
-        lines.push(format!("- **{name}**: {desc}"));
-    }
-    Ok(lines.join("\n"))
 }
 
 /// Gather basic system status.
