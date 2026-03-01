@@ -6,6 +6,7 @@
 mod broca;
 mod config;
 mod runner;
+mod mcp;
 
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
@@ -56,6 +57,17 @@ enum Commands {
     /// Broca memory operations
     #[command(subcommand)]
     Memory(MemoryCommands),
+
+    /// Start MCP server to expose Broca to other AI agents
+    Mcp {
+        /// Server port (for HTTP transport, optional)
+        #[arg(short, long)]
+        port: Option<u16>,
+
+        /// Use stdio transport instead of HTTP
+        #[arg(long, default_value = "true")]
+        stdio: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -353,6 +365,23 @@ fn main() {
                         process::exit(1);
                     }
                 },
+            }
+        }
+
+        Commands::Mcp { port, stdio } => {
+            let cfg = match config::load(&root) {
+                Ok(c) => c,
+                Err(e) => {
+                    eprintln!("Error loading config: {e}");
+                    process::exit(1);
+                }
+            };
+
+            // Create a tokio runtime for the async MCP server
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            if let Err(e) = rt.block_on(mcp::serve(&root, &cfg, port, stdio)) {
+                eprintln!("MCP server error: {e}");
+                process::exit(1);
             }
         }
     }
