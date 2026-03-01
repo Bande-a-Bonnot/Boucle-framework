@@ -285,6 +285,67 @@ fn handle_tools_list(message: JsonRpcMessage) -> Result<Option<JsonRpcMessage>, 
                 "type": "object",
                 "additionalProperties": false
             }
+        },
+        {
+            "name": "broca_search_tags",
+            "title": "Search by Tags",
+            "description": "Search memories by specific tags",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "tags": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Tags to search for"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return",
+                        "default": 10,
+                        "minimum": 1,
+                        "maximum": 100
+                    }
+                },
+                "required": ["tags"]
+            }
+        },
+        {
+            "name": "broca_list",
+            "title": "List Memories",
+            "description": "List all memories with pagination",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return",
+                        "default": 10,
+                        "minimum": 1,
+                        "maximum": 100
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "Number of entries to skip",
+                        "default": 0,
+                        "minimum": 0
+                    }
+                }
+            }
+        },
+        {
+            "name": "broca_show",
+            "title": "Show Memory Details",
+            "description": "Get full details of a specific memory by ID",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "Memory ID to retrieve"
+                    }
+                },
+                "required": ["id"]
+            }
         }
     ]);
 
@@ -319,6 +380,9 @@ async fn handle_tools_call(
         "broca_relate" => handle_broca_relate(arguments, root, config).await,
         "broca_supersede" => handle_broca_supersede(arguments, root, config).await,
         "broca_stats" => handle_broca_stats(root, config).await,
+        "broca_search_tags" => handle_broca_search_tags(arguments, root, config).await,
+        "broca_list" => handle_broca_list(arguments, root, config).await,
+        "broca_show" => handle_broca_show(arguments, root, config).await,
         _ => {
             return Ok(Some(JsonRpcMessage {
                 jsonrpc: "2.0".to_string(),
@@ -486,4 +550,118 @@ async fn handle_broca_stats(
     let stats_output = broca::stats(&memory_dir)?;
 
     Ok(stats_output)
+}
+
+async fn handle_broca_search_tags(
+    arguments: &Value,
+    root: &Path,
+    config: &Config,
+) -> Result<String, Box<dyn Error>> {
+    let tags = arguments.get("tags")
+        .and_then(|v| v.as_array())
+        .ok_or("Missing tags array")?;
+    let limit = arguments.get("limit").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
+
+    let memory_dir = root.join(&config.memory.dir);
+
+    // Convert JSON array to Vec<String>
+    let tag_strings: Vec<String> = tags.iter()
+        .filter_map(|v| v.as_str())
+        .map(|s| s.to_string())
+        .collect();
+
+    if tag_strings.is_empty() {
+        return Ok("No valid tags provided.".to_string());
+    }
+
+    let all_results = broca::search_tag(&memory_dir, &tag_strings[0])?;
+    let results: Vec<_> = all_results.iter().take(limit).collect();
+
+    if results.is_empty() {
+        Ok(format!("No memories found with tag: {}", tag_strings[0]))
+    } else {
+        let mut output = format!("Found {} memory(ies) with tag '{}':\n\n", results.len(), tag_strings[0]);
+
+        for (i, entry) in results.iter().enumerate() {
+            output.push_str(&format!("{}. **{}** ({})\n",
+                i + 1,
+                entry.title,
+                entry.filename
+            ));
+
+            if !entry.tags.is_empty() {
+                output.push_str(&format!("   Tags: {}\n", entry.tags.join(", ")));
+            }
+
+            let preview = if entry.content.len() > 200 {
+                format!("{}...", &entry.content[..200])
+            } else {
+                entry.content.clone()
+            };
+            output.push_str(&format!("   {}\n\n", preview));
+        }
+
+        Ok(output)
+    }
+}
+
+async fn handle_broca_list(
+    arguments: &Value,
+    root: &Path,
+    config: &Config,
+) -> Result<String, Box<dyn Error>> {
+    let limit = arguments.get("limit").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
+    let offset = arguments.get("offset").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+
+    let memory_dir = root.join(&config.memory.dir);
+
+    // Use recall with wildcard to get all entries, then apply pagination
+    let all_results = broca::recall(&memory_dir, "*", limit + offset)?;
+
+    // Apply offset and limit
+    let results: Vec<_> = all_results.iter().skip(offset).take(limit).collect();
+
+    if results.is_empty() {
+        Ok("No memories found.".to_string())
+    } else {
+        let mut output = format!("Memories {} - {} of {}:\n\n",
+            offset + 1,
+            offset + results.len(),
+            all_results.len()
+        );
+
+        for (i, entry) in results.iter().enumerate() {
+            output.push_str(&format!("{}. **{}** ({})\n",
+                offset + i + 1,
+                entry.title,
+                entry.filename
+            ));
+
+            if !entry.tags.is_empty() {
+                output.push_str(&format!("   Tags: {}\n", entry.tags.join(", ")));
+            }
+
+            let preview = if entry.content.len() > 100 {
+                format!("{}...", &entry.content[..100])
+            } else {
+                entry.content.clone()
+            };
+            output.push_str(&format!("   {}\n\n", preview));
+        }
+
+        Ok(output)
+    }
+}
+
+async fn handle_broca_show(
+    arguments: &Value,
+    root: &Path,
+    config: &Config,
+) -> Result<String, Box<dyn Error>> {
+    let id = arguments.get("id").and_then(|v| v.as_str()).ok_or("Missing id")?;
+
+    let memory_dir = root.join(&config.memory.dir);
+    let show_output = broca::show(&memory_dir, id)?;
+
+    Ok(show_output)
 }
