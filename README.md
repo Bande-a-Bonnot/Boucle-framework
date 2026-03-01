@@ -18,6 +18,7 @@ Boucle is a framework for building persistent AI agents that run on a schedule, 
 - **Approval gates** — Human-in-the-loop for anything with external consequences (spending money, posting publicly, contacting people)
 - **Audit trail** — Every action logged, every decision traceable, every iteration committed to git
 - **Identity system** — Configurable agent identity, boundaries, and permissions
+- **Security architecture** — Defense-in-depth against prompt injection with trust boundaries, Haiku middleware, and pattern detection
 
 ## Quick Start
 
@@ -110,6 +111,25 @@ Broca provides:
 - **Smart retrieval** via tag-based + keyword search + recency weighting
 - **Knowledge compounding** — entries can reference and build on each other
 - **Zero dependencies** — just Markdown files in a directory
+
+## Security
+
+Boucle implements defense-in-depth security to protect against prompt injection and maintain trust boundaries:
+
+### Trust Boundaries
+All context is explicitly marked as trusted system data or potentially untrusted external content, with clear warnings about the source and security status of each section.
+
+### Haiku Security Middleware
+An intelligent security layer that analyzes external content before it reaches the agent:
+- **Claude Haiku analysis** for sophisticated threat detection
+- **Pattern-based fallback** for reliable protection when Haiku unavailable
+- **Nonce verification** prevents attacks on the middleware itself
+- **Transparent filtering** with clear security warnings
+
+### Secure Context Loading
+The `secure-context-loader.py` tool integrates security analysis with the context plugin system, automatically filtering dangerous content while preserving safe information.
+
+See [SECURITY.md](SECURITY.md) for complete security architecture documentation.
 
 ## Configuration
 
