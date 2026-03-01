@@ -3,15 +3,15 @@
 //! Exposes Broca memory operations as an MCP (Model Context Protocol) server,
 //! allowing other AI agents to use the file-based memory system.
 
+use crate::broca;
+use crate::config::Config;
+use crate::runner::context::validate_external_content;
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use std::error::Error;
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::{fs, process};
-use crate::config::Config;
-use crate::broca;
-use crate::runner::context::validate_external_content;
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
 
 const MCP_VERSION: &str = "2025-11-25";
 
@@ -169,7 +169,10 @@ fn handle_initialize(message: JsonRpcMessage) -> Result<Option<JsonRpcMessage>, 
     }))
 }
 
-fn handle_tools_list(message: JsonRpcMessage, root: &Path) -> Result<Option<JsonRpcMessage>, Box<dyn Error>> {
+fn handle_tools_list(
+    message: JsonRpcMessage,
+    root: &Path,
+) -> Result<Option<JsonRpcMessage>, Box<dyn Error>> {
     let mut tools: Vec<Value> = vec![
         json!({
             "name": "broca_remember",
@@ -306,7 +309,10 @@ async fn handle_tools_call(
     config: &Config,
 ) -> Result<Option<JsonRpcMessage>, Box<dyn Error>> {
     let params = message.params.as_ref().ok_or("Missing params")?;
-    let tool_name = params.get("name").and_then(|v| v.as_str()).ok_or("Missing tool name")?;
+    let tool_name = params
+        .get("name")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing tool name")?;
     let default_args = json!({});
     let arguments = params.get("arguments").unwrap_or(&default_args);
 
@@ -389,17 +395,35 @@ async fn handle_broca_remember(
     root: &Path,
     config: &Config,
 ) -> Result<String, Box<dyn Error>> {
-    let content = arguments.get("content").and_then(|v| v.as_str()).ok_or("Missing content")?;
-    let title = arguments.get("title").and_then(|v| v.as_str()).unwrap_or("Untitled");
-    let tags = arguments.get("tags")
+    let content = arguments
+        .get("content")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing content")?;
+    let title = arguments
+        .get("title")
+        .and_then(|v| v.as_str())
+        .unwrap_or("Untitled");
+    let tags = arguments
+        .get("tags")
         .and_then(|v| v.as_array())
-        .map(|arr| arr.iter().filter_map(|v| v.as_str()).map(|s| s.to_string()).collect::<Vec<_>>())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str())
+                .map(|s| s.to_string())
+                .collect::<Vec<_>>()
+        })
         .unwrap_or_default();
 
     let memory_dir = root.join(&config.memory.dir);
     let entry_path = broca::remember(&memory_dir, "fact", title, content, &tags)?;
 
-    Ok(format!("Stored memory with ID: {}", entry_path.file_stem().and_then(|f| f.to_str()).unwrap_or("unknown")))
+    Ok(format!(
+        "Stored memory with ID: {}",
+        entry_path
+            .file_stem()
+            .and_then(|f| f.to_str())
+            .unwrap_or("unknown")
+    ))
 }
 
 async fn handle_broca_recall(
@@ -407,8 +431,14 @@ async fn handle_broca_recall(
     root: &Path,
     config: &Config,
 ) -> Result<String, Box<dyn Error>> {
-    let query = arguments.get("query").and_then(|v| v.as_str()).ok_or("Missing query")?;
-    let limit = arguments.get("limit").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
+    let query = arguments
+        .get("query")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing query")?;
+    let limit = arguments
+        .get("limit")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(10) as usize;
 
     let memory_dir = root.join(&config.memory.dir);
     let results = broca::recall(&memory_dir, query, limit)?;
@@ -419,7 +449,8 @@ async fn handle_broca_recall(
         let mut output = format!("Found {} memory(ies):\n\n", results.len());
 
         for (i, entry) in results.iter().enumerate() {
-            output.push_str(&format!("{}. **{}** ({})\n",
+            output.push_str(&format!(
+                "{}. **{}** ({})\n",
                 i + 1,
                 entry.title,
                 entry.filename
@@ -446,12 +477,21 @@ async fn handle_broca_journal(
     root: &Path,
     config: &Config,
 ) -> Result<String, Box<dyn Error>> {
-    let content = arguments.get("content").and_then(|v| v.as_str()).ok_or("Missing content")?;
+    let content = arguments
+        .get("content")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing content")?;
 
     let memory_dir = root.join(&config.memory.dir);
     let entry_path = broca::journal(&memory_dir, content)?;
 
-    Ok(format!("Added journal entry to: {}", entry_path.file_name().and_then(|f| f.to_str()).unwrap_or("unknown")))
+    Ok(format!(
+        "Added journal entry to: {}",
+        entry_path
+            .file_name()
+            .and_then(|f| f.to_str())
+            .unwrap_or("unknown")
+    ))
 }
 
 async fn handle_broca_relate(
@@ -459,14 +499,26 @@ async fn handle_broca_relate(
     root: &Path,
     config: &Config,
 ) -> Result<String, Box<dyn Error>> {
-    let from_id = arguments.get("from_id").and_then(|v| v.as_str()).ok_or("Missing from_id")?;
-    let to_id = arguments.get("to_id").and_then(|v| v.as_str()).ok_or("Missing to_id")?;
-    let relation_type = arguments.get("relation_type").and_then(|v| v.as_str()).ok_or("Missing relation_type")?;
+    let from_id = arguments
+        .get("from_id")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing from_id")?;
+    let to_id = arguments
+        .get("to_id")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing to_id")?;
+    let relation_type = arguments
+        .get("relation_type")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing relation_type")?;
 
     let memory_dir = root.join(&config.memory.dir);
     broca::relate(&memory_dir, from_id, to_id, relation_type)?;
 
-    Ok(format!("Created {} relationship from {} to {}", relation_type, from_id, to_id))
+    Ok(format!(
+        "Created {} relationship from {} to {}",
+        relation_type, from_id, to_id
+    ))
 }
 
 async fn handle_broca_supersede(
@@ -474,8 +526,14 @@ async fn handle_broca_supersede(
     root: &Path,
     config: &Config,
 ) -> Result<String, Box<dyn Error>> {
-    let old_id = arguments.get("old_id").and_then(|v| v.as_str()).ok_or("Missing old_id")?;
-    let new_id = arguments.get("new_id").and_then(|v| v.as_str()).ok_or("Missing new_id")?;
+    let old_id = arguments
+        .get("old_id")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing old_id")?;
+    let new_id = arguments
+        .get("new_id")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing new_id")?;
 
     let memory_dir = root.join(&config.memory.dir);
     broca::supersede(&memory_dir, old_id, new_id)?;
@@ -483,10 +541,7 @@ async fn handle_broca_supersede(
     Ok(format!("Marked {} as superseded by {}", old_id, new_id))
 }
 
-async fn handle_broca_stats(
-    root: &Path,
-    config: &Config,
-) -> Result<String, Box<dyn Error>> {
+async fn handle_broca_stats(root: &Path, config: &Config) -> Result<String, Box<dyn Error>> {
     let memory_dir = root.join(&config.memory.dir);
     let stats_output = broca::stats(&memory_dir)?;
 
@@ -498,15 +553,20 @@ async fn handle_broca_search_tags(
     root: &Path,
     config: &Config,
 ) -> Result<String, Box<dyn Error>> {
-    let tags = arguments.get("tags")
+    let tags = arguments
+        .get("tags")
         .and_then(|v| v.as_array())
         .ok_or("Missing tags array")?;
-    let limit = arguments.get("limit").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
+    let limit = arguments
+        .get("limit")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(10) as usize;
 
     let memory_dir = root.join(&config.memory.dir);
 
     // Convert JSON array to Vec<String>
-    let tag_strings: Vec<String> = tags.iter()
+    let tag_strings: Vec<String> = tags
+        .iter()
         .filter_map(|v| v.as_str())
         .map(|s| s.to_string())
         .collect();
@@ -521,10 +581,15 @@ async fn handle_broca_search_tags(
     if results.is_empty() {
         Ok(format!("No memories found with tag: {}", tag_strings[0]))
     } else {
-        let mut output = format!("Found {} memory(ies) with tag '{}':\n\n", results.len(), tag_strings[0]);
+        let mut output = format!(
+            "Found {} memory(ies) with tag '{}':\n\n",
+            results.len(),
+            tag_strings[0]
+        );
 
         for (i, entry) in results.iter().enumerate() {
-            output.push_str(&format!("{}. **{}** ({})\n",
+            output.push_str(&format!(
+                "{}. **{}** ({})\n",
                 i + 1,
                 entry.title,
                 entry.filename
@@ -551,8 +616,14 @@ async fn handle_broca_list(
     root: &Path,
     config: &Config,
 ) -> Result<String, Box<dyn Error>> {
-    let limit = arguments.get("limit").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
-    let offset = arguments.get("offset").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+    let limit = arguments
+        .get("limit")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(10) as usize;
+    let offset = arguments
+        .get("offset")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as usize;
 
     let memory_dir = root.join(&config.memory.dir);
 
@@ -565,14 +636,16 @@ async fn handle_broca_list(
     if results.is_empty() {
         Ok("No memories found.".to_string())
     } else {
-        let mut output = format!("Memories {} - {} of {}:\n\n",
+        let mut output = format!(
+            "Memories {} - {} of {}:\n\n",
             offset + 1,
             offset + results.len(),
             all_results.len()
         );
 
         for (i, entry) in results.iter().enumerate() {
-            output.push_str(&format!("{}. **{}** ({})\n",
+            output.push_str(&format!(
+                "{}. **{}** ({})\n",
                 offset + i + 1,
                 entry.title,
                 entry.filename
@@ -599,7 +672,10 @@ async fn handle_broca_show(
     root: &Path,
     config: &Config,
 ) -> Result<String, Box<dyn Error>> {
-    let id = arguments.get("id").and_then(|v| v.as_str()).ok_or("Missing id")?;
+    let id = arguments
+        .get("id")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing id")?;
 
     let memory_dir = root.join(&config.memory.dir);
     let show_output = broca::show(&memory_dir, id)?;

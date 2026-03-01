@@ -1,9 +1,9 @@
 //! Memory entry types and parsing.
 
+use serde::Serialize;
 use std::path::Path;
 use std::str::FromStr;
 use std::{fmt, fs};
-use serde::Serialize;
 
 use super::BrocaError;
 

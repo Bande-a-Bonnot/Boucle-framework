@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 /// Plugin context containing shared dependencies that plugins need.
+#[allow(dead_code)]
 pub struct PluginContext<'a> {
     /// Root directory of the agent
     pub root: &'a Path,
@@ -22,6 +23,7 @@ pub struct PluginContext<'a> {
 
 /// Plugin metadata describing the plugin's purpose and behavior.
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct PluginMeta {
     /// Plugin name (used for ordering and identification)
     pub name: String,
@@ -36,6 +38,7 @@ pub struct PluginMeta {
 }
 
 /// Result of plugin execution containing content and metadata.
+#[allow(dead_code)]
 pub struct PluginResult {
     /// Generated content (markdown)
     pub content: String,
@@ -47,6 +50,7 @@ pub struct PluginResult {
 
 /// Error types for plugin operations.
 #[derive(Debug, thiserror::Error)]
+#[allow(dead_code)]
 pub enum PluginError {
     #[error("Plugin initialization failed: {0}")]
     InitializationFailed(String),
@@ -64,7 +68,7 @@ pub trait ContextPlugin: Send + Sync {
     fn meta(&self) -> &PluginMeta;
 
     /// Initialize the plugin with context (called once at startup)
-    fn initialize(&mut self, context: &PluginContext) -> Result<(), PluginError> {
+    fn initialize(&mut self, _context: &PluginContext) -> Result<(), PluginError> {
         // Default implementation does nothing
         Ok(())
     }
@@ -73,13 +77,14 @@ pub trait ContextPlugin: Send + Sync {
     fn execute(&self, context: &PluginContext) -> Result<PluginResult, PluginError>;
 
     /// Cleanup resources (called at shutdown)
+    #[allow(dead_code)]
     fn cleanup(&mut self) -> Result<(), PluginError> {
         // Default implementation does nothing
         Ok(())
     }
 
     /// Check if plugin should run (allows conditional execution)
-    fn should_run(&self, context: &PluginContext) -> bool {
+    fn should_run(&self, _context: &PluginContext) -> bool {
         // Default implementation always runs
         true
     }
@@ -112,8 +117,7 @@ impl PluginRegistry {
         }
 
         // Sort plugins by priority
-        self.plugins
-            .sort_by_key(|p| p.meta().priority);
+        self.plugins.sort_by_key(|p| p.meta().priority);
 
         // Initialize each plugin
         for plugin in &mut self.plugins {
@@ -125,7 +129,10 @@ impl PluginRegistry {
     }
 
     /// Execute all plugins and collect their outputs
-    pub fn execute_all(&self, context: &PluginContext) -> Result<Vec<(String, PluginResult)>, PluginError> {
+    pub fn execute_all(
+        &self,
+        context: &PluginContext,
+    ) -> Result<Vec<(String, PluginResult)>, PluginError> {
         if !self.initialized {
             return Err(PluginError::InitializationFailed(
                 "Registry not initialized".to_string(),
@@ -145,6 +152,7 @@ impl PluginRegistry {
     }
 
     /// Cleanup all plugins
+    #[allow(dead_code)]
     pub fn cleanup(&mut self) -> Result<(), PluginError> {
         for plugin in &mut self.plugins {
             plugin.cleanup()?;
@@ -154,8 +162,12 @@ impl PluginRegistry {
     }
 
     /// Get list of registered plugin names
+    #[allow(dead_code)]
     pub fn plugin_names(&self) -> Vec<&str> {
-        self.plugins.iter().map(|p| p.meta().name.as_str()).collect()
+        self.plugins
+            .iter()
+            .map(|p| p.meta().name.as_str())
+            .collect()
     }
 }
 
@@ -219,7 +231,8 @@ impl PluginMetaBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
+    use crate::config;
+    use crate::runner;
     use std::collections::HashMap;
 
     struct TestPlugin {
@@ -273,16 +286,18 @@ mod tests {
 
     #[test]
     fn test_plugin_execution() {
+        let dir = tempfile::tempdir().unwrap();
+        runner::init(dir.path(), "test-agent").unwrap();
+        let cfg = config::load(dir.path()).unwrap();
+
         let mut registry = PluginRegistry::new();
         let plugin = Box::new(TestPlugin::new("test"));
 
         registry.register(plugin);
 
-        let root = std::path::Path::new("/tmp");
-        let config = Config::default();
         let context = PluginContext {
-            root,
-            config: &config,
+            root: dir.path(),
+            config: &cfg,
             iteration: 1,
             data: HashMap::new(),
         };

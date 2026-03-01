@@ -19,7 +19,7 @@ impl LinearIssuesPlugin {
                 .description("Fetch Linear issues delegated to Boucle")
                 .version("1.0.0")
                 .external(true) // Linear API content is external
-                .priority(10)   // Run early to inform other plugins
+                .priority(10) // Run early to inform other plugins
                 .build(),
         }
     }
@@ -30,7 +30,9 @@ impl LinearIssuesPlugin {
             .arg(&auth_script)
             .current_dir(root)
             .output()
-            .map_err(|e| PluginError::ExecutionFailed(format!("Failed to run auth script: {}", e)))?;
+            .map_err(|e| {
+                PluginError::ExecutionFailed(format!("Failed to run auth script: {}", e))
+            })?;
 
         if !output.status.success() {
             return Err(PluginError::ExecutionFailed(
@@ -43,16 +45,21 @@ impl LinearIssuesPlugin {
 
     fn execute_graphql(&self, token: &str, query: &str) -> Result<serde_json::Value, PluginError> {
         let query_json = serde_json::json!({"query": query});
-        let query_str = serde_json::to_string(&query_json)
-            .map_err(|e| PluginError::ExecutionFailed(format!("JSON serialization failed: {}", e)))?;
+        let query_str = serde_json::to_string(&query_json).map_err(|e| {
+            PluginError::ExecutionFailed(format!("JSON serialization failed: {}", e))
+        })?;
 
         let output = Command::new("curl")
             .args([
                 "-s",
-                "-X", "POST",
-                "-H", "Content-Type: application/json",
-                "-H", &format!("Authorization: Bearer {}", token),
-                "-d", &query_str,
+                "-X",
+                "POST",
+                "-H",
+                "Content-Type: application/json",
+                "-H",
+                &format!("Authorization: Bearer {}", token),
+                "-d",
+                &query_str,
                 "https://api.linear.app/graphql",
             ])
             .output()
@@ -76,7 +83,7 @@ impl ContextPlugin for LinearIssuesPlugin {
     }
 
     fn execute(&self, context: &PluginContext) -> Result<PluginResult, PluginError> {
-        let mut warnings = Vec::new();
+        let warnings = Vec::new();
 
         // Get authentication token
         let token = match self.get_auth_token(context.root) {
@@ -171,7 +178,10 @@ impl ContextPlugin for LinearIssuesPlugin {
                 let state = node["state"]["name"].as_str().unwrap_or("Unknown");
                 let priority = node["priorityLabel"].as_str().unwrap_or("No priority");
 
-                content.push_str(&format!("- [{}] {} ({}, {})\n", identifier, title, state, priority));
+                content.push_str(&format!(
+                    "- [{}] {} ({}, {})\n",
+                    identifier, title, state, priority
+                ));
 
                 if let Some(description) = node["description"].as_str() {
                     let desc_lines: Vec<&str> = description[..description.len().min(300)]
@@ -229,7 +239,7 @@ impl SystemStatusPlugin {
                 .description("Provide system status information")
                 .version("1.0.0")
                 .external(false) // System info is trusted
-                .priority(90)    // Run late
+                .priority(90) // Run late
                 .build(),
         }
     }
@@ -245,7 +255,10 @@ impl ContextPlugin for SystemStatusPlugin {
 
         // Current time
         let now = chrono::Utc::now();
-        content.push_str(&format!("- Timestamp: {}\n", now.format("%Y-%m-%d %H:%M:%S UTC")));
+        content.push_str(&format!(
+            "- Timestamp: {}\n",
+            now.format("%Y-%m-%d %H:%M:%S UTC")
+        ));
 
         // Iteration number
         content.push_str(&format!("- Loop iteration: {}\n", context.iteration));
@@ -298,21 +311,23 @@ pub fn create_builtin_plugins() -> Vec<Box<dyn ContextPlugin>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
-    use std::path::Path;
+    use crate::config;
+    use crate::runner;
 
     #[test]
     fn test_system_status_plugin() {
+        let dir = tempfile::tempdir().unwrap();
+        runner::init(dir.path(), "test-agent").unwrap();
+        let cfg = config::load(dir.path()).unwrap();
+
         let plugin = SystemStatusPlugin::new();
         assert_eq!(plugin.meta().name, "system-status");
         assert!(!plugin.meta().is_external);
         assert_eq!(plugin.meta().priority, 90);
 
-        let root = Path::new("/tmp");
-        let config = Config::default();
         let context = PluginContext {
-            root,
-            config: &config,
+            root: dir.path(),
+            config: &cfg,
             iteration: 5,
             data: HashMap::new(),
         };
@@ -325,13 +340,15 @@ mod tests {
 
     #[test]
     fn test_linear_plugin_should_run() {
+        let dir = tempfile::tempdir().unwrap();
+        runner::init(dir.path(), "test-agent").unwrap();
+        let cfg = config::load(dir.path()).unwrap();
+
         let plugin = LinearIssuesPlugin::new();
 
-        let root = Path::new("/nonexistent");
-        let config = Config::default();
         let context = PluginContext {
-            root,
-            config: &config,
+            root: dir.path(),
+            config: &cfg,
             iteration: 1,
             data: HashMap::new(),
         };

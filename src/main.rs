@@ -5,8 +5,8 @@
 
 mod broca;
 mod config;
-mod runner;
 mod mcp;
+mod runner;
 
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
@@ -406,16 +406,19 @@ fn main() {
                     for entry in entries.flatten() {
                         let path = entry.path();
                         if path.is_file() {
-                            let name = path.file_stem()
-                                .and_then(|s| s.to_str())
-                                .unwrap_or("?");
+                            let name = path.file_stem().and_then(|s| s.to_str()).unwrap_or("?");
                             // Read first line after shebang for description
                             let desc = std::fs::read_to_string(&path)
                                 .ok()
                                 .and_then(|content| {
-                                    content.lines()
+                                    content
+                                        .lines()
                                         .find(|l| l.starts_with("# description:"))
-                                        .map(|l| l.trim_start_matches("# description:").trim().to_string())
+                                        .map(|l| {
+                                            l.trim_start_matches("# description:")
+                                                .trim()
+                                                .to_string()
+                                        })
                                 })
                                 .unwrap_or_default();
                             println!("  {name:20} {desc}");
