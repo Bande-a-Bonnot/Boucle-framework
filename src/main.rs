@@ -11,6 +11,7 @@ mod mcp;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use std::process;
+use std::process::Command;
 
 #[derive(Parser)]
 #[command(name = "boucle")]
@@ -68,6 +69,13 @@ enum Commands {
         #[arg(long, default_value = "true")]
         stdio: bool,
     },
+
+    /// List available plugins
+    Plugins,
+
+    /// Run a plugin from the plugins/ directory
+    #[command(external_subcommand)]
+    Plugin(Vec<String>),
 }
 
 #[derive(Subcommand)]
@@ -384,5 +392,136 @@ fn main() {
                 process::exit(1);
             }
         }
+
+        Commands::Plugins => {
+            let plugins_dir = root.join("plugins");
+            if !plugins_dir.exists() {
+                println!("No plugins directory found at {}", plugins_dir.display());
+                println!("Create plugins/ and add scripts to extend boucle.");
+                return;
+            }
+            match std::fs::read_dir(&plugins_dir) {
+                Ok(entries) => {
+                    let mut found = false;
+                    for entry in entries.flatten() {
+                        let path = entry.path();
+                        if path.is_file() {
+                            let name = path.file_stem()
+                                .and_then(|s| s.to_str())
+                                .unwrap_or("?");
+                            // Read first line after shebang for description
+                            let desc = std::fs::read_to_string(&path)
+                                .ok()
+                                .and_then(|content| {
+                                    content.lines()
+                                        .find(|l| l.starts_with("# description:"))
+                                        .map(|l| l.trim_start_matches("# description:").trim().to_string())
+                                })
+                                .unwrap_or_default();
+                            println!("  {name:20} {desc}");
+                            found = true;
+                        }
+                    }
+                    if !found {
+                        println!("No plugins found in {}", plugins_dir.display());
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Error reading plugins directory: {e}");
+                    process::exit(1);
+                }
+            }
+        }
+
+        Commands::Plugin(args) => {
+            if args.is_empty() {
+                eprintln!("No plugin specified.");
+                process::exit(1);
+            }
+            let plugin_name = &args[0];
+            let plugin_args = &args[1..];
+            let plugins_dir = root.join("plugins");
+
+            // Find the plugin script (with or without extension)
+            let plugin_path = find_plugin(&plugins_dir, plugin_name);
+            match plugin_path {
+                Some(path) => {
+                    // Detect interpreter from shebang
+                    let interpreter = detect_interpreter(&path);
+                    let mut cmd = match interpreter {
+                        Some((interp, arg)) => {
+                            let mut c = Command::new(interp);
+                            if let Some(a) = arg {
+                                c.arg(a);
+                            }
+                            c.arg(&path);
+                            c
+                        }
+                        None => Command::new(&path),
+                    };
+
+                    cmd.args(plugin_args)
+                        .env("BOUCLE_ROOT", &root)
+                        .env("BOUCLE_PLUGINS", &plugins_dir);
+
+                    // Add config-derived env vars if config exists
+                    if let Ok(cfg) = config::load(&root) {
+                        cmd.env("BOUCLE_MEMORY", root.join(&cfg.memory.dir));
+                    }
+
+                    match cmd.status() {
+                        Ok(status) => {
+                            process::exit(status.code().unwrap_or(1));
+                        }
+                        Err(e) => {
+                            eprintln!("Error running plugin '{plugin_name}': {e}");
+                            process::exit(1);
+                        }
+                    }
+                }
+                None => {
+                    eprintln!("Unknown command '{plugin_name}'. Not a built-in or plugin.");
+                    eprintln!("Run 'boucle plugins' to see available plugins.");
+                    process::exit(1);
+                }
+            }
+        }
+    }
+}
+
+/// Find a plugin script by name, checking with and without common extensions.
+fn find_plugin(plugins_dir: &std::path::Path, name: &str) -> Option<PathBuf> {
+    if !plugins_dir.exists() {
+        return None;
+    }
+    // Try exact name first, then with common extensions
+    let candidates = [
+        name.to_string(),
+        format!("{name}.py"),
+        format!("{name}.sh"),
+        format!("{name}.rb"),
+    ];
+    for candidate in &candidates {
+        let path = plugins_dir.join(candidate);
+        if path.is_file() {
+            return Some(path);
+        }
+    }
+    None
+}
+
+/// Detect interpreter from shebang line.
+fn detect_interpreter(path: &std::path::Path) -> Option<(String, Option<String>)> {
+    let content = std::fs::read_to_string(path).ok()?;
+    let first_line = content.lines().next()?;
+    if !first_line.starts_with("#!") {
+        return None;
+    }
+    let shebang = first_line.trim_start_matches("#!").trim();
+    if shebang.starts_with("/usr/bin/env ") {
+        let interp = shebang.trim_start_matches("/usr/bin/env ").trim();
+        Some((interp.to_string(), None))
+    } else {
+        Some((shebang.to_string(), None))
     }
 }
