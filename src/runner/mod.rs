@@ -6,6 +6,8 @@
 
 pub(crate) mod context;
 mod hooks;
+pub(crate) mod plugins;
+pub(crate) mod builtin_plugins;
 
 use crate::config;
 use chrono::{Utc, FixedOffset, Timelike};
