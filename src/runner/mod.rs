@@ -142,18 +142,9 @@ interval = "1h"
 
 /// Run one iteration of the agent loop.
 pub fn run(root: &Path) -> Result<(), RunnerError> {
-    // Check office hours (BOU-17: sleep 9pm-6am CET/CEST)
+    // Note office hours status (Thomas unavailable 9pm-6am CET)
     if !is_office_hours() {
-        let utc_now = Utc::now();
-        let cet_offset = FixedOffset::east_opt(3600).unwrap(); // UTC+1
-        let local_time = utc_now.with_timezone(&cet_offset);
-
-        println!(
-            "😴 Sleep time (current: {}:{}). Office hours: 6am-9pm CET.",
-            local_time.hour(),
-            local_time.minute()
-        );
-        return Ok(());
+        eprintln!("Note: Outside Thomas's office hours. Running autonomously — no human support available.");
     }
 
     let cfg = config::load(root)?;
