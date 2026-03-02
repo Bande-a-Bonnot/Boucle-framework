@@ -11,8 +11,19 @@ pub(crate) mod plugins;
 
 use crate::config;
 use chrono::{FixedOffset, Timelike, Utc};
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::{fmt, fs, io, process};
+
+/// Tracks consecutive LLM failures across loop invocations.
+#[derive(Debug, Serialize, Deserialize, Default)]
+struct FailureState {
+    consecutive_failures: u32,
+    first_failure: Option<String>,
+    last_failure: Option<String>,
+    last_error: Option<String>,
+    alert_sent: bool,
+}
 
 /// Errors from the runner.
 #[derive(Debug)]
@@ -58,6 +69,8 @@ impl From<serde_json::Error> for RunnerError {
 
 const LOCK_FILE: &str = ".boucle.lock";
 const LOG_DIR_DEFAULT: &str = "logs";
+const FAILURE_STATE_FILE: &str = ".boucle-failures.json";
+const FAILURE_THRESHOLD: u32 = 3;
 
 /// Office hours: sleep from 9pm to 6am CET/CEST (UTC+1 in winter, UTC+2 in summer)
 const SLEEP_START_HOUR: u32 = 21; // 9pm
@@ -244,9 +257,15 @@ pub fn run(root: &Path) -> Result<(), RunnerError> {
         if mcp_config_path.exists() {
             cmd.arg("--mcp-config");
             cmd.arg(&mcp_config_path);
-            log(&log_file, &format!("MCP enabled: {}", mcp_config_path.display()))?;
+            log(
+                &log_file,
+                &format!("MCP enabled: {}", mcp_config_path.display()),
+            )?;
         } else {
-            log(&log_file, "MCP enabled but mcp-config.json not found, creating default...")?;
+            log(
+                &log_file,
+                "MCP enabled but mcp-config.json not found, creating default...",
+            )?;
             // Create default MCP config
             let mcp_config = serde_json::json!({
                 "mcpServers": {
@@ -337,10 +356,58 @@ pub fn run(root: &Path) -> Result<(), RunnerError> {
 
     log(&log_file, "=== Loop complete ===")?;
 
+    // Track consecutive failures and alert if threshold reached
+    let failure_state_path = root.join(FAILURE_STATE_FILE);
+
     if exit_code != 0 {
+        let mut state = load_failure_state(&failure_state_path);
+        let now = Utc::now().to_rfc3339();
+
+        state.consecutive_failures += 1;
+        if state.first_failure.is_none() {
+            state.first_failure = Some(now.clone());
+        }
+        state.last_failure = Some(now);
+        state.last_error = Some(format!(
+            "Claude exited with code {exit_code}: {}",
+            stdout.chars().take(200).collect::<String>()
+        ));
+
+        log(
+            &log_file,
+            &format!(
+                "LLM failure #{} (threshold: {FAILURE_THRESHOLD})",
+                state.consecutive_failures
+            ),
+        )?;
+
+        if state.consecutive_failures >= FAILURE_THRESHOLD && !state.alert_sent {
+            log(&log_file, "Failure threshold reached, sending alert...")?;
+            send_failure_alert(root, &state, &log_file);
+            state.alert_sent = true;
+        }
+
+        save_failure_state(&failure_state_path, &state);
+
         return Err(RunnerError::Llm(format!(
-            "Claude exited with code {exit_code}"
+            "Claude exited with code {exit_code} (failure #{} of {FAILURE_THRESHOLD})",
+            state.consecutive_failures
         )));
+    }
+
+    // Success — clear any failure state
+    if failure_state_path.exists() {
+        let old_state = load_failure_state(&failure_state_path);
+        if old_state.consecutive_failures > 0 {
+            log(
+                &log_file,
+                &format!(
+                    "Recovery: cleared {} consecutive failures",
+                    old_state.consecutive_failures
+                ),
+            )?;
+        }
+        let _ = fs::remove_file(&failure_state_path);
     }
 
     Ok(())
@@ -532,6 +599,58 @@ fn log(log_file: &Path, message: &str) -> Result<(), io::Error> {
     Ok(())
 }
 
+fn load_failure_state(path: &Path) -> FailureState {
+    fs::read_to_string(path)
+        .ok()
+        .and_then(|s| serde_json::from_str(&s).ok())
+        .unwrap_or_default()
+}
+
+fn save_failure_state(path: &Path, state: &FailureState) {
+    if let Ok(json) = serde_json::to_string_pretty(state) {
+        let _ = fs::write(path, json);
+    }
+}
+
+fn send_failure_alert(root: &Path, state: &FailureState, log_file: &Path) {
+    let subject = format!(
+        "Boucle: {} consecutive LLM failures",
+        state.consecutive_failures
+    );
+    let body = format!(
+        "Boucle has failed {} consecutive times.\n\n\
+         First failure: {}\n\
+         Last failure:  {}\n\
+         Last error:    {}\n\n\
+         The loop will keep retrying but likely needs manual attention \
+         (expired token? API outage?).\n",
+        state.consecutive_failures,
+        state.first_failure.as_deref().unwrap_or("unknown"),
+        state.last_failure.as_deref().unwrap_or("unknown"),
+        state.last_error.as_deref().unwrap_or("unknown"),
+    );
+
+    // Email primary — works even if Linear/Claude tokens are the broken thing
+    let send_email = root.join("send-email.py");
+    if send_email.exists() {
+        let result = process::Command::new("python3")
+            .arg(&send_email)
+            .arg("thomas.leger@tlgr.io")
+            .arg(&subject)
+            .arg(&body)
+            .current_dir(root)
+            .output();
+        match result {
+            Ok(o) if o.status.success() => {
+                let _ = log(log_file, "Alert email sent.");
+            }
+            _ => {
+                let _ = log(log_file, "Alert email FAILED to send.");
+            }
+        }
+    }
+}
+
 fn generate_launchd_plist(name: &str, binary: &Path, root: &Path, interval_secs: u64) -> String {
     format!(
         r#"<?xml version="1.0" encoding="UTF-8"?>
@@ -700,6 +819,55 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         init(dir.path(), "log-test").unwrap();
         show_log(dir.path(), 10).unwrap();
+    }
+
+    #[test]
+    fn test_failure_state_default() {
+        let state = FailureState::default();
+        assert_eq!(state.consecutive_failures, 0);
+        assert!(state.first_failure.is_none());
+        assert!(!state.alert_sent);
+    }
+
+    #[test]
+    fn test_failure_state_persistence() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(FAILURE_STATE_FILE);
+
+        let state = FailureState {
+            consecutive_failures: 3,
+            first_failure: Some("2026-03-02T10:00:00Z".to_string()),
+            last_failure: Some("2026-03-02T10:30:00Z".to_string()),
+            last_error: Some("exit code 1".to_string()),
+            alert_sent: true,
+        };
+
+        save_failure_state(&path, &state);
+        let loaded = load_failure_state(&path);
+
+        assert_eq!(loaded.consecutive_failures, 3);
+        assert!(loaded.alert_sent);
+        assert_eq!(
+            loaded.first_failure.as_deref(),
+            Some("2026-03-02T10:00:00Z")
+        );
+    }
+
+    #[test]
+    fn test_failure_state_missing_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("nonexistent.json");
+        let state = load_failure_state(&path);
+        assert_eq!(state.consecutive_failures, 0);
+    }
+
+    #[test]
+    fn test_failure_state_corrupt_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(FAILURE_STATE_FILE);
+        fs::write(&path, "not valid json").unwrap();
+        let state = load_failure_state(&path);
+        assert_eq!(state.consecutive_failures, 0);
     }
 
     #[test]
