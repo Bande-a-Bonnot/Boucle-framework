@@ -22,6 +22,9 @@ pub struct Config {
 
     #[serde(default)]
     pub git: GitConfig,
+
+    #[serde(default)]
+    pub mcp: McpConfig,
 }
 
 #[derive(Debug, Deserialize)]
@@ -77,11 +80,25 @@ pub struct GitConfig {
     pub commit_email: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct McpConfig {
+    #[serde(default = "default_enable_mcp")]
+    pub enable: bool,
+}
+
 impl Default for GitConfig {
     fn default() -> Self {
         Self {
             commit_name: default_commit_name(),
             commit_email: default_commit_email(),
+        }
+    }
+}
+
+impl Default for McpConfig {
+    fn default() -> Self {
+        Self {
+            enable: default_enable_mcp(),
         }
     }
 }
@@ -110,6 +127,9 @@ fn default_commit_name() -> String {
 }
 fn default_commit_email() -> String {
     "boucle@agent".to_string()
+}
+fn default_enable_mcp() -> bool {
+    false
 }
 
 impl Default for MemoryConfig {
