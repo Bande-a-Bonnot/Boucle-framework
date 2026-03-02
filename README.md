@@ -283,19 +283,283 @@ Bash(python3:*)
 
 If this file doesn't exist, all tools are available.
 
+## Development
+
+### Building from Source
+
+```bash
+git clone https://github.com/Bande-a-Bonnot/Boucle-framework.git
+cd Boucle-framework
+cargo build --release
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+cargo test
+
+# Run with verbose output
+cargo test -- --nocapture
+
+# Run specific test
+cargo test test_memory_operations
+```
+
+### Code Quality
+
+```bash
+# Format code
+cargo fmt
+
+# Run linter
+cargo clippy -- -D warnings
+
+# Check formatting without modifying files
+cargo fmt -- --check
+```
+
+### Development Workflow
+
+1. **Fork and clone** the repository
+2. **Create a feature branch** from main
+3. **Make your changes** with tests
+4. **Run the full test suite** (`cargo test`)
+5. **Format and lint** (`cargo fmt && cargo clippy`)
+6. **Submit a pull request**
+
+All tests must pass and code must be formatted before merging.
+
+### Directory Structure
+
+```
+src/
+├── main.rs           # CLI entry point
+├── agent/            # Core agent runtime
+├── memory/           # Broca memory system
+├── mcp/             # Model Context Protocol server
+├── scheduler/       # Cron/launchd integration
+├── security/        # Prompt injection protection
+└── runner/          # Loop execution engine
+```
+
+## Troubleshooting
+
+### Agent Won't Start
+
+**Problem:** `boucle run` exits immediately without output.
+
+**Solutions:**
+- Check if another instance is running: `ps aux | grep boucle`
+- Remove stale lock file: `rm your-agent/.boucle.lock` (if agent crashed)
+- Verify config file: `your-agent/boucle.toml` exists and is valid TOML
+- Check permissions on agent directory
+
+### Memory Corruption
+
+**Problem:** Memory recall returns unexpected or corrupted entries.
+
+**Solutions:**
+- Validate memory files: `find your-agent/memory -name "*.md" -exec head -1 {} \;`
+- Check for invalid YAML frontmatter in memory entries
+- Restore from git: `git checkout HEAD -- your-agent/memory/`
+- Run memory stats: `boucle memory stats` to check for issues
+
+### Scheduling Problems
+
+**Problem:** Agent doesn't run on schedule.
+
+**Solutions:**
+
+For macOS (launchd):
+```bash
+# Check if agent is loaded
+launchctl list | grep boucle
+
+# Check agent status
+launchctl list com.boucle.your-agent-name
+
+# Reload agent definition
+launchctl unload ~/Library/LaunchAgents/com.boucle.your-agent-name.plist
+launchctl load ~/Library/LaunchAgents/com.boucle.your-agent-name.plist
+
+# Check system logs
+log show --predicate 'subsystem == "com.boucle.your-agent-name"' --last 1h
+```
+
+For Linux (systemd):
+```bash
+# Check service status
+systemctl --user status boucle-your-agent-name
+
+# View service logs
+journalctl --user -u boucle-your-agent-name -f
+
+# Restart service
+systemctl --user restart boucle-your-agent-name
+```
+
+### Performance Issues
+
+**Problem:** Agent iterations take too long or use too much memory.
+
+**Solutions:**
+- Check memory directory size: `du -sh your-agent/memory`
+- Review context plugins: disable expensive ones in `context.d/`
+- Reduce memory recall limit in configurations
+- Monitor with: `time boucle run --dry-run`
+
+### MCP Server Issues
+
+**Problem:** MCP server won't start or clients can't connect.
+
+**Solutions:**
+- Test stdio transport: `echo '{"jsonrpc":"2.0","id":1,"method":"ping"}' | boucle mcp --stdio`
+- Verify MCP client configuration points to correct binary path
+- Check that tools are properly exported: `boucle mcp --list-tools`
+- Enable debug logging: `RUST_LOG=debug boucle mcp --stdio`
+
+### Getting Help
+
+- **Documentation**: Read this README and [SECURITY.md](SECURITY.md)
+- **Issues**: Search existing issues before creating new ones
+- **Discussions**: Use GitHub Discussions for questions and ideas
+- **Discord/Slack**: Join community channels (links in GitHub)
+
+## CLI Reference
+
+### Agent Management
+
+```bash
+# Initialize new agent
+boucle init --name my-agent [--path ./my-agent]
+
+# Run one iteration
+boucle run [--dry-run] [--verbose]
+
+# Show agent status
+boucle status
+
+# Clean up (remove locks, temp files)
+boucle clean
+```
+
+### Scheduling
+
+```bash
+# Set up scheduled execution
+boucle schedule --interval 1h [--method launchd|systemd]
+boucle schedule --cron "0 */6 * * *"  # Every 6 hours
+
+# Remove scheduled execution
+boucle unschedule
+
+# Show schedule status
+boucle schedule --status
+```
+
+### Memory Operations
+
+```bash
+# Store memories
+boucle memory remember "Important fact" --tags "urgent,project"
+boucle memory remember "Database URL changed" --confidence 0.9 --type "config"
+
+# Retrieve memories
+boucle memory recall "database" [--limit 5] [--tags "config"]
+boucle memory recall --recent [--days 7]
+
+# Memory management
+boucle memory stats              # Show statistics
+boucle memory validate          # Check for corrupted entries
+boucle memory compact          # Remove superseded entries
+boucle memory export [--format json|yaml]
+```
+
+### Goal Management
+
+```bash
+# Create goals
+boucle goal create "Reduce response time by 50%" --priority high
+boucle goal create "Implement caching" --parent goal-123
+
+# Track progress
+boucle goal list [--active] [--completed]
+boucle goal show goal-123
+boucle goal update goal-123 --status "in_progress" --progress 0.3
+boucle goal complete goal-123
+```
+
+### MCP Server
+
+```bash
+# Start MCP server
+boucle mcp --stdio              # Standard I/O transport
+boucle mcp --port 8080          # HTTP transport
+boucle mcp --socket /tmp/boucle.sock  # Unix socket
+
+# Server management
+boucle mcp --list-tools         # Show available tools
+boucle mcp --validate          # Test server configuration
+```
+
+### Configuration
+
+```bash
+# Show current configuration
+boucle config show
+
+# Update configuration
+boucle config set agent.name "new-name"
+boucle config set schedule.interval "30m"
+boucle config set boundaries.autonomous "read,write,research"
+
+# Configuration templates
+boucle config template monitoring  # Create monitoring agent config
+boucle config template content     # Create content agent config
+boucle config template security    # Create security agent config
+```
+
+### Debugging
+
+```bash
+# Verbose execution
+RUST_LOG=debug boucle run --verbose
+
+# Show context without running
+boucle run --dry-run --show-context
+
+# Validate agent setup
+boucle doctor                   # Check configuration, permissions, dependencies
+
+# Show loop history
+boucle log --recent [--lines 100]
+boucle log --since "2026-03-01"
+```
+
+### Global Options
+
+| Flag | Description |
+|------|-------------|
+| `--agent-dir DIR` | Use specific agent directory (default: current) |
+| `--config FILE` | Use specific config file (default: boucle.toml) |
+| `--verbose, -v` | Enable verbose output |
+| `--quiet, -q` | Suppress non-error output |
+| `--help, -h` | Show command help |
+
 ## Status
 
 **v0.3.0 — Production ready.** Originally prototyped in bash, Boucle is now rewritten in Rust for reliability, proper testing, and cross-platform support.
 
 ### Proven in Production
 
-- **81 passing tests** — Comprehensive test coverage for all components
-- **40+ loop iterations** — Running continuously in production since February 2026
+- **85 passing tests** — Comprehensive test coverage for all components
+- **60+ loop iterations** — Running continuously in production since February 2026
 - **Self-healing infrastructure** — Automatically diagnosed and fixed its own timing issues ([read the story](https://bande-a-bonnot.github.io/boucle-blog/technical/debugging/autonomous-systems/2026/03/02/autonomous-debugging.html))
 - **Zero-downtime operation** — Handles errors gracefully with automatic retry and recovery
 - **Git-native audit trail** — Every decision and change is tracked and reversible
 
-Built in public by the agent that uses it. Current iteration count: **47 loops** and growing daily.
+Built in public by the agent that uses it. Current iteration count: **60+ loops** and growing daily.
 
 ### Reliability Features
 
