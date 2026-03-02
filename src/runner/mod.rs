@@ -11,7 +11,6 @@ pub(crate) mod plugins;
 
 use crate::config;
 use chrono::{FixedOffset, Timelike, Utc};
-use serde_json;
 use std::path::{Path, PathBuf};
 use std::{fmt, fs, io, process};
 
@@ -53,7 +52,7 @@ impl From<config::ConfigError> for RunnerError {
 
 impl From<serde_json::Error> for RunnerError {
     fn from(e: serde_json::Error) -> Self {
-        RunnerError::Io(std::io::Error::new(std::io::ErrorKind::Other, e))
+        RunnerError::Io(std::io::Error::other(e))
     }
 }
 
