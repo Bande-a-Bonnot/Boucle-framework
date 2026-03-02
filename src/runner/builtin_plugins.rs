@@ -7,6 +7,19 @@ use crate::runner::plugins::*;
 use std::collections::HashMap;
 use std::process::Command;
 
+/// Safely truncate a string at a UTF-8 character boundary.
+fn truncate_utf8(s: &str, max_bytes: usize) -> &str {
+    if s.len() <= max_bytes {
+        return s;
+    }
+    // Find the last character boundary at or before max_bytes
+    let mut end = max_bytes;
+    while end > 0 && !s.is_char_boundary(end) {
+        end -= 1;
+    }
+    &s[..end]
+}
+
 /// Linear issues plugin - fetches issues delegated to the agent.
 pub struct LinearIssuesPlugin {
     meta: PluginMeta,
@@ -134,11 +147,11 @@ impl ContextPlugin for LinearIssuesPlugin {
                         priority
                         priorityLabel
                         description
-                        comments(first: 5, orderBy: createdAt) {{
+                        comments(first: 20, orderBy: createdAt) {{
                             nodes {{
                                 body
                                 createdAt
-                                user {{ name }}
+                                user {{ name email }}
                                 botActor {{ name }}
                             }}
                         }}
@@ -184,9 +197,8 @@ impl ContextPlugin for LinearIssuesPlugin {
                 ));
 
                 if let Some(description) = node["description"].as_str() {
-                    let desc_lines: Vec<&str> = description[..description.len().min(300)]
-                        .split('\n')
-                        .collect();
+                    let truncated = truncate_utf8(description, 500);
+                    let desc_lines: Vec<&str> = truncated.split('\n').collect();
                     for line in desc_lines {
                         content.push_str(&format!("  {}\n", line));
                     }
@@ -195,14 +207,40 @@ impl ContextPlugin for LinearIssuesPlugin {
                 if let Some(comments) = node["comments"]["nodes"].as_array() {
                     if !comments.is_empty() {
                         content.push_str("  --- Comments ---\n");
+
+                        // Separate comments by author: external (Thomas) vs agent (Boucle)
+                        let mut external_comments = Vec::new();
+                        let mut agent_comments = Vec::new();
+
                         for comment in comments {
                             let author = comment["user"]["name"]
                                 .as_str()
                                 .or_else(|| comment["botActor"]["name"].as_str())
                                 .unwrap_or("unknown");
+                            let email = comment["user"]["email"].as_str().unwrap_or("");
                             let body = comment["body"].as_str().unwrap_or("");
-                            let truncated_body = &body[..body.len().min(300)];
-                            content.push_str(&format!("  [{}]: {}\n", author, truncated_body));
+                            let is_agent = author == "Boucle"
+                                || author == "boucle"
+                                || email.contains("boucle");
+
+                            if is_agent {
+                                agent_comments.push((author, body));
+                            } else {
+                                external_comments.push((author, body));
+                            }
+                        }
+
+                        // Show ALL external (human) comments with generous limit
+                        for (author, body) in &external_comments {
+                            let truncated = truncate_utf8(body, 800);
+                            content.push_str(&format!("  [{}]: {}\n", author, truncated));
+                        }
+
+                        // Show only most recent 3 agent comments, shorter
+                        let agent_start = agent_comments.len().saturating_sub(3);
+                        for (author, body) in &agent_comments[agent_start..] {
+                            let truncated = truncate_utf8(body, 300);
+                            content.push_str(&format!("  [{}]: {}\n", author, truncated));
                         }
                     }
                 }
