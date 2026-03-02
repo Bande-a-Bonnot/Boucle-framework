@@ -11,6 +11,7 @@ pub(crate) mod plugins;
 
 use crate::config;
 use chrono::{FixedOffset, Timelike, Utc};
+use serde_json;
 use std::path::{Path, PathBuf};
 use std::{fmt, fs, io, process};
 
@@ -47,6 +48,12 @@ impl From<io::Error> for RunnerError {
 impl From<config::ConfigError> for RunnerError {
     fn from(e: config::ConfigError) -> Self {
         RunnerError::Config(e)
+    }
+}
+
+impl From<serde_json::Error> for RunnerError {
+    fn from(e: serde_json::Error) -> Self {
+        RunnerError::Io(std::io::Error::new(std::io::ErrorKind::Other, e))
     }
 }
 
@@ -229,6 +236,31 @@ pub fn run(root: &Path) -> Result<(), RunnerError> {
         if !tools.is_empty() {
             cmd.arg("--allowed-tools");
             cmd.arg(tools);
+        }
+    }
+
+    // Add MCP configuration if enabled
+    if cfg.mcp.enable {
+        let mcp_config_path = root.join("mcp-config.json");
+        if mcp_config_path.exists() {
+            cmd.arg("--mcp-config");
+            cmd.arg(&mcp_config_path);
+            log(&log_file, &format!("MCP enabled: {}", mcp_config_path.display()))?;
+        } else {
+            log(&log_file, "MCP enabled but mcp-config.json not found, creating default...")?;
+            // Create default MCP config
+            let mcp_config = serde_json::json!({
+                "mcpServers": {
+                    "boucle": {
+                        "command": "./Boucle-framework/target/release/boucle",
+                        "args": ["mcp", "--stdio"],
+                        "env": {}
+                    }
+                }
+            });
+            fs::write(&mcp_config_path, serde_json::to_string_pretty(&mcp_config)?)?;
+            cmd.arg("--mcp-config");
+            cmd.arg(&mcp_config_path);
         }
     }
 
