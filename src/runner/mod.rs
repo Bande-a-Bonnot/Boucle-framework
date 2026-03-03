@@ -125,9 +125,17 @@ interval = "1h"
 "#
     );
 
-    fs::write(root.join("boucle.toml"), config_content)?;
+    let config_path = root.join("boucle.toml");
+    if config_path.exists() {
+        eprintln!(
+            "Warning: {} already exists, skipping (use --force to overwrite)",
+            config_path.display()
+        );
+    } else {
+        fs::write(&config_path, config_content)?;
+    }
 
-    // Create directories
+    // Create directories (idempotent)
     for dir in &[
         "memory/knowledge",
         "memory/journal",
@@ -138,23 +146,29 @@ interval = "1h"
         fs::create_dir_all(root.join(dir))?;
     }
 
-    // Create system prompt template
-    let prompt = format!(
-        "You are {name}, an autonomous agent running in a loop.\n\
-         Read your state, decide what to do, then update your state.\n"
-    );
-    fs::write(root.join("system-prompt.md"), prompt)?;
+    // Create system prompt template (skip if exists)
+    let prompt_path = root.join("system-prompt.md");
+    if !prompt_path.exists() {
+        let prompt = format!(
+            "You are {name}, an autonomous agent running in a loop.\n\
+             Read your state, decide what to do, then update your state.\n"
+        );
+        fs::write(&prompt_path, prompt)?;
+    }
 
-    // Create initial state
-    let state = format!(
-        "# {name} — State\n\n\
-         ## What I know\n\n\
-         - Initialized: {}\n\n\
-         ## What I'm working on\n\n\
-         (nothing yet)\n",
-        Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
-    );
-    fs::write(root.join("memory/STATE.md"), state)?;
+    // Create initial state (skip if exists)
+    let state_path = root.join("memory/STATE.md");
+    if !state_path.exists() {
+        let state = format!(
+            "# {name} — State\n\n\
+             ## What I know\n\n\
+             - Initialized: {}\n\n\
+             ## What I'm working on\n\n\
+             (nothing yet)\n",
+            Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
+        );
+        fs::write(&state_path, state)?;
+    }
 
     // Create memory directory README for new users
     let memory_readme = r#"# Broca Memory System 🧠
@@ -250,7 +264,10 @@ Broca can operate as:
 
 Your agent's memory compounds over time — every iteration makes it smarter! 🎯
 "#;
-    fs::write(root.join("memory/README.md"), memory_readme)?;
+    let readme_path = root.join("memory/README.md");
+    if !readme_path.exists() {
+        fs::write(&readme_path, memory_readme)?;
+    }
 
     Ok(())
 }
