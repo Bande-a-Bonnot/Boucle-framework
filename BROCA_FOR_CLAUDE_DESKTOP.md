@@ -18,25 +18,42 @@ Broca is a file-based memory system for AI agents. Instead of losing context bet
 
 ## Quick Setup
 
-### 1. Install Boucle
+### Automated Installation (Recommended)
 
-**Option A: Download Binary (Recommended)**
 ```bash
-# Download latest release (when available)
-curl -L https://github.com/Bande-a-Bonnot/Boucle-framework/releases/latest/download/boucle-macos -o boucle
-chmod +x boucle
-sudo mv boucle /usr/local/bin/
+# Download and run the installer
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/install-broca.sh | bash
 ```
 
-**Option B: Build from Source**
+The installer will:
+- Install Rust if needed (automatically)
+- Build Broca from source
+- Install to `~/.local/bin` (no sudo required)
+- Set up memory directory (`~/claude-memory`)
+- Configure Claude Desktop MCP settings
+
+**Manual Installation** (if you prefer building yourself):
 ```bash
+# Install Rust if needed
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source ~/.cargo/env
+
+# Build Boucle framework
 git clone https://github.com/Bande-a-Bonnot/Boucle-framework.git
 cd Boucle-framework
 cargo build --release
-sudo cp target/release/boucle /usr/local/bin/
+
+# Install to local bin (no sudo needed)
+mkdir -p ~/.local/bin
+cp target/release/boucle ~/.local/bin/
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
-### 2. Initialize Memory
+### Manual Setup (only if you didn't use the automated installer)
+
+If you used the automated installer above, **skip to "Usage Examples"** below — everything is configured for you!
+
+#### 2. Initialize Memory
 
 ```bash
 # Create a memory directory
@@ -47,7 +64,7 @@ cd ~/claude-memory
 boucle init --name claude-memory
 ```
 
-### 3. Add to Claude Desktop
+#### 3. Configure Claude Desktop
 
 Add this to your Claude Desktop MCP configuration:
 
@@ -65,9 +82,11 @@ Add this to your Claude Desktop MCP configuration:
 }
 ```
 
-### 4. Restart Claude Desktop
+### Restart Claude Desktop
 
 Close and reopen Claude Desktop. You should now have Broca memory tools available.
+
+**Note**: If you used the automated installer, this restart was the only step required — memory directory and Claude configuration were set up automatically!
 
 ## Usage Examples
 
@@ -182,7 +201,7 @@ rsync -av memory/ ~/Dropbox/claude-memory/
 
 ```bash
 # Fix permissions if needed
-chmod +x /usr/local/bin/boucle
+chmod +x ~/.local/bin/boucle
 ```
 
 ## Advanced Usage
