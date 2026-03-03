@@ -6,46 +6,30 @@ Wake up. Think. Act. Learn. Repeat.
 
 ## What is this?
 
-Boucle is a framework for building persistent AI agents that run on a schedule, maintain memory across iterations, and operate within clear human-defined boundaries. It's not a chatbot wrapper — it's infrastructure for agents that work autonomously over days, weeks, and months.
+Boucle is a framework for building persistent AI agents that run on a schedule, maintain memory across iterations, and operate within human-defined boundaries. It's infrastructure for agents that work autonomously over days, weeks, and months.
 
-**Built by the agent that runs on it.** Boucle is developed and improved by an autonomous agent (also named Boucle) that uses the framework for its own operation. Every feature is dogfooded in production.
+**Built by the agent that runs on it.** Boucle is developed and improved by an autonomous agent (also named Boucle) that uses the framework for its own operation.
 
 ## Features
 
-- **Structured loop runner** — Schedule agent iterations via cron/launchd with locking, logging, and error recovery
+- **Structured loop runner** — Schedule agent iterations via cron/launchd with locking and logging
 - **Persistent memory (Broca)** — File-based, git-native knowledge that compounds across iterations. No database required.
 - **MCP server** — Expose Broca memory as a Model Context Protocol server for multi-agent collaboration
-- **Goal tracking** — Define objectives, track progress, measure value across loop iterations
-- **Approval gates** — Human-in-the-loop for anything with external consequences (spending money, posting publicly, contacting people)
+- **Approval gates** — Human-in-the-loop for anything with external consequences
 - **Audit trail** — Every action logged, every decision traceable, every iteration committed to git
-- **Identity system** — Configurable agent identity, boundaries, and permissions
-- **Security architecture** — Defense-in-depth against prompt injection with trust boundaries, Haiku middleware, and pattern detection
+- **Security architecture** — Trust boundaries, Haiku middleware, and prompt injection detection
 
 ## Quick Start
 
-### Prerequisites
-
-Boucle requires Rust 1.70.0 or later. If you don't have Rust installed:
-
 ```bash
-# Install Rust toolchain
+# Install Rust (if needed)
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
 
-# Verify installation
-cargo --version
-```
-
-### Installation
-
-```bash
 # Clone and build
 git clone https://github.com/Bande-a-Bonnot/Boucle-framework.git
 cd Boucle-framework
 cargo build --release
-
-# Verify build succeeded
-./target/release/boucle --help
 
 # Initialize a new agent
 ./target/release/boucle init --name my-agent
@@ -55,121 +39,30 @@ cargo build --release
 
 # Set up hourly execution
 ./target/release/boucle schedule --interval 1h
-
-# Memory operations
-./target/release/boucle memory remember "API keys rotate monthly" --tags "security,ops"
-./target/release/boucle memory recall "API keys"
-./target/release/boucle memory stats
-
-# Start MCP server for other agents
-./target/release/boucle mcp --stdio
 ```
-
-## Real-World Examples
-
-### Autonomous Monitoring Agent
-
-```toml
-# monitoring-agent/boucle.toml
-[agent]
-name = "monitor"
-description = "Monitors system health and responds to issues"
-
-[schedule]
-interval = "5m"
-
-[boundaries]
-autonomous = ["read_logs", "analyze_metrics", "create_reports"]
-requires_approval = ["restart_services", "alert_oncall", "modify_config"]
-```
-
-This agent continuously monitors system health, learns from patterns, and escalates issues that require human intervention.
-
-### Repository Health Auditor
-
-```bash
-# Create specialized audit memories
-./target/release/boucle memory remember "Critical security advisory in react@18.2.0" \
-  --tags "security,react,audit" --type "threat"
-
-# Agent recalls related knowledge when analyzing repos
-./target/release/boucle memory recall "react security" --limit 5
-```
-
-The agent builds institutional knowledge about security issues, outdated dependencies, and maintenance patterns across your organization's repositories.
-
-### Content Creation Pipeline
-
-```bash
-# Agent learns from successful content patterns
-./target/release/boucle memory remember "Technical debugging posts get 3x engagement vs feature announcements" \
-  --tags "content,strategy" --confidence 0.8
-
-# Later iterations use this knowledge for content decisions
-./target/release/boucle memory recall "content strategy"
-```
-
-## Architecture
-
-```
-your-agent/
-├── boucle.toml          # Agent configuration (identity, boundaries, schedule)
-├── system-prompt.md     # Agent identity and rules (optional)
-├── allowed-tools.txt    # Tools the agent can use, one per line (optional)
-├── memory/              # Persistent knowledge (Broca)
-│   ├── state.md         # Current state — read at loop start, updated at loop end
-│   ├── knowledge/       # Learned facts, indexed by topic
-│   └── journal/         # Timestamped iteration summaries
-├── goals/               # Active objectives
-├── logs/                # Full iteration logs
-├── gates/               # Pending approval requests
-├── context.d/           # Executable scripts that add context sections (optional)
-└── hooks/               # Lifecycle hooks (optional)
-    ├── pre-run          # Runs before each iteration
-    ├── post-context     # Runs after context assembly (stdin: context, stdout: modified context)
-    ├── post-llm         # Runs after LLM completes ($1: exit code)
-    └── post-commit      # Runs after git commit ($1: timestamp)
-```
-
-## How It Works
-
-Each loop iteration follows this cycle:
-
-1. **Wake** — Lock acquired, context assembled from memory + goals + pending actions
-2. **Think** — Agent reads its full state and decides what to do
-3. **Act** — Agent executes: writes code, does research, creates plans, requests approvals
-4. **Learn** — Agent updates its memory with what it learned
-5. **Sleep** — Changes committed to git, lock released, agent waits for next iteration
-
-## Why Boucle?
-
-| Feature | Boucle | LangChain Agents | AutoGPT | Other Frameworks |
-|---------|---------|------------------|---------|------------------|
-| **Infrastructure** | Zero dependencies | Cloud/vector DB | Docker/Redis | Various |
-| **Memory** | File-based, git-native | Vector embeddings | JSON/databases | Mixed |
-| **Persistence** | Built-in across reboots | Manual implementation | Session-based | Varies |
-| **Multi-agent** | MCP server included | Complex setup | Not supported | Plugin-based |
-| **Approval Gates** | First-class feature | Not included | Not included | Rare |
-| **Transparency** | Full audit trail | Limited logging | Basic logs | Varies |
-| **Self-improvement** | Dogfooded daily | Theoretical | Not operational | Not demonstrated |
-
-**The key difference:** Boucle is designed for agents that operate continuously over weeks and months, building institutional knowledge and maintaining consistent identity across reboots.
-
-## Design Principles
-
-1. **Files over databases.** Memory is Markdown. Config is TOML. Logs are plain text. Everything is human-readable, git-diffable, and works anywhere.
-
-2. **Boundaries are features.** Approval gates aren't limitations — they're what make autonomous agents trustworthy. An agent that can spend your money without asking isn't autonomous, it's dangerous.
-
-3. **Compound knowledge.** Every iteration should leave the agent smarter. Memory isn't a cache — it's an investment.
-
-4. **Transparency by default.** If you can't see what the agent did and why, something is wrong.
-
-5. **Zero infrastructure.** No cloud services, no databases, no Docker. Just files, git, and a shell.
 
 ## Memory System (Broca)
 
-Boucle's memory is powered by Broca — a file-based, git-native knowledge system designed for AI agents.
+Broca is a file-based, git-native knowledge system for AI agents. Memories are Markdown files with YAML frontmatter.
+
+```bash
+# Store a memory
+boucle memory remember "Python packaging" "Modern projects use pyproject.toml" --tags "python,packaging"
+
+# Search memories
+boucle memory recall "python packaging" --limit 5
+
+# Search by tag
+boucle memory search-tag "security"
+
+# Add a journal entry
+boucle memory journal "Discovered API rate limits are 100/min"
+
+# View statistics
+boucle memory stats
+```
+
+Memory entries look like this:
 
 ```markdown
 ---
@@ -186,51 +79,59 @@ setuptools with setup.py is legacy. Modern Python projects use pyproject.toml
 with build backends like hatchling, flit, or setuptools itself.
 ```
 
-Broca provides:
-- **Structured entries** with YAML frontmatter (tags, confidence, timestamps, relationships)
-- **Smart retrieval** via tag-based + keyword search + recency weighting
-- **Knowledge compounding** — entries can reference and build on each other
-- **Zero dependencies** — just Markdown files in a directory
+Broca also supports:
+- **Confidence tracking** — `boucle memory update-confidence <id> <score>`
+- **Superseding** — `boucle memory supersede <old-id> <new-id>` when knowledge evolves
+- **Relationships** — `boucle memory relate <id1> <id2> <relation>` to link entries
+- **Reindexing** — `boucle memory index` to rebuild the search index
 
 ## MCP Server
 
-Boucle exposes Broca's memory system as a Model Context Protocol (MCP) server, enabling other AI agents to use file-based memory as shared infrastructure.
+Boucle exposes Broca as a Model Context Protocol server, so other AI agents can share memory.
 
 ```bash
 # Start MCP server (stdio transport)
-./target/release/boucle mcp --stdio
+boucle mcp --stdio
 
-# Use with Claude Desktop, Continue, or any MCP-compatible client
+# Or HTTP transport
+boucle mcp --port 8080
 ```
 
-**Available tools:**
-- `broca_remember` — Store structured memories with tags and metadata
-- `broca_recall` — Search memories with relevance ranking and fuzzy matching
-- `broca_journal` — Add timestamped journal entries
-- `broca_relate` — Create relationships between memories
-- `broca_supersede` — Mark memories as superseded by newer information
-- `broca_stats` — Get memory system statistics
+**Available tools:** `broca_remember`, `broca_recall`, `broca_journal`, `broca_relate`, `broca_supersede`, `broca_stats`
 
-This positions Broca as ecosystem infrastructure — a shared memory layer that multiple agents can use to build knowledge collectively while maintaining their individual workflows.
+Works with Claude Desktop, Claude Code, or any MCP-compatible client.
 
-## Security
+## Architecture
 
-Boucle implements defense-in-depth security to protect against prompt injection and maintain trust boundaries:
+```
+your-agent/
+├── boucle.toml          # Agent configuration
+├── system-prompt.md     # Agent identity and rules (optional)
+├── allowed-tools.txt    # Tool restrictions (optional)
+├── memory/              # Persistent knowledge (Broca)
+│   ├── state.md         # Current state — read at loop start, updated at loop end
+│   ├── knowledge/       # Learned facts, indexed by topic
+│   └── journal/         # Timestamped iteration summaries
+├── goals/               # Active objectives
+├── logs/                # Full iteration logs
+├── gates/               # Pending approval requests
+├── context.d/           # Scripts that add context sections (optional)
+└── hooks/               # Lifecycle hooks (optional)
+    ├── pre-run          # Before each iteration
+    ├── post-context     # After context assembly (stdin: context, stdout: modified)
+    ├── post-llm         # After LLM completes ($1: exit code)
+    └── post-commit      # After git commit ($1: timestamp)
+```
 
-### Trust Boundaries
-All context is explicitly marked as trusted system data or potentially untrusted external content, with clear warnings about the source and security status of each section.
+## How It Works
 
-### Haiku Security Middleware
-An intelligent security layer that analyzes external content before it reaches the agent:
-- **Claude Haiku analysis** for sophisticated threat detection
-- **Pattern-based fallback** for reliable protection when Haiku unavailable
-- **Nonce verification** prevents attacks on the middleware itself
-- **Transparent filtering** with clear security warnings
+Each loop iteration:
 
-### Secure Context Loading
-The `secure-context-loader.py` tool integrates security analysis with the context plugin system, automatically filtering dangerous content while preserving safe information.
-
-See [SECURITY.md](SECURITY.md) for complete security architecture documentation.
+1. **Wake** — Lock acquired, context assembled from memory + goals + pending actions
+2. **Think** — Agent reads its full state and decides what to do
+3. **Act** — Agent executes: writes code, does research, creates plans, requests approvals
+4. **Learn** — Agent updates its memory with what it learned
+5. **Sleep** — Changes committed to git, lock released, agent waits for next iteration
 
 ## Configuration
 
@@ -242,11 +143,10 @@ description = "A helpful autonomous agent"
 
 [schedule]
 interval = "1h"
-method = "launchd"  # or "cron"
 
 [boundaries]
 autonomous = ["read", "write", "research", "plan"]
-requires_approval = ["spend_money", "post_publicly", "contact_people", "push_code"]
+requires_approval = ["spend_money", "post_publicly", "contact_people"]
 
 [memory]
 backend = "broca"
@@ -259,34 +159,27 @@ model = "claude-sonnet-4-20250514"
 
 ## Extension Points
 
-Boucle is designed to be extended without modifying the framework itself.
-
 ### Context Plugins (`context.d/`)
 
-Add executable scripts to `context.d/` to inject custom context into each iteration. Each script receives the agent directory as `$1` and should output Markdown to stdout.
+Executable scripts that inject context into each iteration. Each receives the agent directory as `$1` and outputs Markdown to stdout.
 
 ```bash
 #!/bin/bash
-# context.d/linear-issues — Fetch Linear issues
-echo "## Linear Issues"
-echo ""
-# ... your logic to fetch and format issues
+# context.d/weather — Add weather to context
+echo "## Weather"
+curl -s wttr.in/?format=3
 ```
 
 ### Lifecycle Hooks (`hooks/`)
 
-Add executable scripts to `hooks/` to run code at specific points in the loop:
-
 | Hook | When | Arguments | Use case |
 |------|------|-----------|----------|
-| `pre-run` | Before iteration starts | `$1`: timestamp | Setup, health checks |
-| `post-context` | After context assembly | stdin: context | Modify context (filter, augment) |
+| `pre-run` | Before iteration | `$1`: timestamp | Setup, health checks |
+| `post-context` | After context assembly | stdin: context | Modify/filter context |
 | `post-llm` | After LLM completes | `$1`: exit code | Notifications, cleanup |
 | `post-commit` | After git commit | `$1`: timestamp | Push to remote, deploy |
 
 ### Tool Restrictions (`allowed-tools.txt`)
-
-List one tool per line to restrict what the agent can use:
 
 ```
 Read
@@ -301,314 +194,64 @@ Bash(python3:*)
 
 If this file doesn't exist, all tools are available.
 
-## Development
-
-### Building from Source
-
-```bash
-git clone https://github.com/Bande-a-Bonnot/Boucle-framework.git
-cd Boucle-framework
-cargo build --release
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-cargo test
-
-# Run with verbose output
-cargo test -- --nocapture
-
-# Run specific test
-cargo test test_memory_operations
-```
-
-### Code Quality
-
-```bash
-# Format code
-cargo fmt
-
-# Run linter
-cargo clippy -- -D warnings
-
-# Check formatting without modifying files
-cargo fmt -- --check
-```
-
-### Development Workflow
-
-1. **Fork and clone** the repository
-2. **Create a feature branch** from main
-3. **Make your changes** with tests
-4. **Run the full test suite** (`cargo test`)
-5. **Format and lint** (`cargo fmt && cargo clippy`)
-6. **Submit a pull request**
-
-All tests must pass and code must be formatted before merging.
-
-### Directory Structure
-
-```
-src/
-├── main.rs           # CLI entry point
-├── agent/            # Core agent runtime
-├── memory/           # Broca memory system
-├── mcp/             # Model Context Protocol server
-├── scheduler/       # Cron/launchd integration
-├── security/        # Prompt injection protection
-└── runner/          # Loop execution engine
-```
-
-## Troubleshooting
-
-### Installation Issues
-
-**Problem:** `cargo: command not found` when running `cargo build --release`.
-
-**Solution:** Install Rust toolchain first:
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source $HOME/.cargo/env
-# Then retry: cargo build --release
-```
-
-**Problem:** Build fails with Rust version errors.
-
-**Solution:** Ensure you have Rust 1.70.0 or later:
-```bash
-rustup update
-cargo --version  # Should show 1.70.0+
-```
-
-**Problem:** `./target/release/boucle: No such file or directory`
-
-**Solution:** Build didn't complete successfully. Check for error messages in `cargo build --release` output.
-
-### Agent Won't Start
-
-**Problem:** `boucle run` exits immediately without output.
-
-**Solutions:**
-- Check if another instance is running: `ps aux | grep boucle`
-- Remove stale lock file: `rm your-agent/.boucle.lock` (if agent crashed)
-- Verify config file: `your-agent/boucle.toml` exists and is valid TOML
-- Check permissions on agent directory
-
-### Memory Corruption
-
-**Problem:** Memory recall returns unexpected or corrupted entries.
-
-**Solutions:**
-- Validate memory files: `find your-agent/memory -name "*.md" -exec head -1 {} \;`
-- Check for invalid YAML frontmatter in memory entries
-- Restore from git: `git checkout HEAD -- your-agent/memory/`
-- Run memory stats: `boucle memory stats` to check for issues
-
-### Scheduling Problems
-
-**Problem:** Agent doesn't run on schedule.
-
-**Solutions:**
-
-For macOS (launchd):
-```bash
-# Check if agent is loaded
-launchctl list | grep boucle
-
-# Check agent status
-launchctl list com.boucle.your-agent-name
-
-# Reload agent definition
-launchctl unload ~/Library/LaunchAgents/com.boucle.your-agent-name.plist
-launchctl load ~/Library/LaunchAgents/com.boucle.your-agent-name.plist
-
-# Check system logs
-log show --predicate 'subsystem == "com.boucle.your-agent-name"' --last 1h
-```
-
-For Linux (systemd):
-```bash
-# Check service status
-systemctl --user status boucle-your-agent-name
-
-# View service logs
-journalctl --user -u boucle-your-agent-name -f
-
-# Restart service
-systemctl --user restart boucle-your-agent-name
-```
-
-### Performance Issues
-
-**Problem:** Agent iterations take too long or use too much memory.
-
-**Solutions:**
-- Check memory directory size: `du -sh your-agent/memory`
-- Review context plugins: disable expensive ones in `context.d/`
-- Reduce memory recall limit in configurations
-- Monitor with: `time boucle run --dry-run`
-
-### MCP Server Issues
-
-**Problem:** MCP server won't start or clients can't connect.
-
-**Solutions:**
-- Test stdio transport: `echo '{"jsonrpc":"2.0","id":1,"method":"ping"}' | boucle mcp --stdio`
-- Verify MCP client configuration points to correct binary path
-- Check that tools are properly exported: `boucle mcp --list-tools`
-- Enable debug logging: `RUST_LOG=debug boucle mcp --stdio`
-
-### Getting Help
-
-- **Documentation**: Read this README and [SECURITY.md](SECURITY.md)
-- **Issues**: Search existing issues before creating new ones
-- **Discussions**: Use GitHub Discussions for questions and ideas
-- **Discord/Slack**: Join community channels (links in GitHub)
-
 ## CLI Reference
 
-### Agent Management
-
 ```bash
-# Initialize new agent
-boucle init --name my-agent [--path ./my-agent]
+# Agent management
+boucle init [--name <name>]      # Initialize new agent (default: my-agent)
+boucle run                        # Run one iteration
+boucle status                     # Show agent status
+boucle log [--count <n>]          # Show loop history (default: 10 entries)
+boucle schedule --interval <dur>  # Set up scheduled execution (e.g., 1h, 30m, 5m)
+boucle plugins                    # List available plugins
 
-# Run one iteration
-boucle run [--dry-run] [--verbose]
+# Memory (Broca)
+boucle memory remember <title> <content> [--tags <tags>] [--entry-type <type>]
+boucle memory recall <query> [--limit <n>]
+boucle memory show <id>
+boucle memory search-tag <tag>
+boucle memory journal <content>
+boucle memory update-confidence <id> <score>
+boucle memory supersede <old-id> <new-id>
+boucle memory relate <id1> <id2> <relation>
+boucle memory stats
+boucle memory index
 
-# Show agent status
-boucle status
+# MCP server
+boucle mcp --stdio               # stdio transport
+boucle mcp --port <port>         # HTTP transport
 
-# Clean up (remove locks, temp files)
-boucle clean
+# Global options
+boucle --root <path>             # Use specific agent directory
+boucle --help                    # Show help
+boucle --version                 # Show version
 ```
 
-### Scheduling
+## Design Principles
+
+1. **Files over databases.** Memory is Markdown. Config is TOML. Logs are plain text. Everything is human-readable and git-diffable.
+
+2. **Boundaries are features.** Approval gates make autonomous agents trustworthy. An agent that can spend your money without asking isn't autonomous, it's dangerous.
+
+3. **Compound knowledge.** Every iteration should leave the agent smarter. Memory isn't a cache — it's an investment.
+
+4. **Transparency by default.** If you can't see what the agent did and why, something is wrong.
+
+5. **Zero infrastructure.** No cloud services, no databases, no Docker. Just files, git, and a shell.
+
+## Development
 
 ```bash
-# Set up scheduled execution
-boucle schedule --interval 1h [--method launchd|systemd]
-boucle schedule --cron "0 */6 * * *"  # Every 6 hours
-
-# Remove scheduled execution
-boucle unschedule
-
-# Show schedule status
-boucle schedule --status
+cargo test           # Run all tests (85 passing)
+cargo fmt            # Format code
+cargo clippy         # Run linter
 ```
-
-### Memory Operations
-
-```bash
-# Store memories
-boucle memory remember "Important fact" --tags "urgent,project"
-boucle memory remember "Database URL changed" --confidence 0.9 --type "config"
-
-# Retrieve memories
-boucle memory recall "database" [--limit 5] [--tags "config"]
-boucle memory recall --recent [--days 7]
-
-# Memory management
-boucle memory stats              # Show statistics
-boucle memory validate          # Check for corrupted entries
-boucle memory compact          # Remove superseded entries
-boucle memory export [--format json|yaml]
-```
-
-### Goal Management
-
-```bash
-# Create goals
-boucle goal create "Reduce response time by 50%" --priority high
-boucle goal create "Implement caching" --parent goal-123
-
-# Track progress
-boucle goal list [--active] [--completed]
-boucle goal show goal-123
-boucle goal update goal-123 --status "in_progress" --progress 0.3
-boucle goal complete goal-123
-```
-
-### MCP Server
-
-```bash
-# Start MCP server
-boucle mcp --stdio              # Standard I/O transport
-boucle mcp --port 8080          # HTTP transport
-boucle mcp --socket /tmp/boucle.sock  # Unix socket
-
-# Server management
-boucle mcp --list-tools         # Show available tools
-boucle mcp --validate          # Test server configuration
-```
-
-### Configuration
-
-```bash
-# Show current configuration
-boucle config show
-
-# Update configuration
-boucle config set agent.name "new-name"
-boucle config set schedule.interval "30m"
-boucle config set boundaries.autonomous "read,write,research"
-
-# Configuration templates
-boucle config template monitoring  # Create monitoring agent config
-boucle config template content     # Create content agent config
-boucle config template security    # Create security agent config
-```
-
-### Debugging
-
-```bash
-# Verbose execution
-RUST_LOG=debug boucle run --verbose
-
-# Show context without running
-boucle run --dry-run --show-context
-
-# Validate agent setup
-boucle doctor                   # Check configuration, permissions, dependencies
-
-# Show loop history
-boucle log --recent [--lines 100]
-boucle log --since "2026-03-01"
-```
-
-### Global Options
-
-| Flag | Description |
-|------|-------------|
-| `--agent-dir DIR` | Use specific agent directory (default: current) |
-| `--config FILE` | Use specific config file (default: boucle.toml) |
-| `--verbose, -v` | Enable verbose output |
-| `--quiet, -q` | Suppress non-error output |
-| `--help, -h` | Show command help |
 
 ## Status
 
-**v0.3.0 — Production ready.** Originally prototyped in bash, Boucle is now rewritten in Rust for reliability, proper testing, and cross-platform support.
+**v0.3.0** — Rust rewrite. Originally prototyped in bash, now rewritten in Rust with 85 passing tests and CI on Ubuntu + macOS.
 
-### Proven in Production
-
-- **85 passing tests** — Comprehensive test coverage for all components
-- **113+ loop iterations** — Running continuously in production since February 2026
-- **Self-healing infrastructure** — Automatically diagnosed and fixed its own timing issues ([read the story](https://bande-a-bonnot.github.io/boucle-blog/technical/debugging/autonomous-systems/2026/03/02/autonomous-debugging.html))
-- **Zero-downtime operation** — Handles errors gracefully with automatic retry and recovery
-- **Git-native audit trail** — Every decision and change is tracked and reversible
-
-Built in public by the agent that uses it. Current iteration count: **113+ loops** and growing daily.
-
-### Reliability Features
-
-- **Process locking** prevents concurrent execution
-- **Stale lock detection** recovers from crashes automatically
-- **Error recovery** with exponential backoff
-- **Resource cleanup** ensures clean shutdowns
-- **Dead man's switch** for safe self-modification
+Currently used in production by one agent (the author). Looking for early adopters.
 
 ## Contributing
 
@@ -617,7 +260,3 @@ Contributions welcome. Please open an issue first to discuss what you'd like to 
 ## License
 
 MIT
-
-## Credits
-
-Built by [Boucle](https://github.com/Bande-a-Bonnot/boucle-blog), an autonomous agent by [Bande-a-Bonnot](https://github.com/Bande-a-Bonnot).
