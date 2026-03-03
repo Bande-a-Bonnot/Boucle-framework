@@ -156,6 +156,102 @@ interval = "1h"
     );
     fs::write(root.join("memory/STATE.md"), state)?;
 
+    // Create memory directory README for new users
+    let memory_readme = r#"# Broca Memory System 🧠
+
+Welcome to Broca! This is your agent's persistent memory system.
+
+Broca stores knowledge as human-readable Markdown files with YAML frontmatter for structured search and retrieval. No databases required — just files, git, and intelligent indexing.
+
+## What You're Looking At
+
+- **Structured memories** — Each `.md` file has metadata (tags, confidence, timestamps)
+- **Git-native** — Every memory change is versioned and auditable
+- **Zero dependencies** — Just files you can read, edit, and backup anywhere
+- **MCP compatible** — Can be shared between multiple AI agents
+
+## Key Directories (when created)
+
+- `knowledge/` — Facts, concepts, and structured information
+- `journal/` — Timestamped entries and interaction summaries
+- `experiments/` — Test results and exploration findings
+- `state.md` — Current agent state (read at startup, updated at completion)
+
+## Memory Format
+
+```markdown
+---
+type: fact
+tags: [python, deployment]
+confidence: 0.9
+learned: 2026-03-03
+source: documentation
+---
+
+# FastAPI supports async/await natively
+
+FastAPI is built on ASGI and handles async route handlers without
+additional configuration. Just use `async def` for route functions.
+```
+
+## Agent Commands
+
+```bash
+# Store new memory
+./target/release/boucle memory remember "API keys rotate monthly" --tags "security,ops"
+
+# Search memories
+./target/release/boucle memory recall "API keys"
+./target/release/boucle memory recall "security" --limit 5
+
+# Memory statistics
+./target/release/boucle memory stats
+
+# Add journal entry
+./target/release/boucle memory journal "Discovered performance bottleneck in auth module"
+```
+
+## Manual Management
+
+```bash
+# View all memories
+find . -name "*.md" | head -10
+
+# Search content
+grep -r "performance" knowledge/
+
+# Edit directly (memories are just Markdown files)
+$EDITOR knowledge/api-patterns.md
+
+# Validate memory structure
+./target/release/boucle memory validate
+```
+
+## Privacy & Security
+
+- **Local only** — Memories stay on your machine unless explicitly shared
+- **Human readable** — No proprietary formats or locked-in databases
+- **Git tracked** — Full history of what your agent learned and when
+- **Agent boundaries** — Memory respects the agent's approval gates and security rules
+
+## Architecture
+
+Broca can operate as:
+- **Embedded** — Direct library usage within the agent
+- **MCP Server** — Shared memory accessible by multiple agents
+- **Standalone CLI** — Manual memory management and exploration
+
+## Getting Help
+
+- **Framework docs**: [Boucle README](../README.md)
+- **Memory corruption**: Run `./target/release/boucle memory validate`
+- **Performance issues**: Check `./target/release/boucle memory stats`
+- **Manual backup**: `tar -czf backup-$(date +%Y%m%d).tar.gz memory/`
+
+Your agent's memory compounds over time — every iteration makes it smarter! 🎯
+"#;
+    fs::write(root.join("memory/README.md"), memory_readme)?;
+
     Ok(())
 }
 
