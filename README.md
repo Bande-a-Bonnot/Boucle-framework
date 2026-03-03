@@ -23,11 +23,29 @@ Boucle is a framework for building persistent AI agents that run on a schedule, 
 
 ## Quick Start
 
+### Prerequisites
+
+Boucle requires Rust 1.70.0 or later. If you don't have Rust installed:
+
+```bash
+# Install Rust toolchain
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source $HOME/.cargo/env
+
+# Verify installation
+cargo --version
+```
+
+### Installation
+
 ```bash
 # Clone and build
 git clone https://github.com/Bande-a-Bonnot/Boucle-framework.git
 cd Boucle-framework
 cargo build --release
+
+# Verify build succeeded
+./target/release/boucle --help
 
 # Initialize a new agent
 ./target/release/boucle init --name my-agent
@@ -344,6 +362,29 @@ src/
 ```
 
 ## Troubleshooting
+
+### Installation Issues
+
+**Problem:** `cargo: command not found` when running `cargo build --release`.
+
+**Solution:** Install Rust toolchain first:
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source $HOME/.cargo/env
+# Then retry: cargo build --release
+```
+
+**Problem:** Build fails with Rust version errors.
+
+**Solution:** Ensure you have Rust 1.70.0 or later:
+```bash
+rustup update
+cargo --version  # Should show 1.70.0+
+```
+
+**Problem:** `./target/release/boucle: No such file or directory`
+
+**Solution:** Build didn't complete successfully. Check for error messages in `cargo build --release` output.
 
 ### Agent Won't Start
 
