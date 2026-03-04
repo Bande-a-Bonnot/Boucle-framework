@@ -273,7 +273,8 @@ Your agent's memory compounds over time — every iteration makes it smarter! �
 }
 
 /// Run one iteration of the agent loop.
-pub fn run(root: &Path) -> Result<(), RunnerError> {
+/// If `dry_run` is true, assemble and print the context without calling the LLM.
+pub fn run(root: &Path, dry_run: bool) -> Result<(), RunnerError> {
     // Note office hours status (Thomas unavailable 9pm-6am CET)
     if !is_office_hours() {
         eprintln!("Note: Outside Thomas's office hours. Running autonomously — no human support available.");
@@ -325,6 +326,31 @@ pub fn run(root: &Path) -> Result<(), RunnerError> {
         hooks::run_hook(hooks, "post-context", root)?;
     }
 
+    // Dry-run: print assembled context and exit
+    if dry_run {
+        let system_prompt_path = root.join(&cfg.agent.system_prompt);
+        let system_prompt = if system_prompt_path.exists() {
+            fs::read_to_string(&system_prompt_path)?
+        } else {
+            String::new()
+        };
+
+        println!("=== Boucle dry run ===");
+        println!("Agent: {}", cfg.agent.name);
+        println!("Model: {}", cfg.agent.model);
+        println!();
+        if !system_prompt.is_empty() {
+            println!("--- System prompt ---");
+            println!("{system_prompt}");
+            println!();
+        }
+        println!("--- Context ({} bytes) ---", assembled_context.len());
+        println!("{assembled_context}");
+        println!("--- End dry run ---");
+        log(&log_file, "Dry run complete — LLM not called.")?;
+        return Ok(());
+    }
+
     // Load system prompt
     let system_prompt_path = root.join(&cfg.agent.system_prompt);
     let system_prompt = if system_prompt_path.exists() {
@@ -332,6 +358,21 @@ pub fn run(root: &Path) -> Result<(), RunnerError> {
     } else {
         String::new()
     };
+
+    // Check that claude CLI is available
+    if process::Command::new("claude")
+        .arg("--version")
+        .stdout(process::Stdio::null())
+        .stderr(process::Stdio::null())
+        .status()
+        .is_err()
+    {
+        return Err(RunnerError::Llm(
+            "claude CLI not found. Install it from https://docs.anthropic.com/en/docs/claude-code \
+             or use 'boucle run --dry-run' to preview the context without an LLM."
+                .to_string(),
+        ));
+    }
 
     // Build claude command
     let mut cmd = process::Command::new("claude");
@@ -997,5 +1038,34 @@ mod tests {
         assert_eq!(SLEEP_START_HOUR, 21); // 9pm
         assert_eq!(SLEEP_END_HOUR, 6); // 6am
         assert!(SLEEP_START_HOUR > SLEEP_END_HOUR); // Sleep period spans midnight
+    }
+
+    #[test]
+    fn test_dry_run_succeeds_without_claude() {
+        let dir = tempfile::tempdir().unwrap();
+        init(dir.path(), "dry-test").unwrap();
+
+        // dry_run=true should succeed even without claude CLI
+        let result = run(dir.path(), true);
+        assert!(result.is_ok(), "dry run should succeed: {result:?}");
+
+        // Verify a log file was created
+        let logs: Vec<_> = fs::read_dir(dir.path().join("logs"))
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .collect();
+        assert!(!logs.is_empty(), "dry run should create a log file");
+    }
+
+    #[test]
+    fn test_dry_run_does_not_modify_state() {
+        let dir = tempfile::tempdir().unwrap();
+        init(dir.path(), "dry-test").unwrap();
+
+        let state_before = fs::read_to_string(dir.path().join("memory/STATE.md")).unwrap();
+        run(dir.path(), true).unwrap();
+        let state_after = fs::read_to_string(dir.path().join("memory/STATE.md")).unwrap();
+
+        assert_eq!(state_before, state_after, "dry run should not modify state");
     }
 }
