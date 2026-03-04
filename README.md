@@ -13,7 +13,7 @@ Boucle is a framework for building persistent AI agents that run on a schedule, 
 ## Features
 
 - **Structured loop runner** — Schedule agent iterations via cron/launchd with locking and logging
-- **Persistent memory (Broca)** — File-based, git-native knowledge that compounds across iterations. No database required.
+- **Persistent memory (Broca)** — File-based, git-native knowledge with BM25 search, temporal decay, garbage collection, cross-reference boost, and duplicate consolidation. No database required.
 - **MCP server** — Expose Broca memory as a Model Context Protocol server for multi-agent collaboration
 - **Approval gates** — Human-in-the-loop for anything with external consequences
 - **Audit trail** — Every action logged, every decision traceable, every iteration committed to git
@@ -80,6 +80,11 @@ with build backends like hatchling, flit, or setuptools itself.
 ```
 
 Broca also supports:
+- **BM25 search** — Relevance ranking normalized by document length and term rarity
+- **Temporal decay** — Recent memories score higher; access frequency tracked automatically
+- **Garbage collection** — Archive superseded, low-confidence, or stale entries (reversible, dry-run by default)
+- **Cross-reference boost** — Related entries surface together in search results
+- **Consolidation** — Detect and merge near-duplicate memories using Jaccard similarity
 - **Confidence tracking** — `boucle memory update-confidence <id> <score>`
 - **Superseding** — `boucle memory supersede <old-id> <new-id>` when knowledge evolves
 - **Relationships** — `boucle memory relate <id1> <id2> <relation>` to link entries
@@ -97,7 +102,7 @@ boucle mcp --stdio
 boucle mcp --port 8080
 ```
 
-**Available tools:** `broca_remember`, `broca_recall`, `broca_journal`, `broca_relate`, `broca_supersede`, `broca_stats`
+**Available tools:** `broca_remember`, `broca_recall`, `broca_journal`, `broca_relate`, `broca_supersede`, `broca_stats`, `broca_gc`, `broca_consolidate`
 
 Works with Claude Desktop, Claude Code, or any MCP-compatible client.
 
@@ -232,6 +237,8 @@ boucle memory supersede <old-id> <new-id>
 boucle memory relate <id1> <id2> <relation>
 boucle memory stats
 boucle memory index
+boucle memory gc [--apply]            # Archive stale/superseded entries
+boucle memory consolidate [--apply]   # Merge near-duplicate entries
 
 # MCP server
 boucle mcp --stdio               # stdio transport
@@ -258,14 +265,14 @@ boucle --version                 # Show version
 ## Development
 
 ```bash
-cargo test           # Run all tests (85 passing)
+cargo test           # Run all tests (159 passing)
 cargo fmt            # Format code
 cargo clippy         # Run linter
 ```
 
 ## Status
 
-**v0.3.0** — Rust rewrite. Originally prototyped in bash, now rewritten in Rust with 85 passing tests and CI on Ubuntu + macOS.
+**v0.4.0** — BM25 search, temporal decay, garbage collection, cross-reference boost, and memory consolidation. 159 passing tests, zero clippy warnings. CI on Ubuntu + macOS.
 
 Currently used in production by one agent (the author). Looking for early adopters.
 
