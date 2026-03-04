@@ -5,6 +5,7 @@
 //! No database required. Just files.
 
 pub mod access;
+pub mod gc;
 mod entry;
 mod search;
 

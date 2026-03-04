@@ -284,6 +284,36 @@ fn handle_tools_list(
                 "required": ["id"]
             }
         }),
+        json!({
+            "name": "broca_gc",
+            "title": "Garbage Collect",
+            "description": "Find stale memory entries (superseded, old+unused, very low confidence). Dry-run by default — set apply=true to archive candidates.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "apply": { "type": "boolean", "description": "Actually archive candidates (default: false, dry-run)", "default": false },
+                    "max_age_days": { "type": "integer", "description": "Max age in days for old+unused rule (default: 365)", "default": 365 }
+                }
+            }
+        }),
+        json!({
+            "name": "broca_restore",
+            "title": "Restore Archived Entry",
+            "description": "Restore an archived entry back to active knowledge",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "filename": { "type": "string", "description": "Filename of the archived entry to restore" }
+                },
+                "required": ["filename"]
+            }
+        }),
+        json!({
+            "name": "broca_archived",
+            "title": "List Archived Entries",
+            "description": "List all entries in the archive (moved there by garbage collection)",
+            "inputSchema": { "type": "object", "additionalProperties": false }
+        }),
     ];
 
     // Discover plugins and append as tools
@@ -326,6 +356,9 @@ async fn handle_tools_call(
         "broca_search_tags" => handle_broca_search_tags(arguments, root, config).await,
         "broca_list" => handle_broca_list(arguments, root, config).await,
         "broca_show" => handle_broca_show(arguments, root, config).await,
+        "broca_gc" => handle_broca_gc(arguments, root, config).await,
+        "broca_restore" => handle_broca_restore(arguments, root, config).await,
+        "broca_archived" => handle_broca_archived(root, config).await,
         name if name.starts_with("plugin_") => {
             let plugin_name = &name["plugin_".len()..];
             handle_plugin_call(plugin_name, arguments, root).await
@@ -681,6 +714,86 @@ async fn handle_broca_show(
     let show_output = broca::show(&memory_dir, id)?;
 
     Ok(show_output)
+}
+
+async fn handle_broca_gc(
+    arguments: &Value,
+    root: &Path,
+    config: &Config,
+) -> Result<String, Box<dyn Error>> {
+    let apply = arguments
+        .get("apply")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    let max_age_days = arguments
+        .get("max_age_days")
+        .and_then(|v| v.as_i64())
+        .unwrap_or(365);
+
+    let memory_dir = root.join(&config.memory.dir);
+    let gc_config = broca::gc::GcConfig {
+        max_age_days,
+        ..broca::gc::GcConfig::default()
+    };
+
+    let gc_candidates = broca::gc::candidates(&memory_dir, &gc_config)?;
+
+    if gc_candidates.is_empty() {
+        return Ok("No GC candidates found. Memory is clean.".to_string());
+    }
+
+    let mut output = format!("{} candidate(s) for garbage collection:\n\n", gc_candidates.len());
+    for c in &gc_candidates {
+        output.push_str(&format!(
+            "- {} — \"{}\" (confidence: {:.1}, reason: {})\n",
+            c.filename, c.title, c.confidence, c.reason
+        ));
+    }
+
+    if apply {
+        let archived = broca::gc::archive(&memory_dir, &gc_candidates)?;
+        output.push_str(&format!(
+            "\nArchived {} entry(ies). Use broca_restore to undo.",
+            archived.len()
+        ));
+    } else {
+        output.push_str("\nDry run. Set apply=true to archive these entries.");
+    }
+
+    Ok(output)
+}
+
+async fn handle_broca_restore(
+    arguments: &Value,
+    root: &Path,
+    config: &Config,
+) -> Result<String, Box<dyn Error>> {
+    let filename = arguments
+        .get("filename")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing filename")?;
+
+    let memory_dir = root.join(&config.memory.dir);
+    let path = broca::gc::restore(&memory_dir, filename)?;
+    Ok(format!("Restored: {}", path.display()))
+}
+
+async fn handle_broca_archived(
+    root: &Path,
+    config: &Config,
+) -> Result<String, Box<dyn Error>> {
+    let memory_dir = root.join(&config.memory.dir);
+    let files = broca::gc::list_archived(&memory_dir)?;
+
+    if files.is_empty() {
+        Ok("No archived entries.".to_string())
+    } else {
+        let mut output = format!("{} archived entry(ies):\n\n", files.len());
+        for f in &files {
+            output.push_str(&format!("- {f}\n"));
+        }
+        Ok(output)
+    }
 }
 
 // --- Plugin-as-MCP-tools ---

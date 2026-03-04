@@ -161,6 +161,26 @@ enum MemoryCommands {
 
     /// Build or rebuild the memory index
     Index,
+
+    /// Garbage collect stale entries (dry-run by default)
+    Gc {
+        /// Actually archive candidates (default: dry-run)
+        #[arg(long)]
+        apply: bool,
+
+        /// Max age in days for old+unused rule (default: 365)
+        #[arg(long, default_value = "365")]
+        max_age: i64,
+    },
+
+    /// Restore an archived entry back to knowledge
+    Restore {
+        /// Archived entry filename
+        filename: String,
+    },
+
+    /// List archived entries
+    Archived,
 }
 
 fn main() {
@@ -368,6 +388,72 @@ fn main() {
 
                 MemoryCommands::Index => match broca::build_index(&memory_dir) {
                     Ok(count) => println!("Indexed {count} entries."),
+                    Err(e) => {
+                        eprintln!("Error: {e}");
+                        process::exit(1);
+                    }
+                },
+
+                MemoryCommands::Gc { apply, max_age } => {
+                    let config = broca::gc::GcConfig {
+                        max_age_days: max_age,
+                        ..broca::gc::GcConfig::default()
+                    };
+                    match broca::gc::candidates(&memory_dir, &config) {
+                        Ok(candidates) => {
+                            if candidates.is_empty() {
+                                println!("No GC candidates found. Memory is clean.");
+                            } else {
+                                println!("{} candidate(s) for garbage collection:\n", candidates.len());
+                                for c in &candidates {
+                                    println!(
+                                        "  {} — \"{}\" (confidence: {:.1}, reason: {})",
+                                        c.filename, c.title, c.confidence, c.reason
+                                    );
+                                }
+                                if apply {
+                                    match broca::gc::archive(&memory_dir, &candidates) {
+                                        Ok(archived) => {
+                                            println!("\nArchived {} entry(ies). Use `memory restore` to undo.", archived.len());
+                                        }
+                                        Err(e) => {
+                                            eprintln!("Error archiving: {e}");
+                                            process::exit(1);
+                                        }
+                                    }
+                                } else {
+                                    println!("\nDry run. Use --apply to archive these entries.");
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("Error: {e}");
+                            process::exit(1);
+                        }
+                    }
+                }
+
+                MemoryCommands::Restore { filename } => {
+                    match broca::gc::restore(&memory_dir, &filename) {
+                        Ok(path) => println!("Restored: {}", path.display()),
+                        Err(e) => {
+                            eprintln!("Error: {e}");
+                            process::exit(1);
+                        }
+                    }
+                }
+
+                MemoryCommands::Archived => match broca::gc::list_archived(&memory_dir) {
+                    Ok(files) => {
+                        if files.is_empty() {
+                            println!("No archived entries.");
+                        } else {
+                            println!("{} archived entry(ies):\n", files.len());
+                            for f in &files {
+                                println!("  {f}");
+                            }
+                        }
+                    }
                     Err(e) => {
                         eprintln!("Error: {e}");
                         process::exit(1);
