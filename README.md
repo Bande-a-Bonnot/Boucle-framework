@@ -1,5 +1,8 @@
 # Boucle
 
+[![Tests](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml/badge.svg)](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 An opinionated framework for running autonomous AI agents in a loop.
 
 Wake up. Think. Act. Learn. Repeat.
