@@ -4,6 +4,7 @@
 //! Memory entries are Markdown files with YAML-style frontmatter.
 //! No database required. Just files.
 
+pub mod access;
 mod entry;
 mod search;
 
@@ -87,6 +88,7 @@ pub fn recall(
 }
 
 /// Show a specific memory entry's content (without frontmatter).
+/// Also records an access event for the entry.
 pub fn show(memory_dir: &Path, entry_name: &str) -> Result<String, BrocaError> {
     let knowledge_dir = memory_dir.join("knowledge");
 
@@ -98,6 +100,11 @@ pub fn show(memory_dir: &Path, entry_name: &str) -> Result<String, BrocaError> {
         find_entry_by_name(&knowledge_dir, entry_name)?
             .ok_or_else(|| BrocaError::Parse(format!("Entry not found: {entry_name}")))?
     };
+
+    // Record access (best-effort, don't fail if tracking breaks)
+    if let Some(fname) = path.file_name().and_then(|f| f.to_str()) {
+        let _ = access::record_access(memory_dir, &[fname]);
+    }
 
     let content = fs::read_to_string(&path)?;
     // Strip frontmatter

@@ -1,13 +1,18 @@
 //! Search and recall functionality for Broca memory.
 //!
 //! Implements BM25-ranked search across memory entries, with additional
-//! boosts for title matches, tag matches, and confidence weighting.
-//! BM25 (Best Matching 25) normalizes by document length and term rarity,
-//! replacing naive keyword counting. Inspired by OpenClaw's hybrid search.
+//! boosts for title matches, tag matches, confidence weighting,
+//! temporal decay (recency), and access frequency.
+//!
+//! BM25 (Best Matching 25) normalizes by document length and term rarity.
+//! Temporal decay favors recent entries. Access tracking boosts frequently
+//! accessed entries. Inspired by OpenClaw's hybrid search.
 
+use chrono::{NaiveDate, NaiveDateTime, Utc};
 use std::collections::HashMap;
 use std::path::Path;
 
+use super::access;
 use super::entry::{self, Entry, EntryType};
 use super::BrocaError;
 
@@ -21,6 +26,18 @@ const B: f64 = 0.75;
 const TITLE_BOOST: f64 = 3.0;
 /// Score bonus for each matching tag.
 const TAG_BONUS: f64 = 2.0;
+
+// --- Temporal decay parameters ---
+
+/// Decay rate for recency. Controls half-life of entries.
+/// With 0.007, half-life ≈ 100 days. Gentle enough that old facts stay relevant.
+const RECENCY_DECAY_RATE: f64 = 0.007;
+
+// --- Access boost parameters ---
+
+/// Weight for access frequency boost: score += ACCESS_WEIGHT * ln(1 + count).
+/// Logarithmic scaling prevents heavily-accessed entries from dominating.
+const ACCESS_WEIGHT: f64 = 0.15;
 
 /// A memory entry with a relevance score.
 #[derive(Debug, Clone)]
@@ -81,14 +98,53 @@ fn bm25_term_score(tf: usize, doc_len: usize, avg_doc_len: f64, idf_val: f64) ->
     idf_val * numerator / denominator
 }
 
-/// Search memory with BM25 relevance ranking.
+/// Compute recency factor from a created timestamp string.
+/// Returns a value in (0, 1] where 1.0 = created now, decaying over time.
+/// Uses hyperbolic decay: 1 / (1 + age_days * rate).
+/// Entries with unparseable dates get 0.5 (neutral).
+fn recency_factor(created: &str) -> f64 {
+    let now = Utc::now().naive_utc();
+    let created_dt = parse_created(created);
+    match created_dt {
+        Some(dt) => {
+            let age_days = (now - dt).num_days().max(0) as f64;
+            1.0 / (1.0 + age_days * RECENCY_DECAY_RATE)
+        }
+        None => 0.5, // unparseable → neutral
+    }
+}
+
+/// Parse a created timestamp. Supports:
+/// - "YYYYMMDD-HHMMSS" (e.g., "20260304-143022")
+/// - "YYYYMMDD" (e.g., "20260304")
+fn parse_created(created: &str) -> Option<NaiveDateTime> {
+    // Try full format first
+    if let Ok(dt) = NaiveDateTime::parse_from_str(created, "%Y%m%d-%H%M%S") {
+        return Some(dt);
+    }
+    // Try date-only
+    if let Ok(d) = NaiveDate::parse_from_str(created, "%Y%m%d") {
+        return d.and_hms_opt(0, 0, 0);
+    }
+    None
+}
+
+/// Compute access frequency boost: ACCESS_WEIGHT * ln(1 + count).
+/// Returns 0 for entries never accessed.
+fn access_boost(count: u64) -> f64 {
+    ACCESS_WEIGHT * (1.0 + count as f64).ln()
+}
+
+/// Search memory with BM25 relevance ranking, temporal decay, and access boost.
 ///
 /// Scoring:
 /// 1. BM25 on content tokens (standard information retrieval)
 /// 2. BM25 on title tokens, boosted by TITLE_BOOST
 /// 3. Tag exact-match bonus (TAG_BONUS per matching tag)
 /// 4. Confidence multiplier (entry.confidence)
-/// 5. Superseded entries penalized (×0.3)
+/// 5. Temporal decay — recent entries score higher
+/// 6. Access frequency boost — frequently recalled entries score higher
+/// 7. Superseded entries penalized (×0.3)
 pub fn recall(
     memory_dir: &Path,
     query: &str,
@@ -106,6 +162,9 @@ pub fn recall(
     if num_docs == 0 {
         return Ok(Vec::new());
     }
+
+    // Load access log for frequency boost
+    let access_log = access::load(memory_dir);
 
     // Pre-tokenize all documents
     let doc_tokens: Vec<Vec<String>> = entries.iter().map(|e| tokenize(&e.content)).collect();
@@ -182,6 +241,16 @@ pub fn recall(
             // Confidence multiplier
             score *= entry.confidence;
 
+            // Temporal decay — recent entries get higher scores
+            score *= recency_factor(&entry.created);
+
+            // Access frequency boost
+            let acc_count = access_log
+                .get(&entry.filename)
+                .map(|r| r.count)
+                .unwrap_or(0);
+            score *= 1.0 + access_boost(acc_count);
+
             // Penalize superseded entries
             if entry.superseded_by.is_some() {
                 score *= 0.3;
@@ -202,6 +271,11 @@ pub fn recall(
     });
 
     scored.truncate(limit);
+
+    // Record access for returned results (non-blocking best-effort)
+    let accessed_files: Vec<&str> = scored.iter().map(|e| e.filename.as_str()).collect();
+    let _ = access::record_access(memory_dir, &accessed_files);
+
     Ok(scored)
 }
 
@@ -453,5 +527,175 @@ mod tests {
             idf_rare,
             idf_common
         );
+    }
+
+    // --- Temporal decay tests ---
+
+    #[test]
+    fn test_parse_created_full_format() {
+        let dt = parse_created("20260304-143022");
+        assert!(dt.is_some());
+        let dt = dt.unwrap();
+        assert_eq!(dt.date(), NaiveDate::from_ymd_opt(2026, 3, 4).unwrap());
+    }
+
+    #[test]
+    fn test_parse_created_date_only() {
+        let dt = parse_created("20260304");
+        assert!(dt.is_some());
+        let dt = dt.unwrap();
+        assert_eq!(dt.date(), NaiveDate::from_ymd_opt(2026, 3, 4).unwrap());
+    }
+
+    #[test]
+    fn test_parse_created_invalid() {
+        assert!(parse_created("").is_none());
+        assert!(parse_created("not-a-date").is_none());
+    }
+
+    #[test]
+    fn test_recency_factor_today() {
+        // Entry created now should have factor close to 1.0
+        let now = Utc::now().format("%Y%m%d-%H%M%S").to_string();
+        let factor = recency_factor(&now);
+        assert!(factor > 0.99, "Today's entry should be ~1.0: {factor}");
+    }
+
+    #[test]
+    fn test_recency_factor_old() {
+        // Entry from 200 days ago should have lower factor
+        let factor = recency_factor("20250815-120000");
+        assert!(
+            factor < 0.5,
+            "200-day-old entry should be < 0.5: {factor}"
+        );
+    }
+
+    #[test]
+    fn test_recency_factor_invalid() {
+        // Unparseable date → 0.5 (neutral)
+        let factor = recency_factor("garbage");
+        assert!((factor - 0.5).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_recency_decay_ordering() {
+        // Newer entries should have higher recency factor
+        let recent = recency_factor("20260303-120000");
+        let older = recency_factor("20260101-120000");
+        let ancient = recency_factor("20250601-120000");
+        assert!(
+            recent > older,
+            "Recent > older: {recent} vs {older}"
+        );
+        assert!(
+            older > ancient,
+            "Older > ancient: {older} vs {ancient}"
+        );
+    }
+
+    // --- Access boost tests ---
+
+    #[test]
+    fn test_access_boost_zero() {
+        assert!((access_boost(0) - 0.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_access_boost_increases() {
+        let boost_1 = access_boost(1);
+        let boost_10 = access_boost(10);
+        let boost_100 = access_boost(100);
+        assert!(boost_1 > 0.0);
+        assert!(boost_10 > boost_1);
+        assert!(boost_100 > boost_10);
+    }
+
+    #[test]
+    fn test_access_boost_sublinear() {
+        // 100 accesses should not give 100x the boost of 1 access
+        let boost_1 = access_boost(1);
+        let boost_100 = access_boost(100);
+        assert!(
+            boost_100 < boost_1 * 10.0,
+            "Boost should be sublinear: {boost_100} vs {boost_1}"
+        );
+    }
+
+    // --- Integration: temporal decay + access in recall ---
+
+    #[test]
+    fn test_recall_records_access() {
+        let dir = tempfile::tempdir().unwrap();
+        setup_test_memory(dir.path());
+
+        // First recall
+        let results = recall(dir.path(), "rust", 5).unwrap();
+        assert!(!results.is_empty());
+
+        // Check access log was created
+        let log = access::load(dir.path());
+        assert!(!log.is_empty(), "Access log should be populated after recall");
+
+        // Each returned result should have been recorded
+        for result in &results {
+            assert!(
+                log.contains_key(&result.filename),
+                "Result {} should be in access log",
+                result.filename
+            );
+            assert_eq!(log[&result.filename].count, 1);
+        }
+    }
+
+    #[test]
+    fn test_recall_access_boost_effect() {
+        let dir = tempfile::tempdir().unwrap();
+
+        // Create two entries with identical content
+        let knowledge_dir = dir.path().join("knowledge");
+        fs::create_dir_all(&knowledge_dir).unwrap();
+
+        let entry_a = "---\ntype: fact\ntitle: \"Entry A\"\nconfidence: 0.8\ncreated: 20260304-120000\n---\n\nrust memory system design";
+        let entry_b = "---\ntype: fact\ntitle: \"Entry B\"\nconfidence: 0.8\ncreated: 20260304-120000\n---\n\nrust memory system design";
+        fs::write(knowledge_dir.join("20260304-120000-entry-a.md"), entry_a).unwrap();
+        fs::write(knowledge_dir.join("20260304-120001-entry-b.md"), entry_b).unwrap();
+
+        // Pre-populate access log: entry A has been accessed 20 times
+        access::record_access(dir.path(), &["20260304-120000-entry-a.md"]).unwrap();
+        for _ in 0..19 {
+            access::record_access(dir.path(), &["20260304-120000-entry-a.md"]).unwrap();
+        }
+
+        let results = recall(dir.path(), "rust memory", 5).unwrap();
+        assert!(results.len() >= 2);
+
+        // Entry A (20 accesses) should rank higher than Entry B (0 accesses)
+        let a_score = results.iter().find(|e| e.title == "Entry A").unwrap().relevance_score;
+        let b_score = results.iter().find(|e| e.title == "Entry B").unwrap().relevance_score;
+        assert!(
+            a_score > b_score,
+            "Accessed entry should rank higher: {a_score} vs {b_score}"
+        );
+    }
+
+    #[test]
+    fn test_recall_recency_effect() {
+        let dir = tempfile::tempdir().unwrap();
+
+        // Create two entries: one recent, one old — same content
+        let knowledge_dir = dir.path().join("knowledge");
+        fs::create_dir_all(&knowledge_dir).unwrap();
+
+        let recent = "---\ntype: fact\ntitle: \"Recent fact\"\nconfidence: 0.8\ncreated: 20260304-120000\n---\n\nrust memory";
+        let old = "---\ntype: fact\ntitle: \"Old fact\"\nconfidence: 0.8\ncreated: 20250101-120000\n---\n\nrust memory";
+        fs::write(knowledge_dir.join("20260304-120000-recent.md"), recent).unwrap();
+        fs::write(knowledge_dir.join("20250101-120000-old.md"), old).unwrap();
+
+        let results = recall(dir.path(), "rust memory", 5).unwrap();
+        assert!(results.len() >= 2);
+
+        // Recent entry should rank higher than old one
+        assert_eq!(results[0].title, "Recent fact", "Recent entry should rank first");
     }
 }
