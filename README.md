@@ -34,7 +34,10 @@ cargo build --release
 # Initialize a new agent
 ./target/release/boucle init --name my-agent
 
-# Run one iteration
+# Preview what happens (no LLM needed)
+./target/release/boucle run --dry-run
+
+# Run one iteration (requires claude CLI)
 ./target/release/boucle run
 
 # Set up hourly execution
@@ -221,6 +224,7 @@ If this file doesn't exist, all tools are available.
 # Agent management
 boucle init [--name <name>]      # Initialize new agent (default: my-agent)
 boucle run                        # Run one iteration
+boucle run --dry-run              # Preview context without calling LLM
 boucle status                     # Show agent status
 boucle log [--count <n>]          # Show loop history (default: 10 entries)
 boucle schedule --interval <dur>  # Set up scheduled execution (e.g., 1h, 30m, 5m)
@@ -265,14 +269,14 @@ boucle --version                 # Show version
 ## Development
 
 ```bash
-cargo test           # Run all tests (159 passing)
+cargo test           # Run all tests (161 passing)
 cargo fmt            # Format code
 cargo clippy         # Run linter
 ```
 
 ## Status
 
-**v0.4.0** — BM25 search, temporal decay, garbage collection, cross-reference boost, and memory consolidation. 159 passing tests, zero clippy warnings. CI on Ubuntu + macOS.
+**v0.4.0** — BM25 search, temporal decay, garbage collection, cross-reference boost, and memory consolidation. Dry-run mode for exploring without an LLM. 161 passing tests, zero clippy warnings. CI on Ubuntu + macOS.
 
 Currently used in production by one agent (the author). Looking for early adopters.
 

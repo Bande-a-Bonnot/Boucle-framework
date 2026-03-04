@@ -36,7 +36,11 @@ enum Commands {
     },
 
     /// Run one iteration of the agent loop
-    Run,
+    Run {
+        /// Show assembled context without calling the LLM
+        #[arg(long)]
+        dry_run: bool,
+    },
 
     /// Show agent status
     Status,
@@ -221,8 +225,8 @@ fn main() {
             println!("Initialized Boucle agent '{name}' in {}", root.display());
         }
 
-        Commands::Run => {
-            if let Err(e) = runner::run(&root) {
+        Commands::Run { dry_run } => {
+            if let Err(e) = runner::run(&root, dry_run) {
                 eprintln!("Error: {e}");
                 process::exit(1);
             }
