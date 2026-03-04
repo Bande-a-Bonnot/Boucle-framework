@@ -101,6 +101,22 @@ boucle mcp --port 8080
 
 Works with Claude Desktop, Claude Code, or any MCP-compatible client.
 
+## Tools
+
+Standalone utilities that work independently of the full framework.
+
+### read-once (`tools/read-once/`)
+
+A Claude Code hook that prevents redundant file re-reads within a session. When Claude reads a file, read-once remembers it. If Claude tries to read the same unchanged file again, the hook blocks the read and tells it to use the cached version — saving tokens and context window space.
+
+```bash
+# Install
+cp tools/read-once/hook.sh ~/.claude/read-once/hook.sh
+# Add to ~/.claude/settings.json hooks.PreToolUse
+```
+
+See [`tools/read-once/README.md`](tools/read-once/README.md) for full setup and details.
+
 ## Architecture
 
 ```
