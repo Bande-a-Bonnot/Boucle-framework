@@ -38,8 +38,7 @@ pub fn load(memory_dir: &Path) -> AccessLog {
 /// Save the access log to disk.
 pub fn save(memory_dir: &Path, log: &AccessLog) -> Result<(), io::Error> {
     let path = access_log_path(memory_dir);
-    let content = serde_json::to_string_pretty(log)
-        .map_err(io::Error::other)?;
+    let content = serde_json::to_string_pretty(log).map_err(io::Error::other)?;
     fs::write(path, content)
 }
 
@@ -54,12 +53,10 @@ pub fn record_access(memory_dir: &Path, filenames: &[&str]) -> Result<(), io::Er
     let now = Utc::now().to_rfc3339();
 
     for filename in filenames {
-        let record = log
-            .entry((*filename).to_string())
-            .or_insert(AccessRecord {
-                count: 0,
-                last_accessed: now.clone(),
-            });
+        let record = log.entry((*filename).to_string()).or_insert(AccessRecord {
+            count: 0,
+            last_accessed: now.clone(),
+        });
         record.count += 1;
         record.last_accessed = now.clone();
     }

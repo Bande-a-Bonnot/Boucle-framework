@@ -14,6 +14,7 @@ use std::path::Path;
 
 use super::access;
 use super::entry::{self, Entry, EntryType};
+use super::relations;
 use super::BrocaError;
 
 // --- BM25 parameters ---
@@ -230,8 +231,7 @@ pub fn recall(
             }
 
             // Tag exact-match bonus
-            let tags_lower: Vec<String> =
-                entry.tags.iter().map(|t| t.to_lowercase()).collect();
+            let tags_lower: Vec<String> = entry.tags.iter().map(|t| t.to_lowercase()).collect();
             for term in &query_terms {
                 if tags_lower.iter().any(|t| t == term) {
                     score += TAG_BONUS;
@@ -262,6 +262,34 @@ pub fn recall(
         })
         .filter(|e| e.relevance_score > 0.0)
         .collect();
+
+    // Cross-reference boost: entries related to high-scoring results get a boost.
+    // Load the relation graph (cheap — RELATIONS.md is typically small).
+    let graph = relations::load_relations(memory_dir);
+    if !graph.is_empty() {
+        // Collect current scores by filename for lookup
+        let score_map: HashMap<String, f64> = scored
+            .iter()
+            .map(|e| (e.filename.clone(), e.relevance_score))
+            .collect();
+
+        // For each scored entry, accumulate boost from related entries that also scored
+        for entry in &mut scored {
+            if let Some(neighbors) = graph.get(&entry.filename) {
+                let mut cross_boost: f64 = 0.0;
+                for (related_file, rel_type) in neighbors {
+                    let weight = relations::relation_weight(rel_type);
+                    if weight > 0.0 {
+                        if let Some(&related_score) = score_map.get(related_file) {
+                            // Boost proportional to the related entry's score and relation weight
+                            cross_boost += related_score * weight;
+                        }
+                    }
+                }
+                entry.relevance_score += cross_boost;
+            }
+        }
+    }
 
     // Sort by score descending
     scored.sort_by(|a, b| {
@@ -565,10 +593,7 @@ mod tests {
     fn test_recency_factor_old() {
         // Entry from 200 days ago should have lower factor
         let factor = recency_factor("20250815-120000");
-        assert!(
-            factor < 0.5,
-            "200-day-old entry should be < 0.5: {factor}"
-        );
+        assert!(factor < 0.5, "200-day-old entry should be < 0.5: {factor}");
     }
 
     #[test]
@@ -584,14 +609,8 @@ mod tests {
         let recent = recency_factor("20260303-120000");
         let older = recency_factor("20260101-120000");
         let ancient = recency_factor("20250601-120000");
-        assert!(
-            recent > older,
-            "Recent > older: {recent} vs {older}"
-        );
-        assert!(
-            older > ancient,
-            "Older > ancient: {older} vs {ancient}"
-        );
+        assert!(recent > older, "Recent > older: {recent} vs {older}");
+        assert!(older > ancient, "Older > ancient: {older} vs {ancient}");
     }
 
     // --- Access boost tests ---
@@ -635,7 +654,10 @@ mod tests {
 
         // Check access log was created
         let log = access::load(dir.path());
-        assert!(!log.is_empty(), "Access log should be populated after recall");
+        assert!(
+            !log.is_empty(),
+            "Access log should be populated after recall"
+        );
 
         // Each returned result should have been recorded
         for result in &results {
@@ -671,8 +693,16 @@ mod tests {
         assert!(results.len() >= 2);
 
         // Entry A (20 accesses) should rank higher than Entry B (0 accesses)
-        let a_score = results.iter().find(|e| e.title == "Entry A").unwrap().relevance_score;
-        let b_score = results.iter().find(|e| e.title == "Entry B").unwrap().relevance_score;
+        let a_score = results
+            .iter()
+            .find(|e| e.title == "Entry A")
+            .unwrap()
+            .relevance_score;
+        let b_score = results
+            .iter()
+            .find(|e| e.title == "Entry B")
+            .unwrap()
+            .relevance_score;
         assert!(
             a_score > b_score,
             "Accessed entry should rank higher: {a_score} vs {b_score}"
@@ -696,6 +726,202 @@ mod tests {
         assert!(results.len() >= 2);
 
         // Recent entry should rank higher than old one
-        assert_eq!(results[0].title, "Recent fact", "Recent entry should rank first");
+        assert_eq!(
+            results[0].title, "Recent fact",
+            "Recent entry should rank first"
+        );
+    }
+
+    // --- Cross-reference boost tests ---
+
+    #[test]
+    fn test_cross_ref_boost_raises_related_entry() {
+        let dir = tempfile::tempdir().unwrap();
+        let knowledge_dir = dir.path().join("knowledge");
+        fs::create_dir_all(&knowledge_dir).unwrap();
+
+        // Entry A: strong match for "rust"
+        let entry_a = "---\ntype: fact\ntitle: \"Rust overview\"\nconfidence: 0.9\ncreated: 20260304-120000\n---\n\nrust rust rust programming language";
+        // Entry B: weak match for "rust" but related to A
+        let entry_b = "---\ntype: fact\ntitle: \"Memory design\"\nconfidence: 0.9\ncreated: 20260304-120001\n---\n\nmemory design patterns for systems with some rust";
+        // Entry C: weak match for "rust", NOT related to A
+        let entry_c = "---\ntype: fact\ntitle: \"Unrelated topic\"\nconfidence: 0.9\ncreated: 20260304-120002\n---\n\nmemory design patterns for systems with some rust";
+
+        fs::write(
+            knowledge_dir.join("20260304-120000-rust-overview.md"),
+            entry_a,
+        )
+        .unwrap();
+        fs::write(
+            knowledge_dir.join("20260304-120001-memory-design.md"),
+            entry_b,
+        )
+        .unwrap();
+        fs::write(
+            knowledge_dir.join("20260304-120002-unrelated-topic.md"),
+            entry_c,
+        )
+        .unwrap();
+
+        // Create relation: A <-> B (similar_to)
+        fs::write(
+            dir.path().join("RELATIONS.md"),
+            "20260304-120000-rust-overview.md --[similar_to]--> 20260304-120001-memory-design.md\n",
+        )
+        .unwrap();
+
+        let results = recall(dir.path(), "rust", 5).unwrap();
+        assert!(results.len() >= 3);
+
+        // B (related to high-scoring A) should rank higher than C (identical content, no relation)
+        let b_score = results
+            .iter()
+            .find(|e| e.title == "Memory design")
+            .unwrap()
+            .relevance_score;
+        let c_score = results
+            .iter()
+            .find(|e| e.title == "Unrelated topic")
+            .unwrap()
+            .relevance_score;
+        assert!(
+            b_score > c_score,
+            "Related entry should rank higher: {b_score} vs {c_score}"
+        );
+    }
+
+    #[test]
+    fn test_cross_ref_no_boost_for_contradicts() {
+        let dir = tempfile::tempdir().unwrap();
+        let knowledge_dir = dir.path().join("knowledge");
+        fs::create_dir_all(&knowledge_dir).unwrap();
+
+        let entry_a = "---\ntype: fact\ntitle: \"Fact A\"\nconfidence: 0.9\ncreated: 20260304-120000\n---\n\nrust programming language overview";
+        let entry_b = "---\ntype: fact\ntitle: \"Fact B\"\nconfidence: 0.9\ncreated: 20260304-120001\n---\n\nmemory systems with some rust";
+        let entry_c = "---\ntype: fact\ntitle: \"Fact C\"\nconfidence: 0.9\ncreated: 20260304-120002\n---\n\nmemory systems with some rust";
+
+        fs::write(knowledge_dir.join("20260304-120000-fact-a.md"), entry_a).unwrap();
+        fs::write(knowledge_dir.join("20260304-120001-fact-b.md"), entry_b).unwrap();
+        fs::write(knowledge_dir.join("20260304-120002-fact-c.md"), entry_c).unwrap();
+
+        // B contradicts A (weight = 0.0), C has no relation
+        fs::write(
+            dir.path().join("RELATIONS.md"),
+            "20260304-120000-fact-a.md --[contradicts]--> 20260304-120001-fact-b.md\n",
+        )
+        .unwrap();
+
+        let results = recall(dir.path(), "rust", 5).unwrap();
+        let b_score = results
+            .iter()
+            .find(|e| e.title == "Fact B")
+            .unwrap()
+            .relevance_score;
+        let c_score = results
+            .iter()
+            .find(|e| e.title == "Fact C")
+            .unwrap()
+            .relevance_score;
+
+        // B and C should have equal scores — contradicts gives no boost
+        assert!(
+            (b_score - c_score).abs() < f64::EPSILON,
+            "Contradicts should give no boost: {b_score} vs {c_score}"
+        );
+    }
+
+    #[test]
+    fn test_cross_ref_no_relations_file() {
+        let dir = tempfile::tempdir().unwrap();
+        broca::remember(dir.path(), "fact", "Test entry", "rust programming", &[]).unwrap();
+
+        // No RELATIONS.md — should work fine without boost
+        let results = recall(dir.path(), "rust", 5).unwrap();
+        assert!(!results.is_empty());
+    }
+
+    #[test]
+    fn test_cross_ref_elaborates_stronger_than_related() {
+        let dir = tempfile::tempdir().unwrap();
+        let knowledge_dir = dir.path().join("knowledge");
+        fs::create_dir_all(&knowledge_dir).unwrap();
+
+        let entry_a = "---\ntype: fact\ntitle: \"Core topic\"\nconfidence: 0.9\ncreated: 20260304-120000\n---\n\nrust programming language details";
+        let entry_b = "---\ntype: fact\ntitle: \"Elaboration\"\nconfidence: 0.9\ncreated: 20260304-120001\n---\n\nsome rust details";
+        let entry_c = "---\ntype: fact\ntitle: \"Related\"\nconfidence: 0.9\ncreated: 20260304-120002\n---\n\nsome rust details";
+
+        fs::write(knowledge_dir.join("20260304-120000-core.md"), entry_a).unwrap();
+        fs::write(
+            knowledge_dir.join("20260304-120001-elaboration.md"),
+            entry_b,
+        )
+        .unwrap();
+        fs::write(knowledge_dir.join("20260304-120002-related.md"), entry_c).unwrap();
+
+        // B elaborates_on A (weight=0.4), C is related_to A (weight=0.25)
+        fs::write(
+            dir.path().join("RELATIONS.md"),
+            "20260304-120000-core.md --[elaborates_on]--> 20260304-120001-elaboration.md\n\
+             20260304-120000-core.md --[related_to]--> 20260304-120002-related.md\n",
+        )
+        .unwrap();
+
+        let results = recall(dir.path(), "rust", 5).unwrap();
+        let b_score = results
+            .iter()
+            .find(|e| e.title == "Elaboration")
+            .unwrap()
+            .relevance_score;
+        let c_score = results
+            .iter()
+            .find(|e| e.title == "Related")
+            .unwrap()
+            .relevance_score;
+
+        assert!(
+            b_score > c_score,
+            "elaborates_on should boost more than related_to: {b_score} vs {c_score}"
+        );
+    }
+
+    #[test]
+    fn test_cross_ref_bidirectional() {
+        let dir = tempfile::tempdir().unwrap();
+        let knowledge_dir = dir.path().join("knowledge");
+        fs::create_dir_all(&knowledge_dir).unwrap();
+
+        // Both entries match the query equally well
+        let entry_a = "---\ntype: fact\ntitle: \"Entry A\"\nconfidence: 0.9\ncreated: 20260304-120000\n---\n\nrust memory system";
+        let entry_b = "---\ntype: fact\ntitle: \"Entry B\"\nconfidence: 0.9\ncreated: 20260304-120001\n---\n\nrust memory system";
+
+        fs::write(knowledge_dir.join("20260304-120000-entry-a.md"), entry_a).unwrap();
+        fs::write(knowledge_dir.join("20260304-120001-entry-b.md"), entry_b).unwrap();
+
+        // A -> B relation (but should boost both directions)
+        fs::write(
+            dir.path().join("RELATIONS.md"),
+            "20260304-120000-entry-a.md --[similar_to]--> 20260304-120001-entry-b.md\n",
+        )
+        .unwrap();
+
+        let results = recall(dir.path(), "rust memory", 5).unwrap();
+        let a_score = results
+            .iter()
+            .find(|e| e.title == "Entry A")
+            .unwrap()
+            .relevance_score;
+        let b_score = results
+            .iter()
+            .find(|e| e.title == "Entry B")
+            .unwrap()
+            .relevance_score;
+
+        // Both should be boosted (bidirectional), so scores should be higher than base
+        // Since they have identical content and mutual relation, scores should be very close
+        let ratio = a_score / b_score;
+        assert!(
+            ratio > 0.9 && ratio < 1.1,
+            "Bidirectional boost should keep similar entries close: {a_score} vs {b_score}"
+        );
     }
 }
