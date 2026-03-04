@@ -314,6 +314,18 @@ fn handle_tools_list(
             "description": "List all entries in the archive (moved there by garbage collection)",
             "inputSchema": { "type": "object", "additionalProperties": false }
         }),
+        json!({
+            "name": "broca_consolidate",
+            "title": "Consolidate Memory",
+            "description": "Find and merge similar/duplicate memory entries. Uses Jaccard similarity on content, title, and tags. Dry-run by default — set apply=true to merge candidates.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "apply": { "type": "boolean", "description": "Actually merge candidates (default: false, dry-run)", "default": false },
+                    "threshold": { "type": "number", "description": "Similarity threshold 0.0–1.0 (default: 0.4)", "default": 0.4 }
+                }
+            }
+        }),
     ];
 
     // Discover plugins and append as tools
@@ -359,6 +371,7 @@ async fn handle_tools_call(
         "broca_gc" => handle_broca_gc(arguments, root, config).await,
         "broca_restore" => handle_broca_restore(arguments, root, config).await,
         "broca_archived" => handle_broca_archived(root, config).await,
+        "broca_consolidate" => handle_broca_consolidate(arguments, root, config).await,
         name if name.starts_with("plugin_") => {
             let plugin_name = &name["plugin_".len()..];
             handle_plugin_call(plugin_name, arguments, root).await
@@ -794,6 +807,78 @@ async fn handle_broca_archived(root: &Path, config: &Config) -> Result<String, B
         }
         Ok(output)
     }
+}
+
+async fn handle_broca_consolidate(
+    arguments: &Value,
+    root: &Path,
+    config: &Config,
+) -> Result<String, Box<dyn Error>> {
+    let apply = arguments
+        .get("apply")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    let threshold = arguments
+        .get("threshold")
+        .and_then(|v| v.as_f64())
+        .unwrap_or(0.4);
+
+    let memory_dir = root.join(&config.memory.dir);
+    let consolidate_config = broca::consolidate::ConsolidateConfig {
+        similarity_threshold: threshold,
+    };
+
+    let candidates = broca::consolidate::find_candidates(&memory_dir, &consolidate_config)?;
+
+    if candidates.is_empty() {
+        return Ok("No consolidation candidates found. Memory is clean.".to_string());
+    }
+
+    let groups = broca::consolidate::group_candidates(&candidates);
+    let mut output = format!(
+        "{} similar pair(s) in {} group(s):\n\n",
+        candidates.len(),
+        groups.len()
+    );
+
+    for (i, group) in groups.iter().enumerate() {
+        output.push_str(&format!(
+            "Group {} (avg similarity: {:.0}%):\n",
+            i + 1,
+            group.avg_similarity * 100.0
+        ));
+        for (entry, title) in group.entries.iter().zip(group.titles.iter()) {
+            output.push_str(&format!("  {} — \"{}\"\n", entry, title));
+        }
+        output.push('\n');
+    }
+
+    if apply {
+        let mut merged_count = 0;
+        for group in &groups {
+            match broca::consolidate::merge(&memory_dir, &group.entries) {
+                Ok(path) => {
+                    output.push_str(&format!(
+                        "Merged {} entries → {}\n",
+                        group.entries.len(),
+                        path.file_name().and_then(|f| f.to_str()).unwrap_or("?")
+                    ));
+                    merged_count += 1;
+                }
+                Err(e) => {
+                    output.push_str(&format!("Error merging group: {e}\n"));
+                }
+            }
+        }
+        output.push_str(&format!(
+            "\nConsolidated {} group(s). Old entries superseded.",
+            merged_count
+        ));
+    } else {
+        output.push_str("Dry run. Set apply=true to merge these entries.");
+    }
+
+    Ok(output)
 }
 
 // --- Plugin-as-MCP-tools ---

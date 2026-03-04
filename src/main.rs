@@ -181,6 +181,17 @@ enum MemoryCommands {
 
     /// List archived entries
     Archived,
+
+    /// Find and merge similar/duplicate entries (dry-run by default)
+    Consolidate {
+        /// Actually merge candidates (default: dry-run)
+        #[arg(long)]
+        apply: bool,
+
+        /// Similarity threshold 0.0–1.0 (default: 0.4)
+        #[arg(long, default_value = "0.4")]
+        threshold: f64,
+    },
 }
 
 fn main() {
@@ -462,6 +473,77 @@ fn main() {
                         process::exit(1);
                     }
                 },
+
+                MemoryCommands::Consolidate { apply, threshold } => {
+                    let config = broca::consolidate::ConsolidateConfig {
+                        similarity_threshold: threshold,
+                    };
+                    match broca::consolidate::find_candidates(&memory_dir, &config) {
+                        Ok(candidates) => {
+                            if candidates.is_empty() {
+                                println!("No consolidation candidates found. Memory is clean.");
+                            } else {
+                                // Show individual pairs with reasons.
+                                println!("{} similar pair(s) found:\n", candidates.len());
+                                for c in &candidates {
+                                    println!(
+                                        "  \"{}\" ~ \"{}\" ({:.0}%, {})",
+                                        c.title_a,
+                                        c.title_b,
+                                        c.similarity * 100.0,
+                                        c.reason
+                                    );
+                                }
+                                let groups = broca::consolidate::group_candidates(&candidates);
+                                println!("\nGrouped into {} merge group(s):\n", groups.len());
+                                for (i, group) in groups.iter().enumerate() {
+                                    println!(
+                                        "Group {} (avg similarity: {:.0}%):",
+                                        i + 1,
+                                        group.avg_similarity * 100.0
+                                    );
+                                    for (entry, title) in
+                                        group.entries.iter().zip(group.titles.iter())
+                                    {
+                                        println!("  {} — \"{}\"", entry, title);
+                                    }
+                                    println!();
+                                }
+                                if apply {
+                                    let mut merged_count = 0;
+                                    for group in &groups {
+                                        match broca::consolidate::merge(&memory_dir, &group.entries)
+                                        {
+                                            Ok(path) => {
+                                                println!(
+                                                    "Merged {} entries → {}",
+                                                    group.entries.len(),
+                                                    path.file_name()
+                                                        .and_then(|f| f.to_str())
+                                                        .unwrap_or("?")
+                                                );
+                                                merged_count += 1;
+                                            }
+                                            Err(e) => {
+                                                eprintln!("Error merging group: {e}");
+                                            }
+                                        }
+                                    }
+                                    println!(
+                                        "\nConsolidated {} group(s). Old entries superseded.",
+                                        merged_count
+                                    );
+                                } else {
+                                    println!("Dry run. Use --apply to merge these entries.");
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("Error: {e}");
+                            process::exit(1);
+                        }
+                    }
+                }
             }
         }
 
