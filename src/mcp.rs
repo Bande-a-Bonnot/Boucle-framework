@@ -742,7 +742,10 @@ async fn handle_broca_gc(
         return Ok("No GC candidates found. Memory is clean.".to_string());
     }
 
-    let mut output = format!("{} candidate(s) for garbage collection:\n\n", gc_candidates.len());
+    let mut output = format!(
+        "{} candidate(s) for garbage collection:\n\n",
+        gc_candidates.len()
+    );
     for c in &gc_candidates {
         output.push_str(&format!(
             "- {} — \"{}\" (confidence: {:.1}, reason: {})\n",
@@ -778,10 +781,7 @@ async fn handle_broca_restore(
     Ok(format!("Restored: {}", path.display()))
 }
 
-async fn handle_broca_archived(
-    root: &Path,
-    config: &Config,
-) -> Result<String, Box<dyn Error>> {
+async fn handle_broca_archived(root: &Path, config: &Config) -> Result<String, Box<dyn Error>> {
     let memory_dir = root.join(&config.memory.dir);
     let files = broca::gc::list_archived(&memory_dir)?;
 

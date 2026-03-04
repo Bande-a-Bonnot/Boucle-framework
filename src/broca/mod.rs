@@ -5,8 +5,9 @@
 //! No database required. Just files.
 
 pub mod access;
-pub mod gc;
 mod entry;
+pub mod gc;
+pub mod relations;
 mod search;
 
 pub use entry::{Entry, EntryType};

@@ -404,7 +404,10 @@ fn main() {
                             if candidates.is_empty() {
                                 println!("No GC candidates found. Memory is clean.");
                             } else {
-                                println!("{} candidate(s) for garbage collection:\n", candidates.len());
+                                println!(
+                                    "{} candidate(s) for garbage collection:\n",
+                                    candidates.len()
+                                );
                                 for c in &candidates {
                                     println!(
                                         "  {} — \"{}\" (confidence: {:.1}, reason: {})",

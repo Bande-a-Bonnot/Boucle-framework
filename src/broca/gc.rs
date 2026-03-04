@@ -89,10 +89,7 @@ fn age_days(created: &str) -> Option<i64> {
 /// 1. Superseded entries with confidence ≤ `superseded_confidence`
 /// 2. Old entries (> `max_age_days`) with 0 accesses AND confidence < `old_unused_confidence`
 /// 3. Very low confidence entries (≤ `min_confidence`)
-pub fn candidates(
-    memory_dir: &Path,
-    config: &GcConfig,
-) -> Result<Vec<GcCandidate>, BrocaError> {
+pub fn candidates(memory_dir: &Path, config: &GcConfig) -> Result<Vec<GcCandidate>, BrocaError> {
     let knowledge_dir = memory_dir.join("knowledge");
     let entries = entry::load_all(&knowledge_dir)?;
     let access_log = access::load(memory_dir);
