@@ -1,62 +1,26 @@
 //! Search and recall functionality for Broca memory.
 //!
-//! Implements relevance-ranked search across memory entries using
-//! keyword matching, title similarity, tag matching, and confidence weighting.
+//! Implements BM25-ranked search across memory entries, with additional
+//! boosts for title matches, tag matches, and confidence weighting.
+//! BM25 (Best Matching 25) normalizes by document length and term rarity,
+//! replacing naive keyword counting. Inspired by OpenClaw's hybrid search.
 
+use std::collections::HashMap;
 use std::path::Path;
 
 use super::entry::{self, Entry, EntryType};
 use super::BrocaError;
 
-/// Calculate Levenshtein distance between two strings.
-/// Returns the minimum number of single-character edits required to transform one string into another.
-fn levenshtein_distance(s1: &str, s2: &str) -> usize {
-    let s1_chars: Vec<char> = s1.chars().collect();
-    let s2_chars: Vec<char> = s2.chars().collect();
-    let len1 = s1_chars.len();
-    let len2 = s2_chars.len();
+// --- BM25 parameters ---
 
-    let mut matrix = vec![vec![0; len2 + 1]; len1 + 1];
-
-    // Initialize first row and column
-    for (i, row) in matrix.iter_mut().enumerate().take(len1 + 1) {
-        row[0] = i;
-    }
-    for (j, val) in matrix[0].iter_mut().enumerate().take(len2 + 1) {
-        *val = j;
-    }
-
-    // Fill the matrix
-    for i in 1..=len1 {
-        for j in 1..=len2 {
-            let cost = usize::from(s1_chars[i - 1] != s2_chars[j - 1]);
-            matrix[i][j] = std::cmp::min(
-                std::cmp::min(
-                    matrix[i - 1][j] + 1, // deletion
-                    matrix[i][j - 1] + 1, // insertion
-                ),
-                matrix[i - 1][j - 1] + cost, // substitution
-            );
-        }
-    }
-
-    matrix[len1][len2]
-}
-
-/// Check if two strings are similar based on fuzzy matching.
-/// Returns a similarity score between 0.0 and 1.0.
-fn fuzzy_similarity(s1: &str, s2: &str) -> f64 {
-    if s1.is_empty() && s2.is_empty() {
-        return 1.0;
-    }
-    if s1.is_empty() || s2.is_empty() {
-        return 0.0;
-    }
-
-    let max_len = std::cmp::max(s1.len(), s2.len());
-    let distance = levenshtein_distance(s1, s2);
-    1.0 - (distance as f64 / max_len as f64)
-}
+/// Term frequency saturation. Higher = slower saturation (1.2 is standard).
+const K1: f64 = 1.2;
+/// Document length normalization. 0 = no normalization, 1 = full (0.75 is standard).
+const B: f64 = 0.75;
+/// Score multiplier for title matches (BM25 on title text).
+const TITLE_BOOST: f64 = 3.0;
+/// Score bonus for each matching tag.
+const TAG_BONUS: f64 = 2.0;
 
 /// A memory entry with a relevance score.
 #[derive(Debug, Clone)]
@@ -86,14 +50,45 @@ impl From<&Entry> for ScoredEntry {
     }
 }
 
-/// Search memory with relevance ranking.
+/// Tokenize text into lowercase words, filtering short tokens (len <= 2).
+fn tokenize(text: &str) -> Vec<String> {
+    text.to_lowercase()
+        .split(|c: char| !c.is_alphanumeric())
+        .filter(|w| w.len() > 2)
+        .map(|w| w.to_string())
+        .collect()
+}
+
+/// Count term frequency in a token list.
+fn term_freq(tokens: &[String], term: &str) -> usize {
+    tokens.iter().filter(|t| t.as_str() == term).count()
+}
+
+/// Compute IDF(term) = ln((N - df + 0.5) / (df + 0.5) + 1)
+/// Uses the "plus 1" variant to avoid negative IDF for common terms.
+fn idf(num_docs: usize, doc_freq: usize) -> f64 {
+    let n = num_docs as f64;
+    let df = doc_freq as f64;
+    ((n - df + 0.5) / (df + 0.5) + 1.0).ln()
+}
+
+/// Compute BM25 term score: IDF * (f * (k1 + 1)) / (f + k1 * (1 - b + b * dl / avgdl))
+fn bm25_term_score(tf: usize, doc_len: usize, avg_doc_len: f64, idf_val: f64) -> f64 {
+    let f = tf as f64;
+    let dl = doc_len as f64;
+    let numerator = f * (K1 + 1.0);
+    let denominator = f + K1 * (1.0 - B + B * dl / avg_doc_len);
+    idf_val * numerator / denominator
+}
+
+/// Search memory with BM25 relevance ranking.
 ///
-/// Scoring factors:
-/// - Keyword hits in content (1.0 per hit)
-/// - Title match (5.0 per keyword)
-/// - Tag match (3.0 per matching tag)
-/// - Confidence weighting (multiplier)
-/// - Superseded entries are penalized
+/// Scoring:
+/// 1. BM25 on content tokens (standard information retrieval)
+/// 2. BM25 on title tokens, boosted by TITLE_BOOST
+/// 3. Tag exact-match bonus (TAG_BONUS per matching tag)
+/// 4. Confidence multiplier (entry.confidence)
+/// 5. Superseded entries penalized (×0.3)
 pub fn recall(
     memory_dir: &Path,
     query: &str,
@@ -102,63 +97,85 @@ pub fn recall(
     let knowledge_dir = memory_dir.join("knowledge");
     let entries = entry::load_all(&knowledge_dir)?;
 
-    let keywords: Vec<String> = query
-        .to_lowercase()
-        .split_whitespace()
-        .filter(|w| w.len() > 2) // Skip short words
-        .map(|w| w.to_string())
-        .collect();
-
-    if keywords.is_empty() {
+    let query_terms = tokenize(query);
+    if query_terms.is_empty() {
         return Ok(Vec::new());
     }
 
+    let num_docs = entries.len();
+    if num_docs == 0 {
+        return Ok(Vec::new());
+    }
+
+    // Pre-tokenize all documents
+    let doc_tokens: Vec<Vec<String>> = entries.iter().map(|e| tokenize(&e.content)).collect();
+    let title_tokens: Vec<Vec<String>> = entries.iter().map(|e| tokenize(&e.title)).collect();
+
+    // Compute average document length
+    let total_tokens: usize = doc_tokens.iter().map(|t| t.len()).sum();
+    let avg_doc_len = if num_docs > 0 {
+        total_tokens as f64 / num_docs as f64
+    } else {
+        1.0
+    };
+    let avg_title_len = {
+        let total: usize = title_tokens.iter().map(|t| t.len()).sum();
+        if num_docs > 0 {
+            (total as f64 / num_docs as f64).max(1.0)
+        } else {
+            1.0
+        }
+    };
+
+    // Compute document frequency for each query term (across content + title)
+    let mut content_df: HashMap<&str, usize> = HashMap::new();
+    let mut title_df: HashMap<&str, usize> = HashMap::new();
+    for term in &query_terms {
+        let cdf = doc_tokens
+            .iter()
+            .filter(|tokens| tokens.iter().any(|t| t == term))
+            .count();
+        content_df.insert(term.as_str(), cdf);
+
+        let tdf = title_tokens
+            .iter()
+            .filter(|tokens| tokens.iter().any(|t| t == term))
+            .count();
+        title_df.insert(term.as_str(), tdf);
+    }
+
+    // Score each document
     let mut scored: Vec<ScoredEntry> = entries
         .iter()
-        .map(|entry| {
+        .enumerate()
+        .map(|(i, entry)| {
             let mut score = 0.0f64;
-            let content_lower = entry.content.to_lowercase();
-            let title_lower = entry.title.to_lowercase();
 
-            for keyword in &keywords {
-                // Exact content hits (count occurrences)
-                let content_hits = content_lower.matches(keyword.as_str()).count();
-                score += content_hits as f64;
-
-                // Fuzzy content matching (split content into words and check similarity)
-                for word in content_lower.split_whitespace() {
-                    let similarity = fuzzy_similarity(keyword, word);
-                    if similarity >= 0.8 {
-                        // 80% similarity threshold
-                        score += similarity * 0.5; // Lower weight than exact matches
-                    }
+            // BM25 on content
+            for term in &query_terms {
+                let tf = term_freq(&doc_tokens[i], term);
+                if tf > 0 {
+                    let idf_val = idf(num_docs, *content_df.get(term.as_str()).unwrap_or(&0));
+                    score += bm25_term_score(tf, doc_tokens[i].len(), avg_doc_len, idf_val);
                 }
+            }
 
-                // Exact title match (worth more)
-                if title_lower.contains(keyword.as_str()) {
-                    score += 5.0;
+            // BM25 on title (boosted)
+            for term in &query_terms {
+                let tf = term_freq(&title_tokens[i], term);
+                if tf > 0 {
+                    let idf_val = idf(num_docs, *title_df.get(term.as_str()).unwrap_or(&0));
+                    score += TITLE_BOOST
+                        * bm25_term_score(tf, title_tokens[i].len(), avg_title_len, idf_val);
                 }
+            }
 
-                // Fuzzy title matching
-                for title_word in title_lower.split_whitespace() {
-                    let similarity = fuzzy_similarity(keyword, title_word);
-                    if similarity >= 0.8 {
-                        score += similarity * 2.5; // Half weight of exact title match
-                    }
-                }
-
-                // Exact tag match
-                for tag in &entry.tags {
-                    let tag_lower = tag.to_lowercase();
-                    if tag_lower.contains(keyword.as_str()) {
-                        score += 3.0;
-                    } else {
-                        // Fuzzy tag matching
-                        let similarity = fuzzy_similarity(keyword, &tag_lower);
-                        if similarity >= 0.8 {
-                            score += similarity * 1.5; // Half weight of exact tag match
-                        }
-                    }
+            // Tag exact-match bonus
+            let tags_lower: Vec<String> =
+                entry.tags.iter().map(|t| t.to_lowercase()).collect();
+            for term in &query_terms {
+                if tags_lower.iter().any(|t| t == term) {
+                    score += TAG_BONUS;
                 }
             }
 
@@ -224,13 +241,54 @@ mod tests {
     }
 
     #[test]
+    fn test_tokenize() {
+        let tokens = tokenize("Hello, World! This is a test.");
+        assert!(tokens.contains(&"hello".to_string()));
+        assert!(tokens.contains(&"world".to_string()));
+        assert!(tokens.contains(&"this".to_string()));
+        assert!(tokens.contains(&"test".to_string()));
+        // Short words filtered
+        assert!(!tokens.contains(&"is".to_string()));
+        assert!(!tokens.contains(&"a".to_string()));
+    }
+
+    #[test]
+    fn test_idf_basic() {
+        // Term in no documents → high IDF
+        let idf_rare = idf(10, 0);
+        // Term in all documents → low IDF
+        let idf_common = idf(10, 10);
+        assert!(idf_rare > idf_common);
+        // IDF should always be positive with the +1 variant
+        assert!(idf_common > 0.0);
+    }
+
+    #[test]
+    fn test_bm25_term_score_basic() {
+        // Higher TF → higher score (with diminishing returns)
+        let score_tf1 = bm25_term_score(1, 10, 10.0, 1.0);
+        let score_tf5 = bm25_term_score(5, 10, 10.0, 1.0);
+        assert!(score_tf5 > score_tf1);
+        // But sublinear — tf5 should not be 5x tf1
+        assert!(score_tf5 < score_tf1 * 5.0);
+    }
+
+    #[test]
+    fn test_bm25_length_normalization() {
+        // Shorter doc with same TF should score higher
+        let score_short = bm25_term_score(2, 5, 10.0, 1.0);
+        let score_long = bm25_term_score(2, 50, 10.0, 1.0);
+        assert!(score_short > score_long);
+    }
+
+    #[test]
     fn test_recall_basic() {
         let dir = tempfile::tempdir().unwrap();
         setup_test_memory(dir.path());
 
         let results = recall(dir.path(), "rust", 5).unwrap();
         assert!(!results.is_empty());
-        // "Use Rust for the rewrite" or "Rust is fast" should be top
+        // Entries mentioning "rust" in title, content, or tags should appear
         assert!(results[0].title.contains("Rust") || results[0].title.contains("rust"));
     }
 
@@ -241,7 +299,7 @@ mod tests {
 
         let results = recall(dir.path(), "rust speed", 5).unwrap();
         assert!(!results.is_empty());
-        // "Rust is fast" should rank highest (matches both title and content)
+        // "Rust is fast" should rank highest — matches "rust" in title+content+tag AND "speed" in content
         assert!(results[0].title.contains("fast") || results[0].content.contains("speed"));
     }
 
@@ -326,70 +384,74 @@ mod tests {
     }
 
     #[test]
-    fn test_levenshtein_distance() {
-        assert_eq!(levenshtein_distance("", ""), 0);
-        assert_eq!(levenshtein_distance("abc", ""), 3);
-        assert_eq!(levenshtein_distance("", "abc"), 3);
-        assert_eq!(levenshtein_distance("abc", "abc"), 0);
-        assert_eq!(levenshtein_distance("abc", "ab"), 1);
-        assert_eq!(levenshtein_distance("abc", "abcd"), 1);
-        assert_eq!(levenshtein_distance("rust", "trust"), 1);
-        assert_eq!(levenshtein_distance("kitten", "sitting"), 3);
-    }
-
-    #[test]
-    fn test_fuzzy_similarity() {
-        assert_eq!(fuzzy_similarity("", ""), 1.0);
-        assert_eq!(fuzzy_similarity("abc", "abc"), 1.0);
-        assert!((fuzzy_similarity("rust", "trust") - 0.8).abs() < 0.01); // 4/5 = 0.8
-
-        // "test" vs "testing": distance=3, max_len=7, similarity = 1 - 3/7 ≈ 0.57
-        assert!((fuzzy_similarity("test", "testing") - 0.57).abs() < 0.01);
-    }
-
-    #[test]
-    fn test_recall_fuzzy_matching() {
+    fn test_recall_tag_boost() {
         let dir = tempfile::tempdir().unwrap();
-        setup_test_memory(dir.path());
 
-        // Add specific content for fuzzy testing
+        // Entry with tag "performance" but no content match
         broca::remember(
             dir.path(),
             "fact",
-            "Fuzzy test fact",
-            "This contains words like trust and java concepts.",
-            &["testing".to_string()],
+            "Speed matters",
+            "Latency impacts user experience significantly.",
+            &["performance".to_string()],
         )
         .unwrap();
 
-        // Should find "trust" with fuzzy match to "rust" (distance=1, similarity=0.8)
-        let results = recall(dir.path(), "rust", 5).unwrap();
-        assert!(
-            !results.is_empty(),
-            "Should find fuzzy matches for 'rust' -> 'trust'"
-        );
+        // Entry with content match but no tag
+        broca::remember(
+            dir.path(),
+            "fact",
+            "Other topic",
+            "The performance of the system was tested.",
+            &[],
+        )
+        .unwrap();
 
-        // Verify fuzzy similarity calculation for our test case
-        let similarity = fuzzy_similarity("rust", "trust");
-        assert!(
-            similarity >= 0.8,
-            "rust/trust similarity should be >= 0.8, got {}",
-            similarity
-        );
+        let results = recall(dir.path(), "performance", 5).unwrap();
+        assert!(results.len() >= 2);
+        // Both should match — tag match gives bonus on top of any content match
     }
 
     #[test]
-    fn test_recall_exact_vs_fuzzy_scores() {
+    fn test_recall_title_boost() {
         let dir = tempfile::tempdir().unwrap();
-        setup_test_memory(dir.path());
 
-        // Exact matches should score higher than fuzzy matches
-        let exact_results = recall(dir.path(), "rust", 5).unwrap();
-        let fuzzy_results = recall(dir.path(), "rast", 5).unwrap();
+        // Entry with term in title
+        broca::remember(
+            dir.path(),
+            "fact",
+            "Memory architecture",
+            "Description of system design.",
+            &[],
+        )
+        .unwrap();
 
-        if !exact_results.is_empty() && !fuzzy_results.is_empty() {
-            // Exact match should have higher score than fuzzy match
-            assert!(exact_results[0].relevance_score > fuzzy_results[0].relevance_score);
-        }
+        // Entry with term only in content
+        broca::remember(
+            dir.path(),
+            "fact",
+            "System design",
+            "The memory architecture is important for performance.",
+            &[],
+        )
+        .unwrap();
+
+        let results = recall(dir.path(), "memory", 5).unwrap();
+        assert!(!results.is_empty());
+        // Title match should boost the first entry higher
+        assert_eq!(results[0].title, "Memory architecture");
+    }
+
+    #[test]
+    fn test_bm25_rare_terms_score_higher() {
+        // Rare term (appears in 1/10 docs) should have higher IDF than common term (9/10)
+        let idf_rare = idf(10, 1);
+        let idf_common = idf(10, 9);
+        assert!(
+            idf_rare > idf_common,
+            "Rare terms should have higher IDF: {} vs {}",
+            idf_rare,
+            idf_common
+        );
     }
 }
