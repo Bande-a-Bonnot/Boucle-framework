@@ -1,0 +1,229 @@
+#!/bin/bash
+# read-once CLI — view stats, manage cache, install hook
+#
+# Usage:
+#   read-once stats         Show token savings for current/recent sessions
+#   read-once gain          RTK-style savings summary
+#   read-once status        Quick health check (hook installed? data?)
+#   read-once clear         Clear session cache (start fresh)
+#   read-once install       Install hook to ~/.claude/read-once/hook.sh
+#   read-once upgrade       Update installed hook to latest version
+#   read-once uninstall     Remove hook from .claude/settings.json
+
+set -euo pipefail
+
+CACHE_DIR="${HOME}/.claude/read-once"
+STATS_FILE="${CACHE_DIR}/stats.jsonl"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+HOOK_PATH="${SCRIPT_DIR}/hook.sh"
+
+cmd="${1:-help}"
+
+case "$cmd" in
+  stats|gain)
+    if [ ! -f "$STATS_FILE" ]; then
+      echo "No read-once data yet. Stats appear after your first Claude Code session with the hook installed."
+      exit 0
+    fi
+
+    TOTAL_HITS=$(grep -c '"event":"hit"' "$STATS_FILE" 2>/dev/null || echo 0)
+    TOTAL_MISSES=$(grep -c '"event":"miss"' "$STATS_FILE" 2>/dev/null || echo 0)
+    TOTAL_CHANGED=$(grep -c '"event":"changed"' "$STATS_FILE" 2>/dev/null || echo 0)
+    TOTAL_EXPIRED=$(grep -c '"event":"expired"' "$STATS_FILE" 2>/dev/null || echo 0)
+    TOTAL_READS=$((TOTAL_HITS + TOTAL_MISSES + TOTAL_CHANGED + TOTAL_EXPIRED))
+
+    if [ "$TOTAL_READS" -eq 0 ]; then
+      echo "No reads tracked yet."
+      exit 0
+    fi
+
+    TOKENS_SAVED=$(grep '"event":"hit"' "$STATS_FILE" 2>/dev/null | jq -r '.tokens_saved' 2>/dev/null | paste -sd+ - | bc 2>/dev/null || echo 0)
+    TOKENS_ALLOWED=$(grep -E '"event":"(miss|changed|expired)"' "$STATS_FILE" 2>/dev/null | jq -r '.tokens' 2>/dev/null | paste -sd+ - | bc 2>/dev/null || echo 0)
+    TOKENS_TOTAL=$((TOKENS_ALLOWED + TOKENS_SAVED))
+
+    if [ "$TOKENS_TOTAL" -gt 0 ]; then
+      SAVINGS_PCT=$((TOKENS_SAVED * 100 / TOKENS_TOTAL))
+    else
+      SAVINGS_PCT=0
+    fi
+
+    TTL="${READ_ONCE_TTL:-1200}"
+    TTL_MIN=$((TTL / 60))
+
+    echo "read-once — file read deduplication for Claude Code"
+    echo ""
+    echo "  Total file reads:    ${TOTAL_READS}"
+    echo "  Cache hits:          ${TOTAL_HITS} (blocked re-reads)"
+    echo "  First reads:         ${TOTAL_MISSES}"
+    echo "  Changed files:       ${TOTAL_CHANGED} (re-read after modification)"
+    echo "  TTL expired:         ${TOTAL_EXPIRED} (re-read after ${TTL_MIN}m — compaction safety)"
+    echo ""
+    echo "  Tokens saved:        ~${TOKENS_SAVED}"
+    echo "  Read token total:    ~${TOKENS_TOTAL}"
+    echo "  Savings:             ${SAVINGS_PCT}%"
+    echo ""
+
+    if [ "$TOTAL_HITS" -gt 0 ]; then
+      echo "  Top re-read files:"
+      grep '"event":"hit"' "$STATS_FILE" 2>/dev/null | jq -r '.path' | sort | uniq -c | sort -rn | head -5 | while read count path; do
+        echo "    ${count}x  $(basename "$path")"
+      done
+      echo ""
+    fi
+
+    # Session count
+    SESSIONS=$(grep '"event"' "$STATS_FILE" 2>/dev/null | jq -r '.session' | sort -u | wc -l | tr -d ' ')
+    echo "  Sessions tracked:    ${SESSIONS}"
+    echo "  Cache TTL:           ${TTL_MIN} minutes (READ_ONCE_TTL=${TTL}s)"
+    ;;
+
+  clear)
+    rm -f "${CACHE_DIR}"/session-*.jsonl
+    echo "Session cache cleared. Stats preserved."
+    echo "To clear stats too: rm ${STATS_FILE}"
+    ;;
+
+  install)
+    SETTINGS="${HOME}/.claude/settings.json"
+    if [ ! -f "$SETTINGS" ]; then
+      echo "No .claude/settings.json found. Creating one."
+      echo '{}' > "$SETTINGS"
+    fi
+
+    # Check if hook already installed
+    if grep -q "read-once" "$SETTINGS" 2>/dev/null; then
+      echo "read-once hook is already installed."
+      exit 0
+    fi
+
+    # Use jq to add the hook
+    if ! command -v jq &>/dev/null; then
+      echo "Error: jq is required. Install with: brew install jq"
+      exit 1
+    fi
+
+    # Copy hook to stable user-local path (~/.claude/read-once/hook.sh)
+    # so settings.json doesn't depend on where the source repo lives
+    INSTALLED_HOOK="${CACHE_DIR}/hook.sh"
+    cp "$HOOK_PATH" "$INSTALLED_HOOK"
+    chmod +x "$INSTALLED_HOOK"
+
+    # Add Read matcher to PreToolUse hooks
+    UPDATED=$(jq --arg hook "$INSTALLED_HOOK" '
+      .hooks //= {} |
+      .hooks.PreToolUse //= [] |
+      .hooks.PreToolUse += [{
+        "matcher": "Read",
+        "hooks": [{
+          "type": "command",
+          "command": $hook
+        }]
+      }]
+    ' "$SETTINGS")
+
+    echo "$UPDATED" > "$SETTINGS"
+    echo "read-once hook installed."
+    echo "Hook: ${INSTALLED_HOOK}"
+    echo ""
+    echo "Your Claude Code sessions will now track and deduplicate file reads."
+    echo "The hook is installed at a stable path — you can move or delete the source repo."
+    ;;
+
+  upgrade)
+    # Copy latest hook.sh to the installed location
+    INSTALLED_HOOK="${CACHE_DIR}/hook.sh"
+    if [ ! -f "$INSTALLED_HOOK" ]; then
+      echo "Hook not installed yet. Run: read-once install"
+      exit 1
+    fi
+    cp "$HOOK_PATH" "$INSTALLED_HOOK"
+    chmod +x "$INSTALLED_HOOK"
+    echo "Hook upgraded to latest version."
+    ;;
+
+  status)
+    SETTINGS="${HOME}/.claude/settings.json"
+    INSTALLED_HOOK="${CACHE_DIR}/hook.sh"
+
+    echo "read-once status"
+    echo ""
+
+    # Check hook file
+    if [ -f "$INSTALLED_HOOK" ]; then
+      echo "  Hook file:     ${INSTALLED_HOOK} (exists)"
+    else
+      echo "  Hook file:     NOT INSTALLED — run: read-once install"
+    fi
+
+    # Check settings.json
+    if grep -q "read-once" "$SETTINGS" 2>/dev/null; then
+      echo "  Settings:      Configured in ~/.claude/settings.json"
+    else
+      echo "  Settings:      NOT configured — run: read-once install"
+    fi
+
+    # Check stats
+    if [ -f "$STATS_FILE" ]; then
+      TOTAL=$(wc -l < "$STATS_FILE" | tr -d ' ')
+      HITS=$(grep -c '"event":"hit"' "$STATS_FILE" 2>/dev/null || echo 0)
+      echo "  Data:          ${TOTAL} events, ${HITS} hits"
+    else
+      echo "  Data:          No data yet"
+    fi
+
+    # Check TTL
+    TTL="${READ_ONCE_TTL:-1200}"
+    echo "  TTL:           ${TTL}s ($((TTL/60))m)"
+    echo "  Disabled:      ${READ_ONCE_DISABLED:-0}"
+    ;;
+
+  uninstall)
+    SETTINGS="${HOME}/.claude/settings.json"
+    if [ ! -f "$SETTINGS" ]; then
+      echo "No settings file found."
+      exit 0
+    fi
+
+    UPDATED=$(jq '
+      .hooks.PreToolUse //= [] |
+      .hooks.PreToolUse |= map(select(.hooks[0].command | contains("read-once") | not))
+    ' "$SETTINGS")
+
+    echo "$UPDATED" > "$SETTINGS"
+    echo "read-once hook removed from settings."
+    ;;
+
+  help|--help|-h)
+    echo "read-once — Stop Claude Code from re-reading files it already has"
+    echo ""
+    echo "Usage:"
+    echo "  read-once stats       Show token savings"
+    echo "  read-once gain        Same as stats (RTK-style)"
+    echo "  read-once status      Quick health check"
+    echo "  read-once clear       Clear session cache"
+    echo "  read-once install     Install hook to ~/.claude/"
+    echo "  read-once upgrade     Update hook to latest version"
+    echo "  read-once uninstall   Remove hook"
+    echo ""
+    echo "How it works:"
+    echo "  A PreToolUse hook intercepts Read calls. When Claude tries to"
+    echo "  re-read a file it already read this session (and the file hasn't"
+    echo "  changed), the hook blocks the read and tells Claude the content"
+    echo "  is already in context. Saves ~2000+ tokens per prevented re-read."
+    echo ""
+    echo "Compaction safety:"
+    echo "  Cache entries expire after READ_ONCE_TTL seconds (default: 1200 = 20m)."
+    echo "  After expiry, re-reads are allowed because Claude may have compacted"
+    echo "  the context window and lost the earlier content."
+    echo ""
+    echo "Config (environment variables):"
+    echo "  READ_ONCE_TTL=1200      Cache TTL in seconds (default: 1200)"
+    echo "  READ_ONCE_DISABLED=1    Disable the hook entirely"
+    ;;
+
+  *)
+    echo "Unknown command: $cmd"
+    echo "Run 'read-once help' for usage."
+    exit 1
+    ;;
+esac
