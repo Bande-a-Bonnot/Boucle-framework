@@ -69,7 +69,7 @@ impl From<&Entry> for ScoredEntry {
 }
 
 /// Tokenize text into lowercase words, filtering short tokens (len <= 2).
-fn tokenize(text: &str) -> Vec<String> {
+pub(crate) fn tokenize(text: &str) -> Vec<String> {
     text.to_lowercase()
         .split(|c: char| !c.is_alphanumeric())
         .filter(|w| w.len() > 2)
