@@ -731,14 +731,8 @@ impl Drop for LockGuard {
 }
 
 fn is_process_running(pid: u32) -> bool {
-    // Use kill -0 to check if process exists (works on Unix)
-    process::Command::new("kill")
-        .args(["-0", &pid.to_string()])
-        .stdout(process::Stdio::null())
-        .stderr(process::Stdio::null())
-        .status()
-        .map(|s| s.success())
-        .unwrap_or(false)
+    // Use kill(pid, 0) syscall directly — no subprocess, no flakiness under load
+    unsafe { libc::kill(pid as libc::pid_t, 0) == 0 }
 }
 
 // --- Helpers ---
