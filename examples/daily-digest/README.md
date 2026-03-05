@@ -5,11 +5,11 @@ A practical Boucle agent that reads files from a drop folder and produces a dail
 ## Setup
 
 ```bash
-# From the Boucle-framework root:
-cargo build --release
+# Install boucle (download binary from Releases, or cargo install)
+# See: https://github.com/Bande-a-Bonnot/Boucle-framework/releases
 
 # Initialize
-./target/release/boucle init --name daily-digest
+boucle init --name daily-digest
 
 # Create a drop folder for inputs
 mkdir inbox
@@ -56,7 +56,7 @@ Make it executable: `chmod +x context.d/inbox`
 echo "Meeting notes: decided to use Postgres instead of SQLite" > inbox/meeting.txt
 
 # Run the agent
-./target/release/boucle run
+boucle run
 
 # Check what it learned
 cat memory/STATE.md
