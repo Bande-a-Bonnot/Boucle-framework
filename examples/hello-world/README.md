@@ -4,18 +4,20 @@ A minimal Boucle agent that counts its own iterations and learns one fact per lo
 
 ## Try it
 
+### Option 1: Copy this example
+
 ```bash
-# Install boucle (download binary from Releases, or cargo install)
-# See: https://github.com/Bande-a-Bonnot/Boucle-framework/releases
+cp -r examples/hello-world my-agent
+cd my-agent
+boucle run --dry-run    # Preview context (no LLM call)
+boucle run              # Run one iteration (requires claude CLI)
+```
 
-# Create the agent
+### Option 2: Start from scratch
+
+```bash
 boucle init --name hello-world
-# This creates boucle.toml, system-prompt.md, and memory/STATE.md
-
-# See what the agent will receive (no LLM call)
 boucle run --dry-run
-
-# Run one loop iteration (requires `claude` CLI)
 boucle run
 ```
 
@@ -23,23 +25,26 @@ boucle run
 
 Each iteration, the agent:
 1. Reads its state from `memory/STATE.md`
-2. Decides what to do (in this case: increment a counter, note something)
-3. Updates `memory/STATE.md` with what it learned
-4. Commits the changes to git
+2. Increments its loop counter
+3. Learns one interesting fact
+4. Updates `memory/STATE.md`
+5. Commits the changes to git
 
 After 3 iterations, your state file might look like:
 
 ```markdown
 # hello-world — State
 
-## What I know
-- Initialized: 2026-03-04
-- Loop 1: Learned that Rust was created by Graydon Hoare
-- Loop 2: Learned that the fastest bird is the peregrine falcon
-- Loop 3: Learned that light takes 8 minutes to reach Earth from the Sun
+## Loop count
+3
+
+## What I've learned
+- Loop 1: Rust was created by Graydon Hoare at Mozilla
+- Loop 2: The fastest bird is the peregrine falcon (390 km/h)
+- Loop 3: Light takes 8 minutes to reach Earth from the Sun
 
 ## What I'm working on
-- Counting loops and collecting facts
+Counting loops and collecting one fact per iteration.
 ```
 
 ## Customizing
