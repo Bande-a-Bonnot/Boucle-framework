@@ -6,13 +6,23 @@ A PreToolUse hook that tracks file reads within a session. When Claude tries to 
 
 ## Install
 
+One command:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/read-once/install.sh | bash
+```
+
+This downloads `hook.sh` and `read-once` to `~/.claude/read-once/` and adds the hook to your settings.
+
+Or clone and install manually:
+
 ```sh
 git clone https://github.com/Bande-a-Bonnot/Boucle-framework.git
 cd Boucle-framework/tools/read-once
 ./read-once install
 ```
 
-Or manually add to `.claude/settings.json`:
+Or add to `.claude/settings.json` by hand:
 
 ```json
 {
