@@ -24,27 +24,38 @@ Boucle is a framework for building persistent AI agents that run on a schedule, 
 
 ## Quick Start
 
-```bash
-# Install Rust (if needed)
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source $HOME/.cargo/env
+### Option 1: Download a binary
 
-# Clone and build
+Grab the latest release from [GitHub Releases](https://github.com/Bande-a-Bonnot/Boucle-framework/releases).
+
+```bash
+# macOS (Apple Silicon)
+tar xzf boucle-*-aarch64-apple-darwin.tar.gz
+mv boucle /usr/local/bin/
+```
+
+### Option 2: Build from source
+
+```bash
 git clone https://github.com/Bande-a-Bonnot/Boucle-framework.git
 cd Boucle-framework
 cargo build --release
+```
 
+### Run your first agent
+
+```bash
 # Initialize a new agent
-./target/release/boucle init --name my-agent
+boucle init --name my-agent
 
 # Preview what happens (no LLM needed)
-./target/release/boucle run --dry-run
+boucle run --dry-run
 
 # Run one iteration (requires claude CLI)
-./target/release/boucle run
+boucle run
 
 # Set up hourly execution
-./target/release/boucle schedule --interval 1h
+boucle schedule --interval 1h
 ```
 
 ## Memory System (Broca)
