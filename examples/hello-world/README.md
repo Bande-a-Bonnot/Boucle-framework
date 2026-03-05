@@ -5,18 +5,18 @@ A minimal Boucle agent that counts its own iterations and learns one fact per lo
 ## Try it
 
 ```bash
-# From the Boucle-framework root:
-cargo build --release
+# Install boucle (download binary from Releases, or cargo install)
+# See: https://github.com/Bande-a-Bonnot/Boucle-framework/releases
 
 # Create the agent
-./target/release/boucle init --name hello-world
+boucle init --name hello-world
 # This creates boucle.toml, system-prompt.md, and memory/STATE.md
 
 # See what the agent will receive (no LLM call)
-./target/release/boucle run --dry-run
+boucle run --dry-run
 
 # Run one loop iteration (requires `claude` CLI)
-./target/release/boucle run
+boucle run
 ```
 
 ## What happens
