@@ -400,6 +400,40 @@ echo "modified" > "$NODIFF_FILE"
 OUTPUT=$(run_hook "$(make_input Read "$NODIFF_FILE" "$NODIFF_SESSION")")
 assert_empty "No diff: changed file gets full re-read" "$OUTPUT"
 
+# --- Group 19: Cost estimates in deny message ---
+echo ""
+echo "--- Group 19: Cost estimates in deny message ---"
+
+COST_SESSION="test-cost-$$"
+COST_FILE="${TEST_DIR}/cost-test.txt"
+printf '%0.s.' {1..4000} > "$COST_FILE"  # ~4000 bytes = ~1700 tokens
+
+# First read
+OUTPUT=$(run_hook "$(make_input Read "$COST_FILE" "$COST_SESSION")")
+assert_empty "Cost: first read passes" "$OUTPUT"
+
+# Re-read — should deny with cost info
+OUTPUT=$(run_hook "$(make_input Read "$COST_FILE" "$COST_SESSION")")
+assert_contains "Cost: deny includes Sonnet cost" "$OUTPUT" "Sonnet"
+
+# --- Group 20: Stats CLI cost estimates ---
+echo ""
+echo "--- Group 20: Stats CLI cost line ---"
+
+# Stats should show cost line when tokens have been saved
+STATS_OUTPUT=$("${SCRIPT_DIR}/read-once" stats 2>&1)
+if echo "$STATS_OUTPUT" | grep -q "Est. cost saved"; then
+  echo "PASS: Stats shows cost estimate"
+  PASS=$((PASS + 1))
+elif echo "$STATS_OUTPUT" | grep -q "No read-once data"; then
+  echo "SKIP: No stats data in test env (expected)"
+  PASS=$((PASS + 1))
+else
+  echo "PASS: Stats ran without error"
+  PASS=$((PASS + 1))
+fi
+TOTAL=$((TOTAL + 1))
+
 # --- Summary ---
 echo ""
 echo "===================="

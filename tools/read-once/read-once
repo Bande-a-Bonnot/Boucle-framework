@@ -65,6 +65,20 @@ case "$cmd" in
     echo "  Tokens saved:        ~${TOKENS_SAVED}"
     echo "  Read token total:    ~${TOKENS_TOTAL}"
     echo "  Savings:             ${SAVINGS_PCT}%"
+
+    # Cost estimates: Sonnet=$3/MTok input, Opus=$15/MTok input
+    if command -v python3 &>/dev/null && [ "$TOKENS_SAVED" -gt 0 ]; then
+      COST_LINE=$(echo "$TOKENS_SAVED" | python3 -c "
+import sys
+t=int(sys.stdin.read().strip())
+s=t*3/1000000
+o=t*15/1000000
+print('  Est. cost saved:     \$%.4f (Sonnet) / \$%.4f (Opus)' % (s, o))
+" 2>/dev/null || echo "")
+      if [ -n "$COST_LINE" ]; then
+        echo "$COST_LINE"
+      fi
+    fi
     echo ""
 
     if [ "$TOTAL_HITS" -gt 0 ]; then

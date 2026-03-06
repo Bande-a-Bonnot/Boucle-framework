@@ -114,6 +114,7 @@ read-once — file read deduplication for Claude Code
   Tokens saved:        ~38400
   Read token total:    ~94200
   Savings:             40%
+  Est. cost saved:     $0.1152 (Sonnet) / $0.5760 (Opus)
 
   Top re-read files:
     5x  schema.rb
