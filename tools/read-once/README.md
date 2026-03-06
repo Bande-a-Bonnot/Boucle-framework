@@ -48,8 +48,35 @@ Or add to `.claude/settings.json` by hand:
 2. Checks a session-scoped cache: has this file been read before?
 3. Compares file mtime — if unchanged, blocks the read
 4. Claude sees: "file already in context, no need to re-read"
-5. If the file changed since last read, allows it through
+5. If the file changed since last read, allows it through (or shows just the diff — see below)
 6. Cache entries expire after 20 minutes (configurable) to handle context compaction
+
+### Diff mode (opt-in)
+
+When you're iterating on a file — read it, edit it, read it again — Claude already has the old version in context. With diff mode enabled, read-once shows only what changed instead of the full file. A 3-line change in a 200-line file costs ~30 tokens instead of ~2000.
+
+Enable with:
+
+```sh
+export READ_ONCE_DIFF=1
+```
+
+When a re-read is blocked with a diff, Claude sees:
+
+```
+read-once: app.py changed since last read. You already have the previous
+version in context. Here are only the changes (saving ~1850 tokens):
+
+--- previous
++++ current
+@@ -45,3 +45,3 @@
+-    return None
++    return default_value
+
+Apply this diff mentally to your cached version of the file.
+```
+
+If the diff is too large (>40 lines by default), read-once falls back to allowing a full re-read. Configure the threshold with `READ_ONCE_DIFF_MAX`.
 
 ### What Claude sees
 
@@ -79,8 +106,9 @@ read-once — file read deduplication for Claude Code
 
   Total file reads:    47
   Cache hits:          19 (blocked re-reads)
+  Diff hits:           3 (changed files — sent diff only)
   First reads:         22
-  Changed files:       4 (re-read after modification)
+  Changed files:       1 (full re-read after modification)
   TTL expired:         2 (re-read after 20m — compaction safety)
 
   Tokens saved:        ~38400
@@ -113,12 +141,15 @@ Environment variables:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `READ_ONCE_TTL` | `1200` | Cache TTL in seconds. After this, re-reads are allowed (compaction safety). |
+| `READ_ONCE_DIFF` | `0` | Set to `1` to show only diffs when files change (instead of full re-read). |
+| `READ_ONCE_DIFF_MAX` | `40` | Max diff lines before falling back to full re-read. |
 | `READ_ONCE_DISABLED` | `0` | Set to `1` to disable the hook entirely. |
 
 ## Requirements
 
 - `jq` (for JSON parsing)
 - `bash` 4+
+- `python3` (for diff mode JSON escaping — only needed if `READ_ONCE_DIFF=1`)
 - Claude Code with hooks support
 
 ## How much does it save?
