@@ -45,8 +45,24 @@ else
   # Check if hook already configured
   if grep -q "read-once" "$SETTINGS" 2>/dev/null; then
     echo "read-once: hook already in settings.json"
+  elif command -v jq &>/dev/null; then
+    # Auto-merge into existing settings using jq
+    UPDATED=$(jq --arg hook "${INSTALL_DIR}/hook.sh" '
+      .hooks //= {} |
+      .hooks.PreToolUse //= [] |
+      .hooks.PreToolUse += [{
+        "matcher": "Read",
+        "hooks": [{
+          "type": "command",
+          "command": $hook
+        }]
+      }]
+    ' "$SETTINGS")
+    echo "$UPDATED" > "$SETTINGS"
+    echo "read-once: hook added to existing settings.json"
   else
-    echo "read-once: settings.json exists — add the hook manually:"
+    echo "read-once: settings.json exists but jq not found for auto-merge."
+    echo "  Install jq (brew install jq) and re-run, or add manually:"
     echo ""
     echo '  "hooks": {'
     echo '    "PreToolUse": ['
