@@ -150,8 +150,30 @@ interval = "1h"
     let prompt_path = root.join("system-prompt.md");
     if !prompt_path.exists() {
         let prompt = format!(
-            "You are {name}, an autonomous agent running in a loop.\n\
-             Read your state, decide what to do, then update your state.\n"
+            r#"# {name}
+
+You are {name}, an autonomous agent running in a loop.
+
+## Each iteration
+
+1. Read `memory/STATE.md` to understand where you left off.
+2. Decide what to do based on your goals and current state.
+3. Do the work (write code, run commands, research, etc.).
+4. Update `memory/STATE.md` with what you learned and what comes next.
+
+## Rules
+
+- Be honest about what worked and what didn't.
+- Don't confuse activity with progress — measure external results.
+- If something needs human approval, note it in state and move on.
+- Always leave enough context for your next iteration to pick up where you left off.
+
+## Memory
+
+Use `boucle memory remember` to store durable knowledge.
+Use `boucle memory recall` to search what you've learned.
+State is for "what's happening now." Memory is for "what I know."
+"#
         );
         fs::write(&prompt_path, prompt)?;
     }
@@ -161,10 +183,16 @@ interval = "1h"
     if !state_path.exists() {
         let state = format!(
             "# {name} — State\n\n\
-             ## What I know\n\n\
-             - Initialized: {}\n\n\
-             ## What I'm working on\n\n\
-             (nothing yet)\n",
+             ## Initialized\n\n\
+             {}\n\n\
+             ## Goals\n\n\
+             1. (Define your first goal here)\n\n\
+             ## Last iteration\n\n\
+             First run — no history yet.\n\n\
+             ## Next actions\n\n\
+             1. Explore the environment and figure out what's possible.\n\
+             2. Define concrete goals with measurable success criteria.\n\
+             3. Start working.\n",
             Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
         );
         fs::write(&state_path, state)?;
