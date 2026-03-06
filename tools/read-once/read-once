@@ -27,17 +27,18 @@ case "$cmd" in
     fi
 
     TOTAL_HITS=$(grep -c '"event":"hit"' "$STATS_FILE" 2>/dev/null || echo 0)
+    TOTAL_DIFFS=$(grep -c '"event":"diff"' "$STATS_FILE" 2>/dev/null || echo 0)
     TOTAL_MISSES=$(grep -c '"event":"miss"' "$STATS_FILE" 2>/dev/null || echo 0)
     TOTAL_CHANGED=$(grep -c '"event":"changed"' "$STATS_FILE" 2>/dev/null || echo 0)
     TOTAL_EXPIRED=$(grep -c '"event":"expired"' "$STATS_FILE" 2>/dev/null || echo 0)
-    TOTAL_READS=$((TOTAL_HITS + TOTAL_MISSES + TOTAL_CHANGED + TOTAL_EXPIRED))
+    TOTAL_READS=$((TOTAL_HITS + TOTAL_DIFFS + TOTAL_MISSES + TOTAL_CHANGED + TOTAL_EXPIRED))
 
     if [ "$TOTAL_READS" -eq 0 ]; then
       echo "No reads tracked yet."
       exit 0
     fi
 
-    TOKENS_SAVED=$(grep '"event":"hit"' "$STATS_FILE" 2>/dev/null | jq -r '.tokens_saved' 2>/dev/null | paste -sd+ - | bc 2>/dev/null || echo 0)
+    TOKENS_SAVED=$(grep -E '"event":"(hit|diff)"' "$STATS_FILE" 2>/dev/null | jq -r '.tokens_saved' 2>/dev/null | paste -sd+ - | bc 2>/dev/null || echo 0)
     TOKENS_ALLOWED=$(grep -E '"event":"(miss|changed|expired)"' "$STATS_FILE" 2>/dev/null | jq -r '.tokens' 2>/dev/null | paste -sd+ - | bc 2>/dev/null || echo 0)
     TOKENS_TOTAL=$((TOKENS_ALLOWED + TOKENS_SAVED))
 
@@ -54,8 +55,11 @@ case "$cmd" in
     echo ""
     echo "  Total file reads:    ${TOTAL_READS}"
     echo "  Cache hits:          ${TOTAL_HITS} (blocked re-reads)"
+    if [ "$TOTAL_DIFFS" -gt 0 ]; then
+      echo "  Diff hits:           ${TOTAL_DIFFS} (changed files — sent diff only)"
+    fi
     echo "  First reads:         ${TOTAL_MISSES}"
-    echo "  Changed files:       ${TOTAL_CHANGED} (re-read after modification)"
+    echo "  Changed files:       ${TOTAL_CHANGED} (full re-read after modification)"
     echo "  TTL expired:         ${TOTAL_EXPIRED} (re-read after ${TTL_MIN}m — compaction safety)"
     echo ""
     echo "  Tokens saved:        ~${TOKENS_SAVED}"

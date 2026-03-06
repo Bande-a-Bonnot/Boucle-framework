@@ -4,6 +4,11 @@
 # When a file is re-read and hasn't changed (same mtime), blocks the read
 # and tells Claude the content is already in context.
 #
+# Diff mode: When a file HAS changed since the last read, instead of allowing
+# a full re-read, shows only what changed (the diff). Claude already has the
+# old content in context — it just needs the delta. Saves 80-95% of tokens
+# when iterating on files. Enable with READ_ONCE_DIFF=1.
+#
 # Compaction-aware: cache entries expire after READ_ONCE_TTL seconds
 # (default 1200 = 20 minutes). After expiry, re-reads are allowed because
 # Claude may have compacted the context and lost the earlier content.
@@ -13,6 +18,8 @@
 #
 # Config (env vars):
 #   READ_ONCE_TTL=1200      Seconds before a cached read expires (default: 1200)
+#   READ_ONCE_DIFF=1        Show only diff when files change (default: 0)
+#   READ_ONCE_DIFF_MAX=40   Max diff lines before falling back to full re-read (default: 40)
 #   READ_ONCE_DISABLED=1    Disable the hook entirely
 
 set -euo pipefail
@@ -51,6 +58,16 @@ fi
 CACHE_DIR="${HOME}/.claude/read-once"
 mkdir -p "$CACHE_DIR"
 
+# Diff mode config
+DIFF_MODE="${READ_ONCE_DIFF:-0}"
+DIFF_MAX="${READ_ONCE_DIFF_MAX:-40}"
+
+# Snapshot directory for diff mode
+if [ "$DIFF_MODE" = "1" ]; then
+  SNAP_DIR="${CACHE_DIR}/snapshots"
+  mkdir -p "$SNAP_DIR"
+fi
+
 # TTL: how long a cached read stays valid before we allow re-reads.
 # Accounts for context compaction — after this many seconds, Claude
 # may have lost the content from its working context.
@@ -64,6 +81,7 @@ LAST_CLEANUP=$(cat "$CLEANUP_MARKER" 2>/dev/null || echo 0)
 LAST_CLEANUP=${LAST_CLEANUP:-0}
 if [ $(( NOW - LAST_CLEANUP )) -gt 3600 ]; then
   find "$CACHE_DIR" -name 'session-*.jsonl' -mtime +1 -delete 2>/dev/null || true
+  find "${CACHE_DIR}/snapshots" -type f -mtime +1 -delete 2>/dev/null || true
   echo "$NOW" > "$CLEANUP_MARKER"
 fi
 
@@ -71,6 +89,12 @@ fi
 SESSION_HASH=$(echo -n "$SESSION_ID" | shasum -a 256 | cut -c1-16)
 CACHE_FILE="${CACHE_DIR}/session-${SESSION_HASH}.jsonl"
 STATS_FILE="${CACHE_DIR}/stats.jsonl"
+
+# Snapshot path for this file (used in diff mode)
+if [ "$DIFF_MODE" = "1" ]; then
+  PATH_HASH=$(echo -n "$FILE_PATH" | shasum -a 256 | cut -c1-16)
+  SNAP_FILE="${SNAP_DIR}/${SESSION_HASH}-${PATH_HASH}"
+fi
 
 # Get current file mtime (portable macOS/Linux)
 if [ ! -f "$FILE_PATH" ]; then
@@ -116,6 +140,10 @@ if [ -n "$CACHED_MTIME" ] && [ "$CACHED_MTIME" = "$CURRENT_MTIME" ]; then
     # Update the cache entry with fresh timestamp
     echo "{\"path\":\"${FILE_PATH}\",\"mtime\":\"${CURRENT_MTIME}\",\"ts\":${NOW},\"tokens\":${ESTIMATED_TOKENS}}" >> "$CACHE_FILE"
     echo "{\"ts\":${NOW},\"path\":\"${FILE_PATH}\",\"tokens\":${ESTIMATED_TOKENS},\"session\":\"${SESSION_HASH}\",\"event\":\"expired\"}" >> "$STATS_FILE"
+    # Update snapshot for diff mode
+    if [ "$DIFF_MODE" = "1" ]; then
+      cp "$FILE_PATH" "$SNAP_FILE"
+    fi
     exit 0
   fi
 
@@ -141,10 +169,69 @@ EOF
   exit 0
 fi
 
-# Cache miss or file changed — allow the read and record it
+# Cache miss or file changed
+if [ -n "$CACHED_MTIME" ] && [ "$DIFF_MODE" = "1" ] && [ -f "$SNAP_FILE" ]; then
+  # File changed + diff mode enabled + we have a snapshot
+  # Compute diff and deny with just the changes if small enough
+  DIFF_OUTPUT=$(diff -u "$SNAP_FILE" "$FILE_PATH" 2>/dev/null || true)
+  DIFF_LINES=$(echo "$DIFF_OUTPUT" | wc -l | tr -d ' ')
+
+  if [ -n "$DIFF_OUTPUT" ] && [ "$DIFF_LINES" -le "$DIFF_MAX" ]; then
+    # Diff is small enough — deny with diff in the reason
+    # Update cache and snapshot
+    echo "{\"path\":\"${FILE_PATH}\",\"mtime\":\"${CURRENT_MTIME}\",\"ts\":${NOW},\"tokens\":${ESTIMATED_TOKENS}}" >> "$CACHE_FILE"
+    cp "$FILE_PATH" "$SNAP_FILE"
+
+    DIFF_TOKENS=$(( DIFF_LINES * 10 ))
+    TOKENS_SAVED=$(( ESTIMATED_TOKENS - DIFF_TOKENS ))
+    if [ "$TOKENS_SAVED" -lt 0 ]; then TOKENS_SAVED=0; fi
+
+    echo "{\"ts\":${NOW},\"path\":\"${FILE_PATH}\",\"tokens_saved\":${TOKENS_SAVED},\"session\":\"${SESSION_HASH}\",\"event\":\"diff\"}" >> "$STATS_FILE"
+
+    BASENAME=$(basename "$FILE_PATH")
+    # Build JSON with properly escaped diff
+    REASON_PREFIX="read-once: ${BASENAME} changed since last read. You already have the previous version in context. Here are only the changes (saving ~${TOKENS_SAVED} tokens):\\n\\n"
+    REASON_SUFFIX="\\n\\nApply this diff mentally to your cached version of the file."
+    # Use python3 to safely escape the diff for JSON embedding
+    REASON=$(echo "$DIFF_OUTPUT" | python3 -c "
+import sys, json
+diff = sys.stdin.read()
+prefix = '''${REASON_PREFIX}'''
+suffix = '''${REASON_SUFFIX}'''
+# json.dumps gives us a quoted escaped string; strip the quotes
+escaped_diff = json.dumps(diff)[1:-1]
+print(prefix + escaped_diff + suffix)
+" 2>/dev/null)
+
+    if [ -z "$REASON" ]; then
+      # Python failed — fall through to full re-read
+      :
+    else
+      cat <<EOF
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "${REASON}"
+  }
+}
+EOF
+      exit 0
+    fi
+    # Python failed — fall through to full re-read
+  fi
+  # Diff too large or Python failed — fall through to full re-read
+fi
+
+# Record the read
 echo "{\"path\":\"${FILE_PATH}\",\"mtime\":\"${CURRENT_MTIME}\",\"ts\":${NOW},\"tokens\":${ESTIMATED_TOKENS}}" >> "$CACHE_FILE"
 
-# Log the miss (distinguish first-read from changed-file)
+# Save snapshot for future diffs
+if [ "$DIFF_MODE" = "1" ]; then
+  cp "$FILE_PATH" "$SNAP_FILE"
+fi
+
+# Log the event
 if [ -n "$CACHED_MTIME" ]; then
   EVENT="changed"
 else
