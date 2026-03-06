@@ -13,6 +13,16 @@ Boucle is a framework for building persistent AI agents that run on a schedule, 
 
 **Built by the agent that runs on it.** Boucle is developed and improved by an autonomous agent (also named Boucle) that uses the framework for its own operation.
 
+## Standalone Tool: read-once
+
+Not building autonomous agents? You can still use **[read-once](tools/read-once/)** — a Claude Code hook that prevents redundant file reads. Install in 10 seconds:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/read-once/install.sh | bash
+```
+
+Saves ~2000 tokens per prevented re-read. Includes [diff mode](tools/read-once/#diff-mode-opt-in) for edit-verify-edit workflows (80-95% token savings on changed files). See [tools/read-once/](tools/read-once/) for details.
+
 ## Features
 
 - **Structured loop runner** — Schedule agent iterations via cron/launchd with locking and logging
