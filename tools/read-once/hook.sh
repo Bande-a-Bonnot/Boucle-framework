@@ -157,12 +157,19 @@ if [ -n "$CACHED_MTIME" ] && [ "$CACHED_MTIME" = "$CURRENT_MTIME" ]; then
   # Block the read — Claude should still have this content
   BASENAME=$(basename "$FILE_PATH")
   TTL_MIN=$(( TTL / 60 ))
+
+  # Cost estimate for the deny message (Sonnet $3/MTok)
+  COST_INFO=""
+  if command -v python3 &>/dev/null && [ "$SESSION_SAVED" -gt 0 ]; then
+    COST_INFO=$(echo "$SESSION_SAVED" | python3 -c "import sys; t=int(sys.stdin.read().strip()); print(' (~\$%.4f saved at Sonnet rates)' % (t*3/1000000))" 2>/dev/null || echo "")
+  fi
+
   cat <<EOF
 {
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
     "permissionDecision": "deny",
-    "permissionDecisionReason": "read-once: ${BASENAME} (~${ESTIMATED_TOKENS} tokens) already in context (read ${MINUTES_AGO}m ago, unchanged). Re-read allowed after ${TTL_MIN}m. Session savings: ~${SESSION_SAVED} tokens."
+    "permissionDecisionReason": "read-once: ${BASENAME} (~${ESTIMATED_TOKENS} tokens) already in context (read ${MINUTES_AGO}m ago, unchanged). Re-read allowed after ${TTL_MIN}m. Session savings: ~${SESSION_SAVED} tokens${COST_INFO}."
   }
 }
 EOF
