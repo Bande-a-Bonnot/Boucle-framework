@@ -288,6 +288,118 @@ run_hook "$(make_input Read "$CHANGE_FILE" "$CHANGE_SESSION")" > /dev/null
 CHANGED_COUNT=$(grep -c '"event":"changed"' "$STATS" 2>/dev/null || echo 0)
 assert_eq "Changed file event logged" "1" "$([ "$CHANGED_COUNT" -gt 0 ] && echo 1 || echo 0)"
 
+# --- Test 14: Diff mode — small change shows diff instead of full re-read ---
+echo ""
+echo "14. Diff mode — small change shows diff"
+
+DIFF_FILE="${TEST_DIR}/diff-test.txt"
+cat > "$DIFF_FILE" << 'CONTENT'
+line 1: hello
+line 2: world
+line 3: foo
+line 4: bar
+line 5: baz
+CONTENT
+DIFF_SESSION="diff-session-$$"
+export READ_ONCE_DIFF=1
+
+# First read — should pass through and create snapshot
+OUTPUT=$(run_hook "$(make_input Read "$DIFF_FILE" "$DIFF_SESSION")")
+assert_empty "Diff: first read passes through" "$OUTPUT"
+
+# Verify snapshot was created
+SESSION_HASH_DIFF=$(echo -n "$DIFF_SESSION" | shasum -a 256 | cut -c1-16)
+PATH_HASH_DIFF=$(echo -n "$DIFF_FILE" | shasum -a 256 | cut -c1-16)
+SNAP="${TEST_DIR}/.claude/read-once/snapshots/${SESSION_HASH_DIFF}-${PATH_HASH_DIFF}"
+assert_eq "Diff: snapshot file created" "1" "$([ -f "$SNAP" ] && echo 1 || echo 0)"
+
+# Modify file with a small change
+sleep 1
+cat > "$DIFF_FILE" << 'CONTENT'
+line 1: hello
+line 2: CHANGED
+line 3: foo
+line 4: bar
+line 5: baz
+CONTENT
+
+# Re-read — should show diff, not full re-read
+OUTPUT=$(run_hook "$(make_input Read "$DIFF_FILE" "$DIFF_SESSION")")
+assert_contains "Diff: denied with diff content" "deny" "$OUTPUT"
+assert_contains "Diff: mentions changes" "changed since last read" "$OUTPUT"
+assert_contains "Diff: includes diff markers" "CHANGED" "$OUTPUT"
+
+# --- Test 15: Diff mode — large change falls back to full re-read ---
+echo ""
+echo "15. Diff mode — large change falls back to full re-read"
+
+LARGE_DIFF_FILE="${TEST_DIR}/large-diff.txt"
+LARGE_SESSION="large-diff-$$"
+
+# Create initial file
+for i in $(seq 1 50); do echo "original line $i"; done > "$LARGE_DIFF_FILE"
+
+# First read
+OUTPUT=$(run_hook "$(make_input Read "$LARGE_DIFF_FILE" "$LARGE_SESSION")")
+assert_empty "Large diff: first read passes" "$OUTPUT"
+
+# Change most lines (>40 line diff)
+sleep 1
+for i in $(seq 1 50); do echo "REPLACED line $i"; done > "$LARGE_DIFF_FILE"
+
+# Re-read — diff too large, should allow full re-read
+export READ_ONCE_DIFF_MAX=10
+OUTPUT=$(run_hook "$(make_input Read "$LARGE_DIFF_FILE" "$LARGE_SESSION")")
+assert_empty "Large diff: falls back to full re-read" "$OUTPUT"
+
+unset READ_ONCE_DIFF_MAX
+
+# --- Test 16: Diff mode — unchanged file still blocked normally ---
+echo ""
+echo "16. Diff mode — unchanged file still blocked (cache hit)"
+
+UNCHANGED_FILE="${TEST_DIR}/unchanged-diff.txt"
+echo "stable content" > "$UNCHANGED_FILE"
+UNCH_SESSION="unchanged-diff-$$"
+
+# First read
+OUTPUT=$(run_hook "$(make_input Read "$UNCHANGED_FILE" "$UNCH_SESSION")")
+assert_empty "Diff unchanged: first read passes" "$OUTPUT"
+
+# Second read — unchanged, should be a normal cache hit (not diff)
+OUTPUT=$(run_hook "$(make_input Read "$UNCHANGED_FILE" "$UNCH_SESSION")")
+assert_contains "Diff unchanged: cache hit (deny)" "deny" "$OUTPUT"
+assert_contains "Diff unchanged: normal hit message" "already in context" "$OUTPUT"
+
+# --- Test 17: Diff mode — diff event logged in stats ---
+echo ""
+echo "17. Diff mode — diff events in stats"
+
+DIFF_EVENTS=$(grep -c '"event":"diff"' "$STATS" 2>/dev/null || echo 0)
+assert_eq "Diff: diff events logged in stats" "1" "$([ "$DIFF_EVENTS" -gt 0 ] && echo 1 || echo 0)"
+
+# --- Test 18: Diff mode disabled — changed file gets full re-read ---
+echo ""
+echo "18. Diff mode disabled — changed file gets full re-read"
+
+NODIFF_FILE="${TEST_DIR}/nodiff-test.txt"
+echo "original" > "$NODIFF_FILE"
+NODIFF_SESSION="nodiff-session-$$"
+
+unset READ_ONCE_DIFF
+
+# First read
+OUTPUT=$(run_hook "$(make_input Read "$NODIFF_FILE" "$NODIFF_SESSION")")
+assert_empty "No diff: first read passes" "$OUTPUT"
+
+# Modify
+sleep 1
+echo "modified" > "$NODIFF_FILE"
+
+# Re-read without diff mode — should allow full re-read (changed event)
+OUTPUT=$(run_hook "$(make_input Read "$NODIFF_FILE" "$NODIFF_SESSION")")
+assert_empty "No diff: changed file gets full re-read" "$OUTPUT"
+
 # --- Summary ---
 echo ""
 echo "===================="
