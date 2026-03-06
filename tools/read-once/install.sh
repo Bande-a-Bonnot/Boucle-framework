@@ -47,7 +47,7 @@ else
     echo "read-once: hook already in settings.json"
   elif command -v jq &>/dev/null; then
     # Auto-merge into existing settings using jq
-    UPDATED=$(jq --arg hook "${INSTALL_DIR}/hook.sh" '
+    UPDATED=$(jq --arg hook "~/.claude/read-once/hook.sh" '
       .hooks //= {} |
       .hooks.PreToolUse //= [] |
       .hooks.PreToolUse += [{
