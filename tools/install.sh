@@ -32,14 +32,15 @@ echo ""
 # Hook catalog (no associative arrays — bash 3 compatible)
 hook_desc() {
   case "$1" in
-    read-once)  echo "Skip re-reading unchanged files (saves tokens)" ;;
-    file-guard) echo "Block modifications to sensitive files (.env, keys)" ;;
-    git-safe)   echo "Prevent destructive git operations (force push, reset --hard)" ;;
-    *)          echo "Unknown hook" ;;
+    read-once)   echo "Skip re-reading unchanged files (saves tokens)" ;;
+    file-guard)  echo "Block modifications to sensitive files (.env, keys)" ;;
+    git-safe)    echo "Prevent destructive git operations (force push, reset --hard)" ;;
+    bash-guard)  echo "Block dangerous bash commands (rm -rf /, sudo, curl|bash)" ;;
+    *)           echo "Unknown hook" ;;
   esac
 }
 
-ALL_HOOKS="read-once file-guard git-safe"
+ALL_HOOKS="read-once file-guard git-safe bash-guard"
 
 # Show available hooks
 for hook in $ALL_HOOKS; do
@@ -81,7 +82,7 @@ installed=""
 for hook in $selected; do
   # Validate
   case "$hook" in
-    read-once|file-guard|git-safe) ;;
+    read-once|file-guard|git-safe|bash-guard) ;;
     *)
       echo -e "${YELLOW}Unknown hook: ${hook}${RESET} (available: ${ALL_HOOKS})"
       continue
