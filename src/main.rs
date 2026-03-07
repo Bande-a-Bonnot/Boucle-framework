@@ -77,6 +77,9 @@ enum Commands {
     /// Check prerequisites and agent health
     Doctor,
 
+    /// Show aggregate loop statistics
+    Stats,
+
     /// List available plugins
     Plugins,
 
@@ -573,6 +576,13 @@ fn main() {
 
         Commands::Doctor => {
             if let Err(e) = runner::doctor(&root) {
+                eprintln!("Error: {e}");
+                process::exit(1);
+            }
+        }
+
+        Commands::Stats => {
+            if let Err(e) = runner::show_stats(&root) {
                 eprintln!("Error: {e}");
                 process::exit(1);
             }
