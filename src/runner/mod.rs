@@ -10,7 +10,7 @@ mod hooks;
 pub(crate) mod plugins;
 
 use crate::config;
-use chrono::{FixedOffset, Timelike, Utc};
+use chrono::{FixedOffset, NaiveDateTime, Timelike, Utc};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::{fmt, fs, io, process};
@@ -1027,6 +1027,136 @@ pub fn doctor(root: &Path) -> Result<(), RunnerError> {
     Ok(())
 }
 
+/// Show aggregate loop statistics parsed from log files.
+pub fn show_stats(root: &Path) -> Result<(), RunnerError> {
+    let cfg = config::load(root)?;
+    let log_dir = root.join(
+        cfg.loop_config
+            .log_dir
+            .as_deref()
+            .unwrap_or(LOG_DIR_DEFAULT),
+    );
+
+    if !log_dir.exists() {
+        println!("No logs directory found. Run `boucle run` first.");
+        return Ok(());
+    }
+
+    let mut logs: Vec<_> = fs::read_dir(&log_dir)?
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "log"))
+        .collect();
+    logs.sort_by_key(|e| e.file_name());
+
+    if logs.is_empty() {
+        println!("No loop logs found yet. Run `boucle run` to create one.");
+        return Ok(());
+    }
+
+    let mut total = 0u32;
+    let mut successes = 0u32;
+    let mut failures = 0u32;
+    let mut dry_runs = 0u32;
+    let mut total_context_bytes: u64 = 0;
+    let mut context_count = 0u32;
+    let mut first_timestamp: Option<String> = None;
+    let mut last_timestamp: Option<String> = None;
+
+    for entry in &logs {
+        let name = entry.file_name();
+        let timestamp = name.to_string_lossy().trim_end_matches(".log").to_string();
+
+        if first_timestamp.is_none() {
+            first_timestamp = Some(timestamp.clone());
+        }
+        last_timestamp = Some(timestamp);
+
+        total += 1;
+
+        let content = fs::read_to_string(entry.path()).unwrap_or_default();
+
+        // Parse exit code
+        let mut found_exit = false;
+        for line in content.lines() {
+            if let Some(rest) = line.strip_prefix("LLM exit code: ") {
+                found_exit = true;
+                match rest.trim().parse::<i32>() {
+                    Ok(0) => successes += 1,
+                    _ => failures += 1,
+                }
+            }
+            if line.contains("Dry run complete") {
+                dry_runs += 1;
+            }
+            if let Some(rest) = line.strip_prefix("Context assembled: ") {
+                if let Some(bytes_str) = rest.strip_suffix(" bytes") {
+                    if let Ok(bytes) = bytes_str.trim().parse::<u64>() {
+                        total_context_bytes += bytes;
+                        context_count += 1;
+                    }
+                }
+            }
+        }
+
+        // Log with no exit code and not a dry run = interrupted/crashed
+        if !found_exit && !content.contains("Dry run complete") {
+            failures += 1;
+        }
+    }
+
+    // Display
+    println!("Boucle Stats");
+    println!("============\n");
+
+    println!("Agent: {}", cfg.agent.name);
+    println!("Total loops: {total}");
+
+    if let (Some(first), Some(last)) = (&first_timestamp, &last_timestamp) {
+        println!("First loop:  {first}");
+        println!("Last loop:   {last}");
+    }
+
+    println!();
+    println!("Outcomes:");
+    println!("  Succeeded:    {successes}");
+    println!("  Failed:       {failures}");
+    println!("  Dry runs:     {dry_runs}");
+
+    if successes + failures > 0 {
+        let rate = (successes as f64 / (successes + failures) as f64) * 100.0;
+        println!("  Success rate: {rate:.1}%");
+    }
+
+    if context_count > 0 {
+        let avg = total_context_bytes / context_count as u64;
+        println!();
+        println!("Context:");
+        println!("  Average size: {} bytes ({:.1} KB)", avg, avg as f64 / 1024.0);
+        println!("  Total sent:   {} bytes ({:.1} KB)", total_context_bytes, total_context_bytes as f64 / 1024.0);
+    }
+
+    // Calculate loops per day if we have timestamps
+    if let (Some(first), Some(last)) = (&first_timestamp, &last_timestamp) {
+        if first != last {
+            if let (Some(first_dt), Some(last_dt)) = (
+                NaiveDateTime::parse_from_str(first, "%Y-%m-%d_%H-%M-%S").ok(),
+                NaiveDateTime::parse_from_str(last, "%Y-%m-%d_%H-%M-%S").ok(),
+            ) {
+                let duration = last_dt - first_dt;
+                let days = duration.num_hours() as f64 / 24.0;
+                if days > 0.0 {
+                    println!();
+                    println!("Throughput:");
+                    println!("  Duration:      {:.1} days", days);
+                    println!("  Loops per day: {:.1}", total as f64 / days);
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1256,5 +1386,69 @@ mod tests {
         let state_after = fs::read_to_string(dir.path().join("memory/STATE.md")).unwrap();
 
         assert_eq!(state_before, state_after, "dry run should not modify state");
+    }
+
+    #[test]
+    fn test_stats_no_logs() {
+        let dir = tempfile::tempdir().unwrap();
+        init(dir.path(), "stats-test").unwrap();
+        // Should succeed with no logs
+        show_stats(dir.path()).unwrap();
+    }
+
+    #[test]
+    fn test_stats_with_logs() {
+        let dir = tempfile::tempdir().unwrap();
+        init(dir.path(), "stats-test").unwrap();
+
+        let log_dir = dir.path().join("logs");
+
+        // Create some fake log files
+        fs::write(
+            log_dir.join("2026-03-01_10-00-00.log"),
+            "=== Boucle loop: 2026-03-01_10-00-00 ===\n\
+             Agent: stats-test\n\
+             Max tokens: 50000\n\
+             Context assembled: 8192 bytes\n\
+             Running LLM...\n\
+             LLM exit code: 0\n",
+        )
+        .unwrap();
+
+        fs::write(
+            log_dir.join("2026-03-02_10-00-00.log"),
+            "=== Boucle loop: 2026-03-02_10-00-00 ===\n\
+             Agent: stats-test\n\
+             Max tokens: 50000\n\
+             Context assembled: 12288 bytes\n\
+             Running LLM...\n\
+             LLM exit code: 1\n",
+        )
+        .unwrap();
+
+        fs::write(
+            log_dir.join("2026-03-03_10-00-00.log"),
+            "=== Boucle loop: 2026-03-03_10-00-00 ===\n\
+             Agent: stats-test\n\
+             Max tokens: 50000\n\
+             Context assembled: 10240 bytes\n\
+             Dry run complete — LLM not called.\n",
+        )
+        .unwrap();
+
+        // Should parse and display without error
+        show_stats(dir.path()).unwrap();
+    }
+
+    #[test]
+    fn test_stats_after_dry_run() {
+        let dir = tempfile::tempdir().unwrap();
+        init(dir.path(), "stats-test").unwrap();
+
+        // Do a dry run to create a real log
+        run(dir.path(), true).unwrap();
+
+        // Stats should work on the real log
+        show_stats(dir.path()).unwrap();
     }
 }
