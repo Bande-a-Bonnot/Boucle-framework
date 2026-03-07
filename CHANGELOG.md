@@ -4,6 +4,9 @@ All notable changes to Boucle are documented here.
 
 ## [Unreleased]
 
+### Added
+- **`boucle doctor`** — New command that checks prerequisites and agent health: config parsing, memory directories, system prompt, hooks executability, claude CLI availability, and git status. Helps new users debug setup issues.
+
 ## [0.4.1] - 2026-03-07
 
 ### Added

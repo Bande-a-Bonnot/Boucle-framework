@@ -875,6 +875,158 @@ fn generate_cron_entry(binary: &Path, root: &Path, interval_secs: u64) -> String
     )
 }
 
+/// Check prerequisites and agent health.
+pub fn doctor(root: &Path) -> Result<(), RunnerError> {
+    let mut passed = 0u32;
+    let mut warned = 0u32;
+    let mut failed = 0u32;
+
+    println!("Boucle Doctor");
+    println!("=============\n");
+
+    // 1. Check boucle.toml
+    let config_path = root.join("boucle.toml");
+    if config_path.exists() {
+        match config::load(root) {
+            Ok(cfg) => {
+                println!("[ok]  boucle.toml — agent '{}', model '{}'", cfg.agent.name, cfg.agent.model);
+                passed += 1;
+
+                // 2. Check memory directory
+                let memory_dir = root.join(&cfg.memory.dir);
+                if memory_dir.exists() {
+                    let knowledge_dir = memory_dir.join("knowledge");
+                    let journal_dir = memory_dir.join("journal");
+                    let state_file = memory_dir.join(&cfg.memory.state_file);
+                    let mut mem_issues = Vec::new();
+                    if !knowledge_dir.exists() {
+                        mem_issues.push("knowledge/ missing");
+                    }
+                    if !journal_dir.exists() {
+                        mem_issues.push("journal/ missing");
+                    }
+                    if !state_file.exists() {
+                        mem_issues.push("state file missing");
+                    }
+                    if mem_issues.is_empty() {
+                        println!("[ok]  memory — {}", memory_dir.display());
+                        passed += 1;
+                    } else {
+                        println!("[warn] memory — {} ({})", memory_dir.display(), mem_issues.join(", "));
+                        warned += 1;
+                    }
+                } else {
+                    println!("[FAIL] memory — directory '{}' not found", memory_dir.display());
+                    failed += 1;
+                }
+
+                // 3. Check system prompt
+                let prompt_path = root.join(&cfg.agent.system_prompt);
+                if prompt_path.exists() {
+                    println!("[ok]  system prompt — {}", cfg.agent.system_prompt);
+                    passed += 1;
+                } else {
+                    println!("[warn] system prompt — '{}' not found (optional but recommended)", cfg.agent.system_prompt);
+                    warned += 1;
+                }
+
+                // 4. Check hooks directory
+                let hooks_path = cfg.loop_config.hooks_dir.as_deref().unwrap_or("hooks");
+                let hooks_dir = root.join(hooks_path);
+                if hooks_dir.exists() {
+                    let mut hook_count = 0;
+                    let mut non_exec = Vec::new();
+                    if let Ok(entries) = fs::read_dir(&hooks_dir) {
+                        for entry in entries.flatten() {
+                            let path = entry.path();
+                            if path.is_file() {
+                                hook_count += 1;
+                                #[cfg(unix)]
+                                {
+                                    use std::os::unix::fs::PermissionsExt;
+                                    let perms = fs::metadata(&path).map(|m| m.permissions().mode()).unwrap_or(0);
+                                    if perms & 0o111 == 0 {
+                                        non_exec.push(entry.file_name().to_string_lossy().to_string());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if non_exec.is_empty() {
+                        println!("[ok]  hooks — {} hook(s) found", hook_count);
+                        passed += 1;
+                    } else {
+                        println!("[warn] hooks — {} hook(s), but not executable: {}", hook_count, non_exec.join(", "));
+                        warned += 1;
+                    }
+                } else {
+                    println!("[ok]  hooks — none configured (optional)");
+                    passed += 1;
+                }
+
+                // 5. Check context.d directory
+                let context_path = cfg.loop_config.context_dir.as_deref().unwrap_or("context.d");
+                let context_dir = root.join(context_path);
+                if context_dir.exists() {
+                    let count = fs::read_dir(&context_dir).map(|r| r.count()).unwrap_or(0);
+                    println!("[ok]  context plugins — {} script(s)", count);
+                    passed += 1;
+                } else {
+                    println!("[ok]  context plugins — none configured (optional)");
+                    passed += 1;
+                }
+            }
+            Err(e) => {
+                println!("[FAIL] boucle.toml — parse error: {e}");
+                failed += 1;
+            }
+        }
+    } else {
+        println!("[FAIL] boucle.toml — not found in {}", root.display());
+        println!("       Run 'boucle init' to create one.");
+        failed += 1;
+    }
+
+    // 6. Check claude CLI
+    match process::Command::new("claude").arg("--version").output() {
+        Ok(output) if output.status.success() => {
+            let version = String::from_utf8_lossy(&output.stdout);
+            println!("[ok]  claude CLI — {}", version.trim());
+            passed += 1;
+        }
+        _ => {
+            println!("[FAIL] claude CLI — not found on PATH");
+            println!("       Install: https://docs.anthropic.com/en/docs/claude-code");
+            failed += 1;
+        }
+    }
+
+    // 7. Check git
+    match process::Command::new("git").args(["rev-parse", "--git-dir"]).current_dir(root).output() {
+        Ok(output) if output.status.success() => {
+            println!("[ok]  git — repository initialized");
+            passed += 1;
+        }
+        _ => {
+            println!("[warn] git — not a git repository (memory won't be versioned)");
+            println!("       Run 'git init' in {} to enable versioning", root.display());
+            warned += 1;
+        }
+    }
+
+    // Summary
+    println!();
+    if failed == 0 && warned == 0 {
+        println!("All checks passed ({passed} ok). Ready to run!");
+    } else if failed == 0 {
+        println!("{passed} ok, {warned} warning(s). Agent can run but some features may be limited.");
+    } else {
+        println!("{passed} ok, {warned} warning(s), {failed} FAILED. Fix failures before running.");
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -932,6 +1084,21 @@ mod tests {
         // Should clean up stale lock and acquire
         acquire_lock(&lock_path).unwrap();
         assert!(lock_path.exists());
+    }
+
+    #[test]
+    fn test_doctor_after_init() {
+        let dir = tempfile::tempdir().unwrap();
+        init(dir.path(), "doc-test").unwrap();
+        // Doctor should succeed on a freshly initialized agent
+        assert!(doctor(dir.path()).is_ok());
+    }
+
+    #[test]
+    fn test_doctor_no_config() {
+        let dir = tempfile::tempdir().unwrap();
+        // Doctor should succeed (returns Ok) even with no config — it just reports failures
+        assert!(doctor(dir.path()).is_ok());
     }
 
     #[test]

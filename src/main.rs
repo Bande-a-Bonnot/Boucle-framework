@@ -74,6 +74,9 @@ enum Commands {
         stdio: bool,
     },
 
+    /// Check prerequisites and agent health
+    Doctor,
+
     /// List available plugins
     Plugins,
 
@@ -564,6 +567,13 @@ fn main() {
             let rt = tokio::runtime::Runtime::new().unwrap();
             if let Err(e) = rt.block_on(mcp::serve(&root, &cfg, port, stdio)) {
                 eprintln!("MCP server error: {e}");
+                process::exit(1);
+            }
+        }
+
+        Commands::Doctor => {
+            if let Err(e) = runner::doctor(&root) {
+                eprintln!("Error: {e}");
                 process::exit(1);
             }
         }
