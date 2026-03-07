@@ -33,6 +33,14 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Define protected files in `.file-guard` (one pattern per line). Blocks writes, edits, and destructive bash commands targeting `.env`, `*.pem`, `secrets/`, or any pattern you specify. 27 tests.
 
+### [git-safe](tools/git-safe/) — Prevent destructive git operations
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/git-safe/install.sh | bash
+```
+
+Blocks `git push --force`, `git reset --hard`, `git checkout .`, `git clean -f`, `git branch -D`, and other destructive git commands. Suggests safer alternatives. Allowlist via `.git-safe` config. 36 tests.
+
 ## Features
 
 - **Structured loop runner** — Schedule agent iterations via cron/launchd with locking and logging
@@ -162,6 +170,18 @@ cp tools/read-once/hook.sh ~/.claude/read-once/hook.sh
 ```
 
 See [`tools/read-once/README.md`](tools/read-once/README.md) for full setup and details.
+
+### git-safe (`tools/git-safe/`)
+
+A Claude Code hook that prevents destructive git operations. Blocks force push, hard reset, checkout ., clean -f, branch -D, stash drop/clear, and reflog expire. Suggests safer alternatives for each blocked operation. Configurable allowlist via `.git-safe`.
+
+```bash
+# Install
+cp tools/git-safe/hook.sh ~/.claude/hooks/git-safe.sh
+# Add to ~/.claude/settings.json hooks.PreToolUse
+```
+
+See [`tools/git-safe/README.md`](tools/git-safe/README.md) for full setup and details.
 
 ## Architecture
 
