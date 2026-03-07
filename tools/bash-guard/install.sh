@@ -6,70 +6,94 @@
 #   curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
 #
 # What it does:
-#   1. Downloads hook.sh to ~/.claude/hooks/
+#   1. Downloads hook.sh to ~/.claude/bash-guard/
 #   2. Adds it to ~/.claude/settings.json as a PreToolUse hook
 
 set -euo pipefail
 
 HOOK_NAME="bash-guard"
-HOOK_DIR="$HOME/.claude/hooks"
+HOOK_DIR="$HOME/.claude/$HOOK_NAME"
+HOOK_PATH="$HOOK_DIR/hook.sh"
 SETTINGS="$HOME/.claude/settings.json"
 RAW_BASE="https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard"
 
 echo "Installing $HOOK_NAME for Claude Code..."
 
-# Create hooks directory
+# Create hook directory
 mkdir -p "$HOOK_DIR"
 
 # Download hook
 echo "  Downloading hook..."
 if command -v curl >/dev/null 2>&1; then
-  curl -fsSL "$RAW_BASE/hook.sh" -o "$HOOK_DIR/$HOOK_NAME.sh"
+  curl -fsSL "$RAW_BASE/hook.sh" -o "$HOOK_PATH"
 elif command -v wget >/dev/null 2>&1; then
-  wget -q "$RAW_BASE/hook.sh" -O "$HOOK_DIR/$HOOK_NAME.sh"
+  wget -q "$RAW_BASE/hook.sh" -O "$HOOK_PATH"
 else
   echo "Error: curl or wget required" >&2
   exit 1
 fi
-chmod +x "$HOOK_DIR/$HOOK_NAME.sh"
+chmod +x "$HOOK_PATH"
+
+# Clean up legacy install location if present
+LEGACY_PATH="$HOME/.claude/hooks/$HOOK_NAME.sh"
+if [ -f "$LEGACY_PATH" ]; then
+  echo "  Migrating from legacy location ($LEGACY_PATH)..."
+  rm -f "$LEGACY_PATH"
+fi
 
 # Update settings.json
 echo "  Configuring Claude Code..."
-HOOK_CMD="bash $HOOK_DIR/$HOOK_NAME.sh"
 
 if [ -f "$SETTINGS" ]; then
-  # Check if hook already registered
-  if grep -q "$HOOK_NAME" "$SETTINGS" 2>/dev/null; then
-    echo "  Hook already registered in settings.json"
-  else
-    # Add to existing hooks array or create it
-    python3 -c "
+  # Check if hook already registered (at either old or new path)
+  if python3 -c "
 import json, sys
 with open('$SETTINGS') as f:
     settings = json.load(f)
 hooks = settings.get('hooks', {})
 pre = hooks.get('PreToolUse', [])
-pre.append({'type': 'command', 'command': '$HOOK_CMD'})
-hooks['PreToolUse'] = pre
+
+# Remove any legacy entries and check for current path
+found = False
+cleaned = []
+for h in pre:
+    cmd = h.get('command', '')
+    if '$HOOK_NAME' in cmd:
+        if cmd == '$HOOK_PATH':
+            found = True
+            cleaned.append(h)
+        # else: skip legacy entry (different path)
+    else:
+        cleaned.append(h)
+
+if not found:
+    cleaned.append({'type': 'command', 'command': '$HOOK_PATH'})
+    print('  Hook registered')
+else:
+    print('  Already installed')
+
+hooks['PreToolUse'] = cleaned
 settings['hooks'] = hooks
 with open('$SETTINGS', 'w') as f:
     json.dump(settings, f, indent=2)
     f.write('\n')
-" 2>/dev/null || {
-      echo "  Warning: Could not update settings.json automatically."
-      echo "  Add this to your ~/.claude/settings.json manually:"
-      echo "    {\"hooks\": {\"PreToolUse\": [{\"type\": \"command\", \"command\": \"$HOOK_CMD\"}]}}"
-    }
+" 2>/dev/null; then
+    :
+  else
+    echo "  Warning: Could not update settings.json automatically."
+    echo "  Add this to your ~/.claude/settings.json manually:"
+    echo "    {\"hooks\": {\"PreToolUse\": [{\"type\": \"command\", \"command\": \"$HOOK_PATH\"}]}}"
   fi
 else
   # Create settings.json
+  mkdir -p "$(dirname "$SETTINGS")"
   cat > "$SETTINGS" << SETTINGS_EOF
 {
   "hooks": {
     "PreToolUse": [
       {
         "type": "command",
-        "command": "$HOOK_CMD"
+        "command": "$HOOK_PATH"
       }
     ]
   }
