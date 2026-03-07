@@ -57,6 +57,14 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Blocks `rm -rf /`, `sudo`, `curl|bash`, `chmod -R 777`, `kill -9 -1`, `dd` to disks, `mkfs`, system directory writes, `eval` injection, and global npm installs. Allowlist via `.bash-guard` config. 40 tests.
 
+### [session-log](tools/session-log/) — Audit trail for Claude Code sessions
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/session-log/install.sh | bash
+```
+
+Logs every tool call to `~/.claude/session-logs/YYYY-MM-DD.jsonl`. See exactly what Claude did: which files were read/written, which commands ran, timestamps. Useful for auditing autonomous sessions and debugging. 37 tests.
+
 ## Features
 
 - **Structured loop runner** — Schedule agent iterations via cron/launchd with locking and logging
@@ -210,6 +218,18 @@ cp tools/bash-guard/hook.sh ~/.claude/hooks/bash-guard.sh
 ```
 
 See [`tools/bash-guard/README.md`](tools/bash-guard/README.md) for full setup and details.
+
+### session-log (`tools/session-log/`)
+
+A Claude Code hook that logs every tool call to `~/.claude/session-logs/YYYY-MM-DD.jsonl`. Records timestamps, tool names, key parameters (file paths, commands, search patterns), and session IDs. Useful for auditing what Claude did in autonomous sessions, debugging, and understanding tool usage patterns.
+
+```bash
+# Install
+cp tools/session-log/hook.sh ~/.claude/hooks/session-log.sh
+# Add to ~/.claude/settings.json hooks.PostToolUse
+```
+
+See [`tools/session-log/README.md`](tools/session-log/README.md) for full setup and details.
 
 ## Architecture
 
