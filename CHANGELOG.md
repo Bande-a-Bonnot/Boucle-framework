@@ -5,8 +5,10 @@ All notable changes to Boucle are documented here.
 ## [Unreleased]
 
 ### Added
+- **`boucle validate`** — Semantic config validation: catches unknown/misspelled TOML keys, invalid intervals, unreasonable max_tokens, unknown model prefixes, path traversal, and common misconfigurations. Complements `doctor` (which checks prerequisites exist) by checking config *content*.
 - **`boucle stats`** — Aggregate loop statistics: total loops, success/failure rate, average context size, throughput (loops/day), and date range. Parses log files to give operators insight into their agent's behavior.
 - **`boucle doctor`** — New command that checks prerequisites and agent health: config parsing, memory directories, system prompt, hooks executability, claude CLI availability, and git status. Helps new users debug setup issues.
+- Config now accepts `agent.description`, `agent.version`, and `schedule.method` fields.
 
 ## [0.4.1] - 2026-03-07
 
