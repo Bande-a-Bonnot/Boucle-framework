@@ -80,6 +80,9 @@ enum Commands {
     /// Show aggregate loop statistics
     Stats,
 
+    /// Validate boucle.toml configuration
+    Validate,
+
     /// List available plugins
     Plugins,
 
@@ -583,6 +586,13 @@ fn main() {
 
         Commands::Stats => {
             if let Err(e) = runner::show_stats(&root) {
+                eprintln!("Error: {e}");
+                process::exit(1);
+            }
+        }
+
+        Commands::Validate => {
+            if let Err(e) = runner::validate(&root) {
                 eprintln!("Error: {e}");
                 process::exit(1);
             }

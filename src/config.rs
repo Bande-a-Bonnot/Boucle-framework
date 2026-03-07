@@ -31,6 +31,14 @@ pub struct Config {
 pub struct AgentConfig {
     pub name: String,
 
+    #[serde(default)]
+    #[allow(dead_code)]
+    pub description: Option<String>,
+
+    #[serde(default)]
+    #[allow(dead_code)]
+    pub version: Option<String>,
+
     #[serde(default = "default_model")]
     pub model: String,
 
@@ -69,6 +77,10 @@ pub struct LoopConfig {
 pub struct ScheduleConfig {
     #[serde(default = "default_interval")]
     pub interval: String,
+
+    #[serde(default)]
+    #[allow(dead_code)]
+    pub method: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -156,6 +168,7 @@ impl Default for ScheduleConfig {
     fn default() -> Self {
         Self {
             interval: default_interval(),
+            method: None,
         }
     }
 }

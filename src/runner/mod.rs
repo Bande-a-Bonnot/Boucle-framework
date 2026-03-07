@@ -1157,6 +1157,225 @@ pub fn show_stats(root: &Path) -> Result<(), RunnerError> {
     Ok(())
 }
 
+/// Validate boucle.toml configuration for common mistakes and misconfigurations.
+///
+/// Unlike `doctor` (which checks prerequisites exist), `validate` checks the
+/// config *content* for semantic correctness: typos, bad values, unreachable
+/// paths, and known anti-patterns.
+pub fn validate(root: &Path) -> Result<(), RunnerError> {
+    let config_path = root.join("boucle.toml");
+    if !config_path.exists() {
+        println!("No boucle.toml found in {}", root.display());
+        println!("Run 'boucle init' to create one.");
+        return Ok(());
+    }
+
+    let raw = fs::read_to_string(&config_path)?;
+    let mut errors: Vec<String> = Vec::new();
+    let mut warnings: Vec<String> = Vec::new();
+
+    // 1. Check for unknown top-level keys (common typos)
+    let known_sections = ["agent", "memory", "loop", "schedule", "git", "mcp"];
+    match raw.parse::<toml::Table>() {
+        Ok(table) => {
+            for key in table.keys() {
+                if !known_sections.contains(&key.as_str()) {
+                    warnings.push(format!(
+                        "Unknown section '[{key}]' — expected one of: {}",
+                        known_sections.join(", ")
+                    ));
+                }
+            }
+
+            // Check unknown keys within known sections
+            let known_agent_keys = ["name", "model", "system_prompt", "allowed_tools", "description", "version"];
+            let known_memory_keys = ["dir", "state_file"];
+            let known_loop_keys = ["context_dir", "hooks_dir", "log_dir", "max_tokens"];
+            let known_schedule_keys = ["interval", "method"];
+            let known_git_keys = ["commit_name", "commit_email"];
+            let known_mcp_keys = ["enable"];
+
+            check_section_keys(&table, "agent", &known_agent_keys, &mut warnings);
+            check_section_keys(&table, "memory", &known_memory_keys, &mut warnings);
+            check_section_keys(&table, "loop", &known_loop_keys, &mut warnings);
+            check_section_keys(&table, "schedule", &known_schedule_keys, &mut warnings);
+            check_section_keys(&table, "git", &known_git_keys, &mut warnings);
+            check_section_keys(&table, "mcp", &known_mcp_keys, &mut warnings);
+        }
+        Err(e) => {
+            errors.push(format!("TOML parse error: {e}"));
+            // Can't do further validation if we can't parse
+            print_validation_results(&errors, &warnings);
+            return Ok(());
+        }
+    }
+
+    // 2. Try loading as typed config
+    let cfg = match config::load(root) {
+        Ok(c) => c,
+        Err(e) => {
+            errors.push(format!("Config load error: {e}"));
+            print_validation_results(&errors, &warnings);
+            return Ok(());
+        }
+    };
+
+    // 3. Validate agent section
+    if cfg.agent.name.is_empty() {
+        errors.push("agent.name is empty".to_string());
+    }
+    if cfg.agent.name.contains(' ') {
+        warnings.push("agent.name contains spaces — consider using hyphens or underscores".to_string());
+    }
+
+    // 4. Validate model name
+    let model = &cfg.agent.model;
+    let known_prefixes = [
+        "claude-",
+        "gpt-",
+        "o1-",
+        "o3-",
+        "gemini-",
+    ];
+    if !known_prefixes.iter().any(|p| model.starts_with(p)) {
+        warnings.push(format!(
+            "agent.model '{model}' doesn't match known model prefixes (claude-, gpt-, gemini-, o1-, o3-)"
+        ));
+    }
+
+    // 5. Validate interval format
+    if let Err(e) = config::parse_interval(&cfg.schedule.interval) {
+        errors.push(format!("schedule.interval '{}': {e}", cfg.schedule.interval));
+    } else {
+        let seconds = config::parse_interval(&cfg.schedule.interval).unwrap();
+        if seconds < 60 {
+            warnings.push(format!(
+                "schedule.interval '{}' is under 1 minute — this will consume tokens very quickly",
+                cfg.schedule.interval
+            ));
+        }
+        if seconds > 86400 {
+            warnings.push(format!(
+                "schedule.interval '{}' is over 24 hours — agent will be slow to respond",
+                cfg.schedule.interval
+            ));
+        }
+    }
+
+    // 6. Validate max_tokens
+    if cfg.loop_config.max_tokens == 0 {
+        errors.push("loop.max_tokens is 0 — LLM calls will fail".to_string());
+    } else if cfg.loop_config.max_tokens < 1000 {
+        warnings.push(format!(
+            "loop.max_tokens is {} — very low, agent may not have enough context",
+            cfg.loop_config.max_tokens
+        ));
+    } else if cfg.loop_config.max_tokens > 1_000_000 {
+        warnings.push(format!(
+            "loop.max_tokens is {} — unusually high, check if this is intentional",
+            cfg.loop_config.max_tokens
+        ));
+    }
+
+    // 7. Validate memory paths
+    let memory_dir = root.join(&cfg.memory.dir);
+    let state_path = memory_dir.join(&cfg.memory.state_file);
+    if memory_dir.exists() && !state_path.exists() {
+        warnings.push(format!(
+            "memory.state_file '{}' not found in {} — will be created on first run",
+            cfg.memory.state_file,
+            cfg.memory.dir
+        ));
+    }
+
+    // Check state_file isn't an absolute path
+    if cfg.memory.state_file.starts_with('/') {
+        errors.push("memory.state_file should be relative to memory.dir, not absolute".to_string());
+    }
+
+    // 8. Validate system prompt
+    let prompt_path = root.join(&cfg.agent.system_prompt);
+    if !prompt_path.exists() && cfg.agent.system_prompt != "system-prompt.md" {
+        // Non-default prompt path that doesn't exist is likely a mistake
+        warnings.push(format!(
+            "agent.system_prompt '{}' not found — agent will run without system prompt",
+            cfg.agent.system_prompt
+        ));
+    }
+
+    // 9. Check for path traversal in config values
+    let path_values = [
+        ("memory.dir", &cfg.memory.dir),
+        ("memory.state_file", &cfg.memory.state_file),
+        ("agent.system_prompt", &cfg.agent.system_prompt),
+    ];
+    for (key, value) in &path_values {
+        if value.contains("..") {
+            warnings.push(format!("{key} contains '..' — avoid path traversal in config"));
+        }
+    }
+
+    // 10. Check git config
+    if cfg.git.commit_email == "boucle@agent" {
+        warnings.push(
+            "git.commit_email is default 'boucle@agent' — set a real email for better git history"
+                .to_string(),
+        );
+    }
+
+    print_validation_results(&errors, &warnings);
+    Ok(())
+}
+
+fn check_section_keys(
+    table: &toml::Table,
+    section: &str,
+    known_keys: &[&str],
+    warnings: &mut Vec<String>,
+) {
+    if let Some(toml::Value::Table(sec)) = table.get(section) {
+        for key in sec.keys() {
+            if !known_keys.contains(&key.as_str()) {
+                warnings.push(format!(
+                    "Unknown key '{key}' in [{section}] — expected one of: {}",
+                    known_keys.join(", ")
+                ));
+            }
+        }
+    }
+}
+
+fn print_validation_results(errors: &[String], warnings: &[String]) {
+    println!("Boucle Validate");
+    println!("===============\n");
+
+    if errors.is_empty() && warnings.is_empty() {
+        println!("Config is valid. No issues found.");
+        return;
+    }
+
+    for e in errors {
+        println!("[ERROR]   {e}");
+    }
+    for w in warnings {
+        println!("[warning] {w}");
+    }
+
+    println!();
+    if errors.is_empty() {
+        println!(
+            "{} warning(s), 0 errors. Config will work but review the warnings.",
+            warnings.len()
+        );
+    } else {
+        println!(
+            "{} error(s), {} warning(s). Fix errors before running.",
+            errors.len(),
+            warnings.len()
+        );
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1450,5 +1669,139 @@ mod tests {
 
         // Stats should work on the real log
         show_stats(dir.path()).unwrap();
+    }
+
+    // ---- validate tests ----
+
+    #[test]
+    fn test_validate_valid_config() {
+        let dir = tempfile::tempdir().unwrap();
+        init(dir.path(), "valid-agent").unwrap();
+        // Should succeed without error
+        validate(dir.path()).unwrap();
+    }
+
+    #[test]
+    fn test_validate_no_config() {
+        let dir = tempfile::tempdir().unwrap();
+        // No boucle.toml — should still succeed (prints message)
+        validate(dir.path()).unwrap();
+    }
+
+    #[test]
+    fn test_validate_unknown_section() {
+        let dir = tempfile::tempdir().unwrap();
+        let config = r#"
+[agent]
+name = "test"
+
+[unknown_section]
+foo = "bar"
+"#;
+        fs::write(dir.path().join("boucle.toml"), config).unwrap();
+        // Should succeed (warnings, not errors)
+        validate(dir.path()).unwrap();
+    }
+
+    #[test]
+    fn test_validate_unknown_key_in_section() {
+        let dir = tempfile::tempdir().unwrap();
+        let config = r#"
+[agent]
+name = "test"
+naem = "typo"
+"#;
+        fs::write(dir.path().join("boucle.toml"), config).unwrap();
+        // serde will ignore unknown keys, but our TOML check catches them
+        validate(dir.path()).unwrap();
+    }
+
+    #[test]
+    fn test_validate_bad_interval() {
+        let dir = tempfile::tempdir().unwrap();
+        let config = r#"
+[agent]
+name = "test"
+
+[schedule]
+interval = "5x"
+"#;
+        fs::write(dir.path().join("boucle.toml"), config).unwrap();
+        validate(dir.path()).unwrap();
+    }
+
+    #[test]
+    fn test_validate_zero_max_tokens() {
+        let dir = tempfile::tempdir().unwrap();
+        let config = r#"
+[agent]
+name = "test"
+
+[loop]
+max_tokens = 0
+"#;
+        fs::write(dir.path().join("boucle.toml"), config).unwrap();
+        validate(dir.path()).unwrap();
+    }
+
+    #[test]
+    fn test_validate_path_traversal() {
+        let dir = tempfile::tempdir().unwrap();
+        let config = r#"
+[agent]
+name = "test"
+system_prompt = "../../etc/passwd"
+
+[memory]
+dir = "../sneaky"
+"#;
+        fs::write(dir.path().join("boucle.toml"), config).unwrap();
+        validate(dir.path()).unwrap();
+    }
+
+    #[test]
+    fn test_validate_absolute_state_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let config = r#"
+[agent]
+name = "test"
+
+[memory]
+state_file = "/tmp/state.md"
+"#;
+        fs::write(dir.path().join("boucle.toml"), config).unwrap();
+        validate(dir.path()).unwrap();
+    }
+
+    #[test]
+    fn test_validate_very_short_interval() {
+        let dir = tempfile::tempdir().unwrap();
+        let config = r#"
+[agent]
+name = "test"
+
+[schedule]
+interval = "5s"
+"#;
+        fs::write(dir.path().join("boucle.toml"), config).unwrap();
+        validate(dir.path()).unwrap();
+    }
+
+    #[test]
+    fn test_validate_name_with_spaces() {
+        let dir = tempfile::tempdir().unwrap();
+        let config = r#"
+[agent]
+name = "my cool agent"
+"#;
+        fs::write(dir.path().join("boucle.toml"), config).unwrap();
+        validate(dir.path()).unwrap();
+    }
+
+    #[test]
+    fn test_validate_invalid_toml() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join("boucle.toml"), "this is not [valid toml").unwrap();
+        validate(dir.path()).unwrap();
     }
 }
