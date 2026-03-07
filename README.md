@@ -49,6 +49,14 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Blocks `git push --force`, `git reset --hard`, `git checkout .`, `git clean -f`, `git branch -D`, and other destructive git commands. Suggests safer alternatives. Allowlist via `.git-safe` config. 45 tests.
 
+### [bash-guard](tools/bash-guard/) — Block dangerous bash commands
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
+```
+
+Blocks `rm -rf /`, `sudo`, `curl|bash`, `chmod -R 777`, `kill -9 -1`, `dd` to disks, `mkfs`, system directory writes, `eval` injection, and global npm installs. Allowlist via `.bash-guard` config. 40 tests.
+
 ## Features
 
 - **Structured loop runner** — Schedule agent iterations via cron/launchd with locking and logging
@@ -190,6 +198,18 @@ cp tools/git-safe/hook.sh ~/.claude/hooks/git-safe.sh
 ```
 
 See [`tools/git-safe/README.md`](tools/git-safe/README.md) for full setup and details.
+
+### bash-guard (`tools/bash-guard/`)
+
+A Claude Code hook that blocks dangerous bash commands: `rm -rf` on critical paths, `sudo`, `curl|bash`, `chmod -R 777`, `kill -9 -1`, disk operations, system directory writes, `eval` injection, and global npm installs. Configurable allowlist via `.bash-guard`.
+
+```bash
+# Install
+cp tools/bash-guard/hook.sh ~/.claude/hooks/bash-guard.sh
+# Add to ~/.claude/settings.json hooks.PreToolUse
+```
+
+See [`tools/bash-guard/README.md`](tools/bash-guard/README.md) for full setup and details.
 
 ## Architecture
 
