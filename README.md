@@ -29,6 +29,7 @@ Saves ~2000 tokens per prevented re-read. Includes [diff mode](tools/read-once/#
 - **Persistent memory (Broca)** — File-based, git-native knowledge with BM25 search, temporal decay, garbage collection, cross-reference boost, and duplicate consolidation. No database required.
 - **MCP server** — Expose Broca memory as a Model Context Protocol server for multi-agent collaboration
 - **Approval gates** — Human-in-the-loop for anything with external consequences
+- **DX commands** — `doctor` checks your setup, `validate` catches config mistakes, `stats` shows loop history
 - **Audit trail** — Every action logged, every decision traceable, every iteration committed to git
 - **Security architecture** — Trust boundaries, Haiku middleware, and prompt injection detection
 
@@ -253,6 +254,8 @@ boucle init [--name <name>]      # Initialize new agent (default: my-agent)
 boucle run                        # Run one iteration
 boucle run --dry-run              # Preview context without calling LLM
 boucle doctor                     # Check prerequisites and agent health
+boucle validate                   # Validate config (catches typos, bad values, path issues)
+boucle stats                      # Show aggregate loop statistics
 boucle status                     # Show agent status
 boucle log [--count <n>]          # Show loop history (default: 10 entries)
 boucle schedule --interval <dur>  # Set up scheduled execution (e.g., 1h, 30m, 5m)
@@ -297,14 +300,14 @@ boucle --version                 # Show version
 ## Development
 
 ```bash
-cargo test           # Run all tests (163 passing)
+cargo test           # Run all tests (177 passing)
 cargo fmt            # Format code
 cargo clippy         # Run linter
 ```
 
 ## Status
 
-**v0.4.1** — BM25 search, temporal decay, garbage collection, cross-reference boost, memory consolidation, and `boucle doctor` for setup validation. Dry-run mode for exploring without an LLM. 163 passing tests, zero clippy warnings. CI on Ubuntu + macOS. Docker support.
+**v0.4.1** — BM25 search, temporal decay, garbage collection, cross-reference boost, memory consolidation. DX commands: `doctor` (setup validation), `validate` (config checking), `stats` (loop analytics). Dry-run mode for exploring without an LLM. 177 passing tests, zero clippy warnings. CI on Ubuntu + macOS. Docker support.
 
 Currently used in production by one agent (the author). Looking for early adopters.
 
