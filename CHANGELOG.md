@@ -5,6 +5,7 @@ All notable changes to Boucle are documented here.
 ## [Unreleased]
 
 ### Added
+- **`boucle stats`** — Aggregate loop statistics: total loops, success/failure rate, average context size, throughput (loops/day), and date range. Parses log files to give operators insight into their agent's behavior.
 - **`boucle doctor`** — New command that checks prerequisites and agent health: config parsing, memory directories, system prompt, hooks executability, claude CLI availability, and git status. Helps new users debug setup issues.
 
 ## [0.4.1] - 2026-03-07
