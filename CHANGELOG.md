@@ -4,7 +4,11 @@ All notable changes to Boucle are documented here.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-03-07
+
 ### Added
+- **Dockerfile** — Multi-stage build for MCP server container deployment
+- **Docker image CI** — Release workflow now publishes to `ghcr.io` on tagged releases
 - **`boucle init` scaffolding** — New agents get a useful system prompt (iteration cycle, rules, memory vs state) and a structured state template (goals, last iteration, next actions)
 - **read-once diff mode** — When a file changes between reads, show only the diff instead of the full file. Opt-in via `READ_ONCE_DIFF=1`. Saves 80-95% tokens on edit-verify-edit workflows.
 - **read-once cost estimates** — `stats` and `deny` messages now show estimated token savings
