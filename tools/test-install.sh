@@ -127,10 +127,10 @@ else
   fail "unknown hook not handled"
 fi
 
-# Test 7: All three hooks
+# Test 7: All four hooks
 echo "--- All hooks ---"
 rm -rf "$TEST_HOME/.claude"
-bash "$SCRIPT_DIR/install.sh" read-once file-guard git-safe >/dev/null 2>&1
+bash "$SCRIPT_DIR/install.sh" read-once file-guard git-safe bash-guard >/dev/null 2>&1
 
 count=$(python3 -c "
 import json, sys
@@ -140,10 +140,17 @@ hooks = s.get('hooks', {}).get('PreToolUse', [])
 print(len(hooks))
 " "$TEST_HOME/.claude/settings.json" 2>/dev/null)
 
-if [ "$count" = "3" ]; then
-  pass "all 3 hooks installed"
+if [ "$count" = "4" ]; then
+  pass "all 4 hooks installed"
 else
-  fail "expected 3, got $count"
+  fail "expected 4, got $count"
+fi
+
+# Test 7b: bash-guard hook file exists
+if [ -f "$TEST_HOME/.claude/bash-guard/hook.sh" ]; then
+  pass "bash-guard hook.sh downloaded"
+else
+  fail "bash-guard hook.sh missing"
 fi
 
 # Test 8: Existing settings preserved
