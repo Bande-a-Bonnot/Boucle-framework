@@ -35,12 +35,13 @@ hook_desc() {
     read-once)   echo "Skip re-reading unchanged files (saves tokens)" ;;
     file-guard)  echo "Block modifications to sensitive files (.env, keys)" ;;
     git-safe)    echo "Prevent destructive git operations (force push, reset --hard)" ;;
-    bash-guard)  echo "Block dangerous bash commands (rm -rf /, sudo, curl|bash)" ;;
-    *)           echo "Unknown hook" ;;
+    bash-guard)    echo "Block dangerous bash commands (rm -rf /, sudo, curl|bash)" ;;
+    session-log)   echo "Audit trail — log every tool call to JSONL" ;;
+    *)             echo "Unknown hook" ;;
   esac
 }
 
-ALL_HOOKS="read-once file-guard git-safe bash-guard"
+ALL_HOOKS="read-once file-guard git-safe bash-guard session-log"
 
 # Show available hooks
 for hook in $ALL_HOOKS; do
@@ -82,7 +83,7 @@ installed=""
 for hook in $selected; do
   # Validate
   case "$hook" in
-    read-once|file-guard|git-safe|bash-guard) ;;
+    read-once|file-guard|git-safe|bash-guard|session-log) ;;
     *)
       echo -e "${YELLOW}Unknown hook: ${hook}${RESET} (available: ${ALL_HOOKS})"
       continue
@@ -143,7 +144,8 @@ if "hooks" not in settings:
     settings["hooks"] = {}
 
 for hook in hooks_to_add:
-    event = "PreToolUse"
+    # session-log fires after tool calls; safety hooks fire before
+    event = "PostToolUse" if hook == "session-log" else "PreToolUse"
     command = os.path.expanduser("~/.claude/" + hook + "/hook.sh")
     entry = {"type": "command", "command": command, "timeout": 5000}
 
