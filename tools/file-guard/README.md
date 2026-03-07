@@ -35,7 +35,7 @@ curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/
 }
 ```
 
-4. Create `.file-guard` in your project root:
+4. Create `.file-guard` in your project root (see "Auto-detect" below, or create manually):
 
 ```
 .env
@@ -44,6 +44,25 @@ curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/
 *.key
 secrets/
 ```
+
+## Auto-detect sensitive files
+
+Instead of writing `.file-guard` manually, scan your project for common sensitive files:
+
+```bash
+# Preview what would be protected (no files written)
+bash init.sh --dry-run
+
+# Generate .file-guard from detected files
+bash init.sh
+
+# Add newly detected patterns to an existing .file-guard
+bash init.sh --append
+```
+
+Detects: `.env` files, certificates (`*.pem`, `*.key`, `*.p12`), SSH keys, credentials files, framework secrets (Rails `master.key`, WordPress `wp-config.php`, Django `local_settings.py`), Terraform state, secret directories, and more.
+
+The generated config is yours to edit -- review and adjust patterns after running.
 
 ## Config
 
@@ -108,9 +127,8 @@ file-guard: '.env' is protected (matches pattern '.env'). Check .file-guard conf
 ## Testing
 
 ```bash
-bash test.sh
-# or
-python3 test.py  # if bash is restricted
+bash test.sh       # hook tests (27 assertions)
+bash test-init.sh  # init scanner tests (22+ assertions)
 ```
 
 ## License
