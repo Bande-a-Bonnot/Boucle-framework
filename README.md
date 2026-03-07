@@ -17,6 +17,14 @@ Boucle is a framework for building persistent AI agents that run on a schedule, 
 
 Not building autonomous agents? You can still use these Claude Code hooks independently:
 
+**Install all hooks at once:**
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- all
+```
+
+Or pick individual hooks:
+
 ### [read-once](tools/read-once/) — Stop redundant file reads
 
 ```sh
@@ -39,7 +47,7 @@ Define protected files in `.file-guard` (one pattern per line). Blocks writes, e
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/git-safe/install.sh | bash
 ```
 
-Blocks `git push --force`, `git reset --hard`, `git checkout .`, `git clean -f`, `git branch -D`, and other destructive git commands. Suggests safer alternatives. Allowlist via `.git-safe` config. 36 tests.
+Blocks `git push --force`, `git reset --hard`, `git checkout .`, `git clean -f`, `git branch -D`, and other destructive git commands. Suggests safer alternatives. Allowlist via `.git-safe` config. 45 tests.
 
 ## Features
 
