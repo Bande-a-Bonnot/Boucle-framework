@@ -71,6 +71,29 @@ for f in sorted(files):
 "
 ```
 
+## Session report
+
+A companion script that summarizes your session logs:
+
+```sh
+# Today's activity
+bash ~/.claude/hooks/session-report.sh
+
+# Specific date
+bash ~/.claude/hooks/session-report.sh 2026-03-07
+
+# All time
+bash ~/.claude/hooks/session-report.sh --all
+```
+
+Or run directly from the repo:
+
+```sh
+bash tools/session-log/report.sh
+```
+
+Output includes: total tool calls by type, files read/written, commands run with frequency, and hourly activity distribution.
+
 ## Configuration
 
 **Log location**: `~/.claude/session-logs/` (one file per day, JSONL format)
