@@ -99,6 +99,16 @@ for e in entries:
     if len(ts) >= 13:
         hours[ts[11:13]] += 1
 
+# Failures and errors
+failures = []
+error_count = 0
+for e in entries:
+    ec = e.get('exit_code')
+    st = e.get('status')
+    if (ec is not None and ec != 0) or st == 'error':
+        error_count += 1
+        failures.append(e)
+
 # Print report
 label = '$LABEL'
 print(f'Session Report: {label}')
@@ -106,6 +116,11 @@ print('=' * 50)
 print(f'Total tool calls: {total}')
 print(f'Sessions: {len(sessions)}')
 print(f'Time range: {first_ts} to {last_ts}')
+if error_count > 0:
+    pct = error_count * 100.0 / total
+    print(f'Errors: {error_count}/{total} ({pct:.0f}%)')
+else:
+    print(f'Errors: none')
 print()
 
 print('Tool calls by type:')
@@ -132,6 +147,19 @@ if commands:
     for cmd, count in cmd_counts.most_common(10):
         display = cmd[:60] + '...' if len(cmd) > 60 else cmd
         print(f'    {count:3d}x  {display}')
+    print()
+
+if failures:
+    print('Failed operations:')
+    for e in failures[:15]:
+        tool = e.get('tool', '?')
+        detail = e.get('detail', '')[:70]
+        ec = e.get('exit_code', '')
+        ts = e.get('ts', '')[11:19]
+        code_str = f' (exit {ec})' if ec != '' else ''
+        print(f'  {ts}  {tool:8s}  {detail}{code_str}')
+    if len(failures) > 15:
+        print(f'  ... and {len(failures) - 15} more')
     print()
 
 if hours:

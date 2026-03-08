@@ -155,6 +155,59 @@ with tempfile.TemporaryDirectory() as tmpdir:
     check("/b.txt" in out, "lists edited file b")
     check("/c.txt" in out, "lists written file c")
 
+    # Test 10: Failure tracking - no failures
+    print("Test: No failures")
+    home = os.path.join(tmpdir, "nofail")
+    log_dir = os.path.join(home, ".claude", "session-logs")
+    write_jsonl(os.path.join(log_dir, "2026-02-04.jsonl"), [
+        {"ts": "2026-02-04T09:00:00Z", "session": "s1", "tool": "Bash", "detail": "ls", "cwd": "/p", "exit_code": 0},
+        {"ts": "2026-02-04T09:00:01Z", "session": "s1", "tool": "Read", "detail": "/a.rs", "cwd": "/p"},
+    ])
+    out = run_report(home, ["2026-02-04"])
+    check("Errors: none" in out, "reports no errors when clean")
+
+    # Test 11: Failure tracking - with failures
+    print("Test: With failures")
+    home = os.path.join(tmpdir, "withfail")
+    log_dir = os.path.join(home, ".claude", "session-logs")
+    write_jsonl(os.path.join(log_dir, "2026-02-05.jsonl"), [
+        {"ts": "2026-02-05T09:00:00Z", "session": "s1", "tool": "Bash", "detail": "cargo test", "cwd": "/p", "exit_code": 0},
+        {"ts": "2026-02-05T09:00:10Z", "session": "s1", "tool": "Bash", "detail": "git push origin main", "cwd": "/p", "exit_code": 128, "status": "error"},
+        {"ts": "2026-02-05T09:00:20Z", "session": "s1", "tool": "Read", "detail": "/missing.rs", "cwd": "/p", "status": "error"},
+        {"ts": "2026-02-05T09:00:30Z", "session": "s1", "tool": "Bash", "detail": "cargo build", "cwd": "/p", "exit_code": 0},
+    ])
+    out = run_report(home, ["2026-02-05"])
+    check("Errors: 2/4 (50%)" in out, "counts error rate")
+    check("git push origin main" in out, "lists failed command")
+    check("exit 128" in out, "shows exit code")
+    check("Failed operations:" in out, "shows failure section header")
+
+    # Test 12: Failure tracking - exit_code 1 without status field
+    print("Test: Exit code without status field")
+    home = os.path.join(tmpdir, "exitonly")
+    log_dir = os.path.join(home, ".claude", "session-logs")
+    write_jsonl(os.path.join(log_dir, "2026-02-06.jsonl"), [
+        {"ts": "2026-02-06T09:00:00Z", "session": "s1", "tool": "Bash", "detail": "npm test", "cwd": "/p", "exit_code": 1},
+        {"ts": "2026-02-06T09:00:10Z", "session": "s1", "tool": "Bash", "detail": "ls", "cwd": "/p", "exit_code": 0},
+    ])
+    out = run_report(home, ["2026-02-06"])
+    check("Errors: 1/2 (50%)" in out, "detects non-zero exit code as error")
+    check("npm test" in out, "shows failed npm test")
+    check("exit 1" in out, "shows exit code 1")
+
+    # Test 13: Failure tracking - status error without exit_code
+    print("Test: Status error without exit code")
+    home = os.path.join(tmpdir, "statusonly")
+    log_dir = os.path.join(home, ".claude", "session-logs")
+    write_jsonl(os.path.join(log_dir, "2026-02-07.jsonl"), [
+        {"ts": "2026-02-07T09:00:00Z", "session": "s1", "tool": "Read", "detail": "/nonexistent", "cwd": "/p", "status": "error"},
+        {"ts": "2026-02-07T09:00:10Z", "session": "s1", "tool": "Read", "detail": "/exists.rs", "cwd": "/p"},
+        {"ts": "2026-02-07T09:00:20Z", "session": "s1", "tool": "Read", "detail": "/also.rs", "cwd": "/p"},
+    ])
+    out = run_report(home, ["2026-02-07"])
+    check("Errors: 1/3 (33%)" in out, "detects status-only error")
+    check("/nonexistent" in out, "shows failed read path")
+
 print()
 print(f"Results: {passed} passed, {failed} failed out of {passed + failed} tests")
 sys.exit(0 if failed == 0 else 1)
