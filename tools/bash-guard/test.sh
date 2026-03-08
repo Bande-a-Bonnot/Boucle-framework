@@ -146,6 +146,88 @@ else
   echo "  FAIL: Should be disabled"
 fi
 
+# --- Custom deny rules ---
+echo ""
+echo "--- Custom deny rules ---"
+
+# Create temp config with deny rules
+DENY_CONFIG=$(mktemp)
+echo "deny: rm" > "$DENY_CONFIG"
+echo "deny: unlink" >> "$DENY_CONFIG"
+echo "deny: find.*-delete" >> "$DENY_CONFIG"
+
+# Test deny: rm blocks all rm commands
+RESULT=$(echo '{"tool_name":"Bash","input":{"command":"rm file.wav"}}' | BASH_GUARD_CONFIG="$DENY_CONFIG" bash "$HOOK" 2>/dev/null) || true
+if echo "$RESULT" | grep -q '"decision":"block"'; then
+  PASS=$((PASS + 1))
+  echo "  PASS: deny:rm blocks 'rm file.wav'"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: deny:rm should block 'rm file.wav' (got: $RESULT)"
+fi
+
+# Test deny: rm blocks rm with flags
+RESULT=$(echo '{"tool_name":"Bash","input":{"command":"rm -f *.wav"}}' | BASH_GUARD_CONFIG="$DENY_CONFIG" bash "$HOOK" 2>/dev/null) || true
+if echo "$RESULT" | grep -q '"decision":"block"'; then
+  PASS=$((PASS + 1))
+  echo "  PASS: deny:rm blocks 'rm -f *.wav'"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: deny:rm should block 'rm -f *.wav' (got: $RESULT)"
+fi
+
+# Test deny: unlink blocks unlink command
+RESULT=$(echo '{"tool_name":"Bash","input":{"command":"unlink myfile.txt"}}' | BASH_GUARD_CONFIG="$DENY_CONFIG" bash "$HOOK" 2>/dev/null) || true
+if echo "$RESULT" | grep -q '"decision":"block"'; then
+  PASS=$((PASS + 1))
+  echo "  PASS: deny:unlink blocks 'unlink myfile.txt'"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: deny:unlink should block 'unlink myfile.txt' (got: $RESULT)"
+fi
+
+# Test deny: find.*-delete blocks find with -delete
+RESULT=$(echo '{"tool_name":"Bash","input":{"command":"find . -name *.tmp -delete"}}' | BASH_GUARD_CONFIG="$DENY_CONFIG" bash "$HOOK" 2>/dev/null) || true
+if echo "$RESULT" | grep -q '"decision":"block"'; then
+  PASS=$((PASS + 1))
+  echo "  PASS: deny:find.*-delete blocks 'find . -name *.tmp -delete'"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: deny:find.*-delete should block find -delete (got: $RESULT)"
+fi
+
+# Test deny: rm blocks rm in chained commands
+RESULT=$(echo '{"tool_name":"Bash","input":{"command":"ls && rm old.txt"}}' | BASH_GUARD_CONFIG="$DENY_CONFIG" bash "$HOOK" 2>/dev/null) || true
+if echo "$RESULT" | grep -q '"decision":"block"'; then
+  PASS=$((PASS + 1))
+  echo "  PASS: deny:rm blocks 'ls && rm old.txt'"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: deny:rm should block chained rm (got: $RESULT)"
+fi
+
+# Test that non-denied commands still pass
+RESULT=$(echo '{"tool_name":"Bash","input":{"command":"ls -la"}}' | BASH_GUARD_CONFIG="$DENY_CONFIG" bash "$HOOK" 2>/dev/null) || true
+if [ -z "$RESULT" ] || ! echo "$RESULT" | grep -q '"decision":"block"'; then
+  PASS=$((PASS + 1))
+  echo "  PASS: deny rules don't block 'ls -la'"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: 'ls -la' should not be blocked (got: $RESULT)"
+fi
+
+# Test that cp/mv still pass (only rm/unlink/find-delete denied)
+RESULT=$(echo '{"tool_name":"Bash","input":{"command":"cp file1.txt file2.txt"}}' | BASH_GUARD_CONFIG="$DENY_CONFIG" bash "$HOOK" 2>/dev/null) || true
+if [ -z "$RESULT" ] || ! echo "$RESULT" | grep -q '"decision":"block"'; then
+  PASS=$((PASS + 1))
+  echo "  PASS: deny rules don't block 'cp file1.txt file2.txt'"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: 'cp' should not be blocked by deny:rm (got: $RESULT)"
+fi
+
+rm -f "$DENY_CONFIG"
+
 echo ""
 echo "================================"
 echo "Results: $PASS passed, $FAIL failed"
