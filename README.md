@@ -57,6 +57,14 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Blocks `rm -rf /`, `sudo`, `curl|bash`, `chmod -R 777`, `kill -9 -1`, `dd` to disks, `mkfs`, system directory writes, `eval` injection, and global npm installs. Allowlist via `.bash-guard` config. 40 tests.
 
+### [branch-guard](tools/branch-guard/) — Enforce feature-branch workflow
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/branch-guard/install.sh | bash
+```
+
+Prevents direct commits to protected branches (main, master, production, release). Forces feature-branch workflow. Customize protected branches via `.branch-guard` config or `BRANCH_GUARD_PROTECTED` env var. Allows `--amend` on any branch. 35 tests.
+
 ### [session-log](tools/session-log/) — Audit trail for Claude Code sessions
 
 ```sh
