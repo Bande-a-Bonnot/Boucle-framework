@@ -5,15 +5,18 @@
 #   curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/install.sh | bash
 #
 # What it does:
-#   1. Copies SKILL.md to .claude/skills/enforce-hooks/ (project-scoped)
-#   2. Creates .claude/hooks/ for generated enforcement hooks
-#   3. Does NOT generate hooks yet — ask Claude: "enforce my CLAUDE.md rules"
+#   1. Copies SKILL.md to .claude/skills/enforce-hooks/
+#   2. Installs session-hook.sh to .claude/hooks/
+#   3. Registers a SessionStart hook in .claude/settings.json
+#   4. On next session, if CLAUDE.md has @enforced directives,
+#      Claude is instructed to run the skill (with your approval)
 
 set -euo pipefail
 
 REPO_RAW="https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce"
 SKILL_DIR=".claude/skills/enforce-hooks"
 HOOKS_DIR=".claude/hooks"
+SETTINGS=".claude/settings.json"
 
 # Check we're in a project root (has CLAUDE.md or .claude/)
 if [ ! -f "CLAUDE.md" ] && [ ! -d ".claude" ]; then
@@ -28,23 +31,64 @@ echo "Installing enforce-hooks..."
 mkdir -p "$SKILL_DIR"
 mkdir -p "$HOOKS_DIR"
 
-# Download SKILL.md
-if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$REPO_RAW/SKILL.md" -o "$SKILL_DIR/SKILL.md"
-elif command -v wget >/dev/null 2>&1; then
-    wget -q "$REPO_RAW/SKILL.md" -O "$SKILL_DIR/SKILL.md"
+DL="curl -fsSL"
+command -v curl >/dev/null 2>&1 || DL="wget -q -O -"
+
+# Download skill and session hook
+$DL "$REPO_RAW/SKILL.md" > "$SKILL_DIR/SKILL.md"
+$DL "$REPO_RAW/session-hook.sh" > "$HOOKS_DIR/enforce-session.sh"
+chmod +x "$HOOKS_DIR/enforce-session.sh"
+
+# Register SessionStart hook in project settings
+if [ -f "$SETTINGS" ]; then
+    # Check if already registered
+    if grep -q "enforce-session" "$SETTINGS" 2>/dev/null; then
+        echo "SessionStart hook already registered."
+    else
+        # Merge into existing settings using python
+        python3 -c "
+import json
+with open('$SETTINGS') as f:
+    settings = json.load(f)
+hooks = settings.setdefault('hooks', {})
+session_hooks = hooks.setdefault('SessionStart', [])
+session_hooks.append({
+    'matcher': '',
+    'hooks': [{'type': 'command', 'command': '$HOOKS_DIR/enforce-session.sh'}]
+})
+with open('$SETTINGS', 'w') as f:
+    json.dump(settings, f, indent=2)
+print('SessionStart hook registered in $SETTINGS')
+"
+    fi
 else
-    echo "Error: curl or wget required."
-    exit 1
+    # Create new settings file
+    python3 -c "
+import json
+settings = {
+    'hooks': {
+        'SessionStart': [{
+            'matcher': '',
+            'hooks': [{'type': 'command', 'command': '$HOOKS_DIR/enforce-session.sh'}]
+        }]
+    }
+}
+with open('$SETTINGS', 'w') as f:
+    json.dump(settings, f, indent=2)
+print('Created $SETTINGS with SessionStart hook')
+"
 fi
 
 echo ""
-echo "Installed to $SKILL_DIR/SKILL.md"
+echo "Installed:"
+echo "  $SKILL_DIR/SKILL.md          (skill for generating hooks)"
+echo "  $HOOKS_DIR/enforce-session.sh (auto-detects CLAUDE.md changes)"
 echo ""
-echo "Next steps:"
-echo "  1. Open Claude Code in this project"
-echo "  2. Say: \"enforce my CLAUDE.md rules\""
-echo "  3. Claude will analyze your CLAUDE.md, show enforceable rules,"
-echo "     and generate hooks in $HOOKS_DIR/"
+echo "How it works:"
+echo "  1. Start a Claude Code session in this project"
+echo "  2. If CLAUDE.md has @enforced directives, Claude will suggest"
+echo "     generating enforcement hooks"
+echo "  3. You review and approve each generated hook"
+echo "  4. Hooks enforce your rules at the code level, every tool call"
 echo ""
-echo "The hooks are project-scoped (in .claude/) and won't affect other projects."
+echo "All project-scoped. Nothing touches ~/.claude/ or other projects."
