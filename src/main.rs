@@ -5,6 +5,7 @@
 
 mod broca;
 mod config;
+mod improve;
 mod mcp;
 mod runner;
 
@@ -83,12 +84,44 @@ enum Commands {
     /// Validate boucle.toml configuration
     Validate,
 
+    /// Self-observation engine: track patterns, score responses
+    #[command(subcommand)]
+    Improve(ImproveCommands),
+
+    /// Log a signal (friction, failure, waste, surprise)
+    Signal {
+        /// Signal type: friction, failure, waste, surprise
+        signal_type: String,
+
+        /// What happened
+        summary: String,
+
+        /// Short slug to identify recurring pattern
+        fingerprint: String,
+    },
+
     /// List available plugins
     Plugins,
 
     /// Run a plugin from the plugins/ directory
     #[command(external_subcommand)]
     Plugin(Vec<String>),
+}
+
+#[derive(Subcommand)]
+enum ImproveCommands {
+    /// Run the improvement pipeline (harvest, classify, score, promote)
+    Run {
+        /// Time budget in seconds
+        #[arg(short, long, default_value = "90")]
+        budget: u64,
+    },
+
+    /// Show current patterns, scores, and pending actions
+    Status,
+
+    /// Initialize the improve/ directory with example harvester
+    Init,
 }
 
 #[derive(Subcommand)]
@@ -557,6 +590,38 @@ fn main() {
                         }
                     }
                 }
+            }
+        }
+
+        Commands::Improve(cmd) => match cmd {
+            ImproveCommands::Run { budget } => {
+                if let Err(e) = improve::run_pipeline(&root, budget) {
+                    eprintln!("Error: {e}");
+                    process::exit(1);
+                }
+            }
+            ImproveCommands::Status => {
+                if let Err(e) = improve::show_status(&root) {
+                    eprintln!("Error: {e}");
+                    process::exit(1);
+                }
+            }
+            ImproveCommands::Init => {
+                if let Err(e) = improve::init(&root) {
+                    eprintln!("Error: {e}");
+                    process::exit(1);
+                }
+            }
+        },
+
+        Commands::Signal {
+            signal_type,
+            summary,
+            fingerprint,
+        } => {
+            if let Err(e) = improve::log_signal(&root, &signal_type, &summary, &fingerprint) {
+                eprintln!("Error: {e}");
+                process::exit(1);
             }
         }
 

@@ -85,6 +85,7 @@ An opinionated framework for running autonomous AI agents in a loop. Wake up. Th
 
 - **Structured loop runner** — Schedule agent iterations via cron/launchd with locking and logging
 - **Persistent memory (Broca)** — File-based, git-native knowledge with BM25 search, temporal decay, garbage collection, cross-reference boost, and duplicate consolidation. No database required.
+- **Self-observation engine** — Track friction, failure, waste, and surprise signals across loops. Fingerprint recurring patterns, deploy responses, measure whether they work. The agent observing its own behavior over time.
 - **MCP server** — Expose Broca memory as a Model Context Protocol server for multi-agent collaboration
 - **Approval gates** — Human-in-the-loop for anything with external consequences
 - **DX commands** — `doctor` checks your setup, `validate` catches config mistakes, `stats` shows loop history
@@ -178,6 +179,32 @@ Broca also supports:
 - **Superseding** — `boucle memory supersede <old-id> <new-id>` when knowledge evolves
 - **Relationships** — `boucle memory relate <id1> <id2> <relation>` to link entries
 - **Reindexing** — `boucle memory index` to rebuild the search index
+
+### Self-Observation Engine
+
+Agents with memory recall what happened. Agents with self-observation notice what keeps happening and develop responses to it.
+
+```bash
+# Log a signal when something goes wrong
+boucle signal friction "auth keeps failing on retry" auth-flaky
+
+# Run the pipeline (harvest → classify → score → promote)
+boucle improve run
+
+# See what patterns have emerged
+boucle improve status
+```
+
+The engine tracks four signal types: **friction** (something was harder than it should be), **failure** (something broke), **waste** (effort that produced nothing), **surprise** (unexpected behavior).
+
+Signals with the same fingerprint accumulate into patterns. When a pattern recurs enough, the engine surfaces it as a pending action. You deploy a response (a script, a config change, a new hook), and the engine tracks whether that response actually reduces the signal rate.
+
+**Pluggable harvesters**: Scripts in `improve/harvesters/` run automatically and detect signals from logs, metrics, or any source. Each receives the agent root as `$1` and outputs JSONL signals to stdout.
+
+```bash
+# Initialize with an example harvester
+boucle improve init
+```
 
 ### MCP Server
 
@@ -307,6 +334,12 @@ boucle log [--count <n>]          # Show loop history (default: 10 entries)
 boucle schedule --interval <dur>  # Set up scheduled execution (e.g., 1h, 30m, 5m)
 boucle plugins                    # List available plugins
 
+# Self-observation
+boucle signal <type> <summary> <fingerprint>  # Log a signal (friction/failure/waste/surprise)
+boucle improve run [--budget <secs>]          # Run the improvement pipeline
+boucle improve status                         # Show patterns, scores, pending actions
+boucle improve init                           # Set up improve/ with example harvester
+
 # Memory (Broca)
 boucle memory remember <title> <content> [--tags <tags>] [--entry-type <type>]
 boucle memory recall <query> [--limit <n>]
@@ -351,7 +384,7 @@ cargo clippy         # Run linter
 
 ## Status
 
-**v0.4.1** — BM25 search, temporal decay, garbage collection, cross-reference boost, memory consolidation. DX commands: `doctor` (setup validation), `validate` (config checking), `stats` (loop analytics). Dry-run mode for exploring without an LLM. 177 passing tests, zero clippy warnings. CI on Ubuntu + macOS. Docker support.
+**v0.4.1** — BM25 search, temporal decay, garbage collection, cross-reference boost, memory consolidation. DX commands: `doctor` (setup validation), `validate` (config checking), `stats` (loop analytics). Dry-run mode for exploring without an LLM. 195 passing tests, zero clippy warnings. CI on Ubuntu + macOS. Docker support.
 
 Currently used in production by one agent (the author). Looking for early adopters.
 
