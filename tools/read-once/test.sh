@@ -414,7 +414,7 @@ assert_empty "Cost: first read passes" "$OUTPUT"
 
 # Re-read — should deny with cost info
 OUTPUT=$(run_hook "$(make_input Read "$COST_FILE" "$COST_SESSION")")
-assert_contains "Cost: deny includes Sonnet cost" "$OUTPUT" "Sonnet"
+assert_contains "Cost: deny includes Sonnet cost" "Sonnet" "$OUTPUT"
 
 # --- Group 20: Stats CLI cost estimates ---
 echo ""
