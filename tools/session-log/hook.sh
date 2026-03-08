@@ -45,6 +45,28 @@ if isinstance(ti, dict):
 else:
     detail = str(ti)[:200]
 
+# Extract tool response status (exit codes, errors)
+tr = event.get('tool_response', '')
+status = None
+exit_code = None
+
+if isinstance(tr, str):
+    # Bash tool: check for exit code errors
+    if tr.startswith('Exit code '):
+        try:
+            exit_code = int(tr.split('\\n')[0].replace('Exit code ', ''))
+        except (ValueError, IndexError):
+            pass
+    # General error detection
+    lower = tr[:500].lower()
+    if any(sig in lower for sig in ['error:', 'fatal:', 'permission denied', 'not found',
+                                     'exit code ', 'command not found', 'failed']):
+        status = 'error'
+
+if tool == 'Bash' and exit_code is None and tr and not status:
+    # Bash with output and no error signals: likely success
+    exit_code = 0
+
 # Timestamp
 now = datetime.now(timezone.utc)
 ts = now.strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -64,6 +86,10 @@ entry = {'ts': ts, 'session': session, 'tool': tool}
 if detail:
     entry['detail'] = detail
 entry['cwd'] = os.getcwd()
+if exit_code is not None:
+    entry['exit_code'] = exit_code
+if status:
+    entry['status'] = status
 
 # Append to daily log
 log_file = os.path.join(log_dir, f'{date_str}.jsonl')

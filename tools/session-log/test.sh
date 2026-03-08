@@ -218,6 +218,66 @@ assert_json_field "$LINE" "detail" "TODO in ." "Grep default path is ."
 
 # ============================================================
 echo ""
+echo "=== Exit code and status tracking ==="
+
+# Test 23: Bash success (tool_response with output, no error)
+echo '{"tool_name":"Bash","tool_input":{"command":"git push origin main"},"tool_response":"Everything up-to-date"}' | bash "$HOOK"
+LINE=$(tail -1 "$LOG_FILE")
+assert_json_field "$LINE" "exit_code" "0" "Bash success has exit_code 0"
+assert_json_missing_field "$LINE" "status" "Bash success has no error status"
+
+# Test 24: Bash failure with exit code
+echo '{"tool_name":"Bash","tool_input":{"command":"git push origin main"},"tool_response":"Exit code 128\nfatal: remote rejected"}' | bash "$HOOK"
+LINE=$(tail -1 "$LOG_FILE")
+assert_json_field "$LINE" "exit_code" "128" "Bash failure captures exit code 128"
+assert_json_field "$LINE" "status" "error" "Bash failure has error status"
+
+# Test 25: Bash failure with exit code 1
+echo '{"tool_name":"Bash","tool_input":{"command":"npm test"},"tool_response":"Exit code 1\nTests failed"}' | bash "$HOOK"
+LINE=$(tail -1 "$LOG_FILE")
+assert_json_field "$LINE" "exit_code" "1" "Bash failure captures exit code 1"
+assert_json_field "$LINE" "status" "error" "Exit code 1 has error status"
+
+# Test 26: Read tool with error response
+echo '{"tool_name":"Read","tool_input":{"file_path":"/nonexistent"},"tool_response":"Error: File not found"}' | bash "$HOOK"
+LINE=$(tail -1 "$LOG_FILE")
+assert_json_field "$LINE" "status" "error" "Read error detected from response"
+assert_json_missing_field "$LINE" "exit_code" "Non-Bash tool has no exit_code"
+
+# Test 27: Write tool with permission denied
+echo '{"tool_name":"Write","tool_input":{"file_path":"/root/file"},"tool_response":"Permission denied: /root/file"}' | bash "$HOOK"
+LINE=$(tail -1 "$LOG_FILE")
+assert_json_field "$LINE" "status" "error" "Permission denied detected"
+
+# Test 28: Bash with command not found
+echo '{"tool_name":"Bash","tool_input":{"command":"nonexistent_cmd"},"tool_response":"command not found: nonexistent_cmd"}' | bash "$HOOK"
+LINE=$(tail -1 "$LOG_FILE")
+assert_json_field "$LINE" "status" "error" "Command not found detected"
+
+# Test 29: Bash with fatal error
+echo '{"tool_name":"Bash","tool_input":{"command":"git checkout main"},"tool_response":"fatal: not a git repository"}' | bash "$HOOK"
+LINE=$(tail -1 "$LOG_FILE")
+assert_json_field "$LINE" "status" "error" "Git fatal error detected"
+
+# Test 30: Tool with no tool_response (backward compat)
+echo '{"tool_name":"Bash","tool_input":{"command":"ls"}}' | bash "$HOOK"
+LINE=$(tail -1 "$LOG_FILE")
+assert_json_missing_field "$LINE" "exit_code" "No tool_response means no exit_code"
+assert_json_missing_field "$LINE" "status" "No tool_response means no status"
+
+# Test 31: Bash with empty tool_response
+echo '{"tool_name":"Bash","tool_input":{"command":"true"},"tool_response":""}' | bash "$HOOK"
+LINE=$(tail -1 "$LOG_FILE")
+assert_json_missing_field "$LINE" "exit_code" "Empty response has no exit_code"
+assert_json_missing_field "$LINE" "status" "Empty response has no status"
+
+# Test 32: Non-string tool_response (graceful handling)
+echo '{"tool_name":"Bash","tool_input":{"command":"echo hi"},"tool_response":42}' | bash "$HOOK"
+LINE=$(tail -1 "$LOG_FILE")
+assert_json_field "$LINE" "tool" "Bash" "Non-string tool_response handled gracefully"
+
+# ============================================================
+echo ""
 echo "=== Results ==="
 TOTAL=$((PASS + FAIL))
 echo "$TOTAL tests: $PASS passed, $FAIL failed"
