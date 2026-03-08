@@ -18,6 +18,9 @@
 #   allow: sudo           # whitelist specific operations
 #   allow: rm -rf
 #   allow: pipe-to-shell
+#   deny: rm              # block ALL rm commands (not just rm -rf on critical paths)
+#   deny: unlink          # block unlink commands
+#   deny: find.*-delete   # block find with -delete flag (regex supported)
 #
 # Env vars:
 #   BASH_GUARD_DISABLED=1    Disable the hook entirely
@@ -49,8 +52,9 @@ log() {
   fi
 }
 
-# Load allowlist from .bash-guard config
+# Load allowlist and denylist from .bash-guard config
 ALLOWED=()
+DENIED=()
 CONFIG="${BASH_GUARD_CONFIG:-.bash-guard}"
 if [ -f "$CONFIG" ]; then
   while IFS= read -r line; do
@@ -59,6 +63,9 @@ if [ -f "$CONFIG" ]; then
     if [[ "$line" == allow:* ]]; then
       pattern=$(echo "$line" | sed 's/^allow:\s*//' | xargs)
       ALLOWED+=("$pattern")
+    elif [[ "$line" == deny:* ]]; then
+      pattern=$(echo "$line" | sed 's/^deny:\s*//' | xargs)
+      DENIED+=("$pattern")
     fi
   done < "$CONFIG"
 fi
@@ -85,6 +92,13 @@ block() {
   echo "{\"decision\":\"block\",\"reason\":\"$msg\"}"
   exit 0
 }
+
+# --- Custom deny rules (from .bash-guard config) ---
+for denied in "${DENIED[@]+"${DENIED[@]}"}"; do
+  if echo "$COMMAND" | grep -qE "(^|\s|;|&&|\|\|)${denied}" 2>/dev/null; then
+    block "Command matches deny rule '${denied}' in .bash-guard config." "Remove the deny rule or add a matching allow rule to override."
+  fi
+done
 
 # --- Dangerous operation checks ---
 
