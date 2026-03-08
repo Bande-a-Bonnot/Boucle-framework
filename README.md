@@ -239,6 +239,21 @@ cp tools/session-log/hook.sh ~/.claude/hooks/session-log.sh
 
 See [`tools/session-log/README.md`](tools/session-log/README.md) for full setup and details.
 
+### diagnose (`tools/diagnose/`)
+
+An operations intelligence tool for autonomous agent loops. Analyzes signals, patterns, and response effectiveness to detect regime phases (productive/stagnating/stuck/failing), feedback loops, chronic issues, and generates actionable recommendations. Built from 220+ real loops of autonomous operation.
+
+```bash
+# Standalone
+python3 tools/diagnose/diagnose.py --improve-dir /path/to/improve/
+
+# As a Boucle plugin
+cp tools/diagnose/diagnose.py plugins/diagnose.py
+boucle diagnose
+```
+
+See [`tools/diagnose/README.md`](tools/diagnose/README.md) for input format and details.
+
 ## Architecture
 
 ```
