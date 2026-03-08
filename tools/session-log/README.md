@@ -24,6 +24,8 @@ Each entry records:
 - **tool** — which tool was called (Read, Write, Bash, Grep, etc.)
 - **detail** — key parameter (file path, command, search pattern)
 - **cwd** — working directory
+- **exit_code** — Bash command exit code (0 for success, non-zero for failure)
+- **status** — `"error"` when the tool response contains error signals (fatal, permission denied, etc.)
 
 ## Use cases
 
@@ -36,8 +38,23 @@ Each entry records:
 
 ```jsonl
 {"ts":"2026-03-07T22:15:00Z","session":"abc123","tool":"Read","detail":"/src/main.rs","cwd":"/project"}
-{"ts":"2026-03-07T22:15:01Z","session":"abc123","tool":"Bash","detail":"cargo test","cwd":"/project"}
+{"ts":"2026-03-07T22:15:01Z","session":"abc123","tool":"Bash","detail":"cargo test","cwd":"/project","exit_code":0}
 {"ts":"2026-03-07T22:15:05Z","session":"abc123","tool":"Write","detail":"/src/lib.rs","cwd":"/project"}
+{"ts":"2026-03-07T22:15:08Z","session":"abc123","tool":"Bash","detail":"git push origin main","cwd":"/project","exit_code":128,"status":"error"}
+```
+
+## Verify agent claims
+
+When Claude says "pushed to origin," the log shows whether `git push` actually ran and whether it succeeded:
+
+```sh
+# Find all git push attempts and their exit codes
+grep '"git push' ~/.claude/session-logs/*.jsonl | python3 -c "
+import sys, json
+for l in sys.stdin:
+    e = json.loads(l.split(':', 1)[1] if ':' in l else l)
+    ec = e.get('exit_code', '?')
+    print(f\"{e['ts']}  exit={ec}  {e.get('detail','')}\")"
 ```
 
 ## Viewing logs
