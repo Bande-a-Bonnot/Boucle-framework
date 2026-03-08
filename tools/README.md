@@ -28,6 +28,21 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 | [session-log](session-log/) | Logs all tool calls to `~/.claude/session-logs/` | PostToolUse |
 | [safety-check](safety-check/) | Audits your Claude Code setup for common misconfigurations | CLI tool |
 | [diagnose](diagnose/) | Analyzes loop logs for drift, stagnation, feedback loops | CLI tool |
+| [enforce](enforce/) | Generates hooks from your CLAUDE.md rules (Claude Code skill) | Skill |
+
+## Generate Hooks from CLAUDE.md
+
+The [enforce](enforce/) skill reads your CLAUDE.md, identifies rules that can be enforced at tool-call time, and generates hook scripts for each one. No tagging required.
+
+```
+# Copy the skill to your project
+mkdir -p .claude/skills/enforce-hooks
+cp tools/enforce/SKILL.md .claude/skills/enforce-hooks/
+
+# Then ask Claude: "Enforce my CLAUDE.md rules"
+```
+
+See [enforce/README.md](enforce/README.md) for details and examples.
 
 ## How Hooks Work
 
