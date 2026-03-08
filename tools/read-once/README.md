@@ -45,11 +45,12 @@ Or add to `.claude/settings.json` by hand:
 ## How it works
 
 1. Hook intercepts every `Read` tool call
-2. Checks a session-scoped cache: has this file been read before?
-3. Compares file mtime — if unchanged, blocks the read
-4. Claude sees: "file already in context, no need to re-read"
-5. If the file changed since last read, allows it through (or shows just the diff — see below)
-6. Cache entries expire after 20 minutes (configurable) to handle context compaction
+2. Partial reads (with `offset` or `limit`) always pass through — only full-file reads are cached
+3. Checks a session-scoped cache: has this file been read before?
+4. Compares file mtime — if unchanged, blocks the read
+5. Claude sees: "file already in context, no need to re-read"
+6. If the file changed since last read, allows it through (or shows just the diff — see below)
+7. Cache entries expire after 20 minutes (configurable) to handle context compaction
 
 ### Diff mode (opt-in)
 
@@ -93,7 +94,11 @@ Claude then proceeds without the redundant read. No loss of information — the 
 
 Claude Code compacts the context window during long sessions, dropping older content. A file read 30 minutes ago might no longer be in the working context. read-once handles this with a TTL (time-to-live): cache entries expire after `READ_ONCE_TTL` seconds (default: 1200 = 20 minutes). After expiry, re-reads are allowed.
 
-There's no way to detect compaction events from a hook, so a time-based heuristic is the best available approach.
+There's no way to detect compaction events from a hook, so a time-based heuristic is the best available approach. If you know compaction just happened, you can manually reset the cache:
+
+```sh
+./read-once clear
+```
 
 ## Stats
 
@@ -161,6 +166,17 @@ Claude Code re-reads files more than you'd think. Common patterns:
 - Reading the same file in subagents that share a session
 
 Each blocked re-read saves the full file token cost (including the ~70% overhead from line numbers in `cat -n` format). Run `./read-once stats` after a session to see your actual savings.
+
+## FAQ
+
+**Won't this break after context compaction?**
+Cache entries expire after 20 minutes (configurable via `READ_ONCE_TTL`). After expiry, re-reads are allowed. You can also run `read-once clear` to reset the cache manually after compaction.
+
+**Claude Code reads small chunks, not whole files — does this help?**
+Partial reads with `offset` or `limit` are never cached. They always pass through. read-once only deduplicates full-file reads where the entire file is requested again.
+
+**Isn't there a good reason Claude re-reads files?**
+Yes — when the file changed, or when context compacted. read-once only blocks re-reads when the file hasn't changed (same mtime) and the cache is recent. Changed files always pass through. With diff mode enabled (`READ_ONCE_DIFF=1`), changed files show just the delta instead of the full content.
 
 ## Compatibility
 
