@@ -109,7 +109,7 @@ Or run directly from the repo:
 bash tools/session-log/report.sh
 ```
 
-Output includes: total tool calls by type, files read/written, commands run with frequency, and hourly activity distribution.
+Output includes: total tool calls by type, error rate with failed operations listed, files read/written, commands run with frequency, and hourly activity distribution.
 
 ## Configuration
 
