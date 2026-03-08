@@ -101,6 +101,12 @@ bash ~/.claude/hooks/session-report.sh 2026-03-07
 
 # All time
 bash ~/.claude/hooks/session-report.sh --all
+
+# Last 7 days trend comparison
+bash ~/.claude/hooks/session-report.sh --week
+
+# Last N days trend comparison
+bash ~/.claude/hooks/session-report.sh --days 14
 ```
 
 Or run directly from the repo:
@@ -109,7 +115,28 @@ Or run directly from the repo:
 bash tools/session-log/report.sh
 ```
 
-Output includes: total tool calls by type, error rate with failed operations listed, files read/written, commands run with frequency, and hourly activity distribution.
+**Single-day mode** shows: tool calls by type, error rate with failed operations listed, files read/written, commands run with frequency, and hourly activity distribution.
+
+**Trend mode** (`--week` / `--days N`) shows a day-by-day comparison table:
+
+```
+Session Trends: Last 7 days
+========================================================================
+Date          Calls  Sess   Errors   Rate  Reads  Writes  Cmds
+------------------------------------------------------------------------
+2026-03-02        42     2       1   2.4%     15       8    12
+2026-03-03        --    --      --     --     --      --    --
+2026-03-04        87     5       3   3.4%     34      12    28
+...
+========================================================================
+Total           129     7       4   3.1%     49      20    40
+Avg/day          64.5   3.5     2.0          24.5    10.0  20.0
+Busiest:  2026-03-04 (87 calls)
+Quietest: 2026-03-02 (42 calls)
+Active days: 2/7
+```
+
+Spot trends: increasing error rates, unusually busy days, activity gaps.
 
 ## Configuration
 

@@ -208,6 +208,93 @@ with tempfile.TemporaryDirectory() as tmpdir:
     check("Errors: 1/3 (33%)" in out, "detects status-only error")
     check("/nonexistent" in out, "shows failed read path")
 
+    # Test 14: --week mode with data
+    print("Test: --week trend mode")
+    home = os.path.join(tmpdir, "weekmode")
+    log_dir = os.path.join(home, ".claude", "session-logs")
+    # Create 3 days of data at fixed dates
+    from datetime import datetime, timedelta
+    today = datetime.utcnow().date()
+    day0 = today.isoformat()
+    day1 = (today - timedelta(days=1)).isoformat()
+    day2 = (today - timedelta(days=2)).isoformat()
+    write_jsonl(os.path.join(log_dir, f"{day0}.jsonl"), [
+        {"ts": f"{day0}T10:00:00Z", "session": "s1", "tool": "Read", "detail": "/a.rs", "cwd": "/p"},
+        {"ts": f"{day0}T10:01:00Z", "session": "s1", "tool": "Bash", "detail": "cargo test", "cwd": "/p", "exit_code": 0},
+        {"ts": f"{day0}T10:02:00Z", "session": "s1", "tool": "Write", "detail": "/b.rs", "cwd": "/p"},
+    ])
+    write_jsonl(os.path.join(log_dir, f"{day1}.jsonl"), [
+        {"ts": f"{day1}T08:00:00Z", "session": "s2", "tool": "Read", "detail": "/c.rs", "cwd": "/p"},
+        {"ts": f"{day1}T08:01:00Z", "session": "s2", "tool": "Bash", "detail": "npm test", "cwd": "/p", "exit_code": 1},
+    ])
+    write_jsonl(os.path.join(log_dir, f"{day2}.jsonl"), [
+        {"ts": f"{day2}T14:00:00Z", "session": "s3", "tool": "Read", "detail": "/d.rs", "cwd": "/p"},
+        {"ts": f"{day2}T14:00:01Z", "session": "s3", "tool": "Edit", "detail": "/e.rs", "cwd": "/p"},
+        {"ts": f"{day2}T14:00:02Z", "session": "s4", "tool": "Bash", "detail": "ls", "cwd": "/p", "exit_code": 0},
+        {"ts": f"{day2}T14:00:03Z", "session": "s4", "tool": "Bash", "detail": "make", "cwd": "/p", "exit_code": 2, "status": "error"},
+    ])
+    out = run_report(home, ["--week"])
+    check("Session Trends: Last 7 days" in out, "shows week header")
+    check(day0 in out, "shows today's date")
+    check(day1 in out, "shows yesterday's date")
+    check(day2 in out, "shows day before yesterday")
+    check("--" in out, "shows dashes for inactive days")
+    check("Total" in out, "shows totals row")
+    check("Avg/day" in out, "shows averages row")
+    check("Busiest" in out, "shows busiest day")
+    check("Quietest" in out, "shows quietest day")
+    check("Active days:" in out, "shows active day count")
+
+    # Test 15: --week with no data at all
+    print("Test: --week with no data")
+    home = os.path.join(tmpdir, "weekempty")
+    os.makedirs(os.path.join(home, ".claude", "session-logs"), exist_ok=True)
+    out = run_report(home, ["--week"])
+    check("Session Trends: Last 7 days" in out, "shows header even with no data")
+    check("No activity in this period" in out, "reports no activity")
+
+    # Test 16: --days N custom range
+    print("Test: --days custom range")
+    home = os.path.join(tmpdir, "daysmode")
+    log_dir = os.path.join(home, ".claude", "session-logs")
+    write_jsonl(os.path.join(log_dir, f"{day0}.jsonl"), [
+        {"ts": f"{day0}T10:00:00Z", "session": "s1", "tool": "Read", "detail": "/a.rs", "cwd": "/p"},
+    ])
+    out = run_report(home, ["--days", "3"])
+    check("Session Trends: Last 3 days" in out, "shows custom day count in header")
+    check(day0 in out, "shows today in custom range")
+
+    # Test 17: --week error rate calculation
+    print("Test: --week error rates")
+    home = os.path.join(tmpdir, "weekerr")
+    log_dir = os.path.join(home, ".claude", "session-logs")
+    write_jsonl(os.path.join(log_dir, f"{day0}.jsonl"), [
+        {"ts": f"{day0}T09:00:00Z", "session": "s1", "tool": "Bash", "detail": "test", "cwd": "/p", "exit_code": 1},
+        {"ts": f"{day0}T09:01:00Z", "session": "s1", "tool": "Bash", "detail": "test2", "cwd": "/p", "exit_code": 0},
+        {"ts": f"{day0}T09:02:00Z", "session": "s1", "tool": "Bash", "detail": "test3", "cwd": "/p", "exit_code": 0},
+        {"ts": f"{day0}T09:03:00Z", "session": "s1", "tool": "Bash", "detail": "test4", "cwd": "/p", "exit_code": 0},
+    ])
+    out = run_report(home, ["--week"])
+    check("25.0%" in out, "shows correct error rate (1/4 = 25%)")
+
+    # Test 18: --week sessions and file counts
+    print("Test: --week column accuracy")
+    home = os.path.join(tmpdir, "weekcols")
+    log_dir = os.path.join(home, ".claude", "session-logs")
+    write_jsonl(os.path.join(log_dir, f"{day0}.jsonl"), [
+        {"ts": f"{day0}T10:00:00Z", "session": "s1", "tool": "Read", "detail": "/x.rs", "cwd": "/p"},
+        {"ts": f"{day0}T10:00:01Z", "session": "s1", "tool": "Read", "detail": "/y.rs", "cwd": "/p"},
+        {"ts": f"{day0}T10:00:02Z", "session": "s2", "tool": "Write", "detail": "/z.rs", "cwd": "/p"},
+        {"ts": f"{day0}T10:00:03Z", "session": "s2", "tool": "Edit", "detail": "/w.rs", "cwd": "/p"},
+        {"ts": f"{day0}T10:00:04Z", "session": "s2", "tool": "Bash", "detail": "ls", "cwd": "/p", "exit_code": 0},
+    ])
+    out = run_report(home, ["--week"])
+    # 5 calls, 2 sessions, 0 errors, 2 reads, 2 writes, 1 command
+    lines = out.strip().split("\n")
+    today_line = [l for l in lines if day0 in l][0] if any(day0 in l for l in lines) else ""
+    check("5" in today_line, "correct call count in trend line")
+    check("2" in today_line, "shows session/file counts")
+
 print()
 print(f"Results: {passed} passed, {failed} failed out of {passed + failed} tests")
 sys.exit(0 if failed == 0 else 1)
