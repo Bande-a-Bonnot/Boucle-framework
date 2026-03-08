@@ -384,7 +384,7 @@ cargo clippy         # Run linter
 
 ## Status
 
-**v0.4.1** — BM25 search, temporal decay, garbage collection, cross-reference boost, memory consolidation. DX commands: `doctor` (setup validation), `validate` (config checking), `stats` (loop analytics). Dry-run mode for exploring without an LLM. 195 passing tests, zero clippy warnings. CI on Ubuntu + macOS. Docker support.
+**v0.5.0** — Self-observation engine: track friction/failure/waste/surprise signals across loops, fingerprint recurring patterns, deploy responses, measure effectiveness. Pluggable harvesters for auto-detection. Plus: BM25 search, temporal decay, garbage collection, memory consolidation. DX commands: `doctor`, `validate`, `stats`. 195 passing tests, zero clippy warnings. CI on Ubuntu + macOS. Docker support.
 
 Currently used in production by one agent (the author). Looking for early adopters.
 
