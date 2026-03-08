@@ -6,6 +6,8 @@
 #   session-report.sh              # Today's activity
 #   session-report.sh 2026-03-07   # Specific date
 #   session-report.sh --all        # All time
+#   session-report.sh --week       # Last 7 days trend comparison
+#   session-report.sh --days 14    # Last N days trend comparison
 #
 # MIT License - https://github.com/Bande-a-Bonnot/Boucle-framework
 
@@ -19,8 +21,86 @@ if [ ! -d "$LOG_DIR" ]; then
     exit 1
 fi
 
-# Determine which files to read
+# Handle --week / --days mode (multi-day trend comparison)
 DATE_ARG="${1:-today}"
+if [ "$DATE_ARG" = "--week" ] || [ "$DATE_ARG" = "--days" ]; then
+    if [ "$DATE_ARG" = "--days" ]; then
+        NUM_DAYS="${2:-7}"
+    else
+        NUM_DAYS=7
+    fi
+    python3 -c "
+import json, sys, os
+from collections import Counter
+from datetime import datetime, timedelta
+
+log_dir = '$LOG_DIR'
+num_days = int('$NUM_DAYS')
+
+# Generate date range
+today = datetime.utcnow().date()
+dates = [(today - timedelta(days=i)).isoformat() for i in range(num_days - 1, -1, -1)]
+
+rows = []
+for date in dates:
+    path = os.path.join(log_dir, f'{date}.jsonl')
+    if not os.path.isfile(path):
+        rows.append({'date': date, 'calls': 0, 'sessions': 0, 'errors': 0, 'reads': 0, 'writes': 0, 'commands': 0})
+        continue
+    entries = []
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    entries.append(json.loads(line))
+                except json.JSONDecodeError:
+                    pass
+    calls = len(entries)
+    sessions = len(set(e.get('session', '') for e in entries))
+    errors = sum(1 for e in entries if (e.get('exit_code') not in (None, 0)) or e.get('status') == 'error')
+    reads = len(set(e.get('detail', '') for e in entries if e.get('tool') == 'Read' and e.get('detail')))
+    writes = len(set(e.get('detail', '') for e in entries if e.get('tool') in ('Write', 'Edit') and e.get('detail')))
+    commands = sum(1 for e in entries if e.get('tool') == 'Bash' and e.get('detail'))
+    rows.append({'date': date, 'calls': calls, 'sessions': sessions, 'errors': errors, 'reads': reads, 'writes': writes, 'commands': commands})
+
+active_rows = [r for r in rows if r['calls'] > 0]
+
+print(f'Session Trends: Last {num_days} days')
+print('=' * 72)
+print(f'{\"Date\":12s} {\"Calls\":>6s} {\"Sess\":>5s} {\"Errors\":>7s} {\"Rate\":>6s} {\"Reads\":>6s} {\"Writes\":>7s} {\"Cmds\":>5s}')
+print('-' * 72)
+for r in rows:
+    if r['calls'] == 0:
+        print(f'{r[\"date\"]:12s} {\"--\":>6s} {\"--\":>5s} {\"--\":>7s} {\"--\":>6s} {\"--\":>6s} {\"--\":>7s} {\"--\":>5s}')
+    else:
+        rate = f'{r[\"errors\"] * 100.0 / r[\"calls\"]:.1f}%'
+        print(f'{r[\"date\"]:12s} {r[\"calls\"]:6d} {r[\"sessions\"]:5d} {r[\"errors\"]:7d} {rate:>6s} {r[\"reads\"]:6d} {r[\"writes\"]:7d} {r[\"commands\"]:5d}')
+
+print('=' * 72)
+if active_rows:
+    tc = sum(r['calls'] for r in active_rows)
+    ts = sum(r['sessions'] for r in active_rows)
+    te = sum(r['errors'] for r in active_rows)
+    tr = sum(r['reads'] for r in active_rows)
+    tw = sum(r['writes'] for r in active_rows)
+    tcmd = sum(r['commands'] for r in active_rows)
+    ad = len(active_rows)
+    rate = f'{te * 100.0 / tc:.1f}%' if tc > 0 else '0.0%'
+    print(f'{\"Total\":12s} {tc:6d} {ts:5d} {te:7d} {rate:>6s} {tr:6d} {tw:7d} {tcmd:5d}')
+    print(f'{\"Avg/day\":12s} {tc/ad:6.1f} {ts/ad:5.1f} {te/ad:7.1f} {\"\":>6s} {tr/ad:6.1f} {tw/ad:7.1f} {tcmd/ad:5.1f}')
+    busiest = max(active_rows, key=lambda r: r['calls'])
+    quietest = min(active_rows, key=lambda r: r['calls'])
+    print(f'Busiest:  {busiest[\"date\"]} ({busiest[\"calls\"]} calls)')
+    print(f'Quietest: {quietest[\"date\"]} ({quietest[\"calls\"]} calls)')
+    print(f'Active days: {ad}/{num_days}')
+else:
+    print('No activity in this period.')
+"
+    exit $?
+fi
+
+# Determine which files to read
 if [ "$DATE_ARG" = "--all" ]; then
     FILES=$(find "$LOG_DIR" -name "*.jsonl" -type f 2>/dev/null | sort)
     LABEL="all time"
