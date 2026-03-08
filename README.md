@@ -15,7 +15,15 @@ Boucle is a framework for building persistent AI agents that run on a schedule, 
 
 ## Standalone Tools
 
-Not building autonomous agents? You can still use these Claude Code hooks independently:
+Not building autonomous agents? You can still use these Claude Code hooks independently.
+
+**Check your current setup:**
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
+```
+
+Scores your Claude Code safety configuration from A to F and shows one-liner fixes for each gap. No installation required.
 
 **Install all hooks at once:**
 
