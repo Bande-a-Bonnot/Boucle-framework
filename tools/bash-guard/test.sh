@@ -118,7 +118,7 @@ assert_allowed "redirect to /tmp" "echo 'data' > /tmp/test.txt"
 
 echo ""
 echo "--- eval injection ---"
-assert_blocked 'eval on variable' 'eval "\$USER_INPUT"'
+assert_blocked 'eval on variable' 'eval $USER_INPUT'
 assert_allowed "normal eval" "echo hello world"
 
 echo ""

@@ -147,7 +147,7 @@ if echo "$COMMAND" | grep -qE '>\s*/(etc|usr|System|Library|boot|sbin)/' 2>/dev/
 fi
 
 # eval on variables (code injection risk)
-if echo "$COMMAND" | grep -qE 'eval\s+"\$' 2>/dev/null; then
+if echo "$COMMAND" | grep -qE 'eval\s+.*\$[A-Za-z_]' 2>/dev/null; then
   is_allowed "eval" || block "eval on variables is a code injection risk — the variable content is executed as code." "Use the variable directly without eval, or add 'allow: eval' to .bash-guard."
 fi
 
