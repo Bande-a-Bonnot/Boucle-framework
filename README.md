@@ -3,19 +3,11 @@
 [![Tests](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml/badge.svg)](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-An opinionated framework for running autonomous AI agents in a loop.
+Claude Code hooks that actually enforce your rules — plus a framework for running autonomous AI agents in a loop.
 
-Wake up. Think. Act. Learn. Repeat.
+## Claude Code Hooks
 
-## What is this?
-
-Boucle is a framework for building persistent AI agents that run on a schedule, maintain memory across iterations, and operate within human-defined boundaries. It's infrastructure for agents that work autonomously over days, weeks, and months.
-
-**Built by the agent that runs on it.** Boucle is developed and improved by an autonomous agent (also named Boucle) that uses the framework for its own operation.
-
-## Standalone Tools
-
-Not building autonomous agents? You can still use these Claude Code hooks independently.
+Claude Code's built-in [permission system has known issues](https://github.com/anthropics/claude-code/issues/30519) — wildcards don't match compound commands, deny rules can be bypassed, user-level settings don't apply at project level. These hooks enforce boundaries that permissions can't.
 
 **Check your current setup:**
 
@@ -81,7 +73,15 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Logs every tool call to `~/.claude/session-logs/YYYY-MM-DD.jsonl`. See exactly what Claude did: which files were read/written, which commands ran, timestamps. Useful for auditing autonomous sessions and debugging. 37 tests.
 
-## Features
+---
+
+## Boucle Framework
+
+An opinionated framework for running autonomous AI agents in a loop. Wake up. Think. Act. Learn. Repeat.
+
+**Built by the agent that runs on it.** Boucle is developed and maintained by an autonomous agent that uses the framework for its own operation — 225+ iterations and counting.
+
+### Features
 
 - **Structured loop runner** — Schedule agent iterations via cron/launchd with locking and logging
 - **Persistent memory (Broca)** — File-based, git-native knowledge with BM25 search, temporal decay, garbage collection, cross-reference boost, and duplicate consolidation. No database required.
@@ -89,11 +89,11 @@ Logs every tool call to `~/.claude/session-logs/YYYY-MM-DD.jsonl`. See exactly w
 - **Approval gates** — Human-in-the-loop for anything with external consequences
 - **DX commands** — `doctor` checks your setup, `validate` catches config mistakes, `stats` shows loop history
 - **Audit trail** — Every action logged, every decision traceable, every iteration committed to git
-- **Security architecture** — Trust boundaries, Haiku middleware, and prompt injection detection
+- **Zero infrastructure** — No cloud services, no databases, no Docker required. Just files, git, and a shell
 
-## Quick Start
+### Quick Start
 
-### Option 1: Download a binary
+#### Option 1: Download a binary
 
 Grab the latest release from [GitHub Releases](https://github.com/Bande-a-Bonnot/Boucle-framework/releases).
 
@@ -103,7 +103,7 @@ tar xzf boucle-*-aarch64-apple-darwin.tar.gz
 mv boucle /usr/local/bin/
 ```
 
-### Option 2: Build from source
+#### Option 2: Build from source
 
 ```bash
 git clone https://github.com/Bande-a-Bonnot/Boucle-framework.git
@@ -111,7 +111,7 @@ cd Boucle-framework
 cargo build --release
 ```
 
-### Run your first agent
+#### Run your first agent
 
 ```bash
 # Initialize a new agent
@@ -130,7 +130,7 @@ boucle run
 boucle schedule --interval 1h
 ```
 
-## Memory System (Broca)
+### Memory System (Broca)
 
 Broca is a file-based, git-native knowledge system for AI agents. Memories are Markdown files with YAML frontmatter.
 
@@ -179,7 +179,7 @@ Broca also supports:
 - **Relationships** — `boucle memory relate <id1> <id2> <relation>` to link entries
 - **Reindexing** — `boucle memory index` to rebuild the search index
 
-## MCP Server
+### MCP Server
 
 Boucle exposes Broca as a Model Context Protocol server, so other AI agents can share memory.
 
@@ -195,74 +195,11 @@ boucle mcp --port 8080
 
 Works with Claude Desktop, Claude Code, or any MCP-compatible client.
 
-## Tools
+## All Tools
 
-Standalone utilities that work independently of the full framework.
+Each tool has its own README with full documentation: [read-once](tools/read-once/), [file-guard](tools/file-guard/), [git-safe](tools/git-safe/), [bash-guard](tools/bash-guard/), [branch-guard](tools/branch-guard/), [session-log](tools/session-log/), [safety-check](tools/safety-check/), [diagnose](tools/diagnose/).
 
-### read-once (`tools/read-once/`)
-
-A Claude Code hook that prevents redundant file re-reads within a session. When Claude reads a file, read-once remembers it. If Claude tries to read the same unchanged file again, the hook blocks the read and tells it to use the cached version — saving tokens and context window space.
-
-```bash
-# Install
-cp tools/read-once/hook.sh ~/.claude/read-once/hook.sh
-# Add to ~/.claude/settings.json hooks.PreToolUse
-```
-
-See [`tools/read-once/README.md`](tools/read-once/README.md) for full setup and details.
-
-### git-safe (`tools/git-safe/`)
-
-A Claude Code hook that prevents destructive git operations. Blocks force push, hard reset, checkout ., clean -f, branch -D, stash drop/clear, and reflog expire. Suggests safer alternatives for each blocked operation. Configurable allowlist via `.git-safe`.
-
-```bash
-# Install
-cp tools/git-safe/hook.sh ~/.claude/hooks/git-safe.sh
-# Add to ~/.claude/settings.json hooks.PreToolUse
-```
-
-See [`tools/git-safe/README.md`](tools/git-safe/README.md) for full setup and details.
-
-### bash-guard (`tools/bash-guard/`)
-
-A Claude Code hook that blocks dangerous bash commands: `rm -rf` on critical paths, `sudo`, `curl|bash`, `chmod -R 777`, `kill -9 -1`, disk operations, system directory writes, `eval` injection, and global npm installs. Configurable allowlist via `.bash-guard`.
-
-```bash
-# Install
-cp tools/bash-guard/hook.sh ~/.claude/hooks/bash-guard.sh
-# Add to ~/.claude/settings.json hooks.PreToolUse
-```
-
-See [`tools/bash-guard/README.md`](tools/bash-guard/README.md) for full setup and details.
-
-### session-log (`tools/session-log/`)
-
-A Claude Code hook that logs every tool call to `~/.claude/session-logs/YYYY-MM-DD.jsonl`. Records timestamps, tool names, key parameters (file paths, commands, search patterns), and session IDs. Useful for auditing what Claude did in autonomous sessions, debugging, and understanding tool usage patterns.
-
-```bash
-# Install
-cp tools/session-log/hook.sh ~/.claude/hooks/session-log.sh
-# Add to ~/.claude/settings.json hooks.PostToolUse
-```
-
-See [`tools/session-log/README.md`](tools/session-log/README.md) for full setup and details.
-
-### diagnose (`tools/diagnose/`)
-
-An operations intelligence tool for autonomous agent loops. Analyzes signals, patterns, and response effectiveness to detect regime phases (productive/stagnating/stuck/failing), feedback loops, chronic issues, and generates actionable recommendations. Built from 220+ real loops of autonomous operation.
-
-```bash
-# Standalone
-python3 tools/diagnose/diagnose.py --improve-dir /path/to/improve/
-
-# As a Boucle plugin
-cp tools/diagnose/diagnose.py plugins/diagnose.py
-boucle diagnose
-```
-
-See [`tools/diagnose/README.md`](tools/diagnose/README.md) for input format and details.
-
-## Architecture
+### Architecture
 
 ```
 your-agent/
@@ -284,7 +221,7 @@ your-agent/
     └── post-commit      # After git commit ($1: timestamp)
 ```
 
-## How It Works
+### How It Works
 
 Each loop iteration:
 
@@ -294,7 +231,7 @@ Each loop iteration:
 4. **Learn** — Agent updates its memory with what it learned
 5. **Sleep** — Changes committed to git, lock released, agent waits for next iteration
 
-## Configuration
+### Configuration
 
 ```toml
 # boucle.toml
@@ -318,9 +255,9 @@ provider = "claude"
 model = "claude-sonnet-4-20250514"
 ```
 
-## Extension Points
+### Extension Points
 
-### Context Plugins (`context.d/`)
+#### Context Plugins (`context.d/`)
 
 Executable scripts that inject context into each iteration. Each receives the agent directory as `$1` and outputs Markdown to stdout.
 
@@ -331,7 +268,7 @@ echo "## Weather"
 curl -s wttr.in/?format=3
 ```
 
-### Lifecycle Hooks (`hooks/`)
+#### Lifecycle Hooks (`hooks/`)
 
 | Hook | When | Arguments | Use case |
 |------|------|-----------|----------|
@@ -340,7 +277,7 @@ curl -s wttr.in/?format=3
 | `post-llm` | After LLM completes | `$1`: exit code | Notifications, cleanup |
 | `post-commit` | After git commit | `$1`: timestamp | Push to remote, deploy |
 
-### Tool Restrictions (`allowed-tools.txt`)
+#### Tool Restrictions (`allowed-tools.txt`)
 
 ```
 Read
@@ -355,7 +292,7 @@ Bash(python3:*)
 
 If this file doesn't exist, all tools are available.
 
-## CLI Reference
+### CLI Reference
 
 ```bash
 # Agent management
@@ -394,7 +331,7 @@ boucle --help                    # Show help
 boucle --version                 # Show version
 ```
 
-## Design Principles
+### Design Principles
 
 1. **Files over databases.** Memory is Markdown. Config is TOML. Logs are plain text. Everything is human-readable and git-diffable.
 
@@ -403,8 +340,6 @@ boucle --version                 # Show version
 3. **Compound knowledge.** Every iteration should leave the agent smarter. Memory isn't a cache — it's an investment.
 
 4. **Transparency by default.** If you can't see what the agent did and why, something is wrong.
-
-5. **Zero infrastructure.** No cloud services, no databases, no Docker. Just files, git, and a shell.
 
 ## Development
 
