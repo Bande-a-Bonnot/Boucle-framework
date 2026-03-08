@@ -36,12 +36,13 @@ hook_desc() {
     file-guard)  echo "Block modifications to sensitive files (.env, keys)" ;;
     git-safe)    echo "Prevent destructive git operations (force push, reset --hard)" ;;
     bash-guard)    echo "Block dangerous bash commands (rm -rf /, sudo, curl|bash)" ;;
+    branch-guard)  echo "Prevent direct commits to main/master (feature-branch workflow)" ;;
     session-log)   echo "Audit trail — log every tool call to JSONL" ;;
     *)             echo "Unknown hook" ;;
   esac
 }
 
-ALL_HOOKS="read-once file-guard git-safe bash-guard session-log"
+ALL_HOOKS="read-once file-guard git-safe bash-guard branch-guard session-log"
 
 # Show available hooks
 for hook in $ALL_HOOKS; do
@@ -83,7 +84,7 @@ installed=""
 for hook in $selected; do
   # Validate
   case "$hook" in
-    read-once|file-guard|git-safe|bash-guard|session-log) ;;
+    read-once|file-guard|git-safe|bash-guard|branch-guard|session-log) ;;
     *)
       echo -e "${YELLOW}Unknown hook: ${hook}${RESET} (available: ${ALL_HOOKS})"
       continue
