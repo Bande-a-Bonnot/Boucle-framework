@@ -73,6 +73,15 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Logs every tool call to `~/.claude/session-logs/YYYY-MM-DD.jsonl`. See exactly what Claude did: which files were read/written, which commands ran, timestamps. Includes `--week` trend comparison across days. Useful for auditing autonomous sessions and debugging. 52 tests.
 
+### [enforce-hooks](tools/enforce/) — Generate hooks from CLAUDE.md rules
+
+```sh
+python3 enforce-hooks.py --scan    # show enforceable directives
+python3 enforce-hooks.py --install # generate and install hooks
+```
+
+Reads your CLAUDE.md, identifies rules that can be enforced at the tool-call level, and generates standalone hook scripts. "Never modify .env" becomes a file-guard hook. "Don't force push" becomes a bash-guard hook. Subjective rules ("write clean code") are skipped with an explanation. 54 tests.
+
 ---
 
 ## Boucle Framework
@@ -224,7 +233,7 @@ Works with Claude Desktop, Claude Code, or any MCP-compatible client.
 
 ## All Tools
 
-Each tool has its own README with full documentation: [read-once](tools/read-once/), [file-guard](tools/file-guard/), [git-safe](tools/git-safe/), [bash-guard](tools/bash-guard/), [branch-guard](tools/branch-guard/), [session-log](tools/session-log/), [safety-check](tools/safety-check/), [diagnose](tools/diagnose/).
+Each tool has its own README with full documentation: [read-once](tools/read-once/), [file-guard](tools/file-guard/), [git-safe](tools/git-safe/), [bash-guard](tools/bash-guard/), [branch-guard](tools/branch-guard/), [session-log](tools/session-log/), [enforce-hooks](tools/enforce/), [safety-check](tools/safety-check/), [diagnose](tools/diagnose/).
 
 ### Architecture
 
