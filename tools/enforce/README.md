@@ -2,90 +2,99 @@
 
 Turn CLAUDE.md rules into PreToolUse hooks that actually block violations.
 
-## Install
+## Quick Start
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/install.sh | bash
+# Scan your CLAUDE.md and see what's enforceable
+python3 enforce-hooks.py --scan
+
+# Generate hook scripts to stdout
+python3 enforce-hooks.py --generate
+
+# Install hooks to .claude/hooks/ and update settings.json
+python3 enforce-hooks.py --install
 ```
 
-Then tell Claude: **"enforce my CLAUDE.md rules"**
+## The Problem
 
-## The problem
+CLAUDE.md directives rely on prompt compliance. Compliance drops as instruction count grows. "Never modify .env" works until context gets large enough that it doesn't.
 
-CLAUDE.md directives rely on prompt compliance. Research shows compliance drops linearly as instruction count grows. "Never modify .env" works until context gets large enough that it doesn't.
+## How It Works
 
-## How it works
+1. Point the tool at your CLAUDE.md
+2. It identifies enforceable directives (rules that constrain tool usage)
+3. It generates standalone bash hook scripts
+4. Hooks run before every tool call, blocking violations at the code level
 
-1. You install the skill (one command, copies a single file)
-2. You ask Claude to enforce your rules
-3. Claude reads your CLAUDE.md, identifies enforceable directives, generates hook scripts
-4. You review the hooks and confirm
-5. Hooks run before every tool call, blocking violations at the code level
+No runtime dependencies beyond Python 3.6+ and `jq`. Generated hooks are standalone bash scripts.
 
-No runtime dependencies. No external services. Generated hooks are standalone bash scripts in `.claude/hooks/`, scoped to your project.
-
-## What's enforceable
-
-Rules that constrain tool usage at call time:
+## What's Enforceable
 
 | Directive | Hook type | What it blocks |
 |-----------|-----------|----------------|
 | "Never modify .env" | file-guard | Write/Edit to .env |
 | "Don't force push" | bash-guard | `push --force` in Bash |
-| "Search docs/ before web search" | require-prior-tool | WebSearch without prior Grep |
-| "Don't commit to main" | branch-guard | git commit on main |
-| "Never run rm -rf /" | bash-guard | dangerous command patterns |
+| "Always run tests before committing" | require-prior-tool | Commit without prior test run |
+| "Don't commit to main" | branch-guard | git commit/push on main |
+| "Never run rm -rf" | bash-guard | dangerous command patterns |
 | "Don't edit vendor/" | file-guard | Write/Edit to vendor/* |
+| "Protected files: X, Y" | file-guard | Listed file patterns |
+| "Blocked commands: X, Y" | bash-guard | Listed command patterns |
 
-Rules like "write clean code" or "be concise" are not enforceable (subjective, no tool-call signal). The skill explains why it skips them.
+Rules like "write clean code" or "be concise" are skipped (subjective, no tool-call signal). The tool explains what it skips and why.
 
 ## Example
 
 Given this CLAUDE.md:
 
 ```markdown
-## Knowledge Retrieval @enforced
-Before any WebSearch, grep docs/ first.
-
-## Protected Files @enforced
-Never modify .env, secrets/, or *.pem files.
+## Safety Rules
+- Never modify .env files @enforced
+- Don't run `rm -rf` or `sudo` @enforced
+- Never commit to main @enforced
 
 ## Code Style
-Use 4-space indentation and snake_case.
+- Use 4-space indentation and snake_case
 ```
 
-Claude generates 2 hooks (skips Code Style), shows you a table of what each blocks, and asks for confirmation before writing files.
+```
+$ python3 enforce-hooks.py --scan
 
-## Alternative: declarative rules
+Found 3 enforceable directive(s):
 
-Instead of generated scripts, you can write JSON rule objects in `.claude/enforcements/`:
-
-```json
-{
-  "name": "No Force Push",
-  "directive": "Never use git push --force.",
-  "trigger": { "tool": "Bash" },
-  "condition": { "type": "block_args", "pattern": "push\\s+(-f|--force)" },
-  "action": "block",
-  "message": "Force push is blocked by CLAUDE.md"
-}
+  #  Type                  What it blocks                            Source line
+---  ----                  ---                                       ---
+  1  file-guard            Block Write/Edit to: .env                 L3
+  2  bash-guard            Block commands: rm -rf, sudo              L4
+  3  branch-guard          Block commits to: main                    L5
 ```
 
-Then register `engine.sh` as a PreToolUse hook. The engine reads all `.json` rules and enforces them. Condition types: `require_prior_tool`, `block_tool`, `block_args`, `require_args`, `block_file_pattern`.
+The `@enforced` tag is optional but recommended for clarity.
 
-## Project-scoped
+## Options
 
-Everything lives in `.claude/` at your project root:
-- `.claude/skills/enforce-hooks/SKILL.md` (the skill)
-- `.claude/hooks/enforce-*.sh` (generated hooks)
-- `.claude/enforcements/*.json` (declarative rules, if using engine mode)
+```
+enforce-hooks.py [CLAUDE.md] [options]
 
-Nothing touches `~/.claude/` or other projects.
+  --scan          Show enforceable directives (default)
+  --generate      Print hook scripts to stdout
+  --install       Write hooks and update settings.json
+  --json          Output as JSON (with --scan)
+  --hooks-dir     Directory for hooks (default: .claude/hooks)
+  --settings      Path to settings.json (default: .claude/settings.json)
+  --test          Run self-tests (54 assertions)
+```
+
+Auto-detects CLAUDE.md in the current or parent directories if no file is specified.
+
+## As a Claude Code Skill
+
+Copy `SKILL.md` to `.claude/skills/enforce-hooks/SKILL.md` in your project. Then tell Claude: **"enforce my CLAUDE.md rules"**. Claude reads your CLAUDE.md, shows you what it found, and generates hooks on confirmation.
 
 ## Tests
 
 ```sh
-bash tools/enforce/test.sh    # 16 tests
+python3 enforce-hooks.py --test
 ```
 
 ## License
