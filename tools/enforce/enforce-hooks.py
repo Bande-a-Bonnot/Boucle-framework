@@ -117,18 +117,33 @@ BRANCH_GUARD_PATTERNS = [
 
 # Patterns for requiring a tool before another
 REQUIRE_PRIOR_PATTERNS = [
-    # "Always run tests before committing"
+    # "Always run tests before committing" / "Run cargo test before committing"
     re.compile(
-        r'(?:always|must)\s+'
-        r'(?:run|execute|use)\s+'
+        r'(?:always\s+)?(?:run|execute|use)\s+'
         r'(\S+(?:\s+\S+)?)\s+'
         r'before\s+'
         r'(\S+)',
         re.IGNORECASE
     ),
+    # "Before any WebSearch, MUST grep the vault first"
+    re.compile(
+        r'before\s+(?:any\s+)?(\S+)[,;]\s+'
+        r'(?:\w+\s+)?(?:must|should|always)?\s*'
+        r'(?:run|execute|use|grep|search|check)\s+'
+        r'(.+?)(?:\s+first)?\.?\s*$',
+        re.IGNORECASE
+    ),
+    # "MUST grep X before WebSearch" / "Claude MUST grep X before Y"
+    re.compile(
+        r'must\s+(?:run\s+|execute\s+)?'
+        r'(\S+(?:\s+\S+)?)\s+'
+        r'(?:.+?\s+)?before\s+'
+        r'(\S+)',
+        re.IGNORECASE
+    ),
     # "Search locally before using web search" / "Always search locally before web search"
     re.compile(
-        r'(?:always\s+)?(?:search|check|look)\s+(?:locally|the\s+codebase|existing\s+code)\s+'
+        r'(?:always\s+)?(?:search|check|look|grep)\s+(?:locally|the\s+codebase|existing\s+code|the\s+\S+)\s+'
         r'before\s+(?:using?\s+)?(.+)',
         re.IGNORECASE
     ),
@@ -309,21 +324,70 @@ def classify_directive(line, line_num):
             )
 
     # Try require-prior-tool patterns
-    for pattern in REQUIRE_PRIOR_PATTERNS:
+    # Map common terms to Claude Code tool names
+    _tool_name_map = {
+        'tests': 'Bash', 'test': 'Bash', 'lint': 'Bash',
+        'cargo test': 'Bash', 'npm test': 'Bash', 'pytest': 'Bash',
+        'search': 'Grep', 'grep': 'Grep', 'rg': 'Grep',
+        'web search': 'WebSearch', 'websearch': 'WebSearch',
+        'webfetch': 'WebFetch', 'web fetch': 'WebFetch',
+        'committing': 'Bash', 'commit': 'Bash', 'pushing': 'Bash',
+    }
+    def _to_tool(name):
+        """Map a term to its Claude Code tool name."""
+        low = name.strip().lower()
+        if low in _tool_name_map:
+            return _tool_name_map[low]
+        # If it looks like a tool name already (PascalCase), keep it
+        if name[0].isupper() and name.isalnum():
+            return name
+        return name
+
+    for idx, pattern in enumerate(REQUIRE_PRIOR_PATTERNS):
         m = pattern.search(clean)
         if m:
             groups = m.groups()
-            if len(groups) >= 2:
+            if idx == 1:
+                # Pattern: "Before any WebSearch, MUST grep the vault first"
+                # Group 1 = target tool, verb = required action
+                target_raw = groups[0].strip()
+                verb_match = re.search(r'(?:must|should|always)\s+(?:run\s+|execute\s+)?(\S+)', clean, re.IGNORECASE)
+                required_raw = verb_match.group(1) if verb_match else 'grep'
+                required = _to_tool(required_raw)
+                target = _to_tool(target_raw)
                 return Directive(
                     text=stripped,
                     hook_type='require-prior-tool',
-                    patterns=list(groups),
-                    description=f"Require {groups[0]} before {groups[1]}",
+                    patterns=[required, target],
+                    description=f"Require {required} before {target}",
+                    line_num=line_num,
+                )
+            elif len(groups) >= 2:
+                # Pattern: "Run X before Y" -> required=X, target=Y
+                required_raw = groups[0].strip()
+                target_raw = groups[1].strip()
+                required = _to_tool(required_raw)
+                target = _to_tool(target_raw)
+                # If both map to the same tool (e.g. both Bash), keep
+                # the raw command text so the hook can pattern-match
+                if required == target == 'Bash':
+                    return Directive(
+                        text=stripped,
+                        hook_type='require-prior-command',
+                        patterns=[required_raw, target_raw],
+                        description=f"Require `{required_raw}` before `{target_raw}`",
+                        line_num=line_num,
+                    )
+                return Directive(
+                    text=stripped,
+                    hook_type='require-prior-tool',
+                    patterns=[required, target],
+                    description=f"Require {required} before {target}",
                     line_num=line_num,
                 )
             elif len(groups) == 1:
                 # Single-group: "search locally before web search" -> Grep before WebSearch
-                target = groups[0].strip()
+                target = _to_tool(groups[0].strip())
                 return Directive(
                     text=stripped,
                     hook_type='require-prior-tool',
@@ -364,21 +428,43 @@ def scan_file(path):
     lines = content.splitlines()
     enforceable = []
     skipped = []
+    section_enforced = False  # tracks whether current section has @enforced
+    in_code_block = False
 
     for i, line in enumerate(lines, 1):
         stripped = line.strip()
         if not stripped:
             continue
-        # Skip pure headers, code blocks, and very short lines
+
+        # Track code blocks
         if stripped.startswith('```'):
+            in_code_block = not in_code_block
             continue
-        if stripped.startswith('# ') and len(stripped) < 50:
+        if in_code_block:
+            continue
+
+        # Skip top-level headers
+        if stripped.startswith('# ') and not stripped.startswith('## '):
+            section_enforced = False
+            continue
+
+        # Section headings (## or ###) may carry @enforced tag
+        if re.match(r'^#{2,4}\s', stripped):
+            section_enforced = '@enforced' in stripped or '@required' in stripped
+            # Don't classify the heading itself as a directive — the
+            # content lines under it are the actual rules.
+            continue
+
+        # Content lines: classify if they have @enforced inline or belong
+        # to an @enforced section
+        has_inline_tag = '@enforced' in line or '@required' in line
+        if not has_inline_tag and not section_enforced:
             continue
 
         directive = classify_directive(line, i)
         if directive:
             enforceable.append(directive)
-        elif '@enforced' in line:
+        elif has_inline_tag:
             skipped.append((i, stripped, 'Could not classify'))
 
     return enforceable, skipped
@@ -446,16 +532,37 @@ echo '{{"decision": "block", "reason": "Run {required_tool} first. (CLAUDE.md: {
 exit 0
 '''
 
+REQUIRE_PRIOR_CMD_TEMPLATE = '''#!/usr/bin/env bash
+# enforce: {directive}
+# Generated by enforce-hooks from CLAUDE.md
+# NOTE: Requires session-log hook to be installed for tracking.
+INPUT=$(cat)
+[ "$(echo "$INPUT" | jq -r '.tool_name')" != "Bash" ] && exit 0
+CMD=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+# Only block commands matching the target pattern
+case "$CMD" in *"{target_cmd}"*) ;; *) exit 0 ;; esac
+# Check session log for the required prior command
+TODAY=$(date -u +%Y-%m-%d)
+LOG="$HOME/.claude/session-logs/$TODAY.jsonl"
+if [ -f "$LOG" ]; then
+  if grep -q '{required_cmd}' "$LOG" 2>/dev/null; then
+    exit 0
+  fi
+fi
+echo '{{"decision": "block", "reason": "Run {required_cmd} first. (CLAUDE.md: {short})"}}'
+exit 0
+'''
+
 
 def generate_file_guard_checks(patterns, short_directive):
     """Generate bash checks for file-guard patterns."""
     lines = []
     for pat in patterns:
         escaped = pat.replace('"', '\\"')
-        short = short_directive.replace('"', '\\"')
+        short = short_directive.replace('"', '\\"').replace('`', '')
         lines.append(
             f'[[ "$FILE" == *"{escaped}"* ]] && '
-            f'echo \'{{"decision": "block", "reason": "Protected: $FILE matches {escaped}. (CLAUDE.md: {short})"}}\' && exit 0'
+            f'echo "{{\\"decision\\": \\"block\\", \\"reason\\": \\"Protected: $FILE matches {escaped}. (CLAUDE.md: {short})\\"}}\" && exit 0'
         )
     return '\n'.join(lines)
 
@@ -500,9 +607,21 @@ def generate_tool_block_checks(tools, short_directive):
     return '\n'.join(lines)
 
 
+def _truncate_short(text, maxlen=60):
+    """Truncate text for use in hook messages, word-boundary aware."""
+    clean = text.replace('@enforced', '').replace('@required', '').strip()
+    if len(clean) <= maxlen:
+        return clean
+    # Truncate at word boundary
+    truncated = clean[:maxlen].rsplit(' ', 1)[0]
+    # Don't leave dangling punctuation
+    truncated = truncated.rstrip('(,[;:')
+    return truncated + '...'
+
+
 def generate_hook(directive):
     """Generate a hook script for a directive."""
-    short = directive.text[:80].replace('@enforced', '').strip()
+    short = _truncate_short(directive.text, 80)
 
     if directive.hook_type == 'file-guard':
         checks = generate_file_guard_checks(directive.patterns, short)
@@ -530,22 +649,32 @@ def generate_hook(directive):
         if len(directive.patterns) >= 2:
             required = directive.patterns[0]
             target = directive.patterns[1]
-            # Map common terms to tool names
-            tool_map = {
-                'tests': 'Bash',
-                'test': 'Bash',
-                'lint': 'Bash',
-                'search': 'Grep',
-                'grep': 'Grep',
-                'web search': 'WebSearch',
-                'websearch': 'WebSearch',
-            }
-            target_tool = tool_map.get(target.lower(), 'Bash')
             return REQUIRE_PRIOR_TEMPLATE.format(
                 directive=short,
-                target_tools=target_tool,
+                target_tools=target,
                 required_tool=required,
-                short=short[:60],
+                short=_truncate_short(directive.text),
+            )
+
+    elif directive.hook_type == 'require-prior-command':
+        if len(directive.patterns) >= 2:
+            required_cmd = directive.patterns[0]
+            target_cmd = directive.patterns[1]
+            # Map common verb forms to git command patterns
+            target_map = {
+                'committing': 'git commit',
+                'commit': 'git commit',
+                'pushing': 'git push',
+                'push': 'git push',
+                'merging': 'git merge',
+                'deploying': 'deploy',
+            }
+            target_pattern = target_map.get(target_cmd.lower(), target_cmd)
+            return REQUIRE_PRIOR_CMD_TEMPLATE.format(
+                directive=short,
+                target_cmd=target_pattern,
+                required_cmd=required_cmd,
+                short=_truncate_short(directive.text),
             )
 
     return None
@@ -969,7 +1098,7 @@ def run_tests():
 
     # Test require-prior-tool detection
     d = classify_directive("Always run tests before committing", 11)
-    check("require-prior basic", d is not None and d.hook_type == 'require-prior-tool', True)
+    check("require-prior basic", d is not None and d.hook_type in ('require-prior-tool', 'require-prior-command'), True)
 
     # Test non-enforceable directives
     d = classify_directive("Write clean code", 12)
@@ -1001,7 +1130,7 @@ def run_tests():
     hook = generate_hook(d)
     check("hook gen file-guard", hook is not None, True)
     check("hook has jq", hook is not None and 'jq' in hook, True)
-    check("hook has block", hook is not None and '"block"' in hook, True)
+    check("hook has block", hook is not None and 'block' in hook, True)
 
     d = Directive(
         text="Never run rm -rf",
