@@ -84,7 +84,7 @@ python3 enforce-hooks.py --scan    # show enforceable directives
 python3 enforce-hooks.py --install # generate and install hooks
 ```
 
-Reads your CLAUDE.md, identifies rules that can be enforced at the tool-call level, and generates standalone hook scripts. Supports 6 hook types: file-guard ("never modify .env"), bash-guard ("don't force push"), branch-guard ("never commit to main"), tool-block ("don't use WebSearch"), require-prior-tool ("always run tests before committing"), and bare filename protection ("don't edit Makefile"). Subjective rules ("write clean code") are skipped with an explanation. 77 tests.
+Reads your CLAUDE.md, identifies rules that can be enforced at the tool-call level, and generates standalone hook scripts. Supports 7 hook types: file-guard ("never modify .env"), bash-guard ("don't force push"), branch-guard ("never commit to main"), tool-block ("don't use WebSearch"), require-prior-tool ("always run tests before committing"), bare filename protection ("don't edit Makefile"), and command substitution ("use pnpm instead of npm"). Detects read-blocking ("don't read files in secrets/") and multi-tool rules ("don't use WebSearch or WebFetch"). Subjective rules ("write clean code") are skipped with an explanation. 99 tests.
 
 ---
 
