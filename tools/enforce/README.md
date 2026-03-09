@@ -5,14 +5,13 @@ Turn CLAUDE.md rules into PreToolUse hooks that actually block violations.
 ## Quick Start
 
 ```sh
-# Scan your CLAUDE.md and see what's enforceable
-python3 enforce-hooks.py --scan
+# Try it without cloning (scans your project's CLAUDE.md)
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/enforce-hooks.py -o /tmp/enforce-hooks.py && python3 /tmp/enforce-hooks.py --scan
 
-# Generate hook scripts to stdout
-python3 enforce-hooks.py --generate
-
-# Install hooks to .claude/hooks/ and update settings.json
-python3 enforce-hooks.py --install
+# Or clone and run locally
+python3 enforce-hooks.py --scan       # show enforceable directives
+python3 enforce-hooks.py --generate   # print hook scripts to stdout
+python3 enforce-hooks.py --install    # write hooks and update settings.json
 ```
 
 ## The Problem
@@ -33,11 +32,13 @@ No runtime dependencies beyond Python 3.6+ and `jq`. Generated hooks are standal
 | Directive | Hook type | What it blocks |
 |-----------|-----------|----------------|
 | "Never modify .env" | file-guard | Write/Edit to .env |
-| "Don't force push" | bash-guard | `push --force` in Bash |
+| "Don't edit the Makefile" | file-guard | Write/Edit to Makefile |
+| "Don't force push" | bash-guard | `push --force`, `push -f` in Bash |
+| "Never reset --hard" | bash-guard | `reset --hard` in Bash |
 | "Always run tests before committing" | require-prior-tool | Commit without prior test run |
-| "Don't commit to main" | branch-guard | git commit/push on main |
+| "Don't commit directly to main" | branch-guard | git commit/push on main |
+| "Don't use WebSearch" | tool-block | Block tool by name |
 | "Never run rm -rf" | bash-guard | dangerous command patterns |
-| "Don't edit vendor/" | file-guard | Write/Edit to vendor/* |
 | "Protected files: X, Y" | file-guard | Listed file patterns |
 | "Blocked commands: X, Y" | bash-guard | Listed command patterns |
 
@@ -82,7 +83,7 @@ enforce-hooks.py [CLAUDE.md] [options]
   --json          Output as JSON (with --scan)
   --hooks-dir     Directory for hooks (default: .claude/hooks)
   --settings      Path to settings.json (default: .claude/settings.json)
-  --test          Run self-tests (54 assertions)
+  --test          Run self-tests (77 assertions)
 ```
 
 Auto-detects CLAUDE.md in the current or parent directories if no file is specified.

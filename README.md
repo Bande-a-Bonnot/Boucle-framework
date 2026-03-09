@@ -76,11 +76,15 @@ Logs every tool call to `~/.claude/session-logs/YYYY-MM-DD.jsonl`. See exactly w
 ### [enforce-hooks](tools/enforce/) — Generate hooks from CLAUDE.md rules
 
 ```sh
+# Try it without installing (scans your CLAUDE.md and shows what's enforceable)
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/enforce-hooks.py -o /tmp/enforce-hooks.py && python3 /tmp/enforce-hooks.py --scan
+
+# Or clone and run locally
 python3 enforce-hooks.py --scan    # show enforceable directives
 python3 enforce-hooks.py --install # generate and install hooks
 ```
 
-Reads your CLAUDE.md, identifies rules that can be enforced at the tool-call level, and generates standalone hook scripts. "Never modify .env" becomes a file-guard hook. "Don't force push" becomes a bash-guard hook. Subjective rules ("write clean code") are skipped with an explanation. 54 tests.
+Reads your CLAUDE.md, identifies rules that can be enforced at the tool-call level, and generates standalone hook scripts. Supports 6 hook types: file-guard ("never modify .env"), bash-guard ("don't force push"), branch-guard ("never commit to main"), tool-block ("don't use WebSearch"), require-prior-tool ("always run tests before committing"), and bare filename protection ("don't edit Makefile"). Subjective rules ("write clean code") are skipped with an explanation. 77 tests.
 
 ---
 
@@ -386,7 +390,7 @@ boucle --version                 # Show version
 ## Development
 
 ```bash
-cargo test           # Run all tests (177 passing)
+cargo test           # Run all tests (195 passing)
 cargo fmt            # Format code
 cargo clippy         # Run linter
 ```
