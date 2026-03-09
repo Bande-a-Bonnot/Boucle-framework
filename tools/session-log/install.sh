@@ -34,15 +34,22 @@ with open(settings_path) as f:
 hooks = settings.setdefault('hooks', {})
 post_hooks = hooks.setdefault('PostToolUse', [])
 
-# Check if already installed
+# Check if already installed (handle both flat and nested formats)
 for h in post_hooks:
-    if h.get('type') == 'command' and 'session-log' in h.get('command', ''):
+    cmd = h.get('command', '')
+    if not cmd:
+        for hk in h.get('hooks', []):
+            c = hk.get('command', '')
+            if c: cmd = c; break
+    if 'session-log' in cmd:
         print('session-log hook already configured in settings.json')
         sys.exit(0)
 
 post_hooks.append({
-    'type': 'command',
-    'command': f'bash {hook_path}'
+    'hooks': [{
+        'type': 'command',
+        'command': f'bash {hook_path}'
+    }]
 })
 
 with open(settings_path, 'w') as f:

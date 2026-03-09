@@ -37,22 +37,36 @@ with open('$SETTINGS_FILE') as f:
 hooks = s.setdefault('hooks', {})
 pre = hooks.setdefault('PreToolUse', [])
 
-# Check for existing entry
+def get_cmd(entry):
+    cmd = entry.get('command', '')
+    if not cmd:
+        for hk in entry.get('hooks', []):
+            c = hk.get('command', '')
+            if c: return c
+    return cmd
+
+# Remove legacy/flat entries and check for current path
 found = False
+cleaned = []
 for h in pre:
-    cmd = h.get('command', '')
+    cmd = get_cmd(h)
     if '$HOOK_NAME' in cmd:
-        if cmd == '$HOOK_PATH':
+        if '$HOOK_PATH' in cmd:
             found = True
-        # else: legacy entry, keep it (or remove if you want migration)
+            if 'hooks' not in h:
+                cleaned.append({'hooks': [{'type': 'command', 'command': '$HOOK_PATH'}]})
+            else:
+                cleaned.append(h)
+    else:
+        cleaned.append(h)
 
 if not found:
-    pre.append({'type': 'command', 'command': '$HOOK_PATH'})
+    cleaned.append({'hooks': [{'type': 'command', 'command': '$HOOK_PATH'}]})
     print('  Hook registered')
 else:
     print('  Already installed')
 
-hooks['PreToolUse'] = pre
+hooks['PreToolUse'] = cleaned
 s['hooks'] = hooks
 with open('$SETTINGS_FILE', 'w') as f:
     json.dump(s, f, indent=2)
@@ -68,8 +82,12 @@ else
   "hooks": {
     "PreToolUse": [
       {
-        "type": "command",
-        "command": "$HOOK_PATH"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOOK_PATH"
+          }
+        ]
       }
     ]
   }

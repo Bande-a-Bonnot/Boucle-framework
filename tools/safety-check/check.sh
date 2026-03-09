@@ -65,13 +65,17 @@ try:
                "file-guard", "file_guard", "branch-guard", "branch_guard",
                "session-log", "session_log", "read-once", "read_once"]
     for hook_type in ["PreToolUse", "PostToolUse"]:
-        for group in s.get("hooks", {}).get(hook_type, []):
-            for hook in group.get("hooks", []):
-                cmd = hook.get("command", "")
+        for entry in s.get("hooks", {}).get(hook_type, []):
+            cmds = []
+            # Nested format: {"hooks": [{"type": "command", "command": "..."}]}
+            for hook in entry.get("hooks", []):
+                cmds.append(hook.get("command", ""))
+            # Flat format: {"type": "command", "command": "..."}
+            cmds.append(entry.get("command", ""))
+            for cmd in cmds:
                 for needle in needles:
                     if needle in cmd:
-                        canonical = needle.replace("_", "-")
-                        found.add(canonical)
+                        found.add(needle.replace("_", "-"))
     perms = s.get("permissions", {})
     if perms.get("allow", []) or perms.get("deny", []):
         found.add("permissions")
