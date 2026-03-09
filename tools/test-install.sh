@@ -57,10 +57,15 @@ fi
 
 if python3 -c "
 import json, sys
+def get_cmds(entry):
+    '''Extract commands from flat or nested hook format'''
+    c = entry.get('command', '')
+    if c: return [c]
+    return [h.get('command','') for h in entry.get('hooks',[])]
 with open(sys.argv[1]) as f:
     s = json.load(f)
 hooks = s.get('hooks', {}).get('PreToolUse', [])
-found = any('read-once' in h.get('command', '') for h in hooks)
+found = any('read-once' in c for h in hooks for c in get_cmds(h))
 sys.exit(0 if found else 1)
 " "$TEST_HOME/.claude/settings.json" 2>/dev/null; then
   pass "read-once in settings.json"
@@ -105,10 +110,14 @@ bash "$SCRIPT_DIR/install.sh" file-guard >/dev/null 2>&1
 
 count=$(python3 -c "
 import json, sys
+def get_cmds(entry):
+    c = entry.get('command', '')
+    if c: return [c]
+    return [h.get('command','') for h in entry.get('hooks',[])]
 with open(sys.argv[1]) as f:
     s = json.load(f)
 hooks = s.get('hooks', {}).get('PreToolUse', [])
-n = sum(1 for h in hooks if 'file-guard' in h.get('command', ''))
+n = sum(1 for h in hooks for c in get_cmds(h) if 'file-guard' in c)
 print(n)
 " "$TEST_HOME/.claude/settings.json" 2>/dev/null)
 
@@ -134,10 +143,19 @@ bash "$SCRIPT_DIR/install.sh" read-once file-guard git-safe bash-guard >/dev/nul
 
 count=$(python3 -c "
 import json, sys
+def get_cmds(entry):
+    c = entry.get('command', '')
+    if c: return [c]
+    return [h.get('command','') for h in entry.get('hooks',[])]
 with open(sys.argv[1]) as f:
     s = json.load(f)
 hooks = s.get('hooks', {}).get('PreToolUse', [])
-print(len(hooks))
+names = set()
+for h in hooks:
+    for c in get_cmds(h):
+        for name in ['read-once','file-guard','git-safe','bash-guard']:
+            if name in c: names.add(name)
+print(len(names))
 " "$TEST_HOME/.claude/settings.json" 2>/dev/null)
 
 if [ "$count" = "4" ]; then
