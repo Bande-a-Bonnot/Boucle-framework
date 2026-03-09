@@ -73,18 +73,18 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Logs every tool call to `~/.claude/session-logs/YYYY-MM-DD.jsonl`. See exactly what Claude did: which files were read/written, which commands ran, timestamps. Includes `--week` trend comparison across days. Useful for auditing autonomous sessions and debugging. 52 tests.
 
-### [enforce-hooks](tools/enforce/) — Generate hooks from CLAUDE.md rules
+### [enforce-hooks](tools/enforce/) — Enforce CLAUDE.md rules as hooks
 
 ```sh
-# Try it without installing (scans your CLAUDE.md and shows what's enforceable)
-curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/enforce-hooks.py -o /tmp/enforce-hooks.py && python3 /tmp/enforce-hooks.py --scan
+# Download and install as a single dynamic hook (recommended)
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/enforce-hooks.py -o /tmp/enforce-hooks.py
+python3 /tmp/enforce-hooks.py --install-plugin
 
-# Or clone and run locally
-python3 enforce-hooks.py --scan    # show enforceable directives
-python3 enforce-hooks.py --install # generate and install hooks
+# Or just scan to see what's enforceable
+python3 /tmp/enforce-hooks.py --scan
 ```
 
-Reads your CLAUDE.md, identifies rules that can be enforced at the tool-call level, and generates standalone hook scripts. Supports 7 hook types: file-guard ("never modify .env"), bash-guard ("don't force push"), branch-guard ("never commit to main"), tool-block ("don't use WebSearch"), require-prior-tool ("always run tests before committing"), bare filename protection ("don't edit Makefile"), and command substitution ("use pnpm instead of npm"). Detects read-blocking ("don't read files in secrets/") and multi-tool rules ("don't use WebSearch or WebFetch"). Subjective rules ("write clean code") are skipped with an explanation. 99 tests.
+Reads your CLAUDE.md, identifies rules that can be enforced at the tool-call level, and blocks violations on every tool call. Plugin mode installs one hook that reads CLAUDE.md dynamically; change your rules and enforcement updates automatically. Supports 7 hook types: file-guard, bash-guard, branch-guard, tool-block, require-prior-tool, bare filename protection, and command substitution. Subjective rules ("write clean code") are skipped with an explanation. 134 tests.
 
 ---
 
