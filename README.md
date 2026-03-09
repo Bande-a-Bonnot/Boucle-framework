@@ -73,18 +73,15 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Logs every tool call to `~/.claude/session-logs/YYYY-MM-DD.jsonl`. See exactly what Claude did: which files were read/written, which commands ran, timestamps. Includes `--week` trend comparison across days. Useful for auditing autonomous sessions and debugging. 52 tests.
 
-### [enforce-hooks](tools/enforce/) — Enforce CLAUDE.md rules as hooks
+### [enforce-hooks](tools/enforce/) — Turn CLAUDE.md rules into enforceable hooks
 
 ```sh
-# Download and install as a single dynamic hook (recommended)
-curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/enforce-hooks.py -o /tmp/enforce-hooks.py
-python3 /tmp/enforce-hooks.py --install-plugin
-
-# Or just scan to see what's enforceable
-python3 /tmp/enforce-hooks.py --scan
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/install.sh | bash
 ```
 
-Reads your CLAUDE.md, identifies rules that can be enforced at the tool-call level, and blocks violations on every tool call. Plugin mode installs one hook that reads CLAUDE.md dynamically; change your rules and enforcement updates automatically. Supports 7 hook types: file-guard, bash-guard, branch-guard, tool-block, require-prior-tool, bare filename protection, and command substitution. Subjective rules ("write clean code") are skipped with an explanation. 134 tests.
+Your CLAUDE.md says "never edit .env" but Claude edits it anyway. This tool reads your CLAUDE.md, finds rules marked `@enforced`, and generates hooks that block violations deterministically. Rules in prompts are suggestions; hooks are laws.
+
+Scan first to preview: `enforce-hooks.py --scan`. Installs as one dynamic hook that re-reads CLAUDE.md on every call, so enforcement updates when your rules change. Supports file-guard, bash-guard, branch-guard, tool-block, require-prior-tool, bare filename protection, and command substitution patterns. Subjective rules ("write clean code") are skipped. 134 tests.
 
 ---
 
