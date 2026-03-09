@@ -103,12 +103,21 @@ echo "2. First read (cache miss)"
 OUTPUT=$(run_hook "$(make_input Read "$TEST_FILE")")
 assert_empty "First read passes through (no output)" "$OUTPUT"
 
-# --- Test 3: Second read of same file (cache hit) ---
+# --- Test 3: Second read of same file (cache hit — warn mode default) ---
 echo ""
-echo "3. Second read (cache hit — should block)"
+echo "3. Second read (cache hit — warn mode, should allow with advisory)"
 OUTPUT=$(run_hook "$(make_input Read "$TEST_FILE")")
-assert_contains "Blocked with deny" "deny" "$OUTPUT"
+assert_contains "Warn mode: allows with advisory" "allow" "$OUTPUT"
 assert_contains "Message mentions already in context" "already in context" "$OUTPUT"
+
+# --- Test 3b: Deny mode blocks the read ---
+echo ""
+echo "3b. Second read (cache hit — deny mode, should block)"
+export READ_ONCE_MODE=deny
+OUTPUT=$(run_hook "$(make_input Read "$TEST_FILE")")
+assert_contains "Deny mode: blocks with deny" "deny" "$OUTPUT"
+assert_contains "Deny mode: mentions already in context" "already in context" "$OUTPUT"
+unset READ_ONCE_MODE
 
 # --- Test 4: File changes between reads ---
 echo ""
@@ -153,9 +162,10 @@ assert_empty "Read with limit passes through" "$OUTPUT"
 OUTPUT=$(run_hook "$(make_input Read "$PARTIAL_FILE" "$SESSION" 10 50)")
 assert_empty "Read with offset+limit passes through" "$OUTPUT"
 
-# Full re-read should still be blocked (was cached from first read)
+# Full re-read should still be intercepted (was cached from first read)
 OUTPUT=$(run_hook "$(make_input Read "$PARTIAL_FILE")")
-assert_contains "Full re-read still blocked" "deny" "$OUTPUT"
+assert_contains "Full re-read intercepted (warn mode)" "allow" "$OUTPUT"
+assert_contains "Full re-read advisory message" "already in context" "$OUTPUT"
 
 # --- Test 8: Missing fields ---
 echo ""
@@ -194,10 +204,10 @@ TTL_SESSION="ttl-session-$$"
 OUTPUT=$(run_hook "$(make_input Read "$TTL_FILE" "$TTL_SESSION")")
 assert_empty "TTL: first read passes through" "$OUTPUT"
 
-# Second read — should be blocked
+# Second read — should be intercepted (warn mode: allow with advisory)
 OUTPUT=$(run_hook "$(make_input Read "$TTL_FILE" "$TTL_SESSION")")
-assert_contains "TTL: second read blocked" "deny" "$OUTPUT"
-assert_contains "TTL: deny message mentions re-read window" "Re-read allowed after" "$OUTPUT"
+assert_contains "TTL: second read intercepted" "already in context" "$OUTPUT"
+assert_contains "TTL: message mentions re-read window" "Re-read allowed after" "$OUTPUT"
 
 # Now backdate the cache entry to simulate TTL expiry
 SESSION_HASH=$(echo -n "$TTL_SESSION" | shasum -a 256 | cut -c1-16)
@@ -233,9 +243,9 @@ export READ_ONCE_TTL=2
 OUTPUT=$(run_hook "$(make_input Read "$CTL_FILE" "$CTL_SESSION")")
 assert_empty "Custom TTL: first read passes" "$OUTPUT"
 
-# Immediate re-read — should block
+# Immediate re-read — should be intercepted (warn mode)
 OUTPUT=$(run_hook "$(make_input Read "$CTL_FILE" "$CTL_SESSION")")
-assert_contains "Custom TTL: re-read blocked within 2s" "deny" "$OUTPUT"
+assert_contains "Custom TTL: re-read intercepted within 2s" "already in context" "$OUTPUT"
 
 # Wait for TTL to expire
 sleep 3
@@ -323,9 +333,9 @@ line 4: bar
 line 5: baz
 CONTENT
 
-# Re-read — should show diff, not full re-read
+# Re-read — should show diff, not full re-read (warn mode: allow with diff)
 OUTPUT=$(run_hook "$(make_input Read "$DIFF_FILE" "$DIFF_SESSION")")
-assert_contains "Diff: denied with diff content" "deny" "$OUTPUT"
+assert_contains "Diff: intercepted with diff content (warn=allow)" "allow" "$OUTPUT"
 assert_contains "Diff: mentions changes" "changed since last read" "$OUTPUT"
 assert_contains "Diff: includes diff markers" "CHANGED" "$OUTPUT"
 
@@ -366,9 +376,9 @@ UNCH_SESSION="unchanged-diff-$$"
 OUTPUT=$(run_hook "$(make_input Read "$UNCHANGED_FILE" "$UNCH_SESSION")")
 assert_empty "Diff unchanged: first read passes" "$OUTPUT"
 
-# Second read — unchanged, should be a normal cache hit (not diff)
+# Second read — unchanged, should be a normal cache hit (warn mode: allow with advisory)
 OUTPUT=$(run_hook "$(make_input Read "$UNCHANGED_FILE" "$UNCH_SESSION")")
-assert_contains "Diff unchanged: cache hit (deny)" "deny" "$OUTPUT"
+assert_contains "Diff unchanged: cache hit (warn=allow)" "allow" "$OUTPUT"
 assert_contains "Diff unchanged: normal hit message" "already in context" "$OUTPUT"
 
 # --- Test 17: Diff mode — diff event logged in stats ---
@@ -412,9 +422,9 @@ printf '%0.s.' {1..4000} > "$COST_FILE"  # ~4000 bytes = ~1700 tokens
 OUTPUT=$(run_hook "$(make_input Read "$COST_FILE" "$COST_SESSION")")
 assert_empty "Cost: first read passes" "$OUTPUT"
 
-# Re-read — should deny with cost info
+# Re-read — should include cost info in advisory
 OUTPUT=$(run_hook "$(make_input Read "$COST_FILE" "$COST_SESSION")")
-assert_contains "Cost: deny includes Sonnet cost" "Sonnet" "$OUTPUT"
+assert_contains "Cost: advisory includes Sonnet cost" "Sonnet" "$OUTPUT"
 
 # --- Group 20: Stats CLI cost estimates ---
 echo ""
