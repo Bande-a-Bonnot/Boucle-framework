@@ -5,12 +5,15 @@ Turn CLAUDE.md rules into PreToolUse hooks that actually block violations.
 ## Quick Start
 
 ```sh
-# Download and install as a plugin (recommended)
-curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/enforce-hooks.py -o /tmp/enforce-hooks.py
-python3 /tmp/enforce-hooks.py --install-plugin
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/install.sh | bash
+```
 
-# Or just scan your CLAUDE.md to see what's enforceable
-python3 /tmp/enforce-hooks.py --scan
+Or download and run manually:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/enforce-hooks.py -o /tmp/enforce-hooks.py
+python3 /tmp/enforce-hooks.py --scan             # preview what's enforceable
+python3 /tmp/enforce-hooks.py --install-plugin   # install
 ```
 
 ## The Problem
