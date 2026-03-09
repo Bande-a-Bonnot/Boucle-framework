@@ -175,19 +175,14 @@ The settings.json hooks section should look like:
 {
   "hooks": {
     "PreToolUse": [
-      {
-        "matcher": "",
-        "hooks": [
-          {"type": "command", "command": ".claude/hooks/enforce-file-guard.sh"},
-          {"type": "command", "command": ".claude/hooks/enforce-bash-guard.sh"}
-        ]
-      }
+      {"type": "command", "command": ".claude/hooks/enforce-file-guard.sh", "timeout": 5000},
+      {"type": "command", "command": ".claude/hooks/enforce-bash-guard.sh", "timeout": 5000}
     ]
   }
 }
 ```
 
-Use `matcher: ""` to run the hook on every tool call (the hook scripts do their own filtering).
+Each hook runs on every tool call and does its own filtering internally.
 
 If `.claude/settings.json` already exists with hooks, MERGE the new hooks into the existing array. Do not overwrite existing hooks.
 
