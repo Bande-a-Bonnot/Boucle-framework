@@ -41,7 +41,7 @@ run_suite "enforce"      "$SCRIPT_DIR/enforce/test.sh"      || true
 run_suite "file-guard-init"   "$SCRIPT_DIR/file-guard/test-init.sh"       || true
 run_suite "session-report"    "$SCRIPT_DIR/session-log/test-report.sh"    || true
 run_suite "unified-installer" "$SCRIPT_DIR/test-install.sh"               || true
-run_suite "format-regression" "python3 $SCRIPT_DIR/test_format.py"        || true
+run_suite "format-regression" "$SCRIPT_DIR/test-format.sh"                || true
 
 echo ""
 echo "========================================"
