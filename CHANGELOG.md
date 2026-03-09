@@ -4,11 +4,49 @@ All notable changes to Boucle are documented here.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-03-09
+
 ### Added
-- **`boucle validate`** — Semantic config validation: catches unknown/misspelled TOML keys, invalid intervals, unreasonable max_tokens, unknown model prefixes, path traversal, and common misconfigurations. Complements `doctor` (which checks prerequisites exist) by checking config *content*.
-- **`boucle stats`** — Aggregate loop statistics: total loops, success/failure rate, average context size, throughput (loops/day), and date range. Parses log files to give operators insight into their agent's behavior.
-- **`boucle doctor`** — New command that checks prerequisites and agent health: config parsing, memory directories, system prompt, hooks executability, claude CLI availability, and git status. Helps new users debug setup issues.
+
+#### Standalone Hooks
+- **[enforce-hooks](tools/enforce/)** — Reads your CLAUDE.md, identifies enforceable rules, and generates PreToolUse hooks that block violations at the tool-call level. 12 pattern types (file-guard, bash-guard, branch-guard, git-safe, tool-block, require-prior-tool, bare filename protection, command substitution, read-verb, prefer-command, search-locally, multi-tool). Plugin mode (`--install-plugin`) installs a single dynamic hook that re-reads CLAUDE.md on every call. `--evaluate` audits your current setup. `--scan` shows what's enforceable. 134 tests.
+- **[file-guard](tools/file-guard/)** — Protects files from AI modification. Define patterns in `.file-guard`. Blocks writes, edits, and destructive bash commands targeting sensitive files. Includes `init.sh` for auto-detecting sensitive files. 27 tests.
+- **[git-safe](tools/git-safe/)** — Blocks destructive git operations: force push, hard reset, checkout ., clean -f, branch -D. Suggests safer alternatives. Allowlist via `.git-safe`. 45 tests.
+- **[bash-guard](tools/bash-guard/)** — Blocks dangerous bash commands: `rm -rf /`, `sudo`, `curl|bash`, `chmod -R 777`, `kill -9 -1`, `dd`, `mkfs`, `eval` injection, global npm installs. Custom deny rules for granular blocking. Allowlist via `.bash-guard`. 56 tests.
+- **[branch-guard](tools/branch-guard/)** — Prevents direct commits to protected branches (main, master, production, release). Forces feature-branch workflow. 35 tests.
+- **[session-log](tools/session-log/)** — Logs every tool call to `~/.claude/session-logs/YYYY-MM-DD.jsonl`. Tracks exit codes and error status. 52 tests.
+- **[safety-check](tools/safety-check/)** — Scores your Claude Code safety configuration from A to F. No installation required. One-liner curl.
+- **[diagnose](tools/diagnose/)** — Agent operations intelligence: regime detection, feedback loop analysis, drift indicators, and recommendations from loop log data. 15 tests.
+- **Unified hook installer** — `install.sh all` installs every hook at once. Per-hook install also available.
+- **session-report** — Summarize session-log data. `--week` and `--days` for trend comparison across time periods.
+
+#### Self-Observation Engine
+- **`boucle signal`** — Log friction, failure, waste, or surprise signals with fingerprints for pattern detection.
+- **`boucle improve run`** — Pipeline: harvest signals, classify patterns by fingerprint, score response effectiveness, promote top unaddressed pattern.
+- **`boucle improve status`** — Show patterns, scores, and pending actions.
+- **`boucle improve init`** — Set up improve/ directory with example harvester.
+- **Pluggable harvesters** — Scripts in `improve/harvesters/` run automatically and detect signals from logs, metrics, or any source.
+
+#### DX Commands
+- **`boucle doctor`** — Check prerequisites and agent health: config, memory, hooks, claude CLI, git status.
+- **`boucle validate`** — Semantic config validation: catches unknown keys, invalid intervals, bad values, path issues.
+- **`boucle stats`** — Aggregate loop statistics: total loops, success rate, throughput, date range.
 - Config now accepts `agent.description`, `agent.version`, and `schedule.method` fields.
+
+#### Other
+- `glama.json` for Glama MCP directory listing
+- Tools directory README for visitors navigating from GitHub comments
+
+### Fixed
+- 3 hook test failures: read-once argument swap, bash-guard eval regex, permission bits
+- Standardized install paths across all hook installers (portable `~` instead of hardcoded paths)
+- README restructured: hooks first, framework second
+
+### Stats
+- 195 Rust tests plus per-hook test suites (counts listed per hook above)
+- Zero clippy warnings
+- CI on Ubuntu + macOS
+- Docker support via `ghcr.io`
 
 ## [0.4.1] - 2026-03-07
 
@@ -53,5 +91,7 @@ First public release.
 - 161 passing tests, zero clippy warnings
 - CI on Ubuntu + macOS
 
-[Unreleased]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.4.1...v0.5.0
+[0.4.1]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/Bande-a-Bonnot/Boucle-framework/releases/tag/v0.4.0
