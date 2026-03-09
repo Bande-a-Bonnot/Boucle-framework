@@ -17,6 +17,8 @@
 # Savings: ~2000+ tokens per prevented re-read
 #
 # Config (env vars):
+#   READ_ONCE_MODE=warn     "warn" (default) allows read with advisory, "deny" blocks it.
+#                           warn mode prevents Edit deadlock and parallel read cascade failures.
 #   READ_ONCE_TTL=1200      Seconds before a cached read expires (default: 1200)
 #   READ_ONCE_DIFF=1        Show only diff when files change (default: 0)
 #   READ_ONCE_DIFF_MAX=40   Max diff lines before falling back to full re-read (default: 40)
@@ -57,6 +59,10 @@ fi
 # Session-scoped cache directory
 CACHE_DIR="${HOME}/.claude/read-once"
 mkdir -p "$CACHE_DIR"
+
+# Mode: "warn" (default) allows read with advisory message, "deny" blocks it.
+# warn mode fixes: Edit tool deadlock, parallel read cascade failures.
+MODE="${READ_ONCE_MODE:-warn}"
 
 # Diff mode config
 DIFF_MODE="${READ_ONCE_DIFF:-0}"
@@ -154,22 +160,33 @@ if [ -n "$CACHED_MTIME" ] && [ "$CACHED_MTIME" = "$CURRENT_MTIME" ]; then
   # Calculate cumulative session savings for the deny message
   SESSION_SAVED=$(grep "\"session\":\"${SESSION_HASH}\"" "$STATS_FILE" 2>/dev/null | grep '"event":"hit"' | jq -r '.tokens_saved' 2>/dev/null | paste -sd+ - | bc 2>/dev/null || echo "$ESTIMATED_TOKENS")
 
-  # Block the read — Claude should still have this content
   BASENAME=$(basename "$FILE_PATH")
   TTL_MIN=$(( TTL / 60 ))
 
-  # Cost estimate for the deny message (Sonnet $3/MTok)
+  # Cost estimate (Sonnet $3/MTok)
   COST_INFO=""
   if command -v python3 &>/dev/null && [ "$SESSION_SAVED" -gt 0 ]; then
     COST_INFO=$(echo "$SESSION_SAVED" | python3 -c "import sys; t=int(sys.stdin.read().strip()); print(' (~\$%.4f saved at Sonnet rates)' % (t*3/1000000))" 2>/dev/null || echo "")
+  fi
+
+  REASON="read-once: ${BASENAME} (~${ESTIMATED_TOKENS} tokens) already in context (read ${MINUTES_AGO}m ago, unchanged). Re-read allowed after ${TTL_MIN}m. Session savings: ~${SESSION_SAVED} tokens${COST_INFO}."
+
+  if [ "$MODE" = "deny" ]; then
+    # Hard block — saves tokens but breaks Edit tool and parallel reads
+    DECISION="deny"
+  else
+    # Warn mode (default) — allow the read with advisory message.
+    # Prevents Edit tool deadlock (Edit requires a prior Read to succeed)
+    # and parallel read cascade failures (one deny kills all parallel reads).
+    DECISION="allow"
   fi
 
   cat <<EOF
 {
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
-    "permissionDecision": "deny",
-    "permissionDecisionReason": "read-once: ${BASENAME} (~${ESTIMATED_TOKENS} tokens) already in context (read ${MINUTES_AGO}m ago, unchanged). Re-read allowed after ${TTL_MIN}m. Session savings: ~${SESSION_SAVED} tokens${COST_INFO}."
+    "permissionDecision": "${DECISION}",
+    "permissionDecisionReason": "${REASON}"
   }
 }
 EOF
@@ -214,11 +231,17 @@ print(prefix + escaped_diff + suffix)
       # Python failed — fall through to full re-read
       :
     else
+      if [ "$MODE" = "deny" ]; then
+        DIFF_DECISION="deny"
+      else
+        DIFF_DECISION="allow"
+      fi
+
       cat <<EOF
 {
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
-    "permissionDecision": "deny",
+    "permissionDecision": "${DIFF_DECISION}",
     "permissionDecisionReason": "${REASON}"
   }
 }

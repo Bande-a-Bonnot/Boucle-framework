@@ -2,7 +2,9 @@
 
 Stop Claude Code from re-reading files it already has in context.
 
-A PreToolUse hook that tracks file reads within a session. When Claude tries to re-read a file that hasn't changed, the hook blocks the read and tells Claude the content is already in context. Saves ~2000+ tokens per prevented re-read.
+A PreToolUse hook that tracks file reads within a session. When Claude tries to re-read a file that hasn't changed, the hook tells Claude the content is already in context. Saves ~2000+ tokens per prevented re-read.
+
+By default, read-once uses **warn mode**: it allows the read but attaches an advisory message. This prevents the Edit tool deadlock (Edit requires a prior Read) and parallel read cascade failures. Set `READ_ONCE_MODE=deny` for hard blocking if you want maximum token savings and don't use Edit frequently.
 
 ## Install
 
@@ -47,8 +49,8 @@ Or add to `.claude/settings.json` by hand:
 1. Hook intercepts every `Read` tool call
 2. Partial reads (with `offset` or `limit`) always pass through — only full-file reads are cached
 3. Checks a session-scoped cache: has this file been read before?
-4. Compares file mtime — if unchanged, blocks the read
-5. Claude sees: "file already in context, no need to re-read"
+4. Compares file mtime — if unchanged, advises Claude the content is already in context
+5. In warn mode (default): allows the read with advisory. In deny mode: blocks the read entirely
 6. If the file changed since last read, allows it through (or shows just the diff — see below)
 7. Cache entries expire after 20 minutes (configurable) to handle context compaction
 
@@ -146,6 +148,7 @@ Environment variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `READ_ONCE_MODE` | `warn` | `warn` allows reads with advisory message. `deny` blocks reads entirely. Warn mode prevents Edit tool deadlock and parallel read cascade failures. |
 | `READ_ONCE_TTL` | `1200` | Cache TTL in seconds. After this, re-reads are allowed (compaction safety). |
 | `READ_ONCE_DIFF` | `0` | Set to `1` to show only diffs when files change (instead of full re-read). |
 | `READ_ONCE_DIFF_MAX` | `40` | Max diff lines before falling back to full re-read. |
@@ -168,6 +171,9 @@ Claude Code re-reads files more than you'd think. Common patterns:
 Each blocked re-read saves the full file token cost (including the ~70% overhead from line numbers in `cat -n` format). Run `./read-once stats` after a session to see your actual savings.
 
 ## FAQ
+
+**The Edit tool says "File has not been read yet" even though I already read it.**
+This happens in deny mode (`READ_ONCE_MODE=deny`). Claude Code's Edit tool requires a successful Read before it will edit a file. When read-once blocks the Read, Edit thinks the file was never read. The fix: use the default warn mode (`READ_ONCE_MODE=warn`), which allows reads with an advisory instead of blocking them.
 
 **Won't this break after context compaction?**
 Cache entries expire after 20 minutes (configurable via `READ_ONCE_TTL`). After expiry, re-reads are allowed. You can also run `read-once clear` to reset the cache manually after compaction.
