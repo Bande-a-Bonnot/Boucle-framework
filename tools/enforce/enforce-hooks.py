@@ -624,6 +624,258 @@ def install_hooks(directives, hooks_dir, settings_path):
     return written
 
 
+# --- Runtime Evaluation ---
+
+def get_current_branch():
+    """Get current git branch by reading .git/HEAD directly (no subprocess)."""
+    cwd = Path.cwd()
+    for parent in [cwd] + list(cwd.parents):
+        head = parent / '.git' / 'HEAD'
+        if head.exists():
+            try:
+                content = head.read_text().strip()
+                if content.startswith('ref: refs/heads/'):
+                    return content[len('ref: refs/heads/'):]
+            except IOError:
+                pass
+            return None
+    return None
+
+
+def evaluate_tool_call(directives, tool_name, tool_input):
+    """Evaluate a tool call against all directives.
+
+    Returns dict: {"decision": "allow"} or {"decision": "block", "reason": "..."}
+    """
+    for d in directives:
+        result = _check_single(d, tool_name, tool_input)
+        if result:
+            return result
+    return {"decision": "allow"}
+
+
+def _check_single(directive, tool_name, tool_input):
+    """Check if a tool call violates a single directive."""
+    short = directive.text[:80].replace('@enforced', '').strip()
+
+    if directive.hook_type == 'file-guard':
+        text_lower = directive.text.lower()
+        read_words = ['read', 'access', 'view', 'open', 'look at']
+        target_tools = {'Write', 'Edit', 'MultiEdit'}
+        if any(w in text_lower for w in read_words):
+            target_tools.add('Read')
+
+        if tool_name not in target_tools:
+            return None
+
+        file_path = tool_input.get('file_path', '')
+        if not file_path:
+            return None
+
+        for pat in directive.patterns:
+            if pat in file_path:
+                return {"decision": "block",
+                        "reason": f"Protected: {file_path} matches {pat}. (CLAUDE.md: \"{short}\")"}
+
+    elif directive.hook_type == 'bash-guard':
+        if tool_name != 'Bash':
+            return None
+        cmd = tool_input.get('command', '')
+        if not cmd:
+            return None
+        for pat in directive.patterns:
+            if pat.lower() in cmd.lower():
+                return {"decision": "block",
+                        "reason": f"Blocked command: {pat}. (CLAUDE.md: \"{short}\")"}
+
+    elif directive.hook_type == 'branch-guard':
+        if tool_name != 'Bash':
+            return None
+        cmd = tool_input.get('command', '')
+        if not cmd:
+            return None
+        git_ops = ['git commit', 'git merge', 'git push']
+        if not any(op in cmd for op in git_ops):
+            return None
+        branch = get_current_branch()
+        if branch and branch in directive.patterns:
+            return {"decision": "block",
+                    "reason": f"Branch {branch} is protected. (CLAUDE.md: \"{short}\")"}
+
+    elif directive.hook_type == 'tool-block':
+        if tool_name in directive.patterns:
+            return {"decision": "block",
+                    "reason": f"Tool {tool_name} is blocked. (CLAUDE.md: \"{short}\")"}
+
+    elif directive.hook_type == 'require-prior-tool':
+        if len(directive.patterns) >= 2:
+            required = directive.patterns[0]
+            target = directive.patterns[1]
+            tool_map = {
+                'tests': 'Bash', 'test': 'Bash', 'lint': 'Bash',
+                'search': 'Grep', 'grep': 'Grep',
+                'web search': 'WebSearch', 'websearch': 'WebSearch',
+            }
+            target_tool = tool_map.get(target.lower(), 'Bash')
+
+            if tool_name != target_tool:
+                return None
+
+            from datetime import date
+            today = date.today().isoformat()
+            session_log = Path.home() / '.claude' / 'session-logs' / f'{today}.jsonl'
+
+            found = False
+            if session_log.exists():
+                try:
+                    for line in session_log.read_text().splitlines():
+                        try:
+                            entry = json.loads(line)
+                            if entry.get('tool') == required:
+                                found = True
+                                break
+                        except json.JSONDecodeError:
+                            pass
+                except IOError:
+                    pass
+
+            if not found:
+                return {"decision": "block",
+                        "reason": f"Run {required} first. (CLAUDE.md: \"{short}\")"}
+
+    return None
+
+
+CACHE_FILENAME = '.enforce-cache.json'
+
+
+def load_cached_directives(claude_md_path, cache_dir=None):
+    """Load directives from cache if CLAUDE.md hasn't changed."""
+    md_path = Path(claude_md_path)
+    cache_path = Path(cache_dir or '.claude') / CACHE_FILENAME
+
+    try:
+        md_mtime = md_path.stat().st_mtime
+    except OSError:
+        return None
+
+    if cache_path.exists():
+        try:
+            cache = json.loads(cache_path.read_text())
+            if cache.get('mtime') == md_mtime and cache.get('path') == str(md_path):
+                return [Directive(**d) for d in cache['directives']]
+        except (json.JSONDecodeError, KeyError, TypeError):
+            pass
+
+    return None
+
+
+def save_cached_directives(claude_md_path, directives, cache_dir=None):
+    """Save directives to cache."""
+    md_path = Path(claude_md_path)
+    cache_path = Path(cache_dir or '.claude') / CACHE_FILENAME
+
+    try:
+        md_mtime = md_path.stat().st_mtime
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        cache = {
+            'mtime': md_mtime,
+            'path': str(md_path),
+            'directives': [d.to_dict() for d in directives],
+        }
+        cache_path.write_text(json.dumps(cache))
+    except (OSError, IOError):
+        pass
+
+
+def run_evaluate(claude_md_path):
+    """Run evaluate mode: read tool call from stdin, check rules, output decision."""
+    directives = load_cached_directives(claude_md_path)
+    if directives is None:
+        enforceable, _ = scan_file(claude_md_path)
+        directives = enforceable
+        save_cached_directives(claude_md_path, directives)
+
+    if not directives:
+        print(json.dumps({"decision": "allow"}))
+        return
+
+    try:
+        raw = sys.stdin.read()
+        tool_call = json.loads(raw)
+    except (json.JSONDecodeError, IOError):
+        print(json.dumps({"decision": "allow"}))
+        return
+
+    tool_name = tool_call.get('tool_name', '')
+    tool_input = tool_call.get('tool_input', {})
+
+    if not tool_name:
+        print(json.dumps({"decision": "allow"}))
+        return
+
+    result = evaluate_tool_call(directives, tool_name, tool_input)
+    print(json.dumps(result))
+
+
+def install_plugin(claude_md_path, hooks_dir, settings_path):
+    """Install enforce-hooks as a single PreToolUse hook (plugin mode).
+
+    Instead of generating per-rule scripts, installs one hook that
+    reads CLAUDE.md at runtime and enforces all rules dynamically.
+    """
+    hooks_dir = Path(hooks_dir)
+    hooks_dir.mkdir(parents=True, exist_ok=True)
+
+    # Copy enforce-hooks.py into the hooks directory
+    src = Path(__file__).resolve()
+    dst = hooks_dir / 'enforce-hooks.py'
+    dst.write_text(src.read_text())
+
+    # Write the thin wrapper hook
+    wrapper = hooks_dir / 'enforce-pretooluse.sh'
+    wrapper.write_text(
+        '#!/usr/bin/env bash\n'
+        '# enforce-pretooluse.sh - Enforces CLAUDE.md directives on every tool call.\n'
+        '# Auto-generated by enforce-hooks.py --install-plugin\n'
+        'DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"\n'
+        'exec python3 "$DIR/enforce-hooks.py" --evaluate\n'
+    )
+    wrapper.chmod(0o755)
+
+    # Register in settings.json
+    settings_path = Path(settings_path)
+    settings = {}
+    if settings_path.exists():
+        try:
+            settings = json.loads(settings_path.read_text())
+        except json.JSONDecodeError:
+            pass
+
+    hooks_config = settings.setdefault('hooks', {})
+    pre_tool = hooks_config.setdefault('PreToolUse', [])
+
+    # Find or create the catch-all matcher entry
+    catch_all = None
+    for entry in pre_tool:
+        if entry.get('matcher', '') == '':
+            catch_all = entry
+            break
+    if not catch_all:
+        catch_all = {'matcher': '', 'hooks': []}
+        pre_tool.append(catch_all)
+
+    hook_cmd = str(wrapper)
+    existing_commands = {h.get('command', '') for h in catch_all.get('hooks', [])}
+    if hook_cmd not in existing_commands:
+        catch_all['hooks'].append({'type': 'command', 'command': hook_cmd})
+
+    settings_path.parent.mkdir(parents=True, exist_ok=True)
+    settings_path.write_text(json.dumps(settings, indent=2) + '\n')
+
+    return [str(dst), str(wrapper)]
+
+
 # --- Output Formatting ---
 
 def format_scan_table(enforceable, skipped):
@@ -975,6 +1227,126 @@ def run_tests():
     d = classify_directive("Prefer TypeScript over JavaScript for new files", 111)
     check("prefer-language detected", d is not None, True)
 
+    # --- evaluate_tool_call tests ---
+    def section(name):
+        pass  # silent sections, only failures print
+
+    section("evaluate: file-guard")
+    d = Directive("Never modify .env files", "file-guard", [".env"], "protect env", 1)
+    r = evaluate_tool_call([d], "Write", {"file_path": "/project/.env"})
+    check("eval: blocks Write to .env", r["decision"], "block")
+    r = evaluate_tool_call([d], "Edit", {"file_path": "/project/.env"})
+    check("eval: blocks Edit to .env", r["decision"], "block")
+    r = evaluate_tool_call([d], "MultiEdit", {"file_path": "/project/.env"})
+    check("eval: blocks MultiEdit to .env", r["decision"], "block")
+    r = evaluate_tool_call([d], "Write", {"file_path": "/project/app.py"})
+    check("eval: allows Write to app.py", r["decision"], "allow")
+    r = evaluate_tool_call([d], "Bash", {"command": "echo hi"})
+    check("eval: ignores Bash for file-guard", r["decision"], "allow")
+    r = evaluate_tool_call([d], "Read", {"file_path": "/project/.env"})
+    check("eval: allows Read .env (no read verb)", r["decision"], "allow")
+
+    d2 = Directive("Don't read files in secrets/", "file-guard", ["secrets/"], "protect secrets", 2)
+    r = evaluate_tool_call([d2], "Read", {"file_path": "/project/secrets/key.pem"})
+    check("eval: blocks Read secrets/ (read verb)", r["decision"], "block")
+    r = evaluate_tool_call([d2], "Write", {"file_path": "/project/secrets/key.pem"})
+    check("eval: blocks Write secrets/ too", r["decision"], "block")
+    r = evaluate_tool_call([d2], "Read", {"file_path": "/project/src/main.py"})
+    check("eval: allows Read non-secrets", r["decision"], "allow")
+
+    section("evaluate: bash-guard")
+    d = Directive("Never run rm -rf", "bash-guard", ["rm -rf"], "block rm", 3)
+    r = evaluate_tool_call([d], "Bash", {"command": "rm -rf /"})
+    check("eval: blocks rm -rf", r["decision"], "block")
+    r = evaluate_tool_call([d], "Bash", {"command": "RM -RF /tmp"})
+    check("eval: blocks rm -rf case-insensitive", r["decision"], "block")
+    r = evaluate_tool_call([d], "Bash", {"command": "ls -la"})
+    check("eval: allows ls", r["decision"], "allow")
+    r = evaluate_tool_call([d], "Write", {"file_path": "x"})
+    check("eval: ignores Write for bash-guard", r["decision"], "allow")
+
+    d = Directive("Don't use sudo", "bash-guard", ["sudo"], "block sudo", 4)
+    r = evaluate_tool_call([d], "Bash", {"command": "sudo apt install vim"})
+    check("eval: blocks sudo", r["decision"], "block")
+    r = evaluate_tool_call([d], "Bash", {"command": "apt install vim"})
+    check("eval: allows non-sudo", r["decision"], "allow")
+
+    section("evaluate: tool-block")
+    d = Directive("Don't use WebSearch", "tool-block", ["WebSearch"], "block web", 5)
+    r = evaluate_tool_call([d], "WebSearch", {})
+    check("eval: blocks WebSearch", r["decision"], "block")
+    r = evaluate_tool_call([d], "Read", {})
+    check("eval: allows Read", r["decision"], "allow")
+    r = evaluate_tool_call([d], "WebFetch", {})
+    check("eval: allows WebFetch (not blocked)", r["decision"], "allow")
+
+    d = Directive("Don't use WebSearch or WebFetch", "tool-block", ["WebSearch", "WebFetch"], "block web", 6)
+    r = evaluate_tool_call([d], "WebSearch", {})
+    check("eval: multi-tool blocks WebSearch", r["decision"], "block")
+    r = evaluate_tool_call([d], "WebFetch", {})
+    check("eval: multi-tool blocks WebFetch", r["decision"], "block")
+    r = evaluate_tool_call([d], "Grep", {})
+    check("eval: multi-tool allows Grep", r["decision"], "allow")
+
+    section("evaluate: branch-guard")
+    d = Directive("Never commit to main", "branch-guard", ["main"], "protect main", 7)
+    r = evaluate_tool_call([d], "Bash", {"command": "ls -la"})
+    check("eval: branch-guard ignores non-git", r["decision"], "allow")
+    r = evaluate_tool_call([d], "Write", {"file_path": "x"})
+    check("eval: branch-guard ignores Write", r["decision"], "allow")
+
+    section("evaluate: multiple directives")
+    d1 = Directive("Never modify .env", "file-guard", [".env"], "protect env", 1)
+    d2 = Directive("Never run rm -rf", "bash-guard", ["rm -rf"], "block rm", 2)
+    d3 = Directive("Don't use WebSearch", "tool-block", ["WebSearch"], "block web", 3)
+    all_d = [d1, d2, d3]
+    r = evaluate_tool_call(all_d, "Bash", {"command": "rm -rf /"})
+    check("eval: multi matches bash-guard", r["decision"], "block")
+    r = evaluate_tool_call(all_d, "Write", {"file_path": ".env"})
+    check("eval: multi matches file-guard", r["decision"], "block")
+    r = evaluate_tool_call(all_d, "WebSearch", {})
+    check("eval: multi matches tool-block", r["decision"], "block")
+    r = evaluate_tool_call(all_d, "Read", {"file_path": "app.py"})
+    check("eval: multi allows unmatched", r["decision"], "allow")
+    r = evaluate_tool_call(all_d, "Bash", {"command": "echo hello"})
+    check("eval: multi allows safe bash", r["decision"], "allow")
+
+    section("evaluate: empty/edge cases")
+    r = evaluate_tool_call([], "Bash", {"command": "rm -rf /"})
+    check("eval: no directives allows all", r["decision"], "allow")
+    r = evaluate_tool_call([d1], "Write", {})
+    check("eval: no file_path allows", r["decision"], "allow")
+    r = evaluate_tool_call([d2], "Bash", {})
+    check("eval: no command allows", r["decision"], "allow")
+
+    section("evaluate: cache round-trip")
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmpdir:
+        md = Path(tmpdir) / 'CLAUDE.md'
+        md.write_text('- Never modify .env @enforced\n- Never run sudo @enforced\n')
+        cache_dir = Path(tmpdir) / 'cache'
+        cache_dir.mkdir()
+
+        # No cache yet
+        cached = load_cached_directives(str(md), str(cache_dir))
+        check("eval: cache miss returns None", cached, None)
+
+        # Scan and save
+        enforceable, _ = scan_file(str(md))
+        save_cached_directives(str(md), enforceable, str(cache_dir))
+
+        # Cache hit
+        cached = load_cached_directives(str(md), str(cache_dir))
+        check("eval: cache hit returns list", cached is not None, True)
+        check("eval: cache preserves count", len(cached) if cached else 0, len(enforceable))
+
+        # Modify file invalidates cache
+        import time
+        time.sleep(0.05)
+        md.write_text('- Never modify .env @enforced\n')
+        cached = load_cached_directives(str(md), str(cache_dir))
+        check("eval: mtime change invalidates cache", cached, None)
+
     print(f"\n{passed} passed, {failed} failed")
     return failed == 0
 
@@ -1003,8 +1375,9 @@ def main():
   %(prog)s --scan                     Show enforceable directives
   %(prog)s --scan --json              Show as JSON
   %(prog)s --generate                 Print hook scripts to stdout
-  %(prog)s --install                  Write hooks to .claude/hooks/
-  %(prog)s --install path/CLAUDE.md   Use a specific CLAUDE.md
+  %(prog)s --install                  Write per-rule hooks to .claude/hooks/
+  %(prog)s --install-plugin           Install as one dynamic hook (recommended)
+  %(prog)s --evaluate                 PreToolUse mode (reads stdin, outputs decision)
   %(prog)s --test                     Run self-tests
 ''',
     )
@@ -1013,6 +1386,10 @@ def main():
     parser.add_argument('--generate', action='store_true', help='Generate hook scripts to stdout')
     parser.add_argument('--install', action='store_true', help='Generate and install hooks')
     parser.add_argument('--json', action='store_true', help='Output as JSON (with --scan)')
+    parser.add_argument('--evaluate', action='store_true',
+                        help='PreToolUse mode: read tool call from stdin, check rules, output decision')
+    parser.add_argument('--install-plugin', action='store_true',
+                        help='Install as a single dynamic hook (recommended)')
     parser.add_argument('--hooks-dir', default='.claude/hooks', help='Directory for hook scripts')
     parser.add_argument('--settings', default='.claude/settings.json', help='Path to settings.json')
     parser.add_argument('--test', action='store_true', help='Run self-tests')
@@ -1022,7 +1399,7 @@ def main():
         success = run_tests()
         sys.exit(0 if success else 1)
 
-    if not any([args.scan, args.generate, args.install]):
+    if not any([args.scan, args.generate, args.install, args.evaluate, args.install_plugin]):
         args.scan = True  # Default to scan
 
     path = args.file or find_claude_md()
@@ -1052,6 +1429,28 @@ def main():
                 filename = hook_filename(d, i, seen_names)
                 print(f"# === {filename} ===")
                 print(script)
+        return
+
+    if args.evaluate:
+        run_evaluate(path)
+        return
+
+    if args.install_plugin:
+        enforceable, _ = scan_file(path)
+        if not enforceable:
+            print("No enforceable directives found. Nothing to install.")
+            return
+        print(f"Found {len(enforceable)} enforceable directive(s) in {path}")
+        written = install_plugin(path, args.hooks_dir, args.settings)
+        print(f"\nInstalled plugin mode ({len(written)} files):")
+        for w in written:
+            print(f"  {w}")
+        print(f"\nUpdated: {args.settings}")
+        print("\nHow it works:")
+        print("  - One hook runs on every tool call")
+        print("  - Reads your CLAUDE.md, enforces rules dynamically")
+        print("  - Change CLAUDE.md and rules update automatically")
+        print("\nTo verify, try triggering a blocked action in Claude Code.")
         return
 
     if args.install:
