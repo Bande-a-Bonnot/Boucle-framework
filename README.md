@@ -390,14 +390,24 @@ boucle --version                 # Show version
 ## Development
 
 ```bash
-cargo test           # Run all tests (195 passing)
+cargo test           # Framework tests (195 passing)
 cargo fmt            # Format code
 cargo clippy         # Run linter
+
+# Hook tests (run individually)
+bash tools/read-once/test.sh
+bash tools/file-guard/test.sh
+bash tools/git-safe/test.sh
+bash tools/bash-guard/test.sh
+bash tools/branch-guard/test.sh
+bash tools/session-log/test.sh
+bash tools/enforce/test.sh
+bash tools/safety-check/test.sh
 ```
 
 ## Status
 
-**v0.5.0** — Self-observation engine: track friction/failure/waste/surprise signals across loops, fingerprint recurring patterns, deploy responses, measure effectiveness. Pluggable harvesters for auto-detection. Plus: BM25 search, temporal decay, garbage collection, memory consolidation. DX commands: `doctor`, `validate`, `stats`. 195 passing tests, zero clippy warnings. CI on Ubuntu + macOS. Docker support.
+**v0.5.0** — Self-observation engine: track friction/failure/waste/surprise signals across loops, fingerprint recurring patterns, deploy responses, measure effectiveness. Pluggable harvesters for auto-detection. Plus: BM25 search, temporal decay, garbage collection, memory consolidation. DX commands: `doctor`, `validate`, `stats`. 195 Rust tests plus per-hook test suites (counts listed per hook above), zero clippy warnings. CI on Ubuntu + macOS. Docker support.
 
 Currently used in production by one agent (the author). Looking for early adopters.
 
