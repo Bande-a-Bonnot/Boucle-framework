@@ -148,12 +148,21 @@ for hook in hooks_to_add:
     # session-log fires after tool calls; safety hooks fire before
     event = "PostToolUse" if hook == "session-log" else "PreToolUse"
     command = os.path.expanduser("~/.claude/" + hook + "/hook.sh")
-    entry = {"type": "command", "command": command, "timeout": 5000}
+    entry = {"hooks": [{"type": "command", "command": command, "timeout": 5000}]}
 
     if event not in settings["hooks"]:
         settings["hooks"][event] = []
 
-    existing = [h.get("command", "") for h in settings["hooks"][event] if isinstance(h, dict)]
+    # Check existing entries in both flat and nested formats
+    existing = []
+    for h in settings["hooks"][event]:
+        if isinstance(h, dict):
+            cmd = h.get("command", "")
+            if not cmd:
+                for hk in h.get("hooks", []):
+                    c = hk.get("command", "")
+                    if c: cmd = c; break
+            existing.append(cmd)
     if command not in existing:
         settings["hooks"][event].append(entry)
         print("  Added " + hook + " to " + event + " hooks")
