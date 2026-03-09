@@ -889,7 +889,10 @@ pub fn doctor(root: &Path) -> Result<(), RunnerError> {
     if config_path.exists() {
         match config::load(root) {
             Ok(cfg) => {
-                println!("[ok]  boucle.toml — agent '{}', model '{}'", cfg.agent.name, cfg.agent.model);
+                println!(
+                    "[ok]  boucle.toml — agent '{}', model '{}'",
+                    cfg.agent.name, cfg.agent.model
+                );
                 passed += 1;
 
                 // 2. Check memory directory
@@ -912,11 +915,18 @@ pub fn doctor(root: &Path) -> Result<(), RunnerError> {
                         println!("[ok]  memory — {}", memory_dir.display());
                         passed += 1;
                     } else {
-                        println!("[warn] memory — {} ({})", memory_dir.display(), mem_issues.join(", "));
+                        println!(
+                            "[warn] memory — {} ({})",
+                            memory_dir.display(),
+                            mem_issues.join(", ")
+                        );
                         warned += 1;
                     }
                 } else {
-                    println!("[FAIL] memory — directory '{}' not found", memory_dir.display());
+                    println!(
+                        "[FAIL] memory — directory '{}' not found",
+                        memory_dir.display()
+                    );
                     failed += 1;
                 }
 
@@ -926,7 +936,10 @@ pub fn doctor(root: &Path) -> Result<(), RunnerError> {
                     println!("[ok]  system prompt — {}", cfg.agent.system_prompt);
                     passed += 1;
                 } else {
-                    println!("[warn] system prompt — '{}' not found (optional but recommended)", cfg.agent.system_prompt);
+                    println!(
+                        "[warn] system prompt — '{}' not found (optional but recommended)",
+                        cfg.agent.system_prompt
+                    );
                     warned += 1;
                 }
 
@@ -944,9 +957,12 @@ pub fn doctor(root: &Path) -> Result<(), RunnerError> {
                                 #[cfg(unix)]
                                 {
                                     use std::os::unix::fs::PermissionsExt;
-                                    let perms = fs::metadata(&path).map(|m| m.permissions().mode()).unwrap_or(0);
+                                    let perms = fs::metadata(&path)
+                                        .map(|m| m.permissions().mode())
+                                        .unwrap_or(0);
                                     if perms & 0o111 == 0 {
-                                        non_exec.push(entry.file_name().to_string_lossy().to_string());
+                                        non_exec
+                                            .push(entry.file_name().to_string_lossy().to_string());
                                     }
                                 }
                             }
@@ -956,7 +972,11 @@ pub fn doctor(root: &Path) -> Result<(), RunnerError> {
                         println!("[ok]  hooks — {} hook(s) found", hook_count);
                         passed += 1;
                     } else {
-                        println!("[warn] hooks — {} hook(s), but not executable: {}", hook_count, non_exec.join(", "));
+                        println!(
+                            "[warn] hooks — {} hook(s), but not executable: {}",
+                            hook_count,
+                            non_exec.join(", ")
+                        );
                         warned += 1;
                     }
                 } else {
@@ -965,7 +985,11 @@ pub fn doctor(root: &Path) -> Result<(), RunnerError> {
                 }
 
                 // 5. Check context.d directory
-                let context_path = cfg.loop_config.context_dir.as_deref().unwrap_or("context.d");
+                let context_path = cfg
+                    .loop_config
+                    .context_dir
+                    .as_deref()
+                    .unwrap_or("context.d");
                 let context_dir = root.join(context_path);
                 if context_dir.exists() {
                     let count = fs::read_dir(&context_dir).map(|r| r.count()).unwrap_or(0);
@@ -1002,14 +1026,21 @@ pub fn doctor(root: &Path) -> Result<(), RunnerError> {
     }
 
     // 7. Check git
-    match process::Command::new("git").args(["rev-parse", "--git-dir"]).current_dir(root).output() {
+    match process::Command::new("git")
+        .args(["rev-parse", "--git-dir"])
+        .current_dir(root)
+        .output()
+    {
         Ok(output) if output.status.success() => {
             println!("[ok]  git — repository initialized");
             passed += 1;
         }
         _ => {
             println!("[warn] git — not a git repository (memory won't be versioned)");
-            println!("       Run 'git init' in {} to enable versioning", root.display());
+            println!(
+                "       Run 'git init' in {} to enable versioning",
+                root.display()
+            );
             warned += 1;
         }
     }
@@ -1019,7 +1050,9 @@ pub fn doctor(root: &Path) -> Result<(), RunnerError> {
     if failed == 0 && warned == 0 {
         println!("All checks passed ({passed} ok). Ready to run!");
     } else if failed == 0 {
-        println!("{passed} ok, {warned} warning(s). Agent can run but some features may be limited.");
+        println!(
+            "{passed} ok, {warned} warning(s). Agent can run but some features may be limited."
+        );
     } else {
         println!("{passed} ok, {warned} warning(s), {failed} FAILED. Fix failures before running.");
     }
@@ -1131,8 +1164,16 @@ pub fn show_stats(root: &Path) -> Result<(), RunnerError> {
         let avg = total_context_bytes / context_count as u64;
         println!();
         println!("Context:");
-        println!("  Average size: {} bytes ({:.1} KB)", avg, avg as f64 / 1024.0);
-        println!("  Total sent:   {} bytes ({:.1} KB)", total_context_bytes, total_context_bytes as f64 / 1024.0);
+        println!(
+            "  Average size: {} bytes ({:.1} KB)",
+            avg,
+            avg as f64 / 1024.0
+        );
+        println!(
+            "  Total sent:   {} bytes ({:.1} KB)",
+            total_context_bytes,
+            total_context_bytes as f64 / 1024.0
+        );
     }
 
     // Calculate loops per day if we have timestamps
@@ -1188,7 +1229,14 @@ pub fn validate(root: &Path) -> Result<(), RunnerError> {
             }
 
             // Check unknown keys within known sections
-            let known_agent_keys = ["name", "model", "system_prompt", "allowed_tools", "description", "version"];
+            let known_agent_keys = [
+                "name",
+                "model",
+                "system_prompt",
+                "allowed_tools",
+                "description",
+                "version",
+            ];
             let known_memory_keys = ["dir", "state_file"];
             let known_loop_keys = ["context_dir", "hooks_dir", "log_dir", "max_tokens"];
             let known_schedule_keys = ["interval", "method"];
@@ -1225,18 +1273,13 @@ pub fn validate(root: &Path) -> Result<(), RunnerError> {
         errors.push("agent.name is empty".to_string());
     }
     if cfg.agent.name.contains(' ') {
-        warnings.push("agent.name contains spaces — consider using hyphens or underscores".to_string());
+        warnings
+            .push("agent.name contains spaces — consider using hyphens or underscores".to_string());
     }
 
     // 4. Validate model name
     let model = &cfg.agent.model;
-    let known_prefixes = [
-        "claude-",
-        "gpt-",
-        "o1-",
-        "o3-",
-        "gemini-",
-    ];
+    let known_prefixes = ["claude-", "gpt-", "o1-", "o3-", "gemini-"];
     if !known_prefixes.iter().any(|p| model.starts_with(p)) {
         warnings.push(format!(
             "agent.model '{model}' doesn't match known model prefixes (claude-, gpt-, gemini-, o1-, o3-)"
@@ -1245,7 +1288,10 @@ pub fn validate(root: &Path) -> Result<(), RunnerError> {
 
     // 5. Validate interval format
     if let Err(e) = config::parse_interval(&cfg.schedule.interval) {
-        errors.push(format!("schedule.interval '{}': {e}", cfg.schedule.interval));
+        errors.push(format!(
+            "schedule.interval '{}': {e}",
+            cfg.schedule.interval
+        ));
     } else {
         let seconds = config::parse_interval(&cfg.schedule.interval).unwrap();
         if seconds < 60 {
@@ -1283,8 +1329,7 @@ pub fn validate(root: &Path) -> Result<(), RunnerError> {
     if memory_dir.exists() && !state_path.exists() {
         warnings.push(format!(
             "memory.state_file '{}' not found in {} — will be created on first run",
-            cfg.memory.state_file,
-            cfg.memory.dir
+            cfg.memory.state_file, cfg.memory.dir
         ));
     }
 
@@ -1311,7 +1356,9 @@ pub fn validate(root: &Path) -> Result<(), RunnerError> {
     ];
     for (key, value) in &path_values {
         if value.contains("..") {
-            warnings.push(format!("{key} contains '..' — avoid path traversal in config"));
+            warnings.push(format!(
+                "{key} contains '..' — avoid path traversal in config"
+            ));
         }
     }
 

@@ -18,6 +18,8 @@ TMPDIR=$(mktemp -d)
 trap "rm -rf $TMPDIR" EXIT
 git init -q "$TMPDIR/test-repo"
 cd "$TMPDIR/test-repo"
+git config user.email "test@test.local"
+git config user.name "Test"
 git checkout -q -b main 2>/dev/null || true
 # Need at least one commit for branch operations
 git commit -q --allow-empty -m "init"

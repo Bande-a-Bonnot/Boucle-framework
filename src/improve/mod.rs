@@ -215,9 +215,7 @@ fn harvest(root: &Path, budget_secs: u64) -> Vec<Signal> {
             continue;
         }
 
-        let output = Command::new(&path)
-            .arg(root)
-            .output();
+        let output = Command::new(&path).arg(root).output();
 
         if let Ok(output) = output {
             if output.status.success() {
@@ -268,11 +266,7 @@ fn classify(patterns: &mut HashMap<String, Pattern>, signals: &[Signal]) {
 // ── PHASE 3: SCORE ─────────────────────────────────────────────────────────
 
 /// Evaluate whether deployed responses are reducing their target signal rates.
-fn score(
-    patterns: &HashMap<String, Pattern>,
-    scores: &mut [ScoreEntry],
-    all_signals: &[Signal],
-) {
+fn score(patterns: &HashMap<String, Pattern>, scores: &mut [ScoreEntry], all_signals: &[Signal]) {
     for entry in scores.iter_mut() {
         if entry.effective.is_some() {
             continue; // already scored
@@ -510,8 +504,7 @@ done
         {
             use std::os::unix::fs::PermissionsExt;
             let perms = std::fs::Permissions::from_mode(0o755);
-            fs::set_permissions(&example, perms)
-                .map_err(|e| format!("chmod harvester: {e}"))?;
+            fs::set_permissions(&example, perms).map_err(|e| format!("chmod harvester: {e}"))?;
         }
     }
 

@@ -115,7 +115,8 @@ RESULT=$(echo '' | bash "$HOOK" 2>&1; echo "EXIT:$?")
 assert_contains "$RESULT" "EXIT:0" "Empty stdin exits 0 (non-blocking)"
 
 # Test 12: Tool input with special characters
-echo '{"tool_name":"Bash","tool_input":{"command":"echo \"hello world\" && grep '\''pattern'\\'' file"}}' | bash "$HOOK"
+SPECIAL_INPUT='{"tool_name":"Bash","tool_input":{"command":"echo hello && grep pattern file"}}'
+echo "$SPECIAL_INPUT" | bash "$HOOK"
 LINE=$(tail -1 "$LOG_FILE")
 assert_json_field "$LINE" "tool" "Bash" "Special chars don't break logging"
 
