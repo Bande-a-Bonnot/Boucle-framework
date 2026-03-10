@@ -2481,6 +2481,20 @@ rm -rf /tmp/test
     check("flag: backtick --no-verify detected", d is not None, True)
     check("flag: backtick --no-verify in patterns", '--no-verify' in d.patterns, True)
 
+    # Test evaluate mode gracefully allows when CLAUDE.md is missing
+    import subprocess
+    result = subprocess.run(
+        [sys.executable, __file__, '--evaluate', '/nonexistent/CLAUDE.md'],
+        input='{"tool_name":"Bash","tool_input":{"command":"ls"}}',
+        capture_output=True, text=True
+    )
+    check("evaluate missing CLAUDE.md: exits 0", result.returncode, 0)
+    try:
+        decision = json.loads(result.stdout.strip())
+        check("evaluate missing CLAUDE.md: allows", decision.get('decision'), 'allow')
+    except (json.JSONDecodeError, AttributeError):
+        check("evaluate missing CLAUDE.md: valid JSON", False, True)
+
     print(f"\n{passed} passed, {failed} failed")
     return failed == 0
 
@@ -2537,12 +2551,15 @@ def main():
         args.scan = True  # Default to scan
 
     path = args.file or find_claude_md()
-    if not path:
-        print("Error: No CLAUDE.md found. Specify a path or run from a project directory.", file=sys.stderr)
-        sys.exit(1)
-
-    if not os.path.exists(path):
-        print(f"Error: File not found: {path}", file=sys.stderr)
+    if not path or not os.path.exists(path):
+        if args.evaluate:
+            # In hook mode, missing CLAUDE.md must not block tool calls
+            print(json.dumps({"decision": "allow"}))
+            sys.exit(0)
+        if not path:
+            print("Error: No CLAUDE.md found. Specify a path or run from a project directory.", file=sys.stderr)
+        else:
+            print(f"Error: File not found: {path}", file=sys.stderr)
         sys.exit(1)
 
     enforceable, skipped = scan_file(path)
@@ -2635,7 +2652,7 @@ def main():
         print(f"\nInstalled plugin mode ({len(written)} files):")
         for w in written:
             print(f"  {w}")
-        print(f"\nUpdated: {args.settings}")
+        print(f"\nUpdated: {settings}")
         print("\nHow it works:")
         print("  - One hook runs on every tool call")
         print("  - Reads your CLAUDE.md, enforces rules dynamically")
