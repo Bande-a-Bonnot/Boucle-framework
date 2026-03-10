@@ -60,6 +60,8 @@ No runtime dependencies beyond Python 3.6+ and `jq` (for per-rule mode). Plugin 
 | "Never use inline styles @enforced" | content-guard | Edit/Write containing `style=` |
 | "No HEX color codes in CSS @enforced" | content-guard | Edit/Write containing `#[0-9a-fA-F]` |
 | "No `!important` @enforced" | content-guard | Edit/Write containing `!important` |
+| "Interfaces only in types/ @enforced" | scoped-content-guard | Edit/Write with `interface` outside `types/` |
+| "No SQL queries in controllers/ @enforced" | scoped-content-guard | Edit/Write with SQL inside `controllers/` |
 
 Rules like "write clean code" or "be concise" are skipped (subjective, no tool-call signal). The tool explains what it skips and why.
 
@@ -149,7 +151,7 @@ Copy `SKILL.md` to `.claude/skills/enforce-hooks/SKILL.md` in your project. Then
 python3 enforce-hooks.py --test
 ```
 
-225 assertions covering directive classification, hook generation, suggestion discovery, runtime evaluation, content-guard, and cache invalidation.
+259 assertions covering directive classification, hook generation, suggestion discovery, runtime evaluation, content-guard, scoped-content-guard, and cache invalidation.
 
 ## License
 
