@@ -1513,6 +1513,178 @@ def install_plugin(claude_md_path, hooks_dir, settings_path):
     return [str(dst), str(wrapper)]
 
 
+# --- Audit ---
+
+def audit_hooks(claude_md_path, hooks_dir='.claude/hooks', settings_path='.claude/settings.json'):
+    """Audit relationship between CLAUDE.md rules and installed hooks.
+
+    Returns a dict with:
+      enforced: list of directives that have active enforcement
+      unenforced: list of directives that could be enforced but aren't
+      suggestions: list of rules not tagged @enforced but classifiable
+      orphan_hooks: list of hook files not matching any directive
+      broken_refs: list of settings entries pointing to missing files
+      plugin_mode: bool, whether dynamic plugin is installed
+      settings_hooks: list of registered hook commands
+    """
+    hooks_dir = Path(hooks_dir)
+    settings_path = Path(settings_path)
+
+    # 1. Scan CLAUDE.md
+    enforceable, skipped = scan_file(claude_md_path)
+    suggestions = scan_suggestions(claude_md_path)
+    # Filter suggestions to only those NOT already in enforceable
+    enforced_lines = {d.line_num for d in enforceable}
+    suggestions = [s for s in suggestions if s.line_num not in enforced_lines]
+
+    # 2. Check for plugin mode (dynamic enforcement)
+    plugin_hook = hooks_dir / 'enforce-pretooluse.sh'
+    plugin_engine = hooks_dir / 'enforce-hooks.py'
+    plugin_mode = plugin_hook.exists() and plugin_engine.exists()
+
+    # 3. Read settings.json for registered hooks
+    settings_hooks = []
+    enforce_registered = False
+    if settings_path.exists():
+        try:
+            settings = json.loads(settings_path.read_text())
+            for entry in settings.get('hooks', {}).get('PreToolUse', []):
+                for h in entry.get('hooks', []):
+                    cmd = h.get('command', '')
+                    if cmd:
+                        settings_hooks.append(cmd)
+                        if 'enforce' in cmd.lower():
+                            enforce_registered = True
+        except (json.JSONDecodeError, KeyError):
+            pass
+
+    # 4. Find enforce hook scripts on disk
+    existing_scripts = set()
+    if hooks_dir.exists():
+        for f in hooks_dir.iterdir():
+            if f.is_file() and f.name.startswith('enforce_') and f.suffix == '.sh':
+                existing_scripts.add(str(f))
+
+    # 5. Classify enforcement status
+    if plugin_mode and enforce_registered:
+        # Plugin mode: all @enforced directives are covered dynamically
+        enforced = list(enforceable)
+        unenforced = []
+    elif existing_scripts:
+        # Per-rule mode: match scripts to directives by filename pattern
+        enforced = []
+        unenforced = []
+        seen_names = set()
+        for i, d in enumerate(enforceable):
+            expected_name = hook_filename(d, i, set())
+            expected_path = str(hooks_dir / expected_name)
+            if expected_path in existing_scripts:
+                enforced.append(d)
+                existing_scripts.discard(expected_path)
+            else:
+                unenforced.append(d)
+        orphan_scripts = existing_scripts  # Remaining scripts match nothing
+    else:
+        enforced = []
+        unenforced = list(enforceable)
+
+    # 6. Find orphan hooks (per-rule scripts that don't match any directive)
+    orphan_hooks = []
+    if not plugin_mode:
+        orphan_hooks = sorted(existing_scripts) if existing_scripts else []
+
+    # 7. Find broken references (settings point to missing files)
+    broken_refs = []
+    for cmd in settings_hooks:
+        if not Path(cmd).exists():
+            broken_refs.append(cmd)
+
+    return {
+        'enforced': enforced,
+        'unenforced': unenforced,
+        'suggestions': suggestions,
+        'orphan_hooks': orphan_hooks,
+        'broken_refs': broken_refs,
+        'plugin_mode': plugin_mode,
+        'plugin_registered': enforce_registered,
+        'settings_hooks': settings_hooks,
+        'skipped': skipped,
+    }
+
+
+def format_audit_report(audit):
+    """Format audit results as a readable report."""
+    lines = []
+
+    # Status header
+    if audit['plugin_mode'] and audit['plugin_registered']:
+        lines.append("enforce-hooks: ACTIVE (plugin mode)")
+        lines.append("  All @enforced rules are checked on every tool call.\n")
+    elif audit['plugin_mode'] and not audit['plugin_registered']:
+        lines.append("enforce-hooks: WARNING (plugin files exist but not registered)")
+        lines.append("  Run --install-plugin to register the hook.\n")
+    elif audit['enforced']:
+        lines.append("enforce-hooks: ACTIVE (per-rule mode)")
+        lines.append(f"  {len(audit['enforced'])} individual hook script(s) installed.\n")
+    else:
+        lines.append("enforce-hooks: NOT INSTALLED")
+        lines.append("  No enforcement active. Run --install-plugin to set up.\n")
+
+    # Enforced rules
+    enforced = audit['enforced']
+    if enforced:
+        lines.append(f"Enforced ({len(enforced)}):")
+        for d in enforced:
+            lines.append(f"  [ok]  {d.hook_type:<18}  {d.description}")
+
+    # Unenforced rules (tagged @enforced but no hook)
+    unenforced = audit['unenforced']
+    if unenforced:
+        lines.append(f"\nNot enforced ({len(unenforced)}):")
+        for d in unenforced:
+            lines.append(f"  [!!]  {d.hook_type:<18}  {d.description}")
+        if not audit['plugin_mode']:
+            lines.append("  Fix: run --install or --install-plugin")
+
+    # Suggestions (classifiable but not tagged @enforced)
+    suggestions = audit['suggestions']
+    if suggestions:
+        lines.append(f"\nCould be enforced ({len(suggestions)}):")
+        for s in suggestions:
+            lines.append(f"  [--]  {s.hook_type:<18}  {s.description}  (L{s.line_num})")
+        lines.append("  Add @enforced to activate: \"Never modify .env files @enforced\"")
+
+    # Skipped (tagged @enforced but not classifiable)
+    skipped = audit['skipped']
+    if skipped:
+        lines.append(f"\nUnclassifiable ({len(skipped)}):")
+        for line_num, text, reason in skipped:
+            lines.append(f"  [??]  L{line_num}: {text[:55]}  ({reason})")
+
+    # Orphan hooks
+    orphans = audit['orphan_hooks']
+    if orphans:
+        lines.append(f"\nOrphan hooks ({len(orphans)}):")
+        for o in orphans:
+            lines.append(f"  [~~]  {o}")
+        lines.append("  These hook scripts don't match any current CLAUDE.md rule.")
+
+    # Broken references
+    broken = audit['broken_refs']
+    if broken:
+        lines.append(f"\nBroken references ({len(broken)}):")
+        for b in broken:
+            lines.append(f"  [XX]  {b}")
+        lines.append("  settings.json points to files that don't exist. Re-run --install-plugin.")
+
+    # Summary line
+    total_rules = len(enforced) + len(unenforced) + len(suggestions)
+    coverage = (len(enforced) / total_rules * 100) if total_rules > 0 else 0
+    lines.append(f"\nCoverage: {len(enforced)}/{total_rules} classifiable rules enforced ({coverage:.0f}%)")
+
+    return '\n'.join(lines)
+
+
 # --- Output Formatting ---
 
 def format_scan_table(enforceable, skipped):
@@ -2481,6 +2653,94 @@ rm -rf /tmp/test
     check("flag: backtick --no-verify detected", d is not None, True)
     check("flag: backtick --no-verify in patterns", '--no-verify' in d.patterns, True)
 
+    # --- Audit tests ---
+    # Test audit with no hooks installed
+    with tempfile.TemporaryDirectory() as tmpdir:
+        claude_md = Path(tmpdir) / 'CLAUDE.md'
+        claude_md.write_text('## Rules @enforced\n- Never modify .env files\n- Do not run `rm -rf`\n')
+        hooks_d = os.path.join(tmpdir, '.claude', 'hooks')
+        settings_f = os.path.join(tmpdir, '.claude', 'settings.json')
+        result = audit_hooks(str(claude_md), hooks_d, settings_f)
+        check("audit: no hooks -> unenforced", len(result['unenforced']), 2)
+        check("audit: no hooks -> enforced is 0", len(result['enforced']), 0)
+        check("audit: no hooks -> plugin_mode false", result['plugin_mode'], False)
+
+    # Test audit with plugin mode installed
+    with tempfile.TemporaryDirectory() as tmpdir:
+        claude_md = Path(tmpdir) / 'CLAUDE.md'
+        claude_md.write_text('## Safety @enforced\n- Never modify .env files\n- Do not run `rm -rf`\n')
+        hooks_d = os.path.join(tmpdir, '.claude', 'hooks')
+        settings_f = os.path.join(tmpdir, '.claude', 'settings.json')
+        os.makedirs(hooks_d, exist_ok=True)
+        # Create plugin files
+        Path(hooks_d, 'enforce-pretooluse.sh').write_text('#!/bin/bash\n')
+        Path(hooks_d, 'enforce-hooks.py').write_text('# engine\n')
+        # Create settings with registration
+        Path(settings_f).write_text(json.dumps({
+            'hooks': {'PreToolUse': [{'matcher': '', 'hooks': [
+                {'type': 'command', 'command': os.path.join(hooks_d, 'enforce-pretooluse.sh')}
+            ]}]}
+        }))
+        result = audit_hooks(str(claude_md), hooks_d, settings_f)
+        check("audit: plugin -> enforced count", len(result['enforced']), 2)
+        check("audit: plugin -> unenforced is 0", len(result['unenforced']), 0)
+        check("audit: plugin -> plugin_mode true", result['plugin_mode'], True)
+        check("audit: plugin -> registered", result['plugin_registered'], True)
+
+    # Test audit with suggestions (rules not tagged @enforced)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        claude_md = Path(tmpdir) / 'CLAUDE.md'
+        claude_md.write_text('## Rules\n- Never modify .env files\n- Do not run `rm -rf`\n')
+        hooks_d = os.path.join(tmpdir, '.claude', 'hooks')
+        settings_f = os.path.join(tmpdir, '.claude', 'settings.json')
+        result = audit_hooks(str(claude_md), hooks_d, settings_f)
+        check("audit: untagged -> enforced is 0", len(result['enforced']), 0)
+        check("audit: untagged -> suggestions > 0", len(result['suggestions']) >= 1, True)
+
+    # Test audit with broken references
+    with tempfile.TemporaryDirectory() as tmpdir:
+        claude_md = Path(tmpdir) / 'CLAUDE.md'
+        claude_md.write_text('## Rules @enforced\n- Never modify .env files\n')
+        hooks_d = os.path.join(tmpdir, '.claude', 'hooks')
+        settings_f = os.path.join(tmpdir, '.claude', 'settings.json')
+        os.makedirs(os.path.dirname(settings_f), exist_ok=True)
+        Path(settings_f).write_text(json.dumps({
+            'hooks': {'PreToolUse': [{'matcher': '', 'hooks': [
+                {'type': 'command', 'command': '/nonexistent/hook.sh'}
+            ]}]}
+        }))
+        result = audit_hooks(str(claude_md), hooks_d, settings_f)
+        check("audit: broken ref detected", len(result['broken_refs']), 1)
+        check("audit: broken ref path", result['broken_refs'][0], '/nonexistent/hook.sh')
+
+    # Test format_audit_report produces output
+    with tempfile.TemporaryDirectory() as tmpdir:
+        claude_md = Path(tmpdir) / 'CLAUDE.md'
+        claude_md.write_text('## Safety @enforced\n- Never modify .env files\n')
+        hooks_d = os.path.join(tmpdir, '.claude', 'hooks')
+        settings_f = os.path.join(tmpdir, '.claude', 'settings.json')
+        result = audit_hooks(str(claude_md), hooks_d, settings_f)
+        report = format_audit_report(result)
+        check("audit report: contains NOT INSTALLED", 'NOT INSTALLED' in report, True)
+        check("audit report: contains Coverage", 'Coverage:' in report, True)
+
+    # Test audit JSON output
+    with tempfile.TemporaryDirectory() as tmpdir:
+        claude_md = Path(tmpdir) / 'CLAUDE.md'
+        claude_md.write_text('## Safety @enforced\n- Never modify .env files\n- Do not run `rm -rf`\n')
+        hooks_d = os.path.join(tmpdir, '.claude', 'hooks')
+        settings_f = os.path.join(tmpdir, '.claude', 'settings.json')
+        result = audit_hooks(str(claude_md), hooks_d, settings_f)
+        # Simulate JSON output
+        json_result = {
+            'enforced': [d.to_dict() for d in result['enforced']],
+            'unenforced': [d.to_dict() for d in result['unenforced']],
+            'coverage': len(result['enforced']) / max(1, len(result['enforced']) + len(result['unenforced']) + len(result['suggestions'])),
+        }
+        parsed = json.loads(json.dumps(json_result))
+        check("audit json: valid", 'coverage' in parsed, True)
+        check("audit json: coverage 0", parsed['coverage'], 0)
+
     # Test evaluate mode gracefully allows when CLAUDE.md is missing
     import subprocess
     result = subprocess.run(
@@ -2525,6 +2785,7 @@ def main():
   %(prog)s --generate                 Print hook scripts to stdout
   %(prog)s --install                  Write per-rule hooks to .claude/hooks/
   %(prog)s --install-plugin           Install as one dynamic hook (recommended)
+  %(prog)s --audit                    Audit rules vs installed hooks
   %(prog)s --evaluate                 PreToolUse mode (reads stdin, outputs decision)
   %(prog)s --test                     Run self-tests
 ''',
@@ -2540,6 +2801,8 @@ def main():
                         help='Install as a single dynamic hook (recommended)')
     parser.add_argument('--hooks-dir', default='.claude/hooks', help='Directory for hook scripts')
     parser.add_argument('--settings', default='.claude/settings.json', help='Path to settings.json')
+    parser.add_argument('--audit', action='store_true',
+                        help='Audit: compare CLAUDE.md rules vs installed hooks')
     parser.add_argument('--test', action='store_true', help='Run self-tests')
     args = parser.parse_args()
 
@@ -2547,7 +2810,7 @@ def main():
         success = run_tests()
         sys.exit(0 if success else 1)
 
-    if not any([args.scan, args.generate, args.install, args.evaluate, args.install_plugin]):
+    if not any([args.scan, args.generate, args.install, args.evaluate, args.install_plugin, args.audit]):
         args.scan = True  # Default to scan
 
     path = args.file or find_claude_md()
@@ -2599,6 +2862,33 @@ def main():
                     print("  - Do not run `rm -rf` @enforced           (command blocking)")
                     print("  - Never commit to main @enforced          (branch protection)")
                     print("  - Always run tests before committing @enforced  (workflow)")
+        return
+
+    if args.audit:
+        # Derive hooks/settings paths from CLAUDE.md location when defaults
+        hooks_dir = args.hooks_dir
+        settings = args.settings
+        if hooks_dir == '.claude/hooks' and path != 'CLAUDE.md':
+            project_root = str(Path(path).resolve().parent)
+            hooks_dir = os.path.join(project_root, '.claude', 'hooks')
+            settings = os.path.join(project_root, '.claude', 'settings.json')
+        result = audit_hooks(path, hooks_dir, settings)
+        if args.json:
+            json_result = {
+                'enforced': [d.to_dict() for d in result['enforced']],
+                'unenforced': [d.to_dict() for d in result['unenforced']],
+                'suggestions': [d.to_dict() for d in result['suggestions']],
+                'orphan_hooks': result['orphan_hooks'],
+                'broken_refs': result['broken_refs'],
+                'plugin_mode': result['plugin_mode'],
+                'plugin_registered': result['plugin_registered'],
+                'settings_hooks': result['settings_hooks'],
+                'coverage': len(result['enforced']) / max(1, len(result['enforced']) + len(result['unenforced']) + len(result['suggestions'])),
+            }
+            print(json.dumps(json_result, indent=2))
+        else:
+            print(f"Auditing: {path}\n")
+            print(format_audit_report(result))
         return
 
     if args.generate:

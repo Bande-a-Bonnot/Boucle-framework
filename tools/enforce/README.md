@@ -130,8 +130,9 @@ enforce-hooks.py [CLAUDE.md] [options]
   --generate          Print hook scripts to stdout
   --install           Write per-rule hooks to .claude/hooks/
   --install-plugin    Install as one dynamic hook (recommended)
+  --audit             Compare CLAUDE.md rules vs installed hooks
   --evaluate          PreToolUse mode: read tool call from stdin, output decision
-  --json              Output as JSON (with --scan)
+  --json              Output as JSON (with --scan or --audit)
   --hooks-dir         Directory for hooks (default: .claude/hooks)
   --settings          Path to settings.json (default: .claude/settings.json)
   --test              Run self-tests
@@ -151,6 +152,37 @@ Auto-detects CLAUDE.md in the current or parent directories if no file is specif
 ## As a Claude Code Skill
 
 Copy `SKILL.md` to `.claude/skills/enforce-hooks/SKILL.md` in your project. Then tell Claude: **"enforce my CLAUDE.md rules"**. Claude reads your CLAUDE.md, shows you what it found, and generates hooks on confirmation.
+
+## Audit Mode
+
+Check whether your CLAUDE.md rules are actually being enforced:
+
+```
+$ python3 enforce-hooks.py --audit
+
+enforce-hooks: ACTIVE (plugin mode)
+  All @enforced rules are checked on every tool call.
+
+Enforced (3):
+  [ok]  file-guard          Block Write/Edit to: .env
+  [ok]  bash-guard          Block commands: rm -rf /, rm -rf, rm -r
+  [ok]  branch-guard        Block commits to: main
+
+Could be enforced (2):
+  [--]  content-guard       Block writing: style=  (L10)
+  [--]  file-guard          Block Write/Edit to: config.json  (L14)
+  Add @enforced to activate: "Never modify .env files @enforced"
+
+Coverage: 3/5 classifiable rules enforced (60%)
+```
+
+Reports:
+- **Enforced** `[ok]`: Rules with active hooks
+- **Not enforced** `[!!]`: Rules tagged `@enforced` but missing hooks
+- **Could be enforced** `[--]`: Classifiable rules not tagged `@enforced`
+- **Broken references** `[XX]`: settings.json entries pointing to missing files
+
+Use `--audit --json` for machine-readable output.
 
 ## Known Limitations
 
