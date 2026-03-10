@@ -18,6 +18,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -1869,6 +1870,37 @@ rm -rf /tmp/test
     d = classify_directive("Always read the spec before modifying implementation", 96)
     check("read-before-modify detected", d is not None and d.hook_type == 'require-prior-tool', True)
 
+    # --- scan_suggestions UX: no @enforced but classifiable rules ---
+
+    section("scan_suggestions")
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as f:
+        f.write("# Rules\n- Never modify .env files\n- Don't force push\n")
+        tmp_path = f.name
+    try:
+        sugg = scan_suggestions(tmp_path)
+        check("suggestions found without @enforced", len(sugg) >= 1, True)
+        types = [s.hook_type for s in sugg]
+        check("file-guard in suggestions", 'file-guard' in types, True)
+        check("bash-guard in suggestions", 'bash-guard' in types, True)
+
+        # Tagged version should find enforceable
+        with open(tmp_path, 'w') as f:
+            f.write("# Rules\n- Never modify .env files @enforced\n")
+        enf, _ = scan_file(tmp_path)
+        check("@enforced tags produce enforceable", len(enf) >= 1, True)
+    finally:
+        os.unlink(tmp_path)
+
+    # Empty file should return no suggestions
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as f:
+        f.write("")
+        tmp_path = f.name
+    try:
+        sugg = scan_suggestions(tmp_path)
+        check("empty file: no suggestions", len(sugg), 0)
+    finally:
+        os.unlink(tmp_path)
+
     print(f"\n{passed} passed, {failed} failed")
     return failed == 0
 
@@ -1989,7 +2021,27 @@ def main():
     if args.install_plugin:
         enforceable, _ = scan_file(path)
         if not enforceable:
-            print("No enforceable directives found. Nothing to install.")
+            suggestions = scan_suggestions(path)
+            if suggestions:
+                print(f"No @enforced directives found, but {len(suggestions)} rule(s) could be enforced:\n")
+                print(f"{'#':>3}  {'Type':<20}  {'What it would block':<40}  {'Source line'}")
+                print(f"{'---':>3}  {'----':<20}  {'---':<40}  {'---'}")
+                for i, d in enumerate(suggestions, 1):
+                    print(f"{i:>3}  {d.hook_type:<20}  {d.description:<40}  L{d.line_num}")
+                print("\nTo activate, add @enforced to each rule in your CLAUDE.md:")
+                print("  - Never modify .env files @enforced")
+                print("\nOr tag an entire section:")
+                print("  ## Safety @enforced")
+                print("  - Never modify .env files")
+                print("  - Never run `rm -rf` commands")
+                print("\nThen re-run:")
+                print("  python3 enforce-hooks.py --install-plugin")
+            else:
+                print("No enforceable directives found in your CLAUDE.md.")
+                print("enforce-hooks detects rules like:")
+                print("  - Never modify .env files @enforced       (file protection)")
+                print("  - Do not run `rm -rf` @enforced           (command blocking)")
+                print("  - Don't commit to main @enforced          (branch protection)")
             return
         print(f"Found {len(enforceable)} enforceable directive(s) in {path}")
         written = install_plugin(path, args.hooks_dir, args.settings)
@@ -2006,7 +2058,14 @@ def main():
 
     if args.install:
         if not enforceable:
-            print("No enforceable directives found. Nothing to install.")
+            suggestions = scan_suggestions(path)
+            if suggestions:
+                print(f"No @enforced directives found, but {len(suggestions)} rule(s) could be enforced.\n")
+                print("Add @enforced to activate enforcement:")
+                print("  - Never modify .env files @enforced\n")
+                print("Then re-run: python3 enforce-hooks.py --install")
+            else:
+                print("No enforceable directives found. Nothing to install.")
             return
         print(f"Installing {len(enforceable)} hook(s) to {args.hooks_dir}/...")
         written = install_hooks(enforceable, args.hooks_dir, args.settings)
