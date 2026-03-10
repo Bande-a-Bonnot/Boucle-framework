@@ -77,10 +77,14 @@ Rules like "write clean code" or "be concise" are skipped (subjective, no tool-c
 Given this CLAUDE.md:
 
 ```markdown
-## Safety Rules
-- Never modify .env files @enforced
-- Don't run `rm -rf` or `sudo` @enforced
-- Never commit to main @enforced
+## Safety Rules @enforced
+- Never modify .env files
+- Don't run `rm -rf` or `sudo`
+- Never commit to main
+
+## Guidelines @enforced(warn)
+- Always run tests before committing
+- Don't commit to develop
 
 ## Code Style
 - Use 4-space indentation and snake_case
@@ -89,16 +93,24 @@ Given this CLAUDE.md:
 ```
 $ python3 enforce-hooks.py --scan
 
-Found 3 enforceable directive(s):
+Found 5 enforceable directive(s):
 
-  #  Type                  What it blocks                            Source line
----  ----                  ---                                       ---
-  1  file-guard            Block Write/Edit to: .env                 L3
-  2  bash-guard            Block commands: rm -rf, sudo              L4
-  3  branch-guard          Block commits to: main                    L5
+  #  Type                  What it does                              Severity  Source line
+---  ----                  ---                                       ---       ---
+  1  file-guard            Block Write/Edit to: .env                 block     L3
+  2  bash-guard            Block commands: rm -rf, sudo              block     L4
+  3  branch-guard          Block commits to: main                    block     L5
+  4  require-prior-command Run tests before committing               warn      L8
+  5  branch-guard          Block commits to: develop                 warn      L9
 ```
 
 The `@enforced` tag tells enforce-hooks which rules to activate.
+
+**Severity levels:**
+- `@enforced` or `@enforced(block)` -- blocks the operation (default)
+- `@enforced(warn)` -- prints a warning to stderr but allows the operation
+
+Tag individual rules (`- Never modify .env @enforced(warn)`) or entire sections (`## Guidelines @enforced(warn)`).
 
 ### Not sure what's enforceable?
 
@@ -163,18 +175,21 @@ $ python3 enforce-hooks.py --audit
 enforce-hooks: ACTIVE (plugin mode)
   All @enforced rules are checked on every tool call.
 
-Enforced (3):
+Enforced (4):
   [ok]  file-guard          Block Write/Edit to: .env
   [ok]  bash-guard          Block commands: rm -rf /, rm -rf, rm -r
   [ok]  branch-guard        Block commits to: main
+  [ok]  branch-guard        Block commits to: develop [warn]
 
 Could be enforced (2):
   [--]  content-guard       Block writing: style=  (L10)
   [--]  file-guard          Block Write/Edit to: config.json  (L14)
   Add @enforced to activate: "Never modify .env files @enforced"
 
-Coverage: 3/5 classifiable rules enforced (60%)
+Coverage: 4/6 classifiable rules enforced (67%)
 ```
+
+Rules marked `[warn]` print a warning to stderr but allow the operation. Use `@enforced(warn)` for guidelines you want to flag without blocking.
 
 Reports:
 - **Enforced** `[ok]`: Rules with active hooks
