@@ -2,13 +2,17 @@
 
 Turn CLAUDE.md rules into PreToolUse hooks that actually block violations.
 
+Claude Code's CLAUDE.md lets you write project rules, but Claude follows them on a best-effort basis. enforce-hooks reads your rules and generates hooks that deterministically block violations before they happen.
+
 ## Quick Start
+
+**One command (recommended):**
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/install.sh | bash
 ```
 
-Or download and run manually:
+**Or manually (inspect before installing):**
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/enforce-hooks.py -o /tmp/enforce-hooks.py
@@ -39,20 +43,20 @@ No runtime dependencies beyond Python 3.6+ and `jq` (for per-rule mode). Plugin 
 
 ## What's Enforceable
 
-| Directive | Hook type | What it blocks |
+| Your CLAUDE.md rule | Hook type | What it blocks |
 |-----------|-----------|----------------|
-| "Never modify .env" | file-guard | Write/Edit to .env |
-| "Don't read files in secrets/" | file-guard | Read/Write/Edit in secrets/ |
-| "Protected files: package-lock.json, yarn.lock" | file-guard | Listed file patterns (lock files, configs) |
-| "Don't force push" | bash-guard | `push --force`, `push -f` in Bash |
-| "Never run rm -rf" | bash-guard | dangerous command patterns |
-| "Use pnpm instead of npm" | bash-guard | npm commands |
-| "Don't commit directly to main" | branch-guard | git commit/push on main |
-| "Don't use WebSearch" | tool-block | Block tool by name |
-| "Always run tests before committing" | require-prior-tool | Commit without prior test run |
-| "Read test file before editing source" | require-prior-tool | Edit without prior Read |
-| "Never write `console.log`" | content-guard | Edit/Write containing banned pattern |
-| "Don't use the `any` type" | content-guard | Edit/Write containing banned code |
+| "Never modify .env @enforced" | file-guard | Write/Edit to .env |
+| "Don't read files in secrets/ @enforced" | file-guard | Read/Write/Edit in secrets/ |
+| "Protected files: package-lock.json, yarn.lock @enforced" | file-guard | Listed file patterns (lock files, configs) |
+| "Don't force push @enforced" | bash-guard | `push --force`, `push -f` in Bash |
+| "Never run rm -rf @enforced" | bash-guard | dangerous command patterns |
+| "Use pnpm instead of npm @enforced" | bash-guard | npm commands |
+| "Don't commit directly to main @enforced" | branch-guard | git commit/push on main |
+| "Don't use WebSearch @enforced" | tool-block | Block tool by name |
+| "Always run tests before committing @enforced" | require-prior-tool | Commit without prior test run |
+| "Read test file before editing source @enforced" | require-prior-tool | Edit without prior Read |
+| "Never write `console.log` @enforced" | content-guard | Edit/Write containing banned pattern |
+| "Don't use the `any` type @enforced" | content-guard | Edit/Write containing banned code |
 
 Rules like "write clean code" or "be concise" are skipped (subjective, no tool-call signal). The tool explains what it skips and why.
 
