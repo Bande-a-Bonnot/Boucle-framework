@@ -205,6 +205,30 @@ finally:
     shutil.rmtree(test_home, ignore_errors=True)
 
 
+print("--- Executable bits (git mode) ---")
+# All hook.sh, install.sh, and CLI scripts should be executable in git
+executable_scripts = []
+for hook in HOOKS:
+    executable_scripts.append(os.path.join(TOOLS, hook, "hook.sh"))
+    install = os.path.join(TOOLS, hook, "install.sh")
+    if os.path.exists(install):
+        executable_scripts.append(install)
+# Extra scripts that should be executable
+for extra in [
+    os.path.join(TOOLS, "install.sh"),
+    os.path.join(TOOLS, "enforce", "enforce-hooks.py"),
+    os.path.join(TOOLS, "enforce", "install.sh"),
+]:
+    if os.path.exists(extra):
+        executable_scripts.append(extra)
+
+for script in executable_scripts:
+    if os.access(script, os.X_OK):
+        p(f"{os.path.relpath(script, TOOLS)}: executable")
+    else:
+        f(f"{os.path.relpath(script, TOOLS)}: NOT executable (+x missing)")
+
+
 print()
 print(f"Results: {passes} passed, {fails} failed (total {passes + fails})")
 if fails > 0:
