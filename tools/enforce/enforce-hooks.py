@@ -238,7 +238,39 @@ CONTENT_GUARD_PATTERNS = [
         r'(console\.log|console\.error|console\.warn|debugger|eval\(\)|document\.write)',
         re.IGNORECASE
     ),
+    # Parenthetical code examples: "Never use inline styles (style="...")"
+    # Extracts the first code-like token from parentheses
+    re.compile(
+        r'(?:never|don\'?t|do\s+not|avoid|no)\s+'
+        r'(?:(?:us(?:e|ing)|writ(?:e|ing)|includ(?:e|ing)|add(?:ing)?)\s+)?'
+        r'[\w\s]*'
+        r'\(([^)]*?(?:[=<>:;{}]|\.\.\.)[^)]*)\)',
+        re.IGNORECASE
+    ),
 ]
+
+# Concept-to-pattern mapping for common antipatterns expressed as natural language
+# Maps concept keywords to the actual code pattern to search for
+CONCEPT_PATTERNS = {
+    'inline style': 'style=',
+    'inline styles': 'style=',
+    'hex color': '#[0-9a-fA-F]',
+    'hex colour': '#[0-9a-fA-F]',
+    'hex code': '#[0-9a-fA-F]',
+    'important': '!important',
+    'todo comment': 'TODO',
+    'fixme': 'FIXME',
+    'hack comment': 'HACK',
+    'xxx comment': 'XXX',
+    'type assertion': ' as ',
+    'ts-ignore': 'ts-ignore',
+    'ts-nocheck': 'ts-nocheck',
+    'eslint-disable': 'eslint-disable',
+    'noinspection': 'noinspection',
+    'noqa': 'noqa',
+    'rubocop:disable': 'rubocop:disable',
+    'wildcard import': 'import *',
+}
 
 
 def extract_file_patterns(text):
@@ -382,6 +414,20 @@ def classify_directive(line, line_num):
                     description=f"Block tools: {', '.join(tools)}",
                     line_num=line_num,
                 )
+
+    # Try concept-based content-guard (natural language antipatterns)
+    # "Never use inline styles" → content-guard for style=
+    # "No HEX color codes" → content-guard for #[0-9a-fA-F]
+    clean_lower = clean.lower()
+    for concept, code_pat in CONCEPT_PATTERNS.items():
+        if concept in clean_lower:
+            return Directive(
+                text=stripped,
+                hook_type='content-guard',
+                patterns=[code_pat],
+                description=f"Block writing: {code_pat}",
+                line_num=line_num,
+            )
 
     # Try content-guard patterns (before bash-guard to avoid false positives
     # like "don't use `any` type" being classified as bash-guard)
@@ -712,11 +758,13 @@ def generate_content_guard_checks(patterns, short_directive):
     """Generate bash checks for content-guard patterns."""
     lines = []
     for pat in patterns:
-        # Escape for grep -F (fixed string match)
         escaped = pat.replace("'", "'\\''")
         short = short_directive.replace("'", "'\\''")
+        # Use grep -E (regex) if pattern contains regex metacharacters, else grep -F (fixed)
+        is_regex = any(c in pat for c in r'[](){}*+?|\\^$')
+        grep_flag = '-qE' if is_regex else '-qF'
         lines.append(
-            f'if echo "$CONTENT" | grep -qF \'{escaped}\'; then\n'
+            f'if echo "$CONTENT" | grep {grep_flag} \'{escaped}\'; then\n'
             f'  echo \'{{"decision": "block", "reason": "Content blocked: {escaped} is not allowed. (CLAUDE.md: {short})"}}\'\n'
             f'  exit 0\n'
             f'fi'
@@ -975,7 +1023,16 @@ def _check_single(directive, tool_name, tool_input):
         if not content:
             return None
         for pat in directive.patterns:
-            if pat in content:
+            matched = False
+            # Use regex matching if pattern contains regex metacharacters
+            if any(c in pat for c in r'[](){}*+?|\\^$'):
+                try:
+                    matched = bool(re.search(pat, content))
+                except re.error:
+                    matched = pat in content  # fallback to literal
+            else:
+                matched = pat in content
+            if matched:
                 return {"decision": "block",
                         "reason": f"Content blocked: {pat} is not allowed. (CLAUDE.md: \"{short}\")"}
 
@@ -1995,6 +2052,75 @@ rm -rf /tmp/test
         check("empty file: no suggestions", len(sugg), 0)
     finally:
         os.unlink(tmp_path)
+
+    # --- Concept-based content-guard tests ---
+
+    d = classify_directive("Never use inline styles in HTML files @enforced", 300)
+    check("concept inline styles detected", d is not None and d.hook_type == 'content-guard', True)
+    check("concept inline styles pattern", d is not None and d.patterns == ['style='], True)
+
+    d = classify_directive("Don't use inline style attributes @enforced", 301)
+    check("concept inline style singular", d is not None and d.hook_type == 'content-guard', True)
+
+    d = classify_directive("Never use HEX color codes in CSS files @enforced", 302)
+    check("concept hex color detected", d is not None and d.hook_type == 'content-guard', True)
+    check("concept hex color pattern", d is not None and '#[0-9a-fA-F]' in (d.patterns[0] if d else ''), True)
+
+    d = classify_directive("Avoid !important in stylesheets @enforced", 303)
+    check("concept !important detected", d is not None and d.hook_type == 'content-guard', True)
+    check("concept !important pattern", d is not None and d.patterns == ['!important'], True)
+
+    d = classify_directive("No TODO comments in production code @enforced", 304)
+    check("concept TODO detected", d is not None and d.hook_type == 'content-guard', True)
+    check("concept TODO pattern", d is not None and d.patterns == ['TODO'], True)
+
+    d = classify_directive("Never use eslint-disable comments @enforced", 305)
+    check("concept eslint-disable detected", d is not None and d.hook_type == 'content-guard', True)
+
+    d = classify_directive("No ts-ignore directives @enforced", 306)
+    check("concept ts-ignore detected", d is not None and d.hook_type == 'content-guard', True)
+
+    d = classify_directive("Avoid wildcard imports @enforced", 307)
+    check("concept wildcard import detected", d is not None and d.hook_type == 'content-guard', True)
+
+    # Concept content-guard evaluate: inline styles
+    d = Directive(
+        text="Never use inline styles @enforced",
+        hook_type='content-guard',
+        patterns=['style='],
+        description="Block writing: style=",
+        line_num=1,
+    )
+    result = _check_single(d, 'Edit', {'new_string': '<div style="color: red">', 'file_path': 'app.html', 'old_string': ''})
+    check("concept inline style blocks edit", result is not None and result['decision'] == 'block', True)
+
+    result = _check_single(d, 'Write', {'content': '<div class="container">Hello</div>', 'file_path': 'app.html'})
+    check("concept inline style allows clean", result is None, True)
+
+    # Concept content-guard evaluate: HEX colors
+    d = Directive(
+        text="Never use HEX color codes @enforced",
+        hook_type='content-guard',
+        patterns=['#[0-9a-fA-F]'],
+        description="Block writing: #[0-9a-fA-F]",
+        line_num=1,
+    )
+    result = _check_single(d, 'Edit', {'new_string': 'color: #ff0000;', 'file_path': 'style.css', 'old_string': ''})
+    check("concept hex color blocks edit", result is not None and result['decision'] == 'block', True)
+
+    result = _check_single(d, 'Write', {'content': 'color: var(--primary);', 'file_path': 'style.css'})
+    check("concept hex color allows clean", result is None, True)
+
+    # Parenthetical example extraction
+    d = classify_directive('Never use inline styles (style="...") in templates @enforced', 310)
+    check("paren example detected", d is not None and d.hook_type == 'content-guard', True)
+
+    # Concept should NOT steal from other guard types
+    d = classify_directive("Never modify .env files @enforced", 320)
+    check("concept doesn't steal file-guard", d is not None and d.hook_type == 'file-guard', True)
+
+    d = classify_directive("Don't force push @enforced", 321)
+    check("concept doesn't steal bash-guard", d is not None and d.hook_type == 'bash-guard', True)
 
     print(f"\n{passed} passed, {failed} failed")
     return failed == 0

@@ -57,6 +57,9 @@ No runtime dependencies beyond Python 3.6+ and `jq` (for per-rule mode). Plugin 
 | "Read test file before editing source @enforced" | require-prior-tool | Edit without prior Read |
 | "Never write `console.log` @enforced" | content-guard | Edit/Write containing banned pattern |
 | "Don't use the `any` type @enforced" | content-guard | Edit/Write containing banned code |
+| "Never use inline styles @enforced" | content-guard | Edit/Write containing `style=` |
+| "No HEX color codes in CSS @enforced" | content-guard | Edit/Write containing `#[0-9a-fA-F]` |
+| "No `!important` @enforced" | content-guard | Edit/Write containing `!important` |
 
 Rules like "write clean code" or "be concise" are skipped (subjective, no tool-call signal). The tool explains what it skips and why.
 
@@ -122,7 +125,7 @@ enforce-hooks.py [CLAUDE.md] [options]
   --json              Output as JSON (with --scan)
   --hooks-dir         Directory for hooks (default: .claude/hooks)
   --settings          Path to settings.json (default: .claude/settings.json)
-  --test              Run self-tests (206 assertions)
+  --test              Run self-tests (225 assertions)
 ```
 
 Auto-detects CLAUDE.md in the current or parent directories if no file is specified.
@@ -146,7 +149,7 @@ Copy `SKILL.md` to `.claude/skills/enforce-hooks/SKILL.md` in your project. Then
 python3 enforce-hooks.py --test
 ```
 
-206 assertions covering directive classification, hook generation, suggestion discovery, runtime evaluation, content-guard, and cache invalidation.
+225 assertions covering directive classification, hook generation, suggestion discovery, runtime evaluation, content-guard, and cache invalidation.
 
 ## License
 
