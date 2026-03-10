@@ -224,9 +224,17 @@ CONTENT_GUARD_PATTERNS = [
     # Verb is optional for "avoid" ("Avoid debugger" vs "Avoid using debugger")
     re.compile(
         r'(?:never|don\'?t|do\s+not|avoid)\s+'
-        r'(?:(?:write|include|add|use|put|leave|output|call|invoke)\s+)?'
-        r'(console\.log|eval\s*\(\)|exec\s*\(\)|debugger|binding\.pry|byebug|'
-        r'pdb\.set_trace|alert\s*\(\)|document\.write)',
+        r'(?:(?:us(?:e|ing)|writ(?:e|ing)|includ(?:e|ing)|add(?:ing)?|leav(?:e|ing)|call(?:ing)?|put|output|invoke)\s+)?'
+        r'(console\.log|console\.error|console\.warn|console\.info|console\.debug'
+        r'|debugger|eval\s*\(\)|exec\s*\(\)|document\.write|alert\s*\(\)|innerHTML'
+        r'|\.innerHTML|window\.eval|Function\(\)'
+        r'|binding\.pry|byebug|pdb\.set_trace)',
+        re.IGNORECASE
+    ),
+    # "No console.log" (bare, without backticks)
+    re.compile(
+        r'(?:no|zero|eliminate)\s+'
+        r'(console\.log|console\.error|console\.warn|debugger|eval\(\)|document\.write)',
         re.IGNORECASE
     ),
 ]
@@ -538,13 +546,8 @@ def scan_file(path):
         if in_code_block:
             continue
 
-        # Skip top-level headers
-        if stripped.startswith('# ') and not stripped.startswith('## '):
-            section_enforced = False
-            continue
-
-        # Section headings (## or ###) may carry @enforced tag
-        if re.match(r'^#{2,4}\s', stripped):
+        # Section headings (# through ####) may carry @enforced tag
+        if re.match(r'^#{1,4}\s', stripped):
             section_enforced = '@enforced' in stripped or '@required' in stripped
             # Don't classify the heading itself as a directive — the
             # content lines under it are the actual rules.
@@ -1792,8 +1795,14 @@ rm -rf /tmp/test
     d = classify_directive("Don't include document.write in any page", 204)
     check("bare document.write detected", d is not None and d.hook_type == 'content-guard', True)
 
+    d = classify_directive("No console.log", 205)
+    check("bare no-console.log detected", d is not None and d.hook_type == 'content-guard', True)
+
+    d = classify_directive("Avoid innerHTML assignments", 206)
+    check("bare innerHTML detected", d is not None and d.hook_type == 'content-guard', True)
+
     # Bare identifiers should NOT steal from bash-guard
-    d = classify_directive("Never run rm -rf /", 205)
+    d = classify_directive("Never run rm -rf /", 207)
     check("bare rm still bash-guard", d is not None and d.hook_type == 'bash-guard', True)
 
     # --- "After every change" require-prior tests ---
@@ -1813,6 +1822,23 @@ rm -rf /tmp/test
 
     d = classify_directive("Never push without opening a pull request", 221)
     check("push-without-pr variant", d is not None and d.hook_type == 'bash-guard', True)
+
+    # --- Top-level heading @enforced propagation ---
+
+    toplevel_md = """# Rules @enforced
+
+- Never modify .env files
+- Don't push to main directly
+"""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as f:
+        f.write(toplevel_md)
+        f.flush()
+        enforced, skipped = scan_file(f.name)
+        check("toplevel @enforced propagates", len(enforced) >= 2, True)
+        types = [d.hook_type for d in enforced]
+        check("toplevel has file-guard", 'file-guard' in types, True)
+        check("toplevel has branch-guard", 'branch-guard' in types, True)
+        os.unlink(f.name)
 
     # --- Lock file detection tests ---
 
