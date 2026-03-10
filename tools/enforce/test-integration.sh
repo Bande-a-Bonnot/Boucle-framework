@@ -31,7 +31,11 @@ EOF
 
 # Install enforce-hooks
 cd "$TMPDIR_TEST"
-python3 "$SCRIPT_DIR/enforce-hooks.py" --install-plugin > /dev/null 2>&1
+if ! python3 "$SCRIPT_DIR/enforce-hooks.py" --install-plugin > /dev/null; then
+    echo "ERROR: enforce-hooks installation failed in test project."
+    echo "Make sure enforce-hooks.py is in: $SCRIPT_DIR"
+    exit 1
+fi
 
 HOOK=".claude/hooks/enforce-hooks.py"
 PASS=0

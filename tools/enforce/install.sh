@@ -23,13 +23,36 @@ fi
 
 echo "Installing enforce-hooks..."
 
+# Check python3
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "Error: python3 not found. Install Python 3.6+ and try again." >&2
+    exit 1
+fi
+
 DL="curl -fsSL"
 command -v curl >/dev/null 2>&1 || DL="wget -q -O -"
 
-# Download enforce-hooks.py and run plugin install
+# Download enforce-hooks.py
 TMPFILE="${TMPDIR:-/tmp}/enforce-hooks-installer.py"
-$DL "$REPO_RAW/enforce-hooks.py" > "$TMPFILE"
+if ! $DL "$REPO_RAW/enforce-hooks.py" > "$TMPFILE" 2>/dev/null; then
+    echo "Error: download failed. Check your internet connection." >&2
+    rm -f "$TMPFILE"
+    exit 1
+fi
 
-python3 "$TMPFILE" --install-plugin
+# Verify download is not empty
+if [ ! -s "$TMPFILE" ]; then
+    echo "Error: downloaded file is empty. URL may have changed." >&2
+    rm -f "$TMPFILE"
+    exit 1
+fi
+
+# Install
+if ! python3 "$TMPFILE" --install-plugin; then
+    echo "Error: installation failed. Try downloading enforce-hooks.py manually." >&2
+    rm -f "$TMPFILE"
+    exit 1
+fi
 
 rm -f "$TMPFILE"
+echo "Done. enforce-hooks is active for this project."
