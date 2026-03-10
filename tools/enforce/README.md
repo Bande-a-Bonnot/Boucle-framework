@@ -43,15 +43,16 @@ No runtime dependencies beyond Python 3.6+ and `jq` (for per-rule mode). Plugin 
 |-----------|-----------|----------------|
 | "Never modify .env" | file-guard | Write/Edit to .env |
 | "Don't read files in secrets/" | file-guard | Read/Write/Edit in secrets/ |
+| "Protected files: package-lock.json, yarn.lock" | file-guard | Listed file patterns (lock files, configs) |
 | "Don't force push" | bash-guard | `push --force`, `push -f` in Bash |
-| "Never reset --hard" | bash-guard | `reset --hard` in Bash |
-| "Always run tests before committing" | require-prior-tool | Commit without prior test run |
-| "Don't commit directly to main" | branch-guard | git commit/push on main |
-| "Don't use WebSearch" | tool-block | Block tool by name |
 | "Never run rm -rf" | bash-guard | dangerous command patterns |
 | "Use pnpm instead of npm" | bash-guard | npm commands |
-| "Protected files: X, Y" | file-guard | Listed file patterns |
-| "Blocked commands: X, Y" | bash-guard | Listed command patterns |
+| "Don't commit directly to main" | branch-guard | git commit/push on main |
+| "Don't use WebSearch" | tool-block | Block tool by name |
+| "Always run tests before committing" | require-prior-tool | Commit without prior test run |
+| "Read test file before editing source" | require-prior-tool | Edit without prior Read |
+| "Never write `console.log`" | content-guard | Edit/Write containing banned pattern |
+| "Don't use the `any` type" | content-guard | Edit/Write containing banned code |
 
 Rules like "write clean code" or "be concise" are skipped (subjective, no tool-call signal). The tool explains what it skips and why.
 
@@ -117,7 +118,7 @@ enforce-hooks.py [CLAUDE.md] [options]
   --json              Output as JSON (with --scan)
   --hooks-dir         Directory for hooks (default: .claude/hooks)
   --settings          Path to settings.json (default: .claude/settings.json)
-  --test              Run self-tests (141 assertions)
+  --test              Run self-tests (171 assertions)
 ```
 
 Auto-detects CLAUDE.md in the current or parent directories if no file is specified.
@@ -141,7 +142,7 @@ Copy `SKILL.md` to `.claude/skills/enforce-hooks/SKILL.md` in your project. Then
 python3 enforce-hooks.py --test
 ```
 
-141 assertions covering directive classification, hook generation, suggestion discovery, runtime evaluation, and cache invalidation.
+171 assertions covering directive classification, hook generation, suggestion discovery, runtime evaluation, content-guard, and cache invalidation.
 
 ## License
 

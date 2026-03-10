@@ -147,6 +147,13 @@ REQUIRE_PRIOR_PATTERNS = [
         r'before\s+(?:using?\s+)?(.+)',
         re.IGNORECASE
     ),
+    # "Read the test file before editing source" / "Read X before modifying Y"
+    # Captures the verb "read" as group 1 and the target verb as group 2
+    re.compile(
+        r'(?:always\s+)?(read)\s+.+?\s+'
+        r'before\s+(editing|modifying|changing|updating)',
+        re.IGNORECASE
+    ),
 ]
 
 # Patterns for tool blocking
@@ -161,6 +168,42 @@ TOOL_BLOCK_PATTERNS = [
     ),
 ]
 
+# Patterns for content guards (check what's being written to files)
+CONTENT_GUARD_PATTERNS = [
+    # "Never write/include/add `X` ..." (backtick-quoted code pattern)
+    re.compile(
+        r'(?:never|don\'?t|do\s+not|avoid)\s+'
+        r'(?:write|include|add|put|leave|output)\s+'
+        r'`([^`]+)`',
+        re.IGNORECASE
+    ),
+    # "Don't use `X` type/keyword" / "Avoid `X` keyword" (code context, not commands)
+    re.compile(
+        r'(?:never|don\'?t|do\s+not|avoid)\s+'
+        r'(?:(?:us(?:e|ing))\s+)?'  # "use/using" is optional (for "avoid `X` type")
+        r'(?:the\s+)?'
+        r'`([^`]+)`\s+'
+        r'(?:type|keyword|declaration|statement|function|method|class|variable|operator)',
+        re.IGNORECASE
+    ),
+    # "Don't use `X` in production/code/TypeScript/Python files"
+    re.compile(
+        r'(?:never|don\'?t|do\s+not|avoid)\s+'
+        r'(?:us(?:e|ing))\s+'
+        r'(?:the\s+)?'
+        r'`([^`]+)`\s+'
+        r'in\s+(?:production|code|source|typescript|javascript|python|ruby)',
+        re.IGNORECASE
+    ),
+    # "No `console.log` statements" / "No `debugger` calls"
+    re.compile(
+        r'(?:no|zero|eliminate)\s+'
+        r'`([^`]+)`\s+'
+        r'(?:statements?|calls?|usage|expressions?|literals?)',
+        re.IGNORECASE
+    ),
+]
+
 
 def extract_file_patterns(text):
     """Extract file patterns from directive text."""
@@ -170,10 +213,12 @@ def extract_file_patterns(text):
         patterns.append(m.group(1))
     # Match common file patterns without quotes
     # Use (?:^|\W) instead of \b since dot-prefixed names don't have word boundary before them
-    for m in re.finditer(r'(?:^|\W)(\.env\b|\.env\.\w+|secrets?/|\.pem\b|\.key\b|\.p12\b|\.pfx\b|credentials?\.\w+|vendor/|node_modules/|\*\.\w{1,5})', text):
+    for m in re.finditer(r'(?:^|\W)(\.env\b|\.env\.\w+|\.env\.local\b|secrets?/|\.pem\b|\.key\b|\.p12\b|\.pfx\b|\.cert\b|\.crt\b|credentials?\.\w+|vendor/|node_modules/|\.git/|\*\.\w{1,5})', text):
         patterns.append(m.group(1))
-    # Match common bare filenames (Makefile, Dockerfile, Gemfile, etc.)
-    for m in re.finditer(r'\b(Makefile|Dockerfile|Gemfile|Rakefile|Procfile|Vagrantfile|Brewfile|Guardfile|Thorfile|Berksfile|Capfile|Podfile|Fastfile|Dangerfile|CLAUDE\.md|README\.md|LICENSE|CHANGELOG\.md|package\.json|tsconfig\.json|Cargo\.toml|go\.mod|\.gitignore|\.dockerignore)\b', text):
+    # Match common bare filenames (Makefile, Dockerfile, lock files, etc.)
+    # NOTE: Longer compound names (Gemfile.lock) MUST appear before shorter
+    # prefixes (Gemfile) in the alternation, or the shorter match wins.
+    for m in re.finditer(r'\b(package-lock\.json|Gemfile\.lock|Cargo\.lock|Pipfile\.lock|Cargo\.toml|pnpm-lock\.yaml|shrinkwrap\.json|composer\.lock|poetry\.lock|bun\.lockb|flake\.lock|CHANGELOG\.md|CLAUDE\.md|README\.md|package\.json|tsconfig\.json|go\.mod|go\.sum|yarn\.lock|Makefile|Dockerfile|Gemfile|Rakefile|Procfile|Vagrantfile|Brewfile|Guardfile|Thorfile|Berksfile|Capfile|Podfile|Fastfile|Dangerfile|LICENSE|\.gitignore|\.dockerignore)\b', text):
         if m.group(1) not in patterns:
             patterns.append(m.group(1))
     # Match paths with slashes
@@ -296,6 +341,21 @@ def classify_directive(line, line_num):
                     line_num=line_num,
                 )
 
+    # Try content-guard patterns (before bash-guard to avoid false positives
+    # like "don't use `any` type" being classified as bash-guard)
+    for pattern in CONTENT_GUARD_PATTERNS:
+        m = pattern.search(clean)
+        if m:
+            code_pat = m.group(1).strip()
+            if code_pat:
+                return Directive(
+                    text=stripped,
+                    hook_type='content-guard',
+                    patterns=[code_pat],
+                    description=f"Block writing: {code_pat}",
+                    line_num=line_num,
+                )
+
     # Try bash-guard patterns
     for pattern in BASH_GUARD_PATTERNS:
         m = pattern.search(clean)
@@ -326,12 +386,17 @@ def classify_directive(line, line_num):
     # Try require-prior-tool patterns
     # Map common terms to Claude Code tool names
     _tool_name_map = {
-        'tests': 'Bash', 'test': 'Bash', 'lint': 'Bash',
+        'tests': 'Bash', 'test': 'Bash', 'lint': 'Bash', 'linting': 'Bash',
         'cargo test': 'Bash', 'npm test': 'Bash', 'pytest': 'Bash',
         'search': 'Grep', 'grep': 'Grep', 'rg': 'Grep',
         'web search': 'WebSearch', 'websearch': 'WebSearch',
         'webfetch': 'WebFetch', 'web fetch': 'WebFetch',
         'committing': 'Bash', 'commit': 'Bash', 'pushing': 'Bash',
+        'read': 'Read', 'reading': 'Read',
+        'editing': 'Edit', 'edit': 'Edit',
+        'modifying': 'Edit', 'modify': 'Edit',
+        'changing': 'Edit', 'change': 'Edit',
+        'updating': 'Edit', 'update': 'Edit',
     }
     def _to_tool(name):
         """Map a term to its Claude Code tool name."""
@@ -584,6 +649,42 @@ exit 0
 '''
 
 
+CONTENT_GUARD_TEMPLATE = '''#!/usr/bin/env bash
+# enforce: {directive}
+# Generated by enforce-hooks from CLAUDE.md
+INPUT=$(cat)
+TOOL=$(echo "$INPUT" | jq -r '.tool_name')
+case "$TOOL" in Edit|Write|MultiEdit) ;; *) exit 0 ;; esac
+# Extract content being written
+if [ "$TOOL" = "Edit" ]; then
+  CONTENT=$(echo "$INPUT" | jq -r '.tool_input.new_string // empty')
+elif [ "$TOOL" = "Write" ]; then
+  CONTENT=$(echo "$INPUT" | jq -r '.tool_input.content // empty')
+elif [ "$TOOL" = "MultiEdit" ]; then
+  CONTENT=$(echo "$INPUT" | jq -r '[.tool_input.edits[].new_string] | join("\\n") // empty')
+fi
+[ -z "$CONTENT" ] && exit 0
+{checks}
+exit 0
+'''
+
+
+def generate_content_guard_checks(patterns, short_directive):
+    """Generate bash checks for content-guard patterns."""
+    lines = []
+    for pat in patterns:
+        # Escape for grep -F (fixed string match)
+        escaped = pat.replace("'", "'\\''")
+        short = short_directive.replace("'", "'\\''")
+        lines.append(
+            f'if echo "$CONTENT" | grep -qF \'{escaped}\'; then\n'
+            f'  echo \'{{"decision": "block", "reason": "Content blocked: {escaped} is not allowed. (CLAUDE.md: {short})"}}\'\n'
+            f'  exit 0\n'
+            f'fi'
+        )
+    return '\n'.join(lines)
+
+
 def generate_file_guard_checks(patterns, short_directive):
     """Generate bash checks for file-guard patterns."""
     lines = []
@@ -653,7 +754,11 @@ def generate_hook(directive):
     """Generate a hook script for a directive."""
     short = _truncate_short(directive.text, 80)
 
-    if directive.hook_type == 'file-guard':
+    if directive.hook_type == 'content-guard':
+        checks = generate_content_guard_checks(directive.patterns, short)
+        return CONTENT_GUARD_TEMPLATE.format(directive=short, checks=checks)
+
+    elif directive.hook_type == 'file-guard':
         checks = generate_file_guard_checks(directive.patterns, short)
         # Include Read tool if directive mentions reading
         text_lower = directive.text.lower()
@@ -817,7 +922,25 @@ def _check_single(directive, tool_name, tool_input):
     """Check if a tool call violates a single directive."""
     short = directive.text[:80].replace('@enforced', '').strip()
 
-    if directive.hook_type == 'file-guard':
+    if directive.hook_type == 'content-guard':
+        if tool_name not in ('Write', 'Edit', 'MultiEdit'):
+            return None
+        content = ''
+        if tool_name == 'Edit':
+            content = tool_input.get('new_string', '')
+        elif tool_name == 'Write':
+            content = tool_input.get('content', '')
+        elif tool_name == 'MultiEdit':
+            edits = tool_input.get('edits', [])
+            content = '\n'.join(e.get('new_string', '') for e in edits)
+        if not content:
+            return None
+        for pat in directive.patterns:
+            if pat in content:
+                return {"decision": "block",
+                        "reason": f"Content blocked: {pat} is not allowed. (CLAUDE.md: \"{short}\")"}
+
+    elif directive.hook_type == 'file-guard':
         text_lower = directive.text.lower()
         read_words = ['read', 'access', 'view', 'open', 'look at']
         target_tools = {'Write', 'Edit', 'MultiEdit'}
@@ -1555,6 +1678,100 @@ rm -rf /tmp/test
         check("suggestions skips code blocks", not any('tmp/test' in t for t in texts), True)
         check("suggestions finds sudo rule", len(suggestions) >= 1, True)
         os.unlink(f.name)
+
+    # --- Content-guard tests ---
+
+    # Classification
+    d = classify_directive("Never write `console.log` in production code", 80)
+    check("content-guard console.log", d is not None and d.hook_type == 'content-guard', True)
+    check("content-guard console.log pattern", d is not None and d.patterns == ['console.log'], True)
+
+    d = classify_directive("Don't use the `any` type in TypeScript files", 81)
+    check("content-guard any type", d is not None and d.hook_type == 'content-guard', True)
+    check("content-guard any pattern", d is not None and d.patterns == ['any'], True)
+
+    d = classify_directive("Never include `debugger` statements in code", 82)
+    check("content-guard debugger", d is not None and d.hook_type == 'content-guard', True)
+
+    d = classify_directive("Don't use `eval()` in production code", 83)
+    check("content-guard eval", d is not None and d.hook_type == 'content-guard', True)
+
+    d = classify_directive("Avoid `var` keyword in JavaScript", 84)
+    check("content-guard var keyword", d is not None and d.hook_type == 'content-guard', True)
+
+    d = classify_directive("No `console.log` statements", 85)
+    check("content-guard no-statements", d is not None and d.hook_type == 'content-guard', True)
+
+    # Content-guard should NOT match command-like patterns
+    d = classify_directive("Never run `rm -rf /`", 86)
+    check("content-guard not rm", d is not None and d.hook_type == 'bash-guard', True)
+
+    # Hook generation
+    d = Directive(
+        text="Never write `console.log` @enforced",
+        hook_type='content-guard',
+        patterns=['console.log'],
+        description="Block writing: console.log",
+        line_num=1,
+    )
+    hook = generate_hook(d)
+    check("content-guard hook generated", hook is not None, True)
+    check("content-guard hook has grep", 'grep' in hook, True)
+    check("content-guard hook has console.log", 'console.log' in hook, True)
+    check("content-guard hook checks Edit", 'Edit' in hook, True)
+    check("content-guard hook checks Write", 'Write' in hook, True)
+
+    # Evaluate mode
+    d = Directive(
+        text="Never write `console.log` @enforced",
+        hook_type='content-guard',
+        patterns=['console.log'],
+        description="Block writing: console.log",
+        line_num=1,
+    )
+    result = _check_single(d, 'Edit', {'new_string': 'console.log("debug")', 'file_path': 'app.js', 'old_string': ''})
+    check("content-guard evaluate blocks", result is not None and result['decision'] == 'block', True)
+
+    result = _check_single(d, 'Write', {'content': 'function hello() { return 1; }', 'file_path': 'app.js'})
+    check("content-guard evaluate allows clean", result is None, True)
+
+    result = _check_single(d, 'Write', {'content': 'console.log("test")\nreturn 1;', 'file_path': 'app.js'})
+    check("content-guard evaluate blocks write", result is not None and result['decision'] == 'block', True)
+
+    result = _check_single(d, 'Bash', {'command': 'echo hello'})
+    check("content-guard ignores bash", result is None, True)
+
+    result = _check_single(d, 'Read', {'file_path': 'app.js'})
+    check("content-guard ignores read", result is None, True)
+
+    # --- Lock file detection tests ---
+
+    d = classify_directive("Protected files: package-lock.json, yarn.lock", 90)
+    check("lock-files detected", d is not None and d.hook_type == 'file-guard', True)
+    check("lock-files has package-lock", d is not None and 'package-lock.json' in d.patterns, True)
+    check("lock-files has yarn.lock", d is not None and 'yarn.lock' in d.patterns, True)
+
+    d = classify_directive("Never modify Gemfile.lock or Cargo.lock", 91)
+    check("lock-files gemfile", d is not None and d.hook_type == 'file-guard', True)
+    check("lock-files has Gemfile.lock", d is not None and 'Gemfile.lock' in d.patterns, True)
+    check("lock-files has Cargo.lock", d is not None and 'Cargo.lock' in d.patterns, True)
+
+    d = classify_directive("Don't edit pnpm-lock.yaml or poetry.lock", 92)
+    check("lock-files pnpm", d is not None and d.hook_type == 'file-guard', True)
+
+    # --- .env variants ---
+
+    d = classify_directive("Never modify .env.local files", 93)
+    check("env-local detected", d is not None and d.hook_type == 'file-guard', True)
+
+    # --- Read before editing ---
+
+    d = classify_directive("Read the relevant test file before editing source code", 95)
+    check("read-before-edit detected", d is not None and d.hook_type == 'require-prior-tool', True)
+    check("read-before-edit requires Read", d is not None and d.patterns[0] == 'Read', True)
+
+    d = classify_directive("Always read the spec before modifying implementation", 96)
+    check("read-before-modify detected", d is not None and d.hook_type == 'require-prior-tool', True)
 
     print(f"\n{passed} passed, {failed} failed")
     return failed == 0
