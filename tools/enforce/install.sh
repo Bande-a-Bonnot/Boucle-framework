@@ -18,6 +18,13 @@ REPO_RAW="https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main
 if [ ! -f "CLAUDE.md" ] && [ ! -d ".claude" ]; then
     echo "No CLAUDE.md or .claude/ found in current directory."
     echo "Run this from your project root."
+    echo ""
+    echo "To get started, create a CLAUDE.md with some rules:"
+    echo '  echo "## Safety @enforced" > CLAUDE.md'
+    echo '  echo "- Never modify .env files" >> CLAUDE.md'
+    echo '  echo "- Do not use git push --force" >> CLAUDE.md'
+    echo ""
+    echo "Then re-run this installer."
     exit 1
 fi
 
