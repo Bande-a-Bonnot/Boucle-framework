@@ -10,12 +10,32 @@ LOG_DIR="${HOME}/.claude/session-logs"
 
 echo "Installing session-log hook..."
 
+# Check python3 (needed for settings.json management)
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "Error: python3 not found. Install Python 3 and try again." >&2
+    exit 1
+fi
+
 # Create directories
 mkdir -p "$HOOK_DIR" "$LOG_DIR"
 
 # Download hook script
-curl -fsSL "https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/session-log/hook.sh" -o "$HOOK_FILE"
+HOOK_URL="https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/session-log/hook.sh"
+if command -v curl >/dev/null 2>&1; then
+  curl -fsSL "$HOOK_URL" -o "$HOOK_FILE"
+elif command -v wget >/dev/null 2>&1; then
+  wget -q "$HOOK_URL" -O "$HOOK_FILE"
+else
+  echo "Error: curl or wget required" >&2
+  exit 1
+fi
 chmod +x "$HOOK_FILE"
+
+# Verify download is not empty
+if [ ! -s "$HOOK_FILE" ]; then
+    echo "Error: downloaded file is empty. The URL may have changed." >&2
+    exit 1
+fi
 
 # Add to Claude Code settings
 if [ ! -f "$SETTINGS" ]; then

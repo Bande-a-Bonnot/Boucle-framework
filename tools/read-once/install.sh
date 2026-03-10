@@ -12,10 +12,33 @@ echo "read-once: installing to ${INSTALL_DIR}"
 # Create directory
 mkdir -p "$INSTALL_DIR"
 
+# Determine download command
+DL="curl -fsSL"
+if ! command -v curl >/dev/null 2>&1; then
+  if command -v wget >/dev/null 2>&1; then
+    DL="wget -q -O -"
+  else
+    echo "Error: curl or wget required" >&2
+    exit 1
+  fi
+fi
+
 # Download hook and CLI
-curl -fsSL "${REPO}/hook.sh" -o "${INSTALL_DIR}/hook.sh"
-curl -fsSL "${REPO}/read-once" -o "${INSTALL_DIR}/read-once"
+if ! $DL "${REPO}/hook.sh" > "${INSTALL_DIR}/hook.sh" 2>/dev/null; then
+    echo "Error: download of hook.sh failed. Check your internet connection." >&2
+    exit 1
+fi
+if ! $DL "${REPO}/read-once" > "${INSTALL_DIR}/read-once" 2>/dev/null; then
+    echo "Error: download of read-once CLI failed. Check your internet connection." >&2
+    exit 1
+fi
 chmod +x "${INSTALL_DIR}/hook.sh" "${INSTALL_DIR}/read-once"
+
+# Verify downloads are not empty
+if [ ! -s "${INSTALL_DIR}/hook.sh" ] || [ ! -s "${INSTALL_DIR}/read-once" ]; then
+    echo "Error: downloaded file(s) are empty. The URL may have changed." >&2
+    exit 1
+fi
 
 echo "read-once: downloaded hook.sh and read-once CLI"
 
