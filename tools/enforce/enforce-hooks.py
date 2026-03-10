@@ -348,11 +348,20 @@ def extract_command_patterns(text):
         'checkout .', 'restore .',
         'curl | sh', 'curl | bash', 'wget | sh',
         'git push',
+        '--no-verify', '--no-gpg-sign', '--skip-hooks',
+        '--dangerouslyDisableSandbox',
     ]
     lower = text.lower()
     for cmd in dangerous:
         if cmd in lower and cmd not in patterns:
             patterns.append(cmd)
+    # Extract --flag patterns (e.g., "--no-verify", "--force-with-lease")
+    # These are specific enough to be meaningful blockers
+    for m in re.finditer(r'(--[\w][\w-]+)', text):
+        flag = m.group(1)
+        if flag not in patterns:
+            patterns.append(flag)
+
     # Expand aliases: "force push" should also match "push --force" and "push -f"
     aliases = {
         'force push': ['push --force', 'push -f'],
@@ -2438,6 +2447,39 @@ rm -rf /tmp/test
     d_plain = Directive(text="No console.log", hook_type='content-guard', patterns=['console.log'], description="test")
     dd_plain = d_plain.to_dict()
     check("plain: to_dict no path_filter", 'path_filter' not in dd_plain, True)
+
+    # Test --flag pattern extraction in bash-guard
+    d = classify_directive("Never use --no-verify when committing @enforced", 1)
+    check("flag: --no-verify detected", d is not None, True)
+    check("flag: --no-verify type", d.hook_type, 'bash-guard')
+    check("flag: --no-verify in patterns", '--no-verify' in d.patterns, True)
+
+    d = classify_directive("Don't run --no-gpg-sign @enforced", 1)
+    check("flag: --no-gpg-sign detected", d is not None, True)
+    check("flag: --no-gpg-sign in patterns", '--no-gpg-sign' in d.patterns, True)
+
+    d = classify_directive("Never use --dangerouslyDisableSandbox @enforced", 1)
+    check("flag: --dangerouslyDisableSandbox detected", d is not None, True)
+    check("flag: --dangerouslyDisableSandbox in patterns", '--dangerouslyDisableSandbox' in d.patterns, True)
+
+    # Test flag evaluation blocks matching Bash commands
+    flag_dir = Directive("Never use --no-verify @enforced", 'bash-guard',
+                         ['--no-verify'], "Block: --no-verify", 1)
+    result = _check_single(flag_dir, 'Bash', {'command': 'git commit --no-verify -m "test"'})
+    check("flag eval: --no-verify blocked", result is not None and result['decision'] == 'block', True)
+
+    result = _check_single(flag_dir, 'Bash', {'command': 'git commit -m "normal commit"'})
+    check("flag eval: normal commit allowed", result, None)
+
+    # Test --skip-hooks flag
+    d = classify_directive("Never use --skip-hooks @enforced", 1)
+    check("flag: --skip-hooks detected", d is not None, True)
+    check("flag: --skip-hooks in patterns", '--skip-hooks' in d.patterns, True)
+
+    # Test backtick-quoted flags still work
+    d = classify_directive("Never run `--no-verify` @enforced", 1)
+    check("flag: backtick --no-verify detected", d is not None, True)
+    check("flag: backtick --no-verify in patterns", '--no-verify' in d.patterns, True)
 
     print(f"\n{passed} passed, {failed} failed")
     return failed == 0
