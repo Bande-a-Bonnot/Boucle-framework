@@ -49,6 +49,7 @@ No runtime dependencies beyond Python 3.6+ and `jq` (for per-rule mode). Plugin 
 | "Don't read files in secrets/ @enforced" | file-guard | Read/Write/Edit in secrets/ |
 | "Protected files: package-lock.json, yarn.lock @enforced" | file-guard | Listed file patterns (lock files, configs) |
 | "Don't force push @enforced" | bash-guard | `push --force`, `push -f` in Bash |
+| "Never use --no-verify @enforced" | bash-guard | `--no-verify` flag in any Bash command |
 | "Never run rm -rf @enforced" | bash-guard | dangerous command patterns |
 | "Use pnpm instead of npm @enforced" | bash-guard | npm commands |
 | "Don't commit directly to main @enforced" | branch-guard | git commit/push on main |
@@ -127,7 +128,7 @@ enforce-hooks.py [CLAUDE.md] [options]
   --json              Output as JSON (with --scan)
   --hooks-dir         Directory for hooks (default: .claude/hooks)
   --settings          Path to settings.json (default: .claude/settings.json)
-  --test              Run self-tests (225 assertions)
+  --test              Run self-tests
 ```
 
 Auto-detects CLAUDE.md in the current or parent directories if no file is specified.
@@ -151,7 +152,7 @@ Copy `SKILL.md` to `.claude/skills/enforce-hooks/SKILL.md` in your project. Then
 python3 enforce-hooks.py --test
 ```
 
-259 assertions covering directive classification, hook generation, suggestion discovery, runtime evaluation, content-guard, scoped-content-guard, and cache invalidation.
+Covers directive classification, hook generation, suggestion discovery, runtime evaluation, content-guard, scoped-content-guard, flag patterns, and cache invalidation.
 
 ## License
 
