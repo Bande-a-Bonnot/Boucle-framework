@@ -124,7 +124,7 @@ matches_protected() {
 # Extract target path based on tool
 case "$TOOL_NAME" in
   Write)
-    TARGET=$(echo "$INPUT" | jq -r '.input.file_path // empty')
+    TARGET=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
     if [ -z "$TARGET" ]; then
       exit 0
     fi
@@ -142,7 +142,7 @@ case "$TOOL_NAME" in
     ;;
 
   Edit)
-    TARGET=$(echo "$INPUT" | jq -r '.input.file_path // empty')
+    TARGET=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
     if [ -z "$TARGET" ]; then
       exit 0
     fi
@@ -159,7 +159,7 @@ case "$TOOL_NAME" in
     ;;
 
   Bash)
-    COMMAND=$(echo "$INPUT" | jq -r '.input.command // empty')
+    COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
     if [ -z "$COMMAND" ]; then
       exit 0
     fi

@@ -60,19 +60,19 @@ secrets.json
 EOF
 
 assert_blocked "Write to .env is blocked" \
-  '{"tool_name":"Write","input":{"file_path":".env","content":"SECRET=foo"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":".env","content":"SECRET=foo"}}'
 
 assert_blocked "Edit .env is blocked" \
-  '{"tool_name":"Edit","input":{"file_path":".env","old_string":"a","new_string":"b"}}'
+  '{"tool_name":"Edit","tool_input":{"file_path":".env","old_string":"a","new_string":"b"}}'
 
 assert_allowed "Write to config.json is allowed" \
-  '{"tool_name":"Write","input":{"file_path":"config.json","content":"{}"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"config.json","content":"{}"}}'
 
 assert_blocked "Write to secrets.json is blocked" \
-  '{"tool_name":"Write","input":{"file_path":"secrets.json","content":"{}"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"secrets.json","content":"{}"}}'
 
 assert_allowed "Write to public.json is allowed" \
-  '{"tool_name":"Write","input":{"file_path":"public.json","content":"{}"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"public.json","content":"{}"}}'
 
 # --- Test: Glob patterns ---
 echo ""
@@ -84,19 +84,19 @@ credentials.*
 EOF
 
 assert_blocked "Write to server.pem is blocked" \
-  '{"tool_name":"Write","input":{"file_path":"server.pem","content":"cert"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"server.pem","content":"cert"}}'
 
 assert_blocked "Write to path/to/id_rsa.key is blocked" \
-  '{"tool_name":"Write","input":{"file_path":"path/to/id_rsa.key","content":"key"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"path/to/id_rsa.key","content":"key"}}'
 
 assert_blocked "Write to credentials.yaml is blocked" \
-  '{"tool_name":"Write","input":{"file_path":"credentials.yaml","content":"{}"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"credentials.yaml","content":"{}"}}'
 
 assert_allowed "Write to readme.md is allowed" \
-  '{"tool_name":"Write","input":{"file_path":"readme.md","content":"hello"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"readme.md","content":"hello"}}'
 
 assert_blocked "Write to nested/cert.pem is blocked" \
-  '{"tool_name":"Write","input":{"file_path":"nested/cert.pem","content":"cert"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"nested/cert.pem","content":"cert"}}'
 
 # --- Test: Directory patterns ---
 echo ""
@@ -107,16 +107,16 @@ secrets/
 EOF
 
 assert_blocked "Write to secrets/api-key is blocked" \
-  '{"tool_name":"Write","input":{"file_path":"secrets/api-key","content":"key"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"secrets/api-key","content":"key"}}'
 
 assert_blocked "Write to .ssh/authorized_keys is blocked" \
-  '{"tool_name":"Write","input":{"file_path":".ssh/authorized_keys","content":"ssh-rsa"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":".ssh/authorized_keys","content":"ssh-rsa"}}'
 
 assert_allowed "Write to src/main.rs is allowed" \
-  '{"tool_name":"Write","input":{"file_path":"src/main.rs","content":"fn main(){}"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"src/main.rs","content":"fn main(){}"}}'
 
 assert_blocked "Write to secrets/nested/deep is blocked" \
-  '{"tool_name":"Write","input":{"file_path":"secrets/nested/deep/file","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"secrets/nested/deep/file","content":"x"}}'
 
 # --- Test: Bash command interception ---
 echo ""
@@ -128,19 +128,19 @@ secrets.json
 EOF
 
 assert_blocked "Bash rm .env is blocked" \
-  '{"tool_name":"Bash","input":{"command":"rm .env"}}'
+  '{"tool_name":"Bash","tool_input":{"command":"rm .env"}}'
 
 assert_blocked "Bash with redirect to .env is blocked" \
-  '{"tool_name":"Bash","input":{"command":"echo SECRET=x > .env"}}'
+  '{"tool_name":"Bash","tool_input":{"command":"echo SECRET=x > .env"}}'
 
 assert_blocked "Bash mv secrets.json is blocked" \
-  '{"tool_name":"Bash","input":{"command":"mv secrets.json /tmp/"}}'
+  '{"tool_name":"Bash","tool_input":{"command":"mv secrets.json /tmp/"}}'
 
 assert_allowed "Bash cat .env is allowed (read-only)" \
-  '{"tool_name":"Bash","input":{"command":"cat .env"}}'
+  '{"tool_name":"Bash","tool_input":{"command":"cat .env"}}'
 
 assert_allowed "Bash git status is allowed" \
-  '{"tool_name":"Bash","input":{"command":"git status"}}'
+  '{"tool_name":"Bash","tool_input":{"command":"git status"}}'
 
 # --- Test: Absolute paths ---
 echo ""
@@ -151,7 +151,7 @@ secrets/
 EOF
 
 assert_blocked "Absolute path Write to .env is blocked" \
-  '{"tool_name":"Write","input":{"file_path":"'"$(pwd)"'/.env","content":"SECRET=x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/.env","content":"SECRET=x"}}'
 
 # --- Test: Comments and blank lines in config ---
 echo ""
@@ -166,13 +166,13 @@ secrets.json
 EOF
 
 assert_blocked "Config with comments: .env still blocked" \
-  '{"tool_name":"Write","input":{"file_path":".env","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":".env","content":"x"}}'
 
 assert_blocked "Config with comments: secrets.json still blocked" \
-  '{"tool_name":"Write","input":{"file_path":"secrets.json","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"secrets.json","content":"x"}}'
 
 assert_allowed "Config with comments: readme.md still allowed" \
-  '{"tool_name":"Write","input":{"file_path":"readme.md","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"readme.md","content":"x"}}'
 
 # --- Test: Non-intercepted tools ---
 echo ""
@@ -182,10 +182,10 @@ cat > "$CONFIG" <<'EOF'
 EOF
 
 assert_allowed "Read tool is not intercepted" \
-  '{"tool_name":"Read","input":{"file_path":".env"}}'
+  '{"tool_name":"Read","tool_input":{"file_path":".env"}}'
 
 assert_allowed "Grep tool is not intercepted" \
-  '{"tool_name":"Grep","input":{"pattern":"SECRET","path":".env"}}'
+  '{"tool_name":"Grep","tool_input":{"pattern":"SECRET","path":".env"}}'
 
 # --- Test: Disabled mode ---
 echo ""
@@ -195,7 +195,7 @@ cat > "$CONFIG" <<'EOF'
 EOF
 
 TOTAL=$((TOTAL + 1))
-result=$(FILE_GUARD_DISABLED=1 echo '{"tool_name":"Write","input":{"file_path":".env","content":"x"}}' | FILE_GUARD_DISABLED=1 bash "$HOOK" 2>/dev/null) || true
+result=$(FILE_GUARD_DISABLED=1 echo '{"tool_name":"Write","tool_input":{"file_path":".env","content":"x"}}' | FILE_GUARD_DISABLED=1 bash "$HOOK" 2>/dev/null) || true
 if echo "$result" | grep -q '"decision":"block"'; then
   FAIL=$((FAIL + 1))
   echo "  FAIL: Disabled mode should allow everything"
@@ -210,7 +210,7 @@ echo "--- Missing config ---"
 TOTAL=$((TOTAL + 1))
 old_config="$FILE_GUARD_CONFIG"
 export FILE_GUARD_CONFIG="$TMPDIR/nonexistent"
-result=$(echo '{"tool_name":"Write","input":{"file_path":".env","content":"x"}}' | bash "$HOOK" 2>/dev/null) || true
+result=$(echo '{"tool_name":"Write","tool_input":{"file_path":".env","content":"x"}}' | bash "$HOOK" 2>/dev/null) || true
 if echo "$result" | grep -q '"decision":"block"'; then
   FAIL=$((FAIL + 1))
   echo "  FAIL: No config should allow everything"
@@ -229,13 +229,13 @@ cat > "$CONFIG" <<'EOF'
 EOF
 
 assert_blocked "Write to .env.local is blocked" \
-  '{"tool_name":"Write","input":{"file_path":".env.local","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":".env.local","content":"x"}}'
 
 assert_blocked "Write to .env.production is blocked" \
-  '{"tool_name":"Write","input":{"file_path":".env.production","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":".env.production","content":"x"}}'
 
 assert_allowed "Write to env.example is allowed" \
-  '{"tool_name":"Write","input":{"file_path":"env.example","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"env.example","content":"x"}}'
 
 # --- Summary ---
 echo ""
