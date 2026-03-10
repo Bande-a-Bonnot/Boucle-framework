@@ -87,6 +87,13 @@ BASH_GUARD_PATTERNS = [
         r'clean\s+-f\b.*|checkout\s+\.\s*$|restore\s+\.\s*$)',
         re.IGNORECASE
     ),
+    # "Don't push without creating a PR" / "Never push to origin without a pull request"
+    re.compile(
+        r'(?:never|don\'?t|do\s+not)\s+'
+        r'(push\b[^.]*?)\s*\bwithout\s+(?:creating|opening|making|having)\s+'
+        r'(?:a\s+)?(?:PR|pull\s+request)',
+        re.IGNORECASE
+    ),
 ]
 
 # Patterns for command substitution ("Use pnpm instead of npm", "Use yarn not npm")
@@ -154,6 +161,16 @@ REQUIRE_PRIOR_PATTERNS = [
         r'before\s+(editing|modifying|changing|updating)',
         re.IGNORECASE
     ),
+    # "Run npm test after every code change" / "Run tests after any modification"
+    # Maps to require-prior-tool: must run X before next commit/push
+    # Group 1 = required command, Group 2 = implied target (change/modification -> committing)
+    re.compile(
+        r'(?:always\s+)?(?:run|execute|use)\s+'
+        r'(\S+(?:\s+\S+)?)\s+'
+        r'after\s+(?:every|each|any|all)\s+'
+        r'(?:code\s+)?(changes?|modifications?|edits?|updates?)',
+        re.IGNORECASE
+    ),
 ]
 
 # Patterns for tool blocking
@@ -202,6 +219,16 @@ CONTENT_GUARD_PATTERNS = [
         r'(?:statements?|calls?|usage|expressions?|literals?)',
         re.IGNORECASE
     ),
+    # Bare code identifiers WITHOUT backticks:
+    # "Never write console.log" / "Never use eval()" / "Avoid debugger"
+    # Verb is optional for "avoid" ("Avoid debugger" vs "Avoid using debugger")
+    re.compile(
+        r'(?:never|don\'?t|do\s+not|avoid)\s+'
+        r'(?:(?:write|include|add|use|put|leave|output|call|invoke)\s+)?'
+        r'(console\.log|eval\s*\(\)|exec\s*\(\)|debugger|binding\.pry|byebug|'
+        r'pdb\.set_trace|alert\s*\(\)|document\.write)',
+        re.IGNORECASE
+    ),
 ]
 
 
@@ -247,6 +274,7 @@ def extract_command_patterns(text):
         'force push', 'reset --hard', 'clean -fd', 'clean -f',
         'checkout .', 'restore .',
         'curl | sh', 'curl | bash', 'wget | sh',
+        'push to origin', 'push to remote', 'push',
     ]
     lower = text.lower()
     for cmd in dangerous:
@@ -388,6 +416,8 @@ def classify_directive(line, line_num):
     _tool_name_map = {
         'tests': 'Bash', 'test': 'Bash', 'lint': 'Bash', 'linting': 'Bash',
         'cargo test': 'Bash', 'npm test': 'Bash', 'pytest': 'Bash',
+        'change': 'Bash', 'changes': 'Bash', 'modification': 'Bash',
+        'modifications': 'Bash', 'edits': 'Bash',
         'search': 'Grep', 'grep': 'Grep', 'rg': 'Grep',
         'web search': 'WebSearch', 'websearch': 'WebSearch',
         'webfetch': 'WebFetch', 'web fetch': 'WebFetch',
@@ -395,7 +425,7 @@ def classify_directive(line, line_num):
         'read': 'Read', 'reading': 'Read',
         'editing': 'Edit', 'edit': 'Edit',
         'modifying': 'Edit', 'modify': 'Edit',
-        'changing': 'Edit', 'change': 'Edit',
+        'changing': 'Edit',
         'updating': 'Edit', 'update': 'Edit',
     }
     def _to_tool(name):
@@ -1743,6 +1773,46 @@ rm -rf /tmp/test
 
     result = _check_single(d, 'Read', {'file_path': 'app.js'})
     check("content-guard ignores read", result is None, True)
+
+    # --- Bare code identifier tests (no backticks) ---
+
+    d = classify_directive("Never write console.log in production code", 200)
+    check("bare console.log detected", d is not None and d.hook_type == 'content-guard', True)
+    check("bare console.log pattern", d is not None and 'console.log' in (d.patterns[0] if d else ''), True)
+
+    d = classify_directive("Never use eval() in any file", 201)
+    check("bare eval() detected", d is not None and d.hook_type == 'content-guard', True)
+
+    d = classify_directive("Don't use exec() in production code", 202)
+    check("bare exec() detected", d is not None and d.hook_type == 'content-guard', True)
+
+    d = classify_directive("Avoid debugger in JavaScript files", 203)
+    check("bare debugger detected", d is not None and d.hook_type == 'content-guard', True)
+
+    d = classify_directive("Don't include document.write in any page", 204)
+    check("bare document.write detected", d is not None and d.hook_type == 'content-guard', True)
+
+    # Bare identifiers should NOT steal from bash-guard
+    d = classify_directive("Never run rm -rf /", 205)
+    check("bare rm still bash-guard", d is not None and d.hook_type == 'bash-guard', True)
+
+    # --- "After every change" require-prior tests ---
+
+    d = classify_directive("Run npm test after every code change", 210)
+    check("after-change detected", d is not None and d.hook_type in ('require-prior-tool', 'require-prior-command'), True)
+    check("after-change has npm test", d is not None and 'npm test' in str(d.patterns), True)
+
+    d = classify_directive("Always run pytest after each modification", 211)
+    check("after-modification detected", d is not None and d.hook_type in ('require-prior-tool', 'require-prior-command'), True)
+
+    # --- "Push without PR" bash-guard tests ---
+
+    d = classify_directive("Do not push to origin without creating a PR first", 220)
+    check("push-without-pr detected", d is not None and d.hook_type == 'bash-guard', True)
+    check("push-without-pr has push", d is not None and any('push' in p for p in (d.patterns if d else [])), True)
+
+    d = classify_directive("Never push without opening a pull request", 221)
+    check("push-without-pr variant", d is not None and d.hook_type == 'bash-guard', True)
 
     # --- Lock file detection tests ---
 
