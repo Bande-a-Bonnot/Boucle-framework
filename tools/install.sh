@@ -44,6 +44,23 @@ hook_desc() {
 
 ALL_HOOKS="read-once file-guard git-safe bash-guard branch-guard session-log"
 
+# Check prerequisites
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "Error: python3 not found. Install Python 3 and try again." >&2
+    exit 1
+fi
+
+# Determine download command
+DL="curl -fsSL"
+if ! command -v curl >/dev/null 2>&1; then
+  if command -v wget >/dev/null 2>&1; then
+    DL="wget -q -O -"
+  else
+    echo "Error: curl or wget required" >&2
+    exit 1
+  fi
+fi
+
 # Show available hooks
 for hook in $ALL_HOOKS; do
   dir="${HOME}/.claude/${hook}"
@@ -96,18 +113,33 @@ for hook in $selected; do
   mkdir -p "$install_dir"
 
   # Download hook script
-  curl -fsSL "${REPO}/${hook}/hook.sh" -o "${install_dir}/hook.sh"
+  if ! $DL "${REPO}/${hook}/hook.sh" > "${install_dir}/hook.sh" 2>/dev/null; then
+    echo -e "  ${YELLOW}Error: download failed for ${hook}. Skipping.${RESET}" >&2
+    continue
+  fi
   chmod +x "${install_dir}/hook.sh"
+
+  # Verify download is not empty
+  if [ ! -s "${install_dir}/hook.sh" ]; then
+    echo -e "  ${YELLOW}Error: downloaded ${hook}/hook.sh is empty. Skipping.${RESET}" >&2
+    continue
+  fi
 
   # Download extra files depending on hook
   case "$hook" in
     read-once)
-      curl -fsSL "${REPO}/${hook}/read-once" -o "${install_dir}/read-once"
-      chmod +x "${install_dir}/read-once"
+      if ! $DL "${REPO}/${hook}/read-once" > "${install_dir}/read-once" 2>/dev/null; then
+        echo -e "  ${YELLOW}Warning: failed to download read-once CLI${RESET}" >&2
+      else
+        chmod +x "${install_dir}/read-once"
+      fi
       ;;
     file-guard)
-      curl -fsSL "${REPO}/${hook}/init.sh" -o "${install_dir}/init.sh"
-      chmod +x "${install_dir}/init.sh"
+      if ! $DL "${REPO}/${hook}/init.sh" > "${install_dir}/init.sh" 2>/dev/null; then
+        echo -e "  ${YELLOW}Warning: failed to download init.sh${RESET}" >&2
+      else
+        chmod +x "${install_dir}/init.sh"
+      fi
       ;;
   esac
 

@@ -19,6 +19,12 @@ RAW_BASE="https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main
 
 echo "Installing $HOOK_NAME for Claude Code..."
 
+# Check python3 (needed for settings.json management)
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "Error: python3 not found. Install Python 3 and try again." >&2
+    exit 1
+fi
+
 # Create hook directory
 mkdir -p "$HOOK_DIR"
 
@@ -33,6 +39,12 @@ else
   exit 1
 fi
 chmod +x "$HOOK_PATH"
+
+# Verify download is not empty
+if [ ! -s "$HOOK_PATH" ]; then
+    echo "Error: downloaded file is empty. The URL may have changed." >&2
+    exit 1
+fi
 
 # Clean up legacy install location if present
 LEGACY_PATH="$HOME/.claude/hooks/$HOOK_NAME.sh"
