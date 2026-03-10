@@ -122,7 +122,7 @@ enforce-hooks.py [CLAUDE.md] [options]
   --json              Output as JSON (with --scan)
   --hooks-dir         Directory for hooks (default: .claude/hooks)
   --settings          Path to settings.json (default: .claude/settings.json)
-  --test              Run self-tests (194 assertions)
+  --test              Run self-tests (206 assertions)
 ```
 
 Auto-detects CLAUDE.md in the current or parent directories if no file is specified.
@@ -146,7 +146,7 @@ Copy `SKILL.md` to `.claude/skills/enforce-hooks/SKILL.md` in your project. Then
 python3 enforce-hooks.py --test
 ```
 
-194 assertions covering directive classification, hook generation, suggestion discovery, runtime evaluation, content-guard, and cache invalidation.
+206 assertions covering directive classification, hook generation, suggestion discovery, runtime evaluation, content-guard, and cache invalidation.
 
 ## License
 
