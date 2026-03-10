@@ -470,6 +470,36 @@ def scan_file(path):
     return enforceable, skipped
 
 
+def scan_suggestions(path):
+    """Scan ALL lines in CLAUDE.md, ignoring @enforced requirement.
+
+    Returns directives that COULD be enforced if tagged. Used to guide
+    new users who haven't added @enforced yet.
+    """
+    content = Path(path).read_text()
+    lines = content.splitlines()
+    suggestions = []
+    in_code_block = False
+
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith('```'):
+            in_code_block = not in_code_block
+            continue
+        if in_code_block:
+            continue
+        if re.match(r'^#{1,4}\s', stripped):
+            continue
+
+        directive = classify_directive(line, i)
+        if directive:
+            suggestions.append(directive)
+
+    return suggestions
+
+
 # --- Hook Generation ---
 
 FILE_GUARD_TEMPLATE = '''#!/usr/bin/env bash
@@ -1476,6 +1506,56 @@ def run_tests():
         cached = load_cached_directives(str(md), str(cache_dir))
         check("eval: mtime change invalidates cache", cached, None)
 
+    # Test scan_suggestions (finds enforceable rules without @enforced tags)
+    no_tags = """# Project Rules
+
+## Safety
+- Never modify .env or .env.local files
+- Do not edit any file in the secrets/ directory
+- Never run `rm -rf` commands
+- Do not use `git push --force` or `git push -f`
+- Never commit directly to main or master branch
+- Always run tests before committing
+
+## Style
+- Use 4-space indentation
+- Write clean code
+"""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as f:
+        f.write(no_tags)
+        f.flush()
+        enforceable_tagged, _ = scan_file(f.name)
+        check("no-tag scan finds nothing", len(enforceable_tagged), 0)
+
+        suggestions = scan_suggestions(f.name)
+        check("suggestions finds rules", len(suggestions) >= 4, True)
+        stypes = {d.hook_type for d in suggestions}
+        check("suggestions has file-guard", 'file-guard' in stypes, True)
+        check("suggestions has bash-guard", 'bash-guard' in stypes, True)
+        check("suggestions has branch-guard", 'branch-guard' in stypes, True)
+        os.unlink(f.name)
+
+    # Test suggestions ignores code blocks and headers
+    code_block_md = """# Rules
+
+## Safety
+- Never modify .env files
+
+```bash
+rm -rf /tmp/test
+```
+
+- Never run `sudo` commands
+"""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as f:
+        f.write(code_block_md)
+        f.flush()
+        suggestions = scan_suggestions(f.name)
+        texts = [d.text for d in suggestions]
+        check("suggestions skips code blocks", not any('tmp/test' in t for t in texts), True)
+        check("suggestions finds sudo rule", len(suggestions) >= 1, True)
+        os.unlink(f.name)
+
     print(f"\n{passed} passed, {failed} failed")
     return failed == 0
 
@@ -1544,10 +1624,39 @@ def main():
 
     if args.scan:
         if args.json:
-            print(format_json(enforceable, skipped))
+            result = {
+                'enforceable': [d.to_dict() for d in enforceable],
+                'skipped': [{'line': ln, 'text': t, 'reason': r} for ln, t, r in skipped],
+            }
+            if not enforceable:
+                suggestions = scan_suggestions(path)
+                result['suggestions'] = [d.to_dict() for d in suggestions]
+            print(json.dumps(result, indent=2))
         else:
             print(f"Scanning: {path}\n")
             print(format_scan_table(enforceable, skipped))
+            if not enforceable:
+                suggestions = scan_suggestions(path)
+                if suggestions:
+                    print(f"\nFound {len(suggestions)} rule(s) that could be enforced:\n")
+                    print(f"{'#':>3}  {'Type':<20}  {'What it would block':<40}  {'Source line'}")
+                    print(f"{'---':>3}  {'----':<20}  {'---':<40}  {'---'}")
+                    for i, d in enumerate(suggestions, 1):
+                        print(f"{i:>3}  {d.hook_type:<20}  {d.description:<40}  L{d.line_num}")
+                    print("\nTo activate enforcement, add @enforced to each rule:")
+                    print("  - Never modify .env files @enforced")
+                    print("  - Do not use `git push --force` @enforced")
+                    print("\nOr tag an entire section:")
+                    print("  ## Safety @enforced")
+                    print("  - Never modify .env files")
+                    print("  - Never run `rm -rf` commands")
+                else:
+                    print("\nNo classifiable rules found in your CLAUDE.md.")
+                    print("enforce-hooks detects rules like:")
+                    print("  - Never modify .env files @enforced       (file protection)")
+                    print("  - Do not run `rm -rf` @enforced           (command blocking)")
+                    print("  - Never commit to main @enforced          (branch protection)")
+                    print("  - Always run tests before committing @enforced  (workflow)")
         return
 
     if args.generate:
