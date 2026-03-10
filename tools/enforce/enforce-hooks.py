@@ -283,7 +283,7 @@ def extract_command_patterns(text):
         'force push', 'reset --hard', 'clean -fd', 'clean -f',
         'checkout .', 'restore .',
         'curl | sh', 'curl | bash', 'wget | sh',
-        'push to origin', 'push to remote', 'push',
+        'git push',
     ]
     lower = text.lower()
     for cmd in dangerous:
@@ -295,6 +295,11 @@ def extract_command_patterns(text):
         'push --force': ['force push', 'push -f'],
         'push -f': ['force push', 'push --force'],
     }
+    # If the text mentions push (without force/--force), expand to "git push"
+    # This handles "push to origin", "push without PR" etc.
+    if not patterns and re.search(r'\bpush\b', lower):
+        patterns.append('git push')
+
     expanded = list(patterns)
     for pat in patterns:
         for alias in aliases.get(pat, []):
@@ -1031,6 +1036,9 @@ def _check_single(directive, tool_name, tool_input):
                 'tests': 'Bash', 'test': 'Bash', 'lint': 'Bash',
                 'search': 'Grep', 'grep': 'Grep',
                 'web search': 'WebSearch', 'websearch': 'WebSearch',
+                'edit': 'Edit', 'editing': 'Edit', 'modify': 'Edit',
+                'write': 'Write', 'writing': 'Write',
+                'read': 'Read', 'reading': 'Read',
             }
             target_tool = tool_map.get(target.lower(), 'Bash')
 
@@ -1058,6 +1066,49 @@ def _check_single(directive, tool_name, tool_input):
             if not found:
                 return {"decision": "block",
                         "reason": f"Run {required} first. (CLAUDE.md: \"{short}\")"}
+
+    elif directive.hook_type == 'require-prior-command':
+        if tool_name != 'Bash':
+            return None
+        if len(directive.patterns) >= 2:
+            required_cmd = directive.patterns[0]
+            target_cmd = directive.patterns[1]
+            # Map verb forms to git command patterns
+            target_map = {
+                'committing': 'git commit',
+                'commit': 'git commit',
+                'pushing': 'git push',
+                'push': 'git push',
+                'merging': 'git merge',
+                'deploying': 'deploy',
+            }
+            target_pattern = target_map.get(target_cmd.lower(), target_cmd)
+            cmd = tool_input.get('command', '')
+            if not cmd or target_pattern.lower() not in cmd.lower():
+                return None
+
+            from datetime import date
+            today = date.today().isoformat()
+            session_log = Path.home() / '.claude' / 'session-logs' / f'{today}.jsonl'
+
+            found = False
+            if session_log.exists():
+                try:
+                    for line in session_log.read_text().splitlines():
+                        try:
+                            entry = json.loads(line)
+                            entry_cmd = entry.get('command', '')
+                            if required_cmd.lower() in entry_cmd.lower():
+                                found = True
+                                break
+                        except json.JSONDecodeError:
+                            pass
+                except IOError:
+                    pass
+
+            if not found:
+                return {"decision": "block",
+                        "reason": f"Run `{required_cmd}` before `{target_pattern}`. (CLAUDE.md: \"{short}\")"}
 
     return None
 
@@ -1182,6 +1233,13 @@ def install_plugin(claude_md_path, hooks_dir, settings_path):
         pre_tool.append(catch_all)
 
     hook_cmd = str(wrapper)
+    # Clean up stale enforce-hooks entries (old temp dirs, non-existent paths)
+    if 'hooks' in catch_all:
+        catch_all['hooks'] = [
+            h for h in catch_all['hooks']
+            if not (h.get('command', '').endswith('enforce-pretooluse.sh')
+                    and not Path(h['command']).exists())
+        ]
     existing_commands = {h.get('command', '') for h in catch_all.get('hooks', [])}
     if hook_cmd not in existing_commands:
         catch_all['hooks'].append({'type': 'command', 'command': hook_cmd})
@@ -1635,6 +1693,43 @@ def run_tests():
     r = evaluate_tool_call([d2], "Bash", {})
     check("eval: no command allows", r["decision"], "allow")
 
+    section("evaluate: require-prior-tool targets Edit correctly (BUG 1 fix)")
+    d = Directive("Always read before editing", "require-prior-tool", ["Read", "Edit"], "read first", 50)
+    r = evaluate_tool_call([d], "Edit", {"file_path": "/project/app.py"})
+    check("eval: require-prior-tool targets Edit not Bash", r["decision"], "block")
+    r = evaluate_tool_call([d], "Bash", {"command": "echo hello"})
+    check("eval: require-prior-tool ignores Bash for Edit target", r["decision"], "allow")
+
+    d = Directive("Always read before writing", "require-prior-tool", ["Read", "Write"], "read first", 51)
+    r = evaluate_tool_call([d], "Write", {"file_path": "/project/app.py", "content": "x"})
+    check("eval: require-prior-tool targets Write not Bash", r["decision"], "block")
+    r = evaluate_tool_call([d], "Bash", {"command": "ls"})
+    check("eval: require-prior-tool ignores Bash for Write target", r["decision"], "allow")
+
+    section("evaluate: require-prior-command handled (BUG 2 fix)")
+    d = Directive("Always run tests before committing", "require-prior-command",
+                  ["test", "committing"], "test before commit", 52)
+    r = evaluate_tool_call([d], "Bash", {"command": "git commit -m 'fix'"})
+    check("eval: require-prior-command blocks git commit", r["decision"], "block")
+    r = evaluate_tool_call([d], "Bash", {"command": "echo hello"})
+    check("eval: require-prior-command allows non-commit", r["decision"], "allow")
+    r = evaluate_tool_call([d], "Write", {"file_path": "x", "content": "y"})
+    check("eval: require-prior-command ignores Write", r["decision"], "allow")
+
+    section("evaluate: bash-guard force-push precision (BUG 3 fix)")
+    d = Directive("Don't force push", "bash-guard", ["force push", "push --force", "push -f"],
+                  "no force push", 53)
+    r = evaluate_tool_call([d], "Bash", {"command": "git push --force origin main"})
+    check("eval: force-push blocks push --force", r["decision"], "block")
+    r = evaluate_tool_call([d], "Bash", {"command": "git push -f origin main"})
+    check("eval: force-push blocks push -f", r["decision"], "block")
+    r = evaluate_tool_call([d], "Bash", {"command": "git push origin feature-branch"})
+    check("eval: force-push allows normal push", r["decision"], "allow")
+    r = evaluate_tool_call([d], "Bash", {"command": "npm run push-notification"})
+    check("eval: force-push allows unrelated push", r["decision"], "allow")
+    r = evaluate_tool_call([d], "Bash", {"command": "docker push myimage:latest"})
+    check("eval: force-push allows docker push", r["decision"], "allow")
+
     section("evaluate: cache round-trip")
     import tempfile
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -2044,7 +2139,14 @@ def main():
                 print("  - Don't commit to main @enforced          (branch protection)")
             return
         print(f"Found {len(enforceable)} enforceable directive(s) in {path}")
-        written = install_plugin(path, args.hooks_dir, args.settings)
+        # Derive hooks/settings paths from CLAUDE.md location when defaults are used
+        hooks_dir = args.hooks_dir
+        settings = args.settings
+        if hooks_dir == '.claude/hooks' and path != 'CLAUDE.md':
+            project_root = str(Path(path).resolve().parent)
+            hooks_dir = os.path.join(project_root, '.claude', 'hooks')
+            settings = os.path.join(project_root, '.claude', 'settings.json')
+        written = install_plugin(path, hooks_dir, settings)
         print(f"\nInstalled plugin mode ({len(written)} files):")
         for w in written:
             print(f"  {w}")
