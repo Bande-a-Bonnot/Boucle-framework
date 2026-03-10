@@ -26,23 +26,31 @@ from pathlib import Path
 
 class Directive:
     """A single enforceable directive from CLAUDE.md."""
-    __slots__ = ('text', 'hook_type', 'patterns', 'description', 'line_num')
+    __slots__ = ('text', 'hook_type', 'patterns', 'description', 'line_num',
+                 'path_filter', 'path_mode')
 
-    def __init__(self, text, hook_type, patterns, description, line_num=0):
+    def __init__(self, text, hook_type, patterns, description, line_num=0,
+                 path_filter=None, path_mode=None):
         self.text = text
         self.hook_type = hook_type
         self.patterns = patterns
         self.description = description
         self.line_num = line_num
+        self.path_filter = path_filter  # list of path patterns (e.g. ['types/'])
+        self.path_mode = path_mode      # 'only_in' or 'never_in'
 
     def to_dict(self):
-        return {
+        d = {
             'text': self.text,
             'hook_type': self.hook_type,
             'patterns': self.patterns,
             'description': self.description,
             'line_num': self.line_num,
         }
+        if self.path_filter:
+            d['path_filter'] = self.path_filter
+            d['path_mode'] = self.path_mode
+        return d
 
 
 # Patterns that indicate file protection directives
@@ -272,6 +280,30 @@ CONCEPT_PATTERNS = {
     'wildcard import': 'import *',
 }
 
+# Code concepts that can be scoped to specific directories
+# Maps natural language to regex patterns for content matching
+SCOPED_CONCEPTS = {
+    'interface': r'\binterface\s+\w+',
+    'interfaces': r'\binterface\s+\w+',
+    'type definition': r'\btype\s+\w+\s*=',
+    'type definitions': r'\btype\s+\w+\s*=',
+    'type alias': r'\btype\s+\w+\s*=',
+    'type aliases': r'\btype\s+\w+\s*=',
+    'class': r'\bclass\s+\w+',
+    'classes': r'\bclass\s+\w+',
+    'enum': r'\benum\s+\w+',
+    'enums': r'\benum\s+\w+',
+    'sql': r'\b(SELECT|INSERT|UPDATE|DELETE)\b',
+    'sql queries': r'\b(SELECT|INSERT|UPDATE|DELETE)\b',
+    'queries': r'\b(SELECT|INSERT|UPDATE|DELETE)\b',
+    'console.log': r'console\.log',
+    'console statements': r'console\.',
+    'require': r'\brequire\(',
+    'imports': r'\bimport\b',
+    'styled-components': r'styled\.',
+    'styled components': r'styled\.',
+}
+
 
 def extract_file_patterns(text):
     """Extract file patterns from directive text."""
@@ -356,6 +388,58 @@ def extract_branch_names(text):
     return branches
 
 
+def _try_scoped_content(clean, clean_lower, stripped, line_num):
+    """Try to classify as scoped-content-guard (content pattern + path scope).
+
+    Detects rules like:
+      "Interfaces should only be defined in types/ folders"  -> only_in
+      "No SQL queries in controllers/"                       -> never_in
+    Returns Directive or None.
+    """
+    # Step 1: Find a code concept mentioned in the directive
+    concept_pat = None
+    concept_name = None
+    for name, pat in SCOPED_CONCEPTS.items():
+        if name in clean_lower:
+            concept_pat = pat
+            concept_name = name
+            break
+    if not concept_pat:
+        return None
+
+    # Step 2: Find a directory path (word ending in /)
+    path_match = re.search(r'["`\']([\w./-]+/[\w./-]*)["`\']', clean)
+    if not path_match:
+        path_match = re.search(r'\b(\w[\w.-]*/)', clean)
+    if not path_match:
+        return None
+    path_filter = path_match.group(1)
+
+    # Avoid false positives: path must look like a directory, not a URL or command
+    if path_filter in ('http/', 'https/', 'ftp/', 'or/', 'and/'):
+        return None
+
+    # Step 3: Determine scope mode
+    if re.search(r'\bonly\b', clean_lower):
+        path_mode = 'only_in'
+        desc = f"Only allow {concept_name} in {path_filter}"
+    elif re.search(r'(?:never|don\'?t|do\s+not|no)\b', clean_lower):
+        path_mode = 'never_in'
+        desc = f"Block {concept_name} in {path_filter}"
+    else:
+        return None
+
+    return Directive(
+        text=stripped,
+        hook_type='scoped-content-guard',
+        patterns=[concept_pat],
+        description=desc,
+        line_num=line_num,
+        path_filter=[path_filter],
+        path_mode=path_mode,
+    )
+
+
 def classify_directive(line, line_num):
     """Classify a single line as an enforceable directive or None."""
     stripped = line.strip()
@@ -415,10 +499,17 @@ def classify_directive(line, line_num):
                     line_num=line_num,
                 )
 
+    # Try scoped-content-guard (content + path combo)
+    # "Interfaces should only be defined in types/ folders"
+    # "No SQL queries in controllers/"
+    clean_lower = clean.lower()
+    scoped = _try_scoped_content(clean, clean_lower, stripped, line_num)
+    if scoped:
+        return scoped
+
     # Try concept-based content-guard (natural language antipatterns)
     # "Never use inline styles" → content-guard for style=
     # "No HEX color codes" → content-guard for #[0-9a-fA-F]
-    clean_lower = clean.lower()
     for concept, code_pat in CONCEPT_PATTERNS.items():
         if concept in clean_lower:
             return Directive(
@@ -754,6 +845,69 @@ exit 0
 '''
 
 
+SCOPED_CONTENT_GUARD_TEMPLATE = '''#!/usr/bin/env bash
+# enforce: {directive}
+# Generated by enforce-hooks from CLAUDE.md
+INPUT=$(cat)
+TOOL=$(echo "$INPUT" | jq -r '.tool_name')
+case "$TOOL" in Edit|Write|MultiEdit) ;; *) exit 0 ;; esac
+# Extract file path
+FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+[ -z "$FILE" ] && exit 0
+# Check path scope
+{path_check}
+# Extract content being written
+if [ "$TOOL" = "Edit" ]; then
+  CONTENT=$(echo "$INPUT" | jq -r '.tool_input.new_string // empty')
+elif [ "$TOOL" = "Write" ]; then
+  CONTENT=$(echo "$INPUT" | jq -r '.tool_input.content // empty')
+elif [ "$TOOL" = "MultiEdit" ]; then
+  CONTENT=$(echo "$INPUT" | jq -r '[.tool_input.edits[].new_string] | join("\\n") // empty')
+fi
+[ -z "$CONTENT" ] && exit 0
+{content_check}
+exit 0
+'''
+
+
+def generate_scoped_content_guard(directive):
+    """Generate a scoped-content-guard hook script."""
+    short = directive.text[:80].replace('@enforced', '').strip()
+    short_escaped = short.replace("'", "'\\''")
+
+    # Path check
+    path_lines = []
+    for pf in (directive.path_filter or []):
+        pf_escaped = pf.replace('"', '\\"')
+        if directive.path_mode == 'only_in':
+            # If path matches, content is allowed - exit early
+            path_lines.append(f'[[ "$FILE" == *"{pf_escaped}"* ]] && exit 0')
+        else:  # never_in
+            # If path does NOT match, content is allowed - exit early
+            path_lines.append(f'[[ "$FILE" != *"{pf_escaped}"* ]] && exit 0')
+    path_check = '\n'.join(path_lines)
+
+    # Content check (same logic as content-guard)
+    content_lines = []
+    for pat in directive.patterns:
+        escaped = pat.replace("'", "'\\''")
+        is_regex = any(c in pat for c in r'[](){}*+?|\\^$')
+        grep_flag = '-qE' if is_regex else '-qF'
+        content_lines.append(
+            f'if echo "$CONTENT" | grep {grep_flag} \'{escaped}\'; then\n'
+            f'  echo \'{{"decision": "block", "reason": "Content blocked: {escaped} not allowed here. (CLAUDE.md: {short_escaped})"}}\'\n'
+            f'  exit 0\n'
+            f'fi'
+        )
+    content_check = '\n'.join(content_lines)
+
+    return SCOPED_CONTENT_GUARD_TEMPLATE.format(
+        directive=short,
+        path_check=path_check,
+        content_check=content_check,
+    )
+
+
 def generate_content_guard_checks(patterns, short_directive):
     """Generate bash checks for content-guard patterns."""
     lines = []
@@ -841,7 +995,10 @@ def generate_hook(directive):
     """Generate a hook script for a directive."""
     short = _truncate_short(directive.text, 80)
 
-    if directive.hook_type == 'content-guard':
+    if directive.hook_type == 'scoped-content-guard':
+        return generate_scoped_content_guard(directive)
+
+    elif directive.hook_type == 'content-guard':
         checks = generate_content_guard_checks(directive.patterns, short)
         return CONTENT_GUARD_TEMPLATE.format(directive=short, checks=checks)
 
@@ -1009,7 +1166,47 @@ def _check_single(directive, tool_name, tool_input):
     """Check if a tool call violates a single directive."""
     short = directive.text[:80].replace('@enforced', '').strip()
 
-    if directive.hook_type == 'content-guard':
+    if directive.hook_type == 'scoped-content-guard':
+        if tool_name not in ('Write', 'Edit', 'MultiEdit'):
+            return None
+        file_path = tool_input.get('file_path', '')
+        if not file_path:
+            return None
+        # Check path scope
+        path_match = any(pf in file_path for pf in (directive.path_filter or []))
+        if directive.path_mode == 'only_in' and path_match:
+            return None  # File is in the allowed path, content is fine
+        if directive.path_mode == 'never_in' and not path_match:
+            return None  # File is not in the blocked path, content is fine
+        # Extract content
+        content = ''
+        if tool_name == 'Edit':
+            content = tool_input.get('new_string', '')
+        elif tool_name == 'Write':
+            content = tool_input.get('content', '')
+        elif tool_name == 'MultiEdit':
+            edits = tool_input.get('edits', [])
+            content = '\n'.join(e.get('new_string', '') for e in edits)
+        if not content:
+            return None
+        for pat in directive.patterns:
+            matched = False
+            if any(c in pat for c in r'[](){}*+?|\\^$'):
+                try:
+                    matched = bool(re.search(pat, content))
+                except re.error:
+                    matched = pat in content
+            else:
+                matched = pat in content
+            if matched:
+                scope_desc = ', '.join(directive.path_filter or [])
+                if directive.path_mode == 'only_in':
+                    reason = f"Content blocked: {pat} only allowed in {scope_desc}. (CLAUDE.md: \"{short}\")"
+                else:
+                    reason = f"Content blocked: {pat} not allowed in {scope_desc}. (CLAUDE.md: \"{short}\")"
+                return {"decision": "block", "reason": reason}
+
+    elif directive.hook_type == 'content-guard':
         if tool_name not in ('Write', 'Edit', 'MultiEdit'):
             return None
         content = ''
@@ -2121,6 +2318,126 @@ rm -rf /tmp/test
 
     d = classify_directive("Don't force push @enforced", 321)
     check("concept doesn't steal bash-guard", d is not None and d.hook_type == 'bash-guard', True)
+
+    # --- Scoped content-guard tests ---
+
+    # Classification: "only in" patterns
+    d = classify_directive("Interfaces should only be defined in types/ folders @enforced", 400)
+    check("scoped: interfaces only in types/", d is not None and d.hook_type == 'scoped-content-guard', True)
+    check("scoped: path_filter is types/", d is not None and d.path_filter == ['types/'], True)
+    check("scoped: path_mode is only_in", d is not None and d.path_mode == 'only_in', True)
+    check("scoped: pattern is interface regex", d is not None and r'\binterface\s+\w+' in d.patterns[0], True)
+
+    d = classify_directive("Only define classes in models/ @enforced", 401)
+    check("scoped: classes only in models/", d is not None and d.hook_type == 'scoped-content-guard', True)
+    check("scoped: models/ path", d is not None and d.path_filter == ['models/'], True)
+    check("scoped: only_in mode", d is not None and d.path_mode == 'only_in', True)
+
+    d = classify_directive("Enums should only be in constants/ directory @enforced", 402)
+    check("scoped: enums only in constants/", d is not None and d.hook_type == 'scoped-content-guard', True)
+
+    # Classification: "never in" patterns
+    d = classify_directive("Never put SQL queries in controllers/ @enforced", 410)
+    check("scoped: no SQL in controllers/", d is not None and d.hook_type == 'scoped-content-guard', True)
+    check("scoped: never_in mode", d is not None and d.path_mode == 'never_in', True)
+    check("scoped: controllers/ path", d is not None and d.path_filter == ['controllers/'], True)
+
+    d = classify_directive("Don't use console.log in src/ @enforced", 411)
+    check("scoped: no console.log in src/", d is not None and d.hook_type == 'scoped-content-guard', True)
+    check("scoped: never_in console", d is not None and d.path_mode == 'never_in', True)
+
+    # Classification: should NOT be scoped (no path)
+    d = classify_directive("Never use inline styles @enforced", 420)
+    check("scoped: no path stays content-guard", d is not None and d.hook_type == 'content-guard', True)
+
+    # Evaluate: only_in mode - blocks interface outside types/
+    d = Directive(
+        text="Interfaces should only be defined in types/ @enforced",
+        hook_type='scoped-content-guard',
+        patterns=[r'\binterface\s+\w+'],
+        description="Only allow interface in types/",
+        line_num=1,
+        path_filter=['types/'],
+        path_mode='only_in',
+    )
+    result = _check_single(d, 'Write', {'content': 'export interface User { name: string }', 'file_path': 'src/components/User.tsx'})
+    check("scoped: blocks interface outside types/", result is not None and result['decision'] == 'block', True)
+
+    result = _check_single(d, 'Write', {'content': 'export interface User { name: string }', 'file_path': 'src/types/User.ts'})
+    check("scoped: allows interface in types/", result is None, True)
+
+    result = _check_single(d, 'Edit', {'new_string': 'interface Config {}', 'old_string': '', 'file_path': 'lib/utils.ts'})
+    check("scoped: blocks interface edit outside types/", result is not None and result['decision'] == 'block', True)
+
+    result = _check_single(d, 'Write', {'content': 'const x = 42;', 'file_path': 'src/index.ts'})
+    check("scoped: allows non-interface outside types/", result is None, True)
+
+    result = _check_single(d, 'Bash', {'command': 'echo hello'})
+    check("scoped: ignores Bash tool", result is None, True)
+
+    result = _check_single(d, 'Read', {'file_path': 'src/types/User.ts'})
+    check("scoped: ignores Read tool", result is None, True)
+
+    # Evaluate: never_in mode - blocks SQL in controllers/
+    d = Directive(
+        text="Never put SQL queries in controllers/ @enforced",
+        hook_type='scoped-content-guard',
+        patterns=[r'\b(SELECT|INSERT|UPDATE|DELETE)\b'],
+        description="Block SQL in controllers/",
+        line_num=1,
+        path_filter=['controllers/'],
+        path_mode='never_in',
+    )
+    result = _check_single(d, 'Write', {'content': 'SELECT * FROM users', 'file_path': 'app/controllers/users_controller.rb'})
+    check("scoped: blocks SQL in controllers/", result is not None and result['decision'] == 'block', True)
+
+    result = _check_single(d, 'Write', {'content': 'SELECT * FROM users', 'file_path': 'app/models/user.rb'})
+    check("scoped: allows SQL outside controllers/", result is None, True)
+
+    result = _check_single(d, 'Edit', {'new_string': 'render :index', 'old_string': '', 'file_path': 'app/controllers/home_controller.rb'})
+    check("scoped: allows non-SQL in controllers/", result is None, True)
+
+    # Hook generation: scoped-content-guard produces valid script
+    d = Directive(
+        text="Interfaces only in types/ @enforced",
+        hook_type='scoped-content-guard',
+        patterns=[r'\binterface\s+\w+'],
+        description="Only allow interface in types/",
+        line_num=1,
+        path_filter=['types/'],
+        path_mode='only_in',
+    )
+    hook = generate_hook(d)
+    check("scoped: hook generated", hook is not None, True)
+    check("scoped: hook has jq file_path", 'file_path' in hook, True)
+    check("scoped: hook has path check", 'types/' in hook, True)
+    check("scoped: hook has content grep", 'grep' in hook, True)
+    check("scoped: hook has Edit case", 'Edit' in hook, True)
+    check("scoped: hook checks Write", 'Write' in hook, True)
+
+    # Hook generation: never_in mode
+    d_never = Directive(
+        text="No SQL in controllers/ @enforced",
+        hook_type='scoped-content-guard',
+        patterns=[r'\b(SELECT|INSERT|UPDATE|DELETE)\b'],
+        description="Block SQL in controllers/",
+        line_num=1,
+        path_filter=['controllers/'],
+        path_mode='never_in',
+    )
+    hook_never = generate_hook(d_never)
+    check("scoped: never_in hook generated", hook_never is not None, True)
+    check("scoped: never_in has != check", '!=' in hook_never, True)
+
+    # to_dict includes path fields
+    dd = d.to_dict()
+    check("scoped: to_dict has path_filter", dd.get('path_filter') == ['types/'], True)
+    check("scoped: to_dict has path_mode", dd.get('path_mode') == 'only_in', True)
+
+    # Regular directive to_dict omits path fields
+    d_plain = Directive(text="No console.log", hook_type='content-guard', patterns=['console.log'], description="test")
+    dd_plain = d_plain.to_dict()
+    check("plain: to_dict no path_filter", 'path_filter' not in dd_plain, True)
 
     print(f"\n{passed} passed, {failed} failed")
     return failed == 0
