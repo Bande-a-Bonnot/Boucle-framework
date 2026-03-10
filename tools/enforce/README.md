@@ -20,9 +20,15 @@ python3 /tmp/enforce-hooks.py --scan             # preview what's enforceable
 python3 /tmp/enforce-hooks.py --install-plugin   # install
 ```
 
-## The Problem
+## Why Hooks Instead of Rules
 
-CLAUDE.md directives rely on prompt compliance. Compliance drops as instruction count grows. "Never modify .env" works until context gets large enough that it doesn't.
+CLAUDE.md rules rely on the model choosing to comply. That breaks down in three specific ways:
+
+1. **Compliance decay**: As conversations grow and context compacts, CLAUDE.md directives lose influence. A "never modify .env" rule works at the start and stops working later.
+2. **Subagent blindness**: Path-specific rules and some CLAUDE.md sections [don't load in subagents or teammates](https://github.com/anthropics/claude-code/issues/32906). A spawned agent can violate rules it never received.
+3. **No enforcement boundary**: Rules are suggestions. There is no mechanism to make the model fail when it violates one. It can read "never force push" and still run `git push --force`.
+
+PreToolUse hooks solve all three. They run as code before every tool call, they fire in every context (including subagents), and they return a hard block that the model cannot override.
 
 ## How It Works
 
