@@ -27,10 +27,10 @@ from pathlib import Path
 class Directive:
     """A single enforceable directive from CLAUDE.md."""
     __slots__ = ('text', 'hook_type', 'patterns', 'description', 'line_num',
-                 'path_filter', 'path_mode')
+                 'path_filter', 'path_mode', 'severity')
 
     def __init__(self, text, hook_type, patterns, description, line_num=0,
-                 path_filter=None, path_mode=None):
+                 path_filter=None, path_mode=None, severity='block'):
         self.text = text
         self.hook_type = hook_type
         self.patterns = patterns
@@ -38,6 +38,7 @@ class Directive:
         self.line_num = line_num
         self.path_filter = path_filter  # list of path patterns (e.g. ['types/'])
         self.path_mode = path_mode      # 'only_in' or 'never_in'
+        self.severity = severity        # 'block' or 'warn'
 
     def to_dict(self):
         d = {
@@ -46,6 +47,7 @@ class Directive:
             'patterns': self.patterns,
             'description': self.description,
             'line_num': self.line_num,
+            'severity': self.severity,
         }
         if self.path_filter:
             d['path_filter'] = self.path_filter
@@ -397,7 +399,7 @@ def extract_branch_names(text):
     return branches
 
 
-def _try_scoped_content(clean, clean_lower, stripped, line_num):
+def _try_scoped_content(clean, clean_lower, stripped, line_num, severity='block'):
     """Try to classify as scoped-content-guard (content pattern + path scope).
 
     Detects rules like:
@@ -446,6 +448,7 @@ def _try_scoped_content(clean, clean_lower, stripped, line_num):
         line_num=line_num,
         path_filter=[path_filter],
         path_mode=path_mode,
+        severity=severity,
     )
 
 
@@ -458,9 +461,17 @@ def classify_directive(line, line_num):
     # Remove markdown list markers
     clean = re.sub(r'^[-*]\s+', '', stripped)
     clean = re.sub(r'^\d+\.\s+', '', clean)
-    # Remove @enforced tag but remember it was there
+    # Remove @enforced tag but remember it was there, and extract severity
     has_enforced = '@enforced' in clean
-    clean = clean.replace('@enforced', '').strip()
+    severity = 'block'  # default
+    # Parse @enforced(warn) or @enforced(block) syntax
+    sev_match = re.search(r'@enforced\((\w+)\)', clean)
+    if sev_match:
+        sev_val = sev_match.group(1).lower()
+        if sev_val in ('warn', 'block'):
+            severity = sev_val
+    clean = re.sub(r'@enforced(?:\(\w+\))?', '', clean).strip()
+    clean = clean.replace('@required', '').strip()
 
     if not clean or len(clean) < 10:
         return None
@@ -477,6 +488,7 @@ def classify_directive(line, line_num):
                     patterns=file_pats,
                     description=f"Block Write/Edit to: {', '.join(file_pats)}",
                     line_num=line_num,
+                    severity=severity,
                 )
 
     # Try branch-guard patterns (before bash-guard, since "commit to main" matches both)
@@ -491,6 +503,7 @@ def classify_directive(line, line_num):
                     patterns=branches,
                     description=f"Block commits to: {', '.join(branches)}",
                     line_num=line_num,
+                    severity=severity,
                 )
 
     # Try tool-block patterns (before bash-guard, since "don't use WebSearch" matches both)
@@ -506,13 +519,14 @@ def classify_directive(line, line_num):
                     patterns=tools,
                     description=f"Block tools: {', '.join(tools)}",
                     line_num=line_num,
+                    severity=severity,
                 )
 
     # Try scoped-content-guard (content + path combo)
     # "Interfaces should only be defined in types/ folders"
     # "No SQL queries in controllers/"
     clean_lower = clean.lower()
-    scoped = _try_scoped_content(clean, clean_lower, stripped, line_num)
+    scoped = _try_scoped_content(clean, clean_lower, stripped, line_num, severity=severity)
     if scoped:
         return scoped
 
@@ -527,6 +541,7 @@ def classify_directive(line, line_num):
                 patterns=[code_pat],
                 description=f"Block writing: {code_pat}",
                 line_num=line_num,
+                severity=severity,
             )
 
     # Try content-guard patterns (before bash-guard to avoid false positives
@@ -542,6 +557,7 @@ def classify_directive(line, line_num):
                     patterns=[code_pat],
                     description=f"Block writing: {code_pat}",
                     line_num=line_num,
+                    severity=severity,
                 )
 
     # Try bash-guard patterns
@@ -556,6 +572,7 @@ def classify_directive(line, line_num):
                     patterns=cmd_pats,
                     description=f"Block commands: {', '.join(cmd_pats)}",
                     line_num=line_num,
+                    severity=severity,
                 )
 
     # Try prefer-command patterns ("Use pnpm instead of npm")
@@ -569,6 +586,7 @@ def classify_directive(line, line_num):
                 patterns=[blocked],
                 description=f"Block commands: {blocked} (use {preferred} instead)",
                 line_num=line_num,
+                severity=severity,
             )
 
     # Try require-prior-tool patterns
@@ -616,6 +634,7 @@ def classify_directive(line, line_num):
                     patterns=[required, target],
                     description=f"Require {required} before {target}",
                     line_num=line_num,
+                    severity=severity,
                 )
             elif len(groups) >= 2:
                 # Pattern: "Run X before Y" -> required=X, target=Y
@@ -632,6 +651,7 @@ def classify_directive(line, line_num):
                         patterns=[required_raw, target_raw],
                         description=f"Require `{required_raw}` before `{target_raw}`",
                         line_num=line_num,
+                        severity=severity,
                     )
                 return Directive(
                     text=stripped,
@@ -639,6 +659,7 @@ def classify_directive(line, line_num):
                     patterns=[required, target],
                     description=f"Require {required} before {target}",
                     line_num=line_num,
+                    severity=severity,
                 )
             elif len(groups) == 1:
                 # Single-group: "search locally before web search" -> Grep before WebSearch
@@ -649,6 +670,7 @@ def classify_directive(line, line_num):
                     patterns=['Grep', target],
                     description=f"Require Grep before {target}",
                     line_num=line_num,
+                    severity=severity,
                 )
 
     # @enforced tag on an unclassified line - try harder
@@ -662,6 +684,7 @@ def classify_directive(line, line_num):
                 patterns=file_pats,
                 description=f"Block Write/Edit to: {', '.join(file_pats)}",
                 line_num=line_num,
+                severity=severity,
             )
         # Check for command patterns
         cmd_pats = extract_command_patterns(clean)
@@ -672,6 +695,7 @@ def classify_directive(line, line_num):
                 patterns=cmd_pats,
                 description=f"Block commands: {', '.join(cmd_pats)}",
                 line_num=line_num,
+                severity=severity,
             )
 
     return None
@@ -684,6 +708,7 @@ def scan_file(path):
     enforceable = []
     skipped = []
     section_enforced = False  # tracks whether current section has @enforced
+    section_severity = 'block'  # section-level severity default
     in_code_block = False
 
     for i, line in enumerate(lines, 1):
@@ -701,6 +726,12 @@ def scan_file(path):
         # Section headings (# through ####) may carry @enforced tag
         if re.match(r'^#{1,4}\s', stripped):
             section_enforced = '@enforced' in stripped or '@required' in stripped
+            # Parse section-level severity: ## Rules @enforced(warn)
+            sec_sev_match = re.search(r'@enforced\((\w+)\)', stripped)
+            if sec_sev_match and sec_sev_match.group(1).lower() in ('warn', 'block'):
+                section_severity = sec_sev_match.group(1).lower()
+            elif section_enforced:
+                section_severity = 'block'
             # Don't classify the heading itself as a directive — the
             # content lines under it are the actual rules.
             continue
@@ -713,6 +744,10 @@ def scan_file(path):
 
         directive = classify_directive(line, i)
         if directive:
+            # Inline @enforced(warn) takes precedence; if no inline tag,
+            # inherit section severity
+            if not has_inline_tag and section_enforced:
+                directive.severity = section_severity
             enforceable.append(directive)
         elif has_inline_tag:
             skipped.append((i, stripped, 'Could not classify'))
@@ -833,6 +868,45 @@ echo '{{"decision": "block", "reason": "Run {required_cmd} first. (CLAUDE.md: {s
 exit 0
 '''
 
+REQUIRE_PRIOR_WARN_TEMPLATE = '''#!/usr/bin/env bash
+# enforce: {directive} [WARN]
+# Generated by enforce-hooks from CLAUDE.md
+# NOTE: Requires session-log hook to be installed for tracking.
+INPUT=$(cat)
+TOOL=$(echo "$INPUT" | jq -r '.tool_name')
+case "$TOOL" in {target_tools}) ;; *) exit 0 ;; esac
+TODAY=$(date -u +%Y-%m-%d)
+LOG="$HOME/.claude/session-logs/$TODAY.jsonl"
+if [ -f "$LOG" ]; then
+  if grep -q '"tool":"{required_tool}"' "$LOG" 2>/dev/null; then
+    exit 0
+  fi
+fi
+echo "⚠ enforce-hooks WARN: Run {required_tool} first. (CLAUDE.md: {short})" >&2
+exit 0
+'''
+
+REQUIRE_PRIOR_CMD_WARN_TEMPLATE = '''#!/usr/bin/env bash
+# enforce: {directive} [WARN]
+# Generated by enforce-hooks from CLAUDE.md
+# NOTE: Requires session-log hook to be installed for tracking.
+INPUT=$(cat)
+[ "$(echo "$INPUT" | jq -r '.tool_name')" != "Bash" ] && exit 0
+CMD=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+# Only check commands matching the target pattern
+case "$CMD" in *"{target_cmd}"*) ;; *) exit 0 ;; esac
+# Check session log for the required prior command
+TODAY=$(date -u +%Y-%m-%d)
+LOG="$HOME/.claude/session-logs/$TODAY.jsonl"
+if [ -f "$LOG" ]; then
+  if grep -q '{required_cmd}' "$LOG" 2>/dev/null; then
+    exit 0
+  fi
+fi
+echo "⚠ enforce-hooks WARN: Run {required_cmd} first. (CLAUDE.md: {short})" >&2
+exit 0
+'''
+
 
 CONTENT_GUARD_TEMPLATE = '''#!/usr/bin/env bash
 # enforce: {directive}
@@ -881,8 +955,9 @@ exit 0
 
 def generate_scoped_content_guard(directive):
     """Generate a scoped-content-guard hook script."""
-    short = directive.text[:80].replace('@enforced', '').strip()
+    short = re.sub(r'@enforced(?:\(\w+\))?', '', directive.text[:80]).strip()
     short_escaped = short.replace("'", "'\\''")
+    sev = directive.severity
 
     # Path check
     path_lines = []
@@ -902,12 +977,19 @@ def generate_scoped_content_guard(directive):
         escaped = pat.replace("'", "'\\''")
         is_regex = any(c in pat for c in r'[](){}*+?|\\^$')
         grep_flag = '-qE' if is_regex else '-qF'
-        content_lines.append(
-            f'if echo "$CONTENT" | grep {grep_flag} \'{escaped}\'; then\n'
-            f'  echo \'{{"decision": "block", "reason": "Content blocked: {escaped} not allowed here. (CLAUDE.md: {short_escaped})"}}\'\n'
-            f'  exit 0\n'
-            f'fi'
-        )
+        if sev == 'warn':
+            content_lines.append(
+                f'if echo "$CONTENT" | grep {grep_flag} \'{escaped}\'; then\n'
+                f'  echo "⚠ enforce-hooks WARN: {escaped} not allowed here. (CLAUDE.md: {short_escaped})" >&2\n'
+                f'fi'
+            )
+        else:
+            content_lines.append(
+                f'if echo "$CONTENT" | grep {grep_flag} \'{escaped}\'; then\n'
+                f'  echo \'{{"decision": "block", "reason": "Content blocked: {escaped} not allowed here. (CLAUDE.md: {short_escaped})"}}\'\n'
+                f'  exit 0\n'
+                f'fi'
+            )
     content_check = '\n'.join(content_lines)
 
     return SCOPED_CONTENT_GUARD_TEMPLATE.format(
@@ -917,7 +999,7 @@ def generate_scoped_content_guard(directive):
     )
 
 
-def generate_content_guard_checks(patterns, short_directive):
+def generate_content_guard_checks(patterns, short_directive, severity='block'):
     """Generate bash checks for content-guard patterns."""
     lines = []
     for pat in patterns:
@@ -926,47 +1008,74 @@ def generate_content_guard_checks(patterns, short_directive):
         # Use grep -E (regex) if pattern contains regex metacharacters, else grep -F (fixed)
         is_regex = any(c in pat for c in r'[](){}*+?|\\^$')
         grep_flag = '-qE' if is_regex else '-qF'
-        lines.append(
-            f'if echo "$CONTENT" | grep {grep_flag} \'{escaped}\'; then\n'
-            f'  echo \'{{"decision": "block", "reason": "Content blocked: {escaped} is not allowed. (CLAUDE.md: {short})"}}\'\n'
-            f'  exit 0\n'
-            f'fi'
-        )
+        if severity == 'warn':
+            lines.append(
+                f'if echo "$CONTENT" | grep {grep_flag} \'{escaped}\'; then\n'
+                f'  echo "⚠ enforce-hooks WARN: Content matched: {escaped}. (CLAUDE.md: {short})" >&2\n'
+                f'fi'
+            )
+        else:
+            lines.append(
+                f'if echo "$CONTENT" | grep {grep_flag} \'{escaped}\'; then\n'
+                f'  echo \'{{"decision": "block", "reason": "Content blocked: {escaped} is not allowed. (CLAUDE.md: {short})"}}\'\n'
+                f'  exit 0\n'
+                f'fi'
+            )
     return '\n'.join(lines)
 
 
-def generate_file_guard_checks(patterns, short_directive):
+def generate_file_guard_checks(patterns, short_directive, severity='block'):
     """Generate bash checks for file-guard patterns."""
     lines = []
     for pat in patterns:
         escaped = pat.replace('"', '\\"')
         short = short_directive.replace('"', '\\"').replace('`', '')
-        lines.append(
-            f'[[ "$FILE" == *"{escaped}"* ]] && '
-            f'echo "{{\\"decision\\": \\"block\\", \\"reason\\": \\"Protected: $FILE matches {escaped}. (CLAUDE.md: {short})\\"}}\" && exit 0'
-        )
+        if severity == 'warn':
+            lines.append(
+                f'[[ "$FILE" == *"{escaped}"* ]] && '
+                f'echo "⚠ enforce-hooks WARN: $FILE matches {escaped}. (CLAUDE.md: {short})" >&2'
+            )
+        else:
+            lines.append(
+                f'[[ "$FILE" == *"{escaped}"* ]] && '
+                f'echo "{{\\"decision\\": \\"block\\", \\"reason\\": \\"Protected: $FILE matches {escaped}. (CLAUDE.md: {short})\\"}}\" && exit 0'
+            )
     return '\n'.join(lines)
 
 
-def generate_bash_guard_checks(patterns, short_directive):
+def generate_bash_guard_checks(patterns, short_directive, severity='block'):
     """Generate bash checks for bash-guard patterns."""
     lines = []
     for pat in patterns:
         escaped = pat.replace('"', '\\"').replace("'", "'\\''")
         short = short_directive.replace('"', '\\"').replace("'", "'\\''")
-        lines.append(
-            f'[[ "$CMD" == *"{escaped}"* ]] && '
-            f'echo \'{{"decision": "block", "reason": "Blocked: {escaped}. (CLAUDE.md: {short})"}}\' && exit 0'
-        )
+        if severity == 'warn':
+            lines.append(
+                f'[[ "$CMD" == *"{escaped}"* ]] && '
+                f'echo "⚠ enforce-hooks WARN: {escaped} detected. (CLAUDE.md: {short})" >&2'
+            )
+        else:
+            lines.append(
+                f'[[ "$CMD" == *"{escaped}"* ]] && '
+                f'echo \'{{"decision": "block", "reason": "Blocked: {escaped}. (CLAUDE.md: {short})"}}\' && exit 0'
+            )
     return '\n'.join(lines)
 
 
-def generate_branch_guard_checks(branches, short_directive):
+def generate_branch_guard_checks(branches, short_directive, severity='block'):
     """Generate bash checks for branch-guard patterns."""
     lines = []
     for branch in branches:
         short = short_directive.replace('"', '\\"')
-        lines.append(f'''if [ "$BRANCH" = "{branch}" ]; then
+        if severity == 'warn':
+            lines.append(f'''if [ "$BRANCH" = "{branch}" ]; then
+  case "$CMD" in
+    *"git commit"*|*"git merge"*|*"git push"*)
+      echo "⚠ enforce-hooks WARN: Branch {branch} is protected. (CLAUDE.md: {short})" >&2 ;;
+  esac
+fi''')
+        else:
+            lines.append(f'''if [ "$BRANCH" = "{branch}" ]; then
   case "$CMD" in
     *"git commit"*|*"git merge"*|*"git push"*)
       echo '{{"decision": "block", "reason": "Branch {branch} is protected. (CLAUDE.md: {short})"}}'
@@ -976,21 +1085,27 @@ fi''')
     return '\n'.join(lines)
 
 
-def generate_tool_block_checks(tools, short_directive):
+def generate_tool_block_checks(tools, short_directive, severity='block'):
     """Generate bash checks for tool-block patterns."""
     lines = []
     for tool in tools:
         short = short_directive.replace('"', '\\"').replace("'", "'\\''")
-        lines.append(
-            f'[ "$TOOL" = "{tool}" ] && '
-            f'echo \'{{"decision": "block", "reason": "Tool {tool} is blocked. (CLAUDE.md: {short})"}}\' && exit 0'
-        )
+        if severity == 'warn':
+            lines.append(
+                f'[ "$TOOL" = "{tool}" ] && '
+                f'echo "⚠ enforce-hooks WARN: Tool {tool} used. (CLAUDE.md: {short})" >&2'
+            )
+        else:
+            lines.append(
+                f'[ "$TOOL" = "{tool}" ] && '
+                f'echo \'{{"decision": "block", "reason": "Tool {tool} is blocked. (CLAUDE.md: {short})"}}\' && exit 0'
+            )
     return '\n'.join(lines)
 
 
 def _truncate_short(text, maxlen=60):
     """Truncate text for use in hook messages, word-boundary aware."""
-    clean = text.replace('@enforced', '').replace('@required', '').strip()
+    clean = re.sub(r'@enforced(?:\(\w+\))?', '', text).replace('@required', '').strip()
     if len(clean) <= maxlen:
         return clean
     # Truncate at word boundary
@@ -1004,15 +1119,17 @@ def generate_hook(directive):
     """Generate a hook script for a directive."""
     short = _truncate_short(directive.text, 80)
 
+    sev = directive.severity
+
     if directive.hook_type == 'scoped-content-guard':
         return generate_scoped_content_guard(directive)
 
     elif directive.hook_type == 'content-guard':
-        checks = generate_content_guard_checks(directive.patterns, short)
+        checks = generate_content_guard_checks(directive.patterns, short, severity=sev)
         return CONTENT_GUARD_TEMPLATE.format(directive=short, checks=checks)
 
     elif directive.hook_type == 'file-guard':
-        checks = generate_file_guard_checks(directive.patterns, short)
+        checks = generate_file_guard_checks(directive.patterns, short, severity=sev)
         # Include Read tool if directive mentions reading
         text_lower = directive.text.lower()
         if any(w in text_lower for w in ['read', 'access', 'view', 'open', 'look at']):
@@ -1022,21 +1139,28 @@ def generate_hook(directive):
         return FILE_GUARD_TEMPLATE.format(directive=short, checks=checks, tool_case=tool_case)
 
     elif directive.hook_type == 'bash-guard':
-        checks = generate_bash_guard_checks(directive.patterns, short)
+        checks = generate_bash_guard_checks(directive.patterns, short, severity=sev)
         return BASH_GUARD_TEMPLATE.format(directive=short, checks=checks)
 
     elif directive.hook_type == 'branch-guard':
-        checks = generate_branch_guard_checks(directive.patterns, short)
+        checks = generate_branch_guard_checks(directive.patterns, short, severity=sev)
         return BRANCH_GUARD_TEMPLATE.format(directive=short, checks=checks)
 
     elif directive.hook_type == 'tool-block':
-        checks = generate_tool_block_checks(directive.patterns, short)
+        checks = generate_tool_block_checks(directive.patterns, short, severity=sev)
         return TOOL_BLOCK_TEMPLATE.format(directive=short, checks=checks)
 
     elif directive.hook_type == 'require-prior-tool':
         if len(directive.patterns) >= 2:
             required = directive.patterns[0]
             target = directive.patterns[1]
+            if sev == 'warn':
+                return REQUIRE_PRIOR_WARN_TEMPLATE.format(
+                    directive=short,
+                    target_tools=target,
+                    required_tool=required,
+                    short=_truncate_short(directive.text),
+                )
             return REQUIRE_PRIOR_TEMPLATE.format(
                 directive=short,
                 target_tools=target,
@@ -1058,6 +1182,13 @@ def generate_hook(directive):
                 'deploying': 'deploy',
             }
             target_pattern = target_map.get(target_cmd.lower(), target_cmd)
+            if sev == 'warn':
+                return REQUIRE_PRIOR_CMD_WARN_TEMPLATE.format(
+                    directive=short,
+                    target_cmd=target_pattern,
+                    required_cmd=required_cmd,
+                    short=_truncate_short(directive.text),
+                )
             return REQUIRE_PRIOR_CMD_TEMPLATE.format(
                 directive=short,
                 target_cmd=target_pattern,
@@ -1163,17 +1294,25 @@ def evaluate_tool_call(directives, tool_name, tool_input):
     """Evaluate a tool call against all directives.
 
     Returns dict: {"decision": "allow"} or {"decision": "block", "reason": "..."}
+    Warn-severity directives produce warnings on stderr but don't block.
     """
+    warnings = []
     for d in directives:
         result = _check_single(d, tool_name, tool_input)
         if result:
-            return result
+            if d.severity == 'warn':
+                # Warn: collect but don't block
+                msg = result.get('reason', 'rule violation')
+                warnings.append(msg)
+                print(f"⚠ enforce-hooks WARN: {msg}", file=sys.stderr)
+            else:
+                return result
     return {"decision": "allow"}
 
 
 def _check_single(directive, tool_name, tool_input):
     """Check if a tool call violates a single directive."""
-    short = directive.text[:80].replace('@enforced', '').strip()
+    short = re.sub(r'@enforced(?:\(\w+\))?', '', directive.text[:80]).strip()
 
     if directive.hook_type == 'scoped-content-guard':
         if tool_name not in ('Write', 'Edit', 'MultiEdit'):
@@ -1635,14 +1774,16 @@ def format_audit_report(audit):
     if enforced:
         lines.append(f"Enforced ({len(enforced)}):")
         for d in enforced:
-            lines.append(f"  [ok]  {d.hook_type:<18}  {d.description}")
+            sev_tag = ' [warn]' if d.severity == 'warn' else ''
+            lines.append(f"  [ok]  {d.hook_type:<18}  {d.description}{sev_tag}")
 
     # Unenforced rules (tagged @enforced but no hook)
     unenforced = audit['unenforced']
     if unenforced:
         lines.append(f"\nNot enforced ({len(unenforced)}):")
         for d in unenforced:
-            lines.append(f"  [!!]  {d.hook_type:<18}  {d.description}")
+            sev_tag = ' [warn]' if d.severity == 'warn' else ''
+            lines.append(f"  [!!]  {d.hook_type:<18}  {d.description}{sev_tag}")
         if not audit['plugin_mode']:
             lines.append("  Fix: run --install or --install-plugin")
 
@@ -1692,10 +1833,10 @@ def format_scan_table(enforceable, skipped):
     lines = []
     if enforceable:
         lines.append(f"Found {len(enforceable)} enforceable directive(s):\n")
-        lines.append(f"{'#':>3}  {'Type':<20}  {'What it blocks':<40}  {'Source line'}")
-        lines.append(f"{'---':>3}  {'----':<20}  {'---':<40}  {'---'}")
+        lines.append(f"{'#':>3}  {'Type':<20}  {'What it does':<40}  {'Severity':<8}  {'Source line'}")
+        lines.append(f"{'---':>3}  {'----':<20}  {'---':<40}  {'---':<8}  {'---'}")
         for i, d in enumerate(enforceable, 1):
-            lines.append(f"{i:>3}  {d.hook_type:<20}  {d.description:<40}  L{d.line_num}")
+            lines.append(f"{i:>3}  {d.hook_type:<20}  {d.description:<40}  {d.severity:<8}  L{d.line_num}")
     else:
         lines.append("No enforceable directives found.")
 
@@ -2755,6 +2896,200 @@ rm -rf /tmp/test
     except (json.JSONDecodeError, AttributeError):
         check("evaluate missing CLAUDE.md: valid JSON", False, True)
 
+    # --- Warn mode tests ---
+
+    # 1. Parse @enforced(warn) syntax
+    d = classify_directive("Never modify .env files @enforced(warn)", 1)
+    check("warn: @enforced(warn) parsed", d is not None, True)
+    if d:
+        check("warn: severity is warn", d.severity, 'warn')
+        check("warn: hook_type is file-guard", d.hook_type, 'file-guard')
+
+    # 2. Parse @enforced(block) explicit syntax
+    d = classify_directive("Never modify .env files @enforced(block)", 1)
+    check("warn: @enforced(block) parsed", d is not None, True)
+    if d:
+        check("warn: explicit block severity", d.severity, 'block')
+
+    # 3. Plain @enforced defaults to block
+    d = classify_directive("Never modify .env files @enforced", 1)
+    check("warn: @enforced defaults to block", d is not None and d.severity == 'block', True)
+
+    # 4. Warn mode generates stderr output (no block JSON)
+    d = Directive(
+        text="Never modify .env files @enforced(warn)",
+        hook_type='file-guard',
+        patterns=['.env'],
+        description="Protect .env",
+        line_num=1,
+        severity='warn',
+    )
+    script = generate_hook(d)
+    check("warn: hook script generated", script is not None, True)
+    if script:
+        check("warn: no block JSON in script", '"decision": "block"' not in script
+              and '"decision\\": \\"block\\"' not in script, True)
+        check("warn: has stderr redirect", '>&2' in script, True)
+        check("warn: has WARN prefix", 'WARN' in script, True)
+
+    # 5. Block mode still generates block JSON
+    d_block = Directive(
+        text="Never modify .env files @enforced",
+        hook_type='file-guard',
+        patterns=['.env'],
+        description="Protect .env",
+        line_num=1,
+        severity='block',
+    )
+    script_block = generate_hook(d_block)
+    check("block: has block decision", 'block' in script_block and 'decision' in script_block, True)
+
+    # 6. Warn mode in bash-guard
+    d = Directive(
+        text="Don't run rm -rf @enforced(warn)",
+        hook_type='bash-guard',
+        patterns=['rm -rf'],
+        description="Block rm -rf",
+        line_num=1,
+        severity='warn',
+    )
+    script = generate_hook(d)
+    check("warn bash-guard: no block JSON", '"decision": "block"' not in script, True)
+    check("warn bash-guard: has stderr", '>&2' in script, True)
+
+    # 7. Warn mode in branch-guard
+    d = Directive(
+        text="Never commit to main @enforced(warn)",
+        hook_type='branch-guard',
+        patterns=['main'],
+        description="Protect main",
+        line_num=1,
+        severity='warn',
+    )
+    script = generate_hook(d)
+    check("warn branch-guard: no block JSON", '"decision": "block"' not in script, True)
+    check("warn branch-guard: has stderr", '>&2' in script, True)
+
+    # 8. Warn mode in tool-block
+    d = Directive(
+        text="Don't use WebSearch @enforced(warn)",
+        hook_type='tool-block',
+        patterns=['WebSearch'],
+        description="Block WebSearch",
+        line_num=1,
+        severity='warn',
+    )
+    script = generate_hook(d)
+    check("warn tool-block: no block JSON", '"decision": "block"' not in script, True)
+    check("warn tool-block: has stderr", '>&2' in script, True)
+
+    # 9. Warn mode in content-guard
+    d = Directive(
+        text="Never use inline styles @enforced(warn)",
+        hook_type='content-guard',
+        patterns=[r'style\s*=\s*"'],
+        description="Block inline styles",
+        line_num=1,
+        severity='warn',
+    )
+    script = generate_hook(d)
+    check("warn content-guard: no block JSON", '"decision": "block"' not in script, True)
+    check("warn content-guard: has stderr", '>&2' in script, True)
+
+    # 10. Evaluate mode: warn returns allow, not block
+    warn_directives = [
+        Directive(
+            text="Never modify .env files @enforced(warn)",
+            hook_type='file-guard',
+            patterns=['.env'],
+            description="Protect .env",
+            line_num=1,
+            severity='warn',
+        ),
+    ]
+    result = evaluate_tool_call(warn_directives, 'Write', {'file_path': '.env'})
+    check("warn evaluate: allows (not blocks)", result['decision'], 'allow')
+
+    # 11. Evaluate mode: block still blocks
+    block_directives = [
+        Directive(
+            text="Never modify .env files @enforced",
+            hook_type='file-guard',
+            patterns=['.env'],
+            description="Protect .env",
+            line_num=1,
+            severity='block',
+        ),
+    ]
+    result = evaluate_tool_call(block_directives, 'Write', {'file_path': '.env'})
+    check("block evaluate: blocks", result['decision'], 'block')
+
+    # 12. Section-level @enforced(warn) propagation
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as f:
+        f.write("## Guidelines @enforced(warn)\n- Never modify .env files\n- Don't run sudo\n")
+        f.flush()
+        enforceable, _ = scan_file(f.name)
+        check("section warn: found directives", len(enforceable) >= 2, True)
+        for d_item in enforceable:
+            check(f"section warn: severity={d_item.severity}", d_item.severity, 'warn')
+        os.unlink(f.name)
+
+    # 13. Inline @enforced(warn) overrides section @enforced
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as f:
+        f.write("## Rules @enforced\n- Never modify .env files @enforced(warn)\n- Don't run sudo\n")
+        f.flush()
+        enforceable, _ = scan_file(f.name)
+        check("inline override: found directives", len(enforceable) >= 2, True)
+        # First rule has inline warn, second inherits section block
+        env_rule = [d_item for d_item in enforceable if '.env' in d_item.description]
+        sudo_rule = [d_item for d_item in enforceable if 'sudo' in d_item.description]
+        if env_rule:
+            check("inline override: .env is warn", env_rule[0].severity, 'warn')
+        if sudo_rule:
+            check("inline override: sudo is block", sudo_rule[0].severity, 'block')
+        os.unlink(f.name)
+
+    # 14. to_dict includes severity
+    d = classify_directive("Never modify .env @enforced(warn)", 1)
+    if d:
+        dd = d.to_dict()
+        check("to_dict: severity in dict", dd.get('severity'), 'warn')
+
+    # 15. Directive round-trip through cache
+    d = Directive(text="test @enforced(warn)", hook_type='file-guard',
+                  patterns=['.env'], description="test", severity='warn')
+    dd = d.to_dict()
+    d2 = Directive(**dd)
+    check("cache round-trip: severity preserved", d2.severity, 'warn')
+
+    # 16. Audit shows severity
+    with tempfile.TemporaryDirectory() as td:
+        claude_md = Path(td) / 'CLAUDE.md'
+        hooks_dir = Path(td) / '.claude' / 'hooks'
+        settings_path = Path(td) / '.claude' / 'settings.json'
+        claude_md.write_text('## Rules @enforced(warn)\n- Never modify .env files\n')
+        audit = audit_hooks(str(claude_md), str(hooks_dir), str(settings_path))
+        # Should be unenforced (no hooks installed) with warn severity
+        if audit['unenforced']:
+            check("audit: warn severity shown", audit['unenforced'][0].severity, 'warn')
+            report = format_audit_report(audit)
+            check("audit report: [warn] tag present", '[warn]' in report, True)
+
+    # 17. Warn scoped-content-guard
+    d = Directive(
+        text="Interfaces only in types/ @enforced(warn)",
+        hook_type='scoped-content-guard',
+        patterns=[r'\binterface\b'],
+        description="Only interfaces in types/",
+        line_num=1,
+        path_filter=['types/'],
+        path_mode='only_in',
+        severity='warn',
+    )
+    script = generate_hook(d)
+    check("warn scoped-content: no block JSON", '"decision": "block"' not in script, True)
+    check("warn scoped-content: has stderr", '>&2' in script, True)
+
     print(f"\n{passed} passed, {failed} failed")
     return failed == 0
 
@@ -2851,6 +3186,7 @@ def main():
                     print("\nTo activate enforcement, add @enforced to each rule:")
                     print("  - Never modify .env files @enforced")
                     print("  - Do not use `git push --force` @enforced")
+                    print("  - Avoid using `any` type @enforced(warn)    # warns but allows")
                     print("\nOr tag an entire section:")
                     print("  ## Safety @enforced")
                     print("  - Never modify .env files")
