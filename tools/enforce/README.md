@@ -143,6 +143,7 @@ enforce-hooks.py [CLAUDE.md] [options]
   --install           Write per-rule hooks to .claude/hooks/
   --install-plugin    Install as one dynamic hook (recommended)
   --audit             Compare CLAUDE.md rules vs installed hooks
+  --armor             Install self-protection hooks (no CLAUDE.md needed)
   --evaluate          PreToolUse mode: read tool call from stdin, output decision
   --json              Output as JSON (with --scan or --audit)
   --hooks-dir         Directory for hooks (default: .claude/hooks)
@@ -198,6 +199,25 @@ Reports:
 - **Broken references** `[XX]`: settings.json entries pointing to missing files
 
 Use `--audit --json` for machine-readable output.
+
+## Armor Mode
+
+Protect your hooks from being deleted or modified by Claude itself.
+
+```sh
+python3 enforce-hooks.py --armor
+```
+
+This installs two self-protection hooks that guard `.claude/hooks/` and `.claude/settings.json`:
+
+- **armor_file_guard.sh**: Blocks Write/Edit/MultiEdit targeting hook files or settings
+- **armor_bash_guard.sh**: Blocks `rm`, `mv`, `chmod`, `truncate`, `sed -i`, and similar commands targeting hooks or settings
+
+The hooks protect each other. The file-guard blocks edits to the bash-guard, and the bash-guard blocks deletion of the file-guard. Neither requires a CLAUDE.md.
+
+No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
+
+**Why this exists:** A Claude Code session [deleted its own PreToolUse hook](https://github.com/anthropics/claude-code/issues/32990) to bypass a constraint it was blocking. With the hook file gone, `settings.json` still referenced it, but all tool calls silently proceeded unblocked. Armor prevents this by making hooks defend themselves.
 
 ## Known Limitations
 
