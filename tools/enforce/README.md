@@ -81,7 +81,28 @@ Found 3 enforceable directive(s):
   3  branch-guard          Block commits to: main                    L5
 ```
 
-The `@enforced` tag is optional but recommended for clarity.
+The `@enforced` tag tells enforce-hooks which rules to activate.
+
+### Not sure what's enforceable?
+
+Run `--scan` without any `@enforced` tags. The tool shows suggestions:
+
+```
+$ python3 enforce-hooks.py --scan
+
+No enforceable directives found.
+
+Found 5 rule(s) that could be enforced:
+
+  #  Type                  What it would block                       Source line
+---  ----                  ---                                       ---
+  1  file-guard            Block Write/Edit to: .env                 L4
+  2  bash-guard            Block commands: rm -rf, rm -r             L6
+  ...
+
+To activate enforcement, add @enforced to each rule:
+  - Never modify .env files @enforced
+```
 
 ## Options
 
@@ -96,7 +117,7 @@ enforce-hooks.py [CLAUDE.md] [options]
   --json              Output as JSON (with --scan)
   --hooks-dir         Directory for hooks (default: .claude/hooks)
   --settings          Path to settings.json (default: .claude/settings.json)
-  --test              Run self-tests (134 assertions)
+  --test              Run self-tests (141 assertions)
 ```
 
 Auto-detects CLAUDE.md in the current or parent directories if no file is specified.
@@ -120,7 +141,7 @@ Copy `SKILL.md` to `.claude/skills/enforce-hooks/SKILL.md` in your project. Then
 python3 enforce-hooks.py --test
 ```
 
-134 assertions covering directive classification, hook generation, runtime evaluation, and cache invalidation.
+141 assertions covering directive classification, hook generation, suggestion discovery, runtime evaluation, and cache invalidation.
 
 ## License
 
