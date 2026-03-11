@@ -70,25 +70,25 @@ secrets/
 EOF
 
 # File path with double quote (would break string-concatenated JSON)
-result=$(echo '{"tool_name":"Write","input":{"file_path":"test\".env"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
+result=$(echo '{"tool_name":"Write","tool_input":{"file_path":"test\".env"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
 assert_valid_json "Write with double-quote in path produces valid JSON" "$result"
 
 # File path with backslash
-result=$(echo '{"tool_name":"Write","input":{"file_path":".env\\backup"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
+result=$(echo '{"tool_name":"Write","tool_input":{"file_path":".env\\backup"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
 assert_valid_json "Write with backslash in path produces valid JSON" "$result"
 
 # Protected file with special chars in path
-result=$(echo '{"tool_name":"Edit","input":{"file_path":"secrets/key\"file.pem"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
+result=$(echo '{"tool_name":"Edit","tool_input":{"file_path":"secrets/key\"file.pem"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
 assert_valid_json "Edit with quote in dir path produces valid JSON" "$result"
 assert_blocked "Edit to secrets/ subdir with special chars is blocked" "$result"
 
 # Normal .env still blocked (regression check)
-result=$(echo '{"tool_name":"Write","input":{"file_path":".env"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
+result=$(echo '{"tool_name":"Write","tool_input":{"file_path":".env"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
 assert_blocked "Write to .env still blocked after security fix" "$result"
 assert_valid_json "Write to .env produces valid JSON" "$result"
 
 # Normal safe file still allowed
-result=$(echo '{"tool_name":"Write","input":{"file_path":"src/app.js"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
+result=$(echo '{"tool_name":"Write","tool_input":{"file_path":"src/app.js"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
 assert_allowed "Write to safe file still allowed" "$result"
 
 # ============================================================
@@ -104,23 +104,23 @@ config/
 EOF
 
 # Traversal: subdir/../.env should resolve to .env and be blocked
-result=$(echo '{"tool_name":"Write","input":{"file_path":"subdir/../.env"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
+result=$(echo '{"tool_name":"Write","tool_input":{"file_path":"subdir/../.env"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
 assert_blocked "subdir/../.env traversal is caught" "$result"
 
 # Traversal: deep nesting
-result=$(echo '{"tool_name":"Edit","input":{"file_path":"a/b/c/../../../.env"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
+result=$(echo '{"tool_name":"Edit","tool_input":{"file_path":"a/b/c/../../../.env"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
 assert_blocked "a/b/c/../../../.env deep traversal is caught" "$result"
 
 # Traversal: into protected directory
-result=$(echo '{"tool_name":"Write","input":{"file_path":"src/../config/db.yml"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
+result=$(echo '{"tool_name":"Write","tool_input":{"file_path":"src/../config/db.yml"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
 assert_blocked "src/../config/db.yml directory traversal is caught" "$result"
 
 # Non-traversal: safe file with .. in name (not a directory component)
-result=$(echo '{"tool_name":"Write","input":{"file_path":"src/app.js"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
+result=$(echo '{"tool_name":"Write","tool_input":{"file_path":"src/app.js"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
 assert_allowed "Normal path without traversal still allowed" "$result"
 
 # Traversal with ./ prefix
-result=$(echo '{"tool_name":"Write","input":{"file_path":"./subdir/../secrets.json"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
+result=$(echo '{"tool_name":"Write","tool_input":{"file_path":"./subdir/../secrets.json"}}' | bash "$SCRIPT_DIR/file-guard/hook.sh" 2>/dev/null) || true
 assert_blocked "./subdir/../secrets.json traversal with ./ prefix caught" "$result"
 
 # ============================================================
@@ -136,7 +136,7 @@ cat > "$BASH_CONFIG" <<'EOF'
 deny: mycommand
 EOF
 
-result=$(echo '{"tool_name":"Bash","input":{"command":"mycommand with \"quotes\""}}' | bash "$SCRIPT_DIR/bash-guard/hook.sh" 2>/dev/null) || true
+result=$(echo '{"tool_name":"Bash","tool_input":{"command":"mycommand with \"quotes\""}}' | bash "$SCRIPT_DIR/bash-guard/hook.sh" 2>/dev/null) || true
 assert_valid_json "bash-guard block with quotes in command produces valid JSON" "$result"
 assert_blocked "bash-guard deny rule still works" "$result"
 unset BASH_GUARD_CONFIG
@@ -147,7 +147,7 @@ unset BASH_GUARD_CONFIG
 echo ""
 echo "--- JSON injection: git-safe ---"
 
-result=$(echo '{"tool_name":"Bash","input":{"command":"git push --force origin \"my-branch\""}}' | bash "$SCRIPT_DIR/git-safe/hook.sh" 2>/dev/null) || true
+result=$(echo '{"tool_name":"Bash","tool_input":{"command":"git push --force origin \"my-branch\""}}' | bash "$SCRIPT_DIR/git-safe/hook.sh" 2>/dev/null) || true
 assert_valid_json "git-safe block with quotes produces valid JSON" "$result"
 assert_blocked "git-safe force push still blocked" "$result"
 
@@ -161,7 +161,7 @@ echo "--- JSON injection: branch-guard ---"
 # We need to be on a protected branch for this test
 CURRENT=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
 if [ "$CURRENT" = "main" ] || [ "$CURRENT" = "master" ]; then
-  result=$(echo '{"tool_name":"Bash","input":{"command":"git commit -m \"test with \\\"quotes\\\"\""}}' | bash "$SCRIPT_DIR/branch-guard/hook.sh" 2>/dev/null) || true
+  result=$(echo '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"test with \\\"quotes\\\"\""}}' | bash "$SCRIPT_DIR/branch-guard/hook.sh" 2>/dev/null) || true
   assert_valid_json "branch-guard block produces valid JSON" "$result"
   assert_blocked "branch-guard blocks commit on main" "$result"
 else
