@@ -89,4 +89,8 @@ if len(d.get('enforceable', [])) > 8:
         echo "  - Do not use git push --force"
         echo "  - Always run tests before committing"
     fi
+    echo ""
+    echo "Next steps:"
+    echo "  python3 .claude/hooks/enforce-hooks.py --smoke-test   # verify hooks work"
+    echo "  python3 .claude/hooks/enforce-hooks.py --armor        # protect hooks from deletion"
 fi

@@ -30,6 +30,12 @@ CLAUDE.md rules rely on the model choosing to comply. That breaks down in three 
 
 PreToolUse hooks solve all three. They run as code before every tool call, they fire in every context (including subagents), and they return a hard block that the model cannot override.
 
+## Design Tradeoff
+
+enforce-hooks is deliberately deterministic. Every hook is a bash script with pattern matching. No LLM in the loop, no API key, no network call after install. Same tool call plus same rules equals the same decision, every time. You can read every generated hook (`cat .claude/hooks/*.sh`) and understand exactly what it blocks.
+
+The tradeoff: hooks have no conversation context. "User asked for a discussion but Claude started coding" has no tool-call signal to match. Rules that require understanding intent need a different approach. enforce-hooks handles structural violations where the tool call itself is the signal.
+
 ## How It Works
 
 **Plugin mode** (recommended): One hook enforces all your rules dynamically.
