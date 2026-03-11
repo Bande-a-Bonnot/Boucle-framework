@@ -38,7 +38,7 @@ if [ "$TOOL_NAME" != "Bash" ]; then
   exit 0
 fi
 
-COMMAND=$(echo "$INPUT" | jq -r '.input.command // empty')
+COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 if [ -z "$COMMAND" ]; then
   exit 0
 fi
