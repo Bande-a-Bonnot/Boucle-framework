@@ -61,7 +61,7 @@ bash-guard is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code
 bash test.sh
 ```
 
-40 tests covering all blocked patterns plus safe variants.
+48 tests covering all blocked patterns plus safe variants.
 
 ## License
 
