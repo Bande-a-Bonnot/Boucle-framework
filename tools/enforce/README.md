@@ -144,9 +144,11 @@ enforce-hooks.py [CLAUDE.md] [options]
   --install-plugin    Install as one dynamic hook (recommended)
   --audit             Compare CLAUDE.md rules vs installed hooks
   --audit --strict    CI gate: exit 1 if any @enforced rules lack hooks
+  --verify            Health-check installed hooks for correctness
+  --verify --strict   CI gate: exit 1 if any hooks have errors
   --armor             Install self-protection hooks (no CLAUDE.md needed)
   --evaluate          PreToolUse mode: read tool call from stdin, output decision
-  --json              Output as JSON (with --scan or --audit)
+  --json              Output as JSON (with --scan, --audit, or --verify)
   --hooks-dir         Directory for hooks (default: .claude/hooks)
   --settings          Path to settings.json (default: .claude/settings.json)
   --test              Run self-tests
@@ -216,6 +218,48 @@ Exits 0 if all `@enforced` rules have active hooks. Exits 1 if any are unenforce
 - name: Verify hook enforcement
   run: python3 tools/enforce/enforce-hooks.py --audit --strict
 ```
+
+## Hook Health Check (`--verify`)
+
+Check installed hooks for correctness issues before they silently fail.
+
+```sh
+python3 enforce-hooks.py --verify
+```
+
+Example output:
+```
+Hook Health Check: 4 hook(s) scanned
+
+  [FAIL]  bash-guard.sh
+         [ERR ] Uses .input.X instead of .tool_input.X (1 occurrence(s)). Claude Code sends
+                tool arguments in tool_input, not input. This hook silently fails open.
+                L44: COMMAND=$(echo "$INPUT" | jq -r '.input.command // empty')
+         [ERR ] Combines wrong field name with fail-open pattern (1 instance(s)).
+  [  OK]  enforce-pretooluse.sh
+  [WARN]  my-hook.sh
+         [WARN] Not registered in .claude/settings.json. Hook will not fire.
+  [  OK]  session-log.sh
+
+Summary: 2 ok, 1 warning(s), 2 error(s)
+```
+
+**What it catches:**
+- **Wrong field name**: `.input.command` instead of `.tool_input.command` (the most common hook bug; causes silent fail-open)
+- **Fail-open on empty values**: Hook reads empty string from wrong field, exits 0, never blocks
+- **Not executable**: Missing `chmod +x`
+- **No shebang**: Hook may not execute correctly
+- **Not registered**: Hook file exists but is not wired into `settings.json`
+- **Missing references**: `settings.json` points to files that do not exist
+- **No JSON parser**: Shell hook references tool data without using `jq` or `python`
+
+Use `--verify --strict` as a CI gate (exits 1 on errors):
+
+```sh
+python3 enforce-hooks.py --verify --strict
+```
+
+**Why this exists:** Four of our own hooks shipped with `.input.X` instead of `.tool_input.X` and silently failed open for weeks. They never blocked anything. A user ([chris-peterson](https://github.com/chris-peterson)) found the bug in [PR #2](https://github.com/Bande-a-Bonnot/Boucle-framework/pull/2). This tool catches that class of issue before users get burned.
 
 ## Armor Mode
 
