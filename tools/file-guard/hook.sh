@@ -73,12 +73,71 @@ log() {
   fi
 }
 
+# Normalize a path: resolve ./ and .. components to prevent traversal bypass
+normalize_path() {
+  local p="$1"
+  p="${p#./}"
+
+  # Make absolute path relative to project root
+  if [[ "$p" == /* ]]; then
+    local root
+    root=$(pwd)
+    p="${p#"$root"/}"
+    # Still absolute = outside project root, return as-is
+    if [[ "$p" == /* ]]; then
+      echo "$p"
+      return
+    fi
+  fi
+
+  # Collapse .. segments (pure bash, compatible with bash 3.2/macOS + set -u)
+  if [[ "$p" == */../* ]] || [[ "$p" == ../* ]] || [[ "$p" == */.. ]]; then
+    local oldifs="$IFS"
+    IFS='/'
+    local -a parts=()
+    local -a result=()
+    read -ra parts <<< "$p"
+    IFS="$oldifs"
+    for part in "${parts[@]+"${parts[@]}"}"; do
+      if [ "$part" = ".." ]; then
+        local len=${#result[@]}
+        if [ "$len" -gt 0 ]; then
+          local last="${result[$((len-1))]}"
+          if [ "$last" != ".." ]; then
+            unset "result[$((len-1))]"
+            # Re-index: bash 3.2 leaves gaps after unset; empty
+            # arrays are "unbound" under set -u, so guard the expansion
+            if [ ${#result[@]} -gt 0 ]; then
+              result=("${result[@]}")
+            else
+              result=()
+            fi
+          else
+            result+=("..")
+          fi
+        else
+          result+=("..")
+        fi
+      elif [ "$part" != "." ] && [ -n "$part" ]; then
+        result+=("$part")
+      fi
+    done
+    local out=""
+    for part in "${result[@]+"${result[@]}"}"; do
+      out="${out:+$out/}$part"
+    done
+    p="${out:-.}"
+  fi
+
+  echo "$p"
+}
+
 # Check if a path matches any protected pattern
 matches_protected() {
   local target="$1"
 
-  # Normalize: remove leading ./ if present
-  target="${target#./}"
+  # Normalize target to prevent traversal bypass (../,./ etc)
+  target=$(normalize_path "$target")
 
   for pattern in "${PATTERNS[@]}"; do
     # Normalize pattern too
@@ -129,14 +188,11 @@ case "$TOOL_NAME" in
       exit 0
     fi
 
-    # Make path relative to project root if absolute
-    if [[ "$TARGET" == /* ]]; then
-      PROJECT_ROOT=$(pwd)
-      TARGET="${TARGET#"$PROJECT_ROOT"/}"
-    fi
+    TARGET=$(normalize_path "$TARGET")
 
     if matched=$(matches_protected "$TARGET"); then
-      echo '{"decision":"block","reason":"file-guard: '\''"'"$TARGET"'"'\'' is protected (matches pattern '\''"'"$matched"'"'\''). Check .file-guard config to modify protections."}'
+      jq -n --arg t "$TARGET" --arg p "$matched" \
+        '{"decision":"block","reason":("file-guard: \"" + $t + "\" is protected (matches pattern \"" + $p + "\"). Check .file-guard config to modify protections.")}'
       exit 0
     fi
     ;;
@@ -147,13 +203,11 @@ case "$TOOL_NAME" in
       exit 0
     fi
 
-    if [[ "$TARGET" == /* ]]; then
-      PROJECT_ROOT=$(pwd)
-      TARGET="${TARGET#"$PROJECT_ROOT"/}"
-    fi
+    TARGET=$(normalize_path "$TARGET")
 
     if matched=$(matches_protected "$TARGET"); then
-      echo '{"decision":"block","reason":"file-guard: '\''"'"$TARGET"'"'\'' is protected (matches pattern '\''"'"$matched"'"'\''). Check .file-guard config to modify protections."}'
+      jq -n --arg t "$TARGET" --arg p "$matched" \
+        '{"decision":"block","reason":("file-guard: \"" + $t + "\" is protected (matches pattern \"" + $p + "\"). Check .file-guard config to modify protections.")}'
       exit 0
     fi
     ;;
@@ -183,7 +237,8 @@ case "$TOOL_NAME" in
         # For exact filenames
         if echo "$COMMAND" | grep -qF "$pattern" 2>/dev/null; then
           log "BASH MATCH: command contains modifier + pattern '$pattern'"
-          echo '{"decision":"block","reason":"file-guard: command may modify protected path '\''"'"$pattern"'"'\'' (matches .file-guard config). Use FILE_GUARD_DISABLED=1 to override."}'
+          jq -n --arg p "$pattern" \
+            '{"decision":"block","reason":("file-guard: command may modify protected path \"" + $p + "\" (matches .file-guard config). Use FILE_GUARD_DISABLED=1 to override.")}'
           exit 0
         fi
       fi
