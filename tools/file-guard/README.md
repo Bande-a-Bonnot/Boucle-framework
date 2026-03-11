@@ -127,8 +127,8 @@ file-guard: '.env' is protected (matches pattern '.env'). Check .file-guard conf
 ## Testing
 
 ```bash
-bash test.sh       # hook tests (27 assertions)
-bash test-init.sh  # init scanner tests (22+ assertions)
+bash test.sh       # hook tests (37 assertions)
+bash test-init.sh  # init scanner tests (33 assertions)
 ```
 
 ## License

@@ -349,7 +349,6 @@ def extract_command_patterns(text):
         'force push', 'reset --hard', 'clean -fd', 'clean -f',
         'checkout .', 'restore .',
         'curl | sh', 'curl | bash', 'wget | sh',
-        'git push',
         '--no-verify', '--no-gpg-sign', '--skip-hooks',
         '--dangerouslyDisableSandbox',
     ]
