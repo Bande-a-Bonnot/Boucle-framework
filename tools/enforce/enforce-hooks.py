@@ -1919,6 +1919,291 @@ def format_audit_report(audit):
     return '\n'.join(lines)
 
 
+# --- Hook Verification ---
+
+def verify_hooks(hooks_dir='.claude/hooks', settings_path='.claude/settings.json'):
+    """Verify installed hooks for correctness issues.
+
+    Checks every hook script in hooks_dir for:
+      - Executable permission (+x)
+      - Valid shebang line
+      - Wrong field name (.input.X instead of .tool_input.X)
+      - Fail-open on empty values (gets empty string, exits 0)
+      - JSON parsing method (jq, python, etc.)
+      - Settings.json registration
+
+    Returns a dict with:
+      hooks: list of dicts, one per hook file, each with 'path', 'issues', 'info'
+      settings_issues: list of issues with settings.json
+      summary: dict with counts
+    """
+    hooks_dir = Path(hooks_dir)
+    settings_path = Path(settings_path)
+
+    results = []
+    settings_issues = []
+
+    # 1. Read settings.json to find registered hooks
+    registered_commands = set()
+    if settings_path.exists():
+        try:
+            settings = json.loads(settings_path.read_text())
+            for event_type in settings.get('hooks', {}):
+                for entry in settings.get('hooks', {}).get(event_type, []):
+                    for h in entry.get('hooks', []):
+                        cmd = h.get('command', '')
+                        if cmd:
+                            registered_commands.add(cmd)
+        except (json.JSONDecodeError, KeyError):
+            settings_issues.append({
+                'severity': 'error',
+                'message': f'Cannot parse {settings_path}',
+            })
+
+    # 2. Scan hook files
+    if not hooks_dir.exists():
+        return {
+            'hooks': [],
+            'settings_issues': settings_issues + [{
+                'severity': 'info',
+                'message': f'No hooks directory found at {hooks_dir}',
+            }],
+            'summary': {'total': 0, 'ok': 0, 'warnings': 0, 'errors': 0},
+        }
+
+    hook_files = sorted(f for f in hooks_dir.iterdir() if f.is_file() and not f.name.startswith('.'))
+
+    for hook_path in hook_files:
+        hook_result = {
+            'path': str(hook_path),
+            'name': hook_path.name,
+            'issues': [],
+            'info': [],
+        }
+
+        # Read content
+        try:
+            content = hook_path.read_text(errors='replace')
+        except Exception as e:
+            hook_result['issues'].append({
+                'severity': 'error',
+                'check': 'readable',
+                'message': f'Cannot read file: {e}',
+            })
+            results.append(hook_result)
+            continue
+
+        lines = content.split('\n')
+
+        # Check: executable permission
+        if not os.access(str(hook_path), os.X_OK):
+            hook_result['issues'].append({
+                'severity': 'error',
+                'check': 'executable',
+                'message': 'Not executable. Fix: chmod +x ' + str(hook_path),
+            })
+
+        # Check: shebang
+        if lines and lines[0].startswith('#!'):
+            shebang = lines[0]
+            hook_result['info'].append({'check': 'shebang', 'value': shebang})
+            # Check for common bad shebangs
+            if '/usr/bin/bash' in shebang and sys.platform == 'darwin':
+                hook_result['issues'].append({
+                    'severity': 'warn',
+                    'check': 'shebang',
+                    'message': 'Uses /usr/bin/bash (may not exist on macOS). Prefer /bin/bash or #!/usr/bin/env bash.',
+                })
+        elif not hook_path.suffix == '.json':
+            hook_result['issues'].append({
+                'severity': 'warn',
+                'check': 'shebang',
+                'message': 'No shebang line. Hook may not execute correctly.',
+            })
+
+        # Check: .input.X vs .tool_input.X (the chris-peterson bug)
+        # This is the critical check. Claude Code sends tool_input, not input.
+        wrong_field_lines = []
+        correct_field_lines = []
+        for i, line in enumerate(lines, 1):
+            # Skip comments
+            stripped = line.lstrip()
+            if stripped.startswith('#') or stripped.startswith('//'):
+                continue
+            # Detect jq patterns: .input.command, .input.file_path, etc.
+            # Also detect Python patterns: ['input'], .get('input')
+            # jq-style: .input.something (but NOT .tool_input.something)
+            for m in re.finditer(r'(?<!\w)\.input\.(\w+)', line):
+                # Make sure it's not part of .tool_input.
+                pos = m.start()
+                prefix = line[max(0, pos-5):pos]
+                if 'tool_' not in prefix:
+                    wrong_field_lines.append((i, m.group(0), line.strip()[:80]))
+            # Python dict-style: ['input'] or .get('input') (but not ['tool_input'])
+            for m in re.finditer(r"""\[['"]input['"]\]|\.get\(['"]input['"]""", line):
+                pos = m.start()
+                prefix = line[max(0, pos-10):pos]
+                if 'tool_' not in prefix:
+                    wrong_field_lines.append((i, m.group(0), line.strip()[:80]))
+            # Detect correct usage
+            for m in re.finditer(r'\.tool_input\.\w+|tool_input|tool_input', line):
+                correct_field_lines.append(i)
+
+        if wrong_field_lines:
+            hook_result['issues'].append({
+                'severity': 'error',
+                'check': 'field_name',
+                'message': (
+                    f'Uses .input.X instead of .tool_input.X ({len(wrong_field_lines)} occurrence(s)). '
+                    'Claude Code sends tool arguments in tool_input, not input. '
+                    'This hook silently fails open (gets empty values, never blocks).'
+                ),
+                'details': [
+                    {'line': ln, 'match': match, 'context': ctx}
+                    for ln, match, ctx in wrong_field_lines
+                ],
+            })
+        elif correct_field_lines:
+            hook_result['info'].append({
+                'check': 'field_name',
+                'value': f'Uses tool_input correctly ({len(correct_field_lines)} reference(s))',
+            })
+
+        # Check: fail-open pattern (empty string check followed by exit 0)
+        # Common pattern: if [ -z "$VAR" ]; then exit 0; fi
+        # This is dangerous if the var is empty because the field name is wrong
+        fail_open_count = 0
+        for i, line in enumerate(lines, 1):
+            stripped = line.strip()
+            if re.match(r'if\s+\[\s+-z\s+"?\$\w+"?\s*\]', stripped):
+                # Look at the next few lines for exit 0
+                for j in range(i, min(i + 3, len(lines))):
+                    if 'exit 0' in lines[j-1]:  # Lines are 0-indexed in the list
+                        fail_open_count += 1
+                        break
+        if fail_open_count > 0 and wrong_field_lines:
+            hook_result['issues'].append({
+                'severity': 'error',
+                'check': 'fail_open',
+                'message': (
+                    f'Combines wrong field name with fail-open pattern ({fail_open_count} instance(s)). '
+                    'Hook reads empty value from wrong field, then exits 0 (allow). '
+                    'This hook never actually blocks anything.'
+                ),
+            })
+        elif fail_open_count > 0:
+            hook_result['info'].append({
+                'check': 'fail_open',
+                'value': f'{fail_open_count} empty-check exit(s) (safe if field names are correct)',
+            })
+
+        # Check: JSON parsing method
+        uses_jq = 'jq ' in content or 'jq\t' in content or content.endswith('jq')
+        uses_python_json = 'json.loads' in content or 'json.load' in content
+        if uses_jq:
+            hook_result['info'].append({'check': 'json_parser', 'value': 'jq'})
+        elif uses_python_json:
+            hook_result['info'].append({'check': 'json_parser', 'value': 'python json'})
+        elif hook_path.suffix in ('.sh', '.bash', ''):
+            # Shell script without jq is suspicious
+            if 'tool_name' in content or 'tool_input' in content or 'input' in content:
+                hook_result['issues'].append({
+                    'severity': 'warn',
+                    'check': 'json_parser',
+                    'message': 'Shell hook references tool data but does not use jq or python for JSON parsing.',
+                })
+
+        # Check: registered in settings.json
+        is_registered = False
+        for cmd in registered_commands:
+            if hook_path.name in cmd or str(hook_path) in cmd:
+                is_registered = True
+                break
+        if not is_registered:
+            hook_result['issues'].append({
+                'severity': 'warn',
+                'check': 'registration',
+                'message': f'Not registered in {settings_path}. Hook will not fire.',
+            })
+
+        results.append(hook_result)
+
+    # 3. Check settings references point to existing files
+    for cmd in registered_commands:
+        # Extract file path from command (first token or path-like segment)
+        parts = cmd.split()
+        for part in parts:
+            if '/' in part and not part.startswith('-'):
+                if not Path(part).exists():
+                    settings_issues.append({
+                        'severity': 'error',
+                        'message': f'settings.json references missing file: {part}',
+                    })
+                break
+
+    # Summary
+    total_errors = sum(
+        1 for h in results for i in h['issues'] if i['severity'] == 'error'
+    )
+    total_warnings = sum(
+        1 for h in results for i in h['issues'] if i['severity'] == 'warn'
+    )
+    ok_hooks = sum(1 for h in results if not h['issues'])
+
+    return {
+        'hooks': results,
+        'settings_issues': settings_issues,
+        'summary': {
+            'total': len(results),
+            'ok': ok_hooks,
+            'warnings': total_warnings,
+            'errors': total_errors,
+        },
+    }
+
+
+def format_verify_report(result):
+    """Format verification results as a readable report."""
+    lines = []
+    summary = result['summary']
+
+    lines.append(f"Hook Health Check: {summary['total']} hook(s) scanned\n")
+
+    for hook in result['hooks']:
+        has_errors = any(i['severity'] == 'error' for i in hook['issues'])
+        has_warnings = any(i['severity'] == 'warn' for i in hook['issues'])
+        if has_errors:
+            status = 'FAIL'
+        elif has_warnings:
+            status = 'WARN'
+        else:
+            status = 'OK'
+
+        lines.append(f"  [{status:>4}]  {hook['name']}")
+
+        for issue in hook['issues']:
+            marker = 'ERR ' if issue['severity'] == 'error' else 'WARN'
+            lines.append(f"         [{marker}] {issue['message']}")
+            if 'details' in issue:
+                for d in issue['details'][:3]:  # Show max 3 examples
+                    lines.append(f"                L{d['line']}: {d['context']}")
+
+    # Settings issues
+    if result['settings_issues']:
+        lines.append(f"\nSettings issues:")
+        for si in result['settings_issues']:
+            lines.append(f"  [{si['severity'].upper():>4}]  {si['message']}")
+
+    # Summary
+    lines.append(f"\nSummary: {summary['ok']} ok, {summary['warnings']} warning(s), {summary['errors']} error(s)")
+
+    if summary['errors'] > 0:
+        lines.append("\nMost common fix: replace .input.X with .tool_input.X in hook scripts.")
+        lines.append("See: https://github.com/anthropics/claude-code/issues/32163")
+
+    return '\n'.join(lines)
+
+
 # --- Output Formatting ---
 
 def format_scan_table(enforceable, skipped):
@@ -3423,6 +3708,144 @@ rm -rf /tmp/test
         }))
         check("armor bash-guard: ignores non-Bash tools", out, '')
 
+    # --- Verify (hook health-check) tests ---
+
+    # Create test hooks in temp dir
+    verify_dir = os.path.join(td, 'verify-hooks')
+    os.makedirs(verify_dir)
+    verify_settings = os.path.join(td, 'verify-settings.json')
+
+    # Bad hook: uses .input.command (wrong field name)
+    bad_hook = os.path.join(verify_dir, 'bad-hook.sh')
+    with open(bad_hook, 'w') as f:
+        f.write('#!/bin/bash\nINPUT=$(cat)\n')
+        f.write('COMMAND=$(echo "$INPUT" | jq -r \'.input.command // empty\')\n')
+        f.write('if [ -z "$COMMAND" ]; then\n  exit 0\nfi\n')
+    os.chmod(bad_hook, 0o755)
+
+    # Good hook: uses .tool_input.command (correct)
+    good_hook = os.path.join(verify_dir, 'good-hook.sh')
+    with open(good_hook, 'w') as f:
+        f.write('#!/bin/bash\nINPUT=$(cat)\n')
+        f.write('COMMAND=$(echo "$INPUT" | jq -r \'.tool_input.command // empty\')\n')
+        f.write('if [ -z "$COMMAND" ]; then\n  exit 0\nfi\n')
+    os.chmod(good_hook, 0o755)
+
+    # Non-executable hook
+    noexec_hook = os.path.join(verify_dir, 'noexec-hook.sh')
+    with open(noexec_hook, 'w') as f:
+        f.write('#!/bin/bash\necho "not executable"\n')
+    os.chmod(noexec_hook, 0o644)
+
+    # Python hook with wrong field (dict-style)
+    py_bad_hook = os.path.join(verify_dir, 'py-bad-hook.py')
+    with open(py_bad_hook, 'w') as f:
+        f.write('#!/usr/bin/env python3\n')
+        f.write('import json, sys\n')
+        f.write('data = json.loads(sys.stdin.read())\n')
+        f.write('cmd = data.get("input", {}).get("command", "")\n')
+    os.chmod(py_bad_hook, 0o755)
+
+    # Python hook with correct field
+    py_good_hook = os.path.join(verify_dir, 'py-good-hook.py')
+    with open(py_good_hook, 'w') as f:
+        f.write('#!/usr/bin/env python3\n')
+        f.write('import json, sys\n')
+        f.write('data = json.loads(sys.stdin.read())\n')
+        f.write('cmd = data.get("tool_input", {}).get("command", "")\n')
+    os.chmod(py_good_hook, 0o755)
+
+    # No-shebang hook
+    noshebang = os.path.join(verify_dir, 'noshebang.sh')
+    with open(noshebang, 'w') as f:
+        f.write('INPUT=$(cat)\necho "$INPUT"\n')
+    os.chmod(noshebang, 0o755)
+
+    # Settings with registered + missing hooks
+    with open(verify_settings, 'w') as f:
+        json.dump({
+            'hooks': {
+                'PreToolUse': [{
+                    'hooks': [
+                        {'command': bad_hook},
+                        {'command': good_hook},
+                        {'command': os.path.join(verify_dir, 'ghost-hook.sh')},
+                    ]
+                }]
+            }
+        }, f)
+
+    result = verify_hooks(verify_dir, verify_settings)
+
+    # Summary checks
+    check("verify: found all hooks", result['summary']['total'], 6)
+    check("verify: has errors", result['summary']['errors'] > 0, True)
+    check("verify: has warnings", result['summary']['warnings'] > 0, True)
+
+    # Bad hook: should have field_name error + fail_open error
+    bad = [h for h in result['hooks'] if h['name'] == 'bad-hook.sh'][0]
+    bad_checks = [i['check'] for i in bad['issues']]
+    check("verify: bad-hook has field_name error", 'field_name' in bad_checks, True)
+    check("verify: bad-hook has fail_open error", 'fail_open' in bad_checks, True)
+    bad_severities = [i['severity'] for i in bad['issues'] if i['check'] == 'field_name']
+    check("verify: field_name is error severity", bad_severities[0] if bad_severities else '', 'error')
+
+    # Good hook: should have no field_name error
+    good = [h for h in result['hooks'] if h['name'] == 'good-hook.sh'][0]
+    good_checks = [i['check'] for i in good['issues']]
+    check("verify: good-hook has no field_name error", 'field_name' in good_checks, False)
+    good_info_checks = [i['check'] for i in good['info']]
+    check("verify: good-hook has field_name info", 'field_name' in good_info_checks, True)
+
+    # Non-executable hook: should have executable error
+    noexec = [h for h in result['hooks'] if h['name'] == 'noexec-hook.sh'][0]
+    noexec_checks = [i['check'] for i in noexec['issues']]
+    check("verify: noexec-hook has executable error", 'executable' in noexec_checks, True)
+
+    # Python bad hook: should detect wrong field
+    pybad = [h for h in result['hooks'] if h['name'] == 'py-bad-hook.py'][0]
+    pybad_checks = [i['check'] for i in pybad['issues']]
+    check("verify: py-bad-hook has field_name error", 'field_name' in pybad_checks, True)
+
+    # Python good hook: should be clean
+    pygood = [h for h in result['hooks'] if h['name'] == 'py-good-hook.py'][0]
+    pygood_checks = [i['check'] for i in pygood['issues']]
+    check("verify: py-good-hook has no field_name error", 'field_name' in pygood_checks, False)
+
+    # No-shebang hook: should have shebang warning
+    nosheb = [h for h in result['hooks'] if h['name'] == 'noshebang.sh'][0]
+    nosheb_checks = [i['check'] for i in nosheb['issues']]
+    check("verify: noshebang has shebang warning", 'shebang' in nosheb_checks, True)
+
+    # Unregistered hooks: noexec and noshebang should have registration warning
+    noexec_reg = [i for i in noexec['issues'] if i['check'] == 'registration']
+    check("verify: noexec-hook has registration warning", len(noexec_reg) > 0, True)
+
+    # Settings: missing hook reference
+    settings_errs = [s for s in result['settings_issues'] if 'ghost-hook' in s.get('message', '')]
+    check("verify: detects missing hook reference in settings", len(settings_errs) > 0, True)
+
+    # Format report
+    report = format_verify_report(result)
+    check("verify: report contains FAIL", 'FAIL' in report, True)
+    check("verify: report contains .tool_input", 'tool_input' in report, True)
+    check("verify: report contains summary line", 'Summary:' in report, True)
+
+    # JSON output
+    json_out = json.dumps(result, indent=2, default=str)
+    parsed = json.loads(json_out)
+    check("verify: JSON roundtrips", parsed['summary']['total'], 6)
+
+    # --- Verify: empty hooks dir ---
+    empty_dir = os.path.join(td, 'empty-hooks')
+    os.makedirs(empty_dir)
+    empty_result = verify_hooks(empty_dir, os.path.join(td, 'nonexistent-settings.json'))
+    check("verify: empty dir has 0 hooks", empty_result['summary']['total'], 0)
+
+    # --- Verify: nonexistent dir ---
+    missing_result = verify_hooks(os.path.join(td, 'no-such-dir'), verify_settings)
+    check("verify: missing dir returns info", len(missing_result['settings_issues']) > 0, True)
+
     print(f"\n{passed} passed, {failed} failed")
     return failed == 0
 
@@ -3456,6 +3879,8 @@ def main():
   %(prog)s --audit                    Audit rules vs installed hooks
   %(prog)s --audit --strict            CI gate: exit 1 if any rules unenforced
   %(prog)s --armor                    Protect hooks from being deleted/modified
+  %(prog)s --verify                   Health-check installed hooks for correctness
+  %(prog)s --verify --strict          CI gate: exit 1 if any hooks have errors
   %(prog)s --evaluate                 PreToolUse mode (reads stdin, outputs decision)
   %(prog)s --test                     Run self-tests
 ''',
@@ -3477,6 +3902,8 @@ def main():
                         help='With --audit: exit 1 if any @enforced rules lack hooks (CI gate)')
     parser.add_argument('--armor', action='store_true',
                         help='Install self-protection: hooks that guard .claude/hooks/ from modification')
+    parser.add_argument('--verify', action='store_true',
+                        help='Health-check installed hooks for correctness (wrong field names, permissions, fail-open)')
     parser.add_argument('--test', action='store_true', help='Run self-tests')
     args = parser.parse_args()
 
@@ -3484,8 +3911,30 @@ def main():
         success = run_tests()
         sys.exit(0 if success else 1)
 
-    if not any([args.scan, args.generate, args.install, args.evaluate, args.install_plugin, args.audit, args.armor]):
+    if not any([args.scan, args.generate, args.install, args.evaluate, args.install_plugin, args.audit, args.armor, args.verify]):
         args.scan = True  # Default to scan
+
+    if args.verify:
+        hooks_dir = args.hooks_dir
+        settings = args.settings
+        if args.file and os.path.exists(args.file):
+            project_root = str(Path(args.file).resolve().parent)
+            if hooks_dir == '.claude/hooks':
+                hooks_dir = os.path.join(project_root, '.claude', 'hooks')
+            if settings == '.claude/settings.json':
+                settings = os.path.join(project_root, '.claude', 'settings.json')
+        result = verify_hooks(hooks_dir, settings)
+        if args.json:
+            print(json.dumps(result, indent=2, default=str))
+        else:
+            print(format_verify_report(result))
+        if args.strict:
+            if result['summary']['errors'] > 0:
+                print(f"\n--strict: FAIL ({result['summary']['errors']} error(s))")
+                sys.exit(1)
+            else:
+                print("\n--strict: PASS (all hooks healthy)")
+        return
 
     if args.armor:
         hooks_dir = args.hooks_dir
