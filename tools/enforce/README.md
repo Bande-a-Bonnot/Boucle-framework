@@ -286,6 +286,8 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **Windows: hooks run via `/usr/bin/bash` regardless of shell setting.** On Windows, Claude Code [routes all hook commands through `/usr/bin/bash`](https://github.com/anthropics/claude-code/issues/32930) even when a different shell is configured. Bash-based hooks work if Git Bash is installed (it provides `/usr/bin/bash`), but PowerShell hooks are not supported yet.
 
+**Hook deny is not enforced for MCP tool calls.** PreToolUse hooks fire correctly for MCP server tools, but [`permissionDecision: "deny"` is silently ignored](https://github.com/anthropics/claude-code/issues/33106) -- the MCP tool call proceeds anyway. This means hooks cannot block MCP tools. This is a platform bug, not an enforce-hooks limitation. Workaround: block the MCP server name in managed-settings.json `disallowedTools` instead.
+
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
 ## Tests
