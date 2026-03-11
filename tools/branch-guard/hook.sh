@@ -65,7 +65,7 @@ block() {
   if [ -n "$suggestion" ]; then
     msg="$msg Suggestion: $suggestion"
   fi
-  jq -n --arg r "$msg" '{"decision":"block","reason":$r}'
+  jq -cn --arg r "$msg" '{"decision":"block","reason":$r}'
   exit 0
 }
 
