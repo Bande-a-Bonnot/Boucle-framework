@@ -1,12 +1,14 @@
 # file-guard
 
-A [Claude Code hook](https://docs.anthropic.com/en/docs/claude-code/hooks) that protects specified files and directories from being modified.
+A [Claude Code hook](https://docs.anthropic.com/en/docs/claude-code/hooks) that protects specified files and directories from being accessed or modified.
 
-When Claude tries to write, edit, or run commands that would modify protected files, this hook blocks the operation and explains why.
+Two protection levels:
+- **Write protection** (default): Claude can read protected files but cannot modify them.
+- **Access denial** (`[deny]` section): Claude cannot read, search, or modify denied files at all.
 
 ## Why
 
-AI coding assistants are powerful — but sometimes too powerful. You might not want Claude modifying your `.env`, overwriting your SSH keys, or touching production configs. `file-guard` lets you define exactly which files are off-limits.
+AI coding assistants are powerful — but sometimes too powerful. You might not want Claude modifying your `.env`, overwriting your SSH keys, or touching production configs. And sometimes you need to block access entirely: codegen output, large generated files, or data that Claude should never read. `file-guard` handles both.
 
 ## Install
 
@@ -76,15 +78,29 @@ The `.file-guard` file lists protected paths, one per line:
 | `credentials.*` | `credentials.json`, `credentials.yaml`, etc. |
 | `secrets/` | Everything under `secrets/` (trailing slash = directory) |
 | `# comment` | Ignored (comments and blank lines) |
+| `[deny]` | Section header: everything below is access-denied |
+| `[write]` | Section header: switch back to write-protect mode |
 
 ## What it protects against
+
+### Write-protect mode (default)
 
 | Tool | Detection |
 |------|-----------|
 | **Write** | Checks `file_path` against protected patterns |
 | **Edit** | Checks `file_path` against protected patterns |
 | **Bash** | Detects modifying commands (`rm`, `mv`, `>`, `>>`, etc.) targeting protected paths |
-| **Read, Grep, etc.** | Not intercepted (read-only operations are safe) |
+| **Read, Grep, Glob** | Allowed (read-only operations are safe for write-protected files) |
+
+### Access denial mode (`[deny]` section)
+
+| Tool | Detection |
+|------|-----------|
+| **Read** | Checks `file_path` against denied patterns |
+| **Grep** | Checks search `path` against denied patterns |
+| **Glob** | Checks search `path` against denied patterns |
+| **Write/Edit** | Checks `file_path` against denied patterns |
+| **Bash** | Blocks any command referencing denied paths (read or write) |
 
 ## Environment variables
 
@@ -98,7 +114,8 @@ The `.file-guard` file lists protected paths, one per line:
 
 ```
 # .file-guard
-# Secrets
+
+# Write-protected: Claude can read these but not modify them
 .env
 .env.*
 *.pem
@@ -111,13 +128,21 @@ terraform.tfstate
 
 # Production configs
 config/production/
+
+# Access denied: Claude cannot read, search, or modify these at all
+[deny]
+codegen/
+generated/
+*.generated.ts
 ```
 
-With this config, if Claude tries to write to `.env`:
+With this config, Claude can `cat .env` to check config format, but cannot modify it. If Claude tries to read anything under `codegen/`:
 
 ```
-file-guard: '.env' is protected (matches pattern '.env'). Check .file-guard config to modify protections.
+file-guard: reading "codegen/models.ts" is denied (matches [deny] pattern "codegen/"). Check .file-guard config.
 ```
+
+This blocks Read, Grep, Glob, Write, Edit, and Bash access to denied paths. Useful for large generated codebases where Claude should use an MCP server instead of reading files directly.
 
 ## Pairs well with
 
@@ -127,7 +152,7 @@ file-guard: '.env' is protected (matches pattern '.env'). Check .file-guard conf
 ## Testing
 
 ```bash
-bash test.sh       # hook tests (37 assertions)
+bash test.sh       # hook tests (86 assertions)
 bash test-init.sh  # init scanner tests (33 assertions)
 ```
 
