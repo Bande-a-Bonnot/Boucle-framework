@@ -146,6 +146,8 @@ enforce-hooks.py [CLAUDE.md] [options]
   --audit --strict    CI gate: exit 1 if any @enforced rules lack hooks
   --verify            Health-check installed hooks for correctness
   --verify --strict   CI gate: exit 1 if any hooks have errors
+  --smoke-test        Execute hooks with test payloads, verify responses
+  --smoke-test --strict  CI gate: exit 1 if any hooks fail at runtime
   --armor             Install self-protection hooks (no CLAUDE.md needed)
   --evaluate          PreToolUse mode: read tool call from stdin, output decision
   --json              Output as JSON (with --scan, --audit, or --verify)
@@ -260,6 +262,50 @@ python3 enforce-hooks.py --verify --strict
 ```
 
 **Why this exists:** Four of our own hooks shipped with `.input.X` instead of `.tool_input.X` and silently failed open for weeks. They never blocked anything. A user ([chris-peterson](https://github.com/chris-peterson)) found the bug in [PR #2](https://github.com/Bande-a-Bonnot/Boucle-framework/pull/2). This tool catches that class of issue before users get burned.
+
+## Smoke Test (`--smoke-test`)
+
+`--verify` checks hooks statically (file permissions, field names, code patterns). `--smoke-test` goes further: it actually runs each hook with test payloads and checks the output.
+
+```sh
+python3 enforce-hooks.py --smoke-test
+```
+
+Example output:
+```
+Smoke Test: 3 hook(s) tested
+
+  [PASS]  enforce-pretooluse.sh  (PreToolUse)
+         [  OK] Read a normal file  -> allow
+         [  OK] Write to a temp file  -> allow
+         [  OK] Run a safe Bash command  -> allow
+  [FAIL]  my-custom-hook.sh  (PreToolUse)
+         [ ERR] Read a normal file  -- No output (hook is fail-open: empty stdout = allow)
+         [ ERR] Write to a temp file  -- No output (hook is fail-open: empty stdout = allow)
+         [ ERR] Run a safe Bash command  -- No output (hook is fail-open: empty stdout = allow)
+  [PASS]  file-guard-hook.sh  (PreToolUse)
+         [  OK] Read a normal file  -> allow
+         [  OK] Write to a temp file  -> allow
+         [  OK] Run a safe Bash command  -> allow
+         [  OK] Write to .env  -> block
+
+Summary: 2 passed, 0 warning(s), 1 failed
+```
+
+**What it catches that `--verify` does not:**
+- Hooks that crash at runtime (syntax errors, missing dependencies)
+- Hooks that produce no output (silent fail-open)
+- Hooks that output invalid JSON
+- Hooks that block benign operations (false positives)
+- Hooks that allow operations they should block (fail-open despite correct code)
+
+Use `--smoke-test --strict` as a CI gate (exits 1 on failures):
+
+```sh
+python3 enforce-hooks.py --smoke-test --strict
+```
+
+**Why this exists:** Both of our first two external contributors found hooks that passed static analysis but failed at runtime. [Issue #1](https://github.com/Bande-a-Bonnot/Boucle-framework/issues/1) was a format bug, [PR #2](https://github.com/Bande-a-Bonnot/Boucle-framework/pull/2) was a wrong field name. In both cases, `--verify` would have caught them, but `--smoke-test` catches an even broader class: anything that makes a hook fail to respond correctly when actually executed.
 
 ## Armor Mode
 
