@@ -1,14 +1,16 @@
 #!/bin/bash
 # file-guard: PreToolUse hook for Claude Code
-# Protects specified files and directories from being modified.
+# Protects specified files and directories from being accessed or modified.
 #
-# When Claude tries to write, edit, or run commands that would modify
-# protected files, this hook blocks the operation and explains why.
+# Two protection levels:
+#   - Write protection (default): blocks Write, Edit, and modifying Bash commands
+#   - Access denial ([deny] section): blocks Read, Grep, Glob, and all Bash access
 #
 # Protects against:
-#   - Write tool targeting protected paths
-#   - Edit tool targeting protected paths
-#   - Bash commands containing protected paths with modifying operators
+#   - Write/Edit tool targeting protected paths
+#   - Read tool targeting denied paths
+#   - Grep/Glob searching denied paths
+#   - Bash commands containing protected/denied paths
 #
 # Install:
 #   1. Copy hook.sh to your project (or use the installer)
@@ -22,6 +24,17 @@
 #   - Directory prefixes (trailing /): config/, .ssh/
 #   - Shell globs: *.pem, credentials.*
 #   - Comments (#) and blank lines ignored
+#   - [deny] section header: blocks ALL access (reads too)
+#
+# Example .file-guard:
+#   # Write-protected (Claude can read but not modify)
+#   .env
+#   secrets/*.key
+#
+#   # Deny all access (Claude cannot read, search, or modify)
+#   [deny]
+#   codegen/
+#   generated/
 #
 # Env vars:
 #   FILE_GUARD_CONFIG=path    Override config file location (default: .file-guard)
@@ -40,12 +53,6 @@ INPUT=$(cat)
 
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
 
-# Only intercept tools that can modify files
-case "$TOOL_NAME" in
-  Write|Edit|Bash) ;;
-  *) exit 0 ;;
-esac
-
 # Find config file
 CONFIG="${FILE_GUARD_CONFIG:-.file-guard}"
 if [ ! -f "$CONFIG" ]; then
@@ -53,19 +60,52 @@ if [ ! -f "$CONFIG" ]; then
   exit 0
 fi
 
-# Parse protected patterns from config
-PATTERNS=()
+# Parse protected patterns from config (two sections)
+WRITE_PATTERNS=()
+DENY_PATTERNS=()
+CURRENT_SECTION="write"
+
 while IFS= read -r line; do
   # Skip comments and blank lines
   line=$(echo "$line" | sed 's/#.*//' | xargs)
   [ -z "$line" ] && continue
-  PATTERNS+=("$line")
+
+  # Section headers
+  if [[ "$line" == "[deny]" ]]; then
+    CURRENT_SECTION="deny"
+    continue
+  fi
+  if [[ "$line" == "[write]" ]] || [[ "$line" == "[protect]" ]]; then
+    CURRENT_SECTION="write"
+    continue
+  fi
+
+  case "$CURRENT_SECTION" in
+    write) WRITE_PATTERNS+=("$line") ;;
+    deny) DENY_PATTERNS+=("$line") ;;
+  esac
 done < "$CONFIG"
 
 # Nothing to protect
-if [ ${#PATTERNS[@]} -eq 0 ]; then
+if [ ${#WRITE_PATTERNS[@]} -eq 0 ] && [ ${#DENY_PATTERNS[@]} -eq 0 ]; then
   exit 0
 fi
+
+# Determine which tools to intercept
+case "$TOOL_NAME" in
+  Write|Edit|Bash)
+    # Always check (write protection + deny)
+    ;;
+  Read|Grep|Glob)
+    # Only check if deny patterns exist
+    if [ ${#DENY_PATTERNS[@]} -eq 0 ]; then
+      exit 0
+    fi
+    ;;
+  *)
+    exit 0
+    ;;
+esac
 
 log() {
   if [ "${FILE_GUARD_LOG:-0}" = "1" ]; then
@@ -105,8 +145,7 @@ normalize_path() {
           local last="${result[$((len-1))]}"
           if [ "$last" != ".." ]; then
             unset "result[$((len-1))]"
-            # Re-index: bash 3.2 leaves gaps after unset; empty
-            # arrays are "unbound" under set -u, so guard the expansion
+            # Re-index: bash 3.2 leaves gaps after unset
             if [ ${#result[@]} -gt 0 ]; then
               result=("${result[@]}")
             else
@@ -132,14 +171,17 @@ normalize_path() {
   echo "$p"
 }
 
-# Check if a path matches any protected pattern
-matches_protected() {
+# Check if a path matches any pattern in a list
+# Usage: matches_any "target/path" "pattern1" "pattern2" ...
+# Outputs the matched pattern on stdout (return 0), or returns 1
+matches_any() {
   local target="$1"
+  shift
 
-  # Normalize target to prevent traversal bypass (../,./ etc)
+  # Normalize target to prevent traversal bypass
   target=$(normalize_path "$target")
 
-  for pattern in "${PATTERNS[@]}"; do
+  for pattern in "$@"; do
     # Normalize pattern too
     pattern="${pattern#./}"
 
@@ -180,9 +222,9 @@ matches_protected() {
   return 1
 }
 
-# Extract target path based on tool
+# Extract target path based on tool and check against patterns
 case "$TOOL_NAME" in
-  Write)
+  Write|Edit)
     TARGET=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
     if [ -z "$TARGET" ]; then
       exit 0
@@ -190,24 +232,68 @@ case "$TOOL_NAME" in
 
     TARGET=$(normalize_path "$TARGET")
 
-    if matched=$(matches_protected "$TARGET"); then
+    # Check deny patterns first (blocks all access)
+    if [ ${#DENY_PATTERNS[@]} -gt 0 ]; then
+      if matched=$(matches_any "$TARGET" "${DENY_PATTERNS[@]}"); then
+        jq -cn --arg t "$TARGET" --arg p "$matched" \
+          '{"decision":"block","reason":("file-guard: access to \"" + $t + "\" is denied (matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}'
+        exit 0
+      fi
+    fi
+
+    # Check write-protect patterns
+    if [ ${#WRITE_PATTERNS[@]} -gt 0 ]; then
+      if matched=$(matches_any "$TARGET" "${WRITE_PATTERNS[@]}"); then
+        jq -cn --arg t "$TARGET" --arg p "$matched" \
+          '{"decision":"block","reason":("file-guard: \"" + $t + "\" is protected (matches pattern \"" + $p + "\"). Check .file-guard config to modify protections.")}'
+        exit 0
+      fi
+    fi
+    ;;
+
+  Read)
+    TARGET=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+    if [ -z "$TARGET" ]; then
+      exit 0
+    fi
+
+    TARGET=$(normalize_path "$TARGET")
+
+    # Only deny patterns block reads (write-protect allows reading)
+    if matched=$(matches_any "$TARGET" "${DENY_PATTERNS[@]}"); then
       jq -cn --arg t "$TARGET" --arg p "$matched" \
-        '{"decision":"block","reason":("file-guard: \"" + $t + "\" is protected (matches pattern \"" + $p + "\"). Check .file-guard config to modify protections.")}'
+        '{"decision":"block","reason":("file-guard: reading \"" + $t + "\" is denied (matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}'
       exit 0
     fi
     ;;
 
-  Edit)
-    TARGET=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+  Grep)
+    TARGET=$(echo "$INPUT" | jq -r '.tool_input.path // empty')
+    if [ -z "$TARGET" ]; then
+      # No explicit path = searching cwd, don't block
+      exit 0
+    fi
+
+    TARGET=$(normalize_path "$TARGET")
+
+    if matched=$(matches_any "$TARGET" "${DENY_PATTERNS[@]}"); then
+      jq -cn --arg t "$TARGET" --arg p "$matched" \
+        '{"decision":"block","reason":("file-guard: searching \"" + $t + "\" is denied (matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}'
+      exit 0
+    fi
+    ;;
+
+  Glob)
+    TARGET=$(echo "$INPUT" | jq -r '.tool_input.path // empty')
     if [ -z "$TARGET" ]; then
       exit 0
     fi
 
     TARGET=$(normalize_path "$TARGET")
 
-    if matched=$(matches_protected "$TARGET"); then
+    if matched=$(matches_any "$TARGET" "${DENY_PATTERNS[@]}"); then
       jq -cn --arg t "$TARGET" --arg p "$matched" \
-        '{"decision":"block","reason":("file-guard: \"" + $t + "\" is protected (matches pattern \"" + $p + "\"). Check .file-guard config to modify protections.")}'
+        '{"decision":"block","reason":("file-guard: listing \"" + $t + "\" is denied (matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}'
       exit 0
     fi
     ;;
@@ -218,23 +304,41 @@ case "$TOOL_NAME" in
       exit 0
     fi
 
-    # Check each protected pattern against the command
-    # We look for modifying operators near protected paths
-    # This catches: rm file, mv file, > file, >> file, cp X file, etc.
+    # Check deny patterns: ANY reference to denied paths blocks the command
+    for pattern in "${DENY_PATTERNS[@]+"${DENY_PATTERNS[@]}"}"; do
+      pattern="${pattern#./}"
+
+      if [[ "$pattern" == */ ]]; then
+        # Directory pattern: check if dir name appears in command
+        dir="${pattern%/}"
+        if echo "$COMMAND" | grep -qF "$dir" 2>/dev/null; then
+          log "BASH DENY: command references denied directory '$pattern'"
+          jq -cn --arg p "$pattern" \
+            '{"decision":"block","reason":("file-guard: command references denied path \"" + $p + "\" (matches [deny] in .file-guard). Check .file-guard config.")}'
+          exit 0
+        fi
+      else
+        # File pattern: check if it appears in command
+        if echo "$COMMAND" | grep -qF "$pattern" 2>/dev/null; then
+          log "BASH DENY: command references denied file '$pattern'"
+          jq -cn --arg p "$pattern" \
+            '{"decision":"block","reason":("file-guard: command references denied path \"" + $p + "\" (matches [deny] in .file-guard). Check .file-guard config.")}'
+          exit 0
+        fi
+      fi
+    done
+
+    # Check write-protect patterns: only modifying operations (existing behavior)
     MODIFY_PATTERNS='(rm|mv|cp|chmod|chown|truncate|shred)\s|>\s*|>>'
 
-    for pattern in "${PATTERNS[@]}"; do
+    for pattern in "${WRITE_PATTERNS[@]+"${WRITE_PATTERNS[@]}"}"; do
       pattern="${pattern#./}"
 
       # Skip directory patterns for bash check (too many false positives)
       [[ "$pattern" == */ ]] && continue
 
-      # Check if the pattern appears in the command near a modifying operator
-      # Simple heuristic: if the command contains both a modify operator AND
-      # a protected filename, flag it
+      # Check if the command contains both a modify operator AND a protected filename
       if echo "$COMMAND" | grep -qE "$MODIFY_PATTERNS" 2>/dev/null; then
-        # Check if the protected path/glob appears in the command
-        # For exact filenames
         if echo "$COMMAND" | grep -qF "$pattern" 2>/dev/null; then
           log "BASH MATCH: command contains modifier + pattern '$pattern'"
           jq -cn --arg p "$pattern" \

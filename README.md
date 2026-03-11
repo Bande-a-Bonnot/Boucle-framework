@@ -33,13 +33,13 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Saves ~2000 tokens per prevented re-read. Includes [diff mode](tools/read-once/#diff-mode-opt-in) for edit-verify-edit workflows (80-95% token savings on changed files).
 
-### [file-guard](tools/file-guard/) — Protect files from AI modification
+### [file-guard](tools/file-guard/) — Protect files from AI access or modification
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/file-guard/install.sh | bash
 ```
 
-Define protected files in `.file-guard` (one pattern per line). Blocks writes, edits, and destructive bash commands targeting `.env`, `*.pem`, `secrets/`, or any pattern you specify. 42 tests.
+Define protected files in `.file-guard` (one pattern per line). Two modes: **write-protect** (default) blocks writes, edits, and destructive bash commands. **`[deny]`** blocks all access including Read, Grep, and Glob, useful for large codegen directories where Claude should use an MCP server instead of reading files directly. 86 tests.
 
 ### [git-safe](tools/git-safe/) — Prevent destructive git operations
 

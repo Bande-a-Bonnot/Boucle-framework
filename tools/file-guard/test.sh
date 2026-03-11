@@ -136,7 +136,7 @@ assert_blocked "Bash with redirect to .env is blocked" \
 assert_blocked "Bash mv secrets.json is blocked" \
   '{"tool_name":"Bash","tool_input":{"command":"mv secrets.json /tmp/"}}'
 
-assert_allowed "Bash cat .env is allowed (read-only)" \
+assert_allowed "Bash cat .env is allowed (read-only, write-protect mode)" \
   '{"tool_name":"Bash","tool_input":{"command":"cat .env"}}'
 
 assert_allowed "Bash git status is allowed" \
@@ -174,18 +174,21 @@ assert_blocked "Config with comments: secrets.json still blocked" \
 assert_allowed "Config with comments: readme.md still allowed" \
   '{"tool_name":"Write","tool_input":{"file_path":"readme.md","content":"x"}}'
 
-# --- Test: Non-intercepted tools ---
+# --- Test: Non-intercepted tools (write-protect only, no [deny]) ---
 echo ""
-echo "--- Non-intercepted tools ---"
+echo "--- Non-intercepted tools (write-protect only) ---"
 cat > "$CONFIG" <<'EOF'
 .env
 EOF
 
-assert_allowed "Read tool is not intercepted" \
+assert_allowed "Read tool is not intercepted (write-protect mode)" \
   '{"tool_name":"Read","tool_input":{"file_path":".env"}}'
 
-assert_allowed "Grep tool is not intercepted" \
+assert_allowed "Grep tool is not intercepted (write-protect mode)" \
   '{"tool_name":"Grep","tool_input":{"pattern":"SECRET","path":".env"}}'
+
+assert_allowed "Glob tool is not intercepted (write-protect mode)" \
+  '{"tool_name":"Glob","tool_input":{"pattern":"*.env","path":"."}}'
 
 # --- Test: Disabled mode ---
 echo ""
@@ -292,6 +295,263 @@ else
   FAIL=$((FAIL + 1))
   echo "  FAIL: Block reason missing hook name"
 fi
+
+# ==============================================================================
+# [deny] section tests — blocks ALL access (read + write + search)
+# ==============================================================================
+echo ""
+echo "=== [deny] section tests ==="
+
+# --- Test: [deny] blocks Read ---
+echo ""
+echo "--- [deny] blocks Read ---"
+cat > "$CONFIG" <<'EOF'
+[deny]
+codegen/
+generated/
+secret-data.bin
+EOF
+
+assert_blocked "Read from denied directory is blocked" \
+  '{"tool_name":"Read","tool_input":{"file_path":"codegen/models.ts"}}'
+
+assert_blocked "Read from denied file is blocked" \
+  '{"tool_name":"Read","tool_input":{"file_path":"secret-data.bin"}}'
+
+assert_blocked "Read from nested denied path is blocked" \
+  '{"tool_name":"Read","tool_input":{"file_path":"codegen/deep/nested/file.ts"}}'
+
+assert_allowed "Read from non-denied path is allowed" \
+  '{"tool_name":"Read","tool_input":{"file_path":"src/main.ts"}}'
+
+assert_allowed "Read from similarly-named path is allowed" \
+  '{"tool_name":"Read","tool_input":{"file_path":"my-codegen-notes.md"}}'
+
+# --- Test: [deny] blocks Grep ---
+echo ""
+echo "--- [deny] blocks Grep ---"
+cat > "$CONFIG" <<'EOF'
+[deny]
+codegen/
+EOF
+
+assert_blocked "Grep in denied directory is blocked" \
+  '{"tool_name":"Grep","tool_input":{"pattern":"import","path":"codegen/"}}'
+
+assert_blocked "Grep targeting denied subpath is blocked" \
+  '{"tool_name":"Grep","tool_input":{"pattern":"class","path":"codegen/models"}}'
+
+assert_allowed "Grep in allowed directory is allowed" \
+  '{"tool_name":"Grep","tool_input":{"pattern":"import","path":"src/"}}'
+
+assert_allowed "Grep without path is allowed (searches cwd)" \
+  '{"tool_name":"Grep","tool_input":{"pattern":"import"}}'
+
+# --- Test: [deny] blocks Glob ---
+echo ""
+echo "--- [deny] blocks Glob ---"
+cat > "$CONFIG" <<'EOF'
+[deny]
+codegen/
+generated/
+EOF
+
+assert_blocked "Glob in denied directory is blocked" \
+  '{"tool_name":"Glob","tool_input":{"pattern":"**/*.ts","path":"codegen/"}}'
+
+assert_blocked "Glob in denied directory (no trailing slash) is blocked" \
+  '{"tool_name":"Glob","tool_input":{"pattern":"*.js","path":"codegen"}}'
+
+assert_allowed "Glob in allowed directory is allowed" \
+  '{"tool_name":"Glob","tool_input":{"pattern":"**/*.ts","path":"src/"}}'
+
+assert_allowed "Glob without path is allowed" \
+  '{"tool_name":"Glob","tool_input":{"pattern":"**/*.ts"}}'
+
+# --- Test: [deny] also blocks Write/Edit ---
+echo ""
+echo "--- [deny] blocks Write/Edit too ---"
+cat > "$CONFIG" <<'EOF'
+[deny]
+codegen/
+EOF
+
+assert_blocked "Write to denied directory is blocked" \
+  '{"tool_name":"Write","tool_input":{"file_path":"codegen/output.ts","content":"x"}}'
+
+assert_blocked "Edit in denied directory is blocked" \
+  '{"tool_name":"Edit","tool_input":{"file_path":"codegen/models.ts","old_string":"a","new_string":"b"}}'
+
+# --- Test: [deny] blocks ALL Bash access (not just modifying) ---
+echo ""
+echo "--- [deny] blocks Bash read access ---"
+cat > "$CONFIG" <<'EOF'
+[deny]
+codegen/
+secret-data.bin
+EOF
+
+assert_blocked "Bash cat of denied file is blocked" \
+  '{"tool_name":"Bash","tool_input":{"command":"cat secret-data.bin"}}'
+
+assert_blocked "Bash grep in denied directory is blocked" \
+  '{"tool_name":"Bash","tool_input":{"command":"grep -r import codegen/"}}'
+
+assert_blocked "Bash head of denied file is blocked" \
+  '{"tool_name":"Bash","tool_input":{"command":"head -20 codegen/models.ts"}}'
+
+assert_blocked "Bash ls of denied directory is blocked" \
+  '{"tool_name":"Bash","tool_input":{"command":"ls codegen/"}}'
+
+assert_blocked "Bash find in denied directory is blocked" \
+  '{"tool_name":"Bash","tool_input":{"command":"find codegen/ -name *.ts"}}'
+
+assert_blocked "Bash python script reading denied file is blocked" \
+  '{"tool_name":"Bash","tool_input":{"command":"python3 -c \"open('"'"'codegen/models.ts'"'"').read()\""}}'
+
+assert_allowed "Bash git status is allowed" \
+  '{"tool_name":"Bash","tool_input":{"command":"git status"}}'
+
+assert_allowed "Bash command not referencing denied paths is allowed" \
+  '{"tool_name":"Bash","tool_input":{"command":"npm run build"}}'
+
+# --- Test: Mixed config (write-protect + deny) ---
+echo ""
+echo "--- Mixed config (write-protect + deny) ---"
+cat > "$CONFIG" <<'EOF'
+# Write-protected: Claude can read but not modify
+.env
+secrets/*.key
+
+# Access denied: Claude cannot access at all
+[deny]
+codegen/
+internal-data.bin
+EOF
+
+# Write-protect: read OK, write blocked
+assert_allowed "Read .env is allowed (write-protect only)" \
+  '{"tool_name":"Read","tool_input":{"file_path":".env"}}'
+
+assert_blocked "Write .env is blocked (write-protect)" \
+  '{"tool_name":"Write","tool_input":{"file_path":".env","content":"x"}}'
+
+assert_allowed "Bash cat .env is allowed (write-protect, read OK)" \
+  '{"tool_name":"Bash","tool_input":{"command":"cat .env"}}'
+
+assert_blocked "Bash rm .env is blocked (write-protect, modify blocked)" \
+  '{"tool_name":"Bash","tool_input":{"command":"rm .env"}}'
+
+# Deny: everything blocked
+assert_blocked "Read codegen/ is blocked (deny)" \
+  '{"tool_name":"Read","tool_input":{"file_path":"codegen/file.ts"}}'
+
+assert_blocked "Write codegen/ is blocked (deny)" \
+  '{"tool_name":"Write","tool_input":{"file_path":"codegen/file.ts","content":"x"}}'
+
+assert_blocked "Grep codegen/ is blocked (deny)" \
+  '{"tool_name":"Grep","tool_input":{"pattern":"import","path":"codegen/"}}'
+
+assert_blocked "Bash cat codegen/ is blocked (deny)" \
+  '{"tool_name":"Bash","tool_input":{"command":"cat codegen/file.ts"}}'
+
+# Unprotected: everything allowed
+assert_allowed "Read src/app.ts is allowed (not protected)" \
+  '{"tool_name":"Read","tool_input":{"file_path":"src/app.ts"}}'
+
+assert_allowed "Write src/app.ts is allowed (not protected)" \
+  '{"tool_name":"Write","tool_input":{"file_path":"src/app.ts","content":"x"}}'
+
+# --- Test: [deny] with glob patterns ---
+echo ""
+echo "--- [deny] with glob patterns ---"
+cat > "$CONFIG" <<'EOF'
+[deny]
+*.generated.ts
+*.codegen.js
+EOF
+
+assert_blocked "Read denied glob pattern is blocked" \
+  '{"tool_name":"Read","tool_input":{"file_path":"models.generated.ts"}}'
+
+assert_blocked "Read nested denied glob is blocked" \
+  '{"tool_name":"Read","tool_input":{"file_path":"src/api.generated.ts"}}'
+
+assert_allowed "Read non-matching file is allowed" \
+  '{"tool_name":"Read","tool_input":{"file_path":"src/manual.ts"}}'
+
+# --- Test: [deny] path traversal prevention ---
+echo ""
+echo "--- [deny] path traversal prevention ---"
+cat > "$CONFIG" <<'EOF'
+[deny]
+codegen/
+secret-data.bin
+EOF
+
+assert_blocked "Read traversal into denied dir is caught" \
+  '{"tool_name":"Read","tool_input":{"file_path":"src/../codegen/models.ts"}}'
+
+assert_blocked "Read traversal to denied file is caught" \
+  '{"tool_name":"Read","tool_input":{"file_path":"subdir/../secret-data.bin"}}'
+
+assert_blocked "Grep traversal into denied dir is caught" \
+  '{"tool_name":"Grep","tool_input":{"pattern":"class","path":"src/../codegen/"}}'
+
+# --- Test: [deny] JSON output validity ---
+echo ""
+echo "--- [deny] JSON output validity ---"
+cat > "$CONFIG" <<'EOF'
+[deny]
+codegen/
+EOF
+
+result=$(echo '{"tool_name":"Read","tool_input":{"file_path":"codegen/file.ts"}}' | bash "$HOOK" 2>/dev/null) || true
+TOTAL=$((TOTAL + 1))
+if echo "$result" | jq . >/dev/null 2>&1; then
+  PASS=$((PASS + 1))
+  echo "  PASS: [deny] block output is valid JSON"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: [deny] block output is not valid JSON: $result"
+fi
+
+TOTAL=$((TOTAL + 1))
+if echo "$result" | jq -e '.reason | test("denied")' >/dev/null 2>&1; then
+  PASS=$((PASS + 1))
+  echo "  PASS: [deny] block reason says 'denied'"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: [deny] block reason missing 'denied'"
+fi
+
+# --- Test: [write] section header resets to write mode ---
+echo ""
+echo "--- Section switching ---"
+cat > "$CONFIG" <<'EOF'
+.env
+
+[deny]
+codegen/
+
+[write]
+passwords.txt
+EOF
+
+assert_allowed "Read .env is allowed (write section)" \
+  '{"tool_name":"Read","tool_input":{"file_path":".env"}}'
+
+assert_blocked "Write .env is blocked (write section)" \
+  '{"tool_name":"Write","tool_input":{"file_path":".env","content":"x"}}'
+
+assert_blocked "Read codegen is blocked (deny section)" \
+  '{"tool_name":"Read","tool_input":{"file_path":"codegen/file.ts"}}'
+
+assert_blocked "Write passwords.txt is blocked (back to write section)" \
+  '{"tool_name":"Write","tool_input":{"file_path":"passwords.txt","content":"x"}}'
+
+assert_allowed "Read passwords.txt is allowed (write section, not deny)" \
+  '{"tool_name":"Read","tool_input":{"file_path":"passwords.txt"}}'
 
 # --- Summary ---
 echo ""
