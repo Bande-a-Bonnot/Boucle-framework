@@ -62,4 +62,31 @@ if ! python3 "$TMPFILE" --install-plugin; then
 fi
 
 rm -f "$TMPFILE"
+echo ""
 echo "Done. enforce-hooks is active for this project."
+
+# Show what rules were detected
+ENFORCE_PY=".claude/hooks/enforce-hooks.py"
+if [ -f "$ENFORCE_PY" ] && [ -f "CLAUDE.md" ]; then
+    COUNT=$(python3 "$ENFORCE_PY" --scan --json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('enforceable',[])))" 2>/dev/null || echo "0")
+    if [ "$COUNT" -gt 0 ]; then
+        echo ""
+        echo "Enforcing $COUNT rule(s) from your CLAUDE.md:"
+        python3 "$ENFORCE_PY" --scan --json 2>/dev/null | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+for r in d.get('enforceable', [])[:8]:
+    print(f'  [{r[\"hook_type\"]}] {r[\"description\"]}')
+if len(d.get('enforceable', [])) > 8:
+    print(f'  ... and {len(d[\"enforceable\"]) - 8} more')
+" 2>/dev/null || true
+    else
+        echo ""
+        echo "No @enforced rules found yet. Add some to your CLAUDE.md:"
+        echo ""
+        echo "  ## Safety @enforced"
+        echo "  - Never modify .env files"
+        echo "  - Do not use git push --force"
+        echo "  - Always run tests before committing"
+    fi
+fi
