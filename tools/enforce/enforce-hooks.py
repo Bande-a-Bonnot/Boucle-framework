@@ -2975,6 +2975,93 @@ rm -rf /tmp/test
         check("audit json: valid", 'coverage' in parsed, True)
         check("audit json: coverage 0", parsed['coverage'], 0)
 
+    # Test --strict mode: fails when unenforced rules exist
+    with tempfile.TemporaryDirectory() as tmpdir:
+        claude_md = Path(tmpdir) / 'CLAUDE.md'
+        claude_md.write_text('## Rules @enforced\n- Never modify .env files\n- Do not run `rm -rf`\n')
+        hooks_d = os.path.join(tmpdir, '.claude', 'hooks')
+        settings_f = os.path.join(tmpdir, '.claude', 'settings.json')
+        result = audit_hooks(str(claude_md), hooks_d, settings_f)
+        has_unenforced = len(result['unenforced']) > 0
+        has_broken = len(result['broken_refs']) > 0
+        should_fail = has_unenforced or has_broken
+        check("strict: unenforced rules -> should fail", should_fail, True)
+
+    # Test --strict mode: passes when all rules enforced (plugin mode)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        claude_md = Path(tmpdir) / 'CLAUDE.md'
+        claude_md.write_text('## Safety @enforced\n- Never modify .env files\n- Do not run `rm -rf`\n')
+        hooks_d = os.path.join(tmpdir, '.claude', 'hooks')
+        settings_f = os.path.join(tmpdir, '.claude', 'settings.json')
+        os.makedirs(hooks_d, exist_ok=True)
+        Path(hooks_d, 'enforce-pretooluse.sh').write_text('#!/bin/bash\n')
+        Path(hooks_d, 'enforce-hooks.py').write_text('# engine\n')
+        Path(settings_f).write_text(json.dumps({
+            'hooks': {'PreToolUse': [{'matcher': '', 'hooks': [
+                {'type': 'command', 'command': os.path.join(hooks_d, 'enforce-pretooluse.sh')}
+            ]}]}
+        }))
+        result = audit_hooks(str(claude_md), hooks_d, settings_f)
+        has_unenforced = len(result['unenforced']) > 0
+        has_broken = len(result['broken_refs']) > 0
+        should_fail = has_unenforced or has_broken
+        check("strict: plugin mode all enforced -> should pass", should_fail, False)
+
+    # Test --strict mode: fails on broken refs
+    with tempfile.TemporaryDirectory() as tmpdir:
+        claude_md = Path(tmpdir) / 'CLAUDE.md'
+        claude_md.write_text('## Safety @enforced\n- Never modify .env files\n')
+        hooks_d = os.path.join(tmpdir, '.claude', 'hooks')
+        settings_f = os.path.join(tmpdir, '.claude', 'settings.json')
+        os.makedirs(hooks_d, exist_ok=True)
+        Path(hooks_d, 'enforce-pretooluse.sh').write_text('#!/bin/bash\n')
+        Path(hooks_d, 'enforce-hooks.py').write_text('# engine\n')
+        Path(settings_f).write_text(json.dumps({
+            'hooks': {'PreToolUse': [{'matcher': '', 'hooks': [
+                {'type': 'command', 'command': os.path.join(hooks_d, 'enforce-pretooluse.sh')},
+                {'type': 'command', 'command': '/nonexistent/old-hook.sh'}
+            ]}]}
+        }))
+        result = audit_hooks(str(claude_md), hooks_d, settings_f)
+        has_broken = len(result['broken_refs']) > 0
+        check("strict: broken refs -> should fail", has_broken, True)
+
+    # Test --strict CLI: exit code 1 on unenforced rules
+    import subprocess
+    with tempfile.TemporaryDirectory() as tmpdir:
+        claude_md = Path(tmpdir) / 'CLAUDE.md'
+        claude_md.write_text('## Rules @enforced\n- Never modify .env files\n')
+        proc = subprocess.run(
+            [sys.executable, __file__, str(claude_md), '--audit', '--strict',
+             '--hooks-dir', os.path.join(tmpdir, '.claude', 'hooks'),
+             '--settings', os.path.join(tmpdir, '.claude', 'settings.json')],
+            capture_output=True, text=True
+        )
+        check("strict cli: exit 1 on unenforced", proc.returncode, 1)
+        check("strict cli: FAIL in output", 'FAIL' in proc.stdout, True)
+
+    # Test --strict CLI: exit code 0 when all enforced
+    with tempfile.TemporaryDirectory() as tmpdir:
+        claude_md = Path(tmpdir) / 'CLAUDE.md'
+        claude_md.write_text('## Safety @enforced\n- Never modify .env files\n')
+        hooks_d = os.path.join(tmpdir, '.claude', 'hooks')
+        settings_f = os.path.join(tmpdir, '.claude', 'settings.json')
+        os.makedirs(hooks_d, exist_ok=True)
+        Path(hooks_d, 'enforce-pretooluse.sh').write_text('#!/bin/bash\n')
+        Path(hooks_d, 'enforce-hooks.py').write_text('# engine\n')
+        Path(settings_f).write_text(json.dumps({
+            'hooks': {'PreToolUse': [{'matcher': '', 'hooks': [
+                {'type': 'command', 'command': os.path.join(hooks_d, 'enforce-pretooluse.sh')}
+            ]}]}
+        }))
+        proc = subprocess.run(
+            [sys.executable, __file__, str(claude_md), '--audit', '--strict',
+             '--hooks-dir', hooks_d, '--settings', settings_f],
+            capture_output=True, text=True
+        )
+        check("strict cli: exit 0 when all enforced", proc.returncode, 0)
+        check("strict cli: PASS in output", 'PASS' in proc.stdout, True)
+
     # Test evaluate mode gracefully allows when CLAUDE.md is missing
     import subprocess
     result = subprocess.run(
@@ -3367,6 +3454,7 @@ def main():
   %(prog)s --install                  Write per-rule hooks to .claude/hooks/
   %(prog)s --install-plugin           Install as one dynamic hook (recommended)
   %(prog)s --audit                    Audit rules vs installed hooks
+  %(prog)s --audit --strict            CI gate: exit 1 if any rules unenforced
   %(prog)s --armor                    Protect hooks from being deleted/modified
   %(prog)s --evaluate                 PreToolUse mode (reads stdin, outputs decision)
   %(prog)s --test                     Run self-tests
@@ -3385,6 +3473,8 @@ def main():
     parser.add_argument('--settings', default='.claude/settings.json', help='Path to settings.json')
     parser.add_argument('--audit', action='store_true',
                         help='Audit: compare CLAUDE.md rules vs installed hooks')
+    parser.add_argument('--strict', action='store_true',
+                        help='With --audit: exit 1 if any @enforced rules lack hooks (CI gate)')
     parser.add_argument('--armor', action='store_true',
                         help='Install self-protection: hooks that guard .claude/hooks/ from modification')
     parser.add_argument('--test', action='store_true', help='Run self-tests')
@@ -3496,6 +3586,18 @@ def main():
         else:
             print(f"Auditing: {path}\n")
             print(format_audit_report(result))
+
+        if args.strict:
+            failures = []
+            if result['unenforced']:
+                failures.append(f"{len(result['unenforced'])} @enforced rule(s) without hooks")
+            if result['broken_refs']:
+                failures.append(f"{len(result['broken_refs'])} broken hook reference(s)")
+            if failures:
+                print(f"\n--strict: FAIL ({', '.join(failures)})")
+                sys.exit(1)
+            else:
+                print("\n--strict: PASS (all @enforced rules have active hooks)")
         return
 
     if args.generate:

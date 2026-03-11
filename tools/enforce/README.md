@@ -143,6 +143,7 @@ enforce-hooks.py [CLAUDE.md] [options]
   --install           Write per-rule hooks to .claude/hooks/
   --install-plugin    Install as one dynamic hook (recommended)
   --audit             Compare CLAUDE.md rules vs installed hooks
+  --audit --strict    CI gate: exit 1 if any @enforced rules lack hooks
   --armor             Install self-protection hooks (no CLAUDE.md needed)
   --evaluate          PreToolUse mode: read tool call from stdin, output decision
   --json              Output as JSON (with --scan or --audit)
@@ -199,6 +200,22 @@ Reports:
 - **Broken references** `[XX]`: settings.json entries pointing to missing files
 
 Use `--audit --json` for machine-readable output.
+
+### CI Gate (`--strict`)
+
+Add `--strict` to fail your CI pipeline if any `@enforced` rules are missing hooks:
+
+```sh
+python3 enforce-hooks.py --audit --strict
+```
+
+Exits 0 if all `@enforced` rules have active hooks. Exits 1 if any are unenforced or if settings.json references missing hook files.
+
+```yaml
+# GitHub Actions example
+- name: Verify hook enforcement
+  run: python3 tools/enforce/enforce-hooks.py --audit --strict
+```
 
 ## Armor Mode
 
