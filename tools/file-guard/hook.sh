@@ -191,7 +191,7 @@ case "$TOOL_NAME" in
     TARGET=$(normalize_path "$TARGET")
 
     if matched=$(matches_protected "$TARGET"); then
-      jq -n --arg t "$TARGET" --arg p "$matched" \
+      jq -cn --arg t "$TARGET" --arg p "$matched" \
         '{"decision":"block","reason":("file-guard: \"" + $t + "\" is protected (matches pattern \"" + $p + "\"). Check .file-guard config to modify protections.")}'
       exit 0
     fi
@@ -206,7 +206,7 @@ case "$TOOL_NAME" in
     TARGET=$(normalize_path "$TARGET")
 
     if matched=$(matches_protected "$TARGET"); then
-      jq -n --arg t "$TARGET" --arg p "$matched" \
+      jq -cn --arg t "$TARGET" --arg p "$matched" \
         '{"decision":"block","reason":("file-guard: \"" + $t + "\" is protected (matches pattern \"" + $p + "\"). Check .file-guard config to modify protections.")}'
       exit 0
     fi
@@ -237,7 +237,7 @@ case "$TOOL_NAME" in
         # For exact filenames
         if echo "$COMMAND" | grep -qF "$pattern" 2>/dev/null; then
           log "BASH MATCH: command contains modifier + pattern '$pattern'"
-          jq -n --arg p "$pattern" \
+          jq -cn --arg p "$pattern" \
             '{"decision":"block","reason":("file-guard: command may modify protected path \"" + $p + "\" (matches .file-guard config). Use FILE_GUARD_DISABLED=1 to override.")}'
           exit 0
         fi
