@@ -288,6 +288,8 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **Hook deny is not enforced for MCP tool calls.** PreToolUse hooks fire correctly for MCP server tools, but [`permissionDecision: "deny"` is silently ignored](https://github.com/anthropics/claude-code/issues/33106) -- the MCP tool call proceeds anyway. This means hooks cannot block MCP tools. This is a platform bug, not an enforce-hooks limitation. Workaround: block the MCP server name in managed-settings.json `disallowedTools` instead.
 
+**Only `command`-type hooks block tool calls.** Claude Code supports three hook types: `command`, `agent`, and `prompt`. Only `command` actually blocks execution. Agent and prompt hooks [fire but do not prevent the tool call](https://github.com/anthropics/claude-code/issues/33125) and cannot deliver feedback to the model. enforce-hooks generates command-type hooks exclusively. If you write custom hooks, use `"type": "command"` for any hook that needs to enforce rules.
+
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
 ## Tests
