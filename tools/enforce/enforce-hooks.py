@@ -17,6 +17,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -2203,6 +2204,295 @@ def format_verify_report(result):
     return '\n'.join(lines)
 
 
+def smoke_test_hooks(hooks_dir='.claude/hooks', settings_path='.claude/settings.json'):
+    """Run each registered hook with real test payloads and verify it responds correctly.
+
+    Unlike --verify (static analysis), this actually executes hooks and checks:
+      - Hook runs without crashing
+      - Output is valid JSON
+      - JSON contains a 'decision' field
+      - Benign payloads get 'allow' (not false-positive blocking)
+      - Known-bad payloads get 'block' where detectable
+
+    Returns a dict with per-hook results and summary.
+    """
+    hooks_dir = Path(hooks_dir)
+    settings_path = Path(settings_path)
+
+    results = []
+    settings_issues = []
+
+    # Benign test payloads that should be allowed by any hook
+    BENIGN_PAYLOADS = [
+        {
+            'label': 'Read a normal file',
+            'payload': {"tool_name": "Read", "tool_input": {"file_path": "/tmp/smoke-test.txt"}},
+        },
+        {
+            'label': 'Write to a temp file',
+            'payload': {"tool_name": "Write", "tool_input": {"file_path": "/tmp/smoke-test-out.txt", "content": "test"}},
+        },
+        {
+            'label': 'Run a safe Bash command',
+            'payload': {"tool_name": "Bash", "tool_input": {"command": "echo hello"}},
+        },
+    ]
+
+    # Payloads that should be blocked (for hooks we can identify)
+    BLOCK_PAYLOADS = {
+        'file-guard': {
+            'label': 'Write to .env',
+            'payload': {"tool_name": "Write", "tool_input": {"file_path": ".env", "content": "SECRET=x"}},
+        },
+        'bash-guard': {
+            'label': 'Run rm -rf /',
+            'payload': {"tool_name": "Bash", "tool_input": {"command": "rm -rf /"}},
+        },
+        'git-safe': {
+            'label': 'Force push',
+            'payload': {"tool_name": "Bash", "tool_input": {"command": "git push --force origin main"}},
+        },
+        'branch-guard': {
+            'label': 'Commit on main',
+            'payload': {"tool_name": "Bash", "tool_input": {"command": "git commit -m 'test'"}},
+        },
+    }
+
+    # 1. Read settings.json to find registered hooks
+    registered = []  # list of (event_type, command)
+    if settings_path.exists():
+        try:
+            settings = json.loads(settings_path.read_text())
+            for event_type, entries in settings.get('hooks', {}).items():
+                for entry in entries:
+                    for h in entry.get('hooks', []):
+                        cmd = h.get('command', '')
+                        if cmd:
+                            registered.append((event_type, cmd))
+        except (json.JSONDecodeError, KeyError) as e:
+            settings_issues.append(f'Cannot parse {settings_path}: {e}')
+    else:
+        return {
+            'hooks': [],
+            'settings_issues': [f'No settings file at {settings_path}'],
+            'summary': {'total': 0, 'passed': 0, 'failed': 0, 'warnings': 0},
+        }
+
+    if not registered:
+        return {
+            'hooks': [],
+            'settings_issues': ['No hooks registered in settings.json'],
+            'summary': {'total': 0, 'passed': 0, 'failed': 0, 'warnings': 0},
+        }
+
+    # 2. Test each hook
+    for event_type, command in registered:
+        hook_result = {
+            'command': command,
+            'event_type': event_type,
+            'tests': [],
+            'status': 'ok',
+        }
+
+        # Identify the hook type from the command path
+        hook_type = None
+        cmd_lower = command.lower()
+        for ht in ['file-guard', 'bash-guard', 'git-safe', 'branch-guard', 'enforce', 'session-log', 'read-once', 'armor']:
+            if ht in cmd_lower:
+                hook_type = ht
+                break
+
+        # Run benign payloads
+        for bp in BENIGN_PAYLOADS:
+            test_result = _run_hook_test(command, bp['payload'], bp['label'])
+            test_result['expect'] = 'allow'
+
+            if test_result['status'] == 'error':
+                hook_result['status'] = 'fail'
+            elif test_result['status'] == 'blocked':
+                # Benign payload was blocked = false positive
+                test_result['status'] = 'false_positive'
+                test_result['message'] = f"Benign payload blocked: {test_result.get('reason', 'unknown')}"
+                if hook_result['status'] != 'fail':
+                    hook_result['status'] = 'warn'
+
+            hook_result['tests'].append(test_result)
+
+        # Run block payload if we identified the hook type
+        if hook_type and hook_type in BLOCK_PAYLOADS:
+            bp = BLOCK_PAYLOADS[hook_type]
+            test_result = _run_hook_test(command, bp['payload'], bp['label'])
+            test_result['expect'] = 'block'
+
+            if test_result['status'] == 'error':
+                hook_result['status'] = 'fail'
+            elif test_result['status'] == 'allowed':
+                # Bad payload was allowed = hook not working
+                test_result['status'] = 'fail_open'
+                test_result['message'] = 'Hook allowed a payload it should have blocked'
+                hook_result['status'] = 'fail'
+
+            hook_result['tests'].append(test_result)
+
+        results.append(hook_result)
+
+    # Summary
+    passed = sum(1 for r in results if r['status'] == 'ok')
+    failed = sum(1 for r in results if r['status'] == 'fail')
+    warnings = sum(1 for r in results if r['status'] == 'warn')
+
+    return {
+        'hooks': results,
+        'settings_issues': settings_issues,
+        'summary': {
+            'total': len(results),
+            'passed': passed,
+            'failed': failed,
+            'warnings': warnings,
+        },
+    }
+
+
+def _run_hook_test(command, payload, label):
+    """Execute a single hook with a test payload and check the response."""
+    result = {
+        'label': label,
+        'status': 'ok',
+        'raw_output': '',
+        'decision': None,
+        'reason': None,
+    }
+
+    try:
+        proc = subprocess.run(
+            command,
+            input=json.dumps(payload),
+            capture_output=True,
+            text=True,
+            timeout=5,
+            shell=True,
+        )
+
+        result['raw_output'] = (proc.stdout or '')[:500]
+        result['exit_code'] = proc.returncode
+        stderr = (proc.stderr or '')[:200]
+        if stderr:
+            result['stderr'] = stderr
+
+        # Non-zero exit = hook crashed
+        if proc.returncode != 0 and not proc.stdout.strip():
+            result['status'] = 'error'
+            result['message'] = f'Exit code {proc.returncode}'
+            if stderr:
+                result['message'] += f': {stderr[:100]}'
+            return result
+
+        stdout = (proc.stdout or '').strip()
+
+        # Empty output = hook produced nothing (fail-open)
+        if not stdout:
+            result['status'] = 'error'
+            result['message'] = 'No output (hook is fail-open: empty stdout = allow)'
+            return result
+
+        # Parse JSON
+        try:
+            parsed = json.loads(stdout)
+        except json.JSONDecodeError:
+            result['status'] = 'error'
+            result['message'] = f'Invalid JSON output: {stdout[:100]}'
+            return result
+
+        # Check for decision field
+        decision = parsed.get('decision')
+        if decision is None:
+            result['status'] = 'error'
+            result['message'] = f'Missing "decision" field in output: {stdout[:100]}'
+            return result
+
+        result['decision'] = decision
+        result['reason'] = parsed.get('reason', '')
+
+        if decision == 'block':
+            result['status'] = 'blocked'
+        elif decision == 'allow':
+            result['status'] = 'allowed'
+        else:
+            result['status'] = 'warn'
+            result['message'] = f'Unknown decision value: {decision}'
+
+    except subprocess.TimeoutExpired:
+        result['status'] = 'error'
+        result['message'] = 'Hook timed out after 5 seconds'
+    except FileNotFoundError:
+        result['status'] = 'error'
+        result['message'] = f'Command not found: {command}'
+    except Exception as e:
+        result['status'] = 'error'
+        result['message'] = f'Unexpected error: {e}'
+
+    return result
+
+
+def format_smoke_test_report(result):
+    """Format smoke test results as a readable report."""
+    lines = []
+    summary = result['summary']
+
+    lines.append(f"Smoke Test: {summary['total']} hook(s) tested\n")
+
+    for hook in result['hooks']:
+        if hook['status'] == 'ok':
+            status = 'PASS'
+        elif hook['status'] == 'warn':
+            status = 'WARN'
+        else:
+            status = 'FAIL'
+
+        # Short name from command
+        cmd = hook['command']
+        name = Path(cmd.split()[0]).name if cmd else '???'
+        lines.append(f"  [{status:>4}]  {name}  ({hook['event_type']})")
+
+        for test in hook['tests']:
+            if test['status'] in ('allowed', 'blocked') and test['status'] == test['expect'].replace('allow', 'allowed').replace('block', 'blocked'):
+                # Expected result
+                icon = 'OK'
+            elif test['status'] == 'error':
+                icon = 'ERR'
+            elif test.get('message', '').startswith('Benign'):
+                icon = 'FP'  # false positive
+            elif test['status'] == 'fail_open':
+                icon = 'OPEN'  # fail-open
+            else:
+                icon = 'OK'
+
+            detail = ''
+            if test.get('message'):
+                detail = f'  -- {test["message"]}'
+            elif test.get('decision'):
+                detail = f'  -> {test["decision"]}'
+
+            lines.append(f"         [{icon:>4}] {test['label']}{detail}")
+
+    if result['settings_issues']:
+        lines.append(f"\nSettings issues:")
+        for si in result['settings_issues']:
+            lines.append(f"  {si}")
+
+    lines.append(f"\nSummary: {summary['passed']} passed, {summary['warnings']} warning(s), {summary['failed']} failed")
+
+    if summary['failed'] > 0:
+        lines.append("\nFailed hooks are not protecting your project.")
+        lines.append("Common causes:")
+        lines.append("  - Wrong JSON field: .input.X instead of .tool_input.X")
+        lines.append("  - Missing jq: install with 'brew install jq' or 'apt install jq'")
+        lines.append("  - Not executable: chmod +x <hook-path>")
+        lines.append("  - Empty output on error: hook exits silently instead of printing JSON")
+
+    return '\n'.join(lines)
+
+
 # --- Output Formatting ---
 
 def format_scan_table(enforceable, skipped):
@@ -3845,6 +4135,109 @@ rm -rf /tmp/test
     missing_result = verify_hooks(os.path.join(td, 'no-such-dir'), verify_settings)
     check("verify: missing dir returns info", len(missing_result['settings_issues']) > 0, True)
 
+    # --- Smoke test ---
+    section("smoke-test")
+
+    # Create a temp project with hooks
+    smoke_dir = os.path.join(td, 'smoke-project')
+    smoke_hooks = os.path.join(smoke_dir, '.claude', 'hooks')
+    os.makedirs(smoke_hooks)
+
+    # Good hook: reads stdin, outputs valid JSON allow
+    good_hook = os.path.join(smoke_hooks, 'good-hook.sh')
+    with open(good_hook, 'w') as f:
+        f.write('#!/usr/bin/env bash\n')
+        f.write('INPUT=$(cat)\n')
+        f.write('TOOL=$(echo "$INPUT" | jq -r \'.tool_name\')\n')
+        f.write('echo \'{"decision": "allow"}\'\n')
+    os.chmod(good_hook, 0o755)
+
+    # Bad hook: reads wrong field, outputs nothing useful
+    bad_hook = os.path.join(smoke_hooks, 'bad-hook.sh')
+    with open(bad_hook, 'w') as f:
+        f.write('#!/usr/bin/env bash\n')
+        f.write('INPUT=$(cat)\n')
+        f.write('# Bug: using .input instead of .tool_input\n')
+        f.write('FILE=$(echo "$INPUT" | jq -r \'.input.file_path\')\n')
+        f.write('# No output at all = fail-open\n')
+    os.chmod(bad_hook, 0o755)
+
+    # Blocking hook: always blocks Write to .env
+    block_hook = os.path.join(smoke_hooks, 'file-guard-hook.sh')
+    with open(block_hook, 'w') as f:
+        f.write('#!/usr/bin/env bash\n')
+        f.write('INPUT=$(cat)\n')
+        f.write('TOOL=$(echo "$INPUT" | jq -r \'.tool_name\')\n')
+        f.write('FILE=$(echo "$INPUT" | jq -r \'.tool_input.file_path // empty\')\n')
+        f.write('if [[ "$TOOL" == "Write" ]] && [[ "$FILE" == *".env"* ]]; then\n')
+        f.write('  echo \'{"decision": "block", "reason": "Protected file"}\'\n')
+        f.write('else\n')
+        f.write('  echo \'{"decision": "allow"}\'\n')
+        f.write('fi\n')
+    os.chmod(block_hook, 0o755)
+
+    # Register hooks in settings
+    smoke_settings = os.path.join(smoke_dir, '.claude', 'settings.json')
+    with open(smoke_settings, 'w') as f:
+        json.dump({
+            'hooks': {
+                'PreToolUse': [{
+                    'hooks': [
+                        {'command': good_hook},
+                        {'command': bad_hook},
+                        {'command': block_hook},
+                    ]
+                }]
+            }
+        }, f)
+
+    result = smoke_test_hooks(smoke_hooks, smoke_settings)
+    check("smoke: found 3 hooks", result['summary']['total'], 3)
+
+    # Good hook should pass all benign tests
+    good_r = [h for h in result['hooks'] if 'good-hook' in h['command']][0]
+    check("smoke: good-hook passes", good_r['status'], 'ok')
+    good_allows = [t for t in good_r['tests'] if t.get('decision') == 'allow']
+    check("smoke: good-hook allows benign payloads", len(good_allows) >= 3, True)
+
+    # Bad hook should fail (no output = fail-open)
+    bad_r = [h for h in result['hooks'] if 'bad-hook' in h['command']][0]
+    bad_errors = [t for t in bad_r['tests'] if t['status'] == 'error']
+    check("smoke: bad-hook has errors", len(bad_errors) > 0, True)
+    check("smoke: bad-hook status is fail", bad_r['status'], 'fail')
+
+    # Blocking hook: benign payloads should be allowed
+    block_r = [h for h in result['hooks'] if 'file-guard' in h['command']][0]
+    block_allows = [t for t in block_r['tests'] if t.get('decision') == 'allow']
+    check("smoke: file-guard allows benign payloads", len(block_allows) >= 3, True)
+    # Block payload (Write to .env) should be blocked
+    block_blocks = [t for t in block_r['tests'] if t.get('decision') == 'block']
+    check("smoke: file-guard blocks .env write", len(block_blocks) >= 1, True)
+    check("smoke: file-guard status ok", block_r['status'], 'ok')
+
+    # Format report
+    report = format_smoke_test_report(result)
+    check("smoke: report contains PASS", 'PASS' in report, True)
+    check("smoke: report contains FAIL", 'FAIL' in report, True)
+    check("smoke: report contains Summary:", 'Summary:' in report, True)
+
+    # JSON output
+    json_out = json.dumps(result, indent=2, default=str)
+    parsed = json.loads(json_out)
+    check("smoke: JSON roundtrips", parsed['summary']['total'], 3)
+
+    # --- Smoke test: no settings ---
+    no_settings_result = smoke_test_hooks(smoke_hooks, os.path.join(td, 'nonexistent.json'))
+    check("smoke: no settings returns 0 hooks", no_settings_result['summary']['total'], 0)
+    check("smoke: no settings has issue", len(no_settings_result['settings_issues']) > 0, True)
+
+    # --- Smoke test: empty settings ---
+    empty_settings = os.path.join(td, 'empty-settings.json')
+    with open(empty_settings, 'w') as f:
+        json.dump({}, f)
+    empty_result = smoke_test_hooks(smoke_hooks, empty_settings)
+    check("smoke: empty settings returns 0 hooks", empty_result['summary']['total'], 0)
+
     print(f"\n{passed} passed, {failed} failed")
     return failed == 0
 
@@ -3880,6 +4273,8 @@ def main():
   %(prog)s --armor                    Protect hooks from being deleted/modified
   %(prog)s --verify                   Health-check installed hooks for correctness
   %(prog)s --verify --strict          CI gate: exit 1 if any hooks have errors
+  %(prog)s --smoke-test               Execute hooks with test payloads, verify responses
+  %(prog)s --smoke-test --strict      CI gate: exit 1 if any hooks fail
   %(prog)s --evaluate                 PreToolUse mode (reads stdin, outputs decision)
   %(prog)s --test                     Run self-tests
 ''',
@@ -3903,6 +4298,8 @@ def main():
                         help='Install self-protection: hooks that guard .claude/hooks/ from modification')
     parser.add_argument('--verify', action='store_true',
                         help='Health-check installed hooks for correctness (wrong field names, permissions, fail-open)')
+    parser.add_argument('--smoke-test', action='store_true', dest='smoke_test',
+                        help='Run each hook with test payloads and verify it responds correctly')
     parser.add_argument('--test', action='store_true', help='Run self-tests')
     args = parser.parse_args()
 
@@ -3910,7 +4307,7 @@ def main():
         success = run_tests()
         sys.exit(0 if success else 1)
 
-    if not any([args.scan, args.generate, args.install, args.evaluate, args.install_plugin, args.audit, args.armor, args.verify]):
+    if not any([args.scan, args.generate, args.install, args.evaluate, args.install_plugin, args.audit, args.armor, args.verify, args.smoke_test]):
         args.scan = True  # Default to scan
 
     if args.verify:
@@ -3933,6 +4330,28 @@ def main():
                 sys.exit(1)
             else:
                 print("\n--strict: PASS (all hooks healthy)")
+        return
+
+    if args.smoke_test:
+        hooks_dir = args.hooks_dir
+        settings = args.settings
+        if args.file and os.path.exists(args.file):
+            project_root = str(Path(args.file).resolve().parent)
+            if hooks_dir == '.claude/hooks':
+                hooks_dir = os.path.join(project_root, '.claude', 'hooks')
+            if settings == '.claude/settings.json':
+                settings = os.path.join(project_root, '.claude', 'settings.json')
+        result = smoke_test_hooks(hooks_dir, settings)
+        if args.json:
+            print(json.dumps(result, indent=2, default=str))
+        else:
+            print(format_smoke_test_report(result))
+        if args.strict:
+            if result['summary']['failed'] > 0:
+                print(f"\n--strict: FAIL ({result['summary']['failed']} hook(s) failed)")
+                sys.exit(1)
+            else:
+                print("\n--strict: PASS (all hooks responding correctly)")
         return
 
     if args.armor:
