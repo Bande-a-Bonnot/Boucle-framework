@@ -237,6 +237,62 @@ assert_blocked "Write to .env.production is blocked" \
 assert_allowed "Write to env.example is allowed" \
   '{"tool_name":"Write","input":{"file_path":"env.example","content":"x"}}'
 
+# --- Security: Path traversal bypass ---
+echo "--- Path traversal prevention ---"
+cat > "$CONFIG" <<'EOF'
+.env
+secrets.json
+config/
+EOF
+
+assert_blocked "Traversal subdir/../.env is caught" \
+  '{"tool_name":"Write","input":{"file_path":"subdir/../.env"}}'
+
+assert_blocked "Deep traversal a/b/c/../../../.env is caught" \
+  '{"tool_name":"Write","input":{"file_path":"a/b/c/../../../.env"}}'
+
+assert_blocked "Traversal into protected dir src/../config/db.yml" \
+  '{"tool_name":"Edit","input":{"file_path":"src/../config/db.yml"}}'
+
+assert_blocked "Traversal with ./ prefix ./x/../secrets.json" \
+  '{"tool_name":"Write","input":{"file_path":"./x/../secrets.json"}}'
+
+assert_blocked "Traversal subdir/../.env via Edit" \
+  '{"tool_name":"Edit","input":{"file_path":"subdir/../.env"}}'
+
+assert_allowed "Non-traversal file with dots in name" \
+  '{"tool_name":"Write","input":{"file_path":"test..backup.sql"}}'
+
+assert_allowed "Normal path not affected by traversal fix" \
+  '{"tool_name":"Write","input":{"file_path":"src/app.js"}}'
+
+# --- Security: JSON injection resistance ---
+echo "--- JSON output validity ---"
+cat > "$CONFIG" <<'EOF'
+.env
+EOF
+
+# Verify block output is valid JSON (jq can parse it)
+result=$(echo '{"tool_name":"Write","input":{"file_path":".env"}}' | bash "$HOOK" 2>/dev/null) || true
+TOTAL=$((TOTAL + 1))
+if echo "$result" | jq . >/dev/null 2>&1; then
+  PASS=$((PASS + 1))
+  echo "  PASS: Block output is valid JSON"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: Block output is not valid JSON: $result"
+fi
+
+# Verify reason field contains expected text
+TOTAL=$((TOTAL + 1))
+if echo "$result" | jq -e '.reason | test("file-guard")' >/dev/null 2>&1; then
+  PASS=$((PASS + 1))
+  echo "  PASS: Block reason contains hook name"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: Block reason missing hook name"
+fi
+
 # --- Summary ---
 echo ""
 echo "=== Results: $PASS/$TOTAL passed, $FAIL failed ==="
