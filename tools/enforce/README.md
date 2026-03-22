@@ -12,6 +12,8 @@ Claude Code's CLAUDE.md lets you write project rules, but Claude follows them on
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/install.sh | bash
 ```
 
+This installs enforcement hooks, armor (self-protection), and creates a sensible CLAUDE.md if you don't have one. Works in any git repo.
+
 **Or manually (inspect before installing):**
 
 ```sh
