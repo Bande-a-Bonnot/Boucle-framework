@@ -22,11 +22,12 @@ python3 /tmp/enforce-hooks.py --install-plugin   # install
 
 ## Why Hooks Instead of Rules
 
-CLAUDE.md rules rely on the model choosing to comply. That breaks down in three specific ways:
+CLAUDE.md rules rely on the model choosing to comply. That breaks down in several specific ways:
 
-1. **Compliance decay**: As conversations grow and context compacts, CLAUDE.md directives lose influence. A "never modify .env" rule works at the start and stops working later.
-2. **Subagent blindness**: Path-specific rules and some CLAUDE.md sections [don't load in subagents or teammates](https://github.com/anthropics/claude-code/issues/32906). A spawned agent can violate rules it never received.
+1. **Compliance decay**: As conversations grow and context compacts, CLAUDE.md directives lose influence. A "never modify .env" rule works at the start and [stops working later](https://github.com/anthropics/claude-code/issues/37550). Users report rules are "read at session start but systematically violated during execution."
+2. **Subagent blindness**: Path-specific rules and some CLAUDE.md sections [don't load in subagents](https://github.com/anthropics/claude-code/issues/32906). Spawned agents [immediately violate rules](https://github.com/anthropics/claude-code/issues/37530) that the parent session respects correctly.
 3. **No enforcement boundary**: Rules are suggestions. There is no mechanism to make the model fail when it violates one. It can read "never force push" and still run `git push --force`.
+4. **Model regression**: Newer model versions can [degrade compliance](https://github.com/anthropics/claude-code/issues/34358) with rules that previously worked, requiring users to re-engineer their CLAUDE.md for each update.
 
 PreToolUse hooks solve all three. They run as code before every tool call, they fire in every context (including subagents), and they return a hard block that the model cannot override.
 
@@ -341,6 +342,10 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **Hook deny is not enforced for MCP tool calls.** PreToolUse hooks fire correctly for MCP server tools, but [`permissionDecision: "deny"` is silently ignored](https://github.com/anthropics/claude-code/issues/33106) -- the MCP tool call proceeds anyway. This means hooks cannot block MCP tools. This is a platform bug, not an enforce-hooks limitation. Workaround: block the MCP server name in managed-settings.json `disallowedTools` instead.
 
 **Only `command`-type hooks block tool calls.** Claude Code supports three hook types: `command`, `agent`, and `prompt`. Only `command` actually blocks execution. Agent and prompt hooks [fire but do not prevent the tool call](https://github.com/anthropics/claude-code/issues/33125) and cannot deliver feedback to the model. enforce-hooks generates command-type hooks exclusively. If you write custom hooks, use `"type": "command"` for any hook that needs to enforce rules.
+
+**Silent JSONC parsing failure can disable hooks.** If your `.claude/settings.json` contains invalid JSONC (e.g., commented-out JSON blocks), Claude Code [silently falls back to default settings](https://github.com/anthropics/claude-code/issues/37540) with no hooks or rules loaded. If your hooks suddenly stop firing, check your settings.json syntax first.
+
+**Hooks don't fire in pipe mode (`-p`).** When running Claude Code with `-p` (pipe/print mode), [hooks do not execute](https://github.com/anthropics/claude-code/issues/37559). This means automated testing workflows that use `claude -p "test prompt"` will not trigger PreToolUse hooks. Test hooks in interactive mode.
 
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
