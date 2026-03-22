@@ -14,18 +14,29 @@ set -euo pipefail
 
 REPO_RAW="https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce"
 
-# Check we're in a project root (has CLAUDE.md or .claude/)
+# Check we're in a project root (has CLAUDE.md or .claude/ or .git/)
+CREATED_CLAUDE_MD=false
 if [ ! -f "CLAUDE.md" ] && [ ! -d ".claude" ]; then
-    echo "No CLAUDE.md or .claude/ found in current directory."
-    echo "Run this from your project root."
-    echo ""
-    echo "To get started, create a CLAUDE.md with some rules:"
-    echo '  echo "## Safety @enforced" > CLAUDE.md'
-    echo '  echo "- Never modify .env files" >> CLAUDE.md'
-    echo '  echo "- Do not use git push --force" >> CLAUDE.md'
-    echo ""
-    echo "Then re-run this installer."
-    exit 1
+    if [ ! -d ".git" ]; then
+        echo "No CLAUDE.md, .claude/, or .git/ found in current directory."
+        echo "Run this from your project root."
+        exit 1
+    fi
+
+    # Create a CLAUDE.md with sensible safety defaults
+    cat > CLAUDE.md << 'RULES'
+## Safety @enforced
+- Never modify .env files
+- Do not use `git push --force`
+- Never run `rm -rf /` or `rm -rf ~` or `rm -rf .`
+- Do not commit directly to main
+
+## Guidelines @enforced(warn)
+- Always run tests before committing
+- Read the relevant test file before editing source code
+RULES
+    CREATED_CLAUDE_MD=true
+    echo "Created CLAUDE.md with safety defaults."
 fi
 
 echo "Installing enforce-hooks..."
@@ -89,8 +100,24 @@ if len(d.get('enforceable', [])) > 8:
         echo "  - Do not use git push --force"
         echo "  - Always run tests before committing"
     fi
+
+    # Install armor (self-protection) automatically
     echo ""
-    echo "Next steps:"
-    echo "  python3 .claude/hooks/enforce-hooks.py --smoke-test   # verify hooks work"
-    echo "  python3 .claude/hooks/enforce-hooks.py --armor        # protect hooks from deletion"
+    if python3 "$ENFORCE_PY" --armor 2>/dev/null; then
+        echo ""
+        echo "Armor installed: hooks are protected from deletion."
+    fi
+
+    echo ""
+    if [ "$CREATED_CLAUDE_MD" = true ]; then
+        echo "A default CLAUDE.md was created. Edit it to match your project:"
+        echo "  - Add file paths you want protected"
+        echo "  - Add commands you want blocked"
+        echo "  - Add @enforced to rules you want hard-blocked"
+        echo "  - Use @enforced(warn) for rules that should warn but not block"
+        echo ""
+    fi
+    echo "Verify:"
+    echo "  python3 .claude/hooks/enforce-hooks.py --smoke-test   # test hooks work"
+    echo "  python3 .claude/hooks/enforce-hooks.py --audit        # check coverage"
 fi
