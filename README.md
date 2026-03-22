@@ -7,7 +7,7 @@ Claude Code hooks that actually enforce your rules — plus a framework for runn
 
 ## Claude Code Hooks
 
-Claude Code's built-in [permission system has known issues](https://github.com/anthropics/claude-code/issues/30519) — wildcards don't match compound commands, deny rules can be bypassed, user-level settings don't apply at project level. These hooks enforce boundaries that permissions can't.
+Claude Code's CLAUDE.md rules are [read but not enforced](https://github.com/anthropics/claude-code/issues/37550) — they work at session start and degrade as context grows. Its [permission system has known gaps](https://github.com/anthropics/claude-code/issues/30519) — wildcards don't match compound commands, deny rules can be bypassed. These hooks enforce boundaries that text rules and permissions can't.
 
 **Check your current setup:**
 
