@@ -476,6 +476,63 @@ BASH_GUARD_CONFIG="$EXEC_CONFIG" \
 rm -f "$EXEC_CONFIG"
 
 echo ""
+echo "--- Workaround bypass prevention (Pattern E, #34358) ---"
+
+# find -exec rm (workaround for find -delete)
+assert_blocked "find -exec rm" "find . -exec rm {} \;"
+assert_blocked "find -exec rm -rf" "find /tmp -exec rm -rf {} +"
+assert_blocked "find -name -exec rm" "find . -name '*.log' -exec rm {} \;"
+assert_allowed "find -exec grep (safe)" "find . -exec grep -l 'TODO' {} \;"
+assert_allowed "find -exec cat (safe)" "find . -name '*.md' -exec cat {} \;"
+
+# Privilege escalation alternatives (workaround for sudo)
+assert_blocked "pkexec" "pkexec apt install something"
+assert_blocked "doas" "doas rm -rf /tmp/cache"
+assert_blocked "su -c" "su -c 'rm -rf /var/log'"
+assert_blocked "su root" "su root -c 'chmod 777 /'"
+assert_blocked "pkexec after chain" "cd /tmp && pkexec make install"
+assert_blocked "doas after chain" "echo test; doas reboot"
+assert_allowed "superman (not su)" "echo superman"
+
+# Privilege escalation allowlist
+SUDO_ALT_CONFIG=$(mktemp)
+echo "allow: sudo" > "$SUDO_ALT_CONFIG"
+BASH_GUARD_CONFIG="$SUDO_ALT_CONFIG" \
+  assert_allowed "pkexec allowed by sudo config" "pkexec apt install vim"
+BASH_GUARD_CONFIG="$SUDO_ALT_CONFIG" \
+  assert_allowed "doas allowed by sudo config" "doas reboot"
+rm -f "$SUDO_ALT_CONFIG"
+
+# shred (irrecoverable file destruction)
+assert_blocked "shred file" "shred secret.key"
+assert_blocked "shred -u" "shred -u -z database.sqlite"
+assert_blocked "shred after chain" "echo done; shred important.dat"
+assert_allowed "grep shred (safe)" "grep shred README.md"
+
+SHRED_CONFIG=$(mktemp)
+echo "allow: shred" > "$SHRED_CONFIG"
+BASH_GUARD_CONFIG="$SHRED_CONFIG" \
+  assert_allowed "shred allowed by config" "shred old-key.pem"
+rm -f "$SHRED_CONFIG"
+
+# truncate -s 0 (silent data zeroing)
+assert_blocked "truncate -s 0" "truncate -s 0 database.sqlite"
+assert_blocked "truncate -s 0 log" "truncate -s 0 /var/log/app.log"
+assert_allowed "truncate grow (safe)" "truncate -s 100M sparse-file"
+assert_allowed "truncate check (safe)" "truncate --size=1G preallocate"
+
+TRUNC_CONFIG=$(mktemp)
+echo "allow: truncate" > "$TRUNC_CONFIG"
+BASH_GUARD_CONFIG="$TRUNC_CONFIG" \
+  assert_allowed "truncate -s 0 allowed by config" "truncate -s 0 log.txt"
+rm -f "$TRUNC_CONFIG"
+
+# dd from /dev/zero or /dev/urandom (data overwrite)
+assert_blocked "dd from /dev/zero" "dd if=/dev/zero of=disk.img bs=1M count=100"
+assert_blocked "dd from /dev/urandom" "dd if=/dev/urandom of=secret.key bs=32 count=1"
+assert_allowed "dd from file (safe)" "dd if=backup.img of=restore.img bs=4M"
+
+echo ""
 echo "--- Compound command bypass (#37621, #37662) ---"
 assert_blocked "cd && rm -rf /" "cd .. && rm -rf /"
 assert_blocked "cd && sudo" "cd /tmp && sudo apt install something"
