@@ -9,13 +9,23 @@ Claude Code hooks that actually enforce your rules — plus a framework for runn
 
 Claude Code's CLAUDE.md rules are [read but not enforced](https://github.com/anthropics/claude-code/issues/37550) — they work at session start and degrade as context grows. Its [permission system has known gaps](https://github.com/anthropics/claude-code/issues/30519) — wildcards don't match compound commands, deny rules can be bypassed. These hooks enforce boundaries that text rules and permissions can't.
 
+**What happens when a hook blocks a dangerous command:**
+
+```
+Claude tries:  rm -rf ~/projects
+bash-guard:    {"decision":"block","reason":"rm -rf targets home directory"}
+Claude sees:   ⚠ Hook blocked this action. Suggesting safer alternative...
+```
+
+No prompts, no "are you sure" dialogs. The command never runs.
+
 **Check your current setup:**
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
 ```
 
-Scores your Claude Code safety configuration from A to F and shows one-liner fixes for each gap. Checks hook installation, hook health (missing/non-executable scripts), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings), and known CLI version regressions. No installation required. 53 tests.
+Scores your Claude Code safety configuration from A to F and shows one-liner fixes for each gap. Checks hook installation, hook health (missing/non-executable scripts), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings), and known CLI version regressions. No installation required. 52 tests.
 
 **Install all hooks at once:**
 
@@ -39,7 +49,7 @@ Saves ~2000 tokens per prevented re-read. Includes [diff mode](tools/read-once/#
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/file-guard/install.sh | bash
 ```
 
-Define protected files in `.file-guard` (one pattern per line). Two modes: **write-protect** (default) blocks writes, edits, and destructive bash commands. **`[deny]`** blocks all access including Read, Grep, and Glob, useful for large codegen directories where Claude should use an MCP server instead of reading files directly. 86 tests.
+Define protected files in `.file-guard` (one pattern per line). Two modes: **write-protect** (default) blocks writes, edits, and destructive bash commands. **`[deny]`** blocks all access including Read, Grep, and Glob, useful for large codegen directories where Claude should use an MCP server instead of reading files directly. 82 tests.
 
 ### [git-safe](tools/git-safe/) — Prevent destructive git operations
 
@@ -47,7 +57,7 @@ Define protected files in `.file-guard` (one pattern per line). Two modes: **wri
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/git-safe/install.sh | bash
 ```
 
-Blocks `git push --force`, `git reset --hard`, `git checkout .`, `git checkout HEAD -- path`, `git restore`, `git clean -f`, `git branch -D`, and other destructive git commands. Prevents the [exact pattern](https://github.com/anthropics/claude-code/issues/37888) that destroyed 30+ files despite 100+ CLAUDE.md rules. Suggests safer alternatives. Allowlist via `.git-safe` config. 64 tests.
+Blocks `git push --force`, `git reset --hard`, `git checkout .`, `git checkout HEAD -- path`, `git restore`, `git clean -f`, `git branch -D`, and other destructive git commands. Prevents the [exact pattern](https://github.com/anthropics/claude-code/issues/37888) that destroyed 30+ files despite 100+ CLAUDE.md rules. Suggests safer alternatives. Allowlist via `.git-safe` config. 65 tests.
 
 ### [bash-guard](tools/bash-guard/) — Block dangerous bash commands
 
@@ -55,7 +65,19 @@ Blocks `git push --force`, `git reset --hard`, `git checkout .`, `git checkout H
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
 ```
 
-Blocks `rm -rf /`, `sudo`/`pkexec`/`doas`, `curl|bash`, `chmod -R 777`, `kill -9 -1`, `dd` to disks, `mkfs`, system directory writes, `eval` injection, global npm installs, Docker data destruction (`docker compose down -v`, `docker system prune`), Docker escape (`docker run -v /:/host`, `docker exec`), database destruction (`prisma db push`, `dropdb`, `DROP TABLE`, `db:drop`, `migrate:fresh`), credential exposure (`env`, `printenv`, `cat .env`, `bash -x`, `set -x`), cloud infrastructure (`terraform destroy`, `kubectl delete namespace`), mass file deletion (`find -delete`, `find -exec rm`, `xargs rm`, `git clean -f`), file destruction (`shred`, `truncate -s 0`), data exfiltration (`curl -d @file`, `wget --post-file`, `nc host < file`), programmatic env dumps (`python3 -c "os.environ"`, `node -e "process.env"`), sensitive file reads (`~/.ssh/id_rsa`, `~/.bash_history`, `/proc/*/environ`). Detects workaround bypass attempts ([#34358](https://github.com/anthropics/claude-code/issues/34358)). Evaluates each segment of compound commands ([#37621](https://github.com/anthropics/claude-code/issues/37621), [#37662](https://github.com/anthropics/claude-code/issues/37662)). Blocks system database corruption via sqlite3 on IDE internals ([#37888](https://github.com/anthropics/claude-code/issues/37888)). Prevents mount point deletion on NFS/shared storage ([#36640](https://github.com/anthropics/claude-code/issues/36640)). Allowlist via `.bash-guard` config. 297 tests.
+Blocks dangerous commands across these categories:
+
+- **File destruction** -- `rm -rf /`, `shred`, `truncate -s 0`, mass delete (`find -delete`, `xargs rm`, `git clean -f`)
+- **Privilege escalation** -- `sudo`, `pkexec`, `doas`, pipe-to-shell (`curl|bash`)
+- **Database destruction** -- `DROP TABLE`, `prisma db push`, `dropdb`, `migrate:fresh`, `FLUSHALL`, and [10+ ORM variants](tools/bash-guard/)
+- **Credential exposure** -- `env`/`printenv`, `bash -x`, `cat .env`, SSH keys, [programmatic dumps](tools/bash-guard/) (`os.environ`, `process.env`)
+- **Data exfiltration** -- `curl -d @file`, `wget --post-file`, `nc host < file`
+- **Cloud infrastructure** -- `terraform destroy`, `kubectl delete namespace`, `aws s3 rm --recursive`
+- **Docker** -- container escape (`-v /:/host`), data destruction (`compose down -v`)
+- **System databases** -- sqlite3 on IDE internals ([#37888](https://github.com/anthropics/claude-code/issues/37888): 59 commands corrupted VSCode)
+- **Mount points** -- `rm -rf` on NFS/shared storage ([#36640](https://github.com/anthropics/claude-code/issues/36640))
+
+Evaluates each segment of compound commands. Detects [workaround bypass attempts](https://github.com/anthropics/claude-code/issues/34358). Allowlist via `.bash-guard` config. 297 tests.
 
 ### [branch-guard](tools/branch-guard/) — Enforce feature-branch workflow
 
@@ -418,9 +440,11 @@ bash tools/safety-check/test.sh
 
 ## Status
 
-**v0.6.1** — Security hardening (shell injection, JSON injection, path traversal fixes). bash-guard now covers Docker, databases, cloud infrastructure, credential exposure, data exfiltration, compound commands, workaround bypasses, system database corruption, and mount point protection (89 -> 297 tests). file-guard [deny] mode blocks all access to paths. Quickstart installer for zero-to-protected in one command. JSONC settings.json support across all installers. read-once deny mode fix for Claude Code v2.1.78+ regression. 195 Rust tests + 664 hook tests = 859 total. Zero clippy warnings. CI on Ubuntu + macOS. Docker support.
+**v0.6.1** — 195 Rust tests + 712 hook tests = 907 total. Zero clippy warnings. CI on Ubuntu + macOS. Docker support.
 
-Currently used in production by one agent (the author). Looking for early adopters.
+Security hardening (shell injection, JSON injection, path traversal fixes). bash-guard covers 9 threat categories with 297 tests. file-guard [deny] mode blocks all access to paths. JSONC settings.json support across all installers. read-once deny mode fix for Claude Code v2.1.78+ regression. Quickstart installer for zero-to-protected in one command.
+
+11 stars, 2 external contributors, 1 fork. Looking for early adopters.
 
 ## Contributing
 
