@@ -78,7 +78,7 @@ Blocks dangerous commands across these categories:
 - **System databases** -- sqlite3 on IDE internals ([#37888](https://github.com/anthropics/claude-code/issues/37888): 59 commands corrupted VSCode)
 - **Mount points** -- `rm -rf` on NFS/shared storage ([#36640](https://github.com/anthropics/claude-code/issues/36640))
 
-Evaluates each segment of compound commands. Detects [workaround bypass attempts](https://github.com/anthropics/claude-code/issues/34358). Allowlist via `.bash-guard` config. 307 tests.
+Evaluates each segment of compound commands. Detects [workaround bypass attempts](https://github.com/anthropics/claude-code/issues/34358). Allowlist via `.bash-guard` config. 311 tests.
 
 ### [branch-guard](tools/branch-guard/) — Enforce feature-branch workflow
 
