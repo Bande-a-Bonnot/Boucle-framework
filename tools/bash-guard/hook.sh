@@ -325,7 +325,8 @@ fi
 if echo "$COMMAND" | grep -qE 'python[23]?\s+-c\s.*os\.environ' 2>/dev/null; then
   is_allowed "env-dump" || block "Python one-liner accessing os.environ exposes all environment variables including secrets." "Access specific variables with os.getenv('VAR'), or add 'allow: env-dump' to .bash-guard."
 fi
-if echo "$COMMAND" | grep -qE 'node\s+-e\s.*process\.env' 2>/dev/null; then
+# Match process.env (dump all) but not process.env.HOME (specific access)
+if echo "$COMMAND" | grep -qE 'node\s+-e\s.*process\.env($|[^.\[a-zA-Z])' 2>/dev/null; then
   is_allowed "env-dump" || block "Node.js one-liner accessing process.env exposes all environment variables including secrets." "Access specific variables with process.env.VAR, or add 'allow: env-dump' to .bash-guard."
 fi
 if echo "$COMMAND" | grep -qE 'ruby\s+-e\s.*ENV' 2>/dev/null; then
