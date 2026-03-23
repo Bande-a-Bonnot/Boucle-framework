@@ -21,7 +21,7 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 | Hook | What it does | Type |
 |------|-------------|------|
 | [read-once](read-once/) | Prevents redundant file re-reads, saving tokens | PreToolUse |
-| [git-safe](git-safe/) | Blocks force pushes, `reset --hard`, `checkout .`, `clean -f` | PreToolUse |
+| [git-safe](git-safe/) | Blocks force pushes, `push --delete`, `reset --hard`, `checkout .`, `clean -f` | PreToolUse |
 | [bash-guard](bash-guard/) | Blocks `rm -rf /`, `sudo`, `curl\|bash`, system directory writes | PreToolUse |
 | [file-guard](file-guard/) | Protects files matching patterns in `.file-guard` config | PreToolUse |
 | [branch-guard](branch-guard/) | Prevents commits to main/master/production | PreToolUse |
@@ -49,8 +49,8 @@ See [enforce/README.md](enforce/README.md) for details and examples.
 Claude Code hooks intercept tool calls before (`PreToolUse`) or after (`PostToolUse`) execution. They run as shell scripts that receive tool input as JSON on stdin.
 
 A hook can:
-- **Allow** the operation (exit 0, no output)
-- **Block** it with a reason (exit 2, reason on stdout)
+- **Allow** the operation (exit 0, no output or `{"decision":"allow"}`)
+- **Block** it with a reason (`{"decision":"block","reason":"..."}` on stdout)
 - **Log** it for auditing (PostToolUse)
 
 Hooks catch compound commands (`cd repo && git push --force`), pipes, and subshells. They work even when Claude ignores CLAUDE.md instructions.
@@ -59,10 +59,10 @@ Hooks catch compound commands (`cd repo && git push --force`), pipes, and subshe
 
 Each safety hook supports allowlist configs so you can relax rules where needed:
 
-- `git-safe`: `.git-safe-allow` (e.g., allow force push in a specific repo)
-- `bash-guard`: `.bash-guard-allow`
+- `git-safe`: `.git-safe` (e.g., `allow: push --force`)
+- `bash-guard`: `.bash-guard` (e.g., `allow: sudo` or `deny: rm`)
 - `file-guard`: `.file-guard` (define which files to protect)
-- `branch-guard`: `.branch-guard-allow`
+- `branch-guard`: `.branch-guard` (e.g., `allow: main`)
 
 ## Requirements
 

@@ -128,6 +128,14 @@ assert_blocked "git reflog expire" \
   '{"tool_name":"Bash","tool_input":{"command":"git reflog expire --expire=now --all"}}'
 assert_blocked "git reflog delete" \
   '{"tool_name":"Bash","tool_input":{"command":"git reflog delete HEAD@{2}"}}'
+assert_blocked "git push --delete branch" \
+  '{"tool_name":"Bash","tool_input":{"command":"git push --delete origin feature-branch"}}'
+assert_blocked "git push --delete tag" \
+  '{"tool_name":"Bash","tool_input":{"command":"git push --delete origin v1.0.0"}}'
+assert_blocked "git push origin :branch (alternate delete syntax)" \
+  '{"tool_name":"Bash","tool_input":{"command":"git push origin :feature-branch"}}'
+assert_allowed "git push origin branch (normal, not delete)" \
+  '{"tool_name":"Bash","tool_input":{"command":"git push origin feature-branch"}}'
 
 # --- Force push to main/master (always blocked) ---
 echo ""
@@ -153,6 +161,11 @@ GIT_SAFE_CONFIG="$TMPDIR/.git-safe" assert_allowed "reset --hard allowed by conf
 
 GIT_SAFE_CONFIG="$TMPDIR/.git-safe" assert_allowed "push --force allowed by config" \
   '{"tool_name":"Bash","tool_input":{"command":"git push --force origin feature"}}'
+
+echo "allow: push --delete" >> "$TMPDIR/.git-safe"
+
+GIT_SAFE_CONFIG="$TMPDIR/.git-safe" assert_allowed "push --delete allowed by config" \
+  '{"tool_name":"Bash","tool_input":{"command":"git push --delete origin old-branch"}}'
 
 # Force push to main still blocked even with config
 GIT_SAFE_CONFIG="$TMPDIR/.git-safe" assert_blocked "force push to main still blocked with allowlist" \
