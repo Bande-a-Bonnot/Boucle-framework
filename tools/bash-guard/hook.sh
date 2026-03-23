@@ -20,6 +20,9 @@
 #   - Mass file deletion (find -delete, find -exec rm, xargs rm, git clean -f)
 #   - Privilege escalation alternatives (pkexec, doas, su -c/root)
 #   - File destruction bypasses (shred, truncate -s 0, dd from /dev/zero)
+#   - Data exfiltration (curl/wget file upload, netcat/socat piping)
+#   - Programmatic env dumps (python os.environ, node process.env, ruby ENV)
+#   - Sensitive file reads (SSH private keys, shell history, /proc/*/environ)
 #
 # Install:
 #   curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
@@ -308,6 +311,45 @@ fi
 # Disk overwrite via /dev/zero or /dev/urandom
 if echo "$COMMAND" | grep -qE 'dd\s.*if=/dev/(zero|urandom).*of=' 2>/dev/null; then
   is_allowed "dd" || block "dd from /dev/zero or /dev/urandom overwrites the target with empty/random data, destroying contents." "Add 'allow: dd' to .bash-guard if you need this."
+fi
+
+# Data exfiltration: uploading local files via curl/wget to remote servers
+if echo "$COMMAND" | grep -qE 'curl\s.*(-d\s*@|-F\s+[^=]+=@|--data-binary\s+@|--data\s+@|--data-urlencode\s+@|--upload-file\s)' 2>/dev/null; then
+  is_allowed "file-upload" || block "curl is uploading a local file to a remote server. This could exfiltrate sensitive data." "Inline the data instead of referencing a file, or add 'allow: file-upload' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE 'wget\s.*(--post-file|--body-file)\s' 2>/dev/null; then
+  is_allowed "file-upload" || block "wget is uploading a local file to a remote server. This could exfiltrate sensitive data." "Use curl with inline data instead, or add 'allow: file-upload' to .bash-guard."
+fi
+
+# Programmatic env dumps (scripting language one-liners that dump all env vars)
+if echo "$COMMAND" | grep -qE 'python[23]?\s+-c\s.*os\.environ' 2>/dev/null; then
+  is_allowed "env-dump" || block "Python one-liner accessing os.environ exposes all environment variables including secrets." "Access specific variables with os.getenv('VAR'), or add 'allow: env-dump' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE 'node\s+-e\s.*process\.env' 2>/dev/null; then
+  is_allowed "env-dump" || block "Node.js one-liner accessing process.env exposes all environment variables including secrets." "Access specific variables with process.env.VAR, or add 'allow: env-dump' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE 'ruby\s+-e\s.*ENV' 2>/dev/null; then
+  is_allowed "env-dump" || block "Ruby one-liner accessing ENV exposes all environment variables including secrets." "Access specific variables with ENV['VAR'], or add 'allow: env-dump' to .bash-guard."
+fi
+
+# Process environment file access (Linux /proc/*/environ)
+if echo "$COMMAND" | grep -qE '(cat|less|more|head|tail|strings)\s+/proc/[^/]+/environ' 2>/dev/null; then
+  is_allowed "env-dump" || block "Reading /proc/*/environ exposes all environment variables of a process including secrets." "Access specific variables directly, or add 'allow: env-dump' to .bash-guard."
+fi
+
+# SSH private key access
+if echo "$COMMAND" | grep -qE '(cat|less|more|head|tail|bat)\s+.*\.ssh/(id_|.*\.pem|.*key)' 2>/dev/null; then
+  is_allowed "read-secrets" || block "Reading SSH private keys exposes credentials that grant server access." "Use ssh-agent or reference the key path in SSH config, or add 'allow: read-secrets' to .bash-guard."
+fi
+
+# Shell history access (may contain passwords/tokens typed at prompts)
+if echo "$COMMAND" | grep -qE '(cat|less|more|head|tail|bat)\s+.*(\.bash_history|\.zsh_history|\.sh_history|\.history)' 2>/dev/null; then
+  is_allowed "read-secrets" || block "Shell history files may contain passwords, tokens, and API keys typed at prompts." "Search for specific commands with grep instead, or add 'allow: read-secrets' to .bash-guard."
+fi
+
+# Network exfiltration via netcat/socat (piping files to remote hosts)
+if echo "$COMMAND" | grep -qE '(nc|ncat|netcat|socat)\s.*<\s' 2>/dev/null; then
+  is_allowed "file-upload" || block "Piping file content through netcat/socat sends data to a remote host without encryption or logging." "Use curl or scp instead, or add 'allow: file-upload' to .bash-guard."
 fi
 
 log "ALLOW: $COMMAND"

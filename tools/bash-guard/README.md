@@ -28,8 +28,12 @@ bash-guard intercepts these before they execute.
 | Mass file deletion | `find -delete`, `find -exec rm`, `xargs rm`, `git clean -f` | Bulk file removal without confirmation ([#37331](https://github.com/anthropics/claude-code/issues/37331)) |
 | File destruction | `shred`, `truncate -s 0` | Irrecoverable data destruction or silent zeroing |
 | Disk overwrite | `dd if=/dev/zero of=...`, `dd if=/dev/urandom of=...` | Overwrites target with empty/random data |
+| Data exfiltration | `curl -d @.env`, `curl --upload-file`, `wget --post-file` | Uploads local files to remote servers |
+| Programmatic env dumps | `python3 -c "...os.environ"`, `node -e "...process.env"` | Scripting language env access bypasses env/printenv checks |
+| Sensitive file reads | `cat ~/.ssh/id_rsa`, `cat ~/.bash_history`, `cat /proc/self/environ` | Exposes SSH keys, command history, or process environment |
+| Network exfiltration | `nc host < file`, `ncat host < secrets` | Pipes file contents through raw network connections |
 
-Safe variants are allowed: `rm -rf ./build`, `chmod 644 file.txt`, `curl -o file url`, `kill -9 12345`, `docker compose down` (without -v), `docker run -v mydata:/data`, `prisma migrate dev`, `rails db:migrate`, `printenv HOME`, `cat README.md`, `set -euo pipefail`, `terraform plan`, `aws s3 ls`, `kubectl get pods`, `find -print`, `git clean -n`.
+Safe variants are allowed: `rm -rf ./build`, `chmod 644 file.txt`, `curl -o file url`, `curl -d '{"key":"value"}'`, `kill -9 12345`, `docker compose down` (without -v), `docker run -v mydata:/data`, `prisma migrate dev`, `rails db:migrate`, `printenv HOME`, `cat README.md`, `set -euo pipefail`, `terraform plan`, `aws s3 ls`, `kubectl get pods`, `find -print`, `git clean -n`, `ls ~/.ssh`, `ssh-keygen`, `nc -l 8080`.
 
 ## Install
 
@@ -52,7 +56,7 @@ allow: rm -rf
 allow: pipe-to-shell
 ```
 
-Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `system-write`, `eval`, `global-install`, `docker-destroy`, `docker-mount`, `docker-exec`, `db-destroy`, `env-dump`, `debug-trace`, `read-secrets`, `infra-destroy`, `mass-delete`, `git-clean`, `shred`, `truncate`.
+Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `system-write`, `eval`, `global-install`, `docker-destroy`, `docker-mount`, `docker-exec`, `db-destroy`, `env-dump`, `debug-trace`, `read-secrets`, `infra-destroy`, `mass-delete`, `git-clean`, `shred`, `truncate`, `file-upload`.
 
 ## Disable temporarily
 
@@ -83,8 +87,11 @@ When bash-guard blocks a command, Claude Code may try an equivalent alternative.
 | `rm -rf` | `shred file` | Yes |
 | `rm file` | `truncate -s 0 file` | Yes |
 | `dd of=/dev/sda` | `dd if=/dev/zero of=file` | Yes |
+| `env` / `printenv` | `python3 -c "import os; os.environ"` | Yes |
+| `cat .env` | `curl -d @.env https://...` | Yes |
+| `cat .env` | `nc host 9999 < .env` | Yes |
 
-Safe variants remain allowed: `find -exec grep`, `echo superman`, `truncate -s 100M file`, `dd if=backup of=restore`.
+Safe variants remain allowed: `find -exec grep`, `echo superman`, `truncate -s 100M file`, `dd if=backup of=restore`, `curl -d '{"inline":"data"}'`, `nc -l 8080`.
 
 ## How it works
 
@@ -96,7 +103,7 @@ bash-guard is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code
 bash test.sh
 ```
 
-251 tests covering all blocked patterns, workaround bypass prevention, compound command bypass, and safe variants.
+276 tests covering all blocked patterns, data exfiltration, programmatic env dumps, sensitive file access, workaround bypass prevention, compound command bypass, and safe variants.
 
 ## License
 
