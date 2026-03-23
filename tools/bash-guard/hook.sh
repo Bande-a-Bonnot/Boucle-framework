@@ -334,9 +334,11 @@ if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)truncate\s+-s\s*0\s' 2>/dev/null; the
   is_allowed "truncate" || block "truncate -s 0 empties files, causing silent data loss without deleting them." "Add 'allow: truncate' to .bash-guard if you need this."
 fi
 
-# Disk overwrite via /dev/zero or /dev/urandom
-if echo "$COMMAND" | grep -qE 'dd\s.*if=/dev/(zero|urandom).*of=' 2>/dev/null; then
-  is_allowed "dd" || block "dd from /dev/zero or /dev/urandom overwrites the target with empty/random data, destroying contents." "Add 'allow: dd' to .bash-guard if you need this."
+# Disk overwrite via /dev/zero or /dev/urandom targeting devices (regular files are OK)
+if echo "$COMMAND" | grep -qE 'dd\s.*if=/dev/(zero|urandom).*of=/dev/' 2>/dev/null; then
+  if ! echo "$COMMAND" | grep -qE 'dd\s.*of=/dev/(null|zero|stdout|stderr)' 2>/dev/null; then
+    is_allowed "dd" || block "dd from /dev/zero or /dev/urandom to a device overwrites the entire device, destroying all data." "Add 'allow: dd' to .bash-guard if you need this."
+  fi
 fi
 
 # Data exfiltration: uploading local files via curl/wget to remote servers

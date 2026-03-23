@@ -109,6 +109,10 @@ assert_allowed "dd to file" "dd if=/dev/zero of=./testfile bs=1M count=10"
 assert_allowed "dd to /dev/null (safe)" "dd if=somefile of=/dev/null bs=1M"
 assert_allowed "dd to /dev/zero (safe)" "dd if=somefile of=/dev/zero"
 assert_allowed "dd from file to file (safe)" "dd if=backup.img of=restore.img bs=4M"
+assert_allowed "dd urandom to file (disk image)" "dd if=/dev/urandom of=./random.bin bs=1M count=50"
+assert_allowed "dd zero to named file" "dd if=/dev/zero of=disk.img bs=4M count=1024"
+assert_blocked "dd zero to device" "dd if=/dev/zero of=/dev/sda1 bs=1M"
+assert_blocked "dd urandom to device" "dd if=/dev/urandom of=/dev/nvme0n1p1 bs=1M"
 
 DD_CONFIG=$(mktemp)
 echo "allow: dd" > "$DD_CONFIG"
