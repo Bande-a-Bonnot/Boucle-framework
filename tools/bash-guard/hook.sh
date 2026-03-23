@@ -17,7 +17,9 @@
 #   - Credential exposure (env/printenv dumps, export -p, bash -x, set -x, cat .env/.pem/.key)
 #   - Cloud infrastructure destruction (terraform destroy, pulumi destroy, aws s3 rm --recursive,
 #     kubectl delete namespace/deployment, gcloud delete)
-#   - Mass file deletion (find -delete, xargs rm, git clean -f)
+#   - Mass file deletion (find -delete, find -exec rm, xargs rm, git clean -f)
+#   - Privilege escalation alternatives (pkexec, doas, su -c/root)
+#   - File destruction bypasses (shred, truncate -s 0, dd from /dev/zero)
 #
 # Install:
 #   curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
@@ -139,9 +141,15 @@ if echo "$COMMAND" | grep -qE '(curl|wget)\s.*\|\s*(sh|bash|zsh|dash|ksh|source|
   is_allowed "pipe-to-shell" || block "Piping downloaded content directly to a shell executes untrusted code." "Download the script first, review it, then run it. Or add 'allow: pipe-to-shell' to .bash-guard."
 fi
 
-# sudo (privilege escalation)
+# sudo and alternatives (privilege escalation)
 if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)sudo\s' 2>/dev/null; then
   is_allowed "sudo" || block "sudo escalates to root privileges. AI agents should not run commands as root." "Run without sudo, or add 'allow: sudo' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)(pkexec|doas)\s' 2>/dev/null; then
+  is_allowed "sudo" || block "pkexec/doas escalates to root privileges, same as sudo. AI agents should not run commands as root." "Run without privilege escalation, or add 'allow: sudo' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)su\s+(-c\s|root)' 2>/dev/null; then
+  is_allowed "sudo" || block "su -c or su root escalates to root privileges. AI agents should not run commands as root." "Run without privilege escalation, or add 'allow: sudo' to .bash-guard."
 fi
 
 # kill -9 on broad targets (-1, 0, or no specific PID)
@@ -198,8 +206,14 @@ fi
 if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)dropdb\s' 2>/dev/null; then
   is_allowed "db-destroy" || block "dropdb permanently deletes a PostgreSQL database." "Add 'allow: db-destroy' to .bash-guard if you need this."
 fi
-if echo "$COMMAND" | grep -qiE "(DROP\s+(DATABASE|TABLE)|TRUNCATE\s+)" 2>/dev/null; then
-  is_allowed "db-destroy" || block "Destructive SQL command (DROP/TRUNCATE) causes permanent data loss." "Add 'allow: db-destroy' to .bash-guard if you need this."
+if echo "$COMMAND" | grep -qiE "DROP\s+(DATABASE|TABLE)" 2>/dev/null; then
+  is_allowed "db-destroy" || block "Destructive SQL command (DROP DATABASE/TABLE) causes permanent data loss." "Add 'allow: db-destroy' to .bash-guard if you need this."
+fi
+if echo "$COMMAND" | grep -qiE "TRUNCATE\s+" 2>/dev/null; then
+  # Exclude filesystem truncate command (has -s/-c/-r flags)
+  if ! echo "$COMMAND" | grep -qE 'truncate\s+-' 2>/dev/null; then
+    is_allowed "db-destroy" || block "SQL TRUNCATE causes permanent data loss." "Add 'allow: db-destroy' to .bash-guard if you need this."
+  fi
 fi
 if echo "$COMMAND" | grep -qE '(db:drop|db:wipe|migrate:fresh|fixtures:load|db:seed:replant)' 2>/dev/null; then
   is_allowed "db-destroy" || block "ORM command that destroys or replaces database contents." "Add 'allow: db-destroy' to .bash-guard if you need this."
@@ -257,9 +271,12 @@ if echo "$COMMAND" | grep -qE '(mongosh?|mongo)\s.*dropDatabase' 2>/dev/null; th
   is_allowed "db-destroy" || block "MongoDB dropDatabase permanently removes the entire database." "Add 'allow: db-destroy' to .bash-guard if you need this."
 fi
 
-# Mass file deletion (find -delete, xargs rm)
+# Mass file deletion (find -delete, find -exec rm, xargs rm)
 if echo "$COMMAND" | grep -qE 'find\s.*\s-delete\b' 2>/dev/null; then
   is_allowed "mass-delete" || block "find with -delete permanently removes all matching files without confirmation." "Use -print first to preview, or add 'allow: mass-delete' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE 'find\s.*-exec\s+rm\s' 2>/dev/null; then
+  is_allowed "mass-delete" || block "find with -exec rm permanently removes matching files in bulk." "Use -print first to preview, or add 'allow: mass-delete' to .bash-guard."
 fi
 if echo "$COMMAND" | grep -qE '\|\s*xargs\s.*rm\b' 2>/dev/null; then
   is_allowed "mass-delete" || block "Piping to xargs rm deletes files in bulk without individual confirmation." "Review the file list first, or add 'allow: mass-delete' to .bash-guard."
@@ -278,6 +295,19 @@ fi
 # Docker exec (arbitrary commands in containers with potential host access)
 if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)docker\s+exec\s' 2>/dev/null; then
   is_allowed "docker-exec" || block "docker exec runs commands in a container that may have elevated privileges or host access." "Add 'allow: docker-exec' to .bash-guard if you need container access."
+fi
+
+# File destruction alternatives (workaround bypasses for rm — Pattern E)
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)shred\s' 2>/dev/null; then
+  is_allowed "shred" || block "shred securely overwrites files, making recovery impossible." "Use rm instead (allows recovery from backups), or add 'allow: shred' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)truncate\s+-s\s*0\s' 2>/dev/null; then
+  is_allowed "truncate" || block "truncate -s 0 empties files, causing silent data loss without deleting them." "Add 'allow: truncate' to .bash-guard if you need this."
+fi
+
+# Disk overwrite via /dev/zero or /dev/urandom
+if echo "$COMMAND" | grep -qE 'dd\s.*if=/dev/(zero|urandom).*of=' 2>/dev/null; then
+  is_allowed "dd" || block "dd from /dev/zero or /dev/urandom overwrites the target with empty/random data, destroying contents." "Add 'allow: dd' to .bash-guard if you need this."
 fi
 
 log "ALLOW: $COMMAND"

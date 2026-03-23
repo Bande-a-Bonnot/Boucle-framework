@@ -13,7 +13,7 @@ bash-guard intercepts these before they execute.
 | Recursive delete | `rm -rf /`, `rm -rf ~`, `rm -rf *` | Irreversible data loss |
 | Dangerous permissions | `chmod -R 777`, `chmod -R 000` | Security holes or lockouts |
 | Pipe to shell | `curl ... \| bash`, `wget ... \| sh` | Executes untrusted code |
-| Privilege escalation | `sudo anything` | AI should not have root |
+| Privilege escalation | `sudo`, `pkexec`, `doas`, `su -c` | AI should not have root |
 | Broad kill | `kill -9 -1`, `killall -9` | Kills all processes |
 | Disk operations | `dd of=/dev/sda`, `mkfs` | Destroys filesystems |
 | System writes | `> /etc/hosts`, `> /usr/bin/...` | Breaks OS |
@@ -25,7 +25,9 @@ bash-guard intercepts these before they execute.
 | Credential exposure | `env`, `printenv`, `export -p`, `cat .env` | Dumps secrets to output ([#32616](https://github.com/anthropics/claude-code/issues/32616)) |
 | Debug trace | `bash -x`, `set -x` | Leaks expanded variables in trace |
 | Cloud infra destruction | `terraform destroy`, `aws s3 rm --recursive`, `kubectl delete namespace`, `pulumi destroy` | Takes down production infrastructure |
-| Mass file deletion | `find -delete`, `xargs rm`, `git clean -f` | Bulk file removal without confirmation ([#37331](https://github.com/anthropics/claude-code/issues/37331)) |
+| Mass file deletion | `find -delete`, `find -exec rm`, `xargs rm`, `git clean -f` | Bulk file removal without confirmation ([#37331](https://github.com/anthropics/claude-code/issues/37331)) |
+| File destruction | `shred`, `truncate -s 0` | Irrecoverable data destruction or silent zeroing |
+| Disk overwrite | `dd if=/dev/zero of=...`, `dd if=/dev/urandom of=...` | Overwrites target with empty/random data |
 
 Safe variants are allowed: `rm -rf ./build`, `chmod 644 file.txt`, `curl -o file url`, `kill -9 12345`, `docker compose down` (without -v), `docker run -v mydata:/data`, `prisma migrate dev`, `rails db:migrate`, `printenv HOME`, `cat README.md`, `set -euo pipefail`, `terraform plan`, `aws s3 ls`, `kubectl get pods`, `find -print`, `git clean -n`.
 
@@ -50,7 +52,7 @@ allow: rm -rf
 allow: pipe-to-shell
 ```
 
-Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `system-write`, `eval`, `global-install`, `docker-destroy`, `docker-mount`, `docker-exec`, `db-destroy`, `env-dump`, `debug-trace`, `read-secrets`, `infra-destroy`, `mass-delete`, `git-clean`.
+Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `system-write`, `eval`, `global-install`, `docker-destroy`, `docker-mount`, `docker-exec`, `db-destroy`, `env-dump`, `debug-trace`, `read-secrets`, `infra-destroy`, `mass-delete`, `git-clean`, `shred`, `truncate`.
 
 ## Disable temporarily
 
@@ -70,6 +72,20 @@ npm test || sudo rm -rf /   # deny rule on sudo may not fire
 
 bash-guard evaluates the entire command string. Every pattern checks for matches after `&&`, `||`, `;`, and `|` operators, so chaining a safe command before a dangerous one does not bypass protection.
 
+## Workaround bypass prevention
+
+When bash-guard blocks a command, Claude Code may try an equivalent alternative. bash-guard covers known workaround patterns ([#34358](https://github.com/anthropics/claude-code/issues/34358)):
+
+| Blocked | Workaround attempt | Also blocked? |
+|---------|-------------------|---------------|
+| `find -delete` | `find -exec rm {} \;` | Yes |
+| `sudo` | `pkexec`, `doas`, `su -c` | Yes |
+| `rm -rf` | `shred file` | Yes |
+| `rm file` | `truncate -s 0 file` | Yes |
+| `dd of=/dev/sda` | `dd if=/dev/zero of=file` | Yes |
+
+Safe variants remain allowed: `find -exec grep`, `echo superman`, `truncate -s 100M file`, `dd if=backup of=restore`.
+
 ## How it works
 
 bash-guard is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code/hooks) that runs before every tool call. It checks if the tool is `Bash`, parses the command, and blocks known-dangerous patterns. If a command is blocked, Claude Code sees the reason and suggestion, so it can try a safer alternative.
@@ -80,7 +96,7 @@ bash-guard is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code
 bash test.sh
 ```
 
-225 tests covering all blocked patterns, compound command bypass, and safe variants.
+251 tests covering all blocked patterns, workaround bypass prevention, compound command bypass, and safe variants.
 
 ## License
 
