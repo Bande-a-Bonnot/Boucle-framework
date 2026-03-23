@@ -229,6 +229,57 @@ fi
 rm -f "$DENY_CONFIG"
 
 echo ""
+echo "--- Docker destructive commands ---"
+assert_blocked "docker compose down -v" "docker compose down -v"
+assert_blocked "docker-compose down -v" "docker-compose down -v"
+assert_blocked "docker compose down -v --rmi all" "docker compose down -v --rmi all"
+assert_blocked "docker system prune" "docker system prune"
+assert_blocked "docker system prune -a" "docker system prune -a --force"
+assert_blocked "docker volume prune" "docker volume prune"
+assert_blocked "docker volume rm mydata" "docker volume rm mydata"
+assert_allowed "docker compose down (no -v)" "docker compose down"
+assert_allowed "docker compose up" "docker compose up -d"
+assert_allowed "docker ps" "docker ps -a"
+assert_allowed "docker volume ls" "docker volume ls"
+
+echo ""
+echo "--- Database destructive commands ---"
+assert_blocked "dropdb" "dropdb myapp_production"
+assert_blocked "DROP DATABASE sql" "psql -c 'DROP DATABASE myapp'"
+assert_blocked "DROP TABLE sql" "mysql -e 'DROP TABLE users'"
+assert_blocked "TRUNCATE sql" "psql -c 'TRUNCATE users CASCADE'"
+assert_blocked "drop database lowercase" "mysql -e 'drop database myapp'"
+assert_blocked "db:drop (Rails)" "rails db:drop"
+assert_blocked "db:wipe" "bundle exec rails db:wipe"
+assert_blocked "migrate:fresh (Laravel)" "php artisan migrate:fresh"
+assert_blocked "fixtures:load (Symfony)" "php bin/console doctrine:fixtures:load"
+assert_blocked "db:seed:replant" "rails db:seed:replant"
+assert_allowed "db:migrate (safe)" "rails db:migrate"
+assert_allowed "db:seed (safe)" "rails db:seed"
+assert_allowed "psql query (safe)" "psql -c 'SELECT * FROM users'"
+assert_allowed "docker-unrelated drop word" "echo 'drop the feature flag'"
+
+echo ""
+echo "--- Docker allowlist ---"
+DOCKER_CONFIG=$(mktemp)
+echo "allow: docker-destroy" > "$DOCKER_CONFIG"
+BASH_GUARD_CONFIG="$DOCKER_CONFIG" \
+  assert_allowed "docker compose down -v allowed by config" "docker compose down -v"
+BASH_GUARD_CONFIG="$DOCKER_CONFIG" \
+  assert_allowed "docker system prune allowed by config" "docker system prune -a"
+rm -f "$DOCKER_CONFIG"
+
+echo ""
+echo "--- Database allowlist ---"
+DB_CONFIG=$(mktemp)
+echo "allow: db-destroy" > "$DB_CONFIG"
+BASH_GUARD_CONFIG="$DB_CONFIG" \
+  assert_allowed "dropdb allowed by config" "dropdb myapp_production"
+BASH_GUARD_CONFIG="$DB_CONFIG" \
+  assert_allowed "DROP DATABASE allowed by config" "psql -c 'DROP DATABASE myapp'"
+rm -f "$DB_CONFIG"
+
+echo ""
 echo "================================"
 echo "Results: $PASS passed, $FAIL failed"
 echo "Total: $((PASS + FAIL)) tests"

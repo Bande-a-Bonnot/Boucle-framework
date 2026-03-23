@@ -10,6 +10,8 @@
 #   - kill -9 on broad targets
 #   - dd/mkfs targeting disks
 #   - Overwriting system directories
+#   - Docker data destruction (compose down -v, system prune, volume rm)
+#   - Database destruction (dropdb, DROP/TRUNCATE, db:drop, migrate:fresh)
 #
 # Install:
 #   curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
@@ -168,6 +170,28 @@ fi
 # npm global install
 if echo "$COMMAND" | grep -qE 'npm\s+install\s+-g\b' 2>/dev/null; then
   is_allowed "global-install" || block "Global npm install modifies system-wide packages." "Use npx or local install instead, or add 'allow: global-install' to .bash-guard."
+fi
+
+# Docker destructive commands (data loss via volume/container removal)
+if echo "$COMMAND" | grep -qE 'docker(-compose|\s+compose)\s+down\s.*-v' 2>/dev/null; then
+  is_allowed "docker-destroy" || block "docker compose down -v removes named volumes, causing permanent data loss." "Use 'docker compose down' without -v to keep volumes, or add 'allow: docker-destroy' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE 'docker\s+system\s+prune' 2>/dev/null; then
+  is_allowed "docker-destroy" || block "docker system prune removes unused containers, networks, and images." "Add 'allow: docker-destroy' to .bash-guard if you need this."
+fi
+if echo "$COMMAND" | grep -qE 'docker\s+volume\s+(prune|rm)\b' 2>/dev/null; then
+  is_allowed "docker-destroy" || block "Removing Docker volumes destroys persistent data." "Add 'allow: docker-destroy' to .bash-guard if you need this."
+fi
+
+# Database CLI destructive commands
+if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)dropdb\s' 2>/dev/null; then
+  is_allowed "db-destroy" || block "dropdb permanently deletes a PostgreSQL database." "Add 'allow: db-destroy' to .bash-guard if you need this."
+fi
+if echo "$COMMAND" | grep -qiE "(DROP\s+(DATABASE|TABLE)|TRUNCATE\s+)" 2>/dev/null; then
+  is_allowed "db-destroy" || block "Destructive SQL command (DROP/TRUNCATE) causes permanent data loss." "Add 'allow: db-destroy' to .bash-guard if you need this."
+fi
+if echo "$COMMAND" | grep -qE '(db:drop|db:wipe|migrate:fresh|fixtures:load|db:seed:replant)' 2>/dev/null; then
+  is_allowed "db-destroy" || block "ORM command that destroys or replaces database contents." "Add 'allow: db-destroy' to .bash-guard if you need this."
 fi
 
 log "ALLOW: $COMMAND"

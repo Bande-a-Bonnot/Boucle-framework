@@ -19,8 +19,10 @@ bash-guard intercepts these before they execute.
 | System writes | `> /etc/hosts`, `> /usr/bin/...` | Breaks OS |
 | Code injection | `eval "$variable"` | Arbitrary execution |
 | Global installs | `npm install -g` | Modifies system packages |
+| Docker destruction | `docker compose down -v`, `docker system prune`, `docker volume rm` | Destroys volumes/data |
+| Database destruction | `dropdb`, `DROP DATABASE/TABLE`, `TRUNCATE`, `db:drop`, `migrate:fresh` | Destroys database contents |
 
-Safe variants are allowed: `rm -rf ./build`, `chmod 644 file.txt`, `curl -o file url`, `kill -9 12345`.
+Safe variants are allowed: `rm -rf ./build`, `chmod 644 file.txt`, `curl -o file url`, `kill -9 12345`, `docker compose down` (without -v), `rails db:migrate`.
 
 ## Install
 
@@ -43,7 +45,7 @@ allow: rm -rf
 allow: pipe-to-shell
 ```
 
-Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `system-write`, `eval`, `global-install`.
+Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `system-write`, `eval`, `global-install`, `docker-destroy`, `db-destroy`.
 
 ## Disable temporarily
 
@@ -61,7 +63,7 @@ bash-guard is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code
 bash test.sh
 ```
 
-48 tests covering all blocked patterns plus safe variants.
+89 tests covering all blocked patterns plus safe variants.
 
 ## License
 
