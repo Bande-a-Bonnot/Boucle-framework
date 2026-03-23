@@ -479,11 +479,11 @@ echo ""
 echo "--- Workaround bypass prevention (Pattern E, #34358) ---"
 
 # find -exec rm (workaround for find -delete)
-assert_blocked "find -exec rm" "find . -exec rm {} \;"
+assert_blocked "find -exec rm" "find . -exec rm {} ;"
 assert_blocked "find -exec rm -rf" "find /tmp -exec rm -rf {} +"
-assert_blocked "find -name -exec rm" "find . -name '*.log' -exec rm {} \;"
-assert_allowed "find -exec grep (safe)" "find . -exec grep -l 'TODO' {} \;"
-assert_allowed "find -exec cat (safe)" "find . -name '*.md' -exec cat {} \;"
+assert_blocked "find -name -exec rm" "find . -name '*.log' -exec rm {} ;"
+assert_allowed "find -exec grep (safe)" "find . -exec grep -l 'TODO' {} ;"
+assert_allowed "find -exec cat (safe)" "find . -name '*.md' -exec cat {} ;"
 
 # Privilege escalation alternatives (workaround for sudo)
 assert_blocked "pkexec" "pkexec apt install something"

@@ -4,6 +4,59 @@ All notable changes to Boucle are documented here.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-03-23
+
+### Security
+- **enforce-hooks: shell injection fix** -- Engine now passes values via environment variables instead of string interpolation, preventing crafted CLAUDE.md content from executing arbitrary shell commands. 22 new edge case tests.
+- **Standalone hooks: JSON injection fix** -- All hooks use `jq --arg` for safe JSON output, preventing crafted filenames or commands from breaking hook responses.
+- **file-guard: path traversal fix** -- Normalizes paths to prevent `../../.env` bypassing deny rules.
+
+### Added
+
+#### bash-guard (89 -> 276 tests)
+- **Docker protection** -- Blocks `docker system prune -a`, `docker volume rm`, `docker-compose down -v`, and other container data destruction commands.
+- **Database destruction protection** -- Blocks `dropdb`, `DROP DATABASE`, `TRUNCATE`, ORM migration commands (`prisma db push`, `migrate:fresh`, `fixtures:load`), and database connection string exposure.
+- **Credential exposure protection** -- Blocks `env`, `printenv`, `set`, `export -p`, `bash -x`, `python -c "import os; os.environ"`, and other environment/credential dumping commands.
+- **Cloud infrastructure protection** -- Blocks `terraform destroy`, `aws ... delete`, `gcloud ... delete`, `kubectl delete`, and other cloud resource destruction commands.
+- **Mass delete protection** -- Blocks `find . -delete`, `xargs rm`, `git clean -fdx`, and bulk file removal patterns.
+- **Compound command bypass prevention** -- Detects dangerous commands hidden in `;`, `&&`, `||`, `$()`, and backtick chains. 20 new tests.
+- **Workaround bypass prevention** -- Catches `find -exec rm`, `pkexec`/`doas` privilege escalation, `shred`, `truncate -s 0`, `dd if=/dev/zero`, and other alternatives to blocked commands.
+- **Data exfiltration prevention** -- Blocks `curl -F`/`wget --post-file` file uploads, `nc` piping, `python`/`node`/`ruby` environment dumps, SSH key access, and shell history exposure.
+
+#### file-guard (42 -> 86 tests)
+- **[deny] mode** -- Blocks all access (Read, Grep, Glob, and Bash) to denied paths, not just writes. Addresses users who need to completely hide files from AI agents.
+
+#### git-safe (45 -> 50 tests)
+- **push --delete protection** -- Blocks `git push origin --delete` which deletes remote branches/tags.
+
+#### safety-check
+- **Environment warnings** -- Detects risky environment variables and hook health issues during safety scoring.
+
+#### Installers
+- **Quickstart installer** -- `install.sh quickstart` creates a CLAUDE.md with enforceable rules and installs armor protection if none exist. Zero-to-protected in one command.
+- **JSONC settings.json support** -- All 8 installers now strip comments before parsing settings.json, preventing data loss when users have JSONC-format config files.
+- **Post-install guidance** -- Installers show what rules were detected and what protection was added.
+
+### Fixed
+- **read-once deny mode** -- Switched from `permissionDecision` format (broken since Claude Code v2.1.78, see [#37597](https://github.com/anthropics/claude-code/issues/37597)) to robust top-level `decision:block` format. Prevents silent fail-open on newer Claude Code versions.
+- **Stale test counts** -- Corrected README and framework site test counts across all 6 hooks.
+- **tools/README.md config names** -- Fixed 3 hooks that had wrong config file names in documentation.
+- **Installer post-install messages** -- Updated to reflect current capabilities (was missing 7 protection categories).
+- **CI test payloads** -- Fixed `input` -> `tool_input` field name across all test payloads (contributed by chris-peterson via PR #2).
+
+### Documented
+- 3 platform bugs in Known Limitations: [#37745](https://github.com/anthropics/claude-code/issues/37745) (permission reset), [#37730](https://github.com/anthropics/claude-code/issues/37730) (subagent inheritance), [#37746](https://github.com/anthropics/claude-code/issues/37746) (Vertex AI).
+- Command-type hook limitation ([#33125](https://github.com/anthropics/claude-code/issues/33125)).
+- MCP hook deny limitation ([#33106](https://github.com/anthropics/claude-code/issues/33106)).
+- Design tradeoff section in README (positions vs. advisory-based approaches).
+
+### Stats
+- 195 Rust tests (unchanged)
+- Hook test suites: enforce-hooks 38, bash-guard 276, file-guard 86, git-safe 50, session-log 81, branch-guard 36, safety-check 40, format 36
+- Total hook tests: 643
+- Total tests: 838
+- CI: Ubuntu + macOS, Docker image published to ghcr.io
+
 ## [0.5.0] - 2026-03-09
 
 ### Added
@@ -91,7 +144,8 @@ First public release.
 - 161 passing tests, zero clippy warnings
 - CI on Ubuntu + macOS
 
-[Unreleased]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/Bande-a-Bonnot/Boucle-framework/releases/tag/v0.4.0
