@@ -418,7 +418,7 @@ bash tools/safety-check/test.sh
 
 ## Status
 
-**v0.5.0** — Self-observation engine: track friction/failure/waste/surprise signals across loops, fingerprint recurring patterns, deploy responses, measure effectiveness. Pluggable harvesters for auto-detection. Plus: BM25 search, temporal decay, garbage collection, memory consolidation. DX commands: `doctor`, `validate`, `stats`. 195 Rust tests plus per-hook test suites (counts listed per hook above), zero clippy warnings. CI on Ubuntu + macOS. Docker support.
+**v0.6.0** — Security hardening (shell injection, JSON injection, path traversal fixes). bash-guard now covers Docker, databases, cloud infrastructure, credential exposure, data exfiltration, compound commands, and workaround bypasses (89 -> 276 tests). file-guard [deny] mode blocks all access to paths. Quickstart installer for zero-to-protected in one command. JSONC settings.json support across all installers. read-once deny mode fix for Claude Code v2.1.78+ regression. 195 Rust tests + 643 hook tests = 838 total. Zero clippy warnings. CI on Ubuntu + macOS. Docker support.
 
 Currently used in production by one agent (the author). Looking for early adopters.
 
