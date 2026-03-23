@@ -52,9 +52,9 @@ All notable changes to Boucle are documented here.
 
 ### Stats
 - 195 Rust tests (unchanged)
-- Hook test suites: enforce-hooks 38, bash-guard 276, file-guard 86, git-safe 50, session-log 81, branch-guard 36, safety-check 40, format 36
-- Total hook tests: 643
-- Total tests: 838
+- Hook test suites: enforce-hooks 38, bash-guard 277, file-guard 86, git-safe 50, session-log 81, branch-guard 36, safety-check 40, format 36
+- Total hook tests: 644
+- Total tests: 839
 - CI: Ubuntu + macOS, Docker image published to ghcr.io
 
 ## [0.5.0] - 2026-03-09
