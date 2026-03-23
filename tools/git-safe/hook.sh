@@ -9,6 +9,7 @@
 #   - git clean -f (deletes untracked files permanently)
 #   - git branch -D (force-deletes unmerged branches)
 #   - git stash drop / clear (permanently deletes stashed work)
+#   - git push --delete / origin :branch (removes remote refs)
 #   - git rebase without safeguards
 #   - git reflog expire (destroys recovery data)
 #
@@ -147,6 +148,15 @@ fi
 # git reflog expire / delete
 if echo "$COMMAND" | grep -qE 'git\s+reflog\s+(expire|delete)' 2>/dev/null; then
   is_allowed "reflog expire" || block "git reflog expire/delete destroys recovery data." "This is almost never needed. Add 'allow: reflog expire' to .git-safe if you really need it."
+fi
+
+# git push --delete (removes remote branches/tags)
+if echo "$COMMAND" | grep -qE 'git\s+push\s.*--delete\s' 2>/dev/null; then
+  is_allowed "push --delete" || block "git push --delete permanently removes remote branches or tags." "Use 'git branch -d' for local cleanup instead, or add 'allow: push --delete' to .git-safe."
+fi
+# git push origin :branch (alternate delete syntax)
+if echo "$COMMAND" | grep -qE 'git\s+push\s+\S+\s+:[^/\s]' 2>/dev/null; then
+  is_allowed "push --delete" || block "git push origin :branch permanently removes a remote branch." "Use 'git branch -d' for local cleanup instead, or add 'allow: push --delete' to .git-safe."
 fi
 
 # Force push to main/master (extra protection)
