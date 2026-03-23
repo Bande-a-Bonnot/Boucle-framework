@@ -349,6 +349,12 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **Hooks don't fire in pipe mode (`-p`).** When running Claude Code with `-p` (pipe/print mode), [hooks do not execute](https://github.com/anthropics/claude-code/issues/37559). This means automated testing workflows that use `claude -p "test prompt"` will not trigger PreToolUse hooks. Test hooks in interactive mode.
 
+**PreToolUse hooks can reset permission bypass mode.** When `--dangerously-skip-permissions` is enabled, PreToolUse hooks can [cause the permission state to reset mid-session](https://github.com/anthropics/claude-code/issues/37745), reverting all tools to manual approval after 30 minutes to 2 hours. Disabling hooks is the only workaround. If you use hooks in autonomous mode and find tools suddenly requiring approval, this platform bug is the likely cause.
+
+**Prompt-type hooks fail on Vertex AI.** Hooks configured with `"type": "prompt"` [return a 400 error on Vertex AI backends](https://github.com/anthropics/claude-code/issues/37746) ("output_config: Extra inputs"). enforce-hooks only generates command-type hooks so this does not affect it directly, but custom prompt hooks will silently fail on Vertex.
+
+**Subagents may not inherit hook settings.** Agents spawned via the Agent tool [do not consistently inherit permission settings](https://github.com/anthropics/claude-code/issues/37730) from the parent session. Hooks configured at the project level should still fire for subagents (they share the same `.claude/settings.json`), but global permission preferences may not propagate. Verify hook behavior in subagent workflows.
+
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
 ## Tests

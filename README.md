@@ -390,6 +390,10 @@ boucle --version                 # Show version
 
 **Hooks not blocking**: Claude Code only fires hooks on tool calls, not on prompt assembly. Features like @-autocomplete inject file content before hooks can intercept. See [claude-code#32928](https://github.com/anthropics/claude-code/issues/32928).
 
+**Permission bypass resets with hooks installed**: If you use `--dangerously-skip-permissions` (common in autonomous setups), PreToolUse hooks can [cause the permission state to reset mid-session](https://github.com/anthropics/claude-code/issues/37745), reverting all tools to manual approval. This is a platform bug, not a hooks bug. If tools suddenly require approval 30-120 minutes into a session, this is why.
+
+**Subagents may skip hook settings**: Agents spawned via the Agent tool [don't consistently inherit permission settings](https://github.com/anthropics/claude-code/issues/37730). Hooks in `.claude/settings.json` should still fire (shared config), but verify hook behavior when using subagent workflows.
+
 ## Development
 
 ```bash
