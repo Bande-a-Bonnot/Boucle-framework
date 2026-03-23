@@ -248,6 +248,142 @@ assert "healthy hook shows checkmark" "✓.*good-hook" "$OK_OUTPUT"
 assert_not "healthy hook no errors" "file not found" "$OK_OUTPUT"
 rm -rf "$TMPDIR_OK"
 
+# === Test 18: enforce-hooks detection in user-level settings ===
+TMPDIR_ENFORCE=$(mktemp -d)
+export HOME="$TMPDIR_ENFORCE"
+mkdir -p "$TMPDIR_ENFORCE/.claude"
+cat > "$TMPDIR_ENFORCE/.claude/settings.json" << 'ENFORCE_SETTINGS'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [{"type": "command", "command": "python3 .claude/hooks/enforce-hooks.py"}]
+      }
+    ]
+  }
+}
+ENFORCE_SETTINGS
+ENFORCE_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "enforce-hooks detected in settings" "✓.*enforce-hooks" "$ENFORCE_OUTPUT"
+assert "has rule enforcement section" "Rule Enforcement" "$ENFORCE_OUTPUT"
+rm -rf "$TMPDIR_ENFORCE"
+
+# === Test 19: enforce-hooks not installed ===
+TMPDIR_NOENF=$(mktemp -d)
+export HOME="$TMPDIR_NOENF"
+mkdir -p "$TMPDIR_NOENF/.claude"
+echo '{"hooks": {}}' > "$TMPDIR_NOENF/.claude/settings.json"
+ORIG_DIR_19=$(pwd)
+cd "$TMPDIR_NOENF"
+NOENF_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "enforce-hooks missing flagged" "✗.*enforce-hooks" "$NOENF_OUTPUT"
+cd "$ORIG_DIR_19"
+rm -rf "$TMPDIR_NOENF"
+
+# === Test 20: enforce-hooks via project-level .claude/hooks/ ===
+TMPDIR_PROJ=$(mktemp -d)
+export HOME="$TMPDIR_PROJ"
+mkdir -p "$TMPDIR_PROJ/.claude"
+echo '{}' > "$TMPDIR_PROJ/.claude/settings.json"
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_PROJ"
+mkdir -p .claude/hooks
+echo '#!/usr/bin/env python3' > .claude/hooks/enforce-hooks.py
+PROJ_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "project-level enforce-hooks detected" "✓.*enforce-hooks" "$PROJ_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_PROJ"
+
+# === Test 21: CLAUDE.md with @enforced rules ===
+TMPDIR_RULES=$(mktemp -d)
+export HOME="$TMPDIR_RULES"
+mkdir -p "$TMPDIR_RULES/.claude"
+echo '{}' > "$TMPDIR_RULES/.claude/settings.json"
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_RULES"
+cat > CLAUDE.md << 'CLAUDEMD'
+## Safety @enforced
+- Never modify .env files
+- Do not use git push --force
+
+## Guidelines @enforced(warn)
+- Always run tests before committing
+CLAUDEMD
+RULES_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "CLAUDE.md @enforced rules detected" "✓.*@enforced" "$RULES_OUTPUT"
+assert "shows rule count" "2 found" "$RULES_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_RULES"
+
+# === Test 22: CLAUDE.md without @enforced rules ===
+TMPDIR_NORULES=$(mktemp -d)
+export HOME="$TMPDIR_NORULES"
+mkdir -p "$TMPDIR_NORULES/.claude"
+echo '{}' > "$TMPDIR_NORULES/.claude/settings.json"
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_NORULES"
+cat > CLAUDE.md << 'NORULES'
+## Guidelines
+- Write clean code
+- Use meaningful variable names
+NORULES
+NORULES_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "CLAUDE.md without @enforced flagged" "✗.*@enforced" "$NORULES_OUTPUT"
+assert "advisory warning shown" "advisory only" "$NORULES_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_NORULES"
+
+# === Test 23: No CLAUDE.md at all ===
+TMPDIR_NOCL=$(mktemp -d)
+export HOME="$TMPDIR_NOCL"
+mkdir -p "$TMPDIR_NOCL/.claude"
+echo '{}' > "$TMPDIR_NOCL/.claude/settings.json"
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_NOCL"
+NOCL_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "no CLAUDE.md flagged" "✗.*@enforced" "$NOCL_OUTPUT"
+assert "no CLAUDE.md message" "No CLAUDE.md" "$NOCL_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_NOCL"
+
+# === Test 24: Full setup includes enforce-hooks in score ===
+TMPDIR_FULL2=$(mktemp -d)
+export HOME="$TMPDIR_FULL2"
+mkdir -p "$TMPDIR_FULL2/.claude"
+cat > "$TMPDIR_FULL2/.claude/settings.json" << 'FULL2'
+{
+  "hooks": {
+    "PreToolUse": [
+      {"hooks": [{"type": "command", "command": "bash ~/.claude/hooks/bash-guard.sh"}]},
+      {"hooks": [{"type": "command", "command": "bash ~/.claude/hooks/git-safe.sh"}]},
+      {"hooks": [{"type": "command", "command": "bash ~/.claude/hooks/file-guard.sh"}]},
+      {"hooks": [{"type": "command", "command": "bash ~/.claude/hooks/branch-guard.sh"}]},
+      {"hooks": [{"type": "command", "command": "bash ~/.claude/hooks/read-once.sh"}]},
+      {"hooks": [{"type": "command", "command": "python3 .claude/hooks/enforce-hooks.py"}]}
+    ],
+    "PostToolUse": [
+      {"hooks": [{"type": "command", "command": "bash ~/.claude/hooks/session-log.sh"}]}
+    ]
+  },
+  "permissions": {"allow": ["Read"], "deny": []}
+}
+FULL2
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_FULL2"
+mkdir -p .claude/hooks
+echo '#!/usr/bin/env python3' > .claude/hooks/enforce-hooks.py
+cat > CLAUDE.md << 'FULLENF'
+## Safety @enforced
+- Never modify .env
+FULLENF
+FULL2_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "full setup with enforce gets high grade" "Grade [AB]" "$FULL2_OUTPUT"
+assert "full setup detects enforce-hooks" "✓.*enforce-hooks" "$FULL2_OUTPUT"
+assert "full setup detects @enforced" "✓.*@enforced" "$FULL2_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_FULL2"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
