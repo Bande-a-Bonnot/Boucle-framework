@@ -23,6 +23,55 @@ import tempfile
 from pathlib import Path
 
 
+# --- JSONC Support ---
+
+def strip_jsonc(text):
+    """Strip // and /* */ comments from JSONC, respecting quoted strings."""
+    out, i, n = [], 0, len(text)
+    in_str = False
+    while i < n:
+        if in_str:
+            if text[i] == '\\' and i + 1 < n:
+                out.append(text[i:i+2]); i += 2; continue
+            if text[i] == '"': in_str = False
+            out.append(text[i]); i += 1
+        else:
+            if text[i] == '"':
+                in_str = True; out.append(text[i]); i += 1
+            elif i + 1 < n and text[i:i+2] == '//':
+                while i < n and text[i] != '\n': i += 1
+            elif i + 1 < n and text[i:i+2] == '/*':
+                i += 2
+                while i + 1 < n and text[i:i+2] != '*/': i += 1
+                i += 2
+            else:
+                out.append(text[i]); i += 1
+    return ''.join(out)
+
+
+def load_settings_json(path):
+    """Load settings.json, handling JSONC comments gracefully."""
+    path = Path(path)
+    if not path.exists():
+        return {}
+    raw = path.read_text()
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        try:
+            result = json.loads(strip_jsonc(raw))
+            # Rewrite as clean JSON (backup original)
+            import shutil
+            shutil.copy2(str(path), str(path) + '.bak')
+            path.write_text(json.dumps(result, indent=2) + '\n')
+            print(f"  Note: JSONC comments stripped from {path} (backup: {path}.bak)",
+                  file=sys.stderr)
+            return result
+        except json.JSONDecodeError:
+            print(f"  Warning: {path} is not valid JSON or JSONC", file=sys.stderr)
+            return {}
+
+
 # --- Directive Classification ---
 
 class Directive:
@@ -1276,14 +1325,9 @@ def install_hooks(directives, hooks_dir, settings_path):
         path.chmod(0o755)
         written.append(str(path))
 
-    # Update settings.json
+    # Update settings.json (handles JSONC comments)
     settings_path = Path(settings_path)
-    settings = {}
-    if settings_path.exists():
-        try:
-            settings = json.loads(settings_path.read_text())
-        except json.JSONDecodeError:
-            pass
+    settings = load_settings_json(settings_path)
 
     hooks_config = settings.setdefault('hooks', {})
     pre_tool = hooks_config.setdefault('PreToolUse', [])
@@ -1333,14 +1377,9 @@ def install_armor(hooks_dir, settings_path):
         path.chmod(0o755)
         written.append(str(path))
 
-    # Update settings.json
+    # Update settings.json (handles JSONC comments)
     settings_path = Path(settings_path)
-    settings = {}
-    if settings_path.exists():
-        try:
-            settings = json.loads(settings_path.read_text())
-        except json.JSONDecodeError:
-            pass
+    settings = load_settings_json(settings_path)
 
     hooks_config = settings.setdefault('hooks', {})
     pre_tool = hooks_config.setdefault('PreToolUse', [])
@@ -1705,14 +1744,9 @@ def install_plugin(claude_md_path, hooks_dir, settings_path):
     )
     wrapper.chmod(0o755)
 
-    # Register in settings.json
+    # Register in settings.json (handles JSONC comments)
     settings_path = Path(settings_path)
-    settings = {}
-    if settings_path.exists():
-        try:
-            settings = json.loads(settings_path.read_text())
-        except json.JSONDecodeError:
-            pass
+    settings = load_settings_json(settings_path)
 
     hooks_config = settings.setdefault('hooks', {})
     pre_tool = hooks_config.setdefault('PreToolUse', [])
@@ -1774,21 +1808,20 @@ def audit_hooks(claude_md_path, hooks_dir='.claude/hooks', settings_path='.claud
     plugin_engine = hooks_dir / 'enforce-hooks.py'
     plugin_mode = plugin_hook.exists() and plugin_engine.exists()
 
-    # 3. Read settings.json for registered hooks
+    # 3. Read settings.json for registered hooks (handles JSONC)
     settings_hooks = []
     enforce_registered = False
-    if settings_path.exists():
-        try:
-            settings = json.loads(settings_path.read_text())
-            for entry in settings.get('hooks', {}).get('PreToolUse', []):
-                for h in entry.get('hooks', []):
-                    cmd = h.get('command', '')
-                    if cmd:
-                        settings_hooks.append(cmd)
-                        if 'enforce' in cmd.lower():
-                            enforce_registered = True
-        except (json.JSONDecodeError, KeyError):
-            pass
+    try:
+        settings = load_settings_json(settings_path)
+        for entry in settings.get('hooks', {}).get('PreToolUse', []):
+            for h in entry.get('hooks', []):
+                cmd = h.get('command', '')
+                if cmd:
+                    settings_hooks.append(cmd)
+                    if 'enforce' in cmd.lower():
+                        enforce_registered = True
+    except (KeyError, Exception):
+        pass
 
     # 4. Find enforce hook scripts on disk
     existing_scripts = set()
@@ -1943,22 +1976,21 @@ def verify_hooks(hooks_dir='.claude/hooks', settings_path='.claude/settings.json
     results = []
     settings_issues = []
 
-    # 1. Read settings.json to find registered hooks
+    # 1. Read settings.json to find registered hooks (handles JSONC)
     registered_commands = set()
-    if settings_path.exists():
-        try:
-            settings = json.loads(settings_path.read_text())
-            for event_type in settings.get('hooks', {}):
-                for entry in settings.get('hooks', {}).get(event_type, []):
-                    for h in entry.get('hooks', []):
-                        cmd = h.get('command', '')
-                        if cmd:
-                            registered_commands.add(cmd)
-        except (json.JSONDecodeError, KeyError):
-            settings_issues.append({
-                'severity': 'error',
-                'message': f'Cannot parse {settings_path}',
-            })
+    try:
+        settings = load_settings_json(settings_path)
+        for event_type in settings.get('hooks', {}):
+            for entry in settings.get('hooks', {}).get(event_type, []):
+                for h in entry.get('hooks', []):
+                    cmd = h.get('command', '')
+                    if cmd:
+                        registered_commands.add(cmd)
+    except (KeyError, Exception):
+        settings_issues.append({
+            'severity': 'error',
+            'message': f'Cannot parse {settings_path}',
+        })
 
     # 2. Scan hook files
     if not hooks_dir.exists():
@@ -2258,18 +2290,18 @@ def smoke_test_hooks(hooks_dir='.claude/hooks', settings_path='.claude/settings.
         },
     }
 
-    # 1. Read settings.json to find registered hooks
+    # 1. Read settings.json to find registered hooks (handles JSONC)
     registered = []  # list of (event_type, command)
     if settings_path.exists():
         try:
-            settings = json.loads(settings_path.read_text())
+            settings = load_settings_json(settings_path)
             for event_type, entries in settings.get('hooks', {}).items():
                 for entry in entries:
                     for h in entry.get('hooks', []):
                         cmd = h.get('command', '')
                         if cmd:
                             registered.append((event_type, cmd))
-        except (json.JSONDecodeError, KeyError) as e:
+        except (KeyError, Exception) as e:
             settings_issues.append(f'Cannot parse {settings_path}: {e}')
     else:
         return {
