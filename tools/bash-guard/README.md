@@ -28,6 +28,7 @@ bash-guard intercepts these before they execute.
 | Mass file deletion | `find -delete`, `find -exec rm`, `xargs rm`, `git clean -f` | Bulk file removal without confirmation ([#37331](https://github.com/anthropics/claude-code/issues/37331)) |
 | File destruction | `shred`, `truncate -s 0` | Irrecoverable data destruction or silent zeroing |
 | Disk overwrite | `dd if=/dev/zero of=...`, `dd if=/dev/urandom of=...` | Overwrites target with empty/random data |
+| Disk utility destruction | `diskutil eraseDisk`, `fdisk`, `gdisk`, `parted`, `wipefs` | Erases disks, modifies partition tables ([#37984](https://github.com/anthropics/claude-code/issues/37984)) |
 | Data exfiltration | `curl -d @.env`, `curl --upload-file`, `wget --post-file` | Uploads local files to remote servers |
 | Programmatic env dumps | `python3 -c "...os.environ"`, `node -e "...process.env"` | Scripting language env access bypasses env/printenv checks |
 | Sensitive file reads | `cat ~/.ssh/id_rsa`, `cat ~/.bash_history`, `cat /proc/self/environ` | Exposes SSH keys, command history, or process environment |
@@ -58,7 +59,7 @@ allow: rm -rf
 allow: pipe-to-shell
 ```
 
-Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `system-write`, `eval`, `global-install`, `docker-destroy`, `docker-mount`, `docker-exec`, `db-destroy`, `env-dump`, `debug-trace`, `read-secrets`, `infra-destroy`, `mass-delete`, `git-clean`, `shred`, `truncate`, `file-upload`, `system-db`, `mount-delete`.
+Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `disk-util`, `system-write`, `eval`, `global-install`, `docker-destroy`, `docker-mount`, `docker-exec`, `db-destroy`, `env-dump`, `debug-trace`, `read-secrets`, `infra-destroy`, `mass-delete`, `git-clean`, `shred`, `truncate`, `file-upload`, `system-db`, `mount-delete`.
 
 ## Disable temporarily
 
@@ -105,7 +106,7 @@ bash-guard is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code
 bash test.sh
 ```
 
-297 tests covering all blocked patterns, data exfiltration, programmatic env dumps, sensitive file access, workaround bypass prevention, compound command bypass, system database protection, mount point protection, and safe variants.
+307 tests covering all blocked patterns, disk utility destruction, data exfiltration, programmatic env dumps, sensitive file access, workaround bypass prevention, compound command bypass, system database protection, mount point protection, and safe variants.
 
 ## License
 

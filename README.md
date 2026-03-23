@@ -69,6 +69,7 @@ Blocks dangerous commands across these categories:
 
 - **File destruction** -- `rm -rf /`, `shred`, `truncate -s 0`, mass delete (`find -delete`, `xargs rm`, `git clean -f`)
 - **Privilege escalation** -- `sudo`, `pkexec`, `doas`, pipe-to-shell (`curl|bash`)
+- **Disk utilities** -- `diskutil eraseDisk`/`eraseVolume`/`partitionDisk`, `fdisk`, `gdisk`, `parted`, `wipefs` ([#37984](https://github.com/anthropics/claude-code/issues/37984): 87GB personal data destroyed)
 - **Database destruction** -- `DROP TABLE`, `prisma db push`, `dropdb`, `migrate:fresh`, `FLUSHALL`, and [10+ ORM variants](tools/bash-guard/)
 - **Credential exposure** -- `env`/`printenv`, `bash -x`, `cat .env`, SSH keys, [programmatic dumps](tools/bash-guard/) (`os.environ`, `process.env`)
 - **Data exfiltration** -- `curl -d @file`, `wget --post-file`, `nc host < file`
@@ -77,7 +78,7 @@ Blocks dangerous commands across these categories:
 - **System databases** -- sqlite3 on IDE internals ([#37888](https://github.com/anthropics/claude-code/issues/37888): 59 commands corrupted VSCode)
 - **Mount points** -- `rm -rf` on NFS/shared storage ([#36640](https://github.com/anthropics/claude-code/issues/36640))
 
-Evaluates each segment of compound commands. Detects [workaround bypass attempts](https://github.com/anthropics/claude-code/issues/34358). Allowlist via `.bash-guard` config. 297 tests.
+Evaluates each segment of compound commands. Detects [workaround bypass attempts](https://github.com/anthropics/claude-code/issues/34358). Allowlist via `.bash-guard` config. 307 tests.
 
 ### [branch-guard](tools/branch-guard/) — Enforce feature-branch workflow
 
@@ -440,9 +441,9 @@ bash tools/safety-check/test.sh
 
 ## Status
 
-**v0.6.1** — 195 Rust tests + 712 hook tests = 907 total. Zero clippy warnings. CI on Ubuntu + macOS. Docker support.
+**v0.6.1** — 195 Rust tests + 722 hook tests = 917 total. Zero clippy warnings. CI on Ubuntu + macOS. Docker support.
 
-Security hardening (shell injection, JSON injection, path traversal fixes). bash-guard covers 9 threat categories with 297 tests. file-guard [deny] mode blocks all access to paths. JSONC settings.json support across all installers. read-once deny mode fix for Claude Code v2.1.78+ regression. Quickstart installer for zero-to-protected in one command.
+Security hardening (shell injection, JSON injection, path traversal fixes). bash-guard covers 10 threat categories with 307 tests. file-guard [deny] mode blocks all access to paths. JSONC settings.json support across all installers. read-once deny mode fix for Claude Code v2.1.78+ regression. Quickstart installer for zero-to-protected in one command.
 
 11 stars, 2 external contributors, 1 fork. Looking for early adopters.
 
