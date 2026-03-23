@@ -45,23 +45,30 @@ RULE_FILES=$(find "$ENFORCEMENTS_DIR" -name "*.json" -type f 2>/dev/null)
 
 # Read hook input
 INPUT=$(cat)
-TOOL_NAME=$(echo "$INPUT" | python3 -c "import sys,json; print(json.loads(sys.stdin.read()).get('tool_name',''))" 2>/dev/null || echo "")
-TOOL_INPUT=$(echo "$INPUT" | python3 -c "import sys,json; print(json.dumps(json.loads(sys.stdin.read()).get('tool_input',{})))" 2>/dev/null || echo "{}")
 
-[ -z "$TOOL_NAME" ] && exit 0
+# Pass all data through environment variables to avoid shell injection.
+# TOOL_INPUT may contain quotes, newlines, or other special characters.
+export ENFORCE_INPUT="$INPUT"
+export ENFORCE_DIR="$ENFORCEMENTS_DIR"
+export ENFORCE_SESSION_LOG="$HOME/.claude/session-logs/$(date -u +%Y-%m-%d).jsonl"
 
-# Session log for checking prior tool usage
-TODAY=$(date -u +%Y-%m-%d)
-SESSION_LOG="$HOME/.claude/session-logs/$TODAY.jsonl"
-
-# Evaluate each rule
+# Evaluate each rule (all user data via env vars, never shell interpolation)
 python3 -c "
 import json, sys, os, re, glob, fnmatch
 
-tool_name = '$TOOL_NAME'
-tool_input = json.loads('$TOOL_INPUT') if '$TOOL_INPUT' != '{}' else {}
-session_log = '$SESSION_LOG'
-enforcements_dir = '$ENFORCEMENTS_DIR'
+raw_input = os.environ.get('ENFORCE_INPUT', '{}')
+try:
+    parsed = json.loads(raw_input)
+except (json.JSONDecodeError, ValueError):
+    sys.exit(0)
+
+tool_name = parsed.get('tool_name', '')
+tool_input = parsed.get('tool_input', {})
+if not tool_name:
+    sys.exit(0)
+
+session_log = os.environ.get('ENFORCE_SESSION_LOG', '')
+enforcements_dir = os.environ.get('ENFORCE_DIR', '')
 
 # Load all rules
 rules = []
