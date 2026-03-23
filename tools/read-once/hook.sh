@@ -172,24 +172,24 @@ if [ -n "$CACHED_MTIME" ] && [ "$CACHED_MTIME" = "$CURRENT_MTIME" ]; then
   REASON="read-once: ${BASENAME} (~${ESTIMATED_TOKENS} tokens) already in context (read ${MINUTES_AGO}m ago, unchanged). Re-read allowed after ${TTL_MIN}m. Session savings: ~${SESSION_SAVED} tokens${COST_INFO}."
 
   if [ "$MODE" = "deny" ]; then
-    # Hard block — saves tokens but breaks Edit tool and parallel reads
-    DECISION="deny"
+    # Hard block — saves tokens but breaks Edit tool and parallel reads.
+    # Uses top-level "decision":"block" format (robust against claude-code#37597
+    # regression where permissionDecision inside hookSpecificOutput is silently ignored).
+    jq -cn --arg r "$REASON" '{"decision":"block","reason":$r}'
   else
     # Warn mode (default) — allow the read with advisory message.
     # Prevents Edit tool deadlock (Edit requires a prior Read to succeed)
     # and parallel read cascade failures (one deny kills all parallel reads).
-    DECISION="allow"
-  fi
-
-  cat <<EOF
+    cat <<EOF
 {
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
-    "permissionDecision": "${DECISION}",
+    "permissionDecision": "allow",
     "permissionDecisionReason": "${REASON}"
   }
 }
 EOF
+  fi
   exit 0
 fi
 
@@ -232,20 +232,19 @@ print(prefix + escaped_diff + suffix)
       :
     else
       if [ "$MODE" = "deny" ]; then
-        DIFF_DECISION="deny"
+        # Hard block with diff in reason (robust format, see claude-code#37597)
+        jq -cn --arg r "$REASON" '{"decision":"block","reason":$r}'
       else
-        DIFF_DECISION="allow"
-      fi
-
-      cat <<EOF
+        cat <<EOF
 {
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
-    "permissionDecision": "${DIFF_DECISION}",
+    "permissionDecision": "allow",
     "permissionDecisionReason": "${REASON}"
   }
 }
 EOF
+      fi
       exit 0
     fi
     # Python failed — fall through to full re-read
