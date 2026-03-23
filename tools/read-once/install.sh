@@ -9,6 +9,13 @@ SETTINGS="${HOME}/.claude/settings.json"
 
 echo "read-once: installing to ${INSTALL_DIR}"
 
+# Check jq (needed at runtime to parse Claude Code hook input)
+if ! command -v jq >/dev/null 2>&1; then
+    echo "Error: jq not found. read-once requires jq at runtime." >&2
+    echo "  Install: brew install jq (macOS) or apt install jq (Linux)" >&2
+    exit 1
+fi
+
 # Create directory
 mkdir -p "$INSTALL_DIR"
 
