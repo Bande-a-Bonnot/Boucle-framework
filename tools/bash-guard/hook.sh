@@ -11,8 +11,9 @@
 #   - dd/mkfs targeting disks
 #   - Overwriting system directories
 #   - Docker data destruction (compose down -v, system prune, volume rm)
-#   - Database destruction (dropdb, DROP/TRUNCATE, db:drop, migrate:fresh)
-#   - Credential exposure (env/printenv dumps, export -p, bash -x, set -x)
+#   - Docker escape (host mounts, docker exec)
+#   - Database destruction (prisma db push, dropdb, DROP/TRUNCATE, db:drop, migrate:fresh)
+#   - Credential exposure (env/printenv dumps, export -p, bash -x, set -x, cat .env/.pem/.key)
 #
 # Install:
 #   curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
@@ -184,6 +185,11 @@ if echo "$COMMAND" | grep -qE 'docker\s+volume\s+(prune|rm)\b' 2>/dev/null; then
   is_allowed "docker-destroy" || block "Removing Docker volumes destroys persistent data." "Add 'allow: docker-destroy' to .bash-guard if you need this."
 fi
 
+# prisma db push (destructive schema sync, bypasses migrations — #33183: wiped 276 accounts)
+if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)(npx\s+)?prisma\s+db\s+push' 2>/dev/null; then
+  is_allowed "db-destroy" || block "prisma db push applies schema changes directly without migrations. This has destroyed production databases." "Use 'prisma migrate dev' or 'prisma migrate deploy' instead, or add 'allow: db-destroy' to .bash-guard."
+fi
+
 # Database CLI destructive commands
 if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)dropdb\s' 2>/dev/null; then
   is_allowed "db-destroy" || block "dropdb permanently deletes a PostgreSQL database." "Add 'allow: db-destroy' to .bash-guard if you need this."
@@ -203,12 +209,27 @@ if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)export\s+-p\s*($|\||;|&&|\|\||>)'
   is_allowed "env-dump" || block "export -p lists all exported variables, potentially exposing secrets." "Access specific variables directly, or add 'allow: env-dump' to .bash-guard."
 fi
 
+# Reading credential files directly
+if echo "$COMMAND" | grep -qE '(cat|less|more|head|tail|bat)\s+.*\.(env|pem|key|p12|pfx|credentials|secret)(\s|$)' 2>/dev/null; then
+  is_allowed "read-secrets" || block "Reading credential files may expose secrets in the output." "Reference specific non-secret values instead, or add 'allow: read-secrets' to .bash-guard."
+fi
+
 # Debug trace mode (leaks secrets in trace output)
 if echo "$COMMAND" | grep -qE '(bash|sh|zsh)\s+-[a-zA-Z]*x' 2>/dev/null; then
   is_allowed "debug-trace" || block "Running scripts with -x traces all commands with expanded variables, exposing secrets in output." "Remove the -x flag, or add 'allow: debug-trace' to .bash-guard."
 fi
 if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)set\s+-[a-zA-Z]*x' 2>/dev/null; then
   is_allowed "debug-trace" || block "set -x enables debug tracing which prints all variables including secrets." "Remove set -x, or add 'allow: debug-trace' to .bash-guard."
+fi
+
+# Docker host mounts (escape directory restrictions — #37621)
+if echo "$COMMAND" | grep -qE 'docker\s+run\s.*-v\s+/[^:]*:' 2>/dev/null; then
+  is_allowed "docker-mount" || block "Docker run with host volume mount can access files outside the allowed directory." "Mount only project-specific paths, or add 'allow: docker-mount' to .bash-guard."
+fi
+
+# Docker exec (arbitrary commands in containers with potential host access)
+if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)docker\s+exec\s' 2>/dev/null; then
+  is_allowed "docker-exec" || block "docker exec runs commands in a container that may have elevated privileges or host access." "Add 'allow: docker-exec' to .bash-guard if you need container access."
 fi
 
 log "ALLOW: $COMMAND"

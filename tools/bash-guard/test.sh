@@ -333,6 +333,61 @@ BASH_GUARD_CONFIG="$TRACE_CONFIG" \
 rm -f "$TRACE_CONFIG"
 
 echo ""
+echo "--- prisma db push (#33183) ---"
+assert_blocked "prisma db push" "npx prisma db push"
+assert_blocked "prisma db push bare" "prisma db push"
+assert_blocked "prisma db push with flags" "npx prisma db push --accept-data-loss"
+assert_blocked "prisma db push after chain" "cd app && npx prisma db push"
+assert_allowed "prisma migrate dev" "npx prisma migrate dev"
+assert_allowed "prisma migrate deploy" "npx prisma migrate deploy"
+
+echo ""
+echo "--- Reading credential files ---"
+assert_blocked "cat .env" "cat .env"
+assert_blocked "cat server.pem" "cat server.pem"
+assert_blocked "cat private key" "cat id_rsa.key"
+assert_blocked "head .credentials" "head .credentials"
+assert_blocked "tail .env" "tail -f .env"
+assert_blocked "cat path/.env" "cat /app/config/.env"
+assert_allowed "cat README.md" "cat README.md"
+assert_allowed "cat config.yml" "cat config.yml"
+assert_allowed "cat package.json" "cat package.json"
+
+SECRETS_CONFIG=$(mktemp)
+echo "allow: read-secrets" > "$SECRETS_CONFIG"
+BASH_GUARD_CONFIG="$SECRETS_CONFIG" \
+  assert_allowed "cat .env allowed by config" "cat .env"
+rm -f "$SECRETS_CONFIG"
+
+echo ""
+echo "--- Docker host mounts (#37621) ---"
+assert_blocked "docker run host root mount" "docker run -v /:/host ubuntu"
+assert_blocked "docker run home mount" "docker run -v /home/user:/data alpine sh"
+assert_blocked "docker run etc mount" "docker run -v /etc:/etc:ro nginx"
+assert_allowed "docker run no mount" "docker run ubuntu echo hello"
+assert_allowed "docker run named volume" "docker run -v mydata:/data postgres"
+assert_allowed "docker build" "docker build -t myapp ."
+
+MOUNT_CONFIG=$(mktemp)
+echo "allow: docker-mount" > "$MOUNT_CONFIG"
+BASH_GUARD_CONFIG="$MOUNT_CONFIG" \
+  assert_allowed "docker root mount allowed by config" "docker run -v /:/host ubuntu"
+rm -f "$MOUNT_CONFIG"
+
+echo ""
+echo "--- Docker exec ---"
+assert_blocked "docker exec" "docker exec -it container_id bash"
+assert_blocked "docker exec after chain" "docker build . && docker exec web sh"
+assert_allowed "docker images" "docker images"
+assert_allowed "docker logs" "docker logs web"
+
+EXEC_CONFIG=$(mktemp)
+echo "allow: docker-exec" > "$EXEC_CONFIG"
+BASH_GUARD_CONFIG="$EXEC_CONFIG" \
+  assert_allowed "docker exec allowed by config" "docker exec web bash"
+rm -f "$EXEC_CONFIG"
+
+echo ""
 echo "================================"
 echo "Results: $PASS passed, $FAIL failed"
 echo "Total: $((PASS + FAIL)) tests"

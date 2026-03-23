@@ -55,7 +55,7 @@ Blocks `git push --force`, `git reset --hard`, `git checkout .`, `git clean -f`,
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
 ```
 
-Blocks `rm -rf /`, `sudo`, `curl|bash`, `chmod -R 777`, `kill -9 -1`, `dd` to disks, `mkfs`, system directory writes, `eval` injection, global npm installs, Docker data destruction (`docker compose down -v`, `docker system prune`), database destruction (`dropdb`, `DROP DATABASE/TABLE`, `TRUNCATE`, `db:drop`, `migrate:fresh`), and credential exposure (`env`, `printenv`, `bash -x`, `set -x`). Allowlist via `.bash-guard` config. 117 tests.
+Blocks `rm -rf /`, `sudo`, `curl|bash`, `chmod -R 777`, `kill -9 -1`, `dd` to disks, `mkfs`, system directory writes, `eval` injection, global npm installs, Docker data destruction (`docker compose down -v`, `docker system prune`), Docker escape (`docker run -v /:/host`, `docker exec`), database destruction (`prisma db push`, `dropdb`, `DROP TABLE`, `db:drop`, `migrate:fresh`), credential exposure (`env`, `printenv`, `cat .env`, `bash -x`, `set -x`). Allowlist via `.bash-guard` config. 149 tests.
 
 ### [branch-guard](tools/branch-guard/) — Enforce feature-branch workflow
 
