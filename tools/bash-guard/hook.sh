@@ -23,6 +23,8 @@
 #   - Data exfiltration (curl/wget file upload, netcat/socat piping)
 #   - Programmatic env dumps (python os.environ, node process.env, ruby ENV)
 #   - Sensitive file reads (SSH private keys, shell history, /proc/*/environ)
+#   - System database corruption (sqlite3 on VSCode .vscdb, IDE internals, app config DBs)
+#   - Mount point destruction (rm -rf on /mnt, /media, /Volumes, NFS paths)
 #
 # Install:
 #   curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
@@ -346,6 +348,19 @@ fi
 # Shell history access (may contain passwords/tokens typed at prompts)
 if echo "$COMMAND" | grep -qE '(cat|less|more|head|tail|bat)\s+.*(\.bash_history|\.zsh_history|\.sh_history|\.history)' 2>/dev/null; then
   is_allowed "read-secrets" || block "Shell history files may contain passwords, tokens, and API keys typed at prompts." "Search for specific commands with grep instead, or add 'allow: read-secrets' to .bash-guard."
+fi
+
+# System database modification via sqlite3 (#37888: 59 sqlite3 commands corrupted VSCode state.vscdb)
+if echo "$COMMAND" | grep -qE 'sqlite3\s+.*\.(vscdb|vscdb-wal|vscdb-shm)' 2>/dev/null; then
+  is_allowed "system-db" || block "sqlite3 targeting a VSCode database (.vscdb). This has destroyed IDE session history and Codex functionality (#37888)." "Do not modify VSCode internal databases, or add 'allow: system-db' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE "sqlite3\s+.*(Application Support/Code|\.vscode|\.cursor|\.config/(Code|Cursor)|\.vscode-server)" 2>/dev/null; then
+  is_allowed "system-db" || block "sqlite3 targeting an IDE internal database. Modifying these can corrupt sessions, settings, and extensions." "Only use sqlite3 on your project databases, or add 'allow: system-db' to .bash-guard."
+fi
+
+# Mount point deletion (#36640: rm -rf on NFS mount destroyed production user data)
+if echo "$COMMAND" | grep -qE 'rm\s+-[rRf]+\s+/(mnt|media|Volumes|nfs|mount)/' 2>/dev/null; then
+  is_allowed "mount-delete" || block "rm -rf targeting a mount point path. NFS/SMB/external volumes may contain production data (#36640)." "Check mount status with 'mount' or 'findmnt' first, or add 'allow: mount-delete' to .bash-guard."
 fi
 
 # Network exfiltration via netcat/socat (piping files to remote hosts)
