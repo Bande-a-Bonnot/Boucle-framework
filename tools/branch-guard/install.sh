@@ -39,6 +39,38 @@ if [ ! -s "$HOOK_PATH" ]; then
     exit 1
 fi
 
+# Handle JSONC comments in settings.json (prevents silent failures)
+if [ -f "$SETTINGS_FILE" ]; then
+  if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$SETTINGS_FILE" 2>/dev/null; then
+    python3 - "$SETTINGS_FILE" << 'JSONC_FIX'
+import json, sys, shutil
+path = sys.argv[1]
+with open(path) as f: raw = f.read()
+o, i, n, q = [], 0, len(raw), False
+while i < n:
+    if q:
+        if raw[i] == '\\' and i+1<n: o.append(raw[i:i+2]); i+=2; continue
+        if raw[i] == '"': q=False
+        o.append(raw[i]); i+=1
+    elif raw[i] == '"': q=True; o.append(raw[i]); i+=1
+    elif i+1<n and raw[i:i+2]=='//':
+        while i<n and raw[i]!='\n': i+=1
+    elif i+1<n and raw[i:i+2]=='/*':
+        i+=2
+        while i+1<n and raw[i:i+2]!='*/': i+=1
+        i+=2
+    else: o.append(raw[i]); i+=1
+clean = ''.join(o)
+try:
+    json.loads(clean)
+    shutil.copy2(path, path + '.bak')
+    with open(path, 'w') as f: f.write(clean)
+    print('  Note: JSONC comments stripped from settings.json (backup: .bak)')
+except: print('  Error: settings.json is not valid JSON. Please fix manually.'); sys.exit(1)
+JSONC_FIX
+  fi
+fi
+
 # Register in settings.json
 echo "  Registering hook..."
 if [ -f "$SETTINGS_FILE" ]; then

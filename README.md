@@ -384,6 +384,12 @@ boucle --version                 # Show version
 
 4. **Transparency by default.** If you can't see what the agent did and why, something is wrong.
 
+## Troubleshooting
+
+**JSONC comments in settings.json**: If your `~/.claude/settings.json` contains `//` or `/* */` comments, hooks may silently stop working ([claude-code#37540](https://github.com/anthropics/claude-code/issues/37540)). Our installers detect JSONC and automatically strip comments (creating a `.bak` backup). If hooks aren't firing, check for comments in your settings file.
+
+**Hooks not blocking**: Claude Code only fires hooks on tool calls, not on prompt assembly. Features like @-autocomplete inject file content before hooks can intercept. See [claude-code#32928](https://github.com/anthropics/claude-code/issues/32928).
+
 ## Development
 
 ```bash

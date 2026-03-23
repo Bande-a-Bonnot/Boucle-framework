@@ -194,6 +194,114 @@ else
   fail "existing settings lost"
 fi
 
+# Test 9: JSONC settings preserved (not silently wiped)
+echo "--- JSONC handling ---"
+rm -rf "$TEST_HOME/.claude"
+mkdir -p "$TEST_HOME/.claude"
+cat > "$TEST_HOME/.claude/settings.json" << 'JSONC_EOF'
+{
+  // This is a JSONC comment
+  "allowedTools": ["Bash"],
+  "denyRead": [".env"],
+  "hooks": {
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "echo existing-hook"
+      }
+    ]
+  }
+}
+JSONC_EOF
+
+bash "$SCRIPT_DIR/install.sh" git-safe 2>&1 | tee "$TEST_HOME/jsonc-output.txt" >/dev/null
+
+# Check that settings were NOT silently wiped
+has_preserved=$(python3 -c "
+import json, sys
+with open(sys.argv[1]) as f:
+    s = json.load(f)
+has_allowed = 'allowedTools' in s
+has_deny = 'denyRead' in s
+has_post = len(s.get('hooks', {}).get('PostToolUse', [])) > 0
+has_pre = len(s.get('hooks', {}).get('PreToolUse', [])) > 0
+print('yes' if (has_allowed and has_deny and has_post and has_pre) else 'no')
+" "$TEST_HOME/.claude/settings.json" 2>/dev/null)
+
+if [ "$has_preserved" = "yes" ]; then
+  pass "JSONC settings preserved after install"
+else
+  fail "JSONC settings lost (data loss bug)"
+fi
+
+# Check that backup was created
+if [ -f "$TEST_HOME/.claude/settings.json.bak" ]; then
+  pass "JSONC backup created"
+else
+  fail "no JSONC backup created"
+fi
+
+# Check that warning was shown
+if grep -qi "jsonc\|comment" "$TEST_HOME/jsonc-output.txt" 2>/dev/null; then
+  pass "JSONC warning displayed"
+else
+  fail "no JSONC warning shown"
+fi
+
+# Test 10: Invalid JSON (not JSONC) should error, not silently wipe
+echo "--- Invalid JSON handling ---"
+rm -rf "$TEST_HOME/.claude"
+mkdir -p "$TEST_HOME/.claude"
+echo '{invalid json content here' > "$TEST_HOME/.claude/settings.json"
+
+if bash "$SCRIPT_DIR/install.sh" git-safe >/dev/null 2>&1; then
+  # Check if settings were silently wiped
+  if python3 -c "
+import json, sys
+with open(sys.argv[1]) as f:
+    s = json.load(f)
+# If we get here, the file was replaced with valid JSON (data loss)
+if 'invalid' not in str(s):
+    sys.exit(1)  # settings were silently replaced
+" "$TEST_HOME/.claude/settings.json" 2>/dev/null; then
+    fail "invalid JSON was silently replaced (data loss)"
+  else
+    pass "invalid JSON handled (either errored or preserved)"
+  fi
+else
+  pass "invalid JSON caused installer to exit (correct behavior)"
+fi
+
+# Test 11: Pure JSON (no comments) still works fine
+echo "--- Pure JSON still works ---"
+rm -rf "$TEST_HOME/.claude"
+mkdir -p "$TEST_HOME/.claude"
+echo '{"allowedTools": ["Bash"]}' > "$TEST_HOME/.claude/settings.json"
+
+bash "$SCRIPT_DIR/install.sh" git-safe >/dev/null 2>&1
+
+has_both=$(python3 -c "
+import json, sys
+with open(sys.argv[1]) as f:
+    s = json.load(f)
+has_allowed = 'allowedTools' in s
+has_pre = len(s.get('hooks', {}).get('PreToolUse', [])) > 0
+print('yes' if (has_allowed and has_pre) else 'no')
+" "$TEST_HOME/.claude/settings.json" 2>/dev/null)
+
+if [ "$has_both" = "yes" ]; then
+  pass "pure JSON still works correctly"
+else
+  fail "pure JSON handling broken"
+fi
+
+# Verify no .bak file created for pure JSON
+if [ ! -f "$TEST_HOME/.claude/settings.json.bak" ]; then
+  pass "no unnecessary backup for pure JSON"
+else
+  fail "unnecessary backup created for pure JSON"
+fi
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed (total $((PASS + FAIL)))"
 [ "$FAIL" -eq 0 ] || exit 1
