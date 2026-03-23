@@ -9,6 +9,7 @@
 #   - sudo (privilege escalation)
 #   - kill -9 on broad targets
 #   - dd/mkfs targeting disks
+#   - Disk utility destruction (diskutil erase/partition, fdisk, gdisk, parted, sfdisk, wipefs)
 #   - Overwriting system directories
 #   - Docker data destruction (compose down -v, system prune, volume rm)
 #   - Docker escape (host mounts, docker exec)
@@ -166,14 +167,37 @@ if echo "$COMMAND" | grep -qE 'killall\s+-9\s' 2>/dev/null; then
   is_allowed "kill -9" || block "killall -9 force-kills all matching processes without cleanup." "Use regular kill (without -9) to allow graceful shutdown, or add 'allow: kill -9' to .bash-guard."
 fi
 
-# dd targeting disk devices
-if echo "$COMMAND" | grep -qE 'dd\s.*of=/dev/(sd|hd|nvme|disk|rdisk)' 2>/dev/null; then
-  is_allowed "dd" || block "dd writing to a disk device can overwrite your entire drive." "Double-check the target device, or add 'allow: dd' to .bash-guard."
-fi
-
 # mkfs (format filesystem)
 if echo "$COMMAND" | grep -qE 'mkfs' 2>/dev/null; then
   is_allowed "mkfs" || block "mkfs formats a filesystem, destroying all existing data on the device." "Add 'allow: mkfs' to .bash-guard if you really need to format a device."
+fi
+
+# diskutil destructive operations (macOS) — #37984: eraseDisk destroyed 87GB of personal data
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)diskutil\s+(eraseDisk|eraseVolume|partitionDisk)' 2>/dev/null; then
+  is_allowed "disk-util" || block "diskutil erase/partition permanently destroys all data on the target disk." "Add 'allow: disk-util' to .bash-guard if you really need this."
+fi
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)diskutil\s+apfs\s+deleteContainer' 2>/dev/null; then
+  is_allowed "disk-util" || block "diskutil apfs deleteContainer permanently removes an APFS container and all its volumes." "Add 'allow: disk-util' to .bash-guard if you really need this."
+fi
+
+# Partition table tools (fdisk, gdisk, parted, sfdisk — Linux/macOS)
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)(fdisk|gdisk|sfdisk)\s' 2>/dev/null; then
+  is_allowed "disk-util" || block "fdisk/gdisk/sfdisk modifies disk partition tables, which can cause total data loss." "Add 'allow: disk-util' to .bash-guard if you really need this."
+fi
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)parted\s' 2>/dev/null; then
+  is_allowed "disk-util" || block "parted modifies disk partition tables, which can cause total data loss." "Add 'allow: disk-util' to .bash-guard if you really need this."
+fi
+
+# wipefs (filesystem signature wipe)
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)wipefs\s' 2>/dev/null; then
+  is_allowed "disk-util" || block "wipefs removes filesystem signatures, making data on the device inaccessible." "Add 'allow: disk-util' to .bash-guard if you really need this."
+fi
+
+# dd writing to block devices (exclude safe targets like /dev/null, /dev/zero)
+if echo "$COMMAND" | grep -qE 'dd\s.*of=/dev/' 2>/dev/null; then
+  if ! echo "$COMMAND" | grep -qE 'dd\s.*of=/dev/(null|zero|stdout|stderr)' 2>/dev/null; then
+    is_allowed "dd" || block "dd writing to a device can overwrite your entire drive or partition." "Double-check the target device, or add 'allow: dd' to .bash-guard."
+  fi
 fi
 
 # Writing to system directories with redirects

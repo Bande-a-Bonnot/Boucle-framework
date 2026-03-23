@@ -99,16 +99,75 @@ assert_allowed "kill specific PID" "kill -9 12345"
 assert_allowed "kill without -9" "kill 12345"
 
 echo ""
-echo "--- dd to disk ---"
+echo "--- dd to disk/device ---"
 assert_blocked "dd to /dev/sda" "dd if=/dev/zero of=/dev/sda bs=1M"
 assert_blocked "dd to /dev/disk0" "dd if=image.iso of=/dev/disk0"
-assert_blocked "dd from /dev/zero to file" "dd if=/dev/zero of=./testfile bs=1M count=10"
-assert_allowed "dd copy file (safe)" "dd if=input.bin of=output.bin bs=4M"
+assert_blocked "dd to /dev/nvme0n1" "dd if=image.raw of=/dev/nvme0n1 bs=4M"
+assert_blocked "dd to /dev/rdisk2" "dd if=restore.img of=/dev/rdisk2 bs=1M"
+assert_blocked "dd to /dev/loop0" "dd if=fs.img of=/dev/loop0 bs=512"
+assert_allowed "dd to file" "dd if=/dev/zero of=./testfile bs=1M count=10"
+assert_allowed "dd to /dev/null (safe)" "dd if=somefile of=/dev/null bs=1M"
+assert_allowed "dd to /dev/zero (safe)" "dd if=somefile of=/dev/zero"
+assert_allowed "dd from file to file (safe)" "dd if=backup.img of=restore.img bs=4M"
+
+DD_CONFIG=$(mktemp)
+echo "allow: dd" > "$DD_CONFIG"
+BASH_GUARD_CONFIG="$DD_CONFIG" \
+  assert_allowed "dd to disk allowed by config" "dd if=image.iso of=/dev/sda bs=4M"
+rm -f "$DD_CONFIG"
 
 echo ""
 echo "--- mkfs ---"
 assert_blocked "mkfs" "mkfs.ext4 /dev/sda1"
 assert_blocked "mkfs.vfat" "mkfs.vfat /dev/disk2s1"
+assert_blocked "mkfs.xfs" "mkfs.xfs /dev/nvme0n1p1"
+assert_blocked "mkfs.btrfs" "mkfs.btrfs /dev/sdb1"
+
+echo ""
+echo "--- diskutil (macOS disk destruction, #37984) ---"
+assert_blocked "diskutil eraseDisk" "diskutil eraseDisk JHFS+ Untitled /dev/disk2"
+assert_blocked "diskutil eraseVolume" "diskutil eraseVolume APFS Untitled /dev/disk2s1"
+assert_blocked "diskutil partitionDisk" "diskutil partitionDisk /dev/disk2 GPT JHFS+ Untitled 100%"
+assert_blocked "diskutil apfs deleteContainer" "diskutil apfs deleteContainer /dev/disk2"
+assert_blocked "diskutil eraseDisk after chain" "echo ok && diskutil eraseDisk JHFS+ Untitled /dev/disk2"
+assert_allowed "diskutil list (safe)" "diskutil list"
+assert_allowed "diskutil info (safe)" "diskutil info /dev/disk0"
+assert_allowed "diskutil mount (safe)" "diskutil mount /dev/disk2s1"
+assert_allowed "diskutil unmount (safe)" "diskutil unmount /dev/disk2s1"
+
+echo ""
+echo "--- Partition table tools (fdisk, gdisk, parted, sfdisk) ---"
+assert_blocked "fdisk" "fdisk /dev/sda"
+assert_blocked "gdisk" "gdisk /dev/sda"
+assert_blocked "sfdisk" "sfdisk /dev/sda < partitions.dump"
+assert_blocked "parted" "parted /dev/sda mklabel gpt"
+assert_blocked "fdisk after chain" "echo ok && fdisk /dev/sda"
+assert_blocked "parted after chain" "echo ok; parted /dev/sda print"
+assert_allowed "fdisk in prose (safe)" "echo 'use fdisk to check partitions'"
+assert_allowed "parted in prose (safe)" "echo 'parted is a partition tool'"
+
+echo ""
+echo "--- wipefs ---"
+assert_blocked "wipefs" "wipefs -a /dev/sda1"
+assert_blocked "wipefs --all" "wipefs --all /dev/sdb"
+assert_blocked "wipefs after chain" "echo ok; wipefs -a /dev/sda"
+assert_allowed "wipefs in prose (safe)" "echo 'wipefs removes signatures'"
+
+echo ""
+echo "--- Disk utility allowlist ---"
+DISK_CONFIG=$(mktemp)
+echo "allow: disk-util" > "$DISK_CONFIG"
+BASH_GUARD_CONFIG="$DISK_CONFIG" \
+  assert_allowed "diskutil eraseDisk allowed by config" "diskutil eraseDisk JHFS+ Untitled /dev/disk2"
+BASH_GUARD_CONFIG="$DISK_CONFIG" \
+  assert_allowed "diskutil apfs deleteContainer allowed by config" "diskutil apfs deleteContainer /dev/disk2"
+BASH_GUARD_CONFIG="$DISK_CONFIG" \
+  assert_allowed "fdisk allowed by config" "fdisk /dev/sda"
+BASH_GUARD_CONFIG="$DISK_CONFIG" \
+  assert_allowed "parted allowed by config" "parted /dev/sda mklabel gpt"
+BASH_GUARD_CONFIG="$DISK_CONFIG" \
+  assert_allowed "wipefs allowed by config" "wipefs -a /dev/sda1"
+rm -f "$DISK_CONFIG"
 
 echo ""
 echo "--- System directory writes ---"
