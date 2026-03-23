@@ -280,6 +280,59 @@ BASH_GUARD_CONFIG="$DB_CONFIG" \
 rm -f "$DB_CONFIG"
 
 echo ""
+echo "--- Credential exposure: env/printenv dumps ---"
+assert_blocked "bare env" "env"
+assert_blocked "env piped to grep" "env | grep API"
+assert_blocked "env piped to sort" "env | sort"
+assert_blocked "env redirected to file" "env > /tmp/vars.txt"
+assert_blocked "env after chain" "echo hi && env"
+assert_blocked "bare printenv" "printenv"
+assert_blocked "printenv piped" "printenv | grep SECRET"
+assert_blocked "export -p" "export -p"
+assert_blocked "export -p piped" "export -p | grep KEY"
+assert_allowed "printenv specific var" "printenv HOME"
+assert_allowed "printenv PATH" "printenv PATH"
+assert_allowed "env -i command" "env -i /usr/bin/python3 script.py"
+assert_allowed "env VAR=val command" "env FOO=bar some-command"
+assert_allowed "echo specific var" 'echo $HOME'
+assert_allowed "environment in prose" "echo 'check the env variable'"
+
+echo ""
+echo "--- Credential exposure: debug trace ---"
+assert_blocked "bash -x script" "bash -x deploy.sh"
+assert_blocked "sh -x script" "sh -x setup.sh"
+assert_blocked "bash -ex script" "bash -ex deploy.sh"
+assert_blocked "bash -xe script" "bash -xe deploy.sh"
+assert_blocked "bash -xeuo pipefail" "bash -xeuo pipefail script.sh"
+assert_blocked "set -x" "set -x"
+assert_blocked "set -x in chain" "echo hi && set -x"
+assert_blocked "set -ex" "set -ex"
+assert_allowed "bash script (no -x)" "bash deploy.sh"
+assert_allowed "bash -c command" "bash -c 'echo hello'"
+assert_allowed "set -euo pipefail (no x)" "set -euo pipefail"
+assert_allowed "set -e" "set -e"
+
+echo ""
+echo "--- Credential exposure: allowlists ---"
+ENV_CONFIG=$(mktemp)
+echo "allow: env-dump" > "$ENV_CONFIG"
+BASH_GUARD_CONFIG="$ENV_CONFIG" \
+  assert_allowed "env allowed by config" "env"
+BASH_GUARD_CONFIG="$ENV_CONFIG" \
+  assert_allowed "printenv allowed by config" "printenv"
+BASH_GUARD_CONFIG="$ENV_CONFIG" \
+  assert_allowed "export -p allowed by config" "export -p"
+rm -f "$ENV_CONFIG"
+
+TRACE_CONFIG=$(mktemp)
+echo "allow: debug-trace" > "$TRACE_CONFIG"
+BASH_GUARD_CONFIG="$TRACE_CONFIG" \
+  assert_allowed "bash -x allowed by config" "bash -x deploy.sh"
+BASH_GUARD_CONFIG="$TRACE_CONFIG" \
+  assert_allowed "set -x allowed by config" "set -x"
+rm -f "$TRACE_CONFIG"
+
+echo ""
 echo "================================"
 echo "Results: $PASS passed, $FAIL failed"
 echo "Total: $((PASS + FAIL)) tests"
