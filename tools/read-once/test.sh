@@ -218,7 +218,7 @@ assert_contains "TTL: second read intercepted" "already in context" "$OUTPUT"
 assert_contains "TTL: message mentions re-read window" "Re-read allowed after" "$OUTPUT"
 
 # Now backdate the cache entry to simulate TTL expiry
-SESSION_HASH=$(echo -n "$TTL_SESSION" | shasum -a 256 | cut -c1-16)
+SESSION_HASH=$(echo -n "$TTL_SESSION" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -c1-16)
 CACHE_FILE="${TEST_DIR}/.claude/read-once/session-${SESSION_HASH}.jsonl"
 # Replace timestamp with one that's older than TTL (default 1200s)
 if [ -f "$CACHE_FILE" ]; then
@@ -326,8 +326,8 @@ OUTPUT=$(run_hook "$(make_input Read "$DIFF_FILE" "$DIFF_SESSION")")
 assert_empty "Diff: first read passes through" "$OUTPUT"
 
 # Verify snapshot was created
-SESSION_HASH_DIFF=$(echo -n "$DIFF_SESSION" | shasum -a 256 | cut -c1-16)
-PATH_HASH_DIFF=$(echo -n "$DIFF_FILE" | shasum -a 256 | cut -c1-16)
+SESSION_HASH_DIFF=$(echo -n "$DIFF_SESSION" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -c1-16)
+PATH_HASH_DIFF=$(echo -n "$DIFF_FILE" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -c1-16)
 SNAP="${TEST_DIR}/.claude/read-once/snapshots/${SESSION_HASH_DIFF}-${PATH_HASH_DIFF}"
 assert_eq "Diff: snapshot file created" "1" "$([ -f "$SNAP" ] && echo 1 || echo 0)"
 

@@ -92,13 +92,22 @@ if [ $(( NOW - LAST_CLEANUP )) -gt 3600 ]; then
 fi
 
 # Session cache file (one per session)
-SESSION_HASH=$(echo -n "$SESSION_ID" | shasum -a 256 | cut -c1-16)
+# Portable hash: sha256sum (Linux) or shasum (macOS)
+if command -v sha256sum >/dev/null 2>&1; then
+  SESSION_HASH=$(echo -n "$SESSION_ID" | sha256sum | cut -c1-16)
+else
+  SESSION_HASH=$(echo -n "$SESSION_ID" | shasum -a 256 | cut -c1-16)
+fi
 CACHE_FILE="${CACHE_DIR}/session-${SESSION_HASH}.jsonl"
 STATS_FILE="${CACHE_DIR}/stats.jsonl"
 
 # Snapshot path for this file (used in diff mode)
 if [ "$DIFF_MODE" = "1" ]; then
-  PATH_HASH=$(echo -n "$FILE_PATH" | shasum -a 256 | cut -c1-16)
+  if command -v sha256sum >/dev/null 2>&1; then
+    PATH_HASH=$(echo -n "$FILE_PATH" | sha256sum | cut -c1-16)
+  else
+    PATH_HASH=$(echo -n "$FILE_PATH" | shasum -a 256 | cut -c1-16)
+  fi
   SNAP_FILE="${SNAP_DIR}/${SESSION_HASH}-${PATH_HASH}"
 fi
 

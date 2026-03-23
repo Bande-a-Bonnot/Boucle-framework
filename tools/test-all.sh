@@ -8,6 +8,15 @@ TOTAL_PASS=0
 TOTAL_FAIL=0
 FAILED_SUITES=""
 
+echo "=== Environment ==="
+echo "OS: $(uname -s) $(uname -r)"
+echo "Bash: ${BASH_VERSION:-unknown}"
+echo "jq: $(jq --version 2>/dev/null || echo 'not found')"
+echo "python3: $(python3 --version 2>/dev/null || echo 'not found')"
+echo "shasum: $(which shasum 2>/dev/null || echo 'not found')"
+echo "sha256sum: $(which sha256sum 2>/dev/null || echo 'not found')"
+echo "grep: $(grep --version 2>/dev/null | head -1 || echo 'unknown')"
+
 run_suite() {
   local name="$1"
   local script="$2"
