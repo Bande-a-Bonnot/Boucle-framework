@@ -47,7 +47,7 @@ Define protected files in `.file-guard` (one pattern per line). Two modes: **wri
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/git-safe/install.sh | bash
 ```
 
-Blocks `git push --force`, `git reset --hard`, `git checkout .`, `git clean -f`, `git branch -D`, and other destructive git commands. Suggests safer alternatives. Allowlist via `.git-safe` config. 46 tests.
+Blocks `git push --force`, `git reset --hard`, `git checkout .`, `git clean -f`, `git branch -D`, and other destructive git commands. Suggests safer alternatives. Allowlist via `.git-safe` config. 50 tests.
 
 ### [bash-guard](tools/bash-guard/) — Block dangerous bash commands
 
@@ -55,7 +55,7 @@ Blocks `git push --force`, `git reset --hard`, `git checkout .`, `git clean -f`,
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
 ```
 
-Blocks `rm -rf /`, `sudo`, `curl|bash`, `chmod -R 777`, `kill -9 -1`, `dd` to disks, `mkfs`, system directory writes, `eval` injection, global npm installs, Docker data destruction (`docker compose down -v`, `docker system prune`), Docker escape (`docker run -v /:/host`, `docker exec`), database destruction (`prisma db push`, `dropdb`, `DROP TABLE`, `db:drop`, `migrate:fresh`), credential exposure (`env`, `printenv`, `cat .env`, `bash -x`, `set -x`), cloud infrastructure (`terraform destroy`, `kubectl delete namespace`), mass file deletion (`find -delete`, `xargs rm`, `git clean -f`). Evaluates each segment of compound commands ([#37621](https://github.com/anthropics/claude-code/issues/37621), [#37662](https://github.com/anthropics/claude-code/issues/37662)). Allowlist via `.bash-guard` config. 223 tests.
+Blocks `rm -rf /`, `sudo`, `curl|bash`, `chmod -R 777`, `kill -9 -1`, `dd` to disks, `mkfs`, system directory writes, `eval` injection, global npm installs, Docker data destruction (`docker compose down -v`, `docker system prune`), Docker escape (`docker run -v /:/host`, `docker exec`), database destruction (`prisma db push`, `dropdb`, `DROP TABLE`, `db:drop`, `migrate:fresh`), credential exposure (`env`, `printenv`, `cat .env`, `bash -x`, `set -x`), cloud infrastructure (`terraform destroy`, `kubectl delete namespace`), mass file deletion (`find -delete`, `xargs rm`, `git clean -f`). Evaluates each segment of compound commands ([#37621](https://github.com/anthropics/claude-code/issues/37621), [#37662](https://github.com/anthropics/claude-code/issues/37662)). Allowlist via `.bash-guard` config. 225 tests.
 
 ### [branch-guard](tools/branch-guard/) — Enforce feature-branch workflow
 
