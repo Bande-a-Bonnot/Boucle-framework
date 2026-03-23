@@ -20,11 +20,12 @@ bash-guard intercepts these before they execute.
 | Code injection | `eval "$variable"` | Arbitrary execution |
 | Global installs | `npm install -g` | Modifies system packages |
 | Docker destruction | `docker compose down -v`, `docker system prune`, `docker volume rm` | Destroys volumes/data |
-| Database destruction | `dropdb`, `DROP DATABASE/TABLE`, `TRUNCATE`, `db:drop`, `migrate:fresh` | Destroys database contents |
-| Credential exposure | `env`, `printenv`, `export -p` | Dumps all secrets to output |
+| Docker escape | `docker run -v /:/host`, `docker exec` | Escapes directory restrictions ([#37621](https://github.com/anthropics/claude-code/issues/37621)) |
+| Database destruction | `prisma db push`, `dropdb`, `DROP TABLE`, `db:drop`, `migrate:fresh` | Destroys production data ([#33183](https://github.com/anthropics/claude-code/issues/33183)) |
+| Credential exposure | `env`, `printenv`, `export -p`, `cat .env` | Dumps secrets to output ([#32616](https://github.com/anthropics/claude-code/issues/32616)) |
 | Debug trace | `bash -x`, `set -x` | Leaks expanded variables in trace |
 
-Safe variants are allowed: `rm -rf ./build`, `chmod 644 file.txt`, `curl -o file url`, `kill -9 12345`, `docker compose down` (without -v), `rails db:migrate`, `printenv HOME`, `env FOO=bar command`, `set -euo pipefail`.
+Safe variants are allowed: `rm -rf ./build`, `chmod 644 file.txt`, `curl -o file url`, `kill -9 12345`, `docker compose down` (without -v), `docker run -v mydata:/data`, `prisma migrate dev`, `rails db:migrate`, `printenv HOME`, `cat README.md`, `set -euo pipefail`.
 
 ## Install
 
@@ -47,7 +48,7 @@ allow: rm -rf
 allow: pipe-to-shell
 ```
 
-Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `system-write`, `eval`, `global-install`, `docker-destroy`, `db-destroy`, `env-dump`, `debug-trace`.
+Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `system-write`, `eval`, `global-install`, `docker-destroy`, `docker-mount`, `docker-exec`, `db-destroy`, `env-dump`, `debug-trace`, `read-secrets`.
 
 ## Disable temporarily
 
@@ -65,7 +66,7 @@ bash-guard is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code
 bash test.sh
 ```
 
-117 tests covering all blocked patterns plus safe variants.
+149 tests covering all blocked patterns plus safe variants.
 
 ## License
 
