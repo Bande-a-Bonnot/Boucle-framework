@@ -112,6 +112,42 @@ assert_blocked "git checkout -- file" \
   '{"tool_name":"Bash","tool_input":{"command":"git checkout -- src/main.rs"}}'
 assert_blocked "git restore ." \
   '{"tool_name":"Bash","tool_input":{"command":"git restore ."}}'
+
+# --- git checkout <ref> -- <path> (issue #37888 pattern) ---
+echo ""
+echo "Checkout from ref (issue #37888):"
+assert_blocked "git checkout HEAD -- src/" \
+  '{"tool_name":"Bash","tool_input":{"command":"git checkout HEAD -- src/"}}'
+assert_blocked "git checkout HEAD -- ." \
+  '{"tool_name":"Bash","tool_input":{"command":"git checkout HEAD -- ."}}'
+assert_blocked "git checkout main -- file.js" \
+  '{"tool_name":"Bash","tool_input":{"command":"git checkout main -- file.js"}}'
+assert_blocked "git checkout origin/main -- path/to/file" \
+  '{"tool_name":"Bash","tool_input":{"command":"git checkout origin/main -- path/to/file"}}'
+assert_blocked "git checkout abc123 -- ." \
+  '{"tool_name":"Bash","tool_input":{"command":"git checkout abc123 -- ."}}'
+assert_blocked "git checkout HEAD~3 -- src/main.rs" \
+  '{"tool_name":"Bash","tool_input":{"command":"git checkout HEAD~3 -- src/main.rs"}}'
+
+# --- git restore expanded coverage ---
+echo ""
+echo "Restore expanded coverage:"
+assert_blocked "git restore src/main.rs (no --staged)" \
+  '{"tool_name":"Bash","tool_input":{"command":"git restore src/main.rs"}}'
+assert_blocked "git restore --source=HEAD ." \
+  '{"tool_name":"Bash","tool_input":{"command":"git restore --source=HEAD ."}}'
+assert_blocked "git restore --source=main file.js" \
+  '{"tool_name":"Bash","tool_input":{"command":"git restore --source=main file.js"}}'
+assert_blocked "git restore -s HEAD file.js" \
+  '{"tool_name":"Bash","tool_input":{"command":"git restore -s HEAD file.js"}}'
+assert_blocked "git restore --worktree ." \
+  '{"tool_name":"Bash","tool_input":{"command":"git restore --worktree ."}}'
+assert_blocked "git restore --staged --worktree ." \
+  '{"tool_name":"Bash","tool_input":{"command":"git restore --staged --worktree ."}}'
+assert_allowed "git restore --staged file.js (safe: just unstages)" \
+  '{"tool_name":"Bash","tool_input":{"command":"git restore --staged file.js"}}'
+assert_allowed "git restore --staged . (safe: just unstages)" \
+  '{"tool_name":"Bash","tool_input":{"command":"git restore --staged ."}}'
 assert_blocked "git clean -f" \
   '{"tool_name":"Bash","tool_input":{"command":"git clean -f"}}'
 assert_blocked "git clean -fd" \

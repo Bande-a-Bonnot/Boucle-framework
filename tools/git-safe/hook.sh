@@ -6,6 +6,9 @@
 #   - git push --force / -f (can rewrite remote history)
 #   - git reset --hard (discards uncommitted changes)
 #   - git checkout . / git checkout -- <file> (discards changes)
+#   - git checkout <ref> -- <path> (overwrites files from ref)
+#   - git restore without --staged (discards working tree changes)
+#   - git restore --source / -s (overwrites from arbitrary ref)
 #   - git clean -f (deletes untracked files permanently)
 #   - git branch -D (force-deletes unmerged branches)
 #   - git stash drop / clear (permanently deletes stashed work)
@@ -122,9 +125,26 @@ if echo "$COMMAND" | grep -qE 'git\s+checkout\s+--\s' 2>/dev/null; then
   is_allowed "checkout --" || block "git checkout -- discards uncommitted changes to specified files." "Commit or stash first, or add 'allow: checkout --' to .git-safe."
 fi
 
-# git restore . / git restore --staged --worktree (discards changes)
-if echo "$COMMAND" | grep -qE 'git\s+restore\s+\.\s*$' 2>/dev/null; then
-  is_allowed "restore ." || block "git restore . discards all uncommitted changes." "Commit or stash first, or add 'allow: restore .' to .git-safe."
+# git checkout <ref> -- <path> (overwrites working tree from a specific ref)
+# Catches: git checkout HEAD -- src/, git checkout main -- file.js, git checkout abc123 -- .
+# Does NOT catch: git checkout -- file (no ref; already caught above)
+# Does NOT catch: git checkout -b branch (flag, not ref)
+if echo "$COMMAND" | grep -qE 'git\s+checkout\s+[^-][^ ]*\s+--\s' 2>/dev/null; then
+  is_allowed "checkout ref --" || block "git checkout <ref> -- <path> overwrites working tree files with the version from that ref, discarding local changes." "Commit or stash changes first, or add 'allow: checkout ref --' to .git-safe."
+fi
+
+# git restore (various destructive forms)
+if echo "$COMMAND" | grep -qE 'git\s+restore\s' 2>/dev/null; then
+  # Always block --source/-s (restoring from arbitrary ref)
+  if echo "$COMMAND" | grep -qE '(--source|-s\s)' 2>/dev/null; then
+    is_allowed "restore --source" || block "git restore --source overwrites files from a specific ref, discarding local changes." "Commit or stash first, or add 'allow: restore --source' to .git-safe."
+  # Block --worktree/-W (explicitly discards working tree)
+  elif echo "$COMMAND" | grep -qE '(--worktree|-W\b)' 2>/dev/null; then
+    is_allowed "restore" || block "git restore --worktree discards uncommitted working tree changes." "Commit or stash first, or add 'allow: restore' to .git-safe."
+  # Block if no --staged flag (default = working tree restore = destructive)
+  elif ! echo "$COMMAND" | grep -qE '\-\-staged' 2>/dev/null; then
+    is_allowed "restore" || block "git restore without --staged discards uncommitted working tree changes." "Use git restore --staged to unstage only, or commit/stash first. Add 'allow: restore' to .git-safe."
+  fi
 fi
 
 # git clean -f (deletes untracked files)
