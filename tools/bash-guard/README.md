@@ -32,8 +32,10 @@ bash-guard intercepts these before they execute.
 | Programmatic env dumps | `python3 -c "...os.environ"`, `node -e "...process.env"` | Scripting language env access bypasses env/printenv checks |
 | Sensitive file reads | `cat ~/.ssh/id_rsa`, `cat ~/.bash_history`, `cat /proc/self/environ` | Exposes SSH keys, command history, or process environment |
 | Network exfiltration | `nc host < file`, `ncat host < secrets` | Pipes file contents through raw network connections |
+| System database corruption | `sqlite3 ~/.vscode/state.vscdb`, `sqlite3 ~/Library/Application Support/Code/...` | Corrupts IDE sessions, settings, extensions ([#37888](https://github.com/anthropics/claude-code/issues/37888)) |
+| Mount point destruction | `rm -rf /mnt/...`, `rm -rf /Volumes/...`, `rm -rf /nfs/...` | Deletes data on remote/shared storage ([#36640](https://github.com/anthropics/claude-code/issues/36640)) |
 
-Safe variants are allowed: `rm -rf ./build`, `chmod 644 file.txt`, `curl -o file url`, `curl -d '{"key":"value"}'`, `kill -9 12345`, `docker compose down` (without -v), `docker run -v mydata:/data`, `prisma migrate dev`, `rails db:migrate`, `printenv HOME`, `cat README.md`, `set -euo pipefail`, `terraform plan`, `aws s3 ls`, `kubectl get pods`, `find -print`, `git clean -n`, `ls ~/.ssh`, `ssh-keygen`, `nc -l 8080`.
+Safe variants are allowed: `rm -rf ./build`, `chmod 644 file.txt`, `curl -o file url`, `curl -d '{"key":"value"}'`, `kill -9 12345`, `docker compose down` (without -v), `docker run -v mydata:/data`, `prisma migrate dev`, `rails db:migrate`, `printenv HOME`, `cat README.md`, `set -euo pipefail`, `terraform plan`, `aws s3 ls`, `kubectl get pods`, `find -print`, `git clean -n`, `ls ~/.ssh`, `ssh-keygen`, `nc -l 8080`, `sqlite3 ./db.sqlite3`, `ls /mnt/data/`.
 
 ## Install
 
@@ -56,7 +58,7 @@ allow: rm -rf
 allow: pipe-to-shell
 ```
 
-Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `system-write`, `eval`, `global-install`, `docker-destroy`, `docker-mount`, `docker-exec`, `db-destroy`, `env-dump`, `debug-trace`, `read-secrets`, `infra-destroy`, `mass-delete`, `git-clean`, `shred`, `truncate`, `file-upload`.
+Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `system-write`, `eval`, `global-install`, `docker-destroy`, `docker-mount`, `docker-exec`, `db-destroy`, `env-dump`, `debug-trace`, `read-secrets`, `infra-destroy`, `mass-delete`, `git-clean`, `shred`, `truncate`, `file-upload`, `system-db`, `mount-delete`.
 
 ## Disable temporarily
 
@@ -103,7 +105,7 @@ bash-guard is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code
 bash test.sh
 ```
 
-276 tests covering all blocked patterns, data exfiltration, programmatic env dumps, sensitive file access, workaround bypass prevention, compound command bypass, and safe variants.
+297 tests covering all blocked patterns, data exfiltration, programmatic env dumps, sensitive file access, workaround bypass prevention, compound command bypass, system database protection, mount point protection, and safe variants.
 
 ## License
 
