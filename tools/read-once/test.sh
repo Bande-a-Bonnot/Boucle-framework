@@ -115,8 +115,16 @@ echo ""
 echo "3b. Second read (cache hit — deny mode, should block)"
 export READ_ONCE_MODE=deny
 OUTPUT=$(run_hook "$(make_input Read "$TEST_FILE")")
-assert_contains "Deny mode: blocks with deny" "deny" "$OUTPUT"
+assert_contains "Deny mode: blocks with decision:block" "block" "$OUTPUT"
 assert_contains "Deny mode: mentions already in context" "already in context" "$OUTPUT"
+# Verify robust response format (top-level decision, not hookSpecificOutput — see claude-code#37597)
+if echo "$OUTPUT" | jq -e '.decision == "block"' >/dev/null 2>&1; then
+  echo "PASS: Deny mode uses robust top-level decision format"
+  PASS=$((PASS + 1))
+else
+  echo "FAIL: Deny mode should use top-level decision:block, not hookSpecificOutput"
+  FAIL=$((FAIL + 1))
+fi
 unset READ_ONCE_MODE
 
 # --- Test 4: File changes between reads ---
