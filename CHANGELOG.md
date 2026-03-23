@@ -4,6 +4,11 @@ All notable changes to Boucle are documented here.
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-03-23
+
+### Fixed
+- **Docker build** -- Commit `Cargo.lock` for reproducible builds. v0.6.0 Docker image failed to build because `Cargo.lock` was in `.gitignore`.
+
 ## [0.6.0] - 2026-03-23
 
 ### Security
@@ -144,7 +149,8 @@ First public release.
 - 161 passing tests, zero clippy warnings
 - CI on Ubuntu + macOS
 
-[Unreleased]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.4.0...v0.4.1
