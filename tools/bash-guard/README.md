@@ -58,6 +58,18 @@ Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`,
 export BASH_GUARD_DISABLED=1
 ```
 
+## Compound command evaluation
+
+Claude Code's built-in deny rules evaluate commands as whole strings. When a dangerous command follows `cd` or `echo` in a compound statement, the deny rule may not fire ([#37621](https://github.com/anthropics/claude-code/issues/37621), [#37662](https://github.com/anthropics/claude-code/issues/37662)):
+
+```bash
+cd .. && rm -rf /           # deny rule on rm -rf may not fire
+echo ok; dropdb production  # deny rule on dropdb may not fire
+npm test || sudo rm -rf /   # deny rule on sudo may not fire
+```
+
+bash-guard evaluates the entire command string. Every pattern checks for matches after `&&`, `||`, `;`, and `|` operators, so chaining a safe command before a dangerous one does not bypass protection.
+
 ## How it works
 
 bash-guard is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code/hooks) that runs before every tool call. It checks if the tool is `Bash`, parses the command, and blocks known-dangerous patterns. If a command is blocked, Claude Code sees the reason and suggestion, so it can try a safer alternative.
@@ -68,7 +80,7 @@ bash-guard is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code
 bash test.sh
 ```
 
-208 tests covering all blocked patterns plus safe variants.
+223 tests covering all blocked patterns, compound command bypass, and safe variants.
 
 ## License
 
