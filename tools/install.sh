@@ -50,6 +50,21 @@ if ! command -v python3 >/dev/null 2>&1; then
     exit 1
 fi
 
+if ! command -v jq >/dev/null 2>&1; then
+    echo -e "${YELLOW}Warning: jq not found. Hooks require jq to parse Claude Code input.${RESET}"
+    echo "  Install: brew install jq (macOS) or apt install jq (Linux)"
+    echo "  Without jq, installed hooks will fail silently at runtime."
+    echo ""
+    echo -n "Continue anyway? [y/N] "
+    if [ -t 0 ]; then
+      read -r answer
+      [ "$answer" = "y" ] || [ "$answer" = "Y" ] || exit 1
+    else
+      echo "Non-interactive mode: aborting. Install jq first." >&2
+      exit 1
+    fi
+fi
+
 # Determine download command
 DL="curl -fsSL"
 if ! command -v curl >/dev/null 2>&1; then
@@ -76,7 +91,11 @@ echo ""
 
 # Parse arguments or ask interactively
 if [ $# -gt 0 ]; then
-  selected="$*"
+  if [ "$1" = "all" ]; then
+    selected="$ALL_HOOKS"
+  else
+    selected="$*"
+  fi
 else
   echo -e "${BOLD}Which hooks to install?${RESET}"
   echo "  Enter hook names separated by spaces, or 'all' for everything"

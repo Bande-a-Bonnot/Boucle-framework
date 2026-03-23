@@ -18,6 +18,13 @@ if ! command -v python3 >/dev/null 2>&1; then
     exit 1
 fi
 
+# Check jq (needed at runtime to parse Claude Code hook input)
+if ! command -v jq >/dev/null 2>&1; then
+    echo "Error: jq not found. $HOOK_NAME requires jq at runtime." >&2
+    echo "  Install: brew install jq (macOS) or apt install jq (Linux)" >&2
+    exit 1
+fi
+
 # Create hook directory
 mkdir -p "$HOOK_DIR"
 
