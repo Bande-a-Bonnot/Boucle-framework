@@ -2,7 +2,7 @@
 
 A Claude Code hook that prevents destructive git operations.
 
-When Claude runs `git push --force`, `git reset --hard`, `git push --delete`, `git checkout .`, or other destructive commands, git-safe blocks the operation and suggests a safer alternative.
+When Claude runs `git push --force`, `git reset --hard`, `git checkout HEAD -- path`, `git restore`, or other destructive commands, git-safe blocks the operation and suggests a safer alternative.
 
 ## Install
 
@@ -18,7 +18,10 @@ curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/
 | `git reset --hard` | Discards uncommitted changes | `git stash` first, or `git reset --soft` |
 | `git checkout .` | Discards all working tree changes | `git stash` |
 | `git checkout -- <file>` | Discards changes to file | `git stash` |
-| `git restore .` | Discards all changes | `git stash` |
+| `git checkout <ref> -- <path>` | Overwrites files from a ref | Commit or stash first |
+| `git restore <path>` | Discards working tree changes | `git restore --staged` to unstage only |
+| `git restore --source=<ref>` | Overwrites files from a ref | Commit or stash first |
+| `git restore --worktree` | Explicitly discards changes | `git restore --staged` to unstage only |
 | `git clean -f` | Deletes untracked files permanently | `git clean -n` (dry run first) |
 | `git branch -D` | Force-deletes unmerged branch | `git branch -d` (only merged) |
 | `git push --delete` | Permanently removes remote branches/tags | `git branch -d` for local cleanup |

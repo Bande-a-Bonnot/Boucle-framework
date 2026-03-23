@@ -47,7 +47,7 @@ Define protected files in `.file-guard` (one pattern per line). Two modes: **wri
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/git-safe/install.sh | bash
 ```
 
-Blocks `git push --force`, `git reset --hard`, `git checkout .`, `git clean -f`, `git branch -D`, and other destructive git commands. Suggests safer alternatives. Allowlist via `.git-safe` config. 50 tests.
+Blocks `git push --force`, `git reset --hard`, `git checkout .`, `git checkout HEAD -- path`, `git restore`, `git clean -f`, `git branch -D`, and other destructive git commands. Prevents the [exact pattern](https://github.com/anthropics/claude-code/issues/37888) that destroyed 30+ files despite 100+ CLAUDE.md rules. Suggests safer alternatives. Allowlist via `.git-safe` config. 64 tests.
 
 ### [bash-guard](tools/bash-guard/) — Block dangerous bash commands
 
