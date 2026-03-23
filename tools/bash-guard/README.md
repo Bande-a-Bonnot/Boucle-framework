@@ -21,11 +21,13 @@ bash-guard intercepts these before they execute.
 | Global installs | `npm install -g` | Modifies system packages |
 | Docker destruction | `docker compose down -v`, `docker system prune`, `docker volume rm` | Destroys volumes/data |
 | Docker escape | `docker run -v /:/host`, `docker exec` | Escapes directory restrictions ([#37621](https://github.com/anthropics/claude-code/issues/37621)) |
-| Database destruction | `prisma db push`, `dropdb`, `DROP TABLE`, `db:drop`, `migrate:fresh` | Destroys production data ([#33183](https://github.com/anthropics/claude-code/issues/33183)) |
+| Database destruction | `prisma db push`, `dropdb`, `DROP TABLE`, `migrate:fresh`, `redis-cli FLUSHALL`, `mongosh dropDatabase` | Destroys production data ([#33183](https://github.com/anthropics/claude-code/issues/33183), [#37439](https://github.com/anthropics/claude-code/issues/37439)) |
 | Credential exposure | `env`, `printenv`, `export -p`, `cat .env` | Dumps secrets to output ([#32616](https://github.com/anthropics/claude-code/issues/32616)) |
 | Debug trace | `bash -x`, `set -x` | Leaks expanded variables in trace |
+| Cloud infra destruction | `terraform destroy`, `aws s3 rm --recursive`, `kubectl delete namespace`, `pulumi destroy` | Takes down production infrastructure |
+| Mass file deletion | `find -delete`, `xargs rm`, `git clean -f` | Bulk file removal without confirmation ([#37331](https://github.com/anthropics/claude-code/issues/37331)) |
 
-Safe variants are allowed: `rm -rf ./build`, `chmod 644 file.txt`, `curl -o file url`, `kill -9 12345`, `docker compose down` (without -v), `docker run -v mydata:/data`, `prisma migrate dev`, `rails db:migrate`, `printenv HOME`, `cat README.md`, `set -euo pipefail`.
+Safe variants are allowed: `rm -rf ./build`, `chmod 644 file.txt`, `curl -o file url`, `kill -9 12345`, `docker compose down` (without -v), `docker run -v mydata:/data`, `prisma migrate dev`, `rails db:migrate`, `printenv HOME`, `cat README.md`, `set -euo pipefail`, `terraform plan`, `aws s3 ls`, `kubectl get pods`, `find -print`, `git clean -n`.
 
 ## Install
 
@@ -48,7 +50,7 @@ allow: rm -rf
 allow: pipe-to-shell
 ```
 
-Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `system-write`, `eval`, `global-install`, `docker-destroy`, `docker-mount`, `docker-exec`, `db-destroy`, `env-dump`, `debug-trace`, `read-secrets`.
+Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `system-write`, `eval`, `global-install`, `docker-destroy`, `docker-mount`, `docker-exec`, `db-destroy`, `env-dump`, `debug-trace`, `read-secrets`, `infra-destroy`, `mass-delete`, `git-clean`.
 
 ## Disable temporarily
 
@@ -66,7 +68,7 @@ bash-guard is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code
 bash test.sh
 ```
 
-149 tests covering all blocked patterns plus safe variants.
+208 tests covering all blocked patterns plus safe variants.
 
 ## License
 

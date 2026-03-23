@@ -12,8 +12,12 @@
 #   - Overwriting system directories
 #   - Docker data destruction (compose down -v, system prune, volume rm)
 #   - Docker escape (host mounts, docker exec)
-#   - Database destruction (prisma db push, dropdb, DROP/TRUNCATE, db:drop, migrate:fresh)
+#   - Database destruction (prisma db push, dropdb, DROP/TRUNCATE, db:drop, migrate:fresh,
+#     doctrine:schema:drop, sequelize db:drop, redis FLUSHALL, mongo dropDatabase, wp db reset)
 #   - Credential exposure (env/printenv dumps, export -p, bash -x, set -x, cat .env/.pem/.key)
+#   - Cloud infrastructure destruction (terraform destroy, pulumi destroy, aws s3 rm --recursive,
+#     kubectl delete namespace/deployment, gcloud delete)
+#   - Mass file deletion (find -delete, xargs rm, git clean -f)
 #
 # Install:
 #   curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
@@ -220,6 +224,50 @@ if echo "$COMMAND" | grep -qE '(bash|sh|zsh)\s+-[a-zA-Z]*x' 2>/dev/null; then
 fi
 if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)set\s+-[a-zA-Z]*x' 2>/dev/null; then
   is_allowed "debug-trace" || block "set -x enables debug tracing which prints all variables including secrets." "Remove set -x, or add 'allow: debug-trace' to .bash-guard."
+fi
+
+# Cloud infrastructure destruction (terraform, aws, kubectl, gcloud, pulumi)
+if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)terraform\s+destroy' 2>/dev/null; then
+  is_allowed "infra-destroy" || block "terraform destroy removes cloud infrastructure. This can take down production services." "Use 'terraform plan -destroy' to preview first, or add 'allow: infra-destroy' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)pulumi\s+destroy' 2>/dev/null; then
+  is_allowed "infra-destroy" || block "pulumi destroy removes cloud infrastructure." "Use 'pulumi preview --diff' first, or add 'allow: infra-destroy' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE 'aws\s+s3\s+(rm|rb)\s.*--recursive' 2>/dev/null; then
+  is_allowed "infra-destroy" || block "Recursive S3 deletion permanently removes objects from the bucket." "Remove specific keys instead, or add 'allow: infra-destroy' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE 'kubectl\s+delete\s+(namespace|ns|all|deployment|statefulset)\s' 2>/dev/null; then
+  is_allowed "infra-destroy" || block "kubectl delete removes Kubernetes resources, potentially taking down production services." "Verify the target cluster and namespace first, or add 'allow: infra-destroy' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE 'gcloud\s.*(delete|destroy)\s' 2>/dev/null; then
+  is_allowed "infra-destroy" || block "gcloud delete/destroy removes Google Cloud resources." "Verify the target project first, or add 'allow: infra-destroy' to .bash-guard."
+fi
+
+# Additional database destruction patterns
+if echo "$COMMAND" | grep -qE '(doctrine:schema:drop|sequelize\s+db:drop|typeorm\s+schema:drop)' 2>/dev/null; then
+  is_allowed "db-destroy" || block "ORM schema drop command permanently destroys database structure." "Add 'allow: db-destroy' to .bash-guard if you need this."
+fi
+if echo "$COMMAND" | grep -qE 'redis-cli\s.*(FLUSHALL|FLUSHDB)' 2>/dev/null; then
+  is_allowed "db-destroy" || block "Redis FLUSHALL/FLUSHDB permanently deletes all data in the Redis instance." "Add 'allow: db-destroy' to .bash-guard if you need this."
+fi
+if echo "$COMMAND" | grep -qE '(wp\s+db\s+(reset|clean)|drush\s+sql-drop)' 2>/dev/null; then
+  is_allowed "db-destroy" || block "CMS database destruction command causes permanent data loss." "Add 'allow: db-destroy' to .bash-guard if you need this."
+fi
+if echo "$COMMAND" | grep -qE '(mongosh?|mongo)\s.*dropDatabase' 2>/dev/null; then
+  is_allowed "db-destroy" || block "MongoDB dropDatabase permanently removes the entire database." "Add 'allow: db-destroy' to .bash-guard if you need this."
+fi
+
+# Mass file deletion (find -delete, xargs rm)
+if echo "$COMMAND" | grep -qE 'find\s.*\s-delete\b' 2>/dev/null; then
+  is_allowed "mass-delete" || block "find with -delete permanently removes all matching files without confirmation." "Use -print first to preview, or add 'allow: mass-delete' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE '\|\s*xargs\s.*rm\b' 2>/dev/null; then
+  is_allowed "mass-delete" || block "Piping to xargs rm deletes files in bulk without individual confirmation." "Review the file list first, or add 'allow: mass-delete' to .bash-guard."
+fi
+
+# git clean -fdx (removes all untracked files including gitignored)
+if echo "$COMMAND" | grep -qE 'git\s+clean\s+-[a-zA-Z]*f' 2>/dev/null; then
+  is_allowed "git-clean" || block "git clean -f permanently removes untracked files. With -x it also removes gitignored files (build artifacts, .env, etc.)." "Use 'git clean -n' for a dry run first, or add 'allow: git-clean' to .bash-guard."
 fi
 
 # Docker host mounts (escape directory restrictions — #37621)
