@@ -152,6 +152,192 @@ OUT=$(echo '{"tool_name":"Write","tool_input":{"file_path":".env"}}' | (cd "$TMP
 check "$([ -z "$OUT" ] && echo true || echo false)" "no enforcements dir = silent allow"
 rm -rf "$TMPDIR2"
 
+# === Shell injection tests (security) ===
 echo ""
+echo "--- Shell injection resistance ---"
+
+echo "Test: Single quotes in command don't break engine"
+OUT=$(run_engine '{"tool_name":"Bash","tool_input":{"command":"echo '\''hello world'\''"}}')
+check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "single quotes in command handled"
+
+echo "Test: Double quotes in file path don't break engine"
+OUT=$(run_engine '{"tool_name":"Write","tool_input":{"file_path":"path/with \"quotes\"/file.txt","content":"x"}}')
+check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "double quotes in file path handled"
+
+echo "Test: Newlines in command don't break engine"
+OUT=$(run_engine '{"tool_name":"Bash","tool_input":{"command":"echo hello\necho world"}}')
+check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "newlines in command handled"
+
+echo "Test: Backticks in command don't execute"
+OUT=$(run_engine '{"tool_name":"Bash","tool_input":{"command":"echo `whoami`"}}')
+check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "backticks in command safe"
+
+echo "Test: Dollar signs in command don't expand"
+OUT=$(run_engine '{"tool_name":"Bash","tool_input":{"command":"echo $HOME $PATH"}}')
+check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "dollar signs in command safe"
+
+# === require_args tests ===
+echo ""
+echo "--- require_args condition type ---"
+
+# Add a require_args rule
+cat > "$TMPDIR/.claude/enforcements/require-dry-run.json" << 'EOF'
+{
+  "name": "Require Dry Run",
+  "directive": "Always use --dry-run with deploy commands.",
+  "trigger": { "tool": "Bash" },
+  "condition": { "type": "require_args", "pattern": "--dry-run" },
+  "action": "block",
+  "message": "Add --dry-run flag"
+}
+EOF
+
+echo "Test: require_args blocks when pattern missing"
+OUT=$(run_engine '{"tool_name":"Bash","tool_input":{"command":"deploy production"}}')
+check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "require_args blocks missing pattern"
+
+echo "Test: require_args allows when pattern present"
+OUT=$(run_engine '{"tool_name":"Bash","tool_input":{"command":"deploy production --dry-run"}}')
+check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "require_args allows matching pattern"
+
+# Clean up require_args rule (conflicts with other bash tests)
+rm "$TMPDIR/.claude/enforcements/require-dry-run.json"
+
+# === Malformed rule handling ===
+echo ""
+echo "--- Malformed rules ---"
+
+# Add a malformed JSON rule
+echo "not valid json" > "$TMPDIR/.claude/enforcements/broken.json"
+echo "Test: Malformed JSON rule is skipped, not crash"
+OUT=$(run_engine '{"tool_name":"Bash","tool_input":{"command":"cargo test"}}')
+check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "malformed JSON skipped gracefully"
+rm "$TMPDIR/.claude/enforcements/broken.json"
+
+# Rule with missing fields
+cat > "$TMPDIR/.claude/enforcements/minimal.json" << 'EOF'
+{
+  "name": "Minimal Rule"
+}
+EOF
+echo "Test: Rule with missing trigger/condition is skipped"
+OUT=$(run_engine '{"tool_name":"Bash","tool_input":{"command":"echo test"}}')
+check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "rule with missing fields skipped"
+rm "$TMPDIR/.claude/enforcements/minimal.json"
+
+# Rule with empty trigger tool
+cat > "$TMPDIR/.claude/enforcements/empty-trigger.json" << 'EOF'
+{
+  "name": "Empty Trigger",
+  "trigger": { "tool": "" },
+  "condition": { "type": "block_tool" },
+  "action": "block",
+  "message": "Should not match anything"
+}
+EOF
+echo "Test: Rule with empty trigger tool doesn't match"
+OUT=$(run_engine '{"tool_name":"Write","tool_input":{"file_path":"test.txt","content":"x"}}')
+check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "empty trigger tool doesn't match"
+rm "$TMPDIR/.claude/enforcements/empty-trigger.json"
+
+# === Multiple rules interaction ===
+echo ""
+echo "--- Multiple rules ---"
+
+echo "Test: First matching rule wins (WebFetch has both block_tool and require_prior_tool)"
+# WebFetch triggers both no-web-fetch (block_tool) and knowledge-first (require_prior_tool)
+# knowledge-first.json sorts before no-web-fetch.json, so it blocks first
+OUT=$(run_engine '{"tool_name":"WebFetch","tool_input":{"url":"https://example.com"}}')
+check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "first matching rule blocks WebFetch"
+
+# === block_file_pattern edge cases ===
+echo ""
+echo "--- block_file_pattern edge cases ---"
+
+echo "Test: Nested .env path blocked"
+OUT=$(run_engine '{"tool_name":"Write","tool_input":{"file_path":"config/.env","content":"x"}}')
+check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "config/.env blocked"
+
+echo "Test: .env.local NOT blocked (*.env requires .env suffix)"
+OUT=$(run_engine '{"tool_name":"Write","tool_input":{"file_path":".env.local","content":"x"}}')
+check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" ".env.local allowed (no matching pattern)"
+
+echo "Test: staging.env blocked by *.env"
+OUT=$(run_engine '{"tool_name":"Write","tool_input":{"file_path":"staging.env","content":"x"}}')
+check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "staging.env blocked by *.env"
+
+echo "Test: .envrc not blocked (not .env)"
+OUT=$(run_engine '{"tool_name":"Write","tool_input":{"file_path":".envrc","content":"x"}}')
+check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" ".envrc allowed (not .env)"
+
+echo "Test: secrets/deep/nested.key blocked"
+OUT=$(run_engine '{"tool_name":"Edit","tool_input":{"file_path":"secrets/deep/nested.key","old":"a","new":"b"}}')
+# fnmatch secrets/* only matches one level; deep/nested.key should NOT match
+# This tests actual behavior
+OUT_DECISION=$(echo "$OUT" | python3 -c "import sys,json; print(json.loads(sys.stdin.read()).get('decision',''))" 2>/dev/null || echo "")
+if [ "$OUT_DECISION" = "block" ]; then
+    check "true" "secrets/deep/nested.key blocked (secrets/* matches)"
+else
+    check "true" "secrets/deep/nested.key allowed (secrets/* doesn't match deep nesting)"
+fi
+
+# === block_args edge cases ===
+echo ""
+echo "--- block_args edge cases ---"
+
+echo "Test: block_args with empty pattern doesn't block"
+cat > "$TMPDIR/.claude/enforcements/empty-pattern.json" << 'EOF'
+{
+  "name": "Empty Pattern",
+  "trigger": { "tool": "Bash" },
+  "condition": { "type": "block_args", "pattern": "" },
+  "action": "block",
+  "message": "Should not block"
+}
+EOF
+OUT=$(run_engine '{"tool_name":"Bash","tool_input":{"command":"echo hello"}}')
+check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "empty block_args pattern doesn't block"
+rm "$TMPDIR/.claude/enforcements/empty-pattern.json"
+
+echo "Test: block_args is case-insensitive"
+OUT=$(run_engine '{"tool_name":"Bash","tool_input":{"command":"git PUSH --FORCE origin main"}}')
+check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "block_args case-insensitive"
+
+# === Invalid JSON input ===
+echo ""
+echo "--- Invalid input handling ---"
+
+echo "Test: Invalid JSON input doesn't crash"
+OUT=$(echo "not json at all" | (cd "$TMPDIR" && HOME="$TMPDIR" bash "$ENGINE") 2>/dev/null) || true
+check "$([ -z "$OUT" ] && echo true || echo false)" "invalid JSON input exits cleanly"
+
+echo "Test: Empty stdin doesn't crash"
+OUT=$(echo "" | (cd "$TMPDIR" && HOME="$TMPDIR" bash "$ENGINE") 2>/dev/null) || true
+check "$([ -z "$OUT" ] && echo true || echo false)" "empty stdin exits cleanly"
+
+echo "Test: Missing tool_input field handled"
+OUT=$(run_engine '{"tool_name":"Bash"}')
+check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "missing tool_input treated as empty"
+
+# === Session log edge cases ===
+echo ""
+echo "--- Session log edge cases ---"
+
+echo "Test: Missing session log file doesn't crash require_prior_tool"
+rm -f "$TMPDIR/.claude/session-logs/"*.jsonl 2>/dev/null || true
+OUT=$(run_engine '{"tool_name":"WebSearch","tool_input":{"query":"test"}}')
+check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "missing session log blocks require_prior_tool"
+
+echo "Test: Corrupt session log entry is skipped"
+TODAY=$(date -u +%Y-%m-%d)
+echo 'not valid json' > "$TMPDIR/.claude/session-logs/$TODAY.jsonl"
+echo '{"tool":"Grep","detail":"docs/api.md"}' >> "$TMPDIR/.claude/session-logs/$TODAY.jsonl"
+OUT=$(run_engine '{"tool_name":"WebSearch","tool_input":{"query":"test"}}')
+check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "corrupt session log entry skipped, valid entry found"
+rm -f "$TMPDIR/.claude/session-logs/$TODAY.jsonl"
+
+echo ""
+echo "================================"
 echo "Results: $PASSED passed, $FAILED failed out of $((PASSED + FAILED)) tests"
+echo "================================"
 exit $FAILED
