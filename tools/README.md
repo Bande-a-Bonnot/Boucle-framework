@@ -22,7 +22,7 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 |------|-------------|------|
 | [read-once](read-once/) | Prevents redundant file re-reads, saving tokens | PreToolUse |
 | [git-safe](git-safe/) | Blocks force pushes, `push --delete`, `reset --hard`, `checkout .`, `clean -f` | PreToolUse |
-| [bash-guard](bash-guard/) | Blocks `rm -rf /`, `sudo`, `curl\|bash`, system directory writes | PreToolUse |
+| [bash-guard](bash-guard/) | Blocks dangerous commands: `rm -rf /`, `sudo`, Docker, database drops, credential exposure, cloud infra, compound commands | PreToolUse |
 | [file-guard](file-guard/) | Protects files matching patterns in `.file-guard` config | PreToolUse |
 | [branch-guard](branch-guard/) | Prevents commits to main/master/production | PreToolUse |
 | [session-log](session-log/) | Logs all tool calls to `~/.claude/session-logs/` | PostToolUse |

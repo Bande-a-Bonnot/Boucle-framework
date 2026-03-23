@@ -80,7 +80,7 @@ bash-guard is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code
 bash test.sh
 ```
 
-223 tests covering all blocked patterns, compound command bypass, and safe variants.
+225 tests covering all blocked patterns, compound command bypass, and safe variants.
 
 ## License
 
