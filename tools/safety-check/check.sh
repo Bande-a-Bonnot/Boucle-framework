@@ -93,6 +93,30 @@ printf "${BOLD}Claude Code Safety Check${NC}\n"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
+# === Section 0: Environment Warnings ===
+# These are platform bugs that silently disable hooks — check before anything else
+WARNINGS=()
+
+# IS_DEMO check (claude-code#37780: silently disables all hooks)
+if [ "${IS_DEMO:-}" = "1" ]; then
+    WARNINGS+=("IS_DEMO=1 is set in your environment. This silently disables ALL hooks by suppressing workspace trust. Unset it: unset IS_DEMO (see claude-code#37780)")
+fi
+
+# JSONC check: settings.json with comments silently breaks hook loading
+if [ -f "$SETTINGS_FILE" ]; then
+    if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$SETTINGS_FILE" 2>/dev/null; then
+        WARNINGS+=("settings.json contains JSONC comments or invalid JSON. Hooks may not load. Run any hook installer to auto-fix, or remove // and /* */ comments manually (see claude-code#37540)")
+    fi
+fi
+
+if [ ${#WARNINGS[@]} -gt 0 ]; then
+    printf "${RED}${BOLD}⚠ Environment Warnings${NC}\n"
+    for warn in "${WARNINGS[@]}"; do
+        printf "  ${RED}!${NC} %s\n" "$warn"
+    done
+    echo ""
+fi
+
 # === Section 1: Basic Setup ===
 printf "${BLUE}Setup${NC}\n"
 
@@ -160,6 +184,53 @@ check "Permission rules configured" 5 \
     "$(has_hook permissions && echo true || echo false)" \
     "No permission allow/deny rules in settings.json" \
     "See: https://docs.anthropic.com/en/docs/claude-code/settings"
+
+# === Section 7: Hook Health ===
+# Verify that registered hooks actually exist and are executable
+HOOK_HEALTH_ISSUES=0
+if [ -f "$SETTINGS_FILE" ]; then
+    HOOK_PATHS=$(python3 - "$SETTINGS_FILE" << 'PYEOF'
+import json, sys
+try:
+    with open(sys.argv[1]) as f:
+        s = json.load(f)
+    paths = []
+    for hook_type in ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd"]:
+        for entry in s.get("hooks", {}).get(hook_type, []):
+            for hook in entry.get("hooks", []):
+                cmd = hook.get("command", "")
+                if cmd: paths.append(cmd)
+            cmd = entry.get("command", "")
+            if cmd: paths.append(cmd)
+    for p in paths:
+        print(p)
+except Exception:
+    pass
+PYEOF
+    )
+
+    if [ -n "$HOOK_PATHS" ]; then
+        echo ""
+        printf "${BLUE}Hook Health${NC}\n"
+        while IFS= read -r hook_path; do
+            # Expand ~ to HOME
+            expanded_path="${hook_path/#\~/$HOME}"
+            hook_basename=$(basename "$expanded_path")
+            if [ ! -f "$expanded_path" ]; then
+                printf "  ${RED}✗${NC} %s — file not found\n" "$hook_basename"
+                HOOK_HEALTH_ISSUES=$((HOOK_HEALTH_ISSUES + 1))
+            elif [ ! -x "$expanded_path" ]; then
+                printf "  ${RED}✗${NC} %s — not executable (run: chmod +x %s)\n" "$hook_basename" "$hook_path"
+                HOOK_HEALTH_ISSUES=$((HOOK_HEALTH_ISSUES + 1))
+            else
+                printf "  ${GREEN}✓${NC} %s\n" "$hook_basename"
+            fi
+        done <<< "$HOOK_PATHS"
+        if [ "$HOOK_HEALTH_ISSUES" -gt 0 ]; then
+            ISSUES+=("$HOOK_HEALTH_ISSUES hook(s) are broken (missing or not executable). Hooks that don't exist fail silently.")
+        fi
+    fi
+fi
 
 # === Results ===
 echo ""

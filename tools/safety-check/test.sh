@@ -144,6 +144,110 @@ assert "full setup high score" "Grade [AB]" "$FULL_OUTPUT"
 # Cleanup
 rm -rf "$TMPDIR_TEST"
 
+# === Test 11: IS_DEMO warning ===
+TMPDIR_DEMO=$(mktemp -d)
+export HOME="$TMPDIR_DEMO"
+export IS_DEMO=1
+DEMO_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "IS_DEMO warning shown" "IS_DEMO" "$DEMO_OUTPUT"
+assert "IS_DEMO mentions hooks disabled" "disables ALL hooks" "$DEMO_OUTPUT"
+unset IS_DEMO
+rm -rf "$TMPDIR_DEMO"
+
+# === Test 12: No IS_DEMO warning when unset ===
+TMPDIR_NODEMO=$(mktemp -d)
+export HOME="$TMPDIR_NODEMO"
+unset IS_DEMO 2>/dev/null || true
+NODEMO_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no IS_DEMO warning when unset" "IS_DEMO" "$NODEMO_OUTPUT"
+rm -rf "$TMPDIR_NODEMO"
+
+# === Test 13: JSONC warning for invalid settings ===
+TMPDIR_JSONC=$(mktemp -d)
+export HOME="$TMPDIR_JSONC"
+mkdir -p "$TMPDIR_JSONC/.claude"
+cat > "$TMPDIR_JSONC/.claude/settings.json" << 'JSONC'
+{
+  // This is a JSONC comment that breaks JSON parsing
+  "hooks": {}
+}
+JSONC
+JSONC_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "JSONC warning shown" "JSONC comments" "$JSONC_OUTPUT"
+rm -rf "$TMPDIR_JSONC"
+
+# === Test 14: No JSONC warning for valid JSON ===
+TMPDIR_VALID=$(mktemp -d)
+export HOME="$TMPDIR_VALID"
+mkdir -p "$TMPDIR_VALID/.claude"
+echo '{"hooks": {}}' > "$TMPDIR_VALID/.claude/settings.json"
+VALID_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no JSONC warning for valid JSON" "JSONC comments" "$VALID_OUTPUT"
+rm -rf "$TMPDIR_VALID"
+
+# === Test 15: Hook health checks — missing hook file ===
+TMPDIR_HEALTH=$(mktemp -d)
+export HOME="$TMPDIR_HEALTH"
+mkdir -p "$TMPDIR_HEALTH/.claude"
+cat > "$TMPDIR_HEALTH/.claude/settings.json" << HEALTH
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [{"type": "command", "command": "$TMPDIR_HEALTH/.claude/hooks/nonexistent.sh"}]
+      }
+    ]
+  }
+}
+HEALTH
+HEALTH_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "missing hook detected" "file not found" "$HEALTH_OUTPUT"
+assert "has hook health section" "Hook Health" "$HEALTH_OUTPUT"
+rm -rf "$TMPDIR_HEALTH"
+
+# === Test 16: Hook health checks — non-executable hook ===
+TMPDIR_NOEXEC=$(mktemp -d)
+export HOME="$TMPDIR_NOEXEC"
+mkdir -p "$TMPDIR_NOEXEC/.claude/hooks"
+echo '#!/bin/bash' > "$TMPDIR_NOEXEC/.claude/hooks/test-hook.sh"
+chmod -x "$TMPDIR_NOEXEC/.claude/hooks/test-hook.sh"
+cat > "$TMPDIR_NOEXEC/.claude/settings.json" << NOEXEC
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [{"type": "command", "command": "$TMPDIR_NOEXEC/.claude/hooks/test-hook.sh"}]
+      }
+    ]
+  }
+}
+NOEXEC
+NOEXEC_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "non-executable hook detected" "not executable" "$NOEXEC_OUTPUT"
+rm -rf "$TMPDIR_NOEXEC"
+
+# === Test 17: Hook health checks — healthy hook ===
+TMPDIR_OK=$(mktemp -d)
+export HOME="$TMPDIR_OK"
+mkdir -p "$TMPDIR_OK/.claude/hooks"
+echo '#!/bin/bash' > "$TMPDIR_OK/.claude/hooks/good-hook.sh"
+chmod +x "$TMPDIR_OK/.claude/hooks/good-hook.sh"
+cat > "$TMPDIR_OK/.claude/settings.json" << OKHOOK
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [{"type": "command", "command": "$TMPDIR_OK/.claude/hooks/good-hook.sh"}]
+      }
+    ]
+  }
+}
+OKHOOK
+OK_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "healthy hook shows checkmark" "✓.*good-hook" "$OK_OUTPUT"
+assert_not "healthy hook no errors" "file not found" "$OK_OUTPUT"
+rm -rf "$TMPDIR_OK"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
