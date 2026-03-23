@@ -21,8 +21,10 @@ bash-guard intercepts these before they execute.
 | Global installs | `npm install -g` | Modifies system packages |
 | Docker destruction | `docker compose down -v`, `docker system prune`, `docker volume rm` | Destroys volumes/data |
 | Database destruction | `dropdb`, `DROP DATABASE/TABLE`, `TRUNCATE`, `db:drop`, `migrate:fresh` | Destroys database contents |
+| Credential exposure | `env`, `printenv`, `export -p` | Dumps all secrets to output |
+| Debug trace | `bash -x`, `set -x` | Leaks expanded variables in trace |
 
-Safe variants are allowed: `rm -rf ./build`, `chmod 644 file.txt`, `curl -o file url`, `kill -9 12345`, `docker compose down` (without -v), `rails db:migrate`.
+Safe variants are allowed: `rm -rf ./build`, `chmod 644 file.txt`, `curl -o file url`, `kill -9 12345`, `docker compose down` (without -v), `rails db:migrate`, `printenv HOME`, `env FOO=bar command`, `set -euo pipefail`.
 
 ## Install
 
@@ -45,7 +47,7 @@ allow: rm -rf
 allow: pipe-to-shell
 ```
 
-Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `system-write`, `eval`, `global-install`, `docker-destroy`, `db-destroy`.
+Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `system-write`, `eval`, `global-install`, `docker-destroy`, `db-destroy`, `env-dump`, `debug-trace`.
 
 ## Disable temporarily
 
@@ -63,7 +65,7 @@ bash-guard is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code
 bash test.sh
 ```
 
-89 tests covering all blocked patterns plus safe variants.
+117 tests covering all blocked patterns plus safe variants.
 
 ## License
 

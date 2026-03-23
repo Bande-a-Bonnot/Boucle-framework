@@ -12,6 +12,7 @@
 #   - Overwriting system directories
 #   - Docker data destruction (compose down -v, system prune, volume rm)
 #   - Database destruction (dropdb, DROP/TRUNCATE, db:drop, migrate:fresh)
+#   - Credential exposure (env/printenv dumps, export -p, bash -x, set -x)
 #
 # Install:
 #   curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
@@ -192,6 +193,22 @@ if echo "$COMMAND" | grep -qiE "(DROP\s+(DATABASE|TABLE)|TRUNCATE\s+)" 2>/dev/nu
 fi
 if echo "$COMMAND" | grep -qE '(db:drop|db:wipe|migrate:fresh|fixtures:load|db:seed:replant)' 2>/dev/null; then
   is_allowed "db-destroy" || block "ORM command that destroys or replaces database contents." "Add 'allow: db-destroy' to .bash-guard if you need this."
+fi
+
+# Environment variable dumps (credential exposure)
+if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)(env|printenv)\s*($|\||;|&&|\|\||>|2>)' 2>/dev/null; then
+  is_allowed "env-dump" || block "Dumping all environment variables exposes API keys, tokens, and secrets in the output." "Access specific variables with 'echo \$VAR_NAME' or 'printenv VAR_NAME', or add 'allow: env-dump' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)export\s+-p\s*($|\||;|&&|\|\||>)' 2>/dev/null; then
+  is_allowed "env-dump" || block "export -p lists all exported variables, potentially exposing secrets." "Access specific variables directly, or add 'allow: env-dump' to .bash-guard."
+fi
+
+# Debug trace mode (leaks secrets in trace output)
+if echo "$COMMAND" | grep -qE '(bash|sh|zsh)\s+-[a-zA-Z]*x' 2>/dev/null; then
+  is_allowed "debug-trace" || block "Running scripts with -x traces all commands with expanded variables, exposing secrets in output." "Remove the -x flag, or add 'allow: debug-trace' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)set\s+-[a-zA-Z]*x' 2>/dev/null; then
+  is_allowed "debug-trace" || block "set -x enables debug tracing which prints all variables including secrets." "Remove set -x, or add 'allow: debug-trace' to .bash-guard."
 fi
 
 log "ALLOW: $COMMAND"
