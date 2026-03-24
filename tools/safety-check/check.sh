@@ -1,11 +1,21 @@
 #!/usr/bin/env bash
 # Claude Code Safety Check
 # Run: curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
+# Verify: curl -fsSL ... | bash -s -- --verify
 #
 # Audits your Claude Code setup and scores it for safety.
+# --verify sends test payloads to each hook and checks they actually block.
 # No installation, no dependencies — just information.
 
 set -euo pipefail
+
+# Parse flags
+VERIFY_MODE=0
+for arg in "$@"; do
+    if [ "$arg" = "--verify" ]; then
+        VERIFY_MODE=1
+    fi
+done
 
 CLAUDE_DIR="${HOME}/.claude"
 SETTINGS_FILE="${CLAUDE_DIR}/settings.json"
@@ -267,6 +277,7 @@ fi
 # === Section 8: Hook Health ===
 # Verify that registered hooks actually exist and are executable
 HOOK_HEALTH_ISSUES=0
+HOOK_PATHS=""
 if [ -f "$SETTINGS_FILE" ]; then
     HOOK_PATHS=$(python3 - "$SETTINGS_FILE" << 'PYEOF'
 import json, sys
@@ -309,6 +320,147 @@ PYEOF
             ISSUES+=("$HOOK_HEALTH_ISSUES hook(s) are broken (missing or not executable). Hooks that don't exist fail silently.")
         fi
     fi
+fi
+
+# === Section 9: Verify Mode — test hooks with real payloads ===
+if [ "$VERIFY_MODE" = "1" ] && [ -n "$HOOK_PATHS" ]; then
+    echo ""
+    printf "${BOLD}Hook Verification${NC} ${DIM}(sending test payloads)${NC}\n"
+
+    VERIFY_PASS=0
+    VERIFY_FAIL=0
+    VERIFY_SKIP=0
+    VERIFY_TOTAL=0
+
+    # Test payloads for known hooks
+    BASH_GUARD_PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}'
+    GIT_SAFE_PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}'
+    FILE_GUARD_PAYLOAD='{"tool_name":"Write","tool_input":{"file_path":".env","content":"SECRET=exposed"}}'
+    BRANCH_GUARD_PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"git commit -m test"}}'
+    NONMATCH_PAYLOAD='{"tool_name":"Read","tool_input":{"file_path":"README.md"}}'
+
+    verify_hook() {
+        local name="$1"
+        local hook_cmd="$2"
+        local payload="$3"
+        local expect_block="$4"  # true = should block, false = should pass, skip = skip
+
+        if [ "$expect_block" = "skip" ]; then
+            VERIFY_SKIP=$((VERIFY_SKIP + 1))
+            printf "  ${DIM}— %s (skipped, needs runtime state)${NC}\n" "$name"
+            return
+        fi
+
+        VERIFY_TOTAL=$((VERIFY_TOTAL + 1))
+
+        # Extract the script path from commands like "bash ~/.claude/hooks/foo.sh"
+        local script_path=""
+        if [[ "$hook_cmd" == bash\ * ]]; then
+            script_path="${hook_cmd#bash }"
+        elif [[ "$hook_cmd" == python3\ * ]]; then
+            script_path="${hook_cmd#python3 }"
+        else
+            script_path="$hook_cmd"
+        fi
+        # Expand ~
+        script_path="${script_path/#\~/$HOME}"
+
+        if [ ! -f "$script_path" ]; then
+            VERIFY_FAIL=$((VERIFY_FAIL + 1))
+            printf "  ${RED}✗${NC} %s — script not found: %s\n" "$name" "$script_path"
+            return
+        fi
+
+        if [ ! -x "$script_path" ] && [[ "$hook_cmd" != bash\ * ]] && [[ "$hook_cmd" != python3\ * ]]; then
+            VERIFY_FAIL=$((VERIFY_FAIL + 1))
+            printf "  ${RED}✗${NC} %s — not executable\n" "$name"
+            return
+        fi
+
+        local output=""
+        local exit_code=0
+        # Run the hook (timeout via background+wait if coreutils timeout unavailable)
+        if [[ "$hook_cmd" == bash\ * ]]; then
+            output=$(echo "$payload" | bash "$script_path" 2>/dev/null) || exit_code=$?
+        elif [[ "$hook_cmd" == python3\ * ]]; then
+            output=$(echo "$payload" | python3 "$script_path" 2>/dev/null) || exit_code=$?
+        else
+            output=$(echo "$payload" | "$script_path" 2>/dev/null) || exit_code=$?
+        fi
+
+        if [ "$expect_block" = "true" ]; then
+            # Should have blocked — look for "decision":"block" in JSON output
+            if [ -n "$output" ] && echo "$output" | grep -qE '"decision"[[:space:]]*:[[:space:]]*"block"'; then
+                VERIFY_PASS=$((VERIFY_PASS + 1))
+                printf "  ${GREEN}✓${NC} %s — blocks correctly\n" "$name"
+            else
+                VERIFY_FAIL=$((VERIFY_FAIL + 1))
+                printf "  ${RED}✗${NC} %s — did NOT block ${RED}(FAIL-OPEN)${NC}\n" "$name"
+                if [ -n "$output" ]; then
+                    printf "    ${DIM}Output: %s${NC}\n" "$(echo "$output" | head -1 | cut -c1-80)"
+                else
+                    printf "    ${DIM}No output (silent fail-open)${NC}\n"
+                fi
+            fi
+        else
+            # Should pass through — just verify it doesn't crash
+            if [ "$exit_code" -le 1 ]; then
+                VERIFY_PASS=$((VERIFY_PASS + 1))
+                printf "  ${GREEN}✓${NC} %s — passes safe payload\n" "$name"
+            else
+                VERIFY_FAIL=$((VERIFY_FAIL + 1))
+                printf "  ${RED}✗${NC} %s — crashed on safe payload (exit %d)\n" "$name" "$exit_code"
+            fi
+        fi
+    }
+
+    # For each hook command, identify what it is and test it
+    while IFS= read -r hook_cmd; do
+        [ -z "$hook_cmd" ] && continue
+
+        if echo "$hook_cmd" | grep -q "bash-guard"; then
+            verify_hook "bash-guard blocks rm -rf /" "$hook_cmd" "$BASH_GUARD_PAYLOAD" "true"
+            verify_hook "bash-guard passes safe commands" "$hook_cmd" "$NONMATCH_PAYLOAD" "false"
+        elif echo "$hook_cmd" | grep -q "git-safe"; then
+            verify_hook "git-safe blocks force push" "$hook_cmd" "$GIT_SAFE_PAYLOAD" "true"
+            verify_hook "git-safe passes safe commands" "$hook_cmd" "$NONMATCH_PAYLOAD" "false"
+        elif echo "$hook_cmd" | grep -q "file-guard"; then
+            verify_hook "file-guard blocks .env write" "$hook_cmd" "$FILE_GUARD_PAYLOAD" "true"
+            verify_hook "file-guard passes safe reads" "$hook_cmd" "$NONMATCH_PAYLOAD" "false"
+        elif echo "$hook_cmd" | grep -q "branch-guard"; then
+            verify_hook "branch-guard (git state dependent)" "$hook_cmd" "$BRANCH_GUARD_PAYLOAD" "skip"
+        elif echo "$hook_cmd" | grep -q "session-log"; then
+            verify_hook "session-log accepts payloads" "$hook_cmd" "$NONMATCH_PAYLOAD" "false"
+        elif echo "$hook_cmd" | grep -q "read-once"; then
+            verify_hook "read-once (session state dependent)" "$hook_cmd" "$NONMATCH_PAYLOAD" "skip"
+        elif echo "$hook_cmd" | grep -q "enforce"; then
+            verify_hook "enforce-hooks accepts payloads" "$hook_cmd" "$NONMATCH_PAYLOAD" "false"
+        else
+            # Unknown hook — just test it doesn't crash
+            hook_basename=$(basename "$hook_cmd" | head -1)
+            verify_hook "$hook_basename accepts payloads" "$hook_cmd" "$NONMATCH_PAYLOAD" "false"
+        fi
+    done <<< "$HOOK_PATHS"
+
+    # Summary
+    echo ""
+    if [ "$VERIFY_FAIL" -gt 0 ]; then
+        printf "  ${RED}%d/%d hooks FAIL-OPEN${NC}" "$VERIFY_FAIL" "$VERIFY_TOTAL"
+        if [ "$VERIFY_SKIP" -gt 0 ]; then
+            printf " ${DIM}(%d skipped)${NC}" "$VERIFY_SKIP"
+        fi
+        echo ""
+        ISSUES+=("$VERIFY_FAIL hook(s) did not block when they should have. This means dangerous commands can execute unchecked.")
+    else
+        printf "  ${GREEN}All %d verified hooks working correctly${NC}" "$VERIFY_PASS"
+        if [ "$VERIFY_SKIP" -gt 0 ]; then
+            printf " ${DIM}(%d skipped)${NC}" "$VERIFY_SKIP"
+        fi
+        echo ""
+    fi
+elif [ "$VERIFY_MODE" = "1" ]; then
+    echo ""
+    printf "${DIM}No hooks found to verify. Install hooks first.${NC}\n"
 fi
 
 # === Results ===

@@ -53,6 +53,29 @@ Safety Score: 45/100 (45%) — Grade D
 
 Each failed check shows a one-liner fix command.
 
+## Verify mode
+
+The basic check only confirms hooks are registered. Use `--verify` to send real test payloads and confirm hooks actually block what they claim to:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
+```
+
+This sends dangerous payloads (like `rm -rf /`) to each installed hook and checks the response. Hooks that fail to block are flagged as **FAIL-OPEN**.
+
+```
+Hook Verification (sending test payloads)
+  ✓ bash-guard blocks rm -rf / — blocks correctly
+  ✓ bash-guard passes safe commands — passes safe payload
+  ✓ git-safe blocks force push — blocks correctly
+  ✓ git-safe passes safe commands — passes safe payload
+  ✗ custom-hook — did NOT block (FAIL-OPEN)
+
+  1/5 hooks FAIL-OPEN
+```
+
+Why this matters: a hook can be registered in `settings.json` but silently fail open if the script is missing, uses the wrong JSON field name, or outputs invalid responses ([claude-code#37597](https://github.com/anthropics/claude-code/issues/37597), [Boucle-framework#2](https://github.com/Bande-a-Bonnot/Boucle-framework/pull/2)).
+
 ## No dependencies
 
 - Bash 4+

@@ -384,6 +384,247 @@ assert "full setup detects @enforced" "✓.*@enforced" "$FULL2_OUTPUT"
 cd "$ORIG_DIR"
 rm -rf "$TMPDIR_FULL2"
 
+# === Test 25: --verify flag with no hooks installed ===
+TMPDIR_VNONE=$(mktemp -d)
+export HOME="$TMPDIR_VNONE"
+mkdir -p "$TMPDIR_VNONE/.claude"
+echo '{"hooks": {}}' > "$TMPDIR_VNONE/.claude/settings.json"
+VNONE_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+assert "verify no hooks message" "No hooks found to verify" "$VNONE_OUTPUT"
+rm -rf "$TMPDIR_VNONE"
+
+# === Test 26: --verify with working bash-guard ===
+TMPDIR_VBG=$(mktemp -d)
+export HOME="$TMPDIR_VBG"
+mkdir -p "$TMPDIR_VBG/.claude/hooks"
+# Copy real bash-guard hook
+cp "$SCRIPT_DIR/../bash-guard/hook.sh" "$TMPDIR_VBG/.claude/hooks/bash-guard.sh"
+chmod +x "$TMPDIR_VBG/.claude/hooks/bash-guard.sh"
+cat > "$TMPDIR_VBG/.claude/settings.json" << VBGSETTINGS
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "bash $TMPDIR_VBG/.claude/hooks/bash-guard.sh"}]
+      }
+    ]
+  }
+}
+VBGSETTINGS
+VBG_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+assert "verify bash-guard blocks" "blocks correctly" "$VBG_OUTPUT"
+assert "verify bash-guard passes safe" "passes safe" "$VBG_OUTPUT"
+assert "verify has section header" "Hook Verification" "$VBG_OUTPUT"
+rm -rf "$TMPDIR_VBG"
+
+# === Test 27: --verify with broken (fail-open) hook ===
+TMPDIR_VBROKEN=$(mktemp -d)
+export HOME="$TMPDIR_VBROKEN"
+mkdir -p "$TMPDIR_VBROKEN/.claude/hooks"
+# Create a broken hook that reads stdin but outputs nothing (silent fail-open)
+cat > "$TMPDIR_VBROKEN/.claude/hooks/bash-guard.sh" << 'BROKEN'
+#!/bin/bash
+cat > /dev/null
+exit 0
+BROKEN
+chmod +x "$TMPDIR_VBROKEN/.claude/hooks/bash-guard.sh"
+cat > "$TMPDIR_VBROKEN/.claude/settings.json" << VBRKSET
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "bash $TMPDIR_VBROKEN/.claude/hooks/bash-guard.sh"}]
+      }
+    ]
+  }
+}
+VBRKSET
+VBRK_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+assert "verify broken hook detected" "FAIL-OPEN" "$VBRK_OUTPUT"
+assert "verify broken hook shows not block" "did NOT block" "$VBRK_OUTPUT"
+rm -rf "$TMPDIR_VBROKEN"
+
+# === Test 28: --verify with missing hook file ===
+TMPDIR_VMISS=$(mktemp -d)
+export HOME="$TMPDIR_VMISS"
+mkdir -p "$TMPDIR_VMISS/.claude"
+cat > "$TMPDIR_VMISS/.claude/settings.json" << VMISSSET
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [{"type": "command", "command": "bash $TMPDIR_VMISS/.claude/hooks/nonexistent-bash-guard.sh"}]
+      }
+    ]
+  }
+}
+VMISSSET
+VMISS_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+assert "verify missing hook detected" "not found" "$VMISS_OUTPUT"
+rm -rf "$TMPDIR_VMISS"
+
+# === Test 29: --verify with git-safe ===
+TMPDIR_VGS=$(mktemp -d)
+export HOME="$TMPDIR_VGS"
+mkdir -p "$TMPDIR_VGS/.claude/hooks"
+cp "$SCRIPT_DIR/../git-safe/hook.sh" "$TMPDIR_VGS/.claude/hooks/git-safe.sh"
+chmod +x "$TMPDIR_VGS/.claude/hooks/git-safe.sh"
+cat > "$TMPDIR_VGS/.claude/settings.json" << VGSSET
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "bash $TMPDIR_VGS/.claude/hooks/git-safe.sh"}]
+      }
+    ]
+  }
+}
+VGSSET
+VGS_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+assert "verify git-safe blocks force push" "blocks correctly" "$VGS_OUTPUT"
+assert "verify git-safe passes safe" "passes safe" "$VGS_OUTPUT"
+rm -rf "$TMPDIR_VGS"
+
+# === Test 30: --verify with file-guard ===
+TMPDIR_VFG=$(mktemp -d)
+export HOME="$TMPDIR_VFG"
+mkdir -p "$TMPDIR_VFG/.claude/hooks"
+cp "$SCRIPT_DIR/../file-guard/hook.sh" "$TMPDIR_VFG/.claude/hooks/file-guard.sh"
+chmod +x "$TMPDIR_VFG/.claude/hooks/file-guard.sh"
+cat > "$TMPDIR_VFG/.claude/settings.json" << VFGSET
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Write|Edit",
+        "hooks": [{"type": "command", "command": "bash $TMPDIR_VFG/.claude/hooks/file-guard.sh"}]
+      }
+    ]
+  }
+}
+VFGSET
+VFG_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+assert "verify file-guard blocks .env write" "blocks correctly" "$VFG_OUTPUT"
+assert "verify file-guard passes safe" "passes safe" "$VFG_OUTPUT"
+rm -rf "$TMPDIR_VFG"
+
+# === Test 31: --verify with session-log (PostToolUse, should not block) ===
+TMPDIR_VSL=$(mktemp -d)
+export HOME="$TMPDIR_VSL"
+mkdir -p "$TMPDIR_VSL/.claude/hooks"
+cp "$SCRIPT_DIR/../session-log/hook.sh" "$TMPDIR_VSL/.claude/hooks/session-log.sh"
+chmod +x "$TMPDIR_VSL/.claude/hooks/session-log.sh"
+cat > "$TMPDIR_VSL/.claude/settings.json" << VSLSET
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [{"type": "command", "command": "bash $TMPDIR_VSL/.claude/hooks/session-log.sh"}]
+      }
+    ]
+  }
+}
+VSLSET
+VSL_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+assert "verify session-log accepts payloads" "accepts payloads" "$VSL_OUTPUT"
+rm -rf "$TMPDIR_VSL"
+
+# === Test 32: --verify summary line — all pass ===
+TMPDIR_VSUM=$(mktemp -d)
+export HOME="$TMPDIR_VSUM"
+mkdir -p "$TMPDIR_VSUM/.claude/hooks"
+cp "$SCRIPT_DIR/../bash-guard/hook.sh" "$TMPDIR_VSUM/.claude/hooks/bash-guard.sh"
+chmod +x "$TMPDIR_VSUM/.claude/hooks/bash-guard.sh"
+cat > "$TMPDIR_VSUM/.claude/settings.json" << VSUMSET
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "bash $TMPDIR_VSUM/.claude/hooks/bash-guard.sh"}]
+      }
+    ]
+  }
+}
+VSUMSET
+VSUM_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+assert "verify summary all pass" "All.*verified hooks working" "$VSUM_OUTPUT"
+rm -rf "$TMPDIR_VSUM"
+
+# === Test 33: --verify summary line — has failures ===
+TMPDIR_VFAIL=$(mktemp -d)
+export HOME="$TMPDIR_VFAIL"
+mkdir -p "$TMPDIR_VFAIL/.claude/hooks"
+cat > "$TMPDIR_VFAIL/.claude/hooks/bash-guard.sh" << 'FAILHOOK'
+#!/bin/bash
+cat > /dev/null
+exit 0
+FAILHOOK
+chmod +x "$TMPDIR_VFAIL/.claude/hooks/bash-guard.sh"
+cat > "$TMPDIR_VFAIL/.claude/settings.json" << VFAILSET
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "bash $TMPDIR_VFAIL/.claude/hooks/bash-guard.sh"}]
+      }
+    ]
+  }
+}
+VFAILSET
+VFAIL_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+assert "verify summary shows failures" "FAIL-OPEN" "$VFAIL_OUTPUT"
+rm -rf "$TMPDIR_VFAIL"
+
+# === Test 34: --verify with branch-guard (skipped) ===
+TMPDIR_VBR=$(mktemp -d)
+export HOME="$TMPDIR_VBR"
+mkdir -p "$TMPDIR_VBR/.claude/hooks"
+cp "$SCRIPT_DIR/../branch-guard/hook.sh" "$TMPDIR_VBR/.claude/hooks/branch-guard.sh" 2>/dev/null || echo '#!/bin/bash' > "$TMPDIR_VBR/.claude/hooks/branch-guard.sh"
+chmod +x "$TMPDIR_VBR/.claude/hooks/branch-guard.sh"
+cat > "$TMPDIR_VBR/.claude/settings.json" << VBRSET
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "bash $TMPDIR_VBR/.claude/hooks/branch-guard.sh"}]
+      }
+    ]
+  }
+}
+VBRSET
+VBR_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+assert "verify branch-guard skipped" "skipped" "$VBR_OUTPUT"
+rm -rf "$TMPDIR_VBR"
+
+# === Test 35: without --verify flag, no verify section ===
+TMPDIR_NOVERIFY=$(mktemp -d)
+export HOME="$TMPDIR_NOVERIFY"
+mkdir -p "$TMPDIR_NOVERIFY/.claude/hooks"
+cp "$SCRIPT_DIR/../bash-guard/hook.sh" "$TMPDIR_NOVERIFY/.claude/hooks/bash-guard.sh"
+chmod +x "$TMPDIR_NOVERIFY/.claude/hooks/bash-guard.sh"
+cat > "$TMPDIR_NOVERIFY/.claude/settings.json" << NVSET
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "bash $TMPDIR_NOVERIFY/.claude/hooks/bash-guard.sh"}]
+      }
+    ]
+  }
+}
+NVSET
+NV_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no verify section without flag" "Hook Verification" "$NV_OUTPUT"
+rm -rf "$TMPDIR_NOVERIFY"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
