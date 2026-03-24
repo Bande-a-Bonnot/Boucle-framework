@@ -628,6 +628,168 @@ NV_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no verify section without flag" "Hook Verification" "$NV_OUTPUT"
 rm -rf "$TMPDIR_NOVERIFY"
 
+# === Test 36: CLAUDE.md rule coverage — suggests file-guard ===
+TMPDIR_RC1=$(mktemp -d)
+export HOME="$TMPDIR_RC1"
+mkdir -p "$TMPDIR_RC1/.claude"
+echo '{"hooks": {}}' > "$TMPDIR_RC1/.claude/settings.json"
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_RC1"
+cat > CLAUDE.md << 'RC1MD'
+## Rules
+- Never modify .env files
+- Keep API keys secret
+RC1MD
+RC1_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "rule coverage suggests file-guard" "file-guard" "$RC1_OUTPUT"
+assert "rule coverage mentions sensitive files" "sensitive files" "$RC1_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_RC1"
+
+# === Test 37: CLAUDE.md rule coverage — suggests git-safe ===
+TMPDIR_RC2=$(mktemp -d)
+export HOME="$TMPDIR_RC2"
+mkdir -p "$TMPDIR_RC2/.claude"
+echo '{"hooks": {}}' > "$TMPDIR_RC2/.claude/settings.json"
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_RC2"
+cat > CLAUDE.md << 'RC2MD'
+## Git Rules
+- Never use git push --force
+- Do not use reset --hard
+RC2MD
+RC2_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "rule coverage suggests git-safe" "git-safe" "$RC2_OUTPUT"
+assert "rule coverage mentions git operations" "destructive git" "$RC2_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_RC2"
+
+# === Test 38: CLAUDE.md rule coverage — suggests bash-guard ===
+TMPDIR_RC3=$(mktemp -d)
+export HOME="$TMPDIR_RC3"
+mkdir -p "$TMPDIR_RC3/.claude"
+echo '{"hooks": {}}' > "$TMPDIR_RC3/.claude/settings.json"
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_RC3"
+cat > CLAUDE.md << 'RC3MD'
+## Safety
+- Never run rm -rf on important directories
+- Do not use sudo
+RC3MD
+RC3_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "rule coverage suggests bash-guard" "bash-guard" "$RC3_OUTPUT"
+assert "rule coverage mentions dangerous commands" "dangerous commands" "$RC3_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_RC3"
+
+# === Test 39: CLAUDE.md rule coverage — suggests branch-guard ===
+TMPDIR_RC4=$(mktemp -d)
+export HOME="$TMPDIR_RC4"
+mkdir -p "$TMPDIR_RC4/.claude"
+echo '{"hooks": {}}' > "$TMPDIR_RC4/.claude/settings.json"
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_RC4"
+cat > CLAUDE.md << 'RC4MD'
+## Branching
+- Always use feature branches
+- Never commit directly to main
+RC4MD
+RC4_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "rule coverage suggests branch-guard" "branch-guard" "$RC4_OUTPUT"
+assert "rule coverage mentions branch protection" "branch protection" "$RC4_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_RC4"
+
+# === Test 40: CLAUDE.md rule coverage — no suggestions when hooks installed ===
+TMPDIR_RC5=$(mktemp -d)
+export HOME="$TMPDIR_RC5"
+mkdir -p "$TMPDIR_RC5/.claude"
+cat > "$TMPDIR_RC5/.claude/settings.json" << 'RC5SET'
+{
+  "hooks": {
+    "PreToolUse": [
+      {"hooks": [{"type": "command", "command": "bash ~/.claude/hooks/bash-guard.sh"}]},
+      {"hooks": [{"type": "command", "command": "bash ~/.claude/hooks/git-safe.sh"}]},
+      {"hooks": [{"type": "command", "command": "bash ~/.claude/hooks/file-guard.sh"}]},
+      {"hooks": [{"type": "command", "command": "bash ~/.claude/hooks/branch-guard.sh"}]}
+    ]
+  }
+}
+RC5SET
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_RC5"
+cat > CLAUDE.md << 'RC5MD'
+## Rules
+- Never modify .env
+- Never use git push --force
+- Never run rm -rf /
+- Always use feature branches
+RC5MD
+RC5_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no rule suggestions when all hooks installed" "Rules in CLAUDE.md that could be enforced" "$RC5_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_RC5"
+
+# === Test 41: CLAUDE.md rule coverage — only suggests missing hooks ===
+TMPDIR_RC6=$(mktemp -d)
+export HOME="$TMPDIR_RC6"
+mkdir -p "$TMPDIR_RC6/.claude"
+# Only git-safe installed
+cat > "$TMPDIR_RC6/.claude/settings.json" << 'RC6SET'
+{
+  "hooks": {
+    "PreToolUse": [
+      {"hooks": [{"type": "command", "command": "bash ~/.claude/hooks/git-safe.sh"}]}
+    ]
+  }
+}
+RC6SET
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_RC6"
+cat > CLAUDE.md << 'RC6MD'
+## Rules
+- Never modify .env files
+- Never use git push --force
+- Never run rm -rf /
+RC6MD
+RC6_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "suggests file-guard for .env rule" "file-guard" "$RC6_OUTPUT"
+assert "suggests bash-guard for rm rule" "bash-guard" "$RC6_OUTPUT"
+assert_not "no git-safe suggestion when already installed" "git-safe.*destructive git" "$RC6_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_RC6"
+
+# === Test 42: No CLAUDE.md — no rule coverage section ===
+TMPDIR_RC7=$(mktemp -d)
+export HOME="$TMPDIR_RC7"
+mkdir -p "$TMPDIR_RC7/.claude"
+echo '{"hooks": {}}' > "$TMPDIR_RC7/.claude/settings.json"
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_RC7"
+# No CLAUDE.md
+RC7_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no rule coverage section without CLAUDE.md" "Rules in CLAUDE.md that could be enforced" "$RC7_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_RC7"
+
+# === Test 43: CLAUDE.md with no enforceable content — no suggestions ===
+TMPDIR_RC8=$(mktemp -d)
+export HOME="$TMPDIR_RC8"
+mkdir -p "$TMPDIR_RC8/.claude"
+echo '{"hooks": {}}' > "$TMPDIR_RC8/.claude/settings.json"
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_RC8"
+cat > CLAUDE.md << 'RC8MD'
+## Style Guide
+- Write clean code
+- Use meaningful variable names
+- Keep functions small
+RC8MD
+RC8_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no suggestions for non-enforceable rules" "Rules in CLAUDE.md that could be enforced" "$RC8_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_RC8"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"

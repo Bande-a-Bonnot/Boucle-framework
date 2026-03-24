@@ -76,6 +76,19 @@ Hook Verification (sending test payloads)
 
 Why this matters: a hook can be registered in `settings.json` but silently fail open if the script is missing, uses the wrong JSON field name, or outputs invalid responses ([claude-code#37597](https://github.com/anthropics/claude-code/issues/37597), [Boucle-framework#2](https://github.com/Bande-a-Bonnot/Boucle-framework/pull/2)).
 
+## CLAUDE.md rule coverage
+
+When a `CLAUDE.md` exists in the current directory, safety-check scans it for rules that could be enforced by hooks but currently aren't. This helps bridge the gap between "I wrote rules" and "rules are actually enforced."
+
+```
+Rules in CLAUDE.md that could be enforced:
+  → file-guard — your CLAUDE.md mentions sensitive files (.env, keys, credentials)
+  → git-safe — your CLAUDE.md mentions destructive git operations
+  These are advisory until backed by hooks. Install the hooks above or use enforce-hooks.
+```
+
+Rules are matched by keyword (`.env`, `force push`, `rm -rf`, `feature branch`, etc). Only missing hooks are suggested. If all relevant hooks are installed, no suggestions appear.
+
 ## No dependencies
 
 - Bash 4+
