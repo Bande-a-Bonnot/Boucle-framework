@@ -553,6 +553,59 @@ assert_blocked "Write passwords.txt is blocked (back to write section)" \
 assert_allowed "Read passwords.txt is allowed (write section, not deny)" \
   '{"tool_name":"Read","tool_input":{"file_path":"passwords.txt"}}'
 
+# --- Test: Relative path rejection (always active, no config needed) ---
+echo ""
+echo "--- Relative path rejection (#38270) ---"
+# Clear config to test that relative path check works WITHOUT any .file-guard
+cat > "$CONFIG" <<'EOF'
+EOF
+
+assert_blocked "Write with relative path is blocked" \
+  '{"tool_name":"Write","tool_input":{"file_path":"src/foo.ts","content":"x"}}'
+
+assert_blocked "Edit with relative path is blocked" \
+  '{"tool_name":"Edit","tool_input":{"file_path":"lib/bar.rb","old_string":"a","new_string":"b"}}'
+
+assert_blocked "Write with dot-relative path is blocked" \
+  '{"tool_name":"Write","tool_input":{"file_path":"./config.json","content":"{}"}}'
+
+assert_allowed "Write with absolute path is allowed" \
+  '{"tool_name":"Write","tool_input":{"file_path":"/tmp/test.txt","content":"x"}}'
+
+assert_allowed "Edit with absolute path is allowed" \
+  '{"tool_name":"Edit","tool_input":{"file_path":"/Users/me/project/src/foo.ts","old_string":"a","new_string":"b"}}'
+
+assert_allowed "Read with relative path is allowed (reads don't need absolute)" \
+  '{"tool_name":"Read","tool_input":{"file_path":"src/foo.ts"}}'
+
+# Relative path check with config still active
+cat > "$CONFIG" <<'EOF'
+.env
+EOF
+
+assert_blocked "Write with relative path blocked even with config" \
+  '{"tool_name":"Write","tool_input":{"file_path":"src/app.ts","content":"x"}}'
+
+# Verify the block message is helpful
+result=$(echo '{"tool_name":"Write","tool_input":{"file_path":"src/foo.ts","content":"x"}}' | bash "$HOOK" 2>/dev/null) || true
+TOTAL=$((TOTAL + 1))
+if echo "$result" | jq -e '.reason | test("relative path")' >/dev/null 2>&1; then
+  PASS=$((PASS + 1))
+  echo "  PASS: Relative path block reason mentions 'relative path'"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: Relative path block reason should mention 'relative path': $result"
+fi
+
+TOTAL=$((TOTAL + 1))
+if echo "$result" | jq -e '.reason | test("/")' >/dev/null 2>&1; then
+  PASS=$((PASS + 1))
+  echo "  PASS: Relative path block suggests absolute path"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: Relative path block should suggest absolute path: $result"
+fi
+
 # --- Summary ---
 echo ""
 echo "=== Results: $PASS/$TOTAL passed, $FAIL failed ==="

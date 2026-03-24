@@ -53,6 +53,20 @@ INPUT=$(cat)
 
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
 
+# Reject relative paths in Write/Edit (always active, no config needed)
+# Claude Code's Write/Edit tools require absolute paths. When a confused model
+# provides a relative path, the write lands in the wrong location.
+# See: https://github.com/anthropics/claude-code/issues/38270
+if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ]; then
+  FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+  if [ -n "$FILE_PATH" ] && [[ "$FILE_PATH" != /* ]]; then
+    ABSOLUTE_HINT="$(pwd)/$FILE_PATH"
+    jq -cn --arg p "$FILE_PATH" --arg hint "$ABSOLUTE_HINT" \
+      '{"decision":"block","reason":("file-guard: relative path \"" + $p + "\" rejected. Write/Edit require absolute paths to prevent writing to the wrong location. Try: " + $hint)}'
+    exit 0
+  fi
+fi
+
 # Find config file
 CONFIG="${FILE_GUARD_CONFIG:-.file-guard}"
 if [ ! -f "$CONFIG" ]; then
