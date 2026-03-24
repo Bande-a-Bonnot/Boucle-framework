@@ -1174,6 +1174,56 @@ FILEPATH_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert "filepath deny + denyWrite triggers warning" "bwrap" "$FILEPATH_OUTPUT"
 rm -rf "$TMPDIR_FILEPATH"
 
+# === Test 75: Colon in filename triggers warning ===
+TMPDIR_COLON=$(mktemp -d)
+export HOME="$TMPDIR_COLON"
+mkdir -p "$TMPDIR_COLON/.claude" "$TMPDIR_COLON/src/pages/lesson"
+cat > "$TMPDIR_COLON/.claude/settings.json" << 'COLONSET'
+{
+  "permissions": {
+    "allow": ["Edit"]
+  }
+}
+COLONSET
+touch "$TMPDIR_COLON/src/pages/lesson/:id.vue"
+COLON_OUTPUT=$(cd "$TMPDIR_COLON" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "colon in filename warning" "colons in filenames" "$COLON_OUTPUT"
+assert "colon warning references #38409" "38409" "$COLON_OUTPUT"
+assert "colon warning mentions bypassPermissions" "bypassPermissions" "$COLON_OUTPUT"
+rm -rf "$TMPDIR_COLON"
+
+# === Test 76: No colon warning when no colon files ===
+TMPDIR_NOCOLON=$(mktemp -d)
+export HOME="$TMPDIR_NOCOLON"
+mkdir -p "$TMPDIR_NOCOLON/.claude" "$TMPDIR_NOCOLON/src/pages/lesson"
+cat > "$TMPDIR_NOCOLON/.claude/settings.json" << 'NOCOLON'
+{
+  "permissions": {
+    "allow": ["Edit"]
+  }
+}
+NOCOLON
+touch "$TMPDIR_NOCOLON/src/pages/lesson/[id].vue"
+NOCOLON_OUTPUT=$(cd "$TMPDIR_NOCOLON" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no colon warning without colon files" "38409" "$NOCOLON_OUTPUT"
+rm -rf "$TMPDIR_NOCOLON"
+
+# === Test 77: Colon warning includes filename ===
+TMPDIR_COLNAME=$(mktemp -d)
+export HOME="$TMPDIR_COLNAME"
+mkdir -p "$TMPDIR_COLNAME/.claude" "$TMPDIR_COLNAME/routes"
+cat > "$TMPDIR_COLNAME/.claude/settings.json" << 'COLNAME'
+{
+  "permissions": {
+    "allow": ["Read"]
+  }
+}
+COLNAME
+touch "$TMPDIR_COLNAME/routes/:slug.tsx"
+COLNAME_OUTPUT=$(cd "$TMPDIR_COLNAME" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "colon warning shows filename" ":slug.tsx" "$COLNAME_OUTPUT"
+rm -rf "$TMPDIR_COLNAME"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"

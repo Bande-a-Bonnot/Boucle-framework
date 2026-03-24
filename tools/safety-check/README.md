@@ -89,6 +89,22 @@ Rules in CLAUDE.md that could be enforced:
 
 Rules are matched by keyword (`.env`, `force push`, `rm -rf`, `feature branch`, etc). Only missing hooks are suggested. If all relevant hooks are installed, no suggestions appear.
 
+## Environment warnings
+
+Beyond the scored checks, safety-check detects platform bugs and configuration pitfalls that can silently break your setup:
+
+| Warning | What it catches |
+|---------|----------------|
+| IS_DEMO | Silently disables all hooks ([#37780](https://github.com/anthropics/claude-code/issues/37780)) |
+| GIT_INDEX_FILE | Git index corruption when Claude runs from git hooks ([#38181](https://github.com/anthropics/claude-code/issues/38181)) |
+| JSONC comments | Invalid JSON in settings.json breaks hook loading ([#37540](https://github.com/anthropics/claude-code/issues/37540)) |
+| deny + denyWrite | bwrap sandbox failures on Linux ([#38375](https://github.com/anthropics/claude-code/issues/38375)) |
+| bypassPermissions | Mode resets to default in long sessions ([#38372](https://github.com/anthropics/claude-code/issues/38372)) |
+| External Write allow | Absolute paths outside project ignored for Write/Edit ([#38391](https://github.com/anthropics/claude-code/issues/38391)) |
+| Colon in filenames | Permission matching breaks on `:` in paths ([#38409](https://github.com/anthropics/claude-code/issues/38409)) |
+| Windows | Hooks fire only ~18% of the time ([#37988](https://github.com/anthropics/claude-code/issues/37988)) |
+| CLI version | Known regressions in specific versions ([#37597](https://github.com/anthropics/claude-code/issues/37597), [#37878](https://github.com/anthropics/claude-code/issues/37878)) |
+
 ## No dependencies
 
 - Bash 4+
