@@ -1020,6 +1020,160 @@ assert "project settings code exists" "PROJECT_SETTINGS" "$(cat "$CHECK_SCRIPT")
 # === Test 65: Detect hooks function exists ===
 assert "detect_hooks_from function exists" "detect_hooks_from" "$(cat "$CHECK_SCRIPT")"
 
+# === Test 66: deny + denyWrite conflict warning ===
+TMPDIR_BWRAP=$(mktemp -d)
+export HOME="$TMPDIR_BWRAP"
+mkdir -p "$TMPDIR_BWRAP/.claude"
+cat > "$TMPDIR_BWRAP/.claude/settings.json" << 'BWRAP'
+{
+  "permissions": {
+    "deny": ["Edit(~/.bashrc.user)"]
+  },
+  "sandbox": {
+    "filesystem": {
+      "denyWrite": ["/etc"]
+    }
+  }
+}
+BWRAP
+BWRAP_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "deny+denyWrite conflict warning" "bwrap" "$BWRAP_OUTPUT"
+assert "deny+denyWrite references #38375" "38375" "$BWRAP_OUTPUT"
+rm -rf "$TMPDIR_BWRAP"
+
+# === Test 67: No deny+denyWrite warning when no conflict ===
+TMPDIR_NOBWRAP=$(mktemp -d)
+export HOME="$TMPDIR_NOBWRAP"
+mkdir -p "$TMPDIR_NOBWRAP/.claude"
+cat > "$TMPDIR_NOBWRAP/.claude/settings.json" << 'NOBWRAP'
+{
+  "permissions": {
+    "deny": ["Bash(rm -rf /*)"]
+  }
+}
+NOBWRAP
+NOBWRAP_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no bwrap warning without denyWrite" "bwrap" "$NOBWRAP_OUTPUT"
+rm -rf "$TMPDIR_NOBWRAP"
+
+# === Test 68: No deny+denyWrite warning with glob deny rules ===
+TMPDIR_GLOB=$(mktemp -d)
+export HOME="$TMPDIR_GLOB"
+mkdir -p "$TMPDIR_GLOB/.claude"
+cat > "$TMPDIR_GLOB/.claude/settings.json" << 'GLOBDENY'
+{
+  "permissions": {
+    "deny": ["Bash(rm -rf /*)"]
+  },
+  "sandbox": {
+    "filesystem": {
+      "denyWrite": ["/etc"]
+    }
+  }
+}
+GLOBDENY
+GLOB_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no bwrap warning with glob deny rules" "bwrap" "$GLOB_OUTPUT"
+rm -rf "$TMPDIR_GLOB"
+
+# === Test 69: bypassPermissions instability warning ===
+TMPDIR_BYPASS=$(mktemp -d)
+export HOME="$TMPDIR_BYPASS"
+mkdir -p "$TMPDIR_BYPASS/.claude"
+cat > "$TMPDIR_BYPASS/.claude/settings.json" << 'BYPASS'
+{
+  "permissions": {
+    "permissionMode": "bypassPermissions"
+  }
+}
+BYPASS
+BYPASS_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "bypassPermissions warning shown" "bypassPermissions" "$BYPASS_OUTPUT"
+assert "bypassPermissions mentions reset" "reset" "$BYPASS_OUTPUT"
+assert "bypassPermissions references #38372" "38372" "$BYPASS_OUTPUT"
+rm -rf "$TMPDIR_BYPASS"
+
+# === Test 70: No bypassPermissions warning for default mode ===
+TMPDIR_DEFAULT=$(mktemp -d)
+export HOME="$TMPDIR_DEFAULT"
+mkdir -p "$TMPDIR_DEFAULT/.claude"
+cat > "$TMPDIR_DEFAULT/.claude/settings.json" << 'DEFAULTMODE'
+{
+  "permissions": {
+    "permissionMode": "default"
+  }
+}
+DEFAULTMODE
+DEFAULT_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no bypass warning for default mode" "bypassPermissions.*reset" "$DEFAULT_OUTPUT"
+rm -rf "$TMPDIR_DEFAULT"
+
+# === Test 71: Write allow with absolute path warning ===
+TMPDIR_WALLOW=$(mktemp -d)
+export HOME="$TMPDIR_WALLOW"
+mkdir -p "$TMPDIR_WALLOW/.claude"
+cat > "$TMPDIR_WALLOW/.claude/settings.json" << 'WALLOW'
+{
+  "permissions": {
+    "allow": ["Write(/tmp/output.txt)", "Read"]
+  }
+}
+WALLOW
+WALLOW_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "Write allow absolute path warning" "auto-approve" "$WALLOW_OUTPUT"
+assert "Write allow references #38391" "38391" "$WALLOW_OUTPUT"
+rm -rf "$TMPDIR_WALLOW"
+
+# === Test 72: No Write allow warning for relative paths ===
+TMPDIR_WREL=$(mktemp -d)
+export HOME="$TMPDIR_WREL"
+mkdir -p "$TMPDIR_WREL/.claude"
+cat > "$TMPDIR_WREL/.claude/settings.json" << 'WREL'
+{
+  "permissions": {
+    "allow": ["Write(src/*)", "Read"]
+  }
+}
+WREL
+WREL_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no Write allow warning for relative paths" "38391" "$WREL_OUTPUT"
+rm -rf "$TMPDIR_WREL"
+
+# === Test 73: Edit allow with home-relative path warning ===
+TMPDIR_EHOME=$(mktemp -d)
+export HOME="$TMPDIR_EHOME"
+mkdir -p "$TMPDIR_EHOME/.claude"
+cat > "$TMPDIR_EHOME/.claude/settings.json" << 'EHOME'
+{
+  "permissions": {
+    "allow": ["Edit(~/notes/*.md)"]
+  }
+}
+EHOME
+EHOME_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "Edit allow home path warning" "38391" "$EHOME_OUTPUT"
+rm -rf "$TMPDIR_EHOME"
+
+# === Test 74: deny + denyWrite with filepath containing / in parens ===
+TMPDIR_FILEPATH=$(mktemp -d)
+export HOME="$TMPDIR_FILEPATH"
+mkdir -p "$TMPDIR_FILEPATH/.claude"
+cat > "$TMPDIR_FILEPATH/.claude/settings.json" << 'FILEPATH'
+{
+  "permissions": {
+    "deny": ["Write(/etc/passwd)"]
+  },
+  "sandbox": {
+    "filesystem": {
+      "denyWrite": ["/root"]
+    }
+  }
+}
+FILEPATH
+FILEPATH_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "filepath deny + denyWrite triggers warning" "bwrap" "$FILEPATH_OUTPUT"
+rm -rf "$TMPDIR_FILEPATH"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
