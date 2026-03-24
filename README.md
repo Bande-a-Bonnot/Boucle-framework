@@ -31,7 +31,7 @@ Scores your Claude Code safety configuration from A to F and shows one-liner fix
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
-Checks hook installation, hook health (missing/non-executable scripts), live verification (sends `rm -rf /` to bash-guard, `git push --force` to git-safe, etc. and confirms they block), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings), and known CLI version regressions. No installation required. 63 tests.
+Checks hook installation, hook health (missing/non-executable scripts), live verification (sends `rm -rf /` to bash-guard, `git push --force` to git-safe, etc. and confirms they block), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings), and known CLI version regressions. No installation required. ~70 tests.
 
 **Install all hooks at once:**
 
@@ -84,7 +84,7 @@ Blocks dangerous commands across these categories:
 - **System databases** -- sqlite3 on IDE internals ([#37888](https://github.com/anthropics/claude-code/issues/37888): 59 commands corrupted VSCode)
 - **Mount points** -- `rm -rf` on NFS/shared storage ([#36640](https://github.com/anthropics/claude-code/issues/36640))
 
-Evaluates each segment of compound commands. Detects [workaround bypass attempts](https://github.com/anthropics/claude-code/issues/34358). Allowlist via `.bash-guard` config. 311 tests.
+Evaluates each segment of compound commands. Detects [workaround bypass attempts](https://github.com/anthropics/claude-code/issues/34358). Allowlist via `.bash-guard` config. ~340 tests.
 
 ### [branch-guard](tools/branch-guard/) — Enforce feature-branch workflow
 
@@ -447,9 +447,9 @@ bash tools/safety-check/test.sh
 
 ## Status
 
-**v0.6.1** — 195 Rust tests + 722 hook tests = 917 total. Zero clippy warnings. CI on Ubuntu + macOS. Docker support.
+**v0.6.1** — 195 Rust tests + ~750 hook tests = ~950 total. Zero clippy warnings. CI on Ubuntu + macOS. Docker support.
 
-Security hardening (shell injection, JSON injection, path traversal fixes). bash-guard covers 10 threat categories with 307 tests. file-guard [deny] mode blocks all access to paths. JSONC settings.json support across all installers. read-once deny mode fix for Claude Code v2.1.78+ regression. Quickstart installer for zero-to-protected in one command.
+Security hardening (shell injection, JSON injection, path traversal fixes). bash-guard covers 10 threat categories with ~340 tests. file-guard [deny] mode blocks all access to paths. JSONC settings.json support across all installers. read-once deny mode fix for Claude Code v2.1.78+ regression. Quickstart installer for zero-to-protected in one command.
 
 11 stars, 2 external contributors, 1 fork. Looking for early adopters.
 
