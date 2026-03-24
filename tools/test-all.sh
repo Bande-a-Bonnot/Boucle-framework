@@ -41,8 +41,9 @@ run_suite "read-once"    "$SCRIPT_DIR/read-once/test.sh"    || true
 run_suite "file-guard"   "$SCRIPT_DIR/file-guard/test.sh"   || true
 run_suite "git-safe"     "$SCRIPT_DIR/git-safe/test.sh"     || true
 run_suite "bash-guard"   "$SCRIPT_DIR/bash-guard/test.sh"   || true
-run_suite "branch-guard" "$SCRIPT_DIR/branch-guard/test.sh" || true
-run_suite "session-log"  "$SCRIPT_DIR/session-log/test.sh"  || true
+run_suite "branch-guard"   "$SCRIPT_DIR/branch-guard/test.sh"   || true
+run_suite "worktree-guard" "$SCRIPT_DIR/worktree-guard/test.sh" || true
+run_suite "session-log"    "$SCRIPT_DIR/session-log/test.sh"    || true
 run_suite "safety-check" "$SCRIPT_DIR/safety-check/test.sh" || true
 run_suite "enforce"      "$SCRIPT_DIR/enforce/test.sh"      || true
 

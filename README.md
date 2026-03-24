@@ -94,6 +94,14 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Prevents direct commits to protected branches (main, master, production, release). Forces feature-branch workflow. Customize protected branches via `.branch-guard` config or `BRANCH_GUARD_PROTECTED` env var. Allows `--amend` on any branch. 36 tests.
 
+### [worktree-guard](tools/worktree-guard/) — Prevent data loss from worktree exit
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/worktree-guard/install.sh | bash
+```
+
+When you use `claude -w`, exiting the session [silently deletes](https://github.com/anthropics/claude-code/issues/38287) the worktree branch and all its commits. This hook blocks exit when there are uncommitted changes, untracked files, unmerged commits, or unpushed commits. Uses `ExitWorktree` matcher so it only runs when actually leaving a worktree. Config via `.worktree-guard`. 29 tests.
+
 ### [session-log](tools/session-log/) — Audit trail for Claude Code sessions
 
 ```sh

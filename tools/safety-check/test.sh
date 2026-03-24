@@ -818,7 +818,7 @@ assert "jq warning mentions apt" "apt install jq" "$(cat "$CHECK_SCRIPT")"
 assert "windows hooks 18% cited" "18%" "$(cat "$CHECK_SCRIPT")"
 
 # === Test 50: jq warning references hook count ===
-assert "jq warning says 5 of 7 hooks" "5 of 7" "$(cat "$CHECK_SCRIPT")"
+assert "jq warning says 6 of 8 hooks" "6 of 8" "$(cat "$CHECK_SCRIPT")"
 
 # === Test 51: GIT_INDEX_FILE warning shown when set ===
 TMPDIR_GIT_IDX=$(mktemp -d)
