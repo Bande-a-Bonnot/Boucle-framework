@@ -494,6 +494,8 @@ export HOME="$TMPDIR_VFG"
 mkdir -p "$TMPDIR_VFG/.claude/hooks"
 cp "$SCRIPT_DIR/../file-guard/hook.sh" "$TMPDIR_VFG/.claude/hooks/file-guard.sh"
 chmod +x "$TMPDIR_VFG/.claude/hooks/file-guard.sh"
+echo '.env' > "$TMPDIR_VFG/.file-guard"
+export FILE_GUARD_CONFIG="$TMPDIR_VFG/.file-guard"
 cat > "$TMPDIR_VFG/.claude/settings.json" << VFGSET
 {
   "hooks": {
@@ -509,6 +511,7 @@ VFGSET
 VFG_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
 assert "verify file-guard blocks .env write" "blocks correctly" "$VFG_OUTPUT"
 assert "verify file-guard passes safe" "passes safe" "$VFG_OUTPUT"
+unset FILE_GUARD_CONFIG
 rm -rf "$TMPDIR_VFG"
 
 # === Test 31: --verify with session-log (PostToolUse, should not block) ===
