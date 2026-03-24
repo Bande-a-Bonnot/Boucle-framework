@@ -3,105 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Boucle Framework</title>
-    <meta name="description" content="Rust framework for autonomous AI agents. Loop runner, persistent memory, MCP server.">
+    <title>Boucle - Safety Hooks for Claude Code</title>
+    <meta name="description" content="Prevent Claude Code from deleting files, running dangerous commands, or ignoring your rules. Deterministic safety hooks with ~1200 tests. Zero dependencies.">
+    <meta name="keywords" content="Claude Code, safety hooks, PreToolUse, bash-guard, git-safe, enforce-hooks, file protection, CLAUDE.md enforcement">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="wrapper">
         <div class="container">
             <header>
-                <h1>boucle<span class="muted"> framework</span></h1>
-                <p class="brief">Rust. Autonomous agents. In a loop.</p>
+                <h1>boucle</h1>
+                <p class="brief">Safety hooks for Claude Code. Prevent file deletion, block dangerous commands, enforce your rules.</p>
             </header>
 
             <main>
-                <h2>Install</h2>
+                <h2>The problem</h2>
+                <p class="brief">Claude Code's CLAUDE.md rules are <a href="https://github.com/anthropics/claude-code/issues/37599">probabilistic, not deterministic</a>. Its permission system has <a href="https://github.com/anthropics/claude-code/issues/38119">known bypass patterns</a>. Users have lost <a href="https://github.com/anthropics/claude-code/issues/37984">87GB of personal data</a>, had <a href="https://github.com/anthropics/claude-code/issues/37888">30+ files destroyed</a> despite 100+ rules, and seen <a href="https://github.com/anthropics/claude-code/issues/38193">explicit instructions ignored</a>.</p>
+                <p class="brief">These hooks enforce boundaries that text rules and permissions can't. Zero dependencies beyond bash and jq. ~1200 tests.</p>
+
+                <h2>Check your setup</h2>
                 <div class="code-block">
-                    <code><span class="prompt-char">$</span> cargo install boucle</code>
+                    <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash</code>
                 </div>
-                <p class="brief">Or grab a <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/releases">pre-built binary</a>.</p>
+                <p class="brief">Scores your Claude Code safety configuration from A to F. Shows one-liner fixes for each gap. No installation required.</p>
 
-                <h2>Run</h2>
-                <div class="code-block">
-                    <code><span class="prompt-char">$</span> boucle init my-agent
-<span class="prompt-char">$</span> boucle run
-<span class="dim">Loop 1: starting...</span>
-<span class="dim">  memory: 0 entries</span>
-<span class="dim">  model: claude-sonnet-4</span>
-<span class="dim">  duration: 12.3s</span>
-<span class="dim">Loop 1: complete.</span></code>
-                </div>
-
-                <h2>What's inside</h2>
-                <ul>
-                    <li><strong>Loop runner</strong> — schedule via cron/launchd, with locking and logging</li>
-                    <li><strong>Broca memory</strong> — BM25 search, temporal decay, garbage collection, cross-references. Git-native, no database</li>
-                    <li><strong>MCP server</strong> — expose memory as Model Context Protocol tools</li>
-                    <li><strong>Approval gates</strong> — human-in-the-loop for anything with consequences</li>
-                    <li><strong>Audit trail</strong> — every action logged, every decision committed</li>
-                    <li><strong>~1200 total tests</strong> (195 Rust + ~1000 hook tests)</li>
-                </ul>
-
-                <h2>Standalone tools</h2>
-                <p class="brief">Use these independently, no framework needed. Just bash + jq.</p>
-
-                <h3>enforce-hooks</h3>
-                <p class="brief">Turn your CLAUDE.md rules into actual code-level enforcement. Your CLAUDE.md says "never edit .env" but Claude edits it anyway. This reads your rules and blocks violations deterministically.</p>
-                <div class="code-block">
-                    <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/install.sh | bash</code>
-                </div>
-                <p class="brief">One dynamic hook that re-reads CLAUDE.md on every tool call. Change your rules and enforcement updates automatically. Supports file-guard, bash-guard, branch-guard, tool-block, require-prior-tool, content-guard, scoped-content-guard, and flag blocking patterns. Self-protection mode (<code>--armor</code>) prevents Claude from deleting its own hooks. Hook health-check (<code>--verify</code>) catches silent fail-open bugs. Smoke test (<code>--smoke-test</code>) runs hooks with real payloads to verify runtime correctness. 52 tests. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce">Details</a>.</p>
-
-                <h3>Install all hooks</h3>
+                <h2>Install all hooks</h2>
                 <div class="code-block">
                     <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- all</code>
                 </div>
                 <p class="brief">Or pick individual hooks:</p>
+
                 <ul>
-                    <li>
-                        <strong>safety-check</strong> — audit your Claude Code setup in 5 seconds. Scores your configuration from A to F, shows one-liner fixes for each gap, warns when deny rules are used without bash-guard (deny rules can be <a href="https://github.com/anthropics/claude-code/issues/38119">bypassed by compound commands</a>), scans your CLAUDE.md for rules that could be enforced by hooks, and shows a hook inventory with custom/third-party hooks alongside framework hooks. Checks both user-level and project-level settings. No installation required. ~100 tests.<br>
+                    <li id="enforce-hooks">
+                        <strong>enforce-hooks</strong> — turn CLAUDE.md rules into actual enforcement. Your rules say "never edit .env" but Claude edits it anyway. This reads your rules and blocks violations deterministically. One dynamic hook, re-reads CLAUDE.md on every tool call. Self-protection mode (<code>--armor</code>) prevents Claude from deleting its own hooks. 52 tests. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce">Details</a>.<br>
+                        <div class="code-block">
+                            <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/install.sh | bash</code>
+                        </div>
+                    </li>
+                    <li id="safety-check">
+                        <strong>safety-check</strong> — audit your Claude Code setup in 5 seconds. Scores your configuration from A to F, shows one-liner fixes for each gap, warns when deny rules are used without bash-guard (deny rules can be <a href="https://github.com/anthropics/claude-code/issues/38119">bypassed by compound commands</a>), scans your CLAUDE.md for rules that could be enforced by hooks. No installation required. ~100 tests.<br>
                         <div class="code-block">
                             <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash</code>
                         </div>
                     </li>
-                    <li>
+                    <li id="read-once">
                         <strong>read-once</strong> — stops Claude Code from re-reading files already in context. Diff mode shows only what changed. Saves 30%+ tokens per session.<br>
                         <div class="code-block">
                             <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/read-once/install.sh | bash</code>
                         </div>
                     </li>
-                    <li>
+                    <li id="file-guard">
                         <strong>file-guard</strong> — protects .env, certificates, SSH keys, and other sensitive files. Write-protect (default) blocks edits; deny mode blocks all access including reads.<br>
                         <div class="code-block">
                             <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/file-guard/install.sh | bash</code>
                         </div>
                     </li>
-                    <li>
+                    <li id="git-safe">
                         <strong>git-safe</strong> — prevents destructive git operations (force push, push --delete, reset --hard, checkout ., checkout HEAD -- path, restore, clean -f, branch -D). Suggests safer alternatives.<br>
                         <div class="code-block">
                             <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/git-safe/install.sh | bash</code>
                         </div>
                     </li>
-                    <li>
+                    <li id="bash-guard">
                         <strong>bash-guard</strong> — blocks dangerous bash commands (rm -rf /, sudo/pkexec/doas, curl|bash, chmod -R 777, disk utilities (diskutil erase, fdisk, parted, wipefs), Docker destruction, database drops, credential exposure, cloud infra deletion, mass file deletion, shred, truncate, data exfiltration, programmatic env dumps, sensitive file reads, system database corruption, mount point destruction). Detects encoding bypasses (base64/hex decode piped to shell, reversed strings, process substitution downloads). Catches programming language shell wrappers (python subprocess, ruby system, perl exec, node child_process). Evaluates compound commands. Catches multi-line comment bypass (<a href="https://github.com/anthropics/claude-code/issues/38119">#38119</a>).<br>
                         <div class="code-block">
                             <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash</code>
                         </div>
                     </li>
-                    <li>
+                    <li id="branch-guard">
                         <strong>branch-guard</strong> — prevents direct commits to protected branches (main, master, production, release). Forces feature-branch workflow.<br>
                         <div class="code-block">
                             <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/branch-guard/install.sh | bash</code>
                         </div>
                     </li>
-                    <li>
+                    <li id="session-log">
                         <strong>session-log</strong> — audit trail that logs every tool call to JSONL. See what Claude did: files read/written, commands run, timestamps.<br>
                         <div class="code-block">
                             <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/session-log/install.sh | bash</code>
                         </div>
                     </li>
                 </ul>
+
+                <h2>Common problems</h2>
+                <ul>
+                    <li><strong>Claude deleted my files</strong> — install <a href="#bash-guard">bash-guard</a> + <a href="#git-safe">git-safe</a>. They block <code>rm -rf</code>, <code>git checkout .</code>, <code>git reset --hard</code>, and 25+ other destructive patterns.</li>
+                    <li><strong>Claude ignores my CLAUDE.md rules</strong> — install <a href="#enforce-hooks">enforce-hooks</a>. Turns text rules into deterministic code-level enforcement.</li>
+                    <li><strong>Claude runs commands I told it not to</strong> — install <a href="#bash-guard">bash-guard</a>. Evaluates every command segment, catches compound commands and multi-line bypass.</li>
+                    <li><strong>I want to see what Claude is doing</strong> — install <a href="#session-log">session-log</a>. Logs every tool call with timestamps to JSONL.</li>
+                    <li><strong>Claude edits sensitive files</strong> — install <a href="#file-guard">file-guard</a>. Protects .env, certificates, SSH keys. Write-protect or full deny.</li>
+                    <li><strong>Claude commits to main</strong> — install <a href="#branch-guard">branch-guard</a>. Forces feature-branch workflow on protected branches.</li>
+                </ul>
+
+                <h2>Agent framework</h2>
+                <p class="brief">The hooks above work standalone. The framework below is for running autonomous AI agents in a loop.</p>
+                <div class="code-block">
+                    <code><span class="prompt-char">$</span> cargo install boucle
+<span class="prompt-char">$</span> boucle init my-agent
+<span class="prompt-char">$</span> boucle run</code>
+                </div>
+                <ul>
+                    <li><strong>Loop runner</strong> — schedule via cron/launchd, with locking and logging</li>
+                    <li><strong>Broca memory</strong> — BM25 search, temporal decay, garbage collection. Git-native, no database</li>
+                    <li><strong>MCP server</strong> — expose memory as Model Context Protocol tools</li>
+                    <li><strong>Approval gates</strong> — human-in-the-loop for anything with consequences</li>
+                </ul>
+                <p class="brief">195 Rust tests. Pre-built binaries on the <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/releases">releases page</a>.</p>
 
                 <h2>Links</h2>
                 <ul class="links-list">
