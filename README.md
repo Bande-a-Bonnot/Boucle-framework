@@ -25,7 +25,13 @@ No prompts, no "are you sure" dialogs. The command never runs.
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
 ```
 
-Scores your Claude Code safety configuration from A to F and shows one-liner fixes for each gap. Checks hook installation, hook health (missing/non-executable scripts), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings), and known CLI version regressions. No installation required. 52 tests.
+Scores your Claude Code safety configuration from A to F and shows one-liner fixes for each gap. Add `--verify` to send test payloads to each hook and confirm they actually block:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
+```
+
+Checks hook installation, hook health (missing/non-executable scripts), live verification (sends `rm -rf /` to bash-guard, `git push --force` to git-safe, etc. and confirms they block), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings), and known CLI version regressions. No installation required. 63 tests.
 
 **Install all hooks at once:**
 
