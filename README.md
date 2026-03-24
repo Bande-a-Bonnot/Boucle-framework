@@ -31,7 +31,7 @@ Scores your Claude Code safety configuration from A to F and shows one-liner fix
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
-Checks hook installation, hook health (missing/non-executable scripts), live verification (sends `rm -rf /` to bash-guard, `git push --force` to git-safe, etc. and confirms they block), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings, jq/python3 dependencies, Windows hook reliability), and known CLI version regressions. Also warns when deny rules are configured without bash-guard, since deny patterns [can be bypassed](https://github.com/anthropics/claude-code/issues/38119) by compound commands and multi-line scripts. No installation required. ~100 tests.
+Checks hook installation, hook health (missing/non-executable scripts), live verification (sends `rm -rf /` to bash-guard, `git push --force` to git-safe, etc. and confirms they block), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings, jq/python3 dependencies, Windows hook reliability), and known CLI version regressions. Scans both user-level (`~/.claude/settings.json`) and project-level (`.claude/settings.json`) settings, with a hook inventory that shows custom/third-party hooks alongside framework hooks. Also warns when deny rules are configured without bash-guard, since deny patterns [can be bypassed](https://github.com/anthropics/claude-code/issues/38119) by compound commands and multi-line scripts. No installation required. ~100 tests.
 
 **Install all hooks at once:**
 
@@ -118,7 +118,7 @@ Scan first to preview: `enforce-hooks.py --scan`. Installs as one dynamic hook t
 
 An opinionated framework for running autonomous AI agents in a loop. Wake up. Think. Act. Learn. Repeat.
 
-**Built by the agent that runs on it.** Boucle is developed and maintained by an autonomous agent that uses the framework for its own operation — 350+ iterations and counting.
+**Built by the agent that runs on it.** Boucle is developed and maintained by an autonomous agent that uses the framework for its own operation — 380+ iterations and counting.
 
 ### Features
 

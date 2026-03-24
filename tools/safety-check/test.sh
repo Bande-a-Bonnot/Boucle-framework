@@ -905,6 +905,121 @@ rm -rf "$TMPDIR_NOPERM"
 # === Test 58: Deny bypass warning references compound commands ===
 assert "deny bypass code references compound" "compound" "$(cat "$CHECK_SCRIPT")"
 
+# === Test 59: Project-level hooks detected ===
+TMPDIR_PROJHOOK=$(mktemp -d)
+export HOME="$TMPDIR_PROJHOOK"
+mkdir -p "$TMPDIR_PROJHOOK/.claude"
+echo '{}' > "$TMPDIR_PROJHOOK/.claude/settings.json"
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_PROJHOOK"
+mkdir -p .claude
+cat > .claude/settings.json << 'PROJHOOKSET'
+{
+  "hooks": {
+    "PreToolUse": [
+      {"hooks": [{"type": "command", "command": "bash ~/.claude/hooks/bash-guard.sh"}]},
+      {"hooks": [{"type": "command", "command": "bash ~/.claude/hooks/git-safe.sh"}]}
+    ]
+  }
+}
+PROJHOOKSET
+PROJHOOK_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "project-level bash-guard detected" "✓.*bash-guard" "$PROJHOOK_OUTPUT"
+assert "project-level git-safe detected" "✓.*git-safe" "$PROJHOOK_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_PROJHOOK"
+
+# === Test 60: Custom hooks shown in inventory ===
+TMPDIR_CUSTOM=$(mktemp -d)
+export HOME="$TMPDIR_CUSTOM"
+mkdir -p "$TMPDIR_CUSTOM/.claude"
+cat > "$TMPDIR_CUSTOM/.claude/settings.json" << 'CUSTOMSET'
+{
+  "hooks": {
+    "PreToolUse": [
+      {"hooks": [{"type": "command", "command": "bash ~/.claude/hooks/bash-guard.sh"}]},
+      {"hooks": [{"type": "command", "command": "python3 /opt/my-custom-validator.py"}]}
+    ]
+  }
+}
+CUSTOMSET
+CUSTOM_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "custom hook inventory shown" "Hook Inventory" "$CUSTOM_OUTPUT"
+assert "custom hook listed" "my-custom-validator" "$CUSTOM_OUTPUT"
+assert "hook count shown" "hook(s) registered" "$CUSTOM_OUTPUT"
+rm -rf "$TMPDIR_CUSTOM"
+
+# === Test 61: No inventory section when only framework hooks ===
+TMPDIR_NOCINV=$(mktemp -d)
+export HOME="$TMPDIR_NOCINV"
+mkdir -p "$TMPDIR_NOCINV/.claude"
+cat > "$TMPDIR_NOCINV/.claude/settings.json" << 'NOCINVSET'
+{
+  "hooks": {
+    "PreToolUse": [
+      {"hooks": [{"type": "command", "command": "bash ~/.claude/hooks/bash-guard.sh"}]}
+    ]
+  }
+}
+NOCINVSET
+NOCINV_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no inventory when only framework hooks" "Hook Inventory" "$NOCINV_OUTPUT"
+rm -rf "$TMPDIR_NOCINV"
+
+# === Test 62: Mixed user+project hooks both detected ===
+TMPDIR_MIXED=$(mktemp -d)
+export HOME="$TMPDIR_MIXED"
+mkdir -p "$TMPDIR_MIXED/.claude"
+cat > "$TMPDIR_MIXED/.claude/settings.json" << 'MIXEDUSER'
+{
+  "hooks": {
+    "PreToolUse": [
+      {"hooks": [{"type": "command", "command": "bash ~/.claude/hooks/bash-guard.sh"}]}
+    ]
+  }
+}
+MIXEDUSER
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_MIXED"
+mkdir -p .claude
+cat > .claude/settings.json << 'MIXEDPROJ'
+{
+  "hooks": {
+    "PreToolUse": [
+      {"hooks": [{"type": "command", "command": "bash ~/.claude/hooks/git-safe.sh"}]}
+    ]
+  }
+}
+MIXEDPROJ
+MIXED_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "user-level bash-guard detected in mixed" "✓.*bash-guard" "$MIXED_OUTPUT"
+assert "project-level git-safe detected in mixed" "✓.*git-safe" "$MIXED_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_MIXED"
+
+# === Test 63: Custom hook shows hook type ===
+TMPDIR_CTYPE=$(mktemp -d)
+export HOME="$TMPDIR_CTYPE"
+mkdir -p "$TMPDIR_CTYPE/.claude"
+cat > "$TMPDIR_CTYPE/.claude/settings.json" << 'CTYPESET'
+{
+  "hooks": {
+    "PostToolUse": [
+      {"hooks": [{"type": "command", "command": "bash /opt/my-logger.sh"}]}
+    ]
+  }
+}
+CTYPESET
+CTYPE_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "custom hook shows type" "PostToolUse.*my-logger" "$CTYPE_OUTPUT"
+rm -rf "$TMPDIR_CTYPE"
+
+# === Test 64: Project settings variable exists in code ===
+assert "project settings code exists" "PROJECT_SETTINGS" "$(cat "$CHECK_SCRIPT")"
+
+# === Test 65: Detect hooks function exists ===
+assert "detect_hooks_from function exists" "detect_hooks_from" "$(cat "$CHECK_SCRIPT")"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
