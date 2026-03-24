@@ -232,6 +232,30 @@ check "Permission rules configured" 5 \
     "No permission allow/deny rules in settings.json" \
     "See: https://docs.anthropic.com/en/docs/claude-code/settings"
 
+# Warn if deny rules exist without bash-guard: deny rules only match the first
+# line/command, so multi-line scripts and compound commands bypass them entirely.
+# See: claude-code#38119, claude-code#37662
+if has_hook permissions && ! has_hook bash-guard; then
+    HAS_DENY=false
+    if [ -f "$SETTINGS_FILE" ]; then
+        HAS_DENY=$(python3 -c "
+import json,sys
+try:
+    s=json.load(open(sys.argv[1]))
+    d=s.get('permissions',{}).get('deny',[])
+    print('true' if d else 'false')
+except: print('false')
+" "$SETTINGS_FILE" 2>/dev/null)
+    fi
+    if [ "$HAS_DENY" = "true" ]; then
+        printf "\n  ${YELLOW}⚠${NC}  Deny rules alone are bypassable: multi-line commands, compound\n"
+        printf "     statements (cmd1 && cmd2), and leading comments bypass pattern matching.\n"
+        printf "     bash-guard inspects full command content and catches these cases.\n"
+        printf "     ${DIM}See: claude-code#38119, claude-code#37662${NC}\n"
+        ISSUES+=("Deny rules without bash-guard: deny patterns only match the first line/command. Multi-line scripts (# comment + rm -rf /), compound commands (echo ok && rm -rf /), and other bypass techniques are not caught. bash-guard provides deterministic full-content analysis.")
+    fi
+fi
+
 # === Section 7: Rule Enforcement ===
 echo ""
 printf "${BLUE}Rule Enforcement${NC}\n"

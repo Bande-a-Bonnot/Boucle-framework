@@ -841,6 +841,70 @@ rm -rf "$TMPDIR_NOGIT_IDX"
 # === Test 53: GIT_INDEX_FILE warning mentions corruption ===
 assert "GIT_INDEX_FILE check code exists" "corrupt" "$(cat "$CHECK_SCRIPT")"
 
+# === Test 54: Deny rules without bash-guard shows bypass warning ===
+TMPDIR_DENY=$(mktemp -d)
+export HOME="$TMPDIR_DENY"
+mkdir -p "$TMPDIR_DENY/.claude"
+cat > "$TMPDIR_DENY/.claude/settings.json" << 'DENYSET'
+{
+  "permissions": {
+    "deny": ["Bash(rm -rf /*)"]
+  }
+}
+DENYSET
+DENY_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "deny bypass warning shown" "bypassable" "$DENY_OUTPUT"
+assert "deny bypass mentions multi-line" "multi-line" "$DENY_OUTPUT"
+assert "deny bypass references issue 38119" "38119" "$DENY_OUTPUT"
+rm -rf "$TMPDIR_DENY"
+
+# === Test 55: Deny rules WITH bash-guard — no bypass warning ===
+TMPDIR_DENYBG=$(mktemp -d)
+export HOME="$TMPDIR_DENYBG"
+mkdir -p "$TMPDIR_DENYBG/.claude"
+cat > "$TMPDIR_DENYBG/.claude/settings.json" << 'DENYBGSET'
+{
+  "hooks": {
+    "PreToolUse": [
+      {"hooks": [{"type": "command", "command": "bash ~/.claude/hooks/bash-guard.sh"}]}
+    ]
+  },
+  "permissions": {
+    "deny": ["Bash(rm -rf /*)"]
+  }
+}
+DENYBGSET
+DENYBG_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no bypass warning when bash-guard installed" "bypassable" "$DENYBG_OUTPUT"
+rm -rf "$TMPDIR_DENYBG"
+
+# === Test 56: No deny rules — no bypass warning ===
+TMPDIR_NODENY=$(mktemp -d)
+export HOME="$TMPDIR_NODENY"
+mkdir -p "$TMPDIR_NODENY/.claude"
+cat > "$TMPDIR_NODENY/.claude/settings.json" << 'NODENYSET'
+{
+  "permissions": {
+    "allow": ["Read"]
+  }
+}
+NODENYSET
+NODENY_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no bypass warning without deny rules" "bypassable" "$NODENY_OUTPUT"
+rm -rf "$TMPDIR_NODENY"
+
+# === Test 57: Deny rules without any permissions key — no bypass warning ===
+TMPDIR_NOPERM=$(mktemp -d)
+export HOME="$TMPDIR_NOPERM"
+mkdir -p "$TMPDIR_NOPERM/.claude"
+echo '{"hooks": {}}' > "$TMPDIR_NOPERM/.claude/settings.json"
+NOPERM_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no bypass warning without permissions" "bypassable" "$NOPERM_OUTPUT"
+rm -rf "$TMPDIR_NOPERM"
+
+# === Test 58: Deny bypass warning references compound commands ===
+assert "deny bypass code references compound" "compound" "$(cat "$CHECK_SCRIPT")"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
