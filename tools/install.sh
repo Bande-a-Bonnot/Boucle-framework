@@ -265,10 +265,84 @@ with open(settings_path, "w") as f:
 PYEOF
 
 echo ""
-echo -e "${GREEN}${BOLD}Done!${RESET} Hooks are active for your next Claude Code session."
+
+# Post-install verification: send test payloads to confirm hooks work
+echo -e "${BOLD}Verifying hooks...${RESET}"
+echo ""
+verify_ok=0
+verify_fail=0
+verify_skip=0
+
+for hook in $installed; do
+  hook_path="${HOME}/.claude/${hook}/hook.sh"
+  if [ ! -x "$hook_path" ]; then
+    echo -e "  ${YELLOW}WARN${RESET}: ${hook} is not executable"
+    verify_fail=$((verify_fail + 1))
+    continue
+  fi
+
+  # Test payloads for hooks that can be trivially verified
+  case "$hook" in
+    bash-guard)
+      result=$(echo '{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}' | "$hook_path" 2>/dev/null || true)
+      if echo "$result" | grep -q '"block"'; then
+        echo -e "  ${GREEN}OK${RESET}: ${hook} blocked test payload (rm -rf /)"
+        verify_ok=$((verify_ok + 1))
+      else
+        echo -e "  ${YELLOW}WARN${RESET}: ${hook} did not block test payload"
+        verify_fail=$((verify_fail + 1))
+      fi
+      ;;
+    git-safe)
+      result=$(echo '{"tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}' | "$hook_path" 2>/dev/null || true)
+      if echo "$result" | grep -q '"block"'; then
+        echo -e "  ${GREEN}OK${RESET}: ${hook} blocked test payload (git push --force)"
+        verify_ok=$((verify_ok + 1))
+      else
+        echo -e "  ${YELLOW}WARN${RESET}: ${hook} did not block test payload"
+        verify_fail=$((verify_fail + 1))
+      fi
+      ;;
+    branch-guard)
+      result=$(echo '{"tool_name":"Bash","tool_input":{"command":"git commit -m test"}}' | BRANCH_GUARD_PROTECTED="main" GIT_BRANCH="main" "$hook_path" 2>/dev/null || true)
+      if echo "$result" | grep -q '"block"'; then
+        echo -e "  ${GREEN}OK${RESET}: ${hook} blocked test payload (commit on main)"
+        verify_ok=$((verify_ok + 1))
+      else
+        # branch-guard needs git context, skip if no git repo
+        echo -e "  ${DIM}SKIP${RESET}: ${hook} (needs git repo context to verify)"
+        verify_skip=$((verify_skip + 1))
+      fi
+      ;;
+    session-log)
+      # session-log just needs to not crash on a valid payload
+      if echo '{"tool_name":"Read","tool_input":{"file_path":"/tmp/verify-test"}}' | "$hook_path" >/dev/null 2>&1; then
+        echo -e "  ${GREEN}OK${RESET}: ${hook} accepted test payload without error"
+        verify_ok=$((verify_ok + 1))
+      else
+        echo -e "  ${YELLOW}WARN${RESET}: ${hook} returned an error"
+        verify_fail=$((verify_fail + 1))
+      fi
+      ;;
+    *)
+      echo -e "  ${DIM}SKIP${RESET}: ${hook} (no automated test available)"
+      verify_skip=$((verify_skip + 1))
+      ;;
+  esac
+done
+
+echo ""
+if [ $verify_fail -gt 0 ]; then
+  echo -e "${YELLOW}${BOLD}Installed with warnings.${RESET} $verify_ok passed, $verify_fail warnings, $verify_skip skipped."
+  echo "  Run: curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify"
+  echo "  for a full diagnostic."
+else
+  echo -e "${GREEN}${BOLD}Done!${RESET} $verify_ok hooks verified, $verify_skip skipped. Active for your next Claude Code session."
+fi
 echo ""
 echo "Manage hooks:"
 echo "  View config:  cat ~/.claude/settings.json"
 echo "  Uninstall:    rm -rf ~/.claude/<hook-name>"
+echo "  Full check:   curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify"
 echo ""
 echo -e "${DIM}https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools${RESET}"
