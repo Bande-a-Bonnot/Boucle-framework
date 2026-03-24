@@ -274,6 +274,49 @@ else
         ""
 fi
 
+# === Section 7b: CLAUDE.md Rule Coverage ===
+# Scan CLAUDE.md for enforceable rules and show which hooks cover them
+if [ -f "CLAUDE.md" ]; then
+    RULE_SUGGESTIONS=()
+
+    # Check for file protection rules not covered by file-guard
+    if ! has_hook file-guard; then
+        if grep -qiE '\.env|secret|credential|private.?key|api.?key|\.pem|\.key|token' CLAUDE.md 2>/dev/null; then
+            RULE_SUGGESTIONS+=("file-guard — your CLAUDE.md mentions sensitive files (.env, keys, credentials)")
+        fi
+    fi
+
+    # Check for git safety rules not covered by git-safe
+    if ! has_hook git-safe; then
+        if grep -qiE 'force.?push|reset.?--hard|checkout\s*\.|clean\s+-f|branch\s+-[dD]|push.?--delete' CLAUDE.md 2>/dev/null; then
+            RULE_SUGGESTIONS+=("git-safe — your CLAUDE.md mentions destructive git operations")
+        fi
+    fi
+
+    # Check for command safety rules not covered by bash-guard
+    if ! has_hook bash-guard; then
+        if grep -qiE 'rm\s+-rf|sudo|curl.*bash|drop\s+(table|database)|dangerous|destructive' CLAUDE.md 2>/dev/null; then
+            RULE_SUGGESTIONS+=("bash-guard — your CLAUDE.md mentions dangerous commands")
+        fi
+    fi
+
+    # Check for branch protection rules not covered by branch-guard
+    if ! has_hook branch-guard; then
+        if grep -qiE 'feature.?branch|never.*commit.*main|no.*direct.*commit|protected.?branch' CLAUDE.md 2>/dev/null; then
+            RULE_SUGGESTIONS+=("branch-guard — your CLAUDE.md mentions branch protection")
+        fi
+    fi
+
+    if [ ${#RULE_SUGGESTIONS[@]} -gt 0 ]; then
+        echo ""
+        printf "${YELLOW}${BOLD}Rules in CLAUDE.md that could be enforced:${NC}\n"
+        for suggestion in "${RULE_SUGGESTIONS[@]}"; do
+            printf "  ${YELLOW}→${NC} %s\n" "$suggestion"
+        done
+        printf "${DIM}  These are advisory until backed by hooks. Install the hooks above or use enforce-hooks.${NC}\n"
+    fi
+fi
+
 # === Section 8: Hook Health ===
 # Verify that registered hooks actually exist and are executable
 HOOK_HEALTH_ISSUES=0
