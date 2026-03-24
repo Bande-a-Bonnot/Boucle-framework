@@ -29,6 +29,9 @@
 #   - Encoding bypasses (base64/hex/octal decode piped to shell, reversed strings)
 #   - Process substitution downloads (bash <(curl ...), sh <(wget ...))
 #   - Programming language shell wrappers (python subprocess, ruby system, perl exec, node child_process)
+#   - Here-string/here-doc to shell (bash <<< "cmd", sh << EOF, bypasses pipe detection)
+#   - eval with string literals (eval "rm -rf /")
+#   - xargs to shell interpreter (xargs bash -c)
 #
 # Install:
 #   curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
@@ -395,6 +398,30 @@ fi
 # Network exfiltration via netcat/socat (piping files to remote hosts)
 if echo "$COMMAND" | grep -qE '(nc|ncat|netcat|socat)\s.*<\s' 2>/dev/null; then
   is_allowed "file-upload" || block "Piping file content through netcat/socat sends data to a remote host without encryption or logging." "Use curl or scp instead, or add 'allow: file-upload' to .bash-guard."
+fi
+
+# --- Here-string/here-doc to shell (bypass via redirection instead of pipe) ---
+# `bash <<< "rm -rf /"` and `bash << EOF` bypass ALL pipe-based detection above.
+# These patterns detect command execution via shell redirection.
+
+# Here-string: bash <<< "command", sh <<< 'command'
+if echo "$COMMAND" | grep -qE '(bash|sh|zsh|dash|ksh)\s+<<<\s' 2>/dev/null; then
+  is_allowed "here-exec" || block "Here-string feeds content directly to a shell interpreter, bypassing safety checks." "Run the command directly instead of via here-string. Or add 'allow: here-exec' to .bash-guard."
+fi
+
+# Here-doc: bash << EOF, sh << 'DELIM', bash <<-EOF (with indent stripping)
+if echo "$COMMAND" | grep -qE "(bash|sh|zsh|dash|ksh)\s+<<-?\s*['\"]?[A-Za-z_]" 2>/dev/null; then
+  is_allowed "here-exec" || block "Here-document feeds content directly to a shell interpreter, bypassing safety checks." "Run the commands directly instead of via here-doc. Or add 'allow: here-exec' to .bash-guard."
+fi
+
+# eval with string literal (not just variables): eval "rm -rf /"
+if echo "$COMMAND" | grep -qE "(^|[;&|]\s*)eval\s+['\"]" 2>/dev/null; then
+  is_allowed "eval" || block "eval with a string literal executes arbitrary code that bypasses pattern matching." "Run the command directly without eval. Or add 'allow: eval' to .bash-guard."
+fi
+
+# xargs piping to shell interpreter: xargs -I{} bash -c {} or xargs sh -c
+if echo "$COMMAND" | grep -qE '\|\s*xargs\s.*\b(bash|sh|zsh|dash|ksh)\s+-c\b' 2>/dev/null; then
+  is_allowed "decode-exec" || block "Piping through xargs to a shell interpreter executes arbitrary commands that bypass safety checks." "Process the data directly instead of piping through a shell. Or add 'allow: decode-exec' to .bash-guard."
 fi
 
 # --- Encoding bypass detection ---
