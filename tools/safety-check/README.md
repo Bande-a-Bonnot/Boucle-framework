@@ -104,6 +104,7 @@ Beyond the scored checks, safety-check detects platform bugs and configuration p
 | Colon in filenames | Permission matching breaks on `:` in paths ([#38409](https://github.com/anthropics/claude-code/issues/38409)) |
 | Windows | Hooks fire only ~18% of the time ([#37988](https://github.com/anthropics/claude-code/issues/37988)) |
 | CLI version | Known regressions in specific versions ([#37597](https://github.com/anthropics/claude-code/issues/37597), [#37878](https://github.com/anthropics/claude-code/issues/37878)) |
+| Hook "ask" permission | `permissionDecision: "ask"` permanently breaks bypass mode ([#37420](https://github.com/anthropics/claude-code/issues/37420)) |
 
 ## No dependencies
 

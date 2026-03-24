@@ -275,6 +275,33 @@ if [ -n "$COLON_FILE" ]; then
     WARNINGS+=("Project contains files with colons in filenames (e.g. $(basename "$COLON_FILE")). Claude Code permission matching breaks on paths containing ':' — Edit/Write will prompt for permission even when allowed or in bypassPermissions mode. Workaround: rename to bracket notation (e.g. [id].vue instead of :id.vue) or use a PreToolUse hook to auto-approve. (see claude-code#38409)")
 fi
 
+# Hooks using permissionDecision "ask" permanently break bypass mode (claude-code#37420)
+HOOK_DIR="${HOME}/.claude/hooks"
+if [ -d "$HOOK_DIR" ]; then
+    ASK_HOOKS=""
+    for hookfile in "$HOOK_DIR"/*; do
+        [ -f "$hookfile" ] || continue
+        if grep -qlE 'permissionDecision.*ask|"ask".*permissionDecision' "$hookfile" 2>/dev/null; then
+            ASK_HOOKS="${ASK_HOOKS} $(basename "$hookfile")"
+        fi
+    done
+    if [ -n "$ASK_HOOKS" ]; then
+        WARNINGS+=("Hook(s) use permissionDecision 'ask':${ASK_HOOKS}. This permanently breaks bypass mode for the entire session after the user responds. Use decision:block with a reason instead. (see claude-code#37420)")
+    fi
+fi
+if [ -d ".claude/hooks" ]; then
+    ASK_HOOKS=""
+    for hookfile in ".claude/hooks"/*; do
+        [ -f "$hookfile" ] || continue
+        if grep -qlE 'permissionDecision.*ask|"ask".*permissionDecision' "$hookfile" 2>/dev/null; then
+            ASK_HOOKS="${ASK_HOOKS} $(basename "$hookfile")"
+        fi
+    done
+    if [ -n "$ASK_HOOKS" ]; then
+        WARNINGS+=("Project hook(s) use permissionDecision 'ask':${ASK_HOOKS}. This permanently breaks bypass mode for the entire session. Use decision:block with a reason instead. (see claude-code#37420)")
+    fi
+fi
+
 if [ ${#WARNINGS[@]} -gt 0 ]; then
     printf "${RED}${BOLD}⚠ Environment Warnings${NC}\n"
     for warn in "${WARNINGS[@]}"; do
