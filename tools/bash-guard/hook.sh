@@ -26,6 +26,9 @@
 #   - Sensitive file reads (SSH private keys, shell history, /proc/*/environ)
 #   - System database corruption (sqlite3 on VSCode .vscdb, IDE internals, app config DBs)
 #   - Mount point destruction (rm -rf on /mnt, /media, /Volumes, NFS paths)
+#   - Encoding bypasses (base64/hex/octal decode piped to shell, reversed strings)
+#   - Process substitution downloads (bash <(curl ...), sh <(wget ...))
+#   - Programming language shell wrappers (python subprocess, ruby system, perl exec, node child_process)
 #
 # Install:
 #   curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
@@ -392,6 +395,55 @@ fi
 # Network exfiltration via netcat/socat (piping files to remote hosts)
 if echo "$COMMAND" | grep -qE '(nc|ncat|netcat|socat)\s.*<\s' 2>/dev/null; then
   is_allowed "file-upload" || block "Piping file content through netcat/socat sends data to a remote host without encryption or logging." "Use curl or scp instead, or add 'allow: file-upload' to .bash-guard."
+fi
+
+# --- Encoding bypass detection ---
+# Encoded commands bypass ALL pattern matching above. An LLM tricked into running
+# `echo "cm0gLXJmIC8=" | base64 -d | bash` would execute `rm -rf /` undetected.
+# These patterns detect decode-to-shell pipelines regardless of encoded content.
+
+# base64 decode piped to shell (includes openssl base64 variant)
+if echo "$COMMAND" | grep -qE '(base64\s+(-d|--decode|-D)|openssl\s+(base64|enc)\s+-d)\s*\|.*\s*(bash|sh|zsh|dash|ksh|source|eval)' 2>/dev/null; then
+  is_allowed "decode-exec" || block "Decoding base64 content and piping to shell executes hidden commands that bypass all safety checks." "Decode to a file first, review it, then run it. Or add 'allow: decode-exec' to .bash-guard."
+fi
+
+# base64 decode via command substitution to shell
+if echo "$COMMAND" | grep -qE '(bash|sh|zsh)\s+-c\s.*\$\(.*base64\s+(-d|--decode|-D)' 2>/dev/null; then
+  is_allowed "decode-exec" || block "Executing base64-decoded content via command substitution bypasses all safety checks." "Decode to a file first, review it, then run it. Or add 'allow: decode-exec' to .bash-guard."
+fi
+
+# hex decode piped to shell (xxd -r)
+if echo "$COMMAND" | grep -qE 'xxd\s+-r.*\|.*\s*(bash|sh|zsh|dash|ksh|source|eval)' 2>/dev/null; then
+  is_allowed "decode-exec" || block "Decoding hex content and piping to shell executes hidden commands that bypass all safety checks." "Decode to a file first, review it, then run it. Or add 'allow: decode-exec' to .bash-guard."
+fi
+
+# printf hex/octal escapes piped to shell
+if echo "$COMMAND" | grep -qE "printf\s+['\"]\\\\(x[0-9a-fA-F]|[0-7]{3}).*\|.*\s*(bash|sh|zsh|dash|ksh|source|eval)" 2>/dev/null; then
+  is_allowed "decode-exec" || block "printf with escape sequences piped to shell executes hidden commands that bypass all safety checks." "Write the command directly instead of encoding it. Or add 'allow: decode-exec' to .bash-guard."
+fi
+
+# Process substitution with network downloads: bash <(curl ...) or sh <(wget ...)
+if echo "$COMMAND" | grep -qE '(bash|sh|zsh|dash|ksh)\s+<\(\s*(curl|wget)\s' 2>/dev/null; then
+  is_allowed "pipe-to-shell" || block "Process substitution downloads and executes code without saving it for review." "Download the script first, review it, then run it. Or add 'allow: pipe-to-shell' to .bash-guard."
+fi
+
+# Reversed string piped to shell (obfuscation: echo '/ fr- mr' | rev | bash)
+if echo "$COMMAND" | grep -qE '\|\s*rev\s*\|.*\s*(bash|sh|zsh|dash|ksh|source|eval)' 2>/dev/null; then
+  is_allowed "decode-exec" || block "Reversing a string and piping to shell is an obfuscation technique to hide dangerous commands." "Write the command directly instead of reversing it. Or add 'allow: decode-exec' to .bash-guard."
+fi
+
+# Programming language shell execution (subprocess, os.system, system())
+if echo "$COMMAND" | grep -qE 'python[23]?\s+-c\s.*\b(subprocess|os\.system|os\.popen)\b' 2>/dev/null; then
+  is_allowed "lang-exec" || block "Python one-liner executing shell commands via subprocess/os.system bypasses bash-guard checks." "Run the shell command directly instead of wrapping it in Python. Or add 'allow: lang-exec' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE "ruby\s+-e\s.*\b(system|exec|%x|Kernel\.)" 2>/dev/null; then
+  is_allowed "lang-exec" || block "Ruby one-liner executing shell commands bypasses bash-guard checks." "Run the shell command directly instead of wrapping it in Ruby. Or add 'allow: lang-exec' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE "perl\s+-e\s.*\b(system|exec|qx)" 2>/dev/null; then
+  is_allowed "lang-exec" || block "Perl one-liner executing shell commands bypasses bash-guard checks." "Run the shell command directly instead of wrapping it in Perl. Or add 'allow: lang-exec' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE 'node\s+-e\s.*child_process' 2>/dev/null; then
+  is_allowed "lang-exec" || block "Node.js one-liner executing shell commands via child_process bypasses bash-guard checks." "Run the shell command directly instead of wrapping it in Node. Or add 'allow: lang-exec' to .bash-guard."
 fi
 
 log "ALLOW: $COMMAND"
