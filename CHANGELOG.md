@@ -4,6 +4,55 @@ All notable changes to Boucle are documented here.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-03-24
+
+### Added
+
+#### bash-guard (277 -> 486 tests)
+- **Disk utility protection** -- Blocks `diskutil eraseDisk`/`eraseVolume`/`partitionDisk`, `fdisk`, `gdisk`, `parted`, `sfdisk`, `wipefs`. Addresses [#37984](https://github.com/anthropics/claude-code/issues/37984) (87GB personal data destroyed by AI).
+- **System database protection** -- Blocks `sqlite3` operations on IDE internals (VSCode `.vscdb`, Cursor, JetBrains databases). Addresses [#37888](https://github.com/anthropics/claude-code/issues/37888) (59 commands corrupted VSCode state).
+- **Mount point protection** -- Blocks `rm -rf` targeting `/mnt`, `/media`, `/Volumes`, NFS paths. Addresses [#36640](https://github.com/anthropics/claude-code/issues/36640).
+- **Encoding bypass detection** -- Catches base64/hex/octal decode piped to shell, reversed strings, process substitution downloads (`bash <(curl ...)`), and language wrapper bypasses (Python/Ruby/Node/Perl exec).
+- **Here-string/here-doc detection** -- Blocks dangerous commands hidden in `<<<`, `<<EOF`, eval string injection, and `xargs` piped to shell.
+- **17 competitive analysis patterns** -- LD_PRELOAD injection, macOS Keychain access (`security find-generic-password`), crontab persistence, wrapper command bypass (`command rm`, `env rm`), credential file operations (`cp`/`mv .env`), and more.
+- **Multi-line bypass validation** -- Tests that dangerous commands after comment lines are still caught, closing the deny-rule bypass gap ([#38119](https://github.com/anthropics/claude-code/issues/38119)).
+
+#### safety-check (40 -> 111 tests)
+- **`--verify` mode** -- Sends test payloads (`rm -rf /`, `git push --force`, etc.) to each installed hook and confirms they actually block. Catches hooks that are installed but broken.
+- **enforce-hooks detection** -- Detects enforce-hooks installation and reports `@enforced` CLAUDE.md rules.
+- **CLI version warnings** -- Alerts about known regressions in specific Claude Code versions.
+- **Deny-rule bypass warning** -- Warns when deny rules are configured without bash-guard, since deny patterns [can be bypassed](https://github.com/anthropics/claude-code/issues/38119).
+- **CLAUDE.md rule coverage analysis** -- Scans CLAUDE.md for enforceable rules and reports which are covered by hooks.
+- **Project-level detection** -- Scans both user-level (`~/.claude/settings.json`) and project-level (`.claude/settings.json`) settings.
+- **Hook inventory** -- Shows custom and third-party hooks alongside framework hooks.
+
+#### git-safe (50 -> 65 tests)
+- **Checkout-from-ref protection** -- Blocks `git checkout HEAD -- .` and other ref-based checkout patterns that overwrite working directory files.
+- **Expanded restore detection** -- Catches more `git restore` variants including `--source` and `--staged`.
+
+#### Installers
+- **Post-install verification** -- `install.sh` sends test payloads to newly installed hooks to confirm they work, not just installed.
+- **Dependency checks** -- Warns about missing `jq`/`python3` prerequisites before installation.
+
+### Fixed
+- **Quickstart argument passing** -- `bash -s -- all` now correctly installs all hooks (was broken since v0.6.0).
+- **bash-guard false positive** -- `dd` writing to regular files (not devices) is now allowed.
+- **safety-check file-guard verify** -- Creates temporary `.file-guard` config for file-guard verification instead of failing when no config exists.
+- **Stale test counts** -- README and framework site use approximate counts that stay accurate longer.
+
+### Documented
+- 3 platform bug warnings in enforce-hooks README: [#38162](https://github.com/anthropics/claude-code/issues/38162) (async empty stdin macOS), [#38181](https://github.com/anthropics/claude-code/issues/38181), [#38165](https://github.com/anthropics/claude-code/issues/38165).
+- 3 new Known Limitations: [#38040](https://github.com/anthropics/claude-code/issues/38040) (memory path bypass), [#38018](https://github.com/anthropics/claude-code/issues/38018) (compaction resilience).
+- Framework site restructured for discoverability (SEO-focused, problem-solution mapping, hooks-first layout).
+
+### Stats
+- 195 Rust tests (unchanged)
+- Hook tests: bash-guard 486, safety-check 111, file-guard 87, git-safe 65, session-log 81, read-once 49, enforce-hooks 41, branch-guard 36
+- Cross-cutting tests: format 36, security-fixes 31, install 24
+- Total hook tests: ~1050
+- Total: ~1240
+- CI: Ubuntu + macOS, Docker image published to ghcr.io
+
 ## [0.6.1] - 2026-03-23
 
 ### Fixed
@@ -149,7 +198,8 @@ First public release.
 - 161 passing tests, zero clippy warnings
 - CI on Ubuntu + macOS
 
-[Unreleased]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.4.1...v0.5.0
