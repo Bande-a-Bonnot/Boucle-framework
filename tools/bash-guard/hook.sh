@@ -32,6 +32,19 @@
 #   - Here-string/here-doc to shell (bash <<< "cmd", sh << EOF, bypasses pipe detection)
 #   - eval with string literals (eval "rm -rf /")
 #   - xargs to shell interpreter (xargs bash -c)
+#   - LD_PRELOAD/LD_LIBRARY_PATH injection (library hijacking)
+#   - IFS manipulation (command parsing hijack)
+#   - Wrapper command bypass (timeout/nohup/strace hiding dangerous ops)
+#   - Credential file copy/move/scp (.ssh/, .aws/, .gnupg/, .netrc)
+#   - macOS Keychain access (security find-generic-password, dump-keychain)
+#   - Scheduled task persistence (crontab, launchctl)
+#   - System service management (systemctl, service start/stop)
+#   - SSH key generation and agent management (ssh-keygen, ssh-add)
+#   - git filter-branch (history rewriting)
+#   - docker rm -f (force container removal)
+#   - passwd (credential modification)
+#   - pkill -9 (mass process termination)
+#   - yarn/pnpm global installs
 #
 # Install:
 #   curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
@@ -471,6 +484,96 @@ if echo "$COMMAND" | grep -qE "perl\s+-e\s.*\b(system|exec|qx)" 2>/dev/null; the
 fi
 if echo "$COMMAND" | grep -qE 'node\s+-e\s.*child_process' 2>/dev/null; then
   is_allowed "lang-exec" || block "Node.js one-liner executing shell commands via child_process bypasses bash-guard checks." "Run the shell command directly instead of wrapping it in Node. Or add 'allow: lang-exec' to .bash-guard."
+fi
+
+# --- Gaps identified from competitive analysis (RoaringFerrum/bash-guardian, buildatscale-tv) ---
+
+# LD_PRELOAD / LD_LIBRARY_PATH injection (hijacks library loading)
+if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)(LD_PRELOAD|LD_LIBRARY_PATH)=' 2>/dev/null; then
+  is_allowed "env-inject" || block "Setting LD_PRELOAD or LD_LIBRARY_PATH allows hijacking shared library loading to inject malicious code." "Remove the LD_ variable assignment, or add 'allow: env-inject' to .bash-guard."
+fi
+
+# IFS manipulation (changes command parsing semantics)
+if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)(export\s+)?IFS=' 2>/dev/null; then
+  is_allowed "env-inject" || block "Setting IFS changes how the shell parses commands, which can alter the behavior of scripts in unexpected ways." "Remove the IFS assignment, or add 'allow: env-inject' to .bash-guard."
+fi
+
+# Wrapper commands hiding dangerous operations (timeout rm, nohup rm, env rm, etc.)
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)(timeout|time|nice|nohup|strace|ltrace|unbuffer|caffeinate)\s+.*(rm\s+-[rRf]|mkfs|dd\s|shred|wipefs|fdisk|gdisk|parted|sfdisk|chmod\s.*777|chown\s.*-R)' 2>/dev/null; then
+  is_allowed "wrapper-bypass" || block "A wrapper command (timeout/nohup/strace/etc.) is hiding a dangerous operation. The wrapped command would cause irreversible damage." "Run the command directly so it can be properly checked, or add 'allow: wrapper-bypass' to .bash-guard."
+fi
+
+# Credential file copy/move/scp (exfiltration via file operations)
+if echo "$COMMAND" | grep -qE '(cp|mv|scp|rsync)\s+.*(\.ssh/|\.aws/|\.gnupg/|\.netrc|\.npmrc|\.docker/config)' 2>/dev/null; then
+  is_allowed "cred-copy" || block "Copying or moving credential files (.ssh/, .aws/, .gnupg/, .netrc) could exfiltrate secrets." "Reference credentials via their standard paths instead. Or add 'allow: cred-copy' to .bash-guard."
+fi
+
+# macOS Keychain access (credential theft)
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)security\s+(find-generic-password|find-internet-password|delete-generic-password|delete-internet-password|add-generic-password|dump-keychain)' 2>/dev/null; then
+  is_allowed "keychain" || block "Accessing the macOS Keychain can read, modify, or delete stored passwords and certificates." "Add 'allow: keychain' to .bash-guard if you need Keychain access."
+fi
+
+# crontab modification (persistence mechanism)
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)crontab\s+-[erl]' 2>/dev/null; then
+  is_allowed "scheduled-tasks" || block "Modifying crontab installs scheduled tasks that persist after this session." "Add 'allow: scheduled-tasks' to .bash-guard if you need to modify cron."
+fi
+
+# launchctl load/unload (macOS persistence)
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)launchctl\s+(load|unload|submit|bootstrap|bootout)' 2>/dev/null; then
+  is_allowed "scheduled-tasks" || block "launchctl modifies persistent macOS services that run outside this session." "Add 'allow: scheduled-tasks' to .bash-guard if you need to manage launch agents."
+fi
+
+# Generic pipe to eval (not just curl/wget)
+if echo "$COMMAND" | grep -qE '\|\s*eval\b' 2>/dev/null; then
+  is_allowed "eval" || block "Piping output directly to eval executes arbitrary content as shell code." "Assign to a variable and inspect before evaluating. Or add 'allow: eval' to .bash-guard."
+fi
+
+# Pipe to fish shell (missing from our shell list)
+if echo "$COMMAND" | grep -qE '(curl|wget)\s.*\|\s*fish\b' 2>/dev/null; then
+  is_allowed "pipe-to-shell" || block "Piping downloaded content to fish shell executes untrusted code." "Download the script first, review it, then run it. Or add 'allow: pipe-to-shell' to .bash-guard."
+fi
+
+# systemctl service management
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)systemctl\s+(start|stop|restart|disable|enable|mask)\s' 2>/dev/null; then
+  is_allowed "service-mgmt" || block "systemctl modifies system services which can affect system stability and security." "Add 'allow: service-mgmt' to .bash-guard if you need to manage services."
+fi
+
+# SysV service management
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)service\s+\S+\s+(start|stop|restart)' 2>/dev/null; then
+  is_allowed "service-mgmt" || block "service start/stop/restart modifies running system services." "Add 'allow: service-mgmt' to .bash-guard if you need to manage services."
+fi
+
+# ssh-keygen (key generation) and ssh-add (agent operations)
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)ssh-keygen\s' 2>/dev/null; then
+  is_allowed "ssh-keys" || block "ssh-keygen creates or modifies SSH keys which grant remote server access." "Add 'allow: ssh-keys' to .bash-guard if you need to generate SSH keys."
+fi
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)ssh-add\s' 2>/dev/null; then
+  is_allowed "ssh-keys" || block "ssh-add loads SSH private keys into the agent, granting access to remote servers." "Add 'allow: ssh-keys' to .bash-guard if you need to manage SSH agent keys."
+fi
+
+# pkill -9 (mass process termination)
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)pkill\s+-9\s' 2>/dev/null; then
+  is_allowed "kill -9" || block "pkill -9 force-kills matching processes without graceful shutdown." "Use pkill without -9 for graceful termination, or add 'allow: kill -9' to .bash-guard."
+fi
+
+# git filter-branch (history rewriting, data loss risk)
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)git\s+filter-branch\b' 2>/dev/null; then
+  is_allowed "git-rewrite" || block "git filter-branch rewrites repository history, which can cause data loss and force-push requirements." "Use git filter-repo instead (safer), or add 'allow: git-rewrite' to .bash-guard."
+fi
+
+# docker rm -f (force remove containers)
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)docker\s+rm\s+-[a-zA-Z]*f' 2>/dev/null; then
+  is_allowed "docker-destroy" || block "docker rm -f force-removes running containers without graceful shutdown." "Stop the container first with 'docker stop', or add 'allow: docker-destroy' to .bash-guard."
+fi
+
+# yarn/pnpm global installs (missing from npm-only check)
+if echo "$COMMAND" | grep -qE '(yarn|pnpm)\s+global\s+add\b' 2>/dev/null; then
+  is_allowed "global-install" || block "Global package install modifies system-wide packages." "Use local install instead, or add 'allow: global-install' to .bash-guard."
+fi
+
+# passwd (password change)
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)passwd\b' 2>/dev/null; then
+  is_allowed "passwd" || block "passwd changes user passwords. AI agents should not modify user credentials." "Add 'allow: passwd' to .bash-guard if you need this."
 fi
 
 log "ALLOW: $COMMAND"
