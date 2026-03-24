@@ -447,11 +447,11 @@ bash tools/safety-check/test.sh
 
 ## Status
 
-**v0.6.1** — 195 Rust tests + ~1000 hook tests = ~1200 total. Zero clippy warnings. CI on Ubuntu + macOS. Docker support.
+**v0.7.0** — 195 Rust tests + ~1250 hook tests = ~1450 total. Zero clippy warnings. CI on Ubuntu + macOS. Docker support.
 
-Security hardening (shell injection, JSON injection, path traversal fixes). bash-guard covers 25+ threat categories with ~500 tests. file-guard [deny] mode blocks all access to paths. JSONC settings.json support across all installers. read-once deny mode fix for Claude Code v2.1.78+ regression. Post-install verification catches format bugs at install time. Quickstart installer for zero-to-protected in one command.
+file-guard: relative path rejection. safety-check: permission pitfall warnings (deny+denyWrite sandbox conflict, bypassPermissions instability, Write allow path asymmetry). bash-guard covers 25+ threat categories with ~500 tests. Quickstart installer for zero-to-protected in one command.
 
-12 stars, 2 external contributors, 1 fork.
+13 stars, 2 external contributors, 1 fork.
 
 ## Contributing
 
