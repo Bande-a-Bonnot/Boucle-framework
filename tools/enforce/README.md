@@ -355,6 +355,12 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **Subagents may not inherit hook settings.** Agents spawned via the Agent tool [do not consistently inherit permission settings](https://github.com/anthropics/claude-code/issues/37730) from the parent session. Hooks configured at the project level should still fire for subagents (they share the same `.claude/settings.json`), but global permission preferences may not propagate. Verify hook behavior in subagent workflows.
 
+**Memory paths auto-bypass approval.** File paths under `~/.claude/projects/*/memory/` [auto-bypass Edit/Write approval](https://github.com/anthropics/claude-code/issues/38040) with no opt-out. Claude can modify memory files without the user seeing a prompt. A PreToolUse hook returning `block` for writes to memory paths still works, but you must set it up explicitly. Add memory paths to your file-guard config or enforce-hooks rules if you want protection.
+
+**Built-in skills wrap file operations opaquely.** Claude Code's built-in skills perform Write/Edit internally through the Skill tool wrapper. PreToolUse hooks fire on the `Skill` tool invocation, not on the individual file operations inside it. A hook checking "is this write targeting .env?" won't fire because the tool name is `Skill`, not `Write`. There is no workaround for this yet. See [#38040](https://github.com/anthropics/claude-code/issues/38040).
+
+**Context compaction invalidates stateful hooks.** Hooks that track session state (e.g., "which files has Claude read?") break across [context compaction boundaries](https://github.com/anthropics/claude-code/issues/38018). After compaction, Claude's context no longer contains previously-read files, but hook state still shows them as "recently read." This can cause false gates (blocking a re-read Claude needs) or false passes (allowing an action the hook thinks Claude is informed about). There is no PostCompact hook event yet. Use conservative TTLs for stateful hooks.
+
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
 ## Tests
