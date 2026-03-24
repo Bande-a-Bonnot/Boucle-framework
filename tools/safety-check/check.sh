@@ -194,6 +194,80 @@ if command -v claude >/dev/null 2>&1; then
     fi
 fi
 
+# deny rules + denyWrite sandbox conflict (claude-code#38375: bwrap failures on Linux)
+if [ -f "$SETTINGS_FILE" ]; then
+    DENY_DENYWRITE_CONFLICT=$(python3 - "$SETTINGS_FILE" << 'PYEOF'
+import json, sys
+try:
+    with open(sys.argv[1]) as f:
+        s = json.load(f)
+    deny_rules = s.get("permissions", {}).get("deny", [])
+    sandbox_deny = s.get("sandbox", {}).get("filesystem", {}).get("denyWrite", [])
+    # Check for explicit filepath deny rules (Write/Edit with paths, not Bash commands)
+    has_filepath_deny = False
+    for rule in deny_rules:
+        r = rule if isinstance(rule, str) else ""
+        # Only Write/Edit deny rules cause bwrap issues (not Bash command patterns)
+        if "(" in r:
+            tool_part = r.split("(")[0].strip()
+            if tool_part in ("Write", "Edit", "MultiEdit"):
+                inner = r.split("(", 1)[1].rstrip(")")
+                if inner.startswith("/") or inner.startswith("~"):
+                    has_filepath_deny = True
+                    break
+    if has_filepath_deny and sandbox_deny:
+        print("true")
+    else:
+        print("false")
+except Exception:
+    print("false")
+PYEOF
+    )
+    if [ "$DENY_DENYWRITE_CONFLICT" = "true" ]; then
+        WARNINGS+=("Filepath deny rules combined with sandbox denyWrite can cause ALL Bash calls to fail with bwrap errors. bwrap tries to create dummy files for denied filepaths, which conflicts with denyWrite. Use glob patterns in deny rules instead of exact paths. (see claude-code#38375)")
+    fi
+fi
+
+# bypassPermissions mode instability (claude-code#38372: resets to 'default' in long sessions)
+if [ -f "$SETTINGS_FILE" ]; then
+    BYPASS_MODE=$(python3 -c "
+import json,sys
+try:
+    s=json.load(open(sys.argv[1]))
+    print(s.get('permissions',{}).get('permissionMode',''))
+except: print('')
+" "$SETTINGS_FILE" 2>/dev/null)
+    if [ "$BYPASS_MODE" = "bypassPermissions" ]; then
+        WARNINGS+=("permissionMode is set to bypassPermissions. This mode can silently reset to 'default' during long sessions (3+ hours), causing unexpected permission prompts. Consider using PreToolUse hooks for reliable auto-approval instead. (see claude-code#38372)")
+    fi
+fi
+
+# Write permissions don't work outside project directory (claude-code#38391)
+if [ -f "$SETTINGS_FILE" ]; then
+    HAS_EXTERNAL_WRITE_ALLOW=$(python3 - "$SETTINGS_FILE" << 'PYEOF'
+import json, sys
+try:
+    with open(sys.argv[1]) as f:
+        s = json.load(f)
+    allow_rules = s.get("permissions", {}).get("allow", [])
+    for rule in allow_rules:
+        r = rule if isinstance(rule, str) else ""
+        # Write/Edit with absolute path or home-relative path
+        if ("Write(" in r or "Edit(" in r):
+            inner = r.split("(", 1)[1].rstrip(")")
+            if inner.startswith("/") or inner.startswith("~"):
+                print("true")
+                sys.exit(0)
+    print("false")
+except Exception:
+    print("false")
+PYEOF
+    )
+    if [ "$HAS_EXTERNAL_WRITE_ALLOW" = "true" ]; then
+        WARNINGS+=("Write/Edit allow rules with absolute paths outside the project may not auto-approve as expected. Read permissions work with absolute paths, but Write/Edit do not. Use a PreToolUse hook to auto-approve writes to specific external paths. (see claude-code#38391)")
+    fi
+fi
+
 if [ ${#WARNINGS[@]} -gt 0 ]; then
     printf "${RED}${BOLD}⚠ Environment Warnings${NC}\n"
     for warn in "${WARNINGS[@]}"; do
