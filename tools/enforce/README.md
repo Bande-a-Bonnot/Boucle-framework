@@ -361,6 +361,12 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **Context compaction invalidates stateful hooks.** Hooks that track session state (e.g., "which files has Claude read?") break across [context compaction boundaries](https://github.com/anthropics/claude-code/issues/38018). After compaction, Claude's context no longer contains previously-read files, but hook state still shows them as "recently read." This can cause false gates (blocking a re-read Claude needs) or false passes (allowing an action the hook thinks Claude is informed about). There is no PostCompact hook event yet. Use conservative TTLs for stateful hooks.
 
+**Async hooks receive empty stdin on macOS.** Hooks configured with `"async": true` [receive zero bytes on stdin](https://github.com/anthropics/claude-code/issues/38162) on macOS (works on Linux). Synchronous hooks work correctly on both platforms. enforce-hooks generates synchronous command hooks, so this does not affect it. If you add custom async hooks on macOS, remove the `"async": true` flag as a workaround.
+
+**GIT_INDEX_FILE inherited from git hooks corrupts index.** When Claude Code is [launched from a git hook](https://github.com/anthropics/claude-code/issues/38181) (post-commit, pre-push, etc.), it inherits the `GIT_INDEX_FILE` environment variable. Plugin initialization then writes plugin file entries into the project's git index, silently corrupting it. Workaround: `unset GIT_INDEX_FILE` before invoking Claude from any git hook. This is a platform bug, not an enforce-hooks issue.
+
+**Prompt-type hooks incur undocumented billing.** Hooks with `"type": "prompt"` send an LLM call per invocation, [adding token costs](https://github.com/anthropics/claude-code/issues/38165) that are not documented in the billing docs. enforce-hooks generates only `"type": "command"` hooks, which run as local processes with zero API cost. If you need reasoning-based enforcement, be aware that prompt hooks double your per-response cost.
+
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
 ## Tests
