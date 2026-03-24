@@ -591,9 +591,9 @@ BASH_GUARD_CONFIG="$TRUNC_CONFIG" \
   assert_allowed "truncate -s 0 allowed by config" "truncate -s 0 log.txt"
 rm -f "$TRUNC_CONFIG"
 
-# dd from /dev/zero or /dev/urandom (data overwrite)
-assert_blocked "dd from /dev/zero" "dd if=/dev/zero of=disk.img bs=1M count=100"
-assert_blocked "dd from /dev/urandom" "dd if=/dev/urandom of=secret.key bs=32 count=1"
+# dd from /dev/zero or /dev/urandom (to regular files is safe, only block to /dev/ devices)
+assert_allowed "dd from /dev/zero to file" "dd if=/dev/zero of=disk.img bs=1M count=100"
+assert_allowed "dd from /dev/urandom to file" "dd if=/dev/urandom of=secret.key bs=32 count=1"
 assert_allowed "dd from file (safe)" "dd if=backup.img of=restore.img bs=4M"
 
 echo ""
