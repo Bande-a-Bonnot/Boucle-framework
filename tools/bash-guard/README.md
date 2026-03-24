@@ -41,6 +41,7 @@ bash-guard intercepts these before they execute.
 | Here-string/here-doc | `bash <<< "cmd"`, `sh << EOF` | Feeds commands to shell via redirection, bypasses pipe detection |
 | eval string literals | `eval 'dangerous'`, `eval "cmd"` | Executes arbitrary code from string constants |
 | xargs to shell | `echo cmd \| xargs bash -c` | Funnels data to shell interpreter via xargs |
+| Multi-line comment bypass | `# comment\nrm -rf /` | Comment lines before dangerous commands bypass deny rules ([#38119](https://github.com/anthropics/claude-code/issues/38119)) |
 
 Safe variants are allowed: `rm -rf ./build`, `chmod 644 file.txt`, `curl -o file url`, `curl -d '{"key":"value"}'`, `kill -9 12345`, `docker compose down` (without -v), `docker run -v mydata:/data`, `prisma migrate dev`, `rails db:migrate`, `printenv HOME`, `cat README.md`, `set -euo pipefail`, `terraform plan`, `aws s3 ls`, `kubectl get pods`, `find -print`, `git clean -n`, `ls ~/.ssh`, `ssh-keygen`, `nc -l 8080`, `sqlite3 ./db.sqlite3`, `ls /mnt/data/`.
 
@@ -118,7 +119,7 @@ bash-guard is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code
 bash test.sh
 ```
 
-~400 tests covering all blocked patterns, disk utility destruction, data exfiltration, programmatic env dumps, sensitive file access, workaround bypass prevention, compound command bypass, system database protection, mount point protection, encoding bypass detection, here-string/here-doc detection, and safe variants.
+~411 tests covering all blocked patterns, disk utility destruction, data exfiltration, programmatic env dumps, sensitive file access, workaround bypass prevention, compound command bypass, multi-line comment bypass ([#38119](https://github.com/anthropics/claude-code/issues/38119)), system database protection, mount point protection, encoding bypass detection, here-string/here-doc detection, and safe variants.
 
 ## License
 

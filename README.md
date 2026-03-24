@@ -7,7 +7,7 @@ Claude Code hooks that actually enforce your rules — plus a framework for runn
 
 ## Claude Code Hooks
 
-Claude Code's CLAUDE.md rules are [read but not enforced](https://github.com/anthropics/claude-code/issues/37550) — they work at session start and degrade as context grows. Its [permission system has known gaps](https://github.com/anthropics/claude-code/issues/30519) — wildcards don't match compound commands, deny rules can be bypassed. These hooks enforce boundaries that text rules and permissions can't.
+Claude Code's CLAUDE.md rules are [read but not enforced](https://github.com/anthropics/claude-code/issues/37550) — they work at session start and degrade as context grows. Its [permission system has known gaps](https://github.com/anthropics/claude-code/issues/30519) — wildcards don't match compound commands, deny rules can be [bypassed with multi-line comments](https://github.com/anthropics/claude-code/issues/38119). These hooks enforce boundaries that text rules and permissions can't.
 
 **What happens when a hook blocks a dangerous command:**
 
@@ -31,7 +31,7 @@ Scores your Claude Code safety configuration from A to F and shows one-liner fix
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
-Checks hook installation, hook health (missing/non-executable scripts), live verification (sends `rm -rf /` to bash-guard, `git push --force` to git-safe, etc. and confirms they block), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings), and known CLI version regressions. No installation required. ~70 tests.
+Checks hook installation, hook health (missing/non-executable scripts), live verification (sends `rm -rf /` to bash-guard, `git push --force` to git-safe, etc. and confirms they block), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings, jq/python3 dependencies, Windows hook reliability), and known CLI version regressions. No installation required. ~91 tests.
 
 **Install all hooks at once:**
 
@@ -55,7 +55,7 @@ Saves ~2000 tokens per prevented re-read. Includes [diff mode](tools/read-once/#
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/file-guard/install.sh | bash
 ```
 
-Define protected files in `.file-guard` (one pattern per line). Two modes: **write-protect** (default) blocks writes, edits, and destructive bash commands. **`[deny]`** blocks all access including Read, Grep, and Glob, useful for large codegen directories where Claude should use an MCP server instead of reading files directly. 82 tests.
+Define protected files in `.file-guard` (one pattern per line). Two modes: **write-protect** (default) blocks writes, edits, and destructive bash commands. **`[deny]`** blocks all access including Read, Grep, and Glob, useful for large codegen directories where Claude should use an MCP server instead of reading files directly. 87 tests.
 
 ### [git-safe](tools/git-safe/) — Prevent destructive git operations
 
@@ -84,7 +84,7 @@ Blocks dangerous commands across these categories:
 - **System databases** -- sqlite3 on IDE internals ([#37888](https://github.com/anthropics/claude-code/issues/37888): 59 commands corrupted VSCode)
 - **Mount points** -- `rm -rf` on NFS/shared storage ([#36640](https://github.com/anthropics/claude-code/issues/36640))
 
-Evaluates each segment of compound commands. Detects encoding bypass attempts (base64/hex/octal obfuscation), here-string/here-doc redirection, eval-string injection, and [workaround bypass attempts](https://github.com/anthropics/claude-code/issues/34358). Allowlist via `.bash-guard` config. ~400 tests.
+Evaluates each segment of compound commands. Catches [multi-line comment bypass](https://github.com/anthropics/claude-code/issues/38119) where comment lines before a dangerous command evade deny rules. Detects encoding bypass attempts (base64/hex/octal obfuscation), here-string/here-doc redirection, eval-string injection, and [workaround bypass attempts](https://github.com/anthropics/claude-code/issues/34358). Allowlist via `.bash-guard` config. ~411 tests.
 
 ### [branch-guard](tools/branch-guard/) — Enforce feature-branch workflow
 
@@ -110,7 +110,7 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Your CLAUDE.md says "never edit .env" but Claude edits it anyway. This tool reads your CLAUDE.md, finds rules marked `@enforced`, and generates hooks that block violations deterministically. Rules in prompts are suggestions; hooks are laws.
 
-Scan first to preview: `enforce-hooks.py --scan`. Installs as one dynamic hook that re-reads CLAUDE.md on every call, so enforcement updates when your rules change. Supports file-guard, bash-guard, branch-guard, tool-block, require-prior-tool, content-guard, scoped-content-guard, bare filename protection, flag blocking (`--no-verify`, `--no-gpg-sign`), and command substitution patterns. Subjective rules ("write clean code") are skipped. Self-protection mode (`--armor`) prevents Claude from deleting its own hooks. Hook health-check (`--verify`) catches silent fail-open bugs like wrong field names. Smoke test (`--smoke-test`) runs hooks with real payloads to verify they respond correctly at runtime. 50 tests.
+Scan first to preview: `enforce-hooks.py --scan`. Installs as one dynamic hook that re-reads CLAUDE.md on every call, so enforcement updates when your rules change. Supports file-guard, bash-guard, branch-guard, tool-block, require-prior-tool, content-guard, scoped-content-guard, bare filename protection, flag blocking (`--no-verify`, `--no-gpg-sign`), and command substitution patterns. Subjective rules ("write clean code") are skipped. Self-protection mode (`--armor`) prevents Claude from deleting its own hooks. Hook health-check (`--verify`) catches silent fail-open bugs like wrong field names. Smoke test (`--smoke-test`) runs hooks with real payloads to verify they respond correctly at runtime. 52 tests.
 
 ---
 
@@ -447,11 +447,11 @@ bash tools/safety-check/test.sh
 
 ## Status
 
-**v0.6.1** — 195 Rust tests + ~750 hook tests = ~950 total. Zero clippy warnings. CI on Ubuntu + macOS. Docker support.
+**v0.6.1** — 195 Rust tests + ~900 hook tests = ~1100 total. Zero clippy warnings. CI on Ubuntu + macOS. Docker support.
 
-Security hardening (shell injection, JSON injection, path traversal fixes). bash-guard covers 10 threat categories with ~340 tests. file-guard [deny] mode blocks all access to paths. JSONC settings.json support across all installers. read-once deny mode fix for Claude Code v2.1.78+ regression. Quickstart installer for zero-to-protected in one command.
+Security hardening (shell injection, JSON injection, path traversal fixes). bash-guard covers 10 threat categories with ~411 tests. file-guard [deny] mode blocks all access to paths. JSONC settings.json support across all installers. read-once deny mode fix for Claude Code v2.1.78+ regression. Post-install verification catches format bugs at install time. Quickstart installer for zero-to-protected in one command.
 
-11 stars, 2 external contributors, 1 fork. Looking for early adopters.
+12 stars, 2 external contributors, 1 fork.
 
 ## Contributing
 

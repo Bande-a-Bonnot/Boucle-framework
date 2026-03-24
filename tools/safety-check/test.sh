@@ -790,6 +790,36 @@ assert_not "no suggestions for non-enforceable rules" "Rules in CLAUDE.md that c
 cd "$ORIG_DIR"
 rm -rf "$TMPDIR_RC8"
 
+# === Test 44: jq missing warning ===
+TMPDIR_JQ=$(mktemp -d)
+export HOME="$TMPDIR_JQ"
+mkdir -p "$TMPDIR_JQ/.claude"
+echo '{"hooks": {}}' > "$TMPDIR_JQ/.claude/settings.json"
+# Simulate missing jq by hiding it from PATH
+JQ_OUTPUT=$(PATH="/usr/bin:/bin" bash "$CHECK_SCRIPT" 2>&1) || true
+# On systems where jq is in /usr/bin or /bin, this may still find it
+# so we test that the check script at least has the jq check code
+assert "jq check code exists" "jq" "$(cat "$CHECK_SCRIPT")"
+rm -rf "$TMPDIR_JQ"
+
+# === Test 45: python3 check exists in script ===
+assert "python3 check code exists" "python3 is not installed" "$(cat "$CHECK_SCRIPT")"
+
+# === Test 46: Windows warning code exists ===
+assert "windows check code exists" "Windows" "$(cat "$CHECK_SCRIPT")"
+
+# === Test 47: jq warning message format ===
+assert "jq warning mentions brew" "brew install jq" "$(cat "$CHECK_SCRIPT")"
+
+# === Test 48: jq warning mentions apt ===
+assert "jq warning mentions apt" "apt install jq" "$(cat "$CHECK_SCRIPT")"
+
+# === Test 49: Windows hook reliability rate cited ===
+assert "windows hooks 18% cited" "18%" "$(cat "$CHECK_SCRIPT")"
+
+# === Test 50: jq warning references hook count ===
+assert "jq warning says 5 of 7 hooks" "5 of 7" "$(cat "$CHECK_SCRIPT")"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"

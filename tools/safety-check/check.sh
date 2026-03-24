@@ -120,6 +120,21 @@ if [ -f "$SETTINGS_FILE" ]; then
     fi
 fi
 
+# Dependency checks: jq is required by 5 of 7 hooks (bash-guard, git-safe, file-guard, branch-guard, read-once)
+if ! command -v jq >/dev/null 2>&1; then
+    WARNINGS+=("jq is not installed. 5 of 7 hooks require jq for JSON parsing and will silently fail without it. Install: brew install jq (macOS), apt install jq (Debian/Ubuntu), or see https://jqlang.github.io/jq/download/")
+fi
+
+# python3 check: needed by enforce-hooks, session-log, and safety-check itself
+if ! command -v python3 >/dev/null 2>&1; then
+    WARNINGS+=("python3 is not installed. enforce-hooks and session-log require python3. Some safety-check features may not work.")
+fi
+
+# Platform check: Windows hooks have known reliability issues
+if [[ "${OS:-}" == "Windows_NT" ]] || [[ "$(uname -s 2>/dev/null)" == MINGW* ]] || [[ "$(uname -s 2>/dev/null)" == MSYS* ]]; then
+    WARNINGS+=("Running on Windows. Claude Code hooks fire only ~18% of the time on Windows (see claude-code#37988). Hooks are unreliable on this platform.")
+fi
+
 # CLI version check: warn about known dangerous versions
 if command -v claude >/dev/null 2>&1; then
     CLI_VERSION=$(claude --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "")
