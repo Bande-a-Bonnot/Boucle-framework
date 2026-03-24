@@ -367,6 +367,12 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **Prompt-type hooks incur undocumented billing.** Hooks with `"type": "prompt"` send an LLM call per invocation, [adding token costs](https://github.com/anthropics/claude-code/issues/38165) that are not documented in the billing docs. enforce-hooks generates only `"type": "command"` hooks, which run as local processes with zero API cost. If you need reasoning-based enforcement, be aware that prompt hooks double your per-response cost.
 
+**`permissionDecision: "ask"` permanently breaks bypass mode.** If a hook returns `{"permissionDecision": "ask"}` (intending to let the user decide), the session [permanently loses bypass mode](https://github.com/anthropics/claude-code/issues/37420) after the user responds to the prompt. The permission state machine does not restore the previous mode. All subsequent tool calls revert to manual approval for the rest of the session. Do not use `permissionDecision: "ask"` in any hook if you run with `--dangerously-skip-permissions` or `bypassPermissions`. Use `"decision": "block"` with a clear reason instead.
+
+**EnterWorktree/ExitWorktree hooks may not fire for mid-session operations.** When Claude uses the Agent tool with `isolation: "worktree"` or the in-session EnterWorktree tool, configured [worktree hooks do not execute](https://github.com/anthropics/claude-code/issues/36205). Hooks that guard worktree creation or cleanup only fire for CLI-level worktree operations, not for mid-session agent-spawned worktrees. There is no workaround. If you use worktree-guard, be aware it protects ExitWorktree from the tool but not from internal session management.
+
+**Background agent worktree can silently change parent session CWD.** After a background Agent with `isolation: "worktree"` completes, the parent session's working directory can [silently drift to the worktree path](https://github.com/anthropics/claude-code/issues/38448). Subsequent commands execute in the wrong directory without warning. No hook can detect this because the CWD change happens outside the tool-call lifecycle. Verify your working directory (`pwd`) after background worktree agents complete.
+
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
 ## Tests

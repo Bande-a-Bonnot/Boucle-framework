@@ -53,6 +53,12 @@ The hook registers as a `PreToolUse` hook with `ExitWorktree` matcher. When Clau
 
 The hook auto-detects the base branch by checking `origin/main`, `origin/master`, `main`, then `master`. Override with the `base:` config directive if your repo uses a different default branch.
 
+## Known Limitations
+
+**Mid-session worktree operations may bypass hooks.** When Claude uses the Agent tool with `isolation: "worktree"`, the worktree lifecycle is managed internally. [EnterWorktree ignores configured hooks](https://github.com/anthropics/claude-code/issues/36205) for these operations. worktree-guard fires on explicit ExitWorktree tool calls, but may not fire for internally-managed worktree cleanup.
+
+**CWD drift after background agents.** After a background Agent with worktree isolation completes, the parent session's working directory can [silently drift to the worktree path](https://github.com/anthropics/claude-code/issues/38448). This is outside the hook lifecycle and cannot be detected by any PreToolUse hook.
+
 ## Tests
 
 ```sh
