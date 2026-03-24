@@ -84,6 +84,7 @@ try:
     source = sys.argv[2]
     needles = ["bash-guard", "bash_guard", "git-safe", "git_safe",
                "file-guard", "file_guard", "branch-guard", "branch_guard",
+               "worktree-guard", "worktree_guard",
                "session-log", "session_log", "read-once", "read_once",
                "enforce-hooks", "enforce_hooks"]
     for hook_type in ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd"]:
@@ -163,9 +164,9 @@ if [ -f "$SETTINGS_FILE" ]; then
     fi
 fi
 
-# Dependency checks: jq is required by 5 of 7 hooks (bash-guard, git-safe, file-guard, branch-guard, read-once)
+# Dependency checks: jq is required by 6 of 8 hooks (bash-guard, git-safe, file-guard, branch-guard, worktree-guard, read-once)
 if ! command -v jq >/dev/null 2>&1; then
-    WARNINGS+=("jq is not installed. 5 of 7 hooks require jq for JSON parsing and will silently fail without it. Install: brew install jq (macOS), apt install jq (Debian/Ubuntu), or see https://jqlang.github.io/jq/download/")
+    WARNINGS+=("jq is not installed. 6 of 8 hooks require jq for JSON parsing and will silently fail without it. Install: brew install jq (macOS), apt install jq (Debian/Ubuntu), or see https://jqlang.github.io/jq/download/")
 fi
 
 # python3 check: needed by enforce-hooks, session-log, and safety-check itself
@@ -323,6 +324,11 @@ check "branch-guard (prevents commits to main)" 10 \
     "No branch-guard: Claude can commit directly to main/master/production" \
     "curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/branch-guard/install.sh | bash"
 
+check "worktree-guard (prevents data loss on worktree exit)" 10 \
+    "$(has_hook worktree-guard && echo true || echo false)" \
+    "No worktree-guard: exiting a worktree silently deletes branches with unmerged commits (anthropics/claude-code#38287)" \
+    "curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/worktree-guard/install.sh | bash"
+
 # === Section 4: Observability ===
 echo ""
 printf "${BLUE}Observability${NC}\n"
@@ -469,6 +475,13 @@ if [ -f "CLAUDE.md" ]; then
         fi
     fi
 
+    # Check for worktree safety rules not covered by worktree-guard
+    if ! has_hook worktree-guard; then
+        if grep -qiE 'worktree|merge.*before.*exit|push.*before.*exit|unmerged.*commit' CLAUDE.md 2>/dev/null; then
+            RULE_SUGGESTIONS+=("worktree-guard — your CLAUDE.md mentions worktree safety")
+        fi
+    fi
+
     if [ ${#RULE_SUGGESTIONS[@]} -gt 0 ]; then
         echo ""
         printf "${YELLOW}${BOLD}Rules in CLAUDE.md that could be enforced:${NC}\n"
@@ -481,7 +494,7 @@ fi
 
 # === Section 8a: Hook Inventory ===
 # Show all registered hooks, both from Boucle-framework and custom/third-party
-KNOWN_HOOKS="bash-guard git-safe file-guard branch-guard session-log read-once enforce-hooks enforce"
+KNOWN_HOOKS="bash-guard git-safe file-guard branch-guard worktree-guard session-log read-once enforce-hooks enforce"
 CUSTOM_HOOKS=()
 TOTAL_HOOKS=0
 BOUCLE_HOOKS=0
@@ -704,6 +717,8 @@ if [ "$VERIFY_MODE" = "1" ] && [ -n "$HOOK_PATHS" ]; then
             fi
         elif echo "$hook_cmd" | grep -q "branch-guard"; then
             verify_hook "branch-guard (git state dependent)" "$hook_cmd" "$BRANCH_GUARD_PAYLOAD" "skip"
+        elif echo "$hook_cmd" | grep -q "worktree-guard"; then
+            verify_hook "worktree-guard (git state dependent)" "$hook_cmd" "$NONMATCH_PAYLOAD" "skip"
         elif echo "$hook_cmd" | grep -q "session-log"; then
             verify_hook "session-log accepts payloads" "$hook_cmd" "$NONMATCH_PAYLOAD" "false"
         elif echo "$hook_cmd" | grep -q "read-once"; then

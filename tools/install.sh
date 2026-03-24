@@ -36,13 +36,14 @@ hook_desc() {
     file-guard)  echo "Block modifications to sensitive files (.env, keys)" ;;
     git-safe)    echo "Prevent destructive git operations (force push, reset --hard)" ;;
     bash-guard)    echo "Block dangerous bash commands (rm -rf /, sudo, curl|bash)" ;;
-    branch-guard)  echo "Prevent direct commits to main/master (feature-branch workflow)" ;;
-    session-log)   echo "Audit trail — log every tool call to JSONL" ;;
-    *)             echo "Unknown hook" ;;
+    branch-guard)    echo "Prevent direct commits to main/master (feature-branch workflow)" ;;
+    worktree-guard)  echo "Prevent data loss when exiting worktrees (unmerged commits)" ;;
+    session-log)     echo "Audit trail — log every tool call to JSONL" ;;
+    *)               echo "Unknown hook" ;;
   esac
 }
 
-ALL_HOOKS="read-once file-guard git-safe bash-guard branch-guard session-log"
+ALL_HOOKS="read-once file-guard git-safe bash-guard branch-guard worktree-guard session-log"
 
 # Check prerequisites
 if ! command -v python3 >/dev/null 2>&1; then
@@ -120,7 +121,7 @@ installed=""
 for hook in $selected; do
   # Validate
   case "$hook" in
-    read-once|file-guard|git-safe|bash-guard|branch-guard|session-log) ;;
+    read-once|file-guard|git-safe|bash-guard|branch-guard|worktree-guard|session-log) ;;
     *)
       echo -e "${YELLOW}Unknown hook: ${hook}${RESET} (available: ${ALL_HOOKS})"
       continue
@@ -239,6 +240,9 @@ for hook in hooks_to_add:
     event = "PostToolUse" if hook == "session-log" else "PreToolUse"
     command = os.path.expanduser("~/.claude/" + hook + "/hook.sh")
     entry = {"hooks": [{"type": "command", "command": command, "timeout": 5000}]}
+    # worktree-guard uses ExitWorktree matcher for efficiency
+    if hook == "worktree-guard":
+        entry["matcher"] = "ExitWorktree"
 
     if event not in settings["hooks"]:
         settings["hooks"][event] = []
@@ -312,6 +316,16 @@ for hook in $installed; do
         # branch-guard needs git context, skip if no git repo
         echo -e "  ${DIM}SKIP${RESET}: ${hook} (needs git repo context to verify)"
         verify_skip=$((verify_skip + 1))
+      fi
+      ;;
+    worktree-guard)
+      # worktree-guard needs git context, just check it doesn't crash on non-ExitWorktree
+      if echo '{"tool_name":"Bash","tool_input":{"command":"echo test"}}' | "$hook_path" >/dev/null 2>&1; then
+        echo -e "  ${GREEN}OK${RESET}: ${hook} passes through non-ExitWorktree tools"
+        verify_ok=$((verify_ok + 1))
+      else
+        echo -e "  ${YELLOW}WARN${RESET}: ${hook} returned an error"
+        verify_fail=$((verify_fail + 1))
       fi
       ;;
     session-log)
