@@ -113,6 +113,11 @@ if [ "${IS_DEMO:-}" = "1" ]; then
     WARNINGS+=("IS_DEMO=1 is set in your environment. This silently disables ALL hooks by suppressing workspace trust. Unset it: unset IS_DEMO (see claude-code#37780)")
 fi
 
+# GIT_INDEX_FILE check (claude-code#38181: corrupts git index when Claude launched from git hooks)
+if [ -n "${GIT_INDEX_FILE:-}" ]; then
+    WARNINGS+=("GIT_INDEX_FILE is set ($GIT_INDEX_FILE). If Claude was launched from a git hook (post-commit, pre-push, etc.), plugin initialization can corrupt your git index by writing plugin entries into it. Unset this variable before invoking Claude, or run in a separate shell. (see claude-code#38181)")
+fi
+
 # JSONC check: settings.json with comments silently breaks hook loading
 if [ -f "$SETTINGS_FILE" ]; then
     if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$SETTINGS_FILE" 2>/dev/null; then

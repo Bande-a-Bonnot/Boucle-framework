@@ -820,6 +820,27 @@ assert "windows hooks 18% cited" "18%" "$(cat "$CHECK_SCRIPT")"
 # === Test 50: jq warning references hook count ===
 assert "jq warning says 5 of 7 hooks" "5 of 7" "$(cat "$CHECK_SCRIPT")"
 
+# === Test 51: GIT_INDEX_FILE warning shown when set ===
+TMPDIR_GIT_IDX=$(mktemp -d)
+export HOME="$TMPDIR_GIT_IDX"
+export GIT_INDEX_FILE="/some/project/.git/index"
+GIT_IDX_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "GIT_INDEX_FILE warning shown" "GIT_INDEX_FILE" "$GIT_IDX_OUTPUT"
+assert "GIT_INDEX_FILE mentions git hook" "git hook" "$GIT_IDX_OUTPUT"
+unset GIT_INDEX_FILE
+rm -rf "$TMPDIR_GIT_IDX"
+
+# === Test 52: No GIT_INDEX_FILE warning when unset ===
+TMPDIR_NOGIT_IDX=$(mktemp -d)
+export HOME="$TMPDIR_NOGIT_IDX"
+unset GIT_INDEX_FILE 2>/dev/null || true
+NOGIT_IDX_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no GIT_INDEX_FILE warning when unset" "GIT_INDEX_FILE" "$NOGIT_IDX_OUTPUT"
+rm -rf "$TMPDIR_NOGIT_IDX"
+
+# === Test 53: GIT_INDEX_FILE warning mentions corruption ===
+assert "GIT_INDEX_FILE check code exists" "corrupt" "$(cat "$CHECK_SCRIPT")"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
