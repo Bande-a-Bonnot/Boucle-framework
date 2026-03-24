@@ -425,8 +425,15 @@ if [ "$VERIFY_MODE" = "1" ] && [ -n "$HOOK_PATHS" ]; then
             verify_hook "git-safe blocks force push" "$hook_cmd" "$GIT_SAFE_PAYLOAD" "true"
             verify_hook "git-safe passes safe commands" "$hook_cmd" "$NONMATCH_PAYLOAD" "false"
         elif echo "$hook_cmd" | grep -q "file-guard"; then
-            verify_hook "file-guard blocks .env write" "$hook_cmd" "$FILE_GUARD_PAYLOAD" "true"
-            verify_hook "file-guard passes safe reads" "$hook_cmd" "$NONMATCH_PAYLOAD" "false"
+            # file-guard requires a .file-guard config to know what to protect
+            if [ -f ".file-guard" ] || [ -n "${FILE_GUARD_CONFIG:-}" ]; then
+                verify_hook "file-guard blocks .env write" "$hook_cmd" "$FILE_GUARD_PAYLOAD" "true"
+                verify_hook "file-guard passes safe reads" "$hook_cmd" "$NONMATCH_PAYLOAD" "false"
+            else
+                VERIFY_SKIP=$((VERIFY_SKIP + 1))
+                printf "  ${DIM}— file-guard (skipped, no .file-guard config found)${NC}\n"
+                printf "    ${DIM}Create .file-guard with paths to protect, e.g.: echo '.env' > .file-guard${NC}\n"
+            fi
         elif echo "$hook_cmd" | grep -q "branch-guard"; then
             verify_hook "branch-guard (git state dependent)" "$hook_cmd" "$BRANCH_GUARD_PAYLOAD" "skip"
         elif echo "$hook_cmd" | grep -q "session-log"; then
