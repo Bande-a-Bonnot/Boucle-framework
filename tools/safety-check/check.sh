@@ -62,27 +62,42 @@ check() {
     fi
 }
 
-# Detect all hooks in one python3 call (outputs space-separated list of found hooks)
+# Detect all hooks from both user-level and project-level settings
+# User-level: ~/.claude/settings.json
+# Project-level: .claude/settings.json (in current directory)
 DETECTED_HOOKS=""
-if [ -f "$SETTINGS_FILE" ]; then
-    DETECTED_HOOKS=$(python3 - "$SETTINGS_FILE" << 'PYEOF'
+PROJECT_SETTINGS=".claude/settings.json"
+ALL_HOOK_CMDS=""  # Track all hook commands for inventory
+HOOK_SOURCES=""   # Track where hooks come from
+
+detect_hooks_from() {
+    local file="$1"
+    local source_label="$2"
+    [ -f "$file" ] || return
+    python3 - "$file" "$source_label" << 'PYEOF'
 import json, sys
 found = set()
+all_cmds = []
 try:
     with open(sys.argv[1]) as f:
         s = json.load(f)
+    source = sys.argv[2]
     needles = ["bash-guard", "bash_guard", "git-safe", "git_safe",
                "file-guard", "file_guard", "branch-guard", "branch_guard",
                "session-log", "session_log", "read-once", "read_once",
                "enforce-hooks", "enforce_hooks"]
-    for hook_type in ["PreToolUse", "PostToolUse"]:
+    for hook_type in ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd"]:
         for entry in s.get("hooks", {}).get(hook_type, []):
             cmds = []
-            # Nested format: {"hooks": [{"type": "command", "command": "..."}]}
             for hook in entry.get("hooks", []):
-                cmds.append(hook.get("command", ""))
-            # Flat format: {"type": "command", "command": "..."}
-            cmds.append(entry.get("command", ""))
+                cmd = hook.get("command", "")
+                if cmd:
+                    cmds.append(cmd)
+                    all_cmds.append(f"{hook_type}:{source}:{cmd}")
+            cmd = entry.get("command", "")
+            if cmd:
+                cmds.append(cmd)
+                all_cmds.append(f"{hook_type}:{source}:{cmd}")
             for cmd in cmds:
                 for needle in needles:
                     if needle in cmd:
@@ -92,10 +107,33 @@ try:
         found.add("permissions")
 except Exception:
     pass
-print(" ".join(found))
+# Output format: HOOKS:space-separated-hooks\nCMDS:newline-separated-cmds
+print("HOOKS:" + " ".join(found))
+for c in all_cmds:
+    print("CMD:" + c)
 PYEOF
-    )
-fi
+}
+
+# Merge hooks from both user and project settings
+_merge_hooks() {
+    local output=""
+    output+=$(detect_hooks_from "$SETTINGS_FILE" "user" 2>/dev/null)
+    output+=$'\n'
+    output+=$(detect_hooks_from "$PROJECT_SETTINGS" "project" 2>/dev/null)
+
+    local hooks=""
+    local cmds=""
+    while IFS= read -r line; do
+        if [[ "$line" == HOOKS:* ]]; then
+            hooks="$hooks ${line#HOOKS:}"
+        elif [[ "$line" == CMD:* ]]; then
+            cmds="$cmds"$'\n'"${line#CMD:}"
+        fi
+    done <<< "$output"
+    DETECTED_HOOKS="$hooks"
+    ALL_HOOK_CMDS="$cmds"
+}
+_merge_hooks
 
 has_hook() { echo " $DETECTED_HOOKS " | grep -q " $1 "; }
 
@@ -361,51 +399,114 @@ if [ -f "CLAUDE.md" ]; then
     fi
 fi
 
-# === Section 8: Hook Health ===
+# === Section 8a: Hook Inventory ===
+# Show all registered hooks, both from Boucle-framework and custom/third-party
+KNOWN_HOOKS="bash-guard git-safe file-guard branch-guard session-log read-once enforce-hooks enforce"
+CUSTOM_HOOKS=()
+TOTAL_HOOKS=0
+BOUCLE_HOOKS=0
+
+if [ -n "$ALL_HOOK_CMDS" ]; then
+    while IFS= read -r cmd_entry; do
+        [ -z "$cmd_entry" ] && continue
+        TOTAL_HOOKS=$((TOTAL_HOOKS + 1))
+        # Check if this is a known Boucle-framework hook
+        is_known=false
+        for known in $KNOWN_HOOKS; do
+            if echo "$cmd_entry" | grep -q "$known"; then
+                is_known=true
+                BOUCLE_HOOKS=$((BOUCLE_HOOKS + 1))
+                break
+            fi
+        done
+        if [ "$is_known" = "false" ]; then
+            # Extract just the command part (after hook_type:source:)
+            cmd_part="${cmd_entry#*:*:}"
+            hook_basename=$(basename "$cmd_part" | head -c 50)
+            hook_type="${cmd_entry%%:*}"
+            CUSTOM_HOOKS+=("$hook_type: $hook_basename")
+        fi
+    done <<< "$ALL_HOOK_CMDS"
+
+    if [ ${#CUSTOM_HOOKS[@]} -gt 0 ]; then
+        echo ""
+        printf "${BLUE}Hook Inventory${NC}\n"
+        printf "  %d hook(s) registered" "$TOTAL_HOOKS"
+        if [ "$BOUCLE_HOOKS" -gt 0 ]; then
+            printf " (%d Boucle-framework" "$BOUCLE_HOOKS"
+            printf ", %d custom/third-party)\n" "${#CUSTOM_HOOKS[@]}"
+        else
+            printf " (all custom/third-party)\n"
+        fi
+        for custom in "${CUSTOM_HOOKS[@]}"; do
+            printf "  ${DIM}%s${NC}\n" "$custom"
+        done
+    fi
+fi
+
+# === Section 8b: Hook Health ===
 # Verify that registered hooks actually exist and are executable
 HOOK_HEALTH_ISSUES=0
 HOOK_PATHS=""
-if [ -f "$SETTINGS_FILE" ]; then
-    HOOK_PATHS=$(python3 - "$SETTINGS_FILE" << 'PYEOF'
+
+# Collect hook paths from both user and project settings
+_extract_hook_paths() {
+    local file="$1"
+    [ -f "$file" ] || return
+    python3 - "$file" << 'PYEOF'
 import json, sys
 try:
     with open(sys.argv[1]) as f:
         s = json.load(f)
-    paths = []
     for hook_type in ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd"]:
         for entry in s.get("hooks", {}).get(hook_type, []):
             for hook in entry.get("hooks", []):
                 cmd = hook.get("command", "")
-                if cmd: paths.append(cmd)
+                if cmd: print(cmd)
             cmd = entry.get("command", "")
-            if cmd: paths.append(cmd)
-    for p in paths:
-        print(p)
+            if cmd: print(cmd)
 except Exception:
     pass
 PYEOF
-    )
+}
 
-    if [ -n "$HOOK_PATHS" ]; then
-        echo ""
-        printf "${BLUE}Hook Health${NC}\n"
-        while IFS= read -r hook_path; do
-            # Expand ~ to HOME
-            expanded_path="${hook_path/#\~/$HOME}"
-            hook_basename=$(basename "$expanded_path")
-            if [ ! -f "$expanded_path" ]; then
-                printf "  ${RED}✗${NC} %s — file not found\n" "$hook_basename"
-                HOOK_HEALTH_ISSUES=$((HOOK_HEALTH_ISSUES + 1))
-            elif [ ! -x "$expanded_path" ]; then
-                printf "  ${RED}✗${NC} %s — not executable (run: chmod +x %s)\n" "$hook_basename" "$hook_path"
-                HOOK_HEALTH_ISSUES=$((HOOK_HEALTH_ISSUES + 1))
-            else
-                printf "  ${GREEN}✓${NC} %s\n" "$hook_basename"
-            fi
-        done <<< "$HOOK_PATHS"
-        if [ "$HOOK_HEALTH_ISSUES" -gt 0 ]; then
-            ISSUES+=("$HOOK_HEALTH_ISSUES hook(s) are broken (missing or not executable). Hooks that don't exist fail silently.")
+HOOK_PATHS=$(_extract_hook_paths "$SETTINGS_FILE" 2>/dev/null)
+if [ -f "$PROJECT_SETTINGS" ]; then
+    PROJECT_HOOK_PATHS=$(_extract_hook_paths "$PROJECT_SETTINGS" 2>/dev/null)
+    if [ -n "$PROJECT_HOOK_PATHS" ]; then
+        if [ -n "$HOOK_PATHS" ]; then
+            HOOK_PATHS="$HOOK_PATHS"$'\n'"$PROJECT_HOOK_PATHS"
+        else
+            HOOK_PATHS="$PROJECT_HOOK_PATHS"
         fi
+    fi
+fi
+
+# Deduplicate hook paths (same hook in user+project = show once)
+if [ -n "$HOOK_PATHS" ]; then
+    HOOK_PATHS=$(echo "$HOOK_PATHS" | sort -u)
+fi
+
+if [ -n "$HOOK_PATHS" ]; then
+    echo ""
+    printf "${BLUE}Hook Health${NC}\n"
+    while IFS= read -r hook_path; do
+        [ -z "$hook_path" ] && continue
+        # Expand ~ to HOME
+        expanded_path="${hook_path/#\~/$HOME}"
+        hook_basename=$(basename "$expanded_path")
+        if [ ! -f "$expanded_path" ]; then
+            printf "  ${RED}✗${NC} %s — file not found\n" "$hook_basename"
+            HOOK_HEALTH_ISSUES=$((HOOK_HEALTH_ISSUES + 1))
+        elif [ ! -x "$expanded_path" ]; then
+            printf "  ${RED}✗${NC} %s — not executable (run: chmod +x %s)\n" "$hook_basename" "$hook_path"
+            HOOK_HEALTH_ISSUES=$((HOOK_HEALTH_ISSUES + 1))
+        else
+            printf "  ${GREEN}✓${NC} %s\n" "$hook_basename"
+        fi
+    done <<< "$HOOK_PATHS"
+    if [ "$HOOK_HEALTH_ISSUES" -gt 0 ]; then
+        ISSUES+=("$HOOK_HEALTH_ISSUES hook(s) are broken (missing or not executable). Hooks that don't exist fail silently.")
     fi
 fi
 
