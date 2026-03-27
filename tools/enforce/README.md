@@ -395,6 +395,12 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **Bash permission heuristic misparses escaped semicolons.** Claude Code's built-in bash permission system [misparses `\;` in find -exec](https://github.com/anthropics/claude-code/issues/39911) as a command separator, classifying the redirect suffix (e.g., `2` from `2>/dev/null`) as a standalone command. This does not affect hooks (bash-guard receives the full command string and parses it correctly), but it causes confusing permission prompts for safe find commands. If users report permission prompts for `2` as a command, this is the platform bug.
 
+**Marketplace updates strip execute permissions from .sh hooks.** When a Claude Code plugin is updated through the marketplace, the update process [strips the execute bit from .sh files](https://github.com/anthropics/claude-code/issues/39954). Hook scripts that were `chmod +x` after install silently become non-executable, and Claude Code skips them without warning. This affects any bash-based hook delivered through the marketplace. Workaround: re-run `chmod +x` on your hook scripts after marketplace updates, or use safety-check to detect non-executable hooks.
+
+**Stop hooks that intentionally block display "Hook Error" in the UI.** When a Stop hook returns `{"decision": "block"}` to prevent an action, Claude Code [displays "Hook Error" in the transcript](https://github.com/anthropics/claude-code/issues/39953) instead of showing the block reason. The model reads this label and may abandon the task prematurely, thinking a system error occurred rather than a deliberate enforcement. This is the same underlying issue as the [exit code 3 proposal](https://github.com/anthropics/claude-code/issues/38422), which would let hooks signal intentional blocks distinctly from errors. No workaround. Use PreToolUse hooks for enforcement where possible, since they show block reasons correctly.
+
+**PostToolUse hooks skip some plan-mode transitions.** The PostToolUse event for ExitPlanMode [does not fire](https://github.com/anthropics/claude-code/issues/39950) when a user accepts a plan with "clear context." Hooks that track plan completion or trigger actions after plan acceptance will miss this transition. There is no workaround.
+
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
 ## Tests
