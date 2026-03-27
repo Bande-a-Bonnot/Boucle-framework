@@ -401,6 +401,12 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **PostToolUse hooks skip some plan-mode transitions.** The PostToolUse event for ExitPlanMode [does not fire](https://github.com/anthropics/claude-code/issues/39950) when a user accepts a plan with "clear context." Hooks that track plan completion or trigger actions after plan acceptance will miss this transition. There is no workaround.
 
+**`claude --test-permission` does not exist for dry-run testing.** There is [no way to unit-test hook configurations](https://github.com/anthropics/claude-code/issues/39971) without actually triggering tool calls. Iterating on hook logic requires live sessions with real tool invocations. Affects anyone developing or debugging custom hooks.
+
+**Marketplace plugin sync strips execute permissions from .sh hooks.** When plugins are synced via the marketplace, hook files are [downloaded as 644 (non-executable)](https://github.com/anthropics/claude-code/issues/39964). Any `.sh` hooks delivered via marketplace plugins need manual `chmod +x` after every sync. Same root cause as [#39954](https://github.com/anthropics/claude-code/issues/39954).
+
+**ExitPlanMode resets permission mode to acceptEdits.** When exiting plan mode, the permission state [resets to acceptEdits](https://github.com/anthropics/claude-code/issues/39973) instead of restoring the previous mode (e.g., `bypassPermissions`). Workflows that enter plan mode then resume with elevated permissions will find permissions unexpectedly downgraded.
+
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
 ## Tests
