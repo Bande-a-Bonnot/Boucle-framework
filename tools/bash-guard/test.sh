@@ -957,6 +957,13 @@ assert_blocked "passwd user" "passwd root"
 assert_blocked "compound passwd" "echo test; passwd"
 
 echo ""
+echo "--- escaped semicolon in find -exec (regression for claude-code#39911) ---"
+assert_allowed "find -exec with escaped semicolon" "find /tmp -name '*.js' -exec grep -l 'test' {} \\; 2>/dev/null | head -5"
+assert_allowed "find -exec with plus terminator" "find . -name '*.py' -exec cat {} +"
+assert_blocked "find -exec rm (always blocked)" "find /tmp/build -name '*.o' -exec rm {} \\;"
+assert_blocked "find -exec with rm -rf" "find / -exec rm -rf {} \\;"
+
+echo ""
 echo "================================"
 echo "Results: $PASS passed, $FAIL failed"
 echo "Total: $((PASS + FAIL)) tests"

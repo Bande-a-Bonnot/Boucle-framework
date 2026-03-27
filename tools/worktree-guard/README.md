@@ -63,6 +63,8 @@ The hook auto-detects the base branch by checking `origin/main`, `origin/master`
 
 **Stop hooks fail after worktree cleanup.** After a worktree is removed (post-merge), stop hooks [fail with ENOENT](https://github.com/anthropics/claude-code/issues/39432) because the session's CWD no longer exists. Node.js reports the error on `/bin/sh` rather than the missing CWD. This can prevent any cleanup hooks from running.
 
+**Worktree memory resolves to wrong project directory.** When Claude Code launches from a linked worktree, it uses `git rev-parse --git-common-dir` to derive the project path, which resolves to the main worktree's `.git` directory. This means [both worktrees share the same memory file](https://github.com/anthropics/claude-code/issues/39920), causing cross-contamination of project-specific memory. This is a Claude Code internal behavior that hooks cannot change.
+
 **Worktree isolation can silently fail.** The Agent tool's `isolation: "worktree"` option can [silently run the agent in the main repository](https://github.com/anthropics/claude-code/issues/39886) instead of creating an isolated worktree. The result metadata shows `worktreePath: done` (not an actual path) and `worktreeBranch: undefined`. The agent commits directly to the main checkout's branch with zero isolation. This cannot be detected or prevented by hooks. If you run parallel agents that modify git state, verify `worktreePath` in agent results before trusting branch isolation.
 
 ## Tests
