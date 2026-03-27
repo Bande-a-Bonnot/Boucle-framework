@@ -435,6 +435,8 @@ boucle --version                 # Show version
 
 **Subagents may skip hook settings**: Agents spawned via the Agent tool [don't consistently inherit permission settings](https://github.com/anthropics/claude-code/issues/37730). Hooks in `.claude/settings.json` should still fire (shared config), but verify hook behavior when using subagent workflows.
 
+**Windows**: All hooks are bash scripts designed for macOS and Linux. Two options on Windows: (1) run Claude Code from a **WSL** terminal, where hooks work as-is, or (2) install **Git for Windows**, which provides `/usr/bin/bash`. However, Claude Code has a known bug where hooks [fire only ~18% of the time on Windows](https://github.com/anthropics/claude-code/issues/37988), so neither path is reliable yet. WSL is the recommended option. See [#3](https://github.com/Bande-a-Bonnot/Boucle-framework/issues/3).
+
 ## Development
 
 ```bash
@@ -459,7 +461,7 @@ bash tools/safety-check/test.sh
 
 file-guard: relative path rejection. safety-check: permission pitfall warnings (deny+denyWrite sandbox conflict, bypassPermissions instability, Write allow path asymmetry). bash-guard covers 25+ threat categories with ~500 tests. Quickstart installer for zero-to-protected in one command.
 
-13 stars, 2 external contributors, 1 fork.
+13 stars, 3 external contributors, 2 forks.
 
 ## Contributing
 
