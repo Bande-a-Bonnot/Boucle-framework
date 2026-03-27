@@ -6,6 +6,8 @@ Claude Code can execute arbitrary bash commands. Most of the time, that's fine. 
 
 bash-guard intercepts these before they execute.
 
+Note: `settings.json` path deny rules [do not apply to the Bash tool](https://github.com/anthropics/claude-code/issues/39987). Even if you deny a path for Read/Write/Edit, Claude can still `cat`, `grep`, or `head` files from it via shell commands. bash-guard fills this gap.
+
 ## What it blocks
 
 | Category | Examples | Why |

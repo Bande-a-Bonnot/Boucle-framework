@@ -407,6 +407,10 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **ExitPlanMode resets permission mode to acceptEdits.** When exiting plan mode, the permission state [resets to acceptEdits](https://github.com/anthropics/claude-code/issues/39973) instead of restoring the previous mode (e.g., `bypassPermissions`). Workflows that enter plan mode then resume with elevated permissions will find permissions unexpectedly downgraded.
 
+**`settings.json` path deny rules do not apply to the Bash tool.** Path deny rules in `.claude/settings.json` only restrict Claude Code's built-in file tools (`Read`, `Write`, `Edit`, `Glob`, `Grep`). The Bash tool [executes commands as the user's OS process](https://github.com/anthropics/claude-code/issues/39987) with no path checking against deny rules. Claude can `cat`, `grep`, or `head` files in denied directories via shell commands, silently bypassing the restriction. Users relying on path deny for security have a false sense of protection. Workaround: use a PreToolUse hook on the Bash tool that checks command strings against denied paths. [bash-guard](../bash-guard/) does this among other protections. For defense in depth, also use OS-level file permissions to deny the user account access.
+
+**Subagent output is trusted without verification by the parent agent.** When Claude spawns subagents via the Agent tool, the parent [treats subagent summaries as ground truth](https://github.com/anthropics/claude-code/issues/39981) without checking claims against actual tool output. Subagents can report inflated counts, phantom operations, or partial searches as exhaustive, and the parent relays these to the user. No hook can intercept the Agent tool's return value or validate subagent claims. This is an architecture-level gap, not a hook limitation.
+
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
 ## Tests

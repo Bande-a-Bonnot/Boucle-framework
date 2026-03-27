@@ -1392,6 +1392,56 @@ NOWTISOLATION_OUTPUT=$(cd "$TMPDIR_NOWTISOLATION" && bash "$CHECK_SCRIPT" 2>&1) 
 assert_not "no worktree isolation warning without worktree-guard" "39886" "$NOWTISOLATION_OUTPUT"
 rm -rf "$TMPDIR_NOWTISOLATION"
 
+# === Test: Path deny without bash-guard warns about Bash bypass (#39987) ===
+TMPDIR_PATHDENY=$(mktemp -d)
+export HOME="$TMPDIR_PATHDENY"
+mkdir -p "$TMPDIR_PATHDENY/.claude"
+cat > "$TMPDIR_PATHDENY/.claude/settings.json" << 'PATHDENYEOF'
+{
+  "permissions": {
+    "deny": ["Read(/secrets/)", "Edit(/etc/passwd)"]
+  }
+}
+PATHDENYEOF
+PATHDENY_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "path deny without bash-guard triggers warning" "39987" "$PATHDENY_OUTPUT"
+assert "path deny warning mentions Bash tool" "Bash" "$PATHDENY_OUTPUT"
+assert "path deny warning suggests bash-guard" "bash-guard" "$PATHDENY_OUTPUT"
+rm -rf "$TMPDIR_PATHDENY"
+
+# === Test: Path deny WITH bash-guard does NOT warn (#39987) ===
+TMPDIR_PATHDENYOK=$(mktemp -d)
+export HOME="$TMPDIR_PATHDENYOK"
+mkdir -p "$TMPDIR_PATHDENYOK/.claude"
+cat > "$TMPDIR_PATHDENYOK/.claude/settings.json" << 'PATHDENYOKEOF'
+{
+  "permissions": {
+    "deny": ["Read(/secrets/)"]
+  },
+  "hooks": {
+    "PreToolUse": [{"matcher":"Bash","type":"command","command":"bash bash-guard.sh"}]
+  }
+}
+PATHDENYOKEOF
+PATHDENYOK_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "path deny with bash-guard no warning" "39987" "$PATHDENYOK_OUTPUT"
+rm -rf "$TMPDIR_PATHDENYOK"
+
+# === Test: No path deny rules does NOT warn (#39987) ===
+TMPDIR_NOPATHDENY=$(mktemp -d)
+export HOME="$TMPDIR_NOPATHDENY"
+mkdir -p "$TMPDIR_NOPATHDENY/.claude"
+cat > "$TMPDIR_NOPATHDENY/.claude/settings.json" << 'NOPATHDENYEOF'
+{
+  "permissions": {
+    "deny": ["Bash(rm -rf)"]
+  }
+}
+NOPATHDENYEOF
+NOPATHDENY_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "non-file deny rules no warning" "39987" "$NOPATHDENY_OUTPUT"
+rm -rf "$TMPDIR_NOPATHDENY"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
