@@ -73,7 +73,7 @@ HOOK_SOURCES=""   # Track where hooks come from
 detect_hooks_from() {
     local file="$1"
     local source_label="$2"
-    [ -f "$file" ] || return
+    [ -f "$file" ] || return 0
     python3 - "$file" "$source_label" << 'PYEOF'
 import json, sys
 found = set()
@@ -683,7 +683,7 @@ HOOK_PATHS=""
 # Collect hook paths from both user and project settings
 _extract_hook_paths() {
     local file="$1"
-    [ -f "$file" ] || return
+    [ -f "$file" ] || return 0
     python3 - "$file" << 'PYEOF'
 import json, sys
 try:

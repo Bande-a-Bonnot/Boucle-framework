@@ -916,6 +916,21 @@ assert_blocked "pkill -9 with pattern" "pkill -9 -f 'node server'"
 assert_allowed "pkill without -9" "pkill python"
 
 echo ""
+echo "--- git push --force ---"
+assert_blocked "git push --force" "git push --force origin main"
+assert_blocked "git push -f" "git push -f origin main"
+assert_blocked "git push --force-with-lease" "git push --force-with-lease origin feature"
+assert_blocked "git push with flags then --force" "git push -u --force origin main"
+assert_allowed "git push (no force)" "git push origin main"
+assert_allowed "git push -u" "git push -u origin feature"
+assert_allowed "git pull --force (not push)" "git pull --force"
+FORCE_PUSH_CONFIG=$(mktemp)
+echo "allow: git-force-push" > "$FORCE_PUSH_CONFIG"
+BASH_GUARD_CONFIG="$FORCE_PUSH_CONFIG" \
+  assert_allowed "git push --force allowed by config" "git push --force origin main"
+rm -f "$FORCE_PUSH_CONFIG"
+
+echo ""
 echo "--- git filter-branch ---"
 assert_blocked "git filter-branch" "git filter-branch --tree-filter 'rm -f secrets.txt' HEAD"
 assert_blocked "git filter-branch env" "git filter-branch --env-filter 'export GIT_AUTHOR_NAME=evil'"
