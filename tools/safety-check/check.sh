@@ -321,6 +321,98 @@ for hookdir in "${HOME}/.claude/hooks" ".claude/hooks"; do
     fi
 done
 
+# Spaces in working directory path break hooks (claude-code#39478)
+case "$PWD" in
+    *" "*)
+        WARNINGS+=("Working directory contains spaces: $PWD. Claude Code may pass unquoted paths to hooks, causing parse errors. Move your project to a path without spaces if hooks misbehave. (see claude-code#39478)")
+        ;;
+esac
+
+# Stop hooks blocking parallel sessions (claude-code#39530)
+for _stop_cfg in "$SETTINGS_FILE" "$PROJECT_SETTINGS"; do
+    [ -f "$_stop_cfg" ] || continue
+    _HAS_STOP=$(python3 -c "
+import json,sys
+try:
+    s=json.load(open(sys.argv[1]))
+    stops = s.get('hooks',{}).get('PostToolUse',[]) + s.get('hooks',{}).get('SessionEnd',[])
+    print('true' if stops else 'false')
+except: print('false')
+" "$_stop_cfg" 2>/dev/null)
+    if [ "$_HAS_STOP" = "true" ]; then
+        WARNINGS+=("Stop/PostToolUse hooks detected. Stop hooks fire across ALL parallel Claude sessions sharing this settings file, not just the session that triggered them. If you run multiple Claude instances, a stop hook from one session can affect others. Use separate project directories or check \$CLAUDE_SESSION_ID in your hook. (see claude-code#39530)")
+        break
+    fi
+done
+
+# Hooks using updatedInput with Agent tool (claude-code#39814)
+for hookdir in "${HOME}/.claude/hooks" ".claude/hooks"; do
+    [ -d "$hookdir" ] || continue
+    UPDATEDINPUT_HOOKS=""
+    for hookfile in "$hookdir"/*; do
+        [ -f "$hookfile" ] || continue
+        if grep -qlE 'updatedInput' "$hookfile" 2>/dev/null; then
+            UPDATEDINPUT_HOOKS="${UPDATEDINPUT_HOOKS} $(basename "$hookfile")"
+        fi
+    done
+    if [ -n "$UPDATEDINPUT_HOOKS" ]; then
+        scope="Hook(s)"
+        [ "$hookdir" = ".claude/hooks" ] && scope="Project hook(s)"
+        WARNINGS+=("${scope} use updatedInput:${UPDATEDINPUT_HOOKS}. The updatedInput field is silently ignored for Agent tool calls — the original prompt is used instead. Use decision:block to reject unsafe Agent prompts rather than trying to rewrite them. (see claude-code#39814)")
+    fi
+done
+
+# Supply-chain: detect suspicious project-level .claude/settings.json (claude-code#38319)
+# A malicious repo can include .claude/settings.json that adds hooks or loosens permissions.
+# Project settings merge with user settings — they can ADD hooks and allow rules.
+if [ -f "$PROJECT_SETTINGS" ]; then
+    SUPPLY_CHAIN_FLAGS=$(python3 - "$PROJECT_SETTINGS" << 'PYEOF_SC'
+import json, sys, re
+flags = []
+try:
+    with open(sys.argv[1]) as f:
+        s = json.load(f)
+    perms = s.get("permissions", {})
+    # Flag 1: Project sets bypassPermissions
+    if perms.get("permissionMode") == "bypassPermissions":
+        flags.append("sets permissionMode to bypassPermissions (all tool calls auto-approved)")
+    # Flag 2: Overly broad allow rules
+    for rule in perms.get("allow", []):
+        r = rule if isinstance(rule, str) else ""
+        if r in ("Bash", "Bash(*)", "Bash(**)", "*"):
+            flags.append(f"allow rule '{r}' permits all Bash commands")
+        elif re.search(r'sudo|rm\s+-rf|curl.*\|.*bash|wget.*\|.*bash|chmod\s+777|mkfs|dd\s+if=', r, re.I):
+            flags.append(f"allow rule contains dangerous command: {r[:60]}")
+    # Flag 3: Project hooks that reference external URLs or suspicious commands
+    for hook_type in ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd"]:
+        for entry in s.get("hooks", {}).get(hook_type, []):
+            cmds = []
+            for hook in entry.get("hooks", []):
+                cmd = hook.get("command", "")
+                if cmd: cmds.append(cmd)
+            cmd = entry.get("command", "")
+            if cmd: cmds.append(cmd)
+            for cmd in cmds:
+                if re.search(r'https?://', cmd):
+                    flags.append(f"project hook contacts external URL: {cmd[:80]}")
+                if re.search(r'base64\s+-d|eval\s|python.*-c|node\s+-e', cmd):
+                    flags.append(f"project hook runs inline code: {cmd[:80]}")
+except Exception:
+    pass
+for f in flags:
+    print(f)
+PYEOF_SC
+    )
+    if [ -n "$SUPPLY_CHAIN_FLAGS" ]; then
+        WARNINGS+=("PROJECT SUPPLY-CHAIN RISK: This repo contains .claude/settings.json with suspicious entries:")
+        while IFS= read -r flag; do
+            [ -z "$flag" ] && continue
+            WARNINGS+=("  -> $flag")
+        done <<< "$SUPPLY_CHAIN_FLAGS"
+        WARNINGS+=("Review .claude/settings.json carefully. Project settings merge with your user settings and can add hooks or allow rules. (see claude-code#38319)")
+    fi
+fi
+
 if [ ${#WARNINGS[@]} -gt 0 ]; then
     printf "${RED}${BOLD}⚠ Environment Warnings${NC}\n"
     for warn in "${WARNINGS[@]}"; do

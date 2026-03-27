@@ -375,6 +375,12 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **Exit code 2 silently disables hooks for Edit/Write tools.** If a hook script exits with code 2, Claude Code [treats it as a crash](https://github.com/anthropics/claude-code/issues/37210). For Bash tool calls, crashed hooks still block. For Edit and Write tools, crashed hooks are silently ignored and the operation proceeds. enforce-hooks generates hooks that always exit 0, so this does not affect generated hooks. But custom hook scripts that use `exit 2` on the deny path will appear to work in Bash tests and silently fail on Edit/Write. Always use `exit 0` with `{"decision":"block","reason":"..."}` JSON on stdout.
 
+**`updatedInput` silently ignored for Agent tool.** PreToolUse hooks can return `updatedInput` to rewrite tool inputs before execution. For most tools this works, but for the Agent tool, the [rewritten input is silently discarded](https://github.com/anthropics/claude-code/issues/39814) and the original prompt is used. Hooks that sanitize or modify subagent prompts will appear to succeed (exit 0, JSON accepted) but have no effect. There is no workaround. Use `"decision": "block"` to reject unsafe Agent prompts instead of trying to rewrite them.
+
+**Stop hooks can block unrelated parallel sessions.** Stop hooks configured with a `session_id` guard intended to scope them to one session [still fire across all parallel sessions](https://github.com/anthropics/claude-code/issues/39530). A stop hook that terminates session A can kill session B if both sessions share the same `.claude/settings.json`. This affects autonomous loop architectures running multiple Claude instances. Workaround: use separate project directories with independent settings for parallel sessions, or make stop hooks check `$CLAUDE_SESSION_ID` explicitly.
+
+**Hooks fail when working directory contains spaces.** If the project path contains spaces (e.g., `/Users/name/My Projects/app/`), hook scripts [fail with parse errors](https://github.com/anthropics/claude-code/issues/39478) because the path is passed unquoted in some internal contexts. All enforce-hooks generated hooks and Boucle-framework hooks quote their paths, but the platform itself may break path delivery. Workaround: avoid spaces in project directory paths.
+
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
 ## Tests

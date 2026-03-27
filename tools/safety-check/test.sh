@@ -1263,6 +1263,100 @@ NOEXIT2_OUTPUT=$(cd "$TMPDIR_NOEXIT2" && bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no exit 2 warning for good hooks" "37210" "$NOEXIT2_OUTPUT"
 rm -rf "$TMPDIR_NOEXIT2"
 
+# === Test: Spaces in working directory path warning (#39478) ===
+TMPDIR_SPACES=$(mktemp -d)/path\ with\ spaces
+mkdir -p "$TMPDIR_SPACES/.claude"
+cat > "$TMPDIR_SPACES/.claude/settings.json" << 'SETTINGSEOF'
+{
+  "permissions": {
+    "allow": ["Read"]
+  }
+}
+SETTINGSEOF
+SPACES_OUTPUT=$(cd "$TMPDIR_SPACES" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "spaces in path warning present" "39478" "$SPACES_OUTPUT"
+assert "spaces warning mentions working directory" "spaces" "$SPACES_OUTPUT"
+rm -rf "$(dirname "$TMPDIR_SPACES")"
+
+TMPDIR_NOSPACES=$(mktemp -d)
+mkdir -p "$TMPDIR_NOSPACES/.claude"
+cat > "$TMPDIR_NOSPACES/.claude/settings.json" << 'SETTINGSEOF'
+{
+  "permissions": {
+    "allow": ["Read"]
+  }
+}
+SETTINGSEOF
+NOSPACES_OUTPUT=$(cd "$TMPDIR_NOSPACES" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no spaces warning for normal path" "39478" "$NOSPACES_OUTPUT"
+rm -rf "$TMPDIR_NOSPACES"
+
+# === Test: Stop hooks parallel session warning (#39530) ===
+TMPDIR_STOPHOOK=$(mktemp -d)
+mkdir -p "$TMPDIR_STOPHOOK/.claude"
+cat > "$TMPDIR_STOPHOOK/.claude/settings.json" << 'SETTINGSEOF'
+{
+  "hooks": {
+    "PostToolUse": [{"type":"command","command":"bash cleanup.sh"}]
+  }
+}
+SETTINGSEOF
+STOPHOOK_OUTPUT=$(cd "$TMPDIR_STOPHOOK" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "stop hook parallel warning present" "39530" "$STOPHOOK_OUTPUT"
+assert "stop hook warning mentions parallel" "parallel" "$STOPHOOK_OUTPUT"
+rm -rf "$TMPDIR_STOPHOOK"
+
+TMPDIR_NOSTOPHOOK=$(mktemp -d)
+mkdir -p "$TMPDIR_NOSTOPHOOK/.claude"
+cat > "$TMPDIR_NOSTOPHOOK/.claude/settings.json" << 'SETTINGSEOF'
+{
+  "hooks": {
+    "PreToolUse": [{"type":"command","command":"bash guard.sh"}]
+  }
+}
+SETTINGSEOF
+NOSTOPHOOK_OUTPUT=$(cd "$TMPDIR_NOSTOPHOOK" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no stop hook warning for PreToolUse only" "39530" "$NOSTOPHOOK_OUTPUT"
+rm -rf "$TMPDIR_NOSTOPHOOK"
+
+# === Test: updatedInput warning for Agent tool (#39814) ===
+TMPDIR_UPDINPUT=$(mktemp -d)
+mkdir -p "$TMPDIR_UPDINPUT/.claude/hooks"
+cat > "$TMPDIR_UPDINPUT/.claude/hooks/rewriter.sh" << 'HOOKEOF'
+#!/bin/bash
+echo '{"updatedInput":{"prompt":"sanitized"}}'
+exit 0
+HOOKEOF
+cat > "$TMPDIR_UPDINPUT/.claude/settings.json" << 'SETTINGSEOF'
+{
+  "hooks": {
+    "PreToolUse": [{"type":"command","command":"bash .claude/hooks/rewriter.sh"}]
+  }
+}
+SETTINGSEOF
+UPDINPUT_OUTPUT=$(cd "$TMPDIR_UPDINPUT" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "updatedInput warning present" "39814" "$UPDINPUT_OUTPUT"
+assert "updatedInput warning mentions Agent" "Agent" "$UPDINPUT_OUTPUT"
+rm -rf "$TMPDIR_UPDINPUT"
+
+TMPDIR_NOUPDINPUT=$(mktemp -d)
+mkdir -p "$TMPDIR_NOUPDINPUT/.claude/hooks"
+cat > "$TMPDIR_NOUPDINPUT/.claude/hooks/blocker.sh" << 'HOOKEOF'
+#!/bin/bash
+echo '{"decision":"block","reason":"nope"}'
+exit 0
+HOOKEOF
+cat > "$TMPDIR_NOUPDINPUT/.claude/settings.json" << 'SETTINGSEOF'
+{
+  "hooks": {
+    "PreToolUse": [{"type":"command","command":"bash .claude/hooks/blocker.sh"}]
+  }
+}
+SETTINGSEOF
+NOUPDINPUT_OUTPUT=$(cd "$TMPDIR_NOUPDINPUT" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no updatedInput warning for block-only hooks" "39814" "$NOUPDINPUT_OUTPUT"
+rm -rf "$TMPDIR_NOUPDINPUT"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
