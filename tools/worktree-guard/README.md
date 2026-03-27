@@ -59,6 +59,10 @@ The hook auto-detects the base branch by checking `origin/main`, `origin/master`
 
 **CWD drift after background agents.** After a background Agent with worktree isolation completes, the parent session's working directory can [silently drift to the worktree path](https://github.com/anthropics/claude-code/issues/38448). This is outside the hook lifecycle and cannot be detected by any PreToolUse hook.
 
+**`--worktree --tmux` skips hooks entirely.** When Claude Code is launched with both `--worktree` and `--tmux`, it uses a separate codepath that [creates git worktrees directly](https://github.com/anthropics/claude-code/issues/39281), bypassing WorktreeCreate and WorktreeRemove hooks. worktree-guard cannot fire in this mode. Workaround: use `--worktree` without `--tmux`.
+
+**Stop hooks fail after worktree cleanup.** After a worktree is removed (post-merge), stop hooks [fail with ENOENT](https://github.com/anthropics/claude-code/issues/39432) because the session's CWD no longer exists. Node.js reports the error on `/bin/sh` rather than the missing CWD. This can prevent any cleanup hooks from running.
+
 ## Tests
 
 ```sh

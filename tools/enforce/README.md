@@ -381,6 +381,12 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **Hooks fail when working directory contains spaces.** If the project path contains spaces (e.g., `/Users/name/My Projects/app/`), hook scripts [fail with parse errors](https://github.com/anthropics/claude-code/issues/39478) because the path is passed unquoted in some internal contexts. All enforce-hooks generated hooks and Boucle-framework hooks quote their paths, but the platform itself may break path delivery. Workaround: avoid spaces in project directory paths.
 
+**`--worktree --tmux` skips hook lifecycle entirely.** When Claude Code is launched with both `--worktree` and `--tmux`, it uses a [separate codepath that creates git worktrees directly](https://github.com/anthropics/claude-code/issues/39281), bypassing WorktreeCreate and WorktreeRemove hooks. Any hooks guarding worktree creation or cleanup will not fire in this mode. Workaround: use `--worktree` without `--tmux`.
+
+**Disabled plugins still execute hooks.** Plugins set to `false` in `enabledPlugins` [still have their hooks executed](https://github.com/anthropics/claude-code/issues/39307) by Claude Code. Stop hooks, PreToolUse hooks, and other plugin-registered hooks fire even when the plugin is explicitly disabled. There is no workaround other than removing the plugin entirely.
+
+**Stop hooks fail after worktree removal.** After a worktree is merged and deleted, stop hooks [fail with ENOENT](https://github.com/anthropics/claude-code/issues/39432) because the session's CWD no longer exists. Node.js reports the error as `/bin/sh` not found rather than the missing CWD. Any cleanup hooks registered for the session will not run.
+
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
 ## Tests
