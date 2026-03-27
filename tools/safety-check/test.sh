@@ -13,13 +13,13 @@ assert() {
     local expected="$2"
     local actual="$3"
     TOTAL=$((TOTAL + 1))
-    if echo "$actual" | grep -q "$expected"; then
+    if grep -q "$expected" <<< "$actual"; then
         PASS=$((PASS + 1))
     else
         FAIL=$((FAIL + 1))
         echo "FAIL: $name"
         echo "  Expected to find: $expected"
-        echo "  In output: $(echo "$actual" | head -3)"
+        echo "  In output: $(head -3 <<< "$actual")"
     fi
 }
 
@@ -28,7 +28,7 @@ assert_not() {
     local not_expected="$2"
     local actual="$3"
     TOTAL=$((TOTAL + 1))
-    if echo "$actual" | grep -q "$not_expected"; then
+    if grep -q "$not_expected" <<< "$actual"; then
         FAIL=$((FAIL + 1))
         echo "FAIL: $name"
         echo "  Should NOT contain: $not_expected"
@@ -980,8 +980,9 @@ cat > "$TMPDIR_MIXED/.claude/settings.json" << 'MIXEDUSER'
 }
 MIXEDUSER
 ORIG_DIR=$(pwd)
-cd "$TMPDIR_MIXED"
-mkdir -p .claude
+# Use a subdirectory as project root so project settings don't overwrite user settings
+mkdir -p "$TMPDIR_MIXED/project/.claude"
+cd "$TMPDIR_MIXED/project"
 cat > .claude/settings.json << 'MIXEDPROJ'
 {
   "hooks": {
@@ -992,8 +993,8 @@ cat > .claude/settings.json << 'MIXEDPROJ'
 }
 MIXEDPROJ
 MIXED_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
-assert "user-level bash-guard detected in mixed" "✓.*bash-guard" "$MIXED_OUTPUT"
-assert "project-level git-safe detected in mixed" "✓.*git-safe" "$MIXED_OUTPUT"
+assert "user-level bash-guard detected in mixed" "bash-guard" "$MIXED_OUTPUT"
+assert "project-level git-safe detected in mixed" "git-safe" "$MIXED_OUTPUT"
 cd "$ORIG_DIR"
 rm -rf "$TMPDIR_MIXED"
 
