@@ -373,6 +373,8 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **Background agent worktree can silently change parent session CWD.** After a background Agent with `isolation: "worktree"` completes, the parent session's working directory can [silently drift to the worktree path](https://github.com/anthropics/claude-code/issues/38448). Subsequent commands execute in the wrong directory without warning. No hook can detect this because the CWD change happens outside the tool-call lifecycle. Verify your working directory (`pwd`) after background worktree agents complete.
 
+**Exit code 2 silently disables hooks for Edit/Write tools.** If a hook script exits with code 2, Claude Code [treats it as a crash](https://github.com/anthropics/claude-code/issues/37210). For Bash tool calls, crashed hooks still block. For Edit and Write tools, crashed hooks are silently ignored and the operation proceeds. enforce-hooks generates hooks that always exit 0, so this does not affect generated hooks. But custom hook scripts that use `exit 2` on the deny path will appear to work in Bash tests and silently fail on Edit/Write. Always use `exit 0` with `{"decision":"block","reason":"..."}` JSON on stdout.
+
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
 ## Tests
