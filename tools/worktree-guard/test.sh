@@ -55,6 +55,8 @@ setup_clean_repo() {
   mkdir -p "$TMPDIR/repo"
   cd "$TMPDIR/repo"
   git init -q
+  git config user.email "test@test.com"
+  git config user.name "Test"
   git checkout -b main 2>/dev/null || true
   echo "initial" > file.txt
   git add file.txt

@@ -60,19 +60,19 @@ secrets.json
 EOF
 
 assert_blocked "Write to .env is blocked" \
-  '{"tool_name":"Write","tool_input":{"file_path":".env","content":"SECRET=foo"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/.env","content":"SECRET=foo"}}'
 
 assert_blocked "Edit .env is blocked" \
-  '{"tool_name":"Edit","tool_input":{"file_path":".env","old_string":"a","new_string":"b"}}'
+  '{"tool_name":"Edit","tool_input":{"file_path":"'"$(pwd)"'/.env","old_string":"a","new_string":"b"}}'
 
 assert_allowed "Write to config.json is allowed" \
-  '{"tool_name":"Write","tool_input":{"file_path":"config.json","content":"{}"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"/tmp/test/config.json","content":"{}"}}'
 
 assert_blocked "Write to secrets.json is blocked" \
-  '{"tool_name":"Write","tool_input":{"file_path":"secrets.json","content":"{}"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/secrets.json","content":"{}"}}'
 
 assert_allowed "Write to public.json is allowed" \
-  '{"tool_name":"Write","tool_input":{"file_path":"public.json","content":"{}"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"/tmp/test/public.json","content":"{}"}}'
 
 # --- Test: Glob patterns ---
 echo ""
@@ -84,19 +84,19 @@ credentials.*
 EOF
 
 assert_blocked "Write to server.pem is blocked" \
-  '{"tool_name":"Write","tool_input":{"file_path":"server.pem","content":"cert"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/server.pem","content":"cert"}}'
 
 assert_blocked "Write to path/to/id_rsa.key is blocked" \
-  '{"tool_name":"Write","tool_input":{"file_path":"path/to/id_rsa.key","content":"key"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/path/to/id_rsa.key","content":"key"}}'
 
 assert_blocked "Write to credentials.yaml is blocked" \
-  '{"tool_name":"Write","tool_input":{"file_path":"credentials.yaml","content":"{}"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/credentials.yaml","content":"{}"}}'
 
 assert_allowed "Write to readme.md is allowed" \
-  '{"tool_name":"Write","tool_input":{"file_path":"readme.md","content":"hello"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"/tmp/test/readme.md","content":"hello"}}'
 
 assert_blocked "Write to nested/cert.pem is blocked" \
-  '{"tool_name":"Write","tool_input":{"file_path":"nested/cert.pem","content":"cert"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/nested/cert.pem","content":"cert"}}'
 
 # --- Test: Directory patterns ---
 echo ""
@@ -107,16 +107,16 @@ secrets/
 EOF
 
 assert_blocked "Write to secrets/api-key is blocked" \
-  '{"tool_name":"Write","tool_input":{"file_path":"secrets/api-key","content":"key"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/secrets/api-key","content":"key"}}'
 
 assert_blocked "Write to .ssh/authorized_keys is blocked" \
-  '{"tool_name":"Write","tool_input":{"file_path":".ssh/authorized_keys","content":"ssh-rsa"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/.ssh/authorized_keys","content":"ssh-rsa"}}'
 
 assert_allowed "Write to src/main.rs is allowed" \
-  '{"tool_name":"Write","tool_input":{"file_path":"src/main.rs","content":"fn main(){}"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"/tmp/test/src/main.rs","content":"fn main(){}"}}'
 
 assert_blocked "Write to secrets/nested/deep is blocked" \
-  '{"tool_name":"Write","tool_input":{"file_path":"secrets/nested/deep/file","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/secrets/nested/deep/file","content":"x"}}'
 
 # --- Test: Bash command interception ---
 echo ""
@@ -166,13 +166,13 @@ secrets.json
 EOF
 
 assert_blocked "Config with comments: .env still blocked" \
-  '{"tool_name":"Write","tool_input":{"file_path":".env","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/.env","content":"x"}}'
 
 assert_blocked "Config with comments: secrets.json still blocked" \
-  '{"tool_name":"Write","tool_input":{"file_path":"secrets.json","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/secrets.json","content":"x"}}'
 
 assert_allowed "Config with comments: readme.md still allowed" \
-  '{"tool_name":"Write","tool_input":{"file_path":"readme.md","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"/tmp/test/readme.md","content":"x"}}'
 
 # --- Test: Non-intercepted tools (write-protect only, no [deny]) ---
 echo ""
@@ -213,7 +213,7 @@ echo "--- Missing config ---"
 TOTAL=$((TOTAL + 1))
 old_config="$FILE_GUARD_CONFIG"
 export FILE_GUARD_CONFIG="$TMPDIR/nonexistent"
-result=$(echo '{"tool_name":"Write","tool_input":{"file_path":".env","content":"x"}}' | bash "$HOOK" 2>/dev/null) || true
+result=$(echo '{"tool_name":"Write","tool_input":{"file_path":"/tmp/test/.env","content":"x"}}' | bash "$HOOK" 2>/dev/null) || true
 if echo "$result" | grep -q '"decision":"block"'; then
   FAIL=$((FAIL + 1))
   echo "  FAIL: No config should allow everything"
@@ -232,13 +232,13 @@ cat > "$CONFIG" <<'EOF'
 EOF
 
 assert_blocked "Write to .env.local is blocked" \
-  '{"tool_name":"Write","tool_input":{"file_path":".env.local","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/.env.local","content":"x"}}'
 
 assert_blocked "Write to .env.production is blocked" \
-  '{"tool_name":"Write","tool_input":{"file_path":".env.production","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/.env.production","content":"x"}}'
 
 assert_allowed "Write to env.example is allowed" \
-  '{"tool_name":"Write","tool_input":{"file_path":"env.example","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"/tmp/test/env.example","content":"x"}}'
 
 # --- Security: Path traversal bypass ---
 echo "--- Path traversal prevention ---"
@@ -249,25 +249,25 @@ config/
 EOF
 
 assert_blocked "Traversal subdir/../.env is caught" \
-  '{"tool_name":"Write","tool_input":{"file_path":"subdir/../.env"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/subdir/../.env"}}'
 
 assert_blocked "Deep traversal a/b/c/../../../.env is caught" \
-  '{"tool_name":"Write","tool_input":{"file_path":"a/b/c/../../../.env"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/a/b/c/../../../.env"}}'
 
 assert_blocked "Traversal into protected dir src/../config/db.yml" \
-  '{"tool_name":"Edit","tool_input":{"file_path":"src/../config/db.yml"}}'
+  '{"tool_name":"Edit","tool_input":{"file_path":"'"$(pwd)"'/src/../config/db.yml"}}'
 
 assert_blocked "Traversal with ./ prefix ./x/../secrets.json" \
-  '{"tool_name":"Write","tool_input":{"file_path":"./x/../secrets.json"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/x/../secrets.json"}}'
 
 assert_blocked "Traversal subdir/../.env via Edit" \
-  '{"tool_name":"Edit","tool_input":{"file_path":"subdir/../.env"}}'
+  '{"tool_name":"Edit","tool_input":{"file_path":"'"$(pwd)"'/subdir/../.env"}}'
 
 assert_allowed "Non-traversal file with dots in name" \
-  '{"tool_name":"Write","tool_input":{"file_path":"test..backup.sql"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"/tmp/test/test..backup.sql"}}'
 
 assert_allowed "Normal path not affected by traversal fix" \
-  '{"tool_name":"Write","tool_input":{"file_path":"src/app.js"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"/tmp/test/src/app.js"}}'
 
 # --- Security: JSON injection resistance ---
 echo "--- JSON output validity ---"
@@ -276,7 +276,7 @@ cat > "$CONFIG" <<'EOF'
 EOF
 
 # Verify block output is valid JSON (jq can parse it)
-result=$(echo '{"tool_name":"Write","tool_input":{"file_path":".env"}}' | bash "$HOOK" 2>/dev/null) || true
+result=$(echo '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/.env"}}' | bash "$HOOK" 2>/dev/null) || true
 TOTAL=$((TOTAL + 1))
 if echo "$result" | jq . >/dev/null 2>&1; then
   PASS=$((PASS + 1))
@@ -377,10 +377,10 @@ codegen/
 EOF
 
 assert_blocked "Write to denied directory is blocked" \
-  '{"tool_name":"Write","tool_input":{"file_path":"codegen/output.ts","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/codegen/output.ts","content":"x"}}'
 
 assert_blocked "Edit in denied directory is blocked" \
-  '{"tool_name":"Edit","tool_input":{"file_path":"codegen/models.ts","old_string":"a","new_string":"b"}}'
+  '{"tool_name":"Edit","tool_input":{"file_path":"'"$(pwd)"'/codegen/models.ts","old_string":"a","new_string":"b"}}'
 
 # --- Test: [deny] blocks ALL Bash access (not just modifying) ---
 echo ""
@@ -434,7 +434,7 @@ assert_allowed "Read .env is allowed (write-protect only)" \
   '{"tool_name":"Read","tool_input":{"file_path":".env"}}'
 
 assert_blocked "Write .env is blocked (write-protect)" \
-  '{"tool_name":"Write","tool_input":{"file_path":".env","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/.env","content":"x"}}'
 
 assert_allowed "Bash cat .env is allowed (write-protect, read OK)" \
   '{"tool_name":"Bash","tool_input":{"command":"cat .env"}}'
@@ -447,7 +447,7 @@ assert_blocked "Read codegen/ is blocked (deny)" \
   '{"tool_name":"Read","tool_input":{"file_path":"codegen/file.ts"}}'
 
 assert_blocked "Write codegen/ is blocked (deny)" \
-  '{"tool_name":"Write","tool_input":{"file_path":"codegen/file.ts","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/codegen/file.ts","content":"x"}}'
 
 assert_blocked "Grep codegen/ is blocked (deny)" \
   '{"tool_name":"Grep","tool_input":{"pattern":"import","path":"codegen/"}}'
@@ -460,7 +460,7 @@ assert_allowed "Read src/app.ts is allowed (not protected)" \
   '{"tool_name":"Read","tool_input":{"file_path":"src/app.ts"}}'
 
 assert_allowed "Write src/app.ts is allowed (not protected)" \
-  '{"tool_name":"Write","tool_input":{"file_path":"src/app.ts","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"/tmp/test/src/app.ts","content":"x"}}'
 
 # --- Test: [deny] with glob patterns ---
 echo ""
@@ -542,13 +542,13 @@ assert_allowed "Read .env is allowed (write section)" \
   '{"tool_name":"Read","tool_input":{"file_path":".env"}}'
 
 assert_blocked "Write .env is blocked (write section)" \
-  '{"tool_name":"Write","tool_input":{"file_path":".env","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/.env","content":"x"}}'
 
 assert_blocked "Read codegen is blocked (deny section)" \
   '{"tool_name":"Read","tool_input":{"file_path":"codegen/file.ts"}}'
 
 assert_blocked "Write passwords.txt is blocked (back to write section)" \
-  '{"tool_name":"Write","tool_input":{"file_path":"passwords.txt","content":"x"}}'
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$(pwd)"'/passwords.txt","content":"x"}}'
 
 assert_allowed "Read passwords.txt is allowed (write section, not deny)" \
   '{"tool_name":"Read","tool_input":{"file_path":"passwords.txt"}}'

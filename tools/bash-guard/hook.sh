@@ -40,6 +40,7 @@
 #   - Scheduled task persistence (crontab, launchctl)
 #   - System service management (systemctl, service start/stop)
 #   - SSH key generation and agent management (ssh-keygen, ssh-add)
+#   - git push --force (overwrites remote history)
 #   - git filter-branch (history rewriting)
 #   - docker rm -f (force container removal)
 #   - passwd (credential modification)
@@ -554,6 +555,11 @@ fi
 # pkill -9 (mass process termination)
 if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)pkill\s+-9\s' 2>/dev/null; then
   is_allowed "kill -9" || block "pkill -9 force-kills matching processes without graceful shutdown." "Use pkill without -9 for graceful termination, or add 'allow: kill -9' to .bash-guard."
+fi
+
+# git push --force (overwrites remote history, can destroy teammates' work)
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)git\s+push\s+.*(-f\b|--force\b|--force-with-lease\b)' 2>/dev/null; then
+  is_allowed "git-force-push" || block "git push --force overwrites remote history and can destroy other contributors' work." "Use 'git push' without --force, or add 'allow: git-force-push' to .bash-guard."
 fi
 
 # git filter-branch (history rewriting, data loss risk)
