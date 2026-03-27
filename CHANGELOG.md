@@ -4,6 +4,34 @@ All notable changes to Boucle are documented here.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-03-27
+
+### Added
+
+#### worktree-guard (new, 29 tests)
+- **New hook** -- Blocks `ExitWorktree` when the worktree has uncommitted changes, untracked files, unmerged branches, or unpushed commits. Prevents data loss from [#38287](https://github.com/anthropics/claude-code/issues/38287).
+
+#### bash-guard (486 -> ~495 tests)
+- **git push --force detection** -- Blocks `git push --force`, `git push -f`, and `git push --force-with-lease`. Configurable via `allow: git-force-push`.
+
+#### safety-check (111 -> ~124 tests)
+- **7 new platform bug warnings** -- Detects permission pitfalls ([#38375](https://github.com/anthropics/claude-code/issues/38375), [#38372](https://github.com/anthropics/claude-code/issues/38372), [#38391](https://github.com/anthropics/claude-code/issues/38391), [#38409](https://github.com/anthropics/claude-code/issues/38409)), platform bugs ([#39478](https://github.com/anthropics/claude-code/issues/39478), [#39530](https://github.com/anthropics/claude-code/issues/39530), [#39814](https://github.com/anthropics/claude-code/issues/39814)), and exit-code-2 misconfiguration.
+- **"ask" permission warning** -- Warns when `permissionDecision: "ask"` is used in hooks, which permanently breaks bypass mode per [#37420](https://github.com/anthropics/claude-code/issues/37420).
+
+### Fixed
+- **worktree-guard exit code 2 to 0** -- Exit code 2 is silently ignored for Edit/Write hooks per [#37210](https://github.com/anthropics/claude-code/issues/37210). All hooks now use exit 0 with JSON block decisions.
+- **4 CI test suite failures** -- file-guard (relative path test fixtures), bash-guard (force push test ahead of implementation), worktree-guard (missing git config on Ubuntu), safety-check (bare return under set -e, broken pipe with pipefail, path collision in mixed settings test).
+
+### Documented
+- Windows compatibility notes and troubleshooting (WSL recommended)
+- 22 known platform limitations in enforce-hooks README ([#37420](https://github.com/anthropics/claude-code/issues/37420), [#36205](https://github.com/anthropics/claude-code/issues/36205), [#38448](https://github.com/anthropics/claude-code/issues/38448), and more)
+- Exit-code-2 warning in enforce Known Limitations
+
+### Stats
+- 195 Rust tests (unchanged)
+- Hook tests: bash-guard ~495, safety-check ~124, file-guard 91, git-safe 65, session-log 81, read-once 49, enforce-hooks 41, branch-guard 36, worktree-guard 29
+- Total: 1500+ tests
+
 ## [0.7.0] - 2026-03-24
 
 ### Added
