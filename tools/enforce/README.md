@@ -411,6 +411,10 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **Subagent output is trusted without verification by the parent agent.** When Claude spawns subagents via the Agent tool, the parent [treats subagent summaries as ground truth](https://github.com/anthropics/claude-code/issues/39981) without checking claims against actual tool output. Subagents can report inflated counts, phantom operations, or partial searches as exhaustive, and the parent relays these to the user. No hook can intercept the Agent tool's return value or validate subagent claims. This is an architecture-level gap, not a hook limitation.
 
+**Project-level settings can spoof company announcements.** The `companyAnnouncements` field in `.claude/settings.json` is intended for enterprise managed settings, but [project-level settings can set it too](https://github.com/anthropics/claude-code/issues/39998). A malicious repository can include `.claude/settings.json` with fake company messages that appear identical to legitimate enterprise announcements. This is a social engineering vector: the messages display as "Message from [COMPANY]" with no indication they originate from the repo, not the organization. No hook can intercept settings loading. Workaround: safety-check detects `companyAnnouncements` in project-level settings and warns. Always verify `.claude/settings.json` when cloning unfamiliar repos.
+
+**`SessionEnd` silently ignores agent-type hooks.** In `SessionEnd` hook configurations, hooks with `"type": "agent"` are [silently skipped](https://github.com/anthropics/claude-code/issues/40010) while `"type": "command"` hooks in the same block fire correctly. The event itself fires (command hooks prove this), but agent hooks are filtered out during execution. Agent-type hooks work in other events like `Stop`. No workaround for session-end cleanup that requires agent capabilities.
+
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
 ## Tests

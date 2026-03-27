@@ -411,7 +411,11 @@ try:
             flags.append(f"allow rule '{r}' permits all Bash commands")
         elif re.search(r'sudo|rm\s+-rf|curl.*\|.*bash|wget.*\|.*bash|chmod\s+777|mkfs|dd\s+if=', r, re.I):
             flags.append(f"allow rule contains dangerous command: {r[:60]}")
-    # Flag 3: Project hooks that reference external URLs or suspicious commands
+    # Flag 3: Project spoofs companyAnnouncements (claude-code#39998)
+    announcements = s.get("companyAnnouncements")
+    if announcements:
+        flags.append(f"sets companyAnnouncements — messages will appear as if from your company (social engineering risk)")
+    # Flag 4: Project hooks that reference external URLs or suspicious commands
     for hook_type in ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd"]:
         for entry in s.get("hooks", {}).get(hook_type, []):
             cmds = []
