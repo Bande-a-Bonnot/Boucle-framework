@@ -391,6 +391,10 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **Stop hooks fail after worktree removal.** After a worktree is merged and deleted, stop hooks [fail with ENOENT](https://github.com/anthropics/claude-code/issues/39432) because the session's CWD no longer exists. Node.js reports the error as `/bin/sh` not found rather than the missing CWD. Any cleanup hooks registered for the session will not run.
 
+**Worktree memory resolves to the wrong project directory.** When Claude Code launches from a linked git worktree, it uses `git rev-parse --git-common-dir` to derive the project path, which resolves to the [main worktree's directory](https://github.com/anthropics/claude-code/issues/39920). Both worktrees share the same memory and CLAUDE.md files, causing cross-contamination of project-specific rules. Hooks fire correctly in either worktree, but any `@enforced` rules loaded from the wrong CLAUDE.md may not match the project context. There is no workaround at the hook level; this requires a platform fix.
+
+**Bash permission heuristic misparses escaped semicolons.** Claude Code's built-in bash permission system [misparses `\;` in find -exec](https://github.com/anthropics/claude-code/issues/39911) as a command separator, classifying the redirect suffix (e.g., `2` from `2>/dev/null`) as a standalone command. This does not affect hooks (bash-guard receives the full command string and parses it correctly), but it causes confusing permission prompts for safe find commands. If users report permission prompts for `2` as a command, this is the platform bug.
+
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
 ## Tests
