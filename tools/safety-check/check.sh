@@ -138,6 +138,25 @@ _merge_hooks
 
 has_hook() { echo " $DETECTED_HOOKS " | grep -q " $1 "; }
 
+# Check if a specific hook event type (e.g., "Stop") is configured in any settings file
+has_hook_type() {
+    local event_type="$1"
+    for sf in "$SETTINGS_FILE" "$PROJECT_SETTINGS"; do
+        [ -f "$sf" ] || continue
+        if python3 -c "
+import json,sys
+try:
+    s=json.load(open(sys.argv[1]))
+    hooks=s.get('hooks',{}).get(sys.argv[2],[])
+    sys.exit(0 if hooks else 1)
+except: sys.exit(1)
+" "$sf" "$event_type" 2>/dev/null; then
+            return 0
+        fi
+    done
+    return 1
+}
+
 echo ""
 printf "${BOLD}Claude Code Safety Check${NC}\n"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -417,6 +436,29 @@ except: pass
     if [ -n "$ORPHAN_PLUGINS" ]; then
         WARNINGS+=("Non-enabled marketplace plugins with hooks detected:${ORPHAN_PLUGINS}. These plugins are NOT in your enabledPlugins list but their hooks still fire on every session. Remove unwanted plugin directories from ${MARKETPLACE_DIR} to prevent unauthorized hook execution. (see claude-code#40013)")
     fi
+
+    # Marketplace plugins with hooks installed silently (claude-code#40036)
+    # Even enabled plugins may have hooks the user never consented to.
+    PLUGINS_WITH_HOOKS=""
+    for plugin_dir in "$MARKETPLACE_DIR"/*/plugins/*/; do
+        [ -d "$plugin_dir" ] || continue
+        plugin_name=$(basename "$plugin_dir")
+        if [ -d "${plugin_dir}hooks" ]; then
+            # Count hook files
+            hook_count=$(find "${plugin_dir}hooks" -type f 2>/dev/null | wc -l | tr -d ' ')
+            if [ "$hook_count" -gt 0 ]; then
+                PLUGINS_WITH_HOOKS="${PLUGINS_WITH_HOOKS} ${plugin_name}(${hook_count} hooks)"
+            fi
+        fi
+    done
+    if [ -n "$PLUGINS_WITH_HOOKS" ]; then
+        WARNINGS+=("Marketplace plugins with executable hooks:${PLUGINS_WITH_HOOKS}. The /plugin install flow does not disclose that these plugins include hooks. These hooks run on every session with your full user privileges and no consent prompt. Inspect hook contents: ls ~/.claude/plugins/marketplaces/*/plugins/*/hooks/ (see claude-code#40036)")
+    fi
+fi
+
+# Stop hooks do not fire in VSCode extension (claude-code#40029)
+if has_hook_type "Stop"; then
+    WARNINGS+=("Stop hooks are configured but do not fire in the VSCode extension. If you use Claude Code in VSCode, your Stop hooks are silently skipped. PreToolUse, PostToolUse, and SessionStart hooks work in both CLI and VSCode. (see claude-code#40029)")
 fi
 
 # bypassPermissions in settings.local.json is silently ignored (claude-code#40014)
