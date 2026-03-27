@@ -227,6 +227,29 @@ PYEOF
     if [ "$DENY_DENYWRITE_CONFLICT" = "true" ]; then
         WARNINGS+=("Filepath deny rules combined with sandbox denyWrite can cause ALL Bash calls to fail with bwrap errors. bwrap tries to create dummy files for denied filepaths, which conflicts with denyWrite. Use glob patterns in deny rules instead of exact paths. (see claude-code#38375)")
     fi
+
+    # Path deny rules don't apply to Bash tool (claude-code#39987)
+    HAS_PATH_DENY=$(python3 - "$SETTINGS_FILE" << 'PYEOF'
+import json, sys
+try:
+    with open(sys.argv[1]) as f:
+        s = json.load(f)
+    deny_rules = s.get("permissions", {}).get("deny", [])
+    for rule in deny_rules:
+        r = rule if isinstance(rule, str) else ""
+        if "(" in r:
+            tool_part = r.split("(")[0].strip()
+            if tool_part in ("Read", "Write", "Edit", "Glob", "Grep", "MultiEdit"):
+                print("true")
+                sys.exit(0)
+    print("false")
+except Exception:
+    print("false")
+PYEOF
+    )
+    if [ "$HAS_PATH_DENY" = "true" ] && ! has_hook bash-guard; then
+        WARNINGS+=("Path deny rules only apply to file tools (Read/Write/Edit/Glob/Grep), not to Bash. Claude can still cat, grep, or head denied files via shell commands. Install bash-guard to cover Bash tool access, or use OS-level permissions for true isolation. (see claude-code#39987)")
+    fi
 fi
 
 # bypassPermissions mode instability (claude-code#38372: resets to 'default' in long sessions)
