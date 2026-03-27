@@ -390,6 +390,53 @@ if has_hook worktree-guard; then
     WARNINGS+=("Worktree isolation can silently fail. The Agent tool's isolation:worktree option may run the agent in the main repo instead of a worktree, with worktreePath:done and worktreeBranch:undefined. worktree-guard protects ExitWorktree but cannot detect failed worktree creation. Verify agent results if you rely on branch isolation. (see claude-code#39886)")
 fi
 
+# Non-enabled marketplace plugins still fire hooks (claude-code#40013)
+# Installed-but-not-enabled plugins have their hooks loaded and executed anyway.
+MARKETPLACE_DIR="${HOME}/.claude/plugins/marketplaces"
+if [ -d "$MARKETPLACE_DIR" ]; then
+    ORPHAN_PLUGINS=""
+    ENABLED_PLUGINS=$(python3 -c "
+import json,sys,os
+try:
+    sf = os.path.expanduser('~/.claude/settings.json')
+    s = json.load(open(sf))
+    for p in s.get('enabledPlugins', []):
+        print(p.split('/')[-1] if '/' in p else p)
+except: pass
+" 2>/dev/null)
+    for plugin_dir in "$MARKETPLACE_DIR"/*/plugins/*/; do
+        [ -d "$plugin_dir" ] || continue
+        plugin_name=$(basename "$plugin_dir")
+        if ! echo "$ENABLED_PLUGINS" | grep -qF "$plugin_name" 2>/dev/null; then
+            # Check if it actually has hooks
+            if [ -d "${plugin_dir}hooks" ] || ls "${plugin_dir}"*.sh >/dev/null 2>&1; then
+                ORPHAN_PLUGINS="${ORPHAN_PLUGINS} ${plugin_name}"
+            fi
+        fi
+    done
+    if [ -n "$ORPHAN_PLUGINS" ]; then
+        WARNINGS+=("Non-enabled marketplace plugins with hooks detected:${ORPHAN_PLUGINS}. These plugins are NOT in your enabledPlugins list but their hooks still fire on every session. Remove unwanted plugin directories from ${MARKETPLACE_DIR} to prevent unauthorized hook execution. (see claude-code#40013)")
+    fi
+fi
+
+# bypassPermissions in settings.local.json is silently ignored (claude-code#40014)
+SETTINGS_LOCAL="${HOME}/.claude/settings.local.json"
+[ ! -f "$SETTINGS_LOCAL" ] && SETTINGS_LOCAL=".claude/settings.local.json"
+if [ -f "$SETTINGS_LOCAL" ]; then
+    HAS_BYPASS_LOCAL=$(python3 -c "
+import json,sys
+try:
+    s=json.load(open(sys.argv[1]))
+    pm = s.get('permission-mode','') or s.get('permissions',{}).get('permissionMode','') or s.get('permissions',{}).get('dangerouslySkipPermissions','')
+    if pm: print('true')
+    else: print('false')
+except: print('false')
+" "$SETTINGS_LOCAL" 2>/dev/null)
+    if [ "$HAS_BYPASS_LOCAL" = "true" ]; then
+        WARNINGS+=("settings.local.json sets permission/bypass configuration, but these settings are silently ignored. The only working method to enable bypass mode is the CLI flag --dangerously-skip-permissions. Remove the setting to avoid confusion. (see claude-code#40014)")
+    fi
+fi
+
 # Supply-chain: detect suspicious project-level .claude/settings.json (claude-code#38319)
 # A malicious repo can include .claude/settings.json that adds hooks or loosens permissions.
 # Project settings merge with user settings — they can ADD hooks and allow rules.
