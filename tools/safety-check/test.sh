@@ -1358,6 +1358,40 @@ NOUPDINPUT_OUTPUT=$(cd "$TMPDIR_NOUPDINPUT" && bash "$CHECK_SCRIPT" 2>&1) || tru
 assert_not "no updatedInput warning for block-only hooks" "39814" "$NOUPDINPUT_OUTPUT"
 rm -rf "$TMPDIR_NOUPDINPUT"
 
+# === Test: Worktree isolation silent failure warning (#39886) ===
+TMPDIR_WTISOLATION=$(mktemp -d)
+mkdir -p "$TMPDIR_WTISOLATION/.claude/hooks"
+cat > "$TMPDIR_WTISOLATION/.claude/hooks/worktree-guard.sh" << 'HOOKEOF'
+#!/bin/bash
+echo '{"decision":"block","reason":"uncommitted changes"}'
+exit 0
+HOOKEOF
+chmod +x "$TMPDIR_WTISOLATION/.claude/hooks/worktree-guard.sh"
+cat > "$TMPDIR_WTISOLATION/.claude/settings.json" << 'SETTINGSEOF'
+{
+  "hooks": {
+    "PreToolUse": [{"matcher":"ExitWorktree","type":"command","command":"bash .claude/hooks/worktree-guard.sh"}]
+  }
+}
+SETTINGSEOF
+WTISOLATION_OUTPUT=$(cd "$TMPDIR_WTISOLATION" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "worktree isolation warning present" "39886" "$WTISOLATION_OUTPUT"
+assert "worktree isolation warning mentions silently" "silently" "$WTISOLATION_OUTPUT"
+rm -rf "$TMPDIR_WTISOLATION"
+
+TMPDIR_NOWTISOLATION=$(mktemp -d)
+mkdir -p "$TMPDIR_NOWTISOLATION/.claude"
+cat > "$TMPDIR_NOWTISOLATION/.claude/settings.json" << 'SETTINGSEOF'
+{
+  "hooks": {
+    "PreToolUse": [{"type":"command","command":"bash guard.sh"}]
+  }
+}
+SETTINGSEOF
+NOWTISOLATION_OUTPUT=$(cd "$TMPDIR_NOWTISOLATION" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no worktree isolation warning without worktree-guard" "39886" "$NOWTISOLATION_OUTPUT"
+rm -rf "$TMPDIR_NOWTISOLATION"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"

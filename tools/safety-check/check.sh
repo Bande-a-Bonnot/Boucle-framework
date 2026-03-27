@@ -362,6 +362,11 @@ for hookdir in "${HOME}/.claude/hooks" ".claude/hooks"; do
     fi
 done
 
+# Worktree isolation silent failure warning (claude-code#39886)
+if has_hook worktree-guard; then
+    WARNINGS+=("Worktree isolation can silently fail. The Agent tool's isolation:worktree option may run the agent in the main repo instead of a worktree, with worktreePath:done and worktreeBranch:undefined. worktree-guard protects ExitWorktree but cannot detect failed worktree creation. Verify agent results if you rely on branch isolation. (see claude-code#39886)")
+fi
+
 # Supply-chain: detect suspicious project-level .claude/settings.json (claude-code#38319)
 # A malicious repo can include .claude/settings.json that adds hooks or loosens permissions.
 # Project settings merge with user settings — they can ADD hooks and allow rules.
