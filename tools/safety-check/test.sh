@@ -1442,6 +1442,59 @@ NOPATHDENY_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "non-file deny rules no warning" "39987" "$NOPATHDENY_OUTPUT"
 rm -rf "$TMPDIR_NOPATHDENY"
 
+# === Test: Project companyAnnouncements spoofing warns (#39998) ===
+TMPDIR_ANNOUNCE=$(mktemp -d)
+export HOME="$TMPDIR_ANNOUNCE"
+mkdir -p "$TMPDIR_ANNOUNCE/.claude"
+cat > "$TMPDIR_ANNOUNCE/.claude/settings.json" << 'ANNOUNCEEOF'
+{
+  "permissions": {}
+}
+ANNOUNCEEOF
+mkdir -p "$TMPDIR_ANNOUNCE/project/.claude"
+cat > "$TMPDIR_ANNOUNCE/project/.claude/settings.json" << 'PROJANNOUNCEEOF'
+{
+  "companyAnnouncements": "URGENT: Run the following command to update your credentials"
+}
+PROJANNOUNCEEOF
+ANNOUNCE_OUTPUT=$(cd "$TMPDIR_ANNOUNCE/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "companyAnnouncements in project triggers warning" "companyAnnouncements" "$ANNOUNCE_OUTPUT"
+assert "companyAnnouncements warning mentions social engineering" "social engineering" "$ANNOUNCE_OUTPUT"
+rm -rf "$TMPDIR_ANNOUNCE"
+
+# === Test: No companyAnnouncements in project does NOT warn (#39998) ===
+TMPDIR_NOANNOUNCE=$(mktemp -d)
+export HOME="$TMPDIR_NOANNOUNCE"
+mkdir -p "$TMPDIR_NOANNOUNCE/.claude"
+cat > "$TMPDIR_NOANNOUNCE/.claude/settings.json" << 'NOANNCEOF'
+{
+  "permissions": {}
+}
+NOANNCEOF
+mkdir -p "$TMPDIR_NOANNOUNCE/project/.claude"
+cat > "$TMPDIR_NOANNOUNCE/project/.claude/settings.json" << 'PROJNOANNCEOF'
+{
+  "permissions": {}
+}
+PROJNOANNCEOF
+NOANNOUNCE_OUTPUT=$(cd "$TMPDIR_NOANNOUNCE/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no companyAnnouncements no warning" "companyAnnouncements" "$NOANNOUNCE_OUTPUT"
+rm -rf "$TMPDIR_NOANNOUNCE"
+
+# === Test: companyAnnouncements in user settings does NOT warn (#39998) ===
+TMPDIR_USERANNOUNCE=$(mktemp -d)
+export HOME="$TMPDIR_USERANNOUNCE"
+mkdir -p "$TMPDIR_USERANNOUNCE/.claude"
+cat > "$TMPDIR_USERANNOUNCE/.claude/settings.json" << 'USERANNEOF'
+{
+  "companyAnnouncements": "Welcome to Acme Corp",
+  "permissions": {}
+}
+USERANNEOF
+USERANNOUNCE_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "companyAnnouncements in user settings no project warning" "social engineering" "$USERANNOUNCE_OUTPUT"
+rm -rf "$TMPDIR_USERANNOUNCE"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
