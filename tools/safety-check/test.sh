@@ -1495,6 +1495,122 @@ USERANNOUNCE_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "companyAnnouncements in user settings no project warning" "social engineering" "$USERANNOUNCE_OUTPUT"
 rm -rf "$TMPDIR_USERANNOUNCE"
 
+# === Test: bypassPermissions in settings.local.json warns (#40014) ===
+TMPDIR_BYPASSLOCAL=$(mktemp -d)
+export HOME="$TMPDIR_BYPASSLOCAL"
+mkdir -p "$TMPDIR_BYPASSLOCAL/.claude"
+cat > "$TMPDIR_BYPASSLOCAL/.claude/settings.json" << 'BYPASSLOCALEOF'
+{
+  "permissions": {}
+}
+BYPASSLOCALEOF
+cat > "$TMPDIR_BYPASSLOCAL/.claude/settings.local.json" << 'BYPASSLOCAL2EOF'
+{
+  "permission-mode": "bypassPermissions"
+}
+BYPASSLOCAL2EOF
+mkdir -p "$TMPDIR_BYPASSLOCAL/project/.claude"
+cat > "$TMPDIR_BYPASSLOCAL/project/.claude/settings.json" << 'BYPASSLOCAL3EOF'
+{
+  "permissions": {}
+}
+BYPASSLOCAL3EOF
+BYPASSLOCAL_OUTPUT=$(cd "$TMPDIR_BYPASSLOCAL/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "bypassPermissions in settings.local.json warns" "silently ignored" "$BYPASSLOCAL_OUTPUT"
+assert "bypassPermissions local mentions CLI flag" "dangerously-skip-permissions" "$BYPASSLOCAL_OUTPUT"
+rm -rf "$TMPDIR_BYPASSLOCAL"
+
+# === Test: No bypass in settings.local.json does NOT warn (#40014) ===
+TMPDIR_NOBYPASSLOCAL=$(mktemp -d)
+export HOME="$TMPDIR_NOBYPASSLOCAL"
+mkdir -p "$TMPDIR_NOBYPASSLOCAL/.claude"
+cat > "$TMPDIR_NOBYPASSLOCAL/.claude/settings.json" << 'NOBYPASSEOF'
+{
+  "permissions": {}
+}
+NOBYPASSEOF
+mkdir -p "$TMPDIR_NOBYPASSLOCAL/project/.claude"
+cat > "$TMPDIR_NOBYPASSLOCAL/project/.claude/settings.json" << 'NOBYPASS2EOF'
+{
+  "permissions": {}
+}
+NOBYPASS2EOF
+NOBYPASSLOCAL_OUTPUT=$(cd "$TMPDIR_NOBYPASSLOCAL/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no bypass local no warning" "silently ignored" "$NOBYPASSLOCAL_OUTPUT"
+rm -rf "$TMPDIR_NOBYPASSLOCAL"
+
+# === Test: dangerouslySkipPermissions in settings.local.json also warns (#40014) ===
+TMPDIR_DANGLOCAL=$(mktemp -d)
+export HOME="$TMPDIR_DANGLOCAL"
+mkdir -p "$TMPDIR_DANGLOCAL/.claude"
+cat > "$TMPDIR_DANGLOCAL/.claude/settings.json" << 'DANGLOCALEOF'
+{
+  "permissions": {}
+}
+DANGLOCALEOF
+cat > "$TMPDIR_DANGLOCAL/.claude/settings.local.json" << 'DANGLOCAL2EOF'
+{
+  "permissions": {
+    "dangerouslySkipPermissions": true
+  }
+}
+DANGLOCAL2EOF
+mkdir -p "$TMPDIR_DANGLOCAL/project/.claude"
+cat > "$TMPDIR_DANGLOCAL/project/.claude/settings.json" << 'DANGLOCAL3EOF'
+{
+  "permissions": {}
+}
+DANGLOCAL3EOF
+DANGLOCAL_OUTPUT=$(cd "$TMPDIR_DANGLOCAL/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "dangerouslySkipPermissions in local also warns" "silently ignored" "$DANGLOCAL_OUTPUT"
+rm -rf "$TMPDIR_DANGLOCAL"
+
+# === Test: Non-enabled marketplace plugins with hooks warns (#40013) ===
+TMPDIR_ORPHAN=$(mktemp -d)
+export HOME="$TMPDIR_ORPHAN"
+mkdir -p "$TMPDIR_ORPHAN/.claude"
+cat > "$TMPDIR_ORPHAN/.claude/settings.json" << 'ORPHANEOF'
+{
+  "enabledPlugins": ["some-other-plugin"],
+  "permissions": {}
+}
+ORPHANEOF
+# Create a marketplace plugin that is NOT in enabledPlugins
+mkdir -p "$TMPDIR_ORPHAN/.claude/plugins/marketplaces/claude-plugins-official/plugins/explanatory-output-style/hooks"
+echo '#!/bin/bash' > "$TMPDIR_ORPHAN/.claude/plugins/marketplaces/claude-plugins-official/plugins/explanatory-output-style/hooks/session-start.sh"
+mkdir -p "$TMPDIR_ORPHAN/project/.claude"
+cat > "$TMPDIR_ORPHAN/project/.claude/settings.json" << 'ORPHAN2EOF'
+{
+  "permissions": {}
+}
+ORPHAN2EOF
+ORPHAN_OUTPUT=$(cd "$TMPDIR_ORPHAN/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "non-enabled marketplace plugin with hooks warns" "Non-enabled marketplace" "$ORPHAN_OUTPUT"
+assert "orphan plugin warning mentions 40013" "40013" "$ORPHAN_OUTPUT"
+rm -rf "$TMPDIR_ORPHAN"
+
+# === Test: Enabled marketplace plugin does NOT warn (#40013) ===
+TMPDIR_ENABLED=$(mktemp -d)
+export HOME="$TMPDIR_ENABLED"
+mkdir -p "$TMPDIR_ENABLED/.claude"
+cat > "$TMPDIR_ENABLED/.claude/settings.json" << 'ENABLEDEOF'
+{
+  "enabledPlugins": ["claude-plugins-official/plugins/explanatory-output-style"],
+  "permissions": {}
+}
+ENABLEDEOF
+mkdir -p "$TMPDIR_ENABLED/.claude/plugins/marketplaces/claude-plugins-official/plugins/explanatory-output-style/hooks"
+echo '#!/bin/bash' > "$TMPDIR_ENABLED/.claude/plugins/marketplaces/claude-plugins-official/plugins/explanatory-output-style/hooks/session-start.sh"
+mkdir -p "$TMPDIR_ENABLED/project/.claude"
+cat > "$TMPDIR_ENABLED/project/.claude/settings.json" << 'ENABLED2EOF'
+{
+  "permissions": {}
+}
+ENABLED2EOF
+ENABLED_OUTPUT=$(cd "$TMPDIR_ENABLED/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "enabled plugin no orphan warning" "Non-enabled marketplace" "$ENABLED_OUTPUT"
+rm -rf "$TMPDIR_ENABLED"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
