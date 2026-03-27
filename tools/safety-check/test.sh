@@ -1224,6 +1224,45 @@ COLNAME_OUTPUT=$(cd "$TMPDIR_COLNAME" && bash "$CHECK_SCRIPT" 2>&1) || true
 assert "colon warning shows filename" ":slug.tsx" "$COLNAME_OUTPUT"
 rm -rf "$TMPDIR_COLNAME"
 
+# === Test: Exit code 2 in hooks warning (#37210) ===
+TMPDIR_EXIT2=$(mktemp -d)
+mkdir -p "$TMPDIR_EXIT2/.claude/hooks"
+cat > "$TMPDIR_EXIT2/.claude/hooks/my-hook.sh" << 'HOOKEOF'
+#!/bin/bash
+echo '{"decision":"block","reason":"blocked"}'
+exit 2
+HOOKEOF
+cat > "$TMPDIR_EXIT2/.claude/settings.json" << 'SETTINGSEOF'
+{
+  "hooks": {
+    "PreToolUse": [{"type":"command","command":"bash .claude/hooks/my-hook.sh"}]
+  }
+}
+SETTINGSEOF
+EXIT2_OUTPUT=$(cd "$TMPDIR_EXIT2" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "exit 2 warning present" "exit code 2" "$EXIT2_OUTPUT"
+assert "exit 2 warning references #37210" "37210" "$EXIT2_OUTPUT"
+assert "exit 2 warning mentions block JSON" "decision" "$EXIT2_OUTPUT"
+rm -rf "$TMPDIR_EXIT2"
+
+TMPDIR_NOEXIT2=$(mktemp -d)
+mkdir -p "$TMPDIR_NOEXIT2/.claude/hooks"
+cat > "$TMPDIR_NOEXIT2/.claude/hooks/good-hook.sh" << 'HOOKEOF'
+#!/bin/bash
+echo '{"decision":"block","reason":"blocked"}'
+exit 0
+HOOKEOF
+cat > "$TMPDIR_NOEXIT2/.claude/settings.json" << 'SETTINGSEOF'
+{
+  "hooks": {
+    "PreToolUse": [{"type":"command","command":"bash .claude/hooks/good-hook.sh"}]
+  }
+}
+SETTINGSEOF
+NOEXIT2_OUTPUT=$(cd "$TMPDIR_NOEXIT2" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no exit 2 warning for good hooks" "37210" "$NOEXIT2_OUTPUT"
+rm -rf "$TMPDIR_NOEXIT2"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"

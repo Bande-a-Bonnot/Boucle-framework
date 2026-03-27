@@ -105,6 +105,7 @@ Beyond the scored checks, safety-check detects platform bugs and configuration p
 | Windows | Hooks fire only ~18% of the time ([#37988](https://github.com/anthropics/claude-code/issues/37988)) |
 | CLI version | Known regressions in specific versions ([#37597](https://github.com/anthropics/claude-code/issues/37597), [#37878](https://github.com/anthropics/claude-code/issues/37878)) |
 | Hook "ask" permission | `permissionDecision: "ask"` permanently breaks bypass mode ([#37420](https://github.com/anthropics/claude-code/issues/37420)) |
+| Hook exit code 2 | `exit 2` treated as crash, deny silently ignored for Edit/Write ([#37210](https://github.com/anthropics/claude-code/issues/37210)) |
 
 ## No dependencies
 

@@ -302,6 +302,25 @@ if [ -d ".claude/hooks" ]; then
     fi
 fi
 
+# Hooks using exit code 2 for deny may be silently ignored (claude-code#37210)
+# Exit 2 can be treated as a hook crash, causing Claude to proceed despite the deny.
+# Correct pattern: exit 0 with {"decision":"block","reason":"..."} JSON on stdout.
+for hookdir in "${HOME}/.claude/hooks" ".claude/hooks"; do
+    [ -d "$hookdir" ] || continue
+    EXIT2_HOOKS=""
+    for hookfile in "$hookdir"/*; do
+        [ -f "$hookfile" ] || continue
+        if grep -qlE 'exit\s+2' "$hookfile" 2>/dev/null; then
+            EXIT2_HOOKS="${EXIT2_HOOKS} $(basename "$hookfile")"
+        fi
+    done
+    if [ -n "$EXIT2_HOOKS" ]; then
+        scope="Hook(s)"
+        [ "$hookdir" = ".claude/hooks" ] && scope="Project hook(s)"
+        WARNINGS+=("${scope} use exit code 2 for deny:${EXIT2_HOOKS}. Exit 2 is treated as a hook crash and may be silently ignored, especially for Edit/Write tools. Use exit 0 with {\"decision\":\"block\",\"reason\":\"...\"} JSON on stdout instead. (see claude-code#37210)")
+    fi
+done
+
 if [ ${#WARNINGS[@]} -gt 0 ]; then
     printf "${RED}${BOLD}⚠ Environment Warnings${NC}\n"
     for warn in "${WARNINGS[@]}"; do

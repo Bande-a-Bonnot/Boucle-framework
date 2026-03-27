@@ -56,7 +56,7 @@ block() {
   fi
   log "BLOCK: $msg"
   printf '{"decision":"block","reason":"%s"}\n' "$(echo "$msg" | sed 's/"/\\"/g')"
-  exit 2
+  exit 0
 }
 
 # Load config from .worktree-guard (project root or home)
