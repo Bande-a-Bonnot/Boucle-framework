@@ -232,7 +232,7 @@ git add file.txt
 git commit -q -m "cherry commit"
 CHERRY_SHA=$(git rev-parse HEAD)
 git checkout main 2>/dev/null
-git cherry-pick -q "$CHERRY_SHA"
+git cherry-pick "$CHERRY_SHA" >/dev/null 2>&1
 git checkout cherry-feature 2>/dev/null
 assert_allowed "Cherry-picked branch allows exit" \
   '{"tool_name":"ExitWorktree","tool_input":{}}'
