@@ -4,6 +4,8 @@ All notable changes to Boucle are documented here.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-03-28
+
 ### Added
 
 #### Windows PowerShell hooks (new)
@@ -13,6 +15,26 @@ All notable changes to Boucle are documented here.
 - **session-log.ps1** -- Native PowerShell equivalent. Logs every tool call with timestamp, tool name, detail, exit codes, and error detection. Same JSONL output format as the bash version.
 
 All four hooks use `ConvertFrom-Json`/`ConvertTo-Json` (built into PowerShell) instead of jq. Configure with `"command": "pwsh -File /path/to/hook.ps1"` in settings.json. See [#3](https://github.com/Bande-a-Bonnot/Boucle-framework/issues/3).
+
+#### safety-check
+- **Spaces in HOME path warning** -- Detects when `$HOME` contains spaces (e.g., Windows usernames like "Lea Chan"), which breaks all bash hooks due to word-splitting in Claude Code's hook runner ([#40084](https://github.com/anthropics/claude-code/issues/40084)).
+- **companyAnnouncements spoofing detection** -- Warns when project-level `.claude/settings.json` contains `companyAnnouncements`, which can spoof enterprise messages ([#39998](https://github.com/anthropics/claude-code/issues/39998)).
+- **Plugin hook detection** -- Warns when marketplace plugins include executable hooks installed without consent ([#40036](https://github.com/anthropics/claude-code/issues/40036)).
+- **Non-enabled plugin hook detection** -- Warns when disabled marketplace plugins still have hooks that fire ([#40013](https://github.com/anthropics/claude-code/issues/40013)).
+- **bypassPermissions settings warning** -- Warns that `bypassPermissions` in settings files is silently ignored ([#40014](https://github.com/anthropics/claude-code/issues/40014)).
+- **Path deny bypass warning** -- Warns that `settings.json` path deny rules do not apply to the Bash tool ([#39987](https://github.com/anthropics/claude-code/issues/39987)).
+- **Worktree isolation warning** -- Warns about worktree isolation failures ([#39886](https://github.com/anthropics/claude-code/issues/39886)).
+
+#### bash-guard
+- **find -exec regression tests** -- 4 tests verifying escaped semicolons are handled correctly, preventing false positives from [#39911](https://github.com/anthropics/claude-code/issues/39911).
+
+### Documented
+- **48 known platform limitations** in enforce-hooks README, up from 22 in v0.8.0. New entries cover: marketplace +x stripping ([#39954](https://github.com/anthropics/claude-code/issues/39954), [#39964](https://github.com/anthropics/claude-code/issues/39964), [#40086](https://github.com/anthropics/claude-code/issues/40086)), Stop hooks silent in VSCode ([#40029](https://github.com/anthropics/claude-code/issues/40029)), plugin install adds hooks silently ([#40036](https://github.com/anthropics/claude-code/issues/40036)), SessionEnd skips agent hooks ([#40010](https://github.com/anthropics/claude-code/issues/40010)), SDK Stop hook skip on resume ([#40022](https://github.com/anthropics/claude-code/issues/40022)), Bash bypasses path deny ([#39987](https://github.com/anthropics/claude-code/issues/39987)), subagent trust gap ([#39981](https://github.com/anthropics/claude-code/issues/39981)), companyAnnouncements spoofing ([#39998](https://github.com/anthropics/claude-code/issues/39998)), hooks fail with spaces in HOME ([#40084](https://github.com/anthropics/claude-code/issues/40084)), plugin hook +x cache loss ([#40086](https://github.com/anthropics/claude-code/issues/40086)), and more.
+
+### Stats
+- 195 Rust tests (unchanged)
+- Hook tests: bash-guard ~500, safety-check ~146, file-guard 91, git-safe 65, session-log 50, read-once 48, enforce-hooks ~52, branch-guard 35, worktree-guard 29, format ~36
+- Total: ~1550+ tests
 
 ## [0.8.0] - 2026-03-27
 
