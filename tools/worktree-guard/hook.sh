@@ -130,13 +130,41 @@ fi
 log "Base branch: $BASE"
 
 # Check 3: Unmerged commits (commits on current branch not in base)
-# Uses git cherry for content-equivalent detection: after a squash merge,
-# the original commits have different SHAs but identical patches. git cherry
-# marks these as "-" (already applied) vs "+" (truly unmerged).
+# Two-tier detection to handle squash merges correctly:
+#   Tier 1: git cherry for patch-level equivalence (single-commit squash, cherry-pick, rebase)
+#   Tier 2: per-file comparison for multi-commit squash merges where individual
+#           patches differ but the combined result matches base
 # See: https://github.com/anthropics/claude-code/issues/40137
 if ! is_allowed "unmerged"; then
   if [ -n "$CURRENT" ] && [ "$CURRENT" != "HEAD" ]; then
+    # Tier 1: git cherry compares individual patches
     TRULY_UNMERGED=$(git cherry "$BASE" "$CURRENT" 2>/dev/null | grep '^\+' || true)
+
+    if [ -n "$TRULY_UNMERGED" ]; then
+      # Tier 2: fallback for multi-commit squash merges.
+      # git cherry compares per-commit patches, so a 3-commit branch
+      # squash-merged into 1 commit won't match. Check if all files
+      # changed on the branch match their version on base.
+      MB=$(git merge-base "$BASE" "$CURRENT" 2>/dev/null || echo "")
+      if [ -n "$MB" ]; then
+        BRANCH_FILES=$(git diff --name-only "$MB" "$CURRENT" 2>/dev/null || true)
+        if [ -n "$BRANCH_FILES" ]; then
+          STILL_UNMERGED=false
+          while IFS= read -r changed_file; do
+            [ -z "$changed_file" ] && continue
+            if ! git diff --quiet "$BASE" "$CURRENT" -- "$changed_file" 2>/dev/null; then
+              STILL_UNMERGED=true
+              break
+            fi
+          done <<< "$BRANCH_FILES"
+          if ! $STILL_UNMERGED; then
+            log "SKIP: all branch changes present on $BASE (squash merge)"
+            TRULY_UNMERGED=""
+          fi
+        fi
+      fi
+    fi
+
     if [ -n "$TRULY_UNMERGED" ]; then
       COUNT=$(echo "$TRULY_UNMERGED" | wc -l | tr -d ' ')
       FIRST_SHA=$(echo "$TRULY_UNMERGED" | head -1 | awk '{print $2}')
