@@ -150,7 +150,19 @@ for rule in rules:
         full_message = f'enforce: {message}'
         if directive:
             full_message += f' (CLAUDE.md: \"{directive[:80]}\")'
-        print(json.dumps({'decision': action, 'reason': full_message}))
+        if action == 'warn':
+            # Warn actions: allow the tool call but inject a visible warning.
+            # Bare 'decision:warn' is silently dropped (claude-code#40380).
+            # The only reliable way to surface warnings is hookSpecificOutput
+            # with permissionDecision:allow and additionalContext.
+            print(json.dumps({
+                'hookSpecificOutput': {
+                    'permissionDecision': 'allow',
+                    'additionalContext': full_message
+                }
+            }))
+        else:
+            print(json.dumps({'decision': action, 'reason': full_message}))
         sys.exit(0)
 
 # No rules blocked

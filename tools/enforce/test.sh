@@ -336,6 +336,54 @@ OUT=$(run_engine '{"tool_name":"WebSearch","tool_input":{"query":"test"}}')
 check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "corrupt session log entry skipped, valid entry found"
 rm -f "$TMPDIR/.claude/session-logs/$TODAY.jsonl"
 
+# === Warn action uses hookSpecificOutput (claude-code#40380) ===
+echo ""
+echo "--- Warn action output format (claude-code#40380) ---"
+
+# Use a dedicated temp dir to avoid conflicts with existing block rules
+WARN_TMPDIR=$(mktemp -d)
+mkdir -p "$WARN_TMPDIR/.claude/enforcements"
+mkdir -p "$WARN_TMPDIR/.claude/session-logs"
+
+# Single warn-level rule (no competing block rules)
+cat > "$WARN_TMPDIR/.claude/enforcements/warn-lint.json" << 'EOF'
+{
+  "name": "Warn on Lint",
+  "directive": "Prefer local docs before fetching external URLs.",
+  "trigger": { "tool": "WebFetch" },
+  "condition": { "type": "block_tool" },
+  "action": "warn",
+  "message": "Consider checking local docs first"
+}
+EOF
+
+run_warn_engine() {
+    echo "$1" | (cd "$WARN_TMPDIR" && HOME="$WARN_TMPDIR" bash "$ENGINE")
+}
+
+echo "Test: Warn action outputs hookSpecificOutput format"
+OUT=$(run_warn_engine '{"tool_name":"WebFetch","tool_input":{"url":"https://example.com"}}')
+check "$(echo "$OUT" | grep -q 'hookSpecificOutput' && echo true || echo false)" "warn uses hookSpecificOutput wrapper"
+
+echo "Test: Warn action includes permissionDecision:allow"
+check "$(echo "$OUT" | grep -q '"permissionDecision"' && echo true || echo false)" "warn includes permissionDecision"
+check "$(echo "$OUT" | python3 -c "import json,sys; d=json.load(sys.stdin); print('true' if d.get('hookSpecificOutput',{}).get('permissionDecision')=='allow' else 'false')" 2>/dev/null)" "warn permissionDecision is allow"
+
+echo "Test: Warn action includes additionalContext with message"
+check "$(echo "$OUT" | python3 -c "import json,sys; d=json.load(sys.stdin); ctx=d.get('hookSpecificOutput',{}).get('additionalContext',''); print('true' if 'Consider checking local docs' in ctx else 'false')" 2>/dev/null)" "warn additionalContext contains rule message"
+
+echo "Test: Warn action includes directive text"
+check "$(echo "$OUT" | python3 -c "import json,sys; d=json.load(sys.stdin); ctx=d.get('hookSpecificOutput',{}).get('additionalContext',''); print('true' if 'CLAUDE.md' in ctx else 'false')" 2>/dev/null)" "warn additionalContext includes directive reference"
+
+echo "Test: Warn action does NOT use bare decision:warn"
+check "$(echo "$OUT" | python3 -c "import json,sys; d=json.load(sys.stdin); print('true' if 'decision' not in d else 'false')" 2>/dev/null)" "warn does not output bare decision:warn (would be silently dropped)"
+
+echo "Test: Block action still uses decision:block (unchanged)"
+OUT_BLOCK=$(run_engine '{"tool_name":"Write","tool_input":{"file_path":".env","content":"SECRET=x"}}')
+check "$(echo "$OUT_BLOCK" | python3 -c "import json,sys; d=json.load(sys.stdin); print('true' if d.get('decision')=='block' else 'false')" 2>/dev/null)" "block action still uses decision:block format"
+
+rm -rf "$WARN_TMPDIR"
+
 echo ""
 echo "================================"
 echo "Results: $PASSED passed, $FAILED failed out of $((PASSED + FAILED)) tests"

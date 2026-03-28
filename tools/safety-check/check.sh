@@ -604,6 +604,69 @@ PYEOF_SC
     fi
 fi
 
+# Hooks using bare "decision":"warn" without hookSpecificOutput are silently dropped (claude-code#40380)
+for hookdir in "${HOME}/.claude/hooks" ".claude/hooks"; do
+    [ -d "$hookdir" ] || continue
+    WARN_HOOKS=""
+    for hookfile in "$hookdir"/*; do
+        [ -f "$hookfile" ] || continue
+        # Detect hooks that output decision:warn but don't use hookSpecificOutput
+        if grep -qlE '"decision".*"warn"|"warn".*"decision"' "$hookfile" 2>/dev/null; then
+            if ! grep -qlE 'hookSpecificOutput' "$hookfile" 2>/dev/null; then
+                WARN_HOOKS="${WARN_HOOKS} $(basename "$hookfile")"
+            fi
+        fi
+    done
+    if [ -n "$WARN_HOOKS" ]; then
+        scope="Hook(s)"
+        [ "$hookdir" = ".claude/hooks" ] && scope="Project hook(s)"
+        WARNINGS+=("${scope} use bare decision:warn without hookSpecificOutput:${WARN_HOOKS}. Warn-level hook responses without hookSpecificOutput are silently dropped — neither the user nor the model sees the warning. Use hookSpecificOutput with permissionDecision:allow and additionalContext instead. (see claude-code#40380)")
+    fi
+done
+# Also check settings.json hook commands for the same pattern
+for _cfg in "$SETTINGS_FILE" "$PROJECT_SETTINGS"; do
+    [ -f "$_cfg" ] || continue
+    _BARE_WARN=$(python3 - "$_cfg" << 'PYEOF_WARN'
+import json, sys, re
+try:
+    s = json.load(open(sys.argv[1]))
+    hooks = s.get("hooks", {})
+    for hook_type in hooks:
+        for entry in hooks[hook_type]:
+            cmd = ""
+            for h in entry.get("hooks", []):
+                cmd += h.get("command", "") + " "
+            cmd += entry.get("command", "")
+            if re.search(r'"decision".*"warn"|"warn".*"decision"', cmd):
+                if "hookSpecificOutput" not in cmd:
+                    print("true")
+                    sys.exit(0)
+    print("false")
+except:
+    print("false")
+PYEOF_WARN
+    )
+    if [ "$_BARE_WARN" = "true" ]; then
+        WARNINGS+=("Settings hook commands reference decision:warn without hookSpecificOutput. Warn-level responses are silently dropped. Use hookSpecificOutput with permissionDecision:allow and additionalContext to surface warnings to the model. (see claude-code#40380)")
+        break
+    fi
+done
+
+# Session-level permission caching bypasses allow list in sandbox mode (claude-code#40384)
+# Approving one git commit auto-approves ALL subsequent git commits without prompting.
+if [ -f "$SETTINGS_FILE" ]; then
+    _HAS_SANDBOX=$(python3 -c "
+import json,sys
+try:
+    s=json.load(open(sys.argv[1]))
+    print('true' if s.get('sandbox',{}).get('enabled') else 'false')
+except: print('false')
+" "$SETTINGS_FILE" 2>/dev/null)
+    if [ "$_HAS_SANDBOX" = "true" ]; then
+        WARNINGS+=("Sandbox mode enabled. Session-level permission caching may bypass your allow list: approving one 'git commit' auto-approves ALL subsequent 'git commit' calls without re-prompting. If you expect per-invocation prompts for sensitive commands, use a PreToolUse hook to enforce them. (see claude-code#40384)")
+    fi
+fi
+
 if [ ${#WARNINGS[@]} -gt 0 ]; then
     printf "${RED}${BOLD}⚠ Environment Warnings${NC}\n"
     for warn in "${WARNINGS[@]}"; do
