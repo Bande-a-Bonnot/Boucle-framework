@@ -189,6 +189,87 @@ else
     fail "branch-guard/hook.ps1 does not exist"
 fi
 
+echo ""
+
+# session-log.ps1
+if [ -f "$SCRIPT_DIR/session-log/hook.ps1" ]; then
+    pass "session-log/hook.ps1 exists"
+
+    if grep -q 'ConvertFrom-Json' "$SCRIPT_DIR/session-log/hook.ps1"; then
+        pass "session-log: uses ConvertFrom-Json"
+    else
+        fail "session-log: missing ConvertFrom-Json"
+    fi
+
+    if grep -q 'SESSION_LOG_DISABLED' "$SCRIPT_DIR/session-log/hook.ps1"; then
+        pass "session-log: supports SESSION_LOG_DISABLED env var"
+    else
+        fail "session-log: missing SESSION_LOG_DISABLED support"
+    fi
+
+    if grep -q 'SESSION_LOG_DIR' "$SCRIPT_DIR/session-log/hook.ps1"; then
+        pass "session-log: supports SESSION_LOG_DIR env var"
+    else
+        fail "session-log: missing SESSION_LOG_DIR support"
+    fi
+
+    if grep -q 'CLAUDE_SESSION_ID' "$SCRIPT_DIR/session-log/hook.ps1"; then
+        pass "session-log: reads CLAUDE_SESSION_ID"
+    else
+        fail "session-log: missing CLAUDE_SESSION_ID support"
+    fi
+
+    if grep -q 'session-logs' "$SCRIPT_DIR/session-log/hook.ps1"; then
+        pass "session-log: default dir is session-logs"
+    else
+        fail "session-log: missing default session-logs directory"
+    fi
+
+    if grep -q '\.jsonl' "$SCRIPT_DIR/session-log/hook.ps1"; then
+        pass "session-log: writes .jsonl files"
+    else
+        fail "session-log: missing .jsonl output"
+    fi
+
+    if grep -q 'Add-Content' "$SCRIPT_DIR/session-log/hook.ps1"; then
+        pass "session-log: appends to log (Add-Content)"
+    else
+        fail "session-log: missing append operation"
+    fi
+
+    if grep -q 'file_path' "$SCRIPT_DIR/session-log/hook.ps1"; then
+        pass "session-log: extracts file_path detail"
+    else
+        fail "session-log: missing file_path extraction"
+    fi
+
+    if grep -q 'command' "$SCRIPT_DIR/session-log/hook.ps1"; then
+        pass "session-log: extracts command detail"
+    else
+        fail "session-log: missing command extraction"
+    fi
+
+    if grep -q 'exit_code' "$SCRIPT_DIR/session-log/hook.ps1"; then
+        pass "session-log: tracks exit codes"
+    else
+        fail "session-log: missing exit code tracking"
+    fi
+
+    if grep -q "'error'" "$SCRIPT_DIR/session-log/hook.ps1" || grep -q '"error"' "$SCRIPT_DIR/session-log/hook.ps1"; then
+        pass "session-log: detects error status"
+    else
+        fail "session-log: missing error detection"
+    fi
+
+    if grep -q 'exit 0' "$SCRIPT_DIR/session-log/hook.ps1"; then
+        pass "session-log: always exits 0 (never blocks)"
+    else
+        fail "session-log: missing exit 0"
+    fi
+else
+    fail "session-log/hook.ps1 does not exist"
+fi
+
 # --- Functional tests (only with pwsh) ---
 
 if [ -n "$PWSH" ]; then
@@ -396,6 +477,89 @@ CONF
     else
         fail "branch-guard: blocked --amend (got: $RESULT)"
     fi
+
+    # --- session-log functional tests ---
+    echo ""
+    echo "  session-log:"
+
+    SESSION_LOG_TMPDIR=$(mktemp -d)
+
+    # Test: Read event creates log entry
+    SESSION_LOG_DIR="$SESSION_LOG_TMPDIR" run_hook "$SCRIPT_DIR/session-log/hook.ps1" '{"tool_name":"Read","tool_input":{"file_path":"/tmp/test.txt"},"tool_response":"content"}'
+    if ls "$SESSION_LOG_TMPDIR"/*.jsonl &>/dev/null; then
+        pass "session-log: creates .jsonl log file"
+    else
+        fail "session-log: no .jsonl file created"
+    fi
+
+    # Test: Log entry is valid JSON with required fields
+    if [ -f "$(ls "$SESSION_LOG_TMPDIR"/*.jsonl 2>/dev/null | head -1)" ]; then
+        LOGFILE=$(ls "$SESSION_LOG_TMPDIR"/*.jsonl | head -1)
+        LAST=$(tail -1 "$LOGFILE")
+        if echo "$LAST" | python3 -c "import json,sys; e=json.load(sys.stdin); assert 'ts' in e and 'tool' in e and 'session' in e" 2>/dev/null; then
+            pass "session-log: entry has ts, tool, session fields"
+        else
+            fail "session-log: entry missing required fields (got: $LAST)"
+        fi
+
+        if echo "$LAST" | python3 -c "import json,sys; e=json.load(sys.stdin); assert e['tool']=='Read'" 2>/dev/null; then
+            pass "session-log: tool name is Read"
+        else
+            fail "session-log: wrong tool name"
+        fi
+
+        if echo "$LAST" | python3 -c "import json,sys; e=json.load(sys.stdin); assert e.get('detail')=='/tmp/test.txt'" 2>/dev/null; then
+            pass "session-log: detail is file_path"
+        else
+            fail "session-log: detail not extracted correctly"
+        fi
+    fi
+
+    # Test: Bash event with exit code
+    SESSION_LOG_DIR="$SESSION_LOG_TMPDIR" run_hook "$SCRIPT_DIR/session-log/hook.ps1" '{"tool_name":"Bash","tool_input":{"command":"cat /nope"},"tool_response":"Exit code 1\ncat: /nope: No such file"}'
+    if [ -f "$(ls "$SESSION_LOG_TMPDIR"/*.jsonl 2>/dev/null | head -1)" ]; then
+        LOGFILE=$(ls "$SESSION_LOG_TMPDIR"/*.jsonl | head -1)
+        LAST=$(tail -1 "$LOGFILE")
+        if echo "$LAST" | python3 -c "import json,sys; e=json.load(sys.stdin); assert e.get('exit_code')==1" 2>/dev/null; then
+            pass "session-log: captures exit_code from Bash error"
+        else
+            fail "session-log: missing exit_code (got: $LAST)"
+        fi
+    fi
+
+    # Test: Grep event extracts pattern detail
+    SESSION_LOG_DIR="$SESSION_LOG_TMPDIR" run_hook "$SCRIPT_DIR/session-log/hook.ps1" '{"tool_name":"Grep","tool_input":{"pattern":"TODO","path":"src/"},"tool_response":"found"}'
+    if [ -f "$(ls "$SESSION_LOG_TMPDIR"/*.jsonl 2>/dev/null | head -1)" ]; then
+        LOGFILE=$(ls "$SESSION_LOG_TMPDIR"/*.jsonl | head -1)
+        LAST=$(tail -1 "$LOGFILE")
+        if echo "$LAST" | python3 -c "import json,sys; e=json.load(sys.stdin); assert 'TODO' in e.get('detail','')" 2>/dev/null; then
+            pass "session-log: Grep detail contains pattern"
+        else
+            fail "session-log: Grep detail wrong (got: $LAST)"
+        fi
+    fi
+
+    # Test: Disabled via env var produces no output
+    BEFORE_COUNT=0
+    if [ -f "$(ls "$SESSION_LOG_TMPDIR"/*.jsonl 2>/dev/null | head -1)" ]; then
+        BEFORE_COUNT=$(wc -l < "$(ls "$SESSION_LOG_TMPDIR"/*.jsonl | head -1)")
+    fi
+    SESSION_LOG_DIR="$SESSION_LOG_TMPDIR" SESSION_LOG_DISABLED=1 run_hook "$SCRIPT_DIR/session-log/hook.ps1" '{"tool_name":"Read","tool_input":{"file_path":"/secret"}}'
+    AFTER_COUNT=0
+    if [ -f "$(ls "$SESSION_LOG_TMPDIR"/*.jsonl 2>/dev/null | head -1)" ]; then
+        AFTER_COUNT=$(wc -l < "$(ls "$SESSION_LOG_TMPDIR"/*.jsonl | head -1)")
+    fi
+    if [ "$BEFORE_COUNT" = "$AFTER_COUNT" ]; then
+        pass "session-log: respects SESSION_LOG_DISABLED=1"
+    else
+        fail "session-log: logged despite SESSION_LOG_DISABLED=1"
+    fi
+
+    # Test: Empty input doesn't crash
+    SESSION_LOG_DIR="$SESSION_LOG_TMPDIR" run_hook "$SCRIPT_DIR/session-log/hook.ps1" '{}'
+    pass "session-log: handles empty input without crash"
+
+    rm -rf "$SESSION_LOG_TMPDIR"
 
 else
     echo ""
