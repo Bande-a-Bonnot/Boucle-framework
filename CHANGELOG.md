@@ -18,7 +18,7 @@ All notable changes to Boucle are documented here.
 - **116 new tests** for file-guard, git-safe, branch-guard, and session-log PowerShell hooks. Tests run on Windows CI (GitHub Actions `windows-latest`). Caught 2 real bugs: case-insensitive `-match` needed in git-safe PS1, and `--force-with-lease` detection gap.
 
 ### Documented
-- **51 known platform limitations** in enforce-hooks README, up from 48 in v0.9.0. New entries: hook input lacks agent context ([#40140](https://github.com/anthropics/claude-code/issues/40140)), ExitWorktree squash merge false positive ([#40137](https://github.com/anthropics/claude-code/issues/40137)), runtime deletes .kiro/ directories ([#40139](https://github.com/anthropics/claude-code/issues/40139)), failed marketplace auto-update deletes plugins ([#40153](https://github.com/anthropics/claude-code/issues/40153)).
+- **53 known platform limitations** in enforce-hooks README, up from 48 in v0.9.0. New entries: hook input lacks agent context ([#40140](https://github.com/anthropics/claude-code/issues/40140)), ExitWorktree squash merge false positive ([#40137](https://github.com/anthropics/claude-code/issues/40137)), runtime deletes .kiro/ directories ([#40139](https://github.com/anthropics/claude-code/issues/40139)), failed marketplace auto-update deletes plugins ([#40153](https://github.com/anthropics/claude-code/issues/40153)), teammate SendMessage phantom messages ([#40166](https://github.com/anthropics/claude-code/issues/40166)), worktree isolation fails on Windows ([#40164](https://github.com/anthropics/claude-code/issues/40164)).
 
 ### Stats
 - 195 Rust tests (unchanged)
