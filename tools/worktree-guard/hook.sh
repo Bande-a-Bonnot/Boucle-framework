@@ -130,12 +130,17 @@ fi
 log "Base branch: $BASE"
 
 # Check 3: Unmerged commits (commits on current branch not in base)
+# Uses git cherry for content-equivalent detection: after a squash merge,
+# the original commits have different SHAs but identical patches. git cherry
+# marks these as "-" (already applied) vs "+" (truly unmerged).
+# See: https://github.com/anthropics/claude-code/issues/40137
 if ! is_allowed "unmerged"; then
   if [ -n "$CURRENT" ] && [ "$CURRENT" != "HEAD" ]; then
-    UNMERGED=$(git log --oneline "$BASE..$CURRENT" 2>/dev/null || echo "")
-    if [ -n "$UNMERGED" ]; then
-      COUNT=$(echo "$UNMERGED" | wc -l | tr -d ' ')
-      FIRST=$(echo "$UNMERGED" | head -1)
+    TRULY_UNMERGED=$(git cherry "$BASE" "$CURRENT" 2>/dev/null | grep '^\+' || true)
+    if [ -n "$TRULY_UNMERGED" ]; then
+      COUNT=$(echo "$TRULY_UNMERGED" | wc -l | tr -d ' ')
+      FIRST_SHA=$(echo "$TRULY_UNMERGED" | head -1 | awk '{print $2}')
+      FIRST=$(git log --oneline -1 "$FIRST_SHA" 2>/dev/null || echo "$FIRST_SHA")
       block "$COUNT unmerged commit(s) on $CURRENT will be lost. Latest: $FIRST." "Merge or cherry-pick into $BASE before exiting, or add 'allow: unmerged' to .worktree-guard."
     fi
   fi

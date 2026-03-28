@@ -53,6 +53,12 @@ The hook registers as a `PreToolUse` hook with `ExitWorktree` matcher. When Clau
 
 The hook auto-detects the base branch by checking `origin/main`, `origin/master`, `main`, then `master`. Override with the `base:` config directive if your repo uses a different default branch.
 
+## Squash Merge Detection
+
+worktree-guard uses `git cherry` instead of raw SHA comparison for the unmerged commits check. This correctly handles squash merges: after `git merge --squash`, the original commits have different SHAs but identical patches. `git cherry` marks these as already-applied, so worktree-guard allows exit without a false warning.
+
+This fixes the false positive described in [anthropics/claude-code#40137](https://github.com/anthropics/claude-code/issues/40137). Note that the platform's own ExitWorktree tool still uses SHA comparison and will show the false warning; worktree-guard overrides this with a correct check.
+
 ## Known Limitations
 
 **Mid-session worktree operations may bypass hooks.** When Claude uses the Agent tool with `isolation: "worktree"`, the worktree lifecycle is managed internally. [EnterWorktree ignores configured hooks](https://github.com/anthropics/claude-code/issues/36205) for these operations. worktree-guard fires on explicit ExitWorktree tool calls, but may not fire for internally-managed worktree cleanup.
