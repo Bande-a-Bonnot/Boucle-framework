@@ -1699,6 +1699,9 @@ cat > "$TMPDIR_STOPHOOK/project/.claude/settings.json" << 'STOPEOF'
 }
 STOPEOF
 STOP_OUTPUT=$(cd "$TMPDIR_STOPHOOK/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+echo "DEBUG STOP_OUTPUT BEGIN"
+echo "$STOP_OUTPUT"
+echo "DEBUG STOP_OUTPUT END"
 assert "stop hook triggers vscode warning" "do not fire in the VSCode" "$STOP_OUTPUT"
 assert "stop hook warning mentions 40029" "40029" "$STOP_OUTPUT"
 rm -rf "$TMPDIR_STOPHOOK"
