@@ -96,7 +96,7 @@ def main():
 
     # --- Relative path rejection (always active, no config needed) ---
     print("\nRelative path rejection:")
-    tmpdir = tempfile.mkdtemp(prefix="file-guard-ps1-test-")
+    tmpdir = os.path.realpath(tempfile.mkdtemp(prefix="file-guard-ps1-test-"))
     try:
         assert_blocked("block Write with relative path",
                        make_input("Write", {"file_path": "src/main.rs"}),
@@ -116,7 +116,7 @@ def main():
 
     # --- Write protection ---
     print("\nWrite protection (default section):")
-    tmpdir = tempfile.mkdtemp(prefix="file-guard-ps1-test-")
+    tmpdir = os.path.realpath(tempfile.mkdtemp(prefix="file-guard-ps1-test-"))
     try:
         config = os.path.join(tmpdir, ".file-guard")
         with open(config, "w") as f:
@@ -172,7 +172,7 @@ def main():
 
     # --- Deny section ---
     print("\nDeny section (blocks all access):")
-    tmpdir = tempfile.mkdtemp(prefix="file-guard-ps1-test-")
+    tmpdir = os.path.realpath(tempfile.mkdtemp(prefix="file-guard-ps1-test-"))
     try:
         config = os.path.join(tmpdir, ".file-guard")
         with open(config, "w") as f:
@@ -211,7 +211,7 @@ def main():
 
     # --- No config file ---
     print("\nNo config file:")
-    tmpdir = tempfile.mkdtemp(prefix="file-guard-ps1-test-")
+    tmpdir = os.path.realpath(tempfile.mkdtemp(prefix="file-guard-ps1-test-"))
     try:
         # With no .file-guard, only relative path rejection is active
         assert_allowed("allow Write when no config",
@@ -222,7 +222,7 @@ def main():
 
     # --- Disabled ---
     print("\nDisabled:")
-    tmpdir = tempfile.mkdtemp(prefix="file-guard-ps1-test-")
+    tmpdir = os.path.realpath(tempfile.mkdtemp(prefix="file-guard-ps1-test-"))
     try:
         config = os.path.join(tmpdir, ".file-guard")
         with open(config, "w") as f:
@@ -236,7 +236,7 @@ def main():
 
     # --- Comments and blank lines in config ---
     print("\nConfig parsing:")
-    tmpdir = tempfile.mkdtemp(prefix="file-guard-ps1-test-")
+    tmpdir = os.path.realpath(tempfile.mkdtemp(prefix="file-guard-ps1-test-"))
     try:
         config = os.path.join(tmpdir, ".file-guard")
         with open(config, "w") as f:
