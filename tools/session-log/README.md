@@ -14,6 +14,23 @@ Or via the unified installer:
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- session-log
 ```
 
+## Windows (PowerShell)
+
+A native PowerShell version (`hook.ps1`) works on Windows without bash, python, or jq:
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [{
+      "type": "command",
+      "command": "pwsh -File C:/path/to/hook.ps1"
+    }]
+  }
+}
+```
+
+Same output format, same environment variables. See `hook.ps1` for details.
+
 ## What it does
 
 Hooks into PostToolUse and appends one JSON line per tool call to `~/.claude/session-logs/YYYY-MM-DD.jsonl`.

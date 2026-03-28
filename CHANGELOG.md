@@ -10,8 +10,9 @@ All notable changes to Boucle are documented here.
 - **file-guard.ps1** -- Native PowerShell equivalent. No external dependencies (no jq). Supports all features: write protection, [deny] sections, relative path rejection, path normalization, Bash command scanning.
 - **git-safe.ps1** -- Native PowerShell equivalent. Blocks all destructive git operations. Supports .git-safe allowlist config. Extra protection for main/master force push.
 - **branch-guard.ps1** -- Native PowerShell equivalent. Protected branch enforcement with config file and env var support.
+- **session-log.ps1** -- Native PowerShell equivalent. Logs every tool call with timestamp, tool name, detail, exit codes, and error detection. Same JSONL output format as the bash version.
 
-All three hooks use `ConvertFrom-Json`/`ConvertTo-Json` (built into PowerShell) instead of jq. Configure with `"command": "pwsh -File /path/to/hook.ps1"` in settings.json. See [#3](https://github.com/Bande-a-Bonnot/Boucle-framework/issues/3).
+All four hooks use `ConvertFrom-Json`/`ConvertTo-Json` (built into PowerShell) instead of jq. Configure with `"command": "pwsh -File /path/to/hook.ps1"` in settings.json. See [#3](https://github.com/Bande-a-Bonnot/Boucle-framework/issues/3).
 
 ## [0.8.0] - 2026-03-27
 
