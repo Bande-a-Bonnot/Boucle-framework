@@ -1762,6 +1762,75 @@ assert "windows path warning cites issue 40170" "40170" "$(cat "$CHECK_SCRIPT")"
 # === Test: Windows path warning mentions NTFS ===
 assert "windows path warning mentions NTFS" "NTFS" "$(cat "$CHECK_SCRIPT")"
 
+# === Test: allowedDomains configured triggers HTTP bypass warning (#40213) ===
+TMPDIR_SANDBOX=$(mktemp -d)
+export HOME="$TMPDIR_SANDBOX"
+mkdir -p "$TMPDIR_SANDBOX/.claude"
+cat > "$TMPDIR_SANDBOX/.claude/settings.json" << 'SANDBOXEOF'
+{
+  "sandbox": {
+    "network": {
+      "allowedDomains": ["api.example.com", "cdn.example.com"]
+    }
+  },
+  "permissions": {}
+}
+SANDBOXEOF
+mkdir -p "$TMPDIR_SANDBOX/project/.claude"
+cat > "$TMPDIR_SANDBOX/project/.claude/settings.json" << 'SANDBOX2EOF'
+{
+  "permissions": {}
+}
+SANDBOX2EOF
+SANDBOX_OUTPUT=$(cd "$TMPDIR_SANDBOX/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "allowedDomains triggers HTTP bypass warning" "allowedDomains" "$SANDBOX_OUTPUT"
+assert "HTTP bypass warning mentions plain HTTP" "plain HTTP" "$SANDBOX_OUTPUT"
+assert "HTTP bypass warning cites 40213" "40213" "$SANDBOX_OUTPUT"
+rm -rf "$TMPDIR_SANDBOX"
+
+# === Test: No allowedDomains means no #40213 warning ===
+TMPDIR_NOSANDBOX=$(mktemp -d)
+export HOME="$TMPDIR_NOSANDBOX"
+mkdir -p "$TMPDIR_NOSANDBOX/.claude"
+cat > "$TMPDIR_NOSANDBOX/.claude/settings.json" << 'NOSANDBOXEOF'
+{
+  "permissions": {}
+}
+NOSANDBOXEOF
+mkdir -p "$TMPDIR_NOSANDBOX/project/.claude"
+cat > "$TMPDIR_NOSANDBOX/project/.claude/settings.json" << 'NOSANDBOX2EOF'
+{
+  "permissions": {}
+}
+NOSANDBOX2EOF
+NOSANDBOX_OUTPUT=$(cd "$TMPDIR_NOSANDBOX/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no allowedDomains no HTTP bypass warning" "40213" "$NOSANDBOX_OUTPUT"
+rm -rf "$TMPDIR_NOSANDBOX"
+
+# === Test: Empty allowedDomains does NOT warn (#40213) ===
+TMPDIR_EMPTYSANDBOX=$(mktemp -d)
+export HOME="$TMPDIR_EMPTYSANDBOX"
+mkdir -p "$TMPDIR_EMPTYSANDBOX/.claude"
+cat > "$TMPDIR_EMPTYSANDBOX/.claude/settings.json" << 'EMPTYSANDBOXEOF'
+{
+  "sandbox": {
+    "network": {
+      "allowedDomains": []
+    }
+  },
+  "permissions": {}
+}
+EMPTYSANDBOXEOF
+mkdir -p "$TMPDIR_EMPTYSANDBOX/project/.claude"
+cat > "$TMPDIR_EMPTYSANDBOX/project/.claude/settings.json" << 'EMPTYSANDBOX2EOF'
+{
+  "permissions": {}
+}
+EMPTYSANDBOX2EOF
+EMPTYSANDBOX_OUTPUT=$(cd "$TMPDIR_EMPTYSANDBOX/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "empty allowedDomains no warning" "40213" "$EMPTYSANDBOX_OUTPUT"
+rm -rf "$TMPDIR_EMPTYSANDBOX"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
