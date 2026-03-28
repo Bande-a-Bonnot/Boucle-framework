@@ -1292,6 +1292,38 @@ NOSPACES_OUTPUT=$(cd "$TMPDIR_NOSPACES" && bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no spaces warning for normal path" "39478" "$NOSPACES_OUTPUT"
 rm -rf "$TMPDIR_NOSPACES"
 
+# === Test: Spaces in HOME path warning (#40084) ===
+# Simulate a user profile path with spaces (e.g., /Users/Lea Chan/)
+TMPDIR_HOMESPACE=$(mktemp -d)
+FAKE_HOME_SPACE="${TMPDIR_HOMESPACE}/Users/Lea Chan"
+mkdir -p "$FAKE_HOME_SPACE/.claude"
+cat > "$FAKE_HOME_SPACE/.claude/settings.json" << 'SETTINGSEOF'
+{
+  "permissions": {
+    "allow": ["Read"]
+  }
+}
+SETTINGSEOF
+HOMESPACE_OUTPUT=$(HOME="$FAKE_HOME_SPACE" bash "$CHECK_SCRIPT" 2>&1) || true
+assert "HOME spaces warning present" "40084" "$HOMESPACE_OUTPUT"
+assert "HOME spaces warning mentions home directory" "Home directory" "$HOMESPACE_OUTPUT"
+rm -rf "$TMPDIR_HOMESPACE"
+
+# Test: no false positive when HOME has no spaces
+TMPDIR_HOMENOSPACE=$(mktemp -d)
+FAKE_HOME_NOSPACE="${TMPDIR_HOMENOSPACE}/Users/LeaChan"
+mkdir -p "$FAKE_HOME_NOSPACE/.claude"
+cat > "$FAKE_HOME_NOSPACE/.claude/settings.json" << 'SETTINGSEOF'
+{
+  "permissions": {
+    "allow": ["Read"]
+  }
+}
+SETTINGSEOF
+HOMENOSPACE_OUTPUT=$(HOME="$FAKE_HOME_NOSPACE" bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no HOME spaces warning for normal path" "40084" "$HOMENOSPACE_OUTPUT"
+rm -rf "$TMPDIR_HOMENOSPACE"
+
 # === Test: Stop hooks parallel session warning (#39530) ===
 TMPDIR_STOPHOOK=$(mktemp -d)
 mkdir -p "$TMPDIR_STOPHOOK/.claude"

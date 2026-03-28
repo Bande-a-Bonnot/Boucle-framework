@@ -370,6 +370,17 @@ case "$PWD" in
         ;;
 esac
 
+# Spaces in HOME path break hook command invocation (claude-code#40084)
+# When the user profile path contains spaces (e.g. /Users/Lea Chan/), hook commands
+# that reference $HOME or CLAUDE_PLUGIN_ROOT get word-split by bash, causing:
+#   bash: /c/Users/Lea: No such file or directory
+# This affects ALL hooks — both plugin hooks and settings.json hooks.
+case "$HOME" in
+    *" "*)
+        WARNINGS+=("Home directory contains spaces: $HOME. Hook commands that include your home path will fail because Claude Code's hook runner word-splits the path at spaces. Affected: all hooks in ~/.claude/. Workaround: create a symlink from a space-free path (e.g. ln -s \"$HOME\" /opt/claude-home) and update hook command paths, or use PowerShell hooks on Windows. (see claude-code#40084)")
+        ;;
+esac
+
 # Stop hooks blocking parallel sessions (claude-code#39530)
 for _stop_cfg in "$SETTINGS_FILE" "$PROJECT_SETTINGS"; do
     [ -f "$_stop_cfg" ] || continue
