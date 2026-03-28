@@ -4,6 +4,9 @@ All notable changes to Boucle are documented here.
 
 ## [Unreleased]
 
+### Added
+- **PowerShell installer** (`tools/install.ps1`) -- Windows-native installer for PS1 hooks. Downloads and configures file-guard, git-safe, branch-guard, and session-log without bash, jq, or WSL. Includes post-install verification. Install: `iex "& { $(irm .../tools/install.ps1) } all"`
+
 ## [0.9.1] - 2026-03-28
 
 ### Added
