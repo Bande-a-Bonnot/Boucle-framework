@@ -435,6 +435,8 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **Runtime silently deletes specific directory names.** Claude Code's runtime [silently deletes `.kiro/` directories](https://github.com/anthropics/claude-code/issues/40139) between tool calls, regardless of `.gitignore` status. The deletion is name-specific (renaming to `.sd/` avoids it) and happens outside the hook lifecycle. No PreToolUse or PostToolUse event fires for this. File-guard cannot protect directories that the runtime itself removes. If you need persistent project directories, avoid names that conflict with IDE integrations (`.kiro`, `.cursor`, etc.).
 
+**Failed marketplace auto-update deletes all plugins from that marketplace.** The plugin system's marketplace auto-update mechanism [deletes the marketplace directory before re-cloning](https://github.com/anthropics/claude-code/issues/40153). If the re-clone fails (network timeout, rate limit, disk full), the directory stays deleted and all plugins installed from that marketplace break. This includes any hooks those plugins shipped. The deletion happens outside the hook lifecycle, so no hook can prevent or detect it. Workaround: back up `~/.claude/plugins/marketplaces/` before relying on marketplace plugins for critical hooks. Consider vendoring important plugin hooks into your project's `.claude/settings.json` instead of depending on marketplace delivery.
+
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
 ## Tests

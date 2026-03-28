@@ -4,6 +4,27 @@ All notable changes to Boucle are documented here.
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-03-28
+
+### Added
+
+#### git-safe
+- **`--no-verify` bypass detection** -- Blocks `git commit --no-verify`, `git push --no-verify`, and `-n` shorthand in both bash and PowerShell hooks. Prevents agents from skipping pre-commit hooks and GPG signing. See [#40117](https://github.com/anthropics/claude-code/issues/40117).
+
+#### worktree-guard (29 -> 33 tests)
+- **Squash merge false positive fix** -- Two-tier detection replaces SHA-only comparison. Tier 1: `git cherry` for patch-level equivalence (single-commit squash, cherry-pick, rebase). Tier 2: per-file comparison for multi-commit squash where individual patches differ but combined result matches base. Fixes [#40137](https://github.com/anthropics/claude-code/issues/40137).
+
+#### PowerShell hook tests
+- **116 new tests** for file-guard, git-safe, branch-guard, and session-log PowerShell hooks. Tests run on Windows CI (GitHub Actions `windows-latest`). Caught 2 real bugs: case-insensitive `-match` needed in git-safe PS1, and `--force-with-lease` detection gap.
+
+### Documented
+- **51 known platform limitations** in enforce-hooks README, up from 48 in v0.9.0. New entries: hook input lacks agent context ([#40140](https://github.com/anthropics/claude-code/issues/40140)), ExitWorktree squash merge false positive ([#40137](https://github.com/anthropics/claude-code/issues/40137)), runtime deletes .kiro/ directories ([#40139](https://github.com/anthropics/claude-code/issues/40139)), failed marketplace auto-update deletes plugins ([#40153](https://github.com/anthropics/claude-code/issues/40153)).
+
+### Stats
+- 195 Rust tests (unchanged)
+- Hook tests: bash-guard ~500, safety-check ~146, PS1 hooks 116, file-guard 91, git-safe 65, session-log 50, read-once 48, enforce-hooks ~52, branch-guard 35, worktree-guard 33, format ~36
+- Total: ~1670+ tests
+
 ## [0.9.0] - 2026-03-28
 
 ### Added
