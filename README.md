@@ -460,7 +460,7 @@ bash tools/safety-check/test.sh
 
 **v0.9.1** — 195 Rust tests + ~1670 hook tests. Zero clippy warnings. CI on Ubuntu + macOS + Windows. Docker support.
 
-New in v0.9.1: `--no-verify` bypass detection in git-safe (bash + PS1), squash merge false positive fix in worktree-guard (two-tier detection), 116 PowerShell hook tests on Windows CI, 51 documented platform limitations. See [CHANGELOG](CHANGELOG.md) for details.
+New in v0.9.1: `--no-verify` bypass detection in git-safe (bash + PS1), squash merge false positive fix in worktree-guard (two-tier detection), 116 PowerShell hook tests on Windows CI, 53 documented platform limitations. See [CHANGELOG](CHANGELOG.md) for details.
 
 13 stars, 3 external contributors, 2 forks.
 
