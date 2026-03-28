@@ -3,6 +3,7 @@
 #
 # Usage:
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) }"
+#   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } file-guard git-safe"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } all"
 
@@ -25,6 +26,7 @@ $HookCatalog = [ordered]@{
 }
 
 $AllHookNames = @($HookCatalog.Keys)
+$RecommendedHooks = @('file-guard', 'git-safe')
 
 Write-Host ""
 Write-Host "Boucle Hooks for Claude Code (PowerShell)" -ForegroundColor White
@@ -55,16 +57,24 @@ Write-Host ""
 if ($Hooks -and $Hooks.Count -gt 0) {
     if ($Hooks[0] -eq 'all') {
         $selected = $AllHookNames
+    } elseif ($Hooks[0] -eq 'recommended') {
+        $selected = $RecommendedHooks
+        Write-Host "Installing recommended hooks: file-guard, git-safe" -ForegroundColor White
     } else {
         $selected = $Hooks
     }
 } else {
     Write-Host "Which hooks to install?" -ForegroundColor White
-    Write-Host "  Enter hook names separated by spaces, or 'all' for everything"
+    Write-Host "  'recommended'  file-guard + git-safe (start here)"
+    Write-Host "  'all'          all hooks"
+    Write-Host "  or enter hook names separated by spaces"
     $userInput = Read-Host ">"
     $userInput = $userInput.Trim()
     if ($userInput -eq 'all') {
         $selected = $AllHookNames
+    } elseif ($userInput -eq 'recommended') {
+        $selected = $RecommendedHooks
+        Write-Host "Installing recommended hooks: file-guard, git-safe" -ForegroundColor White
     } elseif ($userInput -ne '') {
         $selected = $userInput -split '\s+'
     } else {
