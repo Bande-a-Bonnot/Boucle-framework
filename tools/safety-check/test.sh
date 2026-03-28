@@ -1645,9 +1645,9 @@ rm -rf "$TMPDIR_ENABLED"
 
 # === Test: Marketplace plugins with hooks warns about silent install (#40036) ===
 TMPDIR_HOOKPLUGIN=$(mktemp -d)
+export HOME="$TMPDIR_HOOKPLUGIN"
 mkdir -p "$TMPDIR_HOOKPLUGIN/.claude/plugins/marketplaces/claude-plugins-official/plugins/my-plugin/hooks"
 echo '#!/bin/bash' > "$TMPDIR_HOOKPLUGIN/.claude/plugins/marketplaces/claude-plugins-official/plugins/my-plugin/hooks/session-start.sh"
-echo '{"hooks":{"PreToolUse":[{"hooks":[{"type":"command","command":"echo test"}]}]}}' > "$TMPDIR_HOOKPLUGIN/project/.claude/settings.json" 2>/dev/null || true
 mkdir -p "$TMPDIR_HOOKPLUGIN/project/.claude"
 cat > "$TMPDIR_HOOKPLUGIN/project/.claude/settings.json" << 'HOOKPEOF'
 {
@@ -1655,25 +1655,31 @@ cat > "$TMPDIR_HOOKPLUGIN/project/.claude/settings.json" << 'HOOKPEOF'
   "permissions": {}
 }
 HOOKPEOF
-HOOKP_OUTPUT=$(cd "$TMPDIR_HOOKPLUGIN/project" && HOME="$TMPDIR_HOOKPLUGIN" bash "$CHECK_SCRIPT" 2>&1) || true
+HOOKP_OUTPUT=$(cd "$TMPDIR_HOOKPLUGIN/project" && bash "$CHECK_SCRIPT" 2>&1) || true
 assert "plugin with hooks warns about silent install" "executable hooks" "$HOOKP_OUTPUT"
 assert "plugin hook warning mentions 40036" "40036" "$HOOKP_OUTPUT"
 rm -rf "$TMPDIR_HOOKPLUGIN"
 
 # === Test: No marketplace plugins means no #40036 warning ===
 TMPDIR_NOPLUGIN=$(mktemp -d)
+export HOME="$TMPDIR_NOPLUGIN"
+mkdir -p "$TMPDIR_NOPLUGIN/.claude"
+echo '{}' > "$TMPDIR_NOPLUGIN/.claude/settings.json"
 mkdir -p "$TMPDIR_NOPLUGIN/project/.claude"
 cat > "$TMPDIR_NOPLUGIN/project/.claude/settings.json" << 'NOPLUGEOF'
 {
   "permissions": {}
 }
 NOPLUGEOF
-NOPLUG_OUTPUT=$(cd "$TMPDIR_NOPLUGIN/project" && HOME="$TMPDIR_NOPLUGIN" bash "$CHECK_SCRIPT" 2>&1) || true
+NOPLUG_OUTPUT=$(cd "$TMPDIR_NOPLUGIN/project" && bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no plugins means no plugin hook warning" "executable hooks" "$NOPLUG_OUTPUT"
 rm -rf "$TMPDIR_NOPLUGIN"
 
 # === Test: Stop hook configured triggers VSCode warning (#40029) ===
 TMPDIR_STOPHOOK=$(mktemp -d)
+export HOME="$TMPDIR_STOPHOOK"
+mkdir -p "$TMPDIR_STOPHOOK/.claude"
+echo '{}' > "$TMPDIR_STOPHOOK/.claude/settings.json"
 mkdir -p "$TMPDIR_STOPHOOK/project/.claude"
 cat > "$TMPDIR_STOPHOOK/project/.claude/settings.json" << 'STOPEOF'
 {
@@ -1692,13 +1698,16 @@ cat > "$TMPDIR_STOPHOOK/project/.claude/settings.json" << 'STOPEOF'
   }
 }
 STOPEOF
-STOP_OUTPUT=$(cd "$TMPDIR_STOPHOOK/project" && HOME="$TMPDIR_STOPHOOK" bash "$CHECK_SCRIPT" 2>&1) || true
+STOP_OUTPUT=$(cd "$TMPDIR_STOPHOOK/project" && bash "$CHECK_SCRIPT" 2>&1) || true
 assert "stop hook triggers vscode warning" "do not fire in the VSCode" "$STOP_OUTPUT"
 assert "stop hook warning mentions 40029" "40029" "$STOP_OUTPUT"
 rm -rf "$TMPDIR_STOPHOOK"
 
 # === Test: No Stop hook means no #40029 warning ===
 TMPDIR_NOSTOP=$(mktemp -d)
+export HOME="$TMPDIR_NOSTOP"
+mkdir -p "$TMPDIR_NOSTOP/.claude"
+echo '{}' > "$TMPDIR_NOSTOP/.claude/settings.json"
 mkdir -p "$TMPDIR_NOSTOP/project/.claude"
 cat > "$TMPDIR_NOSTOP/project/.claude/settings.json" << 'NOSTOPEOF'
 {
@@ -1716,12 +1725,13 @@ cat > "$TMPDIR_NOSTOP/project/.claude/settings.json" << 'NOSTOPEOF'
   }
 }
 NOSTOPEOF
-NOSTOP_OUTPUT=$(cd "$TMPDIR_NOSTOP/project" && HOME="$TMPDIR_NOSTOP" bash "$CHECK_SCRIPT" 2>&1) || true
+NOSTOP_OUTPUT=$(cd "$TMPDIR_NOSTOP/project" && bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no stop hook means no vscode warning" "do not fire in the VSCode" "$NOSTOP_OUTPUT"
 rm -rf "$TMPDIR_NOSTOP"
 
 # === Test: Stop hook in user settings also triggers warning ===
 TMPDIR_USERSTOP=$(mktemp -d)
+export HOME="$TMPDIR_USERSTOP"
 mkdir -p "$TMPDIR_USERSTOP/.claude"
 cat > "$TMPDIR_USERSTOP/.claude/settings.json" << 'USRSTOPEOF'
 {
@@ -1741,7 +1751,7 @@ cat > "$TMPDIR_USERSTOP/.claude/settings.json" << 'USRSTOPEOF'
 USRSTOPEOF
 mkdir -p "$TMPDIR_USERSTOP/project/.claude"
 echo '{}' > "$TMPDIR_USERSTOP/project/.claude/settings.json"
-USRSTOP_OUTPUT=$(cd "$TMPDIR_USERSTOP/project" && HOME="$TMPDIR_USERSTOP" bash "$CHECK_SCRIPT" 2>&1) || true
+USRSTOP_OUTPUT=$(cd "$TMPDIR_USERSTOP/project" && bash "$CHECK_SCRIPT" 2>&1) || true
 assert "user-level stop hook also triggers vscode warning" "do not fire in the VSCode" "$USRSTOP_OUTPUT"
 rm -rf "$TMPDIR_USERSTOP"
 
