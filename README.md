@@ -436,7 +436,7 @@ boucle --version                 # Show version
 
 **Subagents may skip hook settings**: Agents spawned via the Agent tool [don't consistently inherit permission settings](https://github.com/anthropics/claude-code/issues/37730). Hooks in `.claude/settings.json` should still fire (shared config), but verify hook behavior when using subagent workflows.
 
-**Windows**: All hooks are bash scripts designed for macOS and Linux. Two options on Windows: (1) run Claude Code from a **WSL** terminal, where hooks work as-is, or (2) install **Git for Windows**, which provides `/usr/bin/bash`. However, Claude Code has a known bug where hooks [fire only ~18% of the time on Windows](https://github.com/anthropics/claude-code/issues/37988), so neither path is reliable yet. WSL is the recommended option. See [#3](https://github.com/Bande-a-Bonnot/Boucle-framework/issues/3).
+**Windows**: Three hooks now have native **PowerShell** equivalents (`hook.ps1`) that require no external dependencies: **file-guard**, **git-safe**, and **branch-guard**. Configure them in `.claude/settings.json` with `"command": "pwsh -File /path/to/hook.ps1"`. The remaining hooks are bash scripts that work from a **WSL** terminal or with **Git for Windows** (which provides `/usr/bin/bash`). Note: Claude Code has a known bug where hooks [fire only ~18% of the time on Windows](https://github.com/anthropics/claude-code/issues/37988), so hook reliability is limited on native Windows regardless of shell. WSL remains the most reliable option. See [#3](https://github.com/Bande-a-Bonnot/Boucle-framework/issues/3).
 
 ## Development
 
@@ -458,9 +458,9 @@ bash tools/safety-check/test.sh
 
 ## Status
 
-**v0.7.0** — 195 Rust tests + ~1250 hook tests = ~1450 total. Zero clippy warnings. CI on Ubuntu + macOS. Docker support.
+**v0.8.0** — 195 Rust tests + ~1500 hook tests. Zero clippy warnings. CI on Ubuntu + macOS. Docker support.
 
-file-guard: relative path rejection. safety-check: permission pitfall warnings (deny+denyWrite sandbox conflict, bypassPermissions instability, Write allow path asymmetry). bash-guard covers 25+ threat categories with ~500 tests. Quickstart installer for zero-to-protected in one command.
+New in v0.8.0: worktree-guard hook, PowerShell equivalents for file-guard/git-safe/branch-guard (Windows native), bash-guard git force push detection, 7 new platform bug warnings in safety-check. bash-guard covers 25+ threat categories with ~500 tests. Quickstart installer for zero-to-protected in one command.
 
 13 stars, 3 external contributors, 2 forks.
 
