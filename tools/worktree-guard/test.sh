@@ -175,6 +175,68 @@ git checkout merged-feature 2>/dev/null
 assert_allowed "Fully merged branch allows exit" \
   '{"tool_name":"ExitWorktree","tool_input":{}}'
 
+# Squash-merged branch should be allowed (git cherry detects content equivalence)
+# See: https://github.com/anthropics/claude-code/issues/40137
+setup_clean_repo
+git checkout -b squash-feature 2>/dev/null
+echo "squash work" >> file.txt
+git add file.txt
+git commit -q -m "squash commit"
+git checkout main 2>/dev/null
+git merge --squash squash-feature -q
+git commit -q -m "squash merge squash-feature"
+git checkout squash-feature 2>/dev/null
+assert_allowed "Squash-merged branch allows exit" \
+  '{"tool_name":"ExitWorktree","tool_input":{}}'
+
+# Squash merge with multiple commits
+setup_clean_repo
+git checkout -b multi-squash 2>/dev/null
+echo "change 1" >> file.txt
+git add file.txt
+git commit -q -m "multi-squash commit 1"
+echo "change 2" >> file.txt
+git add file.txt
+git commit -q -m "multi-squash commit 2"
+echo "change 3" >> file.txt
+git add file.txt
+git commit -q -m "multi-squash commit 3"
+git checkout main 2>/dev/null
+git merge --squash multi-squash -q
+git commit -q -m "squash merge multi-squash"
+git checkout multi-squash 2>/dev/null
+assert_allowed "Multi-commit squash-merged branch allows exit" \
+  '{"tool_name":"ExitWorktree","tool_input":{}}'
+
+# Partial squash: only some commits merged, rest still unmerged
+setup_clean_repo
+git checkout -b partial-squash 2>/dev/null
+echo "merged part" >> file.txt
+git add file.txt
+git commit -q -m "will be squash-merged"
+git checkout main 2>/dev/null
+git merge --squash partial-squash -q
+git commit -q -m "squash merge partial"
+git checkout partial-squash 2>/dev/null
+echo "unmerged addition" >> file.txt
+git add file.txt
+git commit -q -m "new work after squash merge"
+assert_blocked "Partial squash with new commits blocks exit" \
+  '{"tool_name":"ExitWorktree","tool_input":{}}'
+
+# Cherry-picked commit should allow exit (same patch on base)
+setup_clean_repo
+git checkout -b cherry-feature 2>/dev/null
+echo "cherry work" >> file.txt
+git add file.txt
+git commit -q -m "cherry commit"
+CHERRY_SHA=$(git rev-parse HEAD)
+git checkout main 2>/dev/null
+git cherry-pick "$CHERRY_SHA" -q
+git checkout cherry-feature 2>/dev/null
+assert_allowed "Cherry-picked branch allows exit" \
+  '{"tool_name":"ExitWorktree","tool_input":{}}'
+
 # --- On main branch ---
 echo ""
 echo "Main branch:"
