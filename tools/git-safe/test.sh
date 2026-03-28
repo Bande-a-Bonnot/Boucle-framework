@@ -173,6 +173,34 @@ assert_blocked "git push origin :branch (alternate delete syntax)" \
 assert_allowed "git push origin branch (normal, not delete)" \
   '{"tool_name":"Bash","tool_input":{"command":"git push origin feature-branch"}}'
 
+# --- --no-verify (skips pre-commit hooks) ---
+echo ""
+echo "No-verify detection:"
+assert_blocked "git commit --no-verify" \
+  '{"tool_name":"Bash","tool_input":{"command":"git commit --no-verify -m \"skip hooks\""}}'
+assert_blocked "git commit -n (shorthand)" \
+  '{"tool_name":"Bash","tool_input":{"command":"git commit -n -m \"skip hooks\""}}'
+assert_blocked "git commit -an (combined flags)" \
+  '{"tool_name":"Bash","tool_input":{"command":"git commit -an -m \"skip hooks\""}}'
+assert_blocked "git commit -anm (combined with message)" \
+  '{"tool_name":"Bash","tool_input":{"command":"git commit -anm \"skip hooks\""}}'
+assert_blocked "git merge --no-verify" \
+  '{"tool_name":"Bash","tool_input":{"command":"git merge --no-verify feature-branch"}}'
+assert_blocked "git push --no-verify" \
+  '{"tool_name":"Bash","tool_input":{"command":"git push --no-verify origin main"}}'
+assert_blocked "git cherry-pick --no-verify" \
+  '{"tool_name":"Bash","tool_input":{"command":"git cherry-pick --no-verify abc123"}}'
+assert_blocked "git revert --no-verify" \
+  '{"tool_name":"Bash","tool_input":{"command":"git revert --no-verify HEAD"}}'
+assert_blocked "git am --no-verify" \
+  '{"tool_name":"Bash","tool_input":{"command":"git am --no-verify patch.mbox"}}'
+assert_allowed "git commit (normal, no skip)" \
+  '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"normal commit\""}}'
+assert_allowed "git commit -a (all, not -n)" \
+  '{"tool_name":"Bash","tool_input":{"command":"git commit -a -m \"stage and commit\""}}'
+assert_allowed "git commit --amend (no skip)" \
+  '{"tool_name":"Bash","tool_input":{"command":"git commit --amend -m \"amend\""}}'
+
 # --- Force push to main/master (always blocked) ---
 echo ""
 echo "Force push to main/master (always blocked):"
@@ -198,7 +226,11 @@ GIT_SAFE_CONFIG="$TMPDIR/.git-safe" assert_allowed "reset --hard allowed by conf
 GIT_SAFE_CONFIG="$TMPDIR/.git-safe" assert_allowed "push --force allowed by config" \
   '{"tool_name":"Bash","tool_input":{"command":"git push --force origin feature"}}'
 
+echo "allow: no-verify" >> "$TMPDIR/.git-safe"
 echo "allow: push --delete" >> "$TMPDIR/.git-safe"
+
+GIT_SAFE_CONFIG="$TMPDIR/.git-safe" assert_allowed "no-verify allowed by config" \
+  '{"tool_name":"Bash","tool_input":{"command":"git commit --no-verify -m \"allowed\""}}'
 
 GIT_SAFE_CONFIG="$TMPDIR/.git-safe" assert_allowed "push --delete allowed by config" \
   '{"tool_name":"Bash","tool_input":{"command":"git push --delete origin old-branch"}}'
