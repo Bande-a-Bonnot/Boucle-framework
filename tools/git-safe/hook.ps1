@@ -111,11 +111,16 @@ if ($command -match 'git\s+push\s+(-[a-zA-Z]*f\b|.*\s-[a-zA-Z]*f\b)') {
 }
 
 # Force push to main/master (extra protection - blocked even with allowlist)
-if ($command -match 'git\s+push\s.*--force.*\s(main|master)(\s|$)') {
-    Block-Tool "git-safe: Force push to main/master is extremely dangerous. Suggestion: This is blocked even with 'allow: push --force'. Never force push to main."
+# But --force-with-lease is safe and should be allowed
+if ($command -cmatch 'git\s+push\s.*--force.*\s(main|master)(\s|$)') {
+    if ($command -notmatch '--force-with-lease') {
+        Block-Tool "git-safe: Force push to main/master is extremely dangerous. Suggestion: This is blocked even with 'allow: push --force'. Never force push to main."
+    }
 }
-if ($command -match 'git\s+push\s.*\s(main|master)\s.*--force') {
-    Block-Tool "git-safe: Force push to main/master is extremely dangerous. Suggestion: This is blocked even with 'allow: push --force'. Never force push to main."
+if ($command -cmatch 'git\s+push\s.*\s(main|master)\s.*--force') {
+    if ($command -notmatch '--force-with-lease') {
+        Block-Tool "git-safe: Force push to main/master is extremely dangerous. Suggestion: This is blocked even with 'allow: push --force'. Never force push to main."
+    }
 }
 
 # git reset --hard
@@ -170,8 +175,8 @@ if ($command -match 'git\s+clean\s.*-[a-zA-Z]*f') {
     }
 }
 
-# git branch -D (force-delete unmerged branch)
-if ($command -match 'git\s+branch\s.*-[a-zA-Z]*D') {
+# git branch -D (force-delete unmerged branch) — case-sensitive: -D not -d
+if ($command -cmatch 'git\s+branch\s.*-[a-zA-Z]*D') {
     if (-not (Test-Allowed 'branch -D')) {
         Block-Tool "git-safe: git branch -D force-deletes a branch even if not fully merged. Suggestion: Use -d (lowercase) which only deletes merged branches, or add 'allow: branch -D' to .git-safe."
     }

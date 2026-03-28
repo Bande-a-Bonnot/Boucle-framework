@@ -138,9 +138,10 @@ def main():
                        make_input("Read", {"file_path": "/project/.env"}),
                        env_overrides=env, cwd=tmpdir)
 
-        # Directory prefix: secrets/
+        # Directory prefix: secrets/ — use path under CWD so normalization works
+        secrets_path = os.path.join(tmpdir, "secrets", "api-key.txt")
         assert_blocked("block Write to secrets/ dir",
-                       make_input("Write", {"file_path": "/project/secrets/api-key.txt"}),
+                       make_input("Write", {"file_path": secrets_path}),
                        env_overrides=env, cwd=tmpdir)
 
         # Glob: *.pem
@@ -179,17 +180,20 @@ def main():
 
         env = {"FILE_GUARD_CONFIG": config}
 
-        # Deny blocks reads
+        # Deny blocks reads — use CWD-relative paths so normalization works
+        ssh_id = os.path.join(tmpdir, ".ssh", "id_rsa")
         assert_blocked("block Read of .ssh/ file",
-                       make_input("Read", {"file_path": "/home/user/.ssh/id_rsa"}),
+                       make_input("Read", {"file_path": ssh_id}),
                        env_overrides=env, cwd=tmpdir)
+        id_rsa_path = os.path.join(tmpdir, "id_rsa")
         assert_blocked("block Read of id_rsa",
-                       make_input("Read", {"file_path": "/home/user/id_rsa"}),
+                       make_input("Read", {"file_path": id_rsa_path}),
                        env_overrides=env, cwd=tmpdir)
 
         # Deny also blocks writes
+        ssh_config = os.path.join(tmpdir, ".ssh", "config")
         assert_blocked("block Write to denied file",
-                       make_input("Write", {"file_path": "/home/user/.ssh/config"}),
+                       make_input("Write", {"file_path": ssh_config}),
                        env_overrides=env, cwd=tmpdir)
 
         # Deny blocks bash access
@@ -241,8 +245,9 @@ def main():
         assert_blocked("handles comments and blank lines",
                        make_input("Write", {"file_path": "/project/.env"}),
                        env_overrides=env, cwd=tmpdir)
+        secrets_key = os.path.join(tmpdir, "secrets", "key.txt")
         assert_blocked("handles trailing comment after pattern",
-                       make_input("Write", {"file_path": "/project/secrets/key.txt"}),
+                       make_input("Write", {"file_path": secrets_key}),
                        env_overrides=env, cwd=tmpdir)
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
