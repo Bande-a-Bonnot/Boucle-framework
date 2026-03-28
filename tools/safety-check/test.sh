@@ -1568,7 +1568,7 @@ cat > "$TMPDIR_NOBYPASSLOCAL/project/.claude/settings.json" << 'NOBYPASS2EOF'
 }
 NOBYPASS2EOF
 NOBYPASSLOCAL_OUTPUT=$(cd "$TMPDIR_NOBYPASSLOCAL/project" && bash "$CHECK_SCRIPT" 2>&1) || true
-assert_not "no bypass local no warning" "silently ignored" "$NOBYPASSLOCAL_OUTPUT"
+assert_not "no bypass local no warning" "settings.local.json sets permission" "$NOBYPASSLOCAL_OUTPUT"
 rm -rf "$TMPDIR_NOBYPASSLOCAL"
 
 # === Test: dangerouslySkipPermissions in settings.local.json also warns (#40014) ===
@@ -1784,7 +1784,7 @@ cat > "$TMPDIR_SANDBOX/project/.claude/settings.json" << 'SANDBOX2EOF'
 SANDBOX2EOF
 SANDBOX_OUTPUT=$(cd "$TMPDIR_SANDBOX/project" && bash "$CHECK_SCRIPT" 2>&1) || true
 assert "allowedDomains triggers HTTP bypass warning" "allowedDomains" "$SANDBOX_OUTPUT"
-assert "HTTP bypass warning mentions plain HTTP" "plain HTTP" "$SANDBOX_OUTPUT"
+assert "HTTP bypass warning mentions Plain HTTP" "Plain HTTP" "$SANDBOX_OUTPUT"
 assert "HTTP bypass warning cites 40213" "40213" "$SANDBOX_OUTPUT"
 rm -rf "$TMPDIR_SANDBOX"
 
