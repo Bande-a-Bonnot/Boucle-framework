@@ -495,6 +495,29 @@ except: print('false')
     fi
 fi
 
+# Sandbox allowedDomains HTTP bypass (claude-code#40213)
+# allowedDomains only filters HTTPS CONNECT — plain HTTP passes through unfiltered.
+if [ -f "$SETTINGS_FILE" ]; then
+    HAS_ALLOWED_DOMAINS=$(python3 - "$SETTINGS_FILE" << 'PYEOF_AD'
+import json, sys
+try:
+    s = json.load(open(sys.argv[1]))
+    sandbox = s.get("sandbox", {})
+    network = sandbox.get("network", {})
+    domains = network.get("allowedDomains", [])
+    if domains:
+        print("true")
+    else:
+        print("false")
+except:
+    print("false")
+PYEOF_AD
+    )
+    if [ "$HAS_ALLOWED_DOMAINS" = "true" ]; then
+        WARNINGS+=("sandbox.network.allowedDomains is configured but only filters HTTPS traffic. Plain HTTP requests (curl http://...) bypass domain filtering entirely. A prompt injection payload can exfiltrate data over HTTP even with allowedDomains set. Use bash-guard to detect outbound HTTP requests, or configure OS-level firewall rules for defense in depth. (see claude-code#40213)")
+    fi
+fi
+
 # Supply-chain: detect suspicious project-level .claude/settings.json (claude-code#38319)
 # A malicious repo can include .claude/settings.json that adds hooks or loosens permissions.
 # Project settings merge with user settings — they can ADD hooks and allow rules.
