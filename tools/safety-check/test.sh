@@ -1884,6 +1884,85 @@ MULTIHOOK_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert "multi-hook worktree warning present" "40262" "$MULTIHOOK_OUTPUT"
 rm -rf "$TMPDIR_MULTIHOOK"
 
+# === Test: Glob wildcard injection in Bash allow rules (#40344) ===
+TMPDIR_GLOB=$(mktemp -d)
+export HOME="$TMPDIR_GLOB"
+mkdir -p "$TMPDIR_GLOB/.claude"
+cat > "$TMPDIR_GLOB/.claude/settings.json" << 'GLOBEOF'
+{
+  "permissions": {
+    "allow": ["Bash(git -C * status)", "Bash(npm run *)"]
+  }
+}
+GLOBEOF
+GLOB_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "glob injection warning present" "command injection" "$GLOB_OUTPUT"
+assert "glob injection cites issue" "40344" "$GLOB_OUTPUT"
+assert "glob injection shows affected rule" "git -C \* status" "$GLOB_OUTPUT"
+rm -rf "$TMPDIR_GLOB"
+
+# === Test: No glob warning for allow rules without wildcards ===
+TMPDIR_NOGLOB=$(mktemp -d)
+export HOME="$TMPDIR_NOGLOB"
+mkdir -p "$TMPDIR_NOGLOB/.claude"
+cat > "$TMPDIR_NOGLOB/.claude/settings.json" << 'NOGLOBEOF'
+{
+  "permissions": {
+    "allow": ["Bash(git status)", "Bash(npm test)"]
+  }
+}
+NOGLOBEOF
+NOGLOB_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no glob warning without wildcards" "command injection" "$NOGLOB_OUTPUT"
+rm -rf "$TMPDIR_NOGLOB"
+
+# === Test: No glob warning for non-Bash allow rules with wildcards ===
+TMPDIR_NONBASH=$(mktemp -d)
+export HOME="$TMPDIR_NONBASH"
+mkdir -p "$TMPDIR_NONBASH/.claude"
+cat > "$TMPDIR_NONBASH/.claude/settings.json" << 'NONBASHEOF'
+{
+  "permissions": {
+    "allow": ["Read(/project/src/*)"]
+  }
+}
+NONBASHEOF
+NONBASH_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no glob warning for non-Bash rules" "command injection" "$NONBASH_OUTPUT"
+rm -rf "$TMPDIR_NONBASH"
+
+# === Test: bypassPermissions agent warning (#40343) ===
+TMPDIR_BPA=$(mktemp -d)
+export HOME="$TMPDIR_BPA"
+mkdir -p "$TMPDIR_BPA/.claude"
+cat > "$TMPDIR_BPA/.claude/settings.json" << 'BPAEOF'
+{
+  "agents": {
+    "my-agent": {"mode": "bypassPermissions"}
+  }
+}
+BPAEOF
+BPA_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "bypass agent warning present" "bypassPermissions ignore" "$BPA_OUTPUT"
+assert "bypass agent cites issue" "40343" "$BPA_OUTPUT"
+assert "bypass agent shows name" "my-agent" "$BPA_OUTPUT"
+rm -rf "$TMPDIR_BPA"
+
+# === Test: No bypass agent warning without bypassPermissions agents ===
+TMPDIR_NOBPA=$(mktemp -d)
+export HOME="$TMPDIR_NOBPA"
+mkdir -p "$TMPDIR_NOBPA/.claude"
+cat > "$TMPDIR_NOBPA/.claude/settings.json" << 'NOBPAEOF'
+{
+  "agents": {
+    "my-agent": {"mode": "default"}
+  }
+}
+NOBPAEOF
+NOBPA_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no bypass warning for default-mode agents" "bypassPermissions ignore" "$NOBPA_OUTPUT"
+rm -rf "$TMPDIR_NOBPA"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
