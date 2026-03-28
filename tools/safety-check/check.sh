@@ -709,6 +709,72 @@ except: print('false')
     fi
 fi
 
+# Glob wildcard injection in allow rules (claude-code#40344)
+# Allow rules with * match across shell operators (&&, ;, ||, |), enabling command injection
+if has_hook permissions; then
+    GLOB_INJECTION_RULES=$(python3 - "$SETTINGS_FILE" << 'PYEOF_GLOB'
+import json, sys, re
+try:
+    with open(sys.argv[1]) as f:
+        s = json.load(f)
+    allow_rules = s.get("permissions", {}).get("allow", [])
+    flagged = []
+    for rule in allow_rules:
+        r = rule if isinstance(rule, str) else ""
+        # Flag Bash allow rules containing * wildcards
+        if r.startswith("Bash(") and "*" in r:
+            flagged.append(r)
+    for r in flagged:
+        print(r)
+except Exception:
+    pass
+PYEOF_GLOB
+    )
+    if [ -n "$GLOB_INJECTION_RULES" ]; then
+        printf "\n  ${RED}⚠${NC}  ${BOLD}SECURITY: Glob wildcards in Bash allow rules enable command injection${NC}\n"
+        printf "     The * wildcard matches shell operators (&&, ;, ||, |), so an allow\n"
+        printf "     rule like Bash(git -C * status) also silently allows:\n"
+        printf "       git -C /repo && rm -rf / && git status\n"
+        printf "     Affected rules:\n"
+        while IFS= read -r rule; do
+            [ -z "$rule" ] && continue
+            printf "       ${RED}→${NC} %s\n" "$rule"
+        done <<< "$GLOB_INJECTION_RULES"
+        printf "     Fix: use a PreToolUse hook to parse commands structurally instead\n"
+        printf "     of relying on glob-based allow rules.\n"
+        printf "     ${DIM}See: claude-code#40344${NC}\n"
+        ISSUES+=("SECURITY: Bash allow rules with * wildcards are vulnerable to command injection. The * matches across shell operators (&&, ;, |), so any command containing the allowed prefix can chain arbitrary commands. Use PreToolUse hooks (like bash-guard) for structural command validation instead of glob-based allow rules.")
+    fi
+fi
+
+# bypassPermissions on agents ignores project allowlist (claude-code#40343)
+if [ -f "$SETTINGS_FILE" ]; then
+    HAS_BYPASS_AGENTS=$(python3 - "$SETTINGS_FILE" << 'PYEOF_BPA'
+import json, sys
+try:
+    with open(sys.argv[1]) as f:
+        s = json.load(f)
+    agents = s.get("agents", {})
+    for name, config in agents.items():
+        if isinstance(config, dict) and config.get("mode") == "bypassPermissions":
+            print(name)
+except Exception:
+    pass
+PYEOF_BPA
+    )
+    if [ -n "$HAS_BYPASS_AGENTS" ]; then
+        printf "\n  ${YELLOW}⚠${NC}  Agents with bypassPermissions ignore project-level allowlists entirely.\n"
+        printf "     These agents can execute any tool (Write, Edit, rm, git) with no checks:\n"
+        while IFS= read -r agent_name; do
+            [ -z "$agent_name" ] && continue
+            printf "       ${YELLOW}→${NC} %s\n" "$agent_name"
+        done <<< "$HAS_BYPASS_AGENTS"
+        printf "     bypassPermissions skips per-tool prompts AND the project allowlist.\n"
+        printf "     Use PreToolUse hooks for enforcement that cannot be bypassed by agent mode.\n"
+        printf "     ${DIM}See: claude-code#40343${NC}\n"
+    fi
+fi
+
 # === Section 7: Rule Enforcement ===
 echo ""
 printf "${BLUE}Rule Enforcement${NC}\n"
