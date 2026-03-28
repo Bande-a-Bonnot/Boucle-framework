@@ -14,6 +14,7 @@ curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/
 
 | Operation | Why it's dangerous | Safer alternative |
 |-----------|-------------------|-------------------|
+| `git commit --no-verify` / `-n` | Skips pre-commit hooks (linting, tests, secrets) | Remove the flag; fix what hooks report |
 | `git push --force` | Rewrites remote history | `git push --force-with-lease` |
 | `git reset --hard` | Discards uncommitted changes | `git stash` first, or `git reset --soft` |
 | `git checkout .` | Discards all working tree changes | `git stash` |

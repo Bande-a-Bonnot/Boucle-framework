@@ -12,6 +12,7 @@
 #   - git clean -f (deletes untracked files permanently)
 #   - git branch -D (force-deletes unmerged branches)
 #   - git stash drop / clear (permanently deletes stashed work)
+#   - git commit --no-verify / -n (skips pre-commit hooks)
 #   - git push --delete / origin :branch (removes remote refs)
 #   - git rebase without safeguards
 #   - git reflog expire (destroys recovery data)
@@ -97,6 +98,19 @@ block() {
 }
 
 # --- Destructive operation checks ---
+
+# git commit/merge/push --no-verify / -n (skips safety hooks like pre-commit, pre-push)
+# See: https://github.com/anthropics/claude-code/issues/40117
+if echo "$COMMAND" | grep -qE 'git\s+(commit|merge|push|cherry-pick|revert|am)\s.*--no-verify' 2>/dev/null; then
+  is_allowed "no-verify" || block "git --no-verify skips pre-commit/pre-push hooks, bypassing safety checks like linting, tests, and secret scanning." "Remove --no-verify and let hooks run. Fix any issues they report. Add 'allow: no-verify' to .git-safe only if you understand the risk."
+fi
+# Also catch -n shorthand for commit (git commit -n is --no-verify)
+if echo "$COMMAND" | grep -qE 'git\s+commit\s+(-[a-zA-Z]*n[a-zA-Z]*\b|.*\s-[a-zA-Z]*n[a-zA-Z]*\b)' 2>/dev/null; then
+  # Don't false-positive on --dry-run (-n for some commands) — commit's -n IS --no-verify
+  if ! echo "$COMMAND" | grep -q '\-\-no-verify' 2>/dev/null; then
+    is_allowed "no-verify" || block "git commit -n skips pre-commit hooks (same as --no-verify)." "Remove -n and let pre-commit hooks run. Add 'allow: no-verify' to .git-safe only if you understand the risk."
+  fi
+fi
 
 # git push --force / -f (but not --force-with-lease which is safer)
 if echo "$COMMAND" | grep -qE 'git\s+push\s.*--force(\s|$)' 2>/dev/null; then

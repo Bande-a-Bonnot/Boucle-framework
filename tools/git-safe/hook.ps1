@@ -13,6 +13,7 @@
 #   - git clean -f (deletes untracked files permanently)
 #   - git branch -D (force-deletes unmerged branches)
 #   - git stash drop / clear (permanently deletes stashed work)
+#   - git commit --no-verify / -n (skips pre-commit hooks)
 #   - git push --delete / origin :branch (removes remote refs)
 #   - git reflog expire (destroys recovery data)
 #
@@ -93,6 +94,22 @@ function Test-Allowed {
 }
 
 # --- Destructive operation checks ---
+
+# git commit/merge/push --no-verify / -n (skips safety hooks like pre-commit, pre-push)
+# See: https://github.com/anthropics/claude-code/issues/40117
+if ($command -match 'git\s+(commit|merge|push|cherry-pick|revert|am)\s.*--no-verify') {
+    if (-not (Test-Allowed 'no-verify')) {
+        Block-Tool "git-safe: git --no-verify skips pre-commit/pre-push hooks, bypassing safety checks like linting, tests, and secret scanning. Suggestion: Remove --no-verify and let hooks run. Fix any issues they report. Add 'allow: no-verify' to .git-safe only if you understand the risk."
+    }
+}
+# Also catch -n shorthand for commit (git commit -n is --no-verify)
+if ($command -match 'git\s+commit\s+(-[a-zA-Z]*n[a-zA-Z]*\b|.*\s-[a-zA-Z]*n[a-zA-Z]*\b)') {
+    if ($command -notmatch '--no-verify') {
+        if (-not (Test-Allowed 'no-verify')) {
+            Block-Tool "git-safe: git commit -n skips pre-commit hooks (same as --no-verify). Suggestion: Remove -n and let pre-commit hooks run. Add 'allow: no-verify' to .git-safe only if you understand the risk."
+        }
+    }
+}
 
 # git push --force / -f (but not --force-with-lease which is safer)
 if ($command -match 'git\s+push\s.*--force(\s|$)') {

@@ -185,6 +185,31 @@ def main():
         assert_allowed("allow git stash pop",
                        make_input("Bash", "git stash pop"))
 
+        # --- No-verify ---
+        print("\nNo-verify detection:")
+        assert_blocked("block git commit --no-verify",
+                       make_input("Bash", 'git commit --no-verify -m "skip"'))
+        assert_blocked("block git commit -n (shorthand)",
+                       make_input("Bash", 'git commit -n -m "skip"'))
+        assert_blocked("block git commit -an (combined)",
+                       make_input("Bash", 'git commit -an -m "skip"'))
+        assert_blocked("block git merge --no-verify",
+                       make_input("Bash", "git merge --no-verify feature"))
+        assert_blocked("block git push --no-verify",
+                       make_input("Bash", "git push --no-verify origin main"))
+        assert_blocked("block git cherry-pick --no-verify",
+                       make_input("Bash", "git cherry-pick --no-verify abc123"))
+        assert_blocked("block git revert --no-verify",
+                       make_input("Bash", "git revert --no-verify HEAD"))
+        assert_blocked("block git am --no-verify",
+                       make_input("Bash", "git am --no-verify patch.mbox"))
+        assert_allowed("allow git commit (normal)",
+                       make_input("Bash", 'git commit -m "normal"'))
+        assert_allowed("allow git commit -a (not -n)",
+                       make_input("Bash", 'git commit -a -m "normal"'))
+        assert_allowed("allow git commit --amend (no skip)",
+                       make_input("Bash", 'git commit --amend -m "amend"'))
+
         # --- Push --delete ---
         print("\nPush --delete:")
         assert_blocked("block git push --delete",
@@ -225,6 +250,12 @@ def main():
             f.write("# Allow force push for this project\nallow: push --force\n")
         assert_allowed("config allows push --force",
                        make_input("Bash", "git push --force origin feature"),
+                       env_overrides={"GIT_SAFE_CONFIG": config_path})
+        # No-verify allowed by config
+        with open(config_path, "a") as f:
+            f.write("allow: no-verify\n")
+        assert_allowed("config allows no-verify",
+                       make_input("Bash", 'git commit --no-verify -m "allowed"'),
                        env_overrides={"GIT_SAFE_CONFIG": config_path})
         # Force push to main still blocked even with allowlist
         assert_blocked("config: force push to main still blocked",
