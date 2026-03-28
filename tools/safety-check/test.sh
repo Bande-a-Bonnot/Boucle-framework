@@ -1963,6 +1963,90 @@ NOBPA_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no bypass warning for default-mode agents" "bypassPermissions ignore" "$NOBPA_OUTPUT"
 rm -rf "$TMPDIR_NOBPA"
 
+# === Test: Bare decision:warn warning (claude-code#40380) ===
+TMPDIR_WARN=$(mktemp -d)
+export HOME="$TMPDIR_WARN"
+mkdir -p "$TMPDIR_WARN/.claude/hooks"
+
+# Hook with bare decision:warn (should trigger warning)
+cat > "$TMPDIR_WARN/.claude/hooks/my-hook.sh" << 'WARNEOF'
+#!/usr/bin/env bash
+echo '{"decision": "warn", "reason": "just a warning"}'
+WARNEOF
+chmod +x "$TMPDIR_WARN/.claude/hooks/my-hook.sh"
+
+WARN_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "bare warn warning present" "decision:warn without hookSpecificOutput" "$WARN_OUTPUT"
+assert "bare warn cites issue" "40380" "$WARN_OUTPUT"
+rm -rf "$TMPDIR_WARN"
+
+# === Test: Hook with hookSpecificOutput does NOT trigger warning ===
+TMPDIR_NOWARN=$(mktemp -d)
+export HOME="$TMPDIR_NOWARN"
+mkdir -p "$TMPDIR_NOWARN/.claude/hooks"
+
+cat > "$TMPDIR_NOWARN/.claude/hooks/good-hook.sh" << 'GOODEOF'
+#!/usr/bin/env bash
+# This hook uses the correct format with hookSpecificOutput
+echo '{"hookSpecificOutput": {"permissionDecision": "allow", "additionalContext": "warning text"}}'
+GOODEOF
+chmod +x "$TMPDIR_NOWARN/.claude/hooks/good-hook.sh"
+
+NOWARN_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no bare warn warning for hookSpecificOutput hook" "decision:warn without hookSpecificOutput" "$NOWARN_OUTPUT"
+rm -rf "$TMPDIR_NOWARN"
+
+# === Test: Hook with both warn and hookSpecificOutput does NOT trigger ===
+TMPDIR_BOTH=$(mktemp -d)
+export HOME="$TMPDIR_BOTH"
+mkdir -p "$TMPDIR_BOTH/.claude/hooks"
+
+cat > "$TMPDIR_BOTH/.claude/hooks/both-hook.sh" << 'BOTHEOF'
+#!/usr/bin/env bash
+# Has "warn" in decision logic but also uses hookSpecificOutput
+if [ "$action" = "warn" ]; then
+  echo '{"hookSpecificOutput": {"permissionDecision": "allow", "additionalContext": "msg"}}'
+fi
+BOTHEOF
+chmod +x "$TMPDIR_BOTH/.claude/hooks/both-hook.sh"
+
+BOTH_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no false positive when hook has warn + hookSpecificOutput" "decision:warn without hookSpecificOutput" "$BOTH_OUTPUT"
+rm -rf "$TMPDIR_BOTH"
+
+# === Test: Sandbox permission caching warning (claude-code#40384) ===
+TMPDIR_SANDBOX=$(mktemp -d)
+export HOME="$TMPDIR_SANDBOX"
+mkdir -p "$TMPDIR_SANDBOX/.claude"
+cat > "$TMPDIR_SANDBOX/.claude/settings.json" << 'SBEOF'
+{
+  "sandbox": {
+    "enabled": true
+  }
+}
+SBEOF
+
+SANDBOX_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "sandbox caching warning present" "Session-level permission caching" "$SANDBOX_OUTPUT"
+assert "sandbox caching cites issue" "40384" "$SANDBOX_OUTPUT"
+rm -rf "$TMPDIR_SANDBOX"
+
+# === Test: No sandbox warning when sandbox disabled ===
+TMPDIR_NOSB=$(mktemp -d)
+export HOME="$TMPDIR_NOSB"
+mkdir -p "$TMPDIR_NOSB/.claude"
+cat > "$TMPDIR_NOSB/.claude/settings.json" << 'NOSBEOF'
+{
+  "sandbox": {
+    "enabled": false
+  }
+}
+NOSBEOF
+
+NOSB_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no sandbox warning when disabled" "Session-level permission caching" "$NOSB_OUTPUT"
+rm -rf "$TMPDIR_NOSB"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
