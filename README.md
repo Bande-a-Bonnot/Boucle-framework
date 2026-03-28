@@ -458,9 +458,9 @@ bash tools/safety-check/test.sh
 
 ## Status
 
-**v0.9.0** — 195 Rust tests + ~1550 hook tests. Zero clippy warnings. CI on Ubuntu + macOS. Docker support.
+**v0.9.1** — 195 Rust tests + ~1670 hook tests. Zero clippy warnings. CI on Ubuntu + macOS + Windows. Docker support.
 
-New in v0.9.0: 4 native PowerShell hooks for Windows (file-guard, git-safe, branch-guard, session-log), 48 documented platform limitations (up from 22), spaces-in-HOME detection, plugin hook consent warnings, companyAnnouncements spoofing detection, path deny bypass warnings. bash-guard covers 25+ threat categories with ~500 tests. Quickstart installer for zero-to-protected in one command.
+New in v0.9.1: `--no-verify` bypass detection in git-safe (bash + PS1), squash merge false positive fix in worktree-guard (two-tier detection), 116 PowerShell hook tests on Windows CI, 51 documented platform limitations. See [CHANGELOG](CHANGELOG.md) for details.
 
 13 stars, 3 external contributors, 2 forks.
 
