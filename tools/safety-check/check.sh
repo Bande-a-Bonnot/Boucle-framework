@@ -143,14 +143,18 @@ has_hook_type() {
     local event_type="$1"
     for sf in "$SETTINGS_FILE" "$PROJECT_SETTINGS"; do
         [ -f "$sf" ] || continue
-        if python3 -c "
+        local _hht_result=""
+        _hht_result=$(python3 - "$sf" "$event_type" << 'PYEOF_HHT'
 import json,sys
 try:
     s=json.load(open(sys.argv[1]))
     hooks=s.get('hooks',{}).get(sys.argv[2],[])
-    sys.exit(0 if hooks else 1)
-except: sys.exit(1)
-" "$sf" "$event_type" 2>/dev/null; then
+    print('yes' if hooks else 'no')
+except:
+    print('no')
+PYEOF_HHT
+        ) 2>/dev/null || _hht_result="no"
+        if [ "$_hht_result" = "yes" ]; then
             return 0
         fi
     done
