@@ -200,6 +200,7 @@ fi
 # Platform check: Windows hooks have known reliability issues
 if [[ "${OS:-}" == "Windows_NT" ]] || [[ "$(uname -s 2>/dev/null)" == MINGW* ]] || [[ "$(uname -s 2>/dev/null)" == MSYS* ]]; then
     WARNINGS+=("Running on Windows. Claude Code hooks fire only ~18% of the time on Windows (see claude-code#37988). Hooks are unreliable on this platform.")
+    WARNINGS+=("Windows: permission path matching in settings.json is case-sensitive, but NTFS is case-insensitive. Deny rules may silently fail if path casing differs from what the model uses. Double-check deny/allow paths match exact casing (see claude-code#40170).")
 fi
 
 # CLI version check: warn about known dangerous versions

@@ -1755,6 +1755,13 @@ USRSTOP_OUTPUT=$(cd "$TMPDIR_USERSTOP/project" && bash "$CHECK_SCRIPT" 2>&1) || 
 assert "user-level stop hook also triggers vscode warning" "do not fire in the VSCode" "$USRSTOP_OUTPUT"
 rm -rf "$TMPDIR_USERSTOP"
 
+# === Test: Windows case-sensitive path warning exists in script ===
+assert "windows path case-sensitive warning code" "case-sensitive" "$(cat "$CHECK_SCRIPT")"
+assert "windows path warning cites issue 40170" "40170" "$(cat "$CHECK_SCRIPT")"
+
+# === Test: Windows path warning mentions NTFS ===
+assert "windows path warning mentions NTFS" "NTFS" "$(cat "$CHECK_SCRIPT")"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
