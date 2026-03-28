@@ -1,6 +1,7 @@
 #!/bin/bash
 # Boucle hooks installer — discover and install Claude Code hooks
 # Usage: curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash
+# Or:    curl ... | bash -s -- recommended
 # Or:    curl ... | bash -s -- read-once file-guard git-safe
 set -euo pipefail
 
@@ -44,6 +45,7 @@ hook_desc() {
 }
 
 ALL_HOOKS="read-once file-guard git-safe bash-guard branch-guard worktree-guard session-log"
+RECOMMENDED_HOOKS="bash-guard git-safe file-guard"
 
 # Check prerequisites
 if ! command -v python3 >/dev/null 2>&1; then
@@ -86,7 +88,12 @@ for hook in $ALL_HOOKS; do
     status="${DIM}not installed${RESET}"
   fi
   desc=$(hook_desc "$hook")
-  echo -e "  ${CYAN}${hook}${RESET}  ${desc}  [${status}]"
+  # Mark recommended hooks
+  rec=""
+  case " $RECOMMENDED_HOOKS " in
+    *" $hook "*) rec=" ${YELLOW}recommended${RESET}" ;;
+  esac
+  echo -e "  ${CYAN}${hook}${RESET}  ${desc}  [${status}]${rec}"
 done
 echo ""
 
@@ -94,16 +101,24 @@ echo ""
 if [ $# -gt 0 ]; then
   if [ "$1" = "all" ]; then
     selected="$ALL_HOOKS"
+  elif [ "$1" = "recommended" ]; then
+    selected="$RECOMMENDED_HOOKS"
+    echo -e "${BOLD}Installing recommended hooks:${RESET} bash-guard, git-safe, file-guard"
   else
     selected="$*"
   fi
 else
   echo -e "${BOLD}Which hooks to install?${RESET}"
-  echo "  Enter hook names separated by spaces, or 'all' for everything"
+  echo "  'recommended'  bash-guard + git-safe + file-guard (start here)"
+  echo "  'all'          all 7 hooks"
+  echo "  or enter hook names separated by spaces"
   echo -n "> "
   read -r input
   if [ "$input" = "all" ]; then
     selected="$ALL_HOOKS"
+  elif [ "$input" = "recommended" ]; then
+    selected="$RECOMMENDED_HOOKS"
+    echo -e "${BOLD}Installing recommended hooks:${RESET} bash-guard, git-safe, file-guard"
   else
     selected="$input"
   fi
