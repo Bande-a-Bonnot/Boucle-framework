@@ -73,6 +73,10 @@ This fixes the false positive described in [anthropics/claude-code#40137](https:
 
 **Worktree isolation can silently fail.** The Agent tool's `isolation: "worktree"` option can [silently run the agent in the main repository](https://github.com/anthropics/claude-code/issues/39886) instead of creating an isolated worktree. The result metadata shows `worktreePath: done` (not an actual path) and `worktreeBranch: undefined`. The agent commits directly to the main checkout's branch with zero isolation. This cannot be detected or prevented by hooks. If you run parallel agents that modify git state, verify `worktreePath` in agent results before trusting branch isolation.
 
+**Hook stdout corrupts worktree paths.** When the Agent tool creates a worktree with `isolation: "worktree"`, any hook returning JSON on stdout has its output [concatenated into the worktree path](https://github.com/anthropics/claude-code/issues/40262) instead of being consumed by the hook protocol. This produces paths like `/project/{"continue":true}/{"continue":true}` and an immediate "Path does not exist" error. This affects ALL correctly implemented hooks (the hook protocol requires JSON on stdout). Hooks and worktree isolation are currently incompatible. No workaround at the hook level.
+
+**`symlinkDirectories` prevents automatic worktree cleanup.** When `worktree.symlinkDirectories` is configured (e.g., to symlink `node_modules`), [automatic worktree cleanup silently fails](https://github.com/anthropics/claude-code/issues/40259) because `git worktree remove` refuses to remove a directory containing untracked files (the symlinks). Stale worktrees accumulate. worktree-guard cannot detect or fix this because it fires on ExitWorktree, not on the cleanup that follows. Workaround: use `git worktree remove --force` manually, or add a WorktreeRemove hook.
+
 ## Tests
 
 ```sh

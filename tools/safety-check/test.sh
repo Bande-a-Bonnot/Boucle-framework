@@ -1831,6 +1831,59 @@ EMPTYSANDBOX_OUTPUT=$(cd "$TMPDIR_EMPTYSANDBOX/project" && bash "$CHECK_SCRIPT" 
 assert_not "empty allowedDomains no warning" "40213" "$EMPTYSANDBOX_OUTPUT"
 rm -rf "$TMPDIR_EMPTYSANDBOX"
 
+# === Test: Hook stdout corrupts worktree paths warning (#40262) ===
+# When ANY hooks are configured, warn about worktree incompatibility
+TMPDIR_WTHOOK=$(mktemp -d)
+export HOME="$TMPDIR_WTHOOK"
+mkdir -p "$TMPDIR_WTHOOK/.claude"
+cat > "$TMPDIR_WTHOOK/.claude/settings.json" << 'WTHOOKEOF'
+{
+  "hooks": {
+    "PreToolUse": [{"type":"command","command":"bash guard.sh"}]
+  }
+}
+WTHOOKEOF
+WTHOOK_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "hooks+worktree warning present" "40262" "$WTHOOK_OUTPUT"
+assert "hooks+worktree warning mentions path" "Path does not exist" "$WTHOOK_OUTPUT"
+rm -rf "$TMPDIR_WTHOOK"
+
+# === Test: No hooks = no worktree corruption warning (#40262) ===
+TMPDIR_NOHOOK=$(mktemp -d)
+export HOME="$TMPDIR_NOHOOK"
+mkdir -p "$TMPDIR_NOHOOK/.claude"
+cat > "$TMPDIR_NOHOOK/.claude/settings.json" << 'NOHOOKEOF'
+{
+  "permissions": {
+    "allow": ["Read(*)"]
+  }
+}
+NOHOOKEOF
+NOHOOK_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no worktree corruption warning without hooks" "40262" "$NOHOOK_OUTPUT"
+rm -rf "$TMPDIR_NOHOOK"
+
+# === Test: Multiple hooks in settings triggers single warning (#40262) ===
+TMPDIR_MULTIHOOK=$(mktemp -d)
+export HOME="$TMPDIR_MULTIHOOK"
+mkdir -p "$TMPDIR_MULTIHOOK/.claude"
+cat > "$TMPDIR_MULTIHOOK/.claude/settings.json" << 'MULTIHOOKEOF'
+{
+  "hooks": {
+    "PreToolUse": [
+      {"matcher":"Bash","type":"command","command":"bash bash-guard.sh"},
+      {"matcher":"Write","type":"command","command":"bash file-guard.sh"}
+    ],
+    "PostToolUse": [
+      {"type":"command","command":"bash session-log.sh"}
+    ]
+  }
+}
+MULTIHOOKEOF
+MULTIHOOK_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "multi-hook worktree warning present" "40262" "$MULTIHOOK_OUTPUT"
+rm -rf "$TMPDIR_MULTIHOOK"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"

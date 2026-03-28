@@ -425,6 +425,37 @@ if has_hook worktree-guard; then
     WARNINGS+=("Worktree isolation can silently fail. The Agent tool's isolation:worktree option may run the agent in the main repo instead of a worktree, with worktreePath:done and worktreeBranch:undefined. worktree-guard protects ExitWorktree but cannot detect failed worktree creation. Verify agent results if you rely on branch isolation. (see claude-code#39886)")
 fi
 
+# Hook stdout corrupts worktree paths (claude-code#40262)
+# Any hook returning JSON on stdout can corrupt the worktree path when Agent uses isolation:"worktree".
+# The JSON gets concatenated into the path instead of being consumed by the hook protocol.
+HOOK_COUNT=0
+for hookdir in "${HOME}/.claude/hooks" ".claude/hooks"; do
+    [ -d "$hookdir" ] || continue
+    for hookfile in "$hookdir"/*; do
+        [ -f "$hookfile" ] && HOOK_COUNT=$((HOOK_COUNT + 1))
+    done
+done
+# Also count hooks from settings.json
+if [ -f "$SETTINGS_FILE" ]; then
+    SETTINGS_HOOK_COUNT=$(python3 -c "
+import json,sys
+try:
+    s=json.load(open(sys.argv[1]))
+    c=0
+    for ht in s.get('hooks',{}):
+        for entry in s['hooks'][ht]:
+            for h in entry.get('hooks',[]):
+                if h.get('command',''): c+=1
+            if entry.get('command',''): c+=1
+    print(c)
+except: print(0)
+" "$SETTINGS_FILE" 2>/dev/null)
+    HOOK_COUNT=$((HOOK_COUNT + ${SETTINGS_HOOK_COUNT:-0}))
+fi
+if [ "$HOOK_COUNT" -gt 0 ]; then
+    WARNINGS+=("Hooks and worktree isolation are incompatible on v2.1.86+. Hook stdout JSON is concatenated into the worktree path instead of being consumed by the hook protocol, producing paths like /project/{\"continue\":true}. If you spawn agents with isolation:worktree, expect Path does not exist errors. No workaround except disabling hooks before worktree agent calls. (see claude-code#40262)")
+fi
+
 # Non-enabled marketplace plugins still fire hooks (claude-code#40013)
 # Installed-but-not-enabled plugins have their hooks loaded and executed anyway.
 MARKETPLACE_DIR="${HOME}/.claude/plugins/marketplaces"
