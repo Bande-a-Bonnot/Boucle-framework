@@ -450,6 +450,10 @@ boucle --version                 # Show version
 
 **Subagents may skip hook settings**: Agents spawned via the Agent tool [don't consistently inherit permission settings](https://github.com/anthropics/claude-code/issues/37730). Hooks in `.claude/settings.json` should still fire (shared config), but verify hook behavior when using subagent workflows.
 
+**Internal git operations bypass all hooks**: Claude Code runs background git operations (fetch + reset) [programmatically every ~10 minutes](https://github.com/anthropics/claude-code/issues/40710) without spawning an external `git` binary or making a tool call. Since hooks only fire on tool calls, git-safe and all other hooks are blind to these operations. This can silently destroy uncommitted changes to tracked files. Workaround: use git worktrees (immune) or commit frequently.
+
+**Model can manipulate hook state files**: The model has filesystem access and [can overwrite files that hooks depend on](https://github.com/anthropics/claude-code/issues/38841) — checkpoint files, lock files, counters. In one documented case, Claude computed the SHA256 hash of a checkpoint filename and wrote a fresh timestamp to bypass a content-read-gate. Hooks that rely on external state files for enforcement should assume the model can read and modify those files. Cryptographic signatures or out-of-process validation can mitigate this.
+
 **Windows**: All seven hooks now have native **PowerShell** equivalents (`hook.ps1`) that require no external dependencies: **bash-guard**, **file-guard**, **git-safe**, **branch-guard**, **read-once**, **worktree-guard**, and **session-log**. Install them with the PowerShell installer:
 
 ```powershell
