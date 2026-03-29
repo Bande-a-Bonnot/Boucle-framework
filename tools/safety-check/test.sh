@@ -2120,6 +2120,81 @@ NOKEY_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no additionalDirectories warning when key absent" "additionalDirectories" "$NOKEY_OUTPUT"
 rm -rf "$TMPDIR_NOKEY"
 
+# === Test: Glob-special characters in project path (claude-code#40613) ===
+TMPDIR_GLOB=$(mktemp -d)
+GLOB_DIR="$TMPDIR_GLOB/my-project-{v2}"
+mkdir -p "$GLOB_DIR"
+export HOME="$TMPDIR_GLOB"
+mkdir -p "$TMPDIR_GLOB/.claude"
+echo '{}' > "$TMPDIR_GLOB/.claude/settings.json"
+GLOB_OUTPUT=$(cd "$GLOB_DIR" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "glob chars in path detected" "glob metacharacters" "$GLOB_OUTPUT"
+rm -rf "$TMPDIR_GLOB"
+
+# === Test: No glob warning for normal paths ===
+TMPDIR_NORMAL=$(mktemp -d)
+NORMAL_DIR="$TMPDIR_NORMAL/my-project-v2"
+mkdir -p "$NORMAL_DIR"
+export HOME="$TMPDIR_NORMAL"
+mkdir -p "$TMPDIR_NORMAL/.claude"
+echo '{}' > "$TMPDIR_NORMAL/.claude/settings.json"
+NORMAL_OUTPUT=$(cd "$NORMAL_DIR" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no glob warning for normal path" "glob metacharacters" "$NORMAL_OUTPUT"
+rm -rf "$TMPDIR_NORMAL"
+
+# === Test: Brackets in path detected ===
+TMPDIR_BRACKET=$(mktemp -d)
+BRACKET_DIR="$TMPDIR_BRACKET/lib[core]"
+mkdir -p "$BRACKET_DIR"
+export HOME="$TMPDIR_BRACKET"
+mkdir -p "$TMPDIR_BRACKET/.claude"
+echo '{}' > "$TMPDIR_BRACKET/.claude/settings.json"
+BRACKET_OUTPUT=$(cd "$BRACKET_DIR" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "brackets in path detected" "glob metacharacters" "$BRACKET_OUTPUT"
+rm -rf "$TMPDIR_BRACKET"
+
+# === Test: bypassPermissions + plan mode warning (claude-code#40623) ===
+TMPDIR_BYPASS=$(mktemp -d)
+export HOME="$TMPDIR_BYPASS"
+mkdir -p "$TMPDIR_BYPASS/.claude"
+cat > "$TMPDIR_BYPASS/.claude/settings.json" << 'BYPASSEOF'
+{
+  "bypassPermissions": true
+}
+BYPASSEOF
+
+BYPASS_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "bypass+plan mode warning" "plan mode does NOT deactivate bypass" "$BYPASS_OUTPUT"
+rm -rf "$TMPDIR_BYPASS"
+
+# === Test: No bypass warning when bypassPermissions is false ===
+TMPDIR_NOBYPASS=$(mktemp -d)
+export HOME="$TMPDIR_NOBYPASS"
+mkdir -p "$TMPDIR_NOBYPASS/.claude"
+cat > "$TMPDIR_NOBYPASS/.claude/settings.json" << 'NOBYPASSEOF'
+{
+  "bypassPermissions": false
+}
+NOBYPASSEOF
+
+NOBYPASS_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no bypass warning when false" "plan mode does NOT deactivate bypass" "$NOBYPASS_OUTPUT"
+rm -rf "$TMPDIR_NOBYPASS"
+
+# === Test: No bypass warning when key absent ===
+TMPDIR_NOKEY2=$(mktemp -d)
+export HOME="$TMPDIR_NOKEY2"
+mkdir -p "$TMPDIR_NOKEY2/.claude"
+cat > "$TMPDIR_NOKEY2/.claude/settings.json" << 'NOKEY2EOF'
+{
+  "hooks": {}
+}
+NOKEY2EOF
+
+NOKEY2_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no bypass warning when key absent" "plan mode does NOT deactivate bypass" "$NOKEY2_OUTPUT"
+rm -rf "$TMPDIR_NOKEY2"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"

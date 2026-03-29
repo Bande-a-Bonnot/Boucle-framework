@@ -473,6 +473,26 @@ except: pass
     fi
 fi
 
+# Glob-special characters in project path break Read permissions (claude-code#40613)
+CURRENT_DIR="$(pwd)"
+if echo "$CURRENT_DIR" | grep -qE '[{}]' || echo "$CURRENT_DIR" | grep -q '\[' || echo "$CURRENT_DIR" | grep -q '\]'; then
+    WARNINGS+=("Your project path contains glob metacharacters ({, }, [, or ]). Claude Code's Read permission matching interprets these as glob patterns instead of literal characters, causing permission failures. Rename the directory to remove these characters. PreToolUse hooks use exact string matching and are unaffected. (see claude-code#40613)")
+fi
+
+# Plan mode does not deactivate bypass permissions (claude-code#40623)
+if [ -f "$SETTINGS_FILE" ]; then
+    HAS_BYPASS=$(python3 -c "
+import json,sys
+try:
+    s=json.load(open(sys.argv[1]))
+    if s.get('bypassPermissions'): print('yes')
+except: pass
+" "$SETTINGS_FILE" 2>/dev/null)
+    if [ "$HAS_BYPASS" = "yes" ]; then
+        WARNINGS+=("bypassPermissions is enabled globally. Note: entering plan mode does NOT deactivate bypass permissions — the model can execute write operations during what you expect to be a read-only analysis phase. PreToolUse hooks fire regardless of both modes and are the only reliable constraint during plan+bypass overlap. (see claude-code#40623)")
+    fi
+fi
+
 # Non-enabled marketplace plugins still fire hooks (claude-code#40013)
 # Installed-but-not-enabled plugins have their hooks loaded and executed anyway.
 MARKETPLACE_DIR="${HOME}/.claude/plugins/marketplaces"
