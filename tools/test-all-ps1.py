@@ -11,6 +11,7 @@ import sys
 
 TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
 HOOKS_WITH_PS1_TESTS = [
+    "bash-guard",
     "branch-guard",
     "file-guard",
     "git-safe",

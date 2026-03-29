@@ -19,6 +19,7 @@ $SettingsPath = Join-Path $HOME ".claude" "settings.json"
 
 # Hook catalog
 $HookCatalog = [ordered]@{
+    'bash-guard'     = @{ Desc = 'Block dangerous bash commands (rm -rf, sudo, curl|bash, cloud destroy)'; Event = 'PreToolUse' }
     'file-guard'     = @{ Desc = 'Block modifications to sensitive files (.env, keys)'; Event = 'PreToolUse' }
     'git-safe'       = @{ Desc = 'Prevent destructive git operations (force push, reset --hard)'; Event = 'PreToolUse' }
     'branch-guard'   = @{ Desc = 'Prevent direct commits to main/master (feature-branch workflow)'; Event = 'PreToolUse' }
