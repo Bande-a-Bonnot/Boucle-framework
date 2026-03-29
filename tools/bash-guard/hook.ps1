@@ -174,7 +174,7 @@ if ($command -match '(curl|wget)\s.*\|\s*(sh|bash|zsh|dash|ksh|source|eval)') {
 }
 
 # sudo and alternatives (privilege escalation)
-if ($command -match '(^|\s|;|&&|\|\|)sudo\s') {
+if ($command -match '(^|[;&|]\s*)sudo\s') {
     if (-not (Test-Allowed 'sudo')) {
         Block-Tool 'bash-guard: sudo escalates to root privileges. AI agents should not run commands as root. Suggestion: Run without sudo, or add ''allow: sudo'' to .bash-guard.'
     }

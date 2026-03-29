@@ -168,7 +168,7 @@ if echo "$COMMAND" | grep -qE '(curl|wget)\s.*\|\s*(sh|bash|zsh|dash|ksh|source|
 fi
 
 # sudo and alternatives (privilege escalation)
-if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)sudo\s' 2>/dev/null; then
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)sudo\s' 2>/dev/null; then
   is_allowed "sudo" || block "sudo escalates to root privileges. AI agents should not run commands as root." "Run without sudo, or add 'allow: sudo' to .bash-guard."
 fi
 if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)(pkexec|doas)\s' 2>/dev/null; then

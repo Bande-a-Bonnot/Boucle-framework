@@ -106,6 +106,9 @@ def make_repo(tmpdir, name="repo"):
     os.makedirs(bare)
     git(["init", "--bare", bare], cwd=tmpdir)
     git(["clone", bare, clone], cwd=tmpdir)
+    # Configure git identity for CI environments
+    git(["config", "user.name", "test"], cwd=clone)
+    git(["config", "user.email", "test@test.local"], cwd=clone)
     # Initial commit so main exists
     filepath = os.path.join(clone, "README.md")
     with open(filepath, "w") as f:
