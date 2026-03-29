@@ -111,6 +111,7 @@ Beyond the scored checks, safety-check detects platform bugs and configuration p
 | Stop hook isolation | Stop/PostToolUse hooks fire across all parallel sessions ([#39530](https://github.com/anthropics/claude-code/issues/39530)) |
 | updatedInput + Agent | `updatedInput` silently ignored for Agent tool calls ([#39814](https://github.com/anthropics/claude-code/issues/39814)) |
 | Worktree isolation | Agent `isolation: "worktree"` silently runs in main repo ([#39886](https://github.com/anthropics/claude-code/issues/39886)) |
+| Subagent hook bypass | Hook exit codes silently ignored in subagent tool calls ([#40580](https://github.com/anthropics/claude-code/issues/40580)) |
 
 ## No dependencies
 
