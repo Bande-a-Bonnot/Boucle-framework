@@ -40,6 +40,7 @@ Note: `settings.json` path deny rules [do not apply to the Bash tool](https://gi
 | Encoding bypasses | `base64 -d \| bash`, `xxd -r \| sh`, `rev \| bash` | Decoded commands bypass all pattern matching |
 | Process substitution | `bash <(curl ...)`, `sh <(wget ...)` | Downloads and executes without saving for review |
 | Language shell wrappers | `python3 -c "subprocess.run(...)"`, `ruby -e "system(...)"` | Runs shell commands through programming languages |
+| In-place file editing | `perl -i -pe`, `ruby -i -pe`, `sed -i` | Modifies files directly, bypassing file-guard ([#40408](https://github.com/anthropics/claude-code/issues/40408)) |
 | Here-string/here-doc | `bash <<< "cmd"`, `sh << EOF` | Feeds commands to shell via redirection, bypasses pipe detection |
 | eval string literals | `eval 'dangerous'`, `eval "cmd"` | Executes arbitrary code from string constants |
 | xargs to shell | `echo cmd \| xargs bash -c` | Funnels data to shell interpreter via xargs |
