@@ -4,6 +4,29 @@ All notable changes to Boucle are documented here.
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-03-29
+
+### Added
+
+#### Windows parity: 7/7 hooks now have native PowerShell equivalents
+- **bash-guard PS1** (`bash-guard.ps1`) -- 849 lines, 112 check rules, 51 pattern categories. Largest PS1 port. Covers cloud infrastructure, encoding bypasses, disk utilities, and all bash-guard patterns.
+- **worktree-guard PS1** (`worktree-guard.ps1`) -- 208 lines. Blocks ExitWorktree on uncommitted, untracked, unmerged, or unpushed changes. Two-tier squash merge detection.
+- **read-once PS1** (`read-once.ps1`) -- 264 lines. Token-saving hook that blocks redundant file re-reads within a configurable window.
+
+#### bash-guard
+- **Cloud infrastructure protection** -- 15+ cloud platforms: AWS (EC2, S3, IAM, RDS, Lambda, ECS, EKS, CloudFormation), Azure (az vm, az storage, az aks), GCP (gcloud compute, gcloud storage, gcloud container), DigitalOcean, Linode, Vultr, Hetzner, OVH, Scaleway, Fly.io, Railway, Render, Vercel, Netlify, Heroku. Blocks destructive operations (delete, destroy, terminate, scale-to-zero) on production resources. 48 new tests.
+
+#### installer
+- **bash-guard added to Windows installer** -- `install.ps1` now includes bash-guard in the PS1 hook catalog.
+
+### Documented
+- **~80 known platform limitations** in enforce-hooks README, up from 72 in v0.9.2. New entries: bypass permission mode still prompts ([#40552](https://github.com/anthropics/claude-code/issues/40552)), model executes physical device commands without permission ([#40537](https://github.com/anthropics/claude-code/issues/40537)), cowork ignores all user hooks ([#40495](https://github.com/anthropics/claude-code/issues/40495)), model ignores startup sequences ([#40489](https://github.com/anthropics/claude-code/issues/40489)), background agents deny writes ([#40502](https://github.com/anthropics/claude-code/issues/40502)), model ignores negative feedback ([#40499](https://github.com/anthropics/claude-code/issues/40499)), Write guard pushes to Bash ([#40517](https://github.com/anthropics/claude-code/issues/40517)), ExitPlanMode crashes on auto-compact ([#40519](https://github.com/anthropics/claude-code/issues/40519)), self-modification guard ignores bypass ([#40463](https://github.com/anthropics/claude-code/issues/40463)), subagents lose CLAUDE.md ([#40459](https://github.com/anthropics/claude-code/issues/40459)).
+
+### Stats
+- 195 Rust tests (unchanged)
+- Hook tests: bash-guard ~561, safety-check ~146, PS1 hooks ~248 (132 bash-guard + 116 prior), file-guard 91, git-safe 65, session-log 50, read-once 48, enforce-hooks ~52, branch-guard 35, worktree-guard 33, format ~36
+- Total: ~1810+ tests
+
 ## [0.9.2] - 2026-03-29
 
 ### Added

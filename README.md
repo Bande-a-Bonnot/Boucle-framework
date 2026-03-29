@@ -478,9 +478,9 @@ bash tools/safety-check/test.sh
 
 ## Status
 
-**v0.9.2** — 195 Rust tests + ~1810 hook tests. Zero clippy warnings. CI on Ubuntu + macOS + Windows. Docker support.
+**v0.9.3** — 195 Rust tests + ~1810 hook tests. Zero clippy warnings. CI on Ubuntu + macOS + Windows. Docker support.
 
-New in v0.9.2: in-place file editing bypass detection in bash-guard (`perl -i`, `ruby -i`, `sed -i`), glob wildcard injection warning in safety-check, `recommended` installer preset, PowerShell installer for Windows, hookSpecificOutput fix for warn-level hooks, 72 documented platform limitations. See [CHANGELOG](CHANGELOG.md) for details.
+New in v0.9.3: **Windows parity complete** -- all 7 hooks now have native PowerShell equivalents (bash-guard, worktree-guard, read-once added). Cloud infrastructure protection for 15+ platforms in bash-guard. ~80 documented platform limitations. See [CHANGELOG](CHANGELOG.md) for details.
 
 13 stars, 3 external contributors, 2 forks.
 
