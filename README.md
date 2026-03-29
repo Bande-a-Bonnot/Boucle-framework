@@ -450,13 +450,13 @@ boucle --version                 # Show version
 
 **Subagents may skip hook settings**: Agents spawned via the Agent tool [don't consistently inherit permission settings](https://github.com/anthropics/claude-code/issues/37730). Hooks in `.claude/settings.json` should still fire (shared config), but verify hook behavior when using subagent workflows.
 
-**Windows**: Four hooks now have native **PowerShell** equivalents (`hook.ps1`) that require no external dependencies: **file-guard**, **git-safe**, **branch-guard**, and **session-log**. Install them with the PowerShell installer:
+**Windows**: Six hooks now have native **PowerShell** equivalents (`hook.ps1`) that require no external dependencies: **file-guard**, **git-safe**, **branch-guard**, **read-once**, **worktree-guard**, and **session-log**. Install them with the PowerShell installer:
 
 ```powershell
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } all"
 ```
 
-Or configure manually in `.claude/settings.json` with `"command": "pwsh -File /path/to/hook.ps1"`. The remaining hooks are bash scripts that work from a **WSL** terminal or with **Git for Windows** (which provides `/usr/bin/bash`). Note: Claude Code has a known bug where hooks [fire only ~18% of the time on Windows](https://github.com/anthropics/claude-code/issues/37988), so hook reliability is limited on native Windows regardless of shell. WSL remains the most reliable option. See [#3](https://github.com/Bande-a-Bonnot/Boucle-framework/issues/3).
+Or configure manually in `.claude/settings.json` with `"command": "pwsh -File /path/to/hook.ps1"`. The remaining hooks (**bash-guard**, **enforce-hooks**) are bash scripts that work from a **WSL** terminal or with **Git for Windows** (which provides `/usr/bin/bash`). Note: Claude Code has a known bug where hooks [fire only ~18% of the time on Windows](https://github.com/anthropics/claude-code/issues/37988), so hook reliability is limited on native Windows regardless of shell. WSL remains the most reliable option. See [#3](https://github.com/Bande-a-Bonnot/Boucle-framework/issues/3).
 
 ## Development
 
