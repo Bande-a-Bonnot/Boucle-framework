@@ -286,7 +286,7 @@ Works with Claude Desktop, Claude Code, or any MCP-compatible client.
 
 ## All Tools
 
-Each tool has its own README with full documentation: [read-once](tools/read-once/), [file-guard](tools/file-guard/), [git-safe](tools/git-safe/), [bash-guard](tools/bash-guard/), [branch-guard](tools/branch-guard/), [session-log](tools/session-log/), [enforce-hooks](tools/enforce/), [safety-check](tools/safety-check/), [diagnose](tools/diagnose/).
+Each tool has its own README with full documentation: [read-once](tools/read-once/), [file-guard](tools/file-guard/), [git-safe](tools/git-safe/), [bash-guard](tools/bash-guard/), [branch-guard](tools/branch-guard/), [session-log](tools/session-log/), [enforce-hooks](tools/enforce/), [safety-check](tools/safety-check/), [worktree-guard](tools/worktree-guard/), [diagnose](tools/diagnose/).
 
 ### Architecture
 
@@ -474,11 +474,12 @@ bash tools/branch-guard/test.sh
 bash tools/session-log/test.sh
 bash tools/enforce/test.sh
 bash tools/safety-check/test.sh
+bash tools/worktree-guard/test.sh
 ```
 
 ## Status
 
-**v0.9.3** — 195 Rust tests + ~1500 hook tests (bash + PowerShell). Zero clippy warnings. CI on Ubuntu + macOS + Windows. Docker support.
+**v0.9.3** — 195 Rust tests + ~1300 hook tests (bash + PowerShell). Zero clippy warnings. CI on Ubuntu + macOS + Windows. Docker support.
 
 New in v0.9.3: **Windows parity complete** -- all 7 hooks now have native PowerShell equivalents (bash-guard, worktree-guard, read-once added). Cloud infrastructure protection for 15+ platforms in bash-guard. 100+ documented platform limitations. See [CHANGELOG](CHANGELOG.md) for details.
 
