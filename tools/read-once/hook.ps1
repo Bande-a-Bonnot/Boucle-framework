@@ -120,13 +120,13 @@ $cachedTs = ''
 if (Test-Path $cacheFile) {
     $lines = Get-Content $cacheFile -ErrorAction SilentlyContinue
     foreach ($line in $lines) {
-        if ($line -match [regex]::Escape("`"path`":`"${filePath}`"")) {
-            try {
-                $entry = $line | ConvertFrom-Json
+        try {
+            $entry = $line | ConvertFrom-Json
+            if ($entry.path -eq $filePath) {
                 $cachedMtime = [string]$entry.mtime
                 $cachedTs = [string]$entry.ts
-            } catch {}
-        }
+            }
+        } catch {}
     }
 }
 

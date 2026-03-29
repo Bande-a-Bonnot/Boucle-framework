@@ -91,6 +91,8 @@ assert_blocked "sudo chmod" "sudo chmod 777 /etc/hosts"
 assert_blocked "sudo at line start" "sudo apt-get install foo"
 assert_blocked "sudo after &&" "echo hi && sudo rm -rf /tmp"
 assert_allowed "no sudo" "apt-get install --user foo"
+assert_allowed "grep sudo (argument)" "grep sudo README"
+assert_allowed "cat sudoers (substring)" "cat /etc/sudoers"
 
 echo ""
 echo "--- kill -9 broad targets ---"
