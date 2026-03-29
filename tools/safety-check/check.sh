@@ -550,6 +550,11 @@ if has_hook_type "UserPromptSubmit"; then
     WARNINGS+=("UserPromptSubmit hooks are configured but their systemMessage delivery is intermittently unreliable. The hook command fires and returns valid JSON, but the injected systemMessage may not reach the model. For safety enforcement, prefer PreToolUse hooks which gate on the decision field rather than systemMessage injection. (see claude-code#40647)")
 fi
 
+# Stop hooks receive stale transcript data (claude-code#40655)
+if has_hook_type "Stop"; then
+    WARNINGS+=("Stop hooks fire before the transcript JSONL file is fully flushed to disk. Any Stop hook that reads the transcript to inspect the assistant's last output will see stale data missing the final content blocks (15-44ms race window, 64% failure rate measured). This affects completion detection, audit logging, and post-session analysis. No reliable workaround exists. (see claude-code#40655)")
+fi
+
 # bypassPermissions in settings.local.json is silently ignored (claude-code#40014)
 SETTINGS_LOCAL="${HOME}/.claude/settings.local.json"
 [ ! -f "$SETTINGS_LOCAL" ] && SETTINGS_LOCAL=".claude/settings.local.json"

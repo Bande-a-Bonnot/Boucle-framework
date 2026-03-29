@@ -1784,6 +1784,63 @@ USRSTOP_OUTPUT=$(cd "$TMPDIR_USERSTOP/project" && bash "$CHECK_SCRIPT" 2>&1) || 
 assert "user-level stop hook also triggers vscode warning" "do not fire in the VSCode" "$USRSTOP_OUTPUT"
 rm -rf "$TMPDIR_USERSTOP"
 
+# === Test: Stop hook triggers stale transcript warning (#40655) ===
+assert "stop hook stale transcript warning in script" "transcript JSONL" "$(cat "$CHECK_SCRIPT")"
+assert "stop hook stale transcript cites 40655" "40655" "$(cat "$CHECK_SCRIPT")"
+# Re-use the USRSTOP test env pattern: Stop hook should produce the warning
+TMPDIR_STOPTRANSCRIPT=$(mktemp -d)
+export HOME="$TMPDIR_STOPTRANSCRIPT"
+mkdir -p "$TMPDIR_STOPTRANSCRIPT/.claude"
+echo '{}' > "$TMPDIR_STOPTRANSCRIPT/.claude/settings.json"
+mkdir -p "$TMPDIR_STOPTRANSCRIPT/project/.claude"
+cat > "$TMPDIR_STOPTRANSCRIPT/project/.claude/settings.json" << 'STOPTEOF'
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /tmp/audit.sh",
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  }
+}
+STOPTEOF
+STOPT_OUTPUT=$(cd "$TMPDIR_STOPTRANSCRIPT/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "stop hook triggers stale transcript warning" "transcript JSONL" "$STOPT_OUTPUT"
+assert "stale transcript warning cites 40655" "40655" "$STOPT_OUTPUT"
+rm -rf "$TMPDIR_STOPTRANSCRIPT"
+
+# === Test: No Stop hook means no #40655 warning ===
+TMPDIR_NOSTOPT=$(mktemp -d)
+export HOME="$TMPDIR_NOSTOPT"
+mkdir -p "$TMPDIR_NOSTOPT/.claude"
+echo '{}' > "$TMPDIR_NOSTOPT/.claude/settings.json"
+mkdir -p "$TMPDIR_NOSTOPT/project/.claude"
+cat > "$TMPDIR_NOSTOPT/project/.claude/settings.json" << 'NOSTOPTEOF'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo test"
+          }
+        ]
+      }
+    ]
+  }
+}
+NOSTOPTEOF
+NOSTOPT_OUTPUT=$(cd "$TMPDIR_NOSTOPT/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no stop hook means no stale transcript warning" "40655" "$NOSTOPT_OUTPUT"
+rm -rf "$TMPDIR_NOSTOPT"
+
 # === Test: Windows case-sensitive path warning exists in script ===
 assert "windows path case-sensitive warning code" "case-sensitive" "$(cat "$CHECK_SCRIPT")"
 assert "windows path warning cites issue 40170" "40170" "$(cat "$CHECK_SCRIPT")"
