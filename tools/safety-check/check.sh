@@ -545,6 +545,11 @@ if has_hook_type "Stop"; then
     WARNINGS+=("Stop hooks are configured but do not fire in the VSCode extension. If you use Claude Code in VSCode, your Stop hooks are silently skipped. PreToolUse, PostToolUse, and SessionStart hooks work in both CLI and VSCode. (see claude-code#40029)")
 fi
 
+# UserPromptSubmit hooks can silently fail to deliver systemMessage (claude-code#40647)
+if has_hook_type "UserPromptSubmit"; then
+    WARNINGS+=("UserPromptSubmit hooks are configured but their systemMessage delivery is intermittently unreliable. The hook command fires and returns valid JSON, but the injected systemMessage may not reach the model. For safety enforcement, prefer PreToolUse hooks which gate on the decision field rather than systemMessage injection. (see claude-code#40647)")
+fi
+
 # bypassPermissions in settings.local.json is silently ignored (claude-code#40014)
 SETTINGS_LOCAL="${HOME}/.claude/settings.local.json"
 [ ! -f "$SETTINGS_LOCAL" ] && SETTINGS_LOCAL=".claude/settings.local.json"

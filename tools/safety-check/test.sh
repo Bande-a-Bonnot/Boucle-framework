@@ -2195,6 +2195,85 @@ NOKEY2_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no bypass warning when key absent" "plan mode does NOT deactivate bypass" "$NOKEY2_OUTPUT"
 rm -rf "$TMPDIR_NOKEY2"
 
+# === Test: UserPromptSubmit hook triggers systemMessage warning (#40647) ===
+TMPDIR_UPS=$(mktemp -d)
+export HOME="$TMPDIR_UPS"
+mkdir -p "$TMPDIR_UPS/.claude"
+echo '{}' > "$TMPDIR_UPS/.claude/settings.json"
+mkdir -p "$TMPDIR_UPS/project/.claude"
+cat > "$TMPDIR_UPS/project/.claude/settings.json" << 'UPSEOF'
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /tmp/prompt-hook.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+UPSEOF
+UPS_OUTPUT=$(cd "$TMPDIR_UPS/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "UserPromptSubmit hook triggers warning" "systemMessage delivery is intermittently unreliable" "$UPS_OUTPUT"
+assert "UserPromptSubmit warning mentions 40647" "40647" "$UPS_OUTPUT"
+rm -rf "$TMPDIR_UPS"
+
+# === Test: No UserPromptSubmit hook means no #40647 warning ===
+TMPDIR_NOUPS=$(mktemp -d)
+export HOME="$TMPDIR_NOUPS"
+mkdir -p "$TMPDIR_NOUPS/.claude"
+echo '{}' > "$TMPDIR_NOUPS/.claude/settings.json"
+mkdir -p "$TMPDIR_NOUPS/project/.claude"
+cat > "$TMPDIR_NOUPS/project/.claude/settings.json" << 'NOUPSEOF'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo test"
+          }
+        ]
+      }
+    ]
+  }
+}
+NOUPSEOF
+NOUPS_OUTPUT=$(cd "$TMPDIR_NOUPS/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no UPS hook means no 40647 warning" "systemMessage delivery is intermittently unreliable" "$NOUPS_OUTPUT"
+rm -rf "$TMPDIR_NOUPS"
+
+# === Test: UserPromptSubmit in user settings also triggers warning ===
+TMPDIR_UPSUSER=$(mktemp -d)
+export HOME="$TMPDIR_UPSUSER"
+mkdir -p "$TMPDIR_UPSUSER/.claude"
+cat > "$TMPDIR_UPSUSER/.claude/settings.json" << 'UPSUSEREOF'
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo prompt-hook"
+          }
+        ]
+      }
+    ]
+  }
+}
+UPSUSEREOF
+mkdir -p "$TMPDIR_UPSUSER/project/.claude"
+echo '{}' > "$TMPDIR_UPSUSER/project/.claude/settings.json"
+UPSUSER_OUTPUT=$(cd "$TMPDIR_UPSUSER/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "user-level UPS hook also triggers warning" "systemMessage delivery is intermittently unreliable" "$UPSUSER_OUTPUT"
+rm -rf "$TMPDIR_UPSUSER"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
