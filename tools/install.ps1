@@ -19,10 +19,12 @@ $SettingsPath = Join-Path $HOME ".claude" "settings.json"
 
 # Hook catalog
 $HookCatalog = [ordered]@{
-    'file-guard'   = @{ Desc = 'Block modifications to sensitive files (.env, keys)'; Event = 'PreToolUse' }
-    'git-safe'     = @{ Desc = 'Prevent destructive git operations (force push, reset --hard)'; Event = 'PreToolUse' }
-    'branch-guard' = @{ Desc = 'Prevent direct commits to main/master (feature-branch workflow)'; Event = 'PreToolUse' }
-    'session-log'  = @{ Desc = 'Audit trail - log every tool call to JSONL'; Event = 'PostToolUse' }
+    'file-guard'     = @{ Desc = 'Block modifications to sensitive files (.env, keys)'; Event = 'PreToolUse' }
+    'git-safe'       = @{ Desc = 'Prevent destructive git operations (force push, reset --hard)'; Event = 'PreToolUse' }
+    'branch-guard'   = @{ Desc = 'Prevent direct commits to main/master (feature-branch workflow)'; Event = 'PreToolUse' }
+    'read-once'      = @{ Desc = 'Prevent redundant file reads, save tokens (~2000/read)'; Event = 'PreToolUse' }
+    'worktree-guard' = @{ Desc = 'Prevent worktree exit with uncommitted/unmerged changes'; Event = 'PreToolUse' }
+    'session-log'    = @{ Desc = 'Audit trail - log every tool call to JSONL'; Event = 'PostToolUse' }
 }
 
 $AllHookNames = @($HookCatalog.Keys)
@@ -303,6 +305,32 @@ foreach ($hook in $installed) {
                 $result = $payload | pwsh -File $hookFile 2>$null
                 Write-Host "  OK" -ForegroundColor Green -NoNewline
                 Write-Host ": $hook accepted test payload (no .file-guard config = allow all)"
+                $verifyOk++
+            } catch {
+                Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
+                Write-Host ": $hook returned an error"
+                $verifyFail++
+            }
+        }
+        'read-once' {
+            $payload = '{"tool_name":"Bash","tool_input":{"command":"echo test"}}'
+            try {
+                $null = $payload | pwsh -File $hookFile 2>$null
+                Write-Host "  OK" -ForegroundColor Green -NoNewline
+                Write-Host ": $hook accepted non-Read payload (ignored correctly)"
+                $verifyOk++
+            } catch {
+                Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
+                Write-Host ": $hook returned an error"
+                $verifyFail++
+            }
+        }
+        'worktree-guard' {
+            $payload = '{"tool_name":"Bash","tool_input":{"command":"echo test"}}'
+            try {
+                $null = $payload | pwsh -File $hookFile 2>$null
+                Write-Host "  OK" -ForegroundColor Green -NoNewline
+                Write-Host ": $hook accepted non-ExitWorktree payload (ignored correctly)"
                 $verifyOk++
             } catch {
                 Write-Host "  WARN" -ForegroundColor Yellow -NoNewline

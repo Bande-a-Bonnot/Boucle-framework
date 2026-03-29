@@ -14,7 +14,9 @@ HOOKS_WITH_PS1_TESTS = [
     "branch-guard",
     "file-guard",
     "git-safe",
+    "read-once",
     "session-log",
+    "worktree-guard",
 ]
 
 GREEN = "\033[0;32m"
