@@ -185,6 +185,28 @@ normalize_path() {
   echo "$p"
 }
 
+# Resolve symlinks to their real target path.
+# Prevents bypass where a symlink to a protected file is accessed via the link name.
+# See: GHSA-4q92-rfm6-2cqx (Permission Deny Bypass Through Symbolic Links)
+resolve_symlinks() {
+  local p="$1"
+  # Only resolve if path exists as a symlink or has symlink components
+  [ -e "$p" ] || [ -L "$p" ] || { echo "$p"; return; }
+  # readlink -f: GNU coreutils (Linux) and macOS 13+
+  local resolved
+  resolved=$(readlink -f "$p" 2>/dev/null) && { echo "$resolved"; return; }
+  # Fallback: follow symlink chain (max 10 hops, prevents infinite loops)
+  local count=0
+  while [ -L "$p" ] && [ $count -lt 10 ]; do
+    local link_dir
+    link_dir=$(cd "$(dirname "$p")" 2>/dev/null && pwd) || break
+    p=$(readlink "$p" 2>/dev/null) || break
+    [[ "$p" != /* ]] && p="$link_dir/$p"
+    count=$((count + 1))
+  done
+  echo "$p"
+}
+
 # Check if a path matches any pattern in a list
 # Usage: matches_any "target/path" "pattern1" "pattern2" ...
 # Outputs the matched pattern on stdout (return 0), or returns 1
@@ -239,18 +261,31 @@ matches_any() {
 # Extract target path based on tool and check against patterns
 case "$TOOL_NAME" in
   Write|Edit)
-    TARGET=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
-    if [ -z "$TARGET" ]; then
+    RAW_TARGET=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+    if [ -z "$RAW_TARGET" ]; then
       exit 0
     fi
 
-    TARGET=$(normalize_path "$TARGET")
+    TARGET=$(normalize_path "$RAW_TARGET")
+
+    # Resolve symlinks to prevent bypass (GHSA-4q92-rfm6-2cqx)
+    SYM_RESOLVED=$(resolve_symlinks "$RAW_TARGET")
+    SYM_TARGET=""
+    if [ "$SYM_RESOLVED" != "$RAW_TARGET" ]; then
+      SYM_TARGET=$(normalize_path "$SYM_RESOLVED")
+      [ "$SYM_TARGET" = "$TARGET" ] && SYM_TARGET=""
+    fi
 
     # Check deny patterns first (blocks all access)
     if [ ${#DENY_PATTERNS[@]} -gt 0 ]; then
       if matched=$(matches_any "$TARGET" "${DENY_PATTERNS[@]}"); then
         jq -cn --arg t "$TARGET" --arg p "$matched" \
           '{"decision":"block","reason":("file-guard: access to \"" + $t + "\" is denied (matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}'
+        exit 0
+      fi
+      if [ -n "$SYM_TARGET" ] && matched=$(matches_any "$SYM_TARGET" "${DENY_PATTERNS[@]}"); then
+        jq -cn --arg t "$TARGET" --arg r "$SYM_TARGET" --arg p "$matched" \
+          '{"decision":"block","reason":("file-guard: \"" + $t + "\" is a symlink to denied path \"" + $r + "\" (matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}'
         exit 0
       fi
     fi
@@ -262,16 +297,29 @@ case "$TOOL_NAME" in
           '{"decision":"block","reason":("file-guard: \"" + $t + "\" is protected (matches pattern \"" + $p + "\"). Check .file-guard config to modify protections.")}'
         exit 0
       fi
+      if [ -n "$SYM_TARGET" ] && matched=$(matches_any "$SYM_TARGET" "${WRITE_PATTERNS[@]}"); then
+        jq -cn --arg t "$TARGET" --arg r "$SYM_TARGET" --arg p "$matched" \
+          '{"decision":"block","reason":("file-guard: \"" + $t + "\" is a symlink to protected path \"" + $r + "\" (matches pattern \"" + $p + "\"). Check .file-guard config.")}'
+        exit 0
+      fi
     fi
     ;;
 
   Read)
-    TARGET=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
-    if [ -z "$TARGET" ]; then
+    RAW_TARGET=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+    if [ -z "$RAW_TARGET" ]; then
       exit 0
     fi
 
-    TARGET=$(normalize_path "$TARGET")
+    TARGET=$(normalize_path "$RAW_TARGET")
+
+    # Resolve symlinks to prevent bypass (GHSA-4q92-rfm6-2cqx)
+    SYM_RESOLVED=$(resolve_symlinks "$RAW_TARGET")
+    SYM_TARGET=""
+    if [ "$SYM_RESOLVED" != "$RAW_TARGET" ]; then
+      SYM_TARGET=$(normalize_path "$SYM_RESOLVED")
+      [ "$SYM_TARGET" = "$TARGET" ] && SYM_TARGET=""
+    fi
 
     # Only deny patterns block reads (write-protect allows reading)
     if matched=$(matches_any "$TARGET" "${DENY_PATTERNS[@]}"); then
@@ -279,35 +327,66 @@ case "$TOOL_NAME" in
         '{"decision":"block","reason":("file-guard: reading \"" + $t + "\" is denied (matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}'
       exit 0
     fi
+    if [ -n "$SYM_TARGET" ] && matched=$(matches_any "$SYM_TARGET" "${DENY_PATTERNS[@]}"); then
+      jq -cn --arg t "$TARGET" --arg r "$SYM_TARGET" --arg p "$matched" \
+        '{"decision":"block","reason":("file-guard: reading \"" + $t + "\" is denied (symlink to \"" + $r + "\", matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}'
+      exit 0
+    fi
     ;;
 
   Grep)
-    TARGET=$(echo "$INPUT" | jq -r '.tool_input.path // empty')
-    if [ -z "$TARGET" ]; then
+    RAW_TARGET=$(echo "$INPUT" | jq -r '.tool_input.path // empty')
+    if [ -z "$RAW_TARGET" ]; then
       # No explicit path = searching cwd, don't block
       exit 0
     fi
 
-    TARGET=$(normalize_path "$TARGET")
+    TARGET=$(normalize_path "$RAW_TARGET")
+
+    # Resolve symlinks to prevent bypass (GHSA-4q92-rfm6-2cqx)
+    SYM_RESOLVED=$(resolve_symlinks "$RAW_TARGET")
+    SYM_TARGET=""
+    if [ "$SYM_RESOLVED" != "$RAW_TARGET" ]; then
+      SYM_TARGET=$(normalize_path "$SYM_RESOLVED")
+      [ "$SYM_TARGET" = "$TARGET" ] && SYM_TARGET=""
+    fi
 
     if matched=$(matches_any "$TARGET" "${DENY_PATTERNS[@]}"); then
       jq -cn --arg t "$TARGET" --arg p "$matched" \
         '{"decision":"block","reason":("file-guard: searching \"" + $t + "\" is denied (matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}'
       exit 0
     fi
+    if [ -n "$SYM_TARGET" ] && matched=$(matches_any "$SYM_TARGET" "${DENY_PATTERNS[@]}"); then
+      jq -cn --arg t "$TARGET" --arg r "$SYM_TARGET" --arg p "$matched" \
+        '{"decision":"block","reason":("file-guard: searching \"" + $t + "\" is denied (symlink to \"" + $r + "\", matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}'
+      exit 0
+    fi
     ;;
 
   Glob)
-    TARGET=$(echo "$INPUT" | jq -r '.tool_input.path // empty')
-    if [ -z "$TARGET" ]; then
+    RAW_TARGET=$(echo "$INPUT" | jq -r '.tool_input.path // empty')
+    if [ -z "$RAW_TARGET" ]; then
       exit 0
     fi
 
-    TARGET=$(normalize_path "$TARGET")
+    TARGET=$(normalize_path "$RAW_TARGET")
+
+    # Resolve symlinks to prevent bypass (GHSA-4q92-rfm6-2cqx)
+    SYM_RESOLVED=$(resolve_symlinks "$RAW_TARGET")
+    SYM_TARGET=""
+    if [ "$SYM_RESOLVED" != "$RAW_TARGET" ]; then
+      SYM_TARGET=$(normalize_path "$SYM_RESOLVED")
+      [ "$SYM_TARGET" = "$TARGET" ] && SYM_TARGET=""
+    fi
 
     if matched=$(matches_any "$TARGET" "${DENY_PATTERNS[@]}"); then
       jq -cn --arg t "$TARGET" --arg p "$matched" \
         '{"decision":"block","reason":("file-guard: listing \"" + $t + "\" is denied (matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}'
+      exit 0
+    fi
+    if [ -n "$SYM_TARGET" ] && matched=$(matches_any "$SYM_TARGET" "${DENY_PATTERNS[@]}"); then
+      jq -cn --arg t "$TARGET" --arg r "$SYM_TARGET" --arg p "$matched" \
+        '{"decision":"block","reason":("file-guard: listing \"" + $t + "\" is denied (symlink to \"" + $r + "\", matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}'
       exit 0
     fi
     ;;

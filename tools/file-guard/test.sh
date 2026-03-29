@@ -606,6 +606,60 @@ else
   echo "  FAIL: Relative path block should suggest absolute path: $result"
 fi
 
+# --- Test: Symlink bypass protection (GHSA-4q92-rfm6-2cqx) ---
+echo ""
+echo "--- Symlink bypass protection ---"
+
+# Create symlinks for testing
+SYMTEST="$TMPDIR/symtest"
+mkdir -p "$SYMTEST"
+echo "SECRET=value" > "$SYMTEST/.env"
+echo "key data" > "$SYMTEST/secret-key.pem"
+mkdir -p "$SYMTEST/secrets"
+echo "api-key" > "$SYMTEST/secrets/api.key"
+ln -sf "$SYMTEST/.env" "$SYMTEST/safe-link"
+ln -sf "$SYMTEST/secret-key.pem" "$SYMTEST/harmless.txt"
+ln -sf "$SYMTEST/secrets" "$SYMTEST/docs"
+
+cat > "$CONFIG" <<EOF
+.env
+*.pem
+[deny]
+secrets/
+EOF
+
+# Write-protect: symlink to .env
+cd "$SYMTEST"
+
+assert_blocked "Write via symlink to .env is blocked" \
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$SYMTEST/safe-link"'","content":"HACKED=true"}}'
+
+assert_blocked "Edit via symlink to .env is blocked" \
+  '{"tool_name":"Edit","tool_input":{"file_path":"'"$SYMTEST/safe-link"'","old_string":"SECRET","new_string":"HACKED"}}'
+
+assert_blocked "Write via symlink to .pem is blocked" \
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$SYMTEST/harmless.txt"'","content":"fake key"}}'
+
+# Deny: symlink to denied directory
+assert_blocked "Read via symlink to denied dir is blocked" \
+  '{"tool_name":"Read","tool_input":{"file_path":"'"$SYMTEST/docs/api.key"'"}}'
+
+assert_blocked "Grep via symlink to denied dir is blocked" \
+  '{"tool_name":"Grep","tool_input":{"path":"'"$SYMTEST/docs"'","pattern":"key"}}'
+
+assert_blocked "Glob via symlink to denied dir is blocked" \
+  '{"tool_name":"Glob","tool_input":{"path":"'"$SYMTEST/docs"'","pattern":"*"}}'
+
+# Non-symlink should still work
+assert_allowed "Write to non-symlink non-protected file allowed" \
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$SYMTEST/readme.md"'","content":"hello"}}'
+
+# Direct access to .env should still be blocked
+assert_blocked "Direct write to .env still blocked" \
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$SYMTEST/.env"'","content":"HACKED"}}'
+
+cd "$TMPDIR"
+
 # --- Summary ---
 echo ""
 echo "=== Results: $PASS/$TOTAL passed, $FAIL failed ==="
