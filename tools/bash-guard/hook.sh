@@ -305,6 +305,42 @@ fi
 if echo "$COMMAND" | grep -qE 'gcloud\s.*(delete|destroy)\s' 2>/dev/null; then
   is_allowed "infra-destroy" || block "gcloud delete/destroy removes Google Cloud resources." "Verify the target project first, or add 'allow: infra-destroy' to .bash-guard."
 fi
+if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)helm\s+(uninstall|delete)\s' 2>/dev/null; then
+  is_allowed "infra-destroy" || block "helm uninstall removes a Kubernetes release and all its resources." "Use 'helm list' to verify the release first, or add 'allow: infra-destroy' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE 'kubectl\s+drain\s' 2>/dev/null; then
+  is_allowed "infra-destroy" || block "kubectl drain evicts all pods from a node, causing service disruption." "Verify the node and use --dry-run first, or add 'allow: infra-destroy' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE 'kubectl\s+scale\s.*--replicas[= ]*0\b' 2>/dev/null; then
+  is_allowed "infra-destroy" || block "kubectl scale --replicas=0 stops all pods for the resource, taking the service offline." "Verify the target resource first, or add 'allow: infra-destroy' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)az\s+(group|resource|vm|webapp|functionapp|sql\s+server)\s+delete\s' 2>/dev/null; then
+  is_allowed "infra-destroy" || block "Azure CLI delete removes cloud resources permanently." "Verify the resource group and subscription first, or add 'allow: infra-destroy' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)doctl\s.*(delete|destroy)\s' 2>/dev/null; then
+  is_allowed "infra-destroy" || block "DigitalOcean CLI delete/destroy removes cloud resources." "Verify the target first, or add 'allow: infra-destroy' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)(flyctl|fly)\s+(apps\s+)?destroy\s' 2>/dev/null; then
+  is_allowed "infra-destroy" || block "Fly.io destroy removes the application and all its machines." "Verify the app name first, or add 'allow: infra-destroy' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)heroku\s+apps:destroy\s' 2>/dev/null; then
+  is_allowed "infra-destroy" || block "heroku apps:destroy permanently removes the application and all add-ons." "Verify the app name first, or add 'allow: infra-destroy' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)vercel\s+(rm|remove)\s' 2>/dev/null; then
+  is_allowed "infra-destroy" || block "vercel rm removes deployments or projects." "Verify the target first, or add 'allow: infra-destroy' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)netlify\s+sites:delete\s' 2>/dev/null; then
+  is_allowed "infra-destroy" || block "netlify sites:delete permanently removes the site." "Verify the site name first, or add 'allow: infra-destroy' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE 'aws\s+ec2\s+terminate-instances\s' 2>/dev/null; then
+  is_allowed "infra-destroy" || block "aws ec2 terminate-instances permanently destroys EC2 instances." "Verify instance IDs first, or add 'allow: infra-destroy' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE 'aws\s+(rds|dynamodb|elasticache|lambda)\s+delete-' 2>/dev/null; then
+  is_allowed "infra-destroy" || block "AWS CLI delete command permanently removes cloud resources." "Verify the resource identifier first, or add 'allow: infra-destroy' to .bash-guard."
+fi
+if echo "$COMMAND" | grep -qE 'aws\s+cloudformation\s+delete-stack\s' 2>/dev/null; then
+  is_allowed "infra-destroy" || block "aws cloudformation delete-stack tears down the entire stack and all its resources." "Verify the stack name first, or add 'allow: infra-destroy' to .bash-guard."
+fi
 
 # Additional database destruction patterns
 if echo "$COMMAND" | grep -qE '(doctrine:schema:drop|sequelize\s+db:drop|typeorm\s+schema:drop)' 2>/dev/null; then

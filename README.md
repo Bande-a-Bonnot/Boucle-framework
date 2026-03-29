@@ -93,7 +93,7 @@ Blocks dangerous commands across these categories:
 - **Database destruction** -- `DROP TABLE`, `prisma db push`, `dropdb`, `migrate:fresh`, `FLUSHALL`, and [10+ ORM variants](tools/bash-guard/)
 - **Credential exposure** -- `env`/`printenv`, `bash -x`, `cat .env`, SSH keys, [programmatic dumps](tools/bash-guard/) (`os.environ`, `process.env`)
 - **Data exfiltration** -- `curl -d @file`, `wget --post-file`, `nc host < file`
-- **Cloud infrastructure** -- `terraform destroy`, `kubectl delete namespace`, `aws s3 rm --recursive`
+- **Cloud infrastructure** -- `terraform destroy`, `kubectl delete/drain/scale-to-zero`, `helm uninstall`, `aws ec2 terminate`/`rds delete`/`cloudformation delete-stack`, `az group delete`, `doctl destroy`, `flyctl destroy`, `heroku apps:destroy`, `vercel rm`, `netlify sites:delete`
 - **Docker** -- container escape (`-v /:/host`), data destruction (`compose down -v`)
 - **System databases** -- sqlite3 on IDE internals ([#37888](https://github.com/anthropics/claude-code/issues/37888): 59 commands corrupted VSCode)
 - **Mount points** -- `rm -rf` on NFS/shared storage ([#36640](https://github.com/anthropics/claude-code/issues/36640))
