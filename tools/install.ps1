@@ -198,6 +198,10 @@ foreach ($hook in $installed) {
             }
         )
     }
+    # worktree-guard uses ExitWorktree matcher for efficiency
+    if ($hook -eq 'worktree-guard') {
+        $entry['matcher'] = 'ExitWorktree'
+    }
 
     if (-not $settings['hooks'].ContainsKey($event)) {
         $settings['hooks'][$event] = @()
@@ -333,6 +337,25 @@ foreach ($hook in $installed) {
                 Write-Host "  OK" -ForegroundColor Green -NoNewline
                 Write-Host ": $hook accepted non-ExitWorktree payload (ignored correctly)"
                 $verifyOk++
+            } catch {
+                Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
+                Write-Host ": $hook returned an error"
+                $verifyFail++
+            }
+        }
+        'bash-guard' {
+            $payload = '{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}'
+            try {
+                $result = $payload | pwsh -File $hookFile 2>$null
+                if ($result -match '"block"') {
+                    Write-Host "  OK" -ForegroundColor Green -NoNewline
+                    Write-Host ": $hook blocked test payload (rm -rf /)"
+                    $verifyOk++
+                } else {
+                    Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
+                    Write-Host ": $hook did not block test payload"
+                    $verifyFail++
+                }
             } catch {
                 Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
                 Write-Host ": $hook returned an error"
