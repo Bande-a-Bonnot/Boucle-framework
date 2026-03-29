@@ -457,6 +457,22 @@ if [ "$HOOK_COUNT" -gt 0 ]; then
     WARNINGS+=("Hook enforcement does not work in subagents. PreToolUse hooks fire inside Agent-spawned subagents, but the exit code and block decision are silently ignored. A command blocked in the parent session will succeed in a subagent. All hook-based enforcement is parent-session-only. There is no workaround. (see claude-code#40580)")
 fi
 
+# additionalDirectories leak across projects (claude-code#40606)
+if [ -f "$SETTINGS_FILE" ]; then
+    ADDITIONAL_DIRS=$(python3 -c "
+import json,sys
+try:
+    s=json.load(open(sys.argv[1]))
+    dirs=s.get('additionalDirectories',[])
+    if dirs: print('\n'.join(dirs))
+except: pass
+" "$SETTINGS_FILE" 2>/dev/null)
+    if [ -n "$ADDITIONAL_DIRS" ]; then
+        DIR_COUNT=$(echo "$ADDITIONAL_DIRS" | wc -l | tr -d ' ')
+        WARNINGS+=("Global settings.json contains ${DIR_COUNT} additionalDirectories entry/entries. These directories are shared across ALL projects — approving file access outside the working directory in one project makes those paths available in every other project, and subagents will search them. Review and remove entries not needed for the current project. (see claude-code#40606)")
+    fi
+fi
+
 # Non-enabled marketplace plugins still fire hooks (claude-code#40013)
 # Installed-but-not-enabled plugins have their hooks loaded and executed anyway.
 MARKETPLACE_DIR="${HOME}/.claude/plugins/marketplaces"
