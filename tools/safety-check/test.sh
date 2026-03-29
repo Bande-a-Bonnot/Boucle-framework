@@ -2076,6 +2076,50 @@ NOSB_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no sandbox warning when disabled" "Session-level permission caching" "$NOSB_OUTPUT"
 rm -rf "$TMPDIR_NOSB"
 
+# === Test: additionalDirectories leak warning (#40606) ===
+TMPDIR_ADDDIR=$(mktemp -d)
+export HOME="$TMPDIR_ADDDIR"
+mkdir -p "$TMPDIR_ADDDIR/.claude"
+cat > "$TMPDIR_ADDDIR/.claude/settings.json" << 'ADDDIREOF'
+{
+  "additionalDirectories": ["/Users/alice/other-project", "/tmp/shared"]
+}
+ADDDIREOF
+
+ADDDIR_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "additionalDirectories warning present" "additionalDirectories" "$ADDDIR_OUTPUT"
+assert "additionalDirectories cites issue" "40606" "$ADDDIR_OUTPUT"
+assert "additionalDirectories mentions cross-project" "ALL projects" "$ADDDIR_OUTPUT"
+rm -rf "$TMPDIR_ADDDIR"
+
+# === Test: No additionalDirectories warning when empty ===
+TMPDIR_NOADD=$(mktemp -d)
+export HOME="$TMPDIR_NOADD"
+mkdir -p "$TMPDIR_NOADD/.claude"
+cat > "$TMPDIR_NOADD/.claude/settings.json" << 'NOADDEOF'
+{
+  "additionalDirectories": []
+}
+NOADDEOF
+
+NOADD_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no additionalDirectories warning when empty" "additionalDirectories" "$NOADD_OUTPUT"
+rm -rf "$TMPDIR_NOADD"
+
+# === Test: No additionalDirectories warning when key absent ===
+TMPDIR_NOKEY=$(mktemp -d)
+export HOME="$TMPDIR_NOKEY"
+mkdir -p "$TMPDIR_NOKEY/.claude"
+cat > "$TMPDIR_NOKEY/.claude/settings.json" << 'NOKEYEOF'
+{
+  "hooks": {}
+}
+NOKEYEOF
+
+NOKEY_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no additionalDirectories warning when key absent" "additionalDirectories" "$NOKEY_OUTPUT"
+rm -rf "$TMPDIR_NOKEY"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
