@@ -1424,6 +1424,35 @@ NOWTISOLATION_OUTPUT=$(cd "$TMPDIR_NOWTISOLATION" && bash "$CHECK_SCRIPT" 2>&1) 
 assert_not "no worktree isolation warning without worktree-guard" "39886" "$NOWTISOLATION_OUTPUT"
 rm -rf "$TMPDIR_NOWTISOLATION"
 
+# === Test: Subagent hook bypass warning (#40580) ===
+TMPDIR_SUBAGENT=$(mktemp -d)
+export HOME="$TMPDIR_SUBAGENT"
+mkdir -p "$TMPDIR_SUBAGENT/.claude"
+cat > "$TMPDIR_SUBAGENT/.claude/settings.json" << 'SETTINGSEOF'
+{
+  "hooks": {
+    "PreToolUse": [{"matcher":"Bash","type":"command","command":"bash guard.sh"}]
+  }
+}
+SETTINGSEOF
+SUBAGENT_OUTPUT=$(cd "$TMPDIR_SUBAGENT" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "subagent hook bypass warning present" "40580" "$SUBAGENT_OUTPUT"
+assert "subagent warning mentions enforcement" "enforcement" "$SUBAGENT_OUTPUT"
+rm -rf "$TMPDIR_SUBAGENT"
+
+# Negative case: no hooks, no subagent warning
+TMPDIR_NOSUBAGENT=$(mktemp -d)
+export HOME="$TMPDIR_NOSUBAGENT"
+mkdir -p "$TMPDIR_NOSUBAGENT/.claude"
+cat > "$TMPDIR_NOSUBAGENT/.claude/settings.json" << 'SETTINGSEOF'
+{
+  "permissions": {}
+}
+SETTINGSEOF
+NOSUBAGENT_OUTPUT=$(cd "$TMPDIR_NOSUBAGENT" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no subagent warning without hooks" "40580" "$NOSUBAGENT_OUTPUT"
+rm -rf "$TMPDIR_NOSUBAGENT"
+
 # === Test: Path deny without bash-guard warns about Bash bypass (#39987) ===
 TMPDIR_PATHDENY=$(mktemp -d)
 export HOME="$TMPDIR_PATHDENY"
