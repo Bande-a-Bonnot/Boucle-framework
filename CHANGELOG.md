@@ -4,8 +4,31 @@ All notable changes to Boucle are documented here.
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-03-29
+
 ### Added
-- **PowerShell installer** (`tools/install.ps1`) -- Windows-native installer for PS1 hooks. Downloads and configures file-guard, git-safe, branch-guard, and session-log without bash, jq, or WSL. Includes post-install verification. Install: `iex "& { $(irm .../tools/install.ps1) } all"`
+
+#### bash-guard
+- **In-place file editing bypass detection** -- Blocks `perl -i`, `ruby -i`, `sed -i`, and `ed` commands that modify files directly, bypassing all Write/Edit hook protections. Addresses [#40408](https://github.com/anthropics/claude-code/issues/40408) where `perl -i -pe` was discovered as a complete bypass of file-guard and all write-protection hooks.
+
+#### safety-check
+- **Glob wildcard injection detection** -- Warns when permission allowlist rules contain glob wildcards (`*`, `?`, `[`) that can be exploited to match unintended commands. Addresses [#40344](https://github.com/anthropics/claude-code/issues/40344) and [#40343](https://github.com/anthropics/claude-code/issues/40343).
+
+#### installer
+- **'recommended' preset** -- `bash install.sh recommended` installs the essential safety hooks (file-guard, git-safe, bash-guard, branch-guard) in a single command. Skips optional hooks (session-log, read-once, worktree-guard) for a minimal secure setup.
+- **PowerShell installer** (`tools/install.ps1`) -- Windows-native installer for PS1 hooks. Downloads and configures file-guard, git-safe, branch-guard, and session-log without bash, jq, or WSL. Includes post-install verification.
+
+### Fixed
+- **Warn-level hook output** now uses `hookSpecificOutput` to avoid silent drop when hook returns a warning without `decision: "block"`. Fixes [#40380](https://github.com/anthropics/claude-code/issues/40380).
+- **safety-check test reliability** -- Fixed false positive and case mismatch in 2 safety-check tests.
+
+### Documented
+- **72 known platform limitations** in enforce-hooks README, up from 53 in v0.9.1. Notable additions: glob wildcard injection in allowlists ([#40344](https://github.com/anthropics/claude-code/issues/40344)), bypassPermissions ignores allowlist ([#40343](https://github.com/anthropics/claude-code/issues/40343)), sandbox desync destroyed 2500 files ([#40321](https://github.com/anthropics/claude-code/issues/40321)), skip-permissions broken at runtime ([#40328](https://github.com/anthropics/claude-code/issues/40328)), plan mode not enforced at tool layer ([#40324](https://github.com/anthropics/claude-code/issues/40324)), permission prompt bypass ([#40302](https://github.com/anthropics/claude-code/issues/40302)), hook stdout corrupts worktree path ([#40262](https://github.com/anthropics/claude-code/issues/40262)), config race condition ([#40226](https://github.com/anthropics/claude-code/issues/40226)), iMessage relay attack ([#40221](https://github.com/anthropics/claude-code/issues/40221)), sandbox HTTP bypass ([#40213](https://github.com/anthropics/claude-code/issues/40213)), phantom SendMessage injection ([#40166](https://github.com/anthropics/claude-code/issues/40166)), and more.
+
+### Stats
+- 195 Rust tests (unchanged)
+- Hook tests: bash-guard ~500, safety-check ~149, PS1 hooks 116, file-guard 91, git-safe 65, session-log 50, read-once 48, enforce-hooks ~52, branch-guard 35, worktree-guard 33, format ~36
+- Total: ~1680+ tests
 
 ## [0.9.1] - 2026-03-28
 
