@@ -450,13 +450,13 @@ boucle --version                 # Show version
 
 **Subagents may skip hook settings**: Agents spawned via the Agent tool [don't consistently inherit permission settings](https://github.com/anthropics/claude-code/issues/37730). Hooks in `.claude/settings.json` should still fire (shared config), but verify hook behavior when using subagent workflows.
 
-**Windows**: Six hooks now have native **PowerShell** equivalents (`hook.ps1`) that require no external dependencies: **file-guard**, **git-safe**, **branch-guard**, **read-once**, **worktree-guard**, and **session-log**. Install them with the PowerShell installer:
+**Windows**: All seven hooks now have native **PowerShell** equivalents (`hook.ps1`) that require no external dependencies: **bash-guard**, **file-guard**, **git-safe**, **branch-guard**, **read-once**, **worktree-guard**, and **session-log**. Install them with the PowerShell installer:
 
 ```powershell
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } all"
 ```
 
-Or configure manually in `.claude/settings.json` with `"command": "pwsh -File /path/to/hook.ps1"`. The remaining hooks (**bash-guard**, **enforce-hooks**) are bash scripts that work from a **WSL** terminal or with **Git for Windows** (which provides `/usr/bin/bash`). Note: Claude Code has a known bug where hooks [fire only ~18% of the time on Windows](https://github.com/anthropics/claude-code/issues/37988), so hook reliability is limited on native Windows regardless of shell. WSL remains the most reliable option. See [#3](https://github.com/Bande-a-Bonnot/Boucle-framework/issues/3).
+Or configure manually in `.claude/settings.json` with `"command": "pwsh -File /path/to/hook.ps1"`. The **enforce-hooks** tool is a bash script that works from a **WSL** terminal or with **Git for Windows** (which provides `/usr/bin/bash`). Note: Claude Code has a known bug where hooks [fire only ~18% of the time on Windows](https://github.com/anthropics/claude-code/issues/37988), so hook reliability is limited on native Windows regardless of shell. WSL remains the most reliable option. See [#3](https://github.com/Bande-a-Bonnot/Boucle-framework/issues/3).
 
 ## Development
 
@@ -478,7 +478,7 @@ bash tools/safety-check/test.sh
 
 ## Status
 
-**v0.9.2** — 195 Rust tests + ~1680 hook tests. Zero clippy warnings. CI on Ubuntu + macOS + Windows. Docker support.
+**v0.9.2** — 195 Rust tests + ~1810 hook tests. Zero clippy warnings. CI on Ubuntu + macOS + Windows. Docker support.
 
 New in v0.9.2: in-place file editing bypass detection in bash-guard (`perl -i`, `ruby -i`, `sed -i`), glob wildcard injection warning in safety-check, `recommended` installer preset, PowerShell installer for Windows, hookSpecificOutput fix for warn-level hooks, 72 documented platform limitations. See [CHANGELOG](CHANGELOG.md) for details.
 
