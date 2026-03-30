@@ -112,6 +112,13 @@ Beyond the scored checks, safety-check detects platform bugs and configuration p
 | updatedInput + Agent | `updatedInput` silently ignored for Agent tool calls ([#39814](https://github.com/anthropics/claude-code/issues/39814)) |
 | Worktree isolation | Agent `isolation: "worktree"` silently runs in main repo ([#39886](https://github.com/anthropics/claude-code/issues/39886)) |
 | Subagent hook bypass | Hook exit codes silently ignored in subagent tool calls ([#40580](https://github.com/anthropics/claude-code/issues/40580)) |
+| WorktreeCreate ignored | EnterWorktree tool does not fire WorktreeCreate/WorktreeRemove hooks ([#36205](https://github.com/anthropics/claude-code/issues/36205)) |
+| TaskCreated observe-only | TaskCreated hooks cannot block task creation; decision field is ignored |
+| SubagentStop inheritance | Background agents may not inherit all hook configurations ([#40818](https://github.com/anthropics/claude-code/issues/40818)) |
+
+### Hook event types scanned
+
+safety-check detects hooks across all Claude Code event types: PreToolUse, PostToolUse, SessionStart, SessionEnd, Stop, SubagentStop, TaskCreated, WorktreeCreate, WorktreeRemove, UserPromptSubmit, and Notification.
 
 ## No dependencies
 
