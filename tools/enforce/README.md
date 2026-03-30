@@ -230,6 +230,52 @@ For sessions where token spend matters. These rules have no direct hook signal, 
 - Don't commit directly to main
 ```
 
+### Git workflow
+
+Enforces git hygiene that CLAUDE.md alone cannot. Addresses [#40695](https://github.com/anthropics/claude-code/issues/40695) (Claude ignores CLAUDE.md git rules, amends without asking, force pushes).
+
+```markdown
+## Git workflow @enforced
+- Never force push
+- Never use --no-verify
+- Don't commit directly to main
+- Never use git reset --hard
+```
+
+### Device / system safety
+
+For environments where Claude has access to system commands. Addresses [#40537](https://github.com/anthropics/claude-code/issues/40537) (Claude executed IoT commands despite explicit CLAUDE.md rules against it).
+
+```markdown
+## Device safety @enforced
+- Never run shutdown
+- Never run reboot
+- Never run halt
+- Never run systemctl stop
+- Never run systemctl restart
+```
+
+### Quick start with templates
+
+Generate a complete CLAUDE.md with best-practice `@enforced` rules:
+
+```sh
+# Print recommended rules to stdout
+python3 enforce-hooks.py --template
+
+# Write strict rules to a file
+python3 enforce-hooks.py --template strict CLAUDE.md
+
+# Available: minimal, recommended (default), strict
+python3 enforce-hooks.py --template minimal
+```
+
+Then install:
+
+```sh
+python3 enforce-hooks.py CLAUDE.md --install-plugin
+```
+
 ## Options
 
 ```
@@ -245,6 +291,7 @@ enforce-hooks.py [CLAUDE.md] [options]
   --verify --strict   CI gate: exit 1 if any hooks have errors
   --smoke-test        Execute hooks with test payloads, verify responses
   --smoke-test --strict  CI gate: exit 1 if any hooks fail at runtime
+  --template [NAME]   Output a starter CLAUDE.md (minimal|recommended|strict)
   --armor             Install self-protection hooks (no CLAUDE.md needed)
   --evaluate          PreToolUse mode: read tool call from stdin, output decision
   --json              Output as JSON (with --scan, --audit, or --verify)
