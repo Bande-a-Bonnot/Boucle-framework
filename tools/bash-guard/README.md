@@ -59,6 +59,9 @@ Note: `settings.json` path deny rules [do not apply to the Bash tool](https://gi
 | Mass process kill | `pkill -9` | Force-kills matching processes without cleanup |
 | Package manager globals | `yarn global add`, `pnpm global add` | System-wide package installs (extends npm -g coverage) |
 | Pipe to fish shell | `curl ... \| fish` | Extends pipe-to-shell coverage to fish |
+| pip install --target | `pip3 install pkg --target /tmp/libs` | Writes packages to arbitrary paths, sandbox escape ([#41103](https://github.com/anthropics/claude-code/issues/41103)) |
+| pip install --user | `pip install pkg --user` | Writes to ~/.local, may be outside sandbox |
+| Deep path traversal | `python3 ../../../../tmp/evil.py` | 4+ levels of ../ likely indicates sandbox escape attempt |
 
 Safe variants are allowed: `rm -rf ./build`, `chmod 644 file.txt`, `curl -o file url`, `curl -d '{"key":"value"}'`, `kill -9 12345`, `docker compose down` (without -v), `docker run -v mydata:/data`, `prisma migrate dev`, `rails db:migrate`, `printenv HOME`, `cat README.md`, `set -euo pipefail`, `terraform plan`, `aws s3 ls`, `kubectl get pods`, `find -print`, `git clean -n`, `ls ~/.ssh`, `nc -l 8080`, `sqlite3 ./db.sqlite3`, `ls /mnt/data/`, `LDFLAGS=-L/usr/lib make`, `systemctl status nginx`, `launchctl list`, `ssh user@host`, `docker rm container`, `yarn add lodash`, `pkill process`.
 
@@ -83,7 +86,7 @@ allow: rm -rf
 allow: pipe-to-shell
 ```
 
-Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `disk-util`, `system-write`, `eval`, `global-install`, `docker-destroy`, `docker-mount`, `docker-exec`, `db-destroy`, `env-dump`, `debug-trace`, `read-secrets`, `infra-destroy`, `mass-delete`, `git-clean`, `shred`, `truncate`, `file-upload`, `system-db`, `mount-delete`, `decode-exec`, `lang-exec`, `here-exec`.
+Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `disk-util`, `system-write`, `eval`, `global-install`, `docker-destroy`, `docker-mount`, `docker-exec`, `db-destroy`, `env-dump`, `debug-trace`, `read-secrets`, `infra-destroy`, `mass-delete`, `git-clean`, `shred`, `truncate`, `file-upload`, `system-db`, `mount-delete`, `decode-exec`, `lang-exec`, `here-exec`, `pip-target`, `pip-user`, `path-traversal`.
 
 ## Disable temporarily
 

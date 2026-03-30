@@ -589,6 +589,31 @@ def main():
         assert_blocked("block cat /proc/1/environ",
                        make_input("Bash", "cat /proc/1/environ"))
 
+        # --- 75. pip install --target (sandbox escape — #41103) ---
+        print("\npip install --target:")
+        assert_blocked("block pip install --target",
+                       make_input("Bash", "pip install requests --target /tmp/pylibs"))
+        assert_blocked("block pip3 install --target",
+                       make_input("Bash", "pip3 install python-docx --target=$TMPDIR/pylibs"))
+        assert_allowed("allow normal pip install",
+                       make_input("Bash", "pip install requests"))
+
+        # --- 76. pip install --user (outside sandbox — #41103) ---
+        print("\npip install --user:")
+        assert_blocked("block pip install --user",
+                       make_input("Bash", "pip install requests --user"))
+        assert_blocked("block pip3 install --user",
+                       make_input("Bash", "pip3 install python-docx --user"))
+
+        # --- 77. Deep path traversal (sandbox escape — #41103) ---
+        print("\nDeep path traversal:")
+        assert_blocked("block 4-level traversal",
+                       make_input("Bash", "python3 ../../../../tmp/evil.py"))
+        assert_blocked("block 5-level traversal",
+                       make_input("Bash", "cat ../../../../../etc/passwd"))
+        assert_allowed("allow 2-level traversal",
+                       make_input("Bash", "cat ../../README.md"))
+
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
 
