@@ -241,10 +241,18 @@ TOOL_BLOCK_PATTERNS = [
         r'(?:never|don\'?t|do\s+not|avoid)\s+'
         r'(?:us(?:e|ing)|call(?:ing)?|invok(?:e|ing))\s+'
         r'(?:the\s+)?'
-        r'((?:Web(?:Search|Fetch)|NotebookEdit|Agent|Bash)(?:\s*(?:[,/&+]|or|and)\s*(?:Web(?:Search|Fetch)|NotebookEdit|Agent|Bash))*)',
+        r'((?:Web(?:Search|Fetch)|NotebookEdit|Agent|Bash|Write|Edit|MultiEdit|Read)(?:\s*(?:[,/&+]|or|and)\s*(?:Web(?:Search|Fetch)|NotebookEdit|Agent|Bash|Write|Edit|MultiEdit|Read))*)',
         re.IGNORECASE
     ),
 ]
+
+# "Never modify/write any files" → block Write, Edit, MultiEdit tools
+FILE_MODIFY_BLOCK_PATTERN = re.compile(
+    r'(?:never|don\'?t|do\s+not|avoid)\s+'
+    r'(?:modify(?:ing)?|writ(?:e|ing)|edit(?:ing)?|chang(?:e|ing)|alter(?:ing)?|creat(?:e|ing))\s+'
+    r'(?:any\s+)?files?',
+    re.IGNORECASE
+)
 
 # Patterns for content guards (check what's being written to files)
 CONTENT_GUARD_PATTERNS = [
@@ -406,6 +414,36 @@ def extract_command_patterns(text):
     for cmd in dangerous:
         if cmd in lower and cmd not in patterns:
             patterns.append(cmd)
+
+    # Match well-known command words from comma/or-separated lists
+    # Handles: "ALTER, DROP, TRUNCATE, INSERT, UPDATE, or DELETE"
+    # and: "docker restart, docker stop, docker build, or docker rm"
+    known_commands = {
+        # SQL destructive
+        'alter': 'ALTER', 'drop': 'DROP', 'truncate': 'TRUNCATE',
+        'insert': 'INSERT', 'update': 'UPDATE', 'delete': 'DELETE',
+        # Docker
+        'docker restart': 'docker restart', 'docker stop': 'docker stop',
+        'docker build': 'docker build', 'docker rm': 'docker rm',
+        'docker compose down': 'docker compose down',
+        # Git operations
+        'git commit': 'git commit', 'git push': 'git push',
+        'git merge': 'git merge', 'git rebase': 'git rebase',
+        'git stash drop': 'git stash drop',
+    }
+    # Check multi-word patterns first (longer match wins)
+    for key in sorted(known_commands, key=len, reverse=True):
+        if key in lower and known_commands[key] not in patterns:
+            patterns.append(known_commands[key])
+    # Check single-word SQL keywords in comma-separated lists
+    # Split by comma, "or", "and" and check each token
+    tokens = re.split(r'[,]|\bor\b|\band\b', lower)
+    sql_keywords = {'alter', 'drop', 'truncate', 'insert', 'update', 'delete'}
+    for token in tokens:
+        word = token.strip().rstrip('.')
+        if word in sql_keywords and known_commands[word] not in patterns:
+            patterns.append(known_commands[word])
+
     # Extract --flag patterns (e.g., "--no-verify", "--force-with-lease")
     # These are specific enough to be meaningful blockers
     for m in re.finditer(r'(--[\w][\w-]+)', text):
@@ -554,6 +592,17 @@ def classify_directive(line, line_num):
                     line_num=line_num,
                     severity=severity,
                 )
+
+    # "Never modify/write any files" → block Write, Edit, MultiEdit tools
+    if FILE_MODIFY_BLOCK_PATTERN.search(clean):
+        return Directive(
+            text=stripped,
+            hook_type='tool-block',
+            patterns=['Write', 'Edit', 'MultiEdit'],
+            description="Block tools: Write, Edit, MultiEdit (read-only mode)",
+            line_num=line_num,
+            severity=severity,
+        )
 
     # Try tool-block patterns (before bash-guard, since "don't use WebSearch" matches both)
     for pattern in TOOL_BLOCK_PATTERNS:
@@ -2871,6 +2920,51 @@ def run_tests():
 
     d = classify_directive("Never use WebSearch and WebFetch", 112)
     check("tool-block and separator", d is not None and d.patterns == ['WebSearch', 'WebFetch'], True)
+
+    # Test tool-block: Write, Edit, Read (new tools)
+    d = classify_directive("Never use Write or Edit", 113)
+    check("tool-block write-edit", d is not None and d.hook_type == 'tool-block', True)
+    check("tool-block write-edit patterns", d is not None and 'Write' in d.patterns and 'Edit' in d.patterns, True)
+
+    d = classify_directive("Don't use the Read tool", 114)
+    check("tool-block read", d is not None and d.hook_type == 'tool-block', True)
+    check("tool-block read pattern", d is not None and d.patterns == ['Read'], True)
+
+    # Test file-modify-block: "Never modify any files" → tool-block for Write/Edit/MultiEdit
+    d = classify_directive("Never modify any files", 115)
+    check("file-modify-block detect", d is not None and d.hook_type == 'tool-block', True)
+    check("file-modify-block has Write", d is not None and 'Write' in d.patterns, True)
+    check("file-modify-block has Edit", d is not None and 'Edit' in d.patterns, True)
+    check("file-modify-block has MultiEdit", d is not None and 'MultiEdit' in d.patterns, True)
+
+    d = classify_directive("Never write any files", 116)
+    check("file-modify-block write", d is not None and d.hook_type == 'tool-block', True)
+
+    d = classify_directive("Don't edit files", 117)
+    check("file-modify-block edit", d is not None and d.hook_type == 'tool-block', True)
+
+    d = classify_directive("Avoid creating files", 118)
+    check("file-modify-block create", d is not None and d.hook_type == 'tool-block', True)
+
+    # Test bash-guard: SQL command extraction from comma-separated lists
+    d = classify_directive("Never run ALTER, DROP, TRUNCATE, INSERT, UPDATE, or DELETE", 119)
+    check("sql-commands detect", d is not None and d.hook_type == 'bash-guard', True)
+    check("sql-commands has ALTER", d is not None and 'ALTER' in d.patterns, True)
+    check("sql-commands has DROP", d is not None and 'DROP' in d.patterns, True)
+    check("sql-commands has DELETE", d is not None and 'DELETE' in d.patterns, True)
+
+    # Test bash-guard: docker commands
+    d = classify_directive("Never run docker restart, docker stop, docker build, or docker rm", 120)
+    check("docker-commands detect", d is not None and d.hook_type == 'bash-guard', True)
+    check("docker-commands has restart", d is not None and 'docker restart' in d.patterns, True)
+    check("docker-commands has stop", d is not None and 'docker stop' in d.patterns, True)
+
+    # Test bash-guard: git commit/merge
+    d = classify_directive("Never run git commit, git push, or git merge", 121)
+    check("git-commands detect", d is not None and d.hook_type == 'bash-guard', True)
+    check("git-commands has commit", d is not None and 'git commit' in d.patterns, True)
+    check("git-commands has merge", d is not None and 'git merge' in d.patterns, True)
+    check("git-commands has push", d is not None and 'git push' in d.patterns, True)
 
     # Test prefer-language as file-guard edge case
     d = classify_directive("Prefer TypeScript over JavaScript for new files", 111)
