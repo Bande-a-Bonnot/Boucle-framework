@@ -573,6 +573,33 @@ if has_hook_type "SubagentStop"; then
     WARNINGS+=("SubagentStop hooks are configured. These fire when a spawned subagent completes, providing the last_assistant_message field. Note: background agents may not inherit all hook configurations from the parent session. (see claude-code#40818)")
 fi
 
+# PreToolUse hooks on EnterPlanMode — hook output deprioritized (claude-code#41051)
+_check_planmode_matcher() {
+    local sf="$1"
+    [ -f "$sf" ] || return 1
+    python3 - "$sf" << 'PYEOF_PM'
+import json,sys
+try:
+    s=json.load(open(sys.argv[1]))
+    found = False
+    for entry in s.get('hooks',{}).get('PreToolUse',[]):
+        m = entry.get('matcher','')
+        if 'EnterPlanMode' in m:
+            found = True
+            break
+    print('yes' if found else 'no')
+except Exception:
+    print('no')
+PYEOF_PM
+}
+for sf in "$SETTINGS_FILE" "$PROJECT_SETTINGS"; do
+    _PM_RESULT=$(_check_planmode_matcher "$sf" 2>/dev/null) || _PM_RESULT="no"
+    if [ "$_PM_RESULT" = "yes" ]; then
+        WARNINGS+=("PreToolUse hook targets EnterPlanMode. Hook output injected via system-reminder is deprioritized by plan mode's own detailed system prompt, which arrives in the same turn. The model will follow plan mode's Phase 1-5 workflow and ignore the hook's instructions. Use decision:block to gate entry, or move logic to a separate event. (see claude-code#41051)")
+        break
+    fi
+done
+
 # bypassPermissions in settings.local.json is silently ignored (claude-code#40014)
 SETTINGS_LOCAL="${HOME}/.claude/settings.local.json"
 [ ! -f "$SETTINGS_LOCAL" ] && SETTINGS_LOCAL=".claude/settings.local.json"

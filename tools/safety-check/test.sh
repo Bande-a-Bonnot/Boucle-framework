@@ -2463,6 +2463,61 @@ assert "SubagentStop hook triggers inheritance warning" "background agents may n
 assert "SubagentStop warning mentions 40818" "40818" "$SAS_OUTPUT"
 rm -rf "$TMPDIR_SAS"
 
+# === Test: PreToolUse on EnterPlanMode triggers deprioritization warning ===
+TMPDIR_PM=$(mktemp -d)
+export HOME="$TMPDIR_PM"
+mkdir -p "$TMPDIR_PM/.claude"
+echo '{}' > "$TMPDIR_PM/.claude/settings.json"
+mkdir -p "$TMPDIR_PM/project/.claude"
+cat > "$TMPDIR_PM/project/.claude/settings.json" << 'PMEOF'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "EnterPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo ok"
+          }
+        ]
+      }
+    ]
+  }
+}
+PMEOF
+PM_OUTPUT=$(cd "$TMPDIR_PM/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "EnterPlanMode hook triggers deprioritization warning" "deprioritized by plan mode" "$PM_OUTPUT"
+assert "EnterPlanMode warning mentions 41051" "41051" "$PM_OUTPUT"
+rm -rf "$TMPDIR_PM"
+
+# === Test: PreToolUse without EnterPlanMode matcher does not trigger warning ===
+TMPDIR_NOPM=$(mktemp -d)
+export HOME="$TMPDIR_NOPM"
+mkdir -p "$TMPDIR_NOPM/.claude"
+echo '{}' > "$TMPDIR_NOPM/.claude/settings.json"
+mkdir -p "$TMPDIR_NOPM/project/.claude"
+cat > "$TMPDIR_NOPM/project/.claude/settings.json" << 'NOPMEOF'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo ok"
+          }
+        ]
+      }
+    ]
+  }
+}
+NOPMEOF
+NOPM_OUTPUT=$(cd "$TMPDIR_NOPM/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "Write matcher does not trigger EnterPlanMode warning" "deprioritized by plan mode" "$NOPM_OUTPUT"
+rm -rf "$TMPDIR_NOPM"
+
 # === Test: New hook types detected in supply-chain scan ===
 TMPDIR_SCNEW=$(mktemp -d)
 export HOME="$TMPDIR_SCNEW"
