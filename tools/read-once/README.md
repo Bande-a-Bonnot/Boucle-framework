@@ -8,6 +8,8 @@ By default, read-once uses **warn mode**: it allows the read but attaches an adv
 
 ## Install
 
+### macOS / Linux
+
 One command:
 
 ```sh
@@ -24,7 +26,25 @@ cd Boucle-framework/tools/read-once
 ./read-once install
 ```
 
-Or add to `.claude/settings.json` by hand:
+### Windows (PowerShell 7+)
+
+```powershell
+irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1 | iex
+```
+
+Or clone and install manually:
+
+```powershell
+git clone https://github.com/Bande-a-Bonnot/Boucle-framework.git
+cd Boucle-framework/tools/read-once
+pwsh read-once.ps1 install
+```
+
+Requires PowerShell 7+ (`pwsh`), not the built-in Windows PowerShell 5.1. Install with `winget install Microsoft.PowerShell` if needed.
+
+### Manual setup
+
+Add to `.claude/settings.json` by hand:
 
 ```json
 {
@@ -43,6 +63,8 @@ Or add to `.claude/settings.json` by hand:
   }
 }
 ```
+
+On Windows, use `"command": "pwsh -File ~/.claude/read-once/hook.ps1"` instead.
 
 ## How it works
 
@@ -105,7 +127,8 @@ There's no way to detect compaction events from a hook, so a time-based heuristi
 ## Stats
 
 ```sh
-./read-once stats
+./read-once stats          # macOS/Linux
+pwsh read-once.ps1 stats   # Windows
 ```
 
 ```
@@ -144,6 +167,8 @@ read-once install     Add hook to settings
 read-once upgrade     Update installed hook to latest
 read-once uninstall   Remove hook
 ```
+
+On Windows, use `pwsh read-once.ps1 <command>` instead of `./read-once <command>`.
 
 ### Verify
 
@@ -199,9 +224,14 @@ Environment variables:
 
 ## Requirements
 
+**macOS / Linux:**
 - `jq` (for JSON parsing)
 - `bash` 4+
-- `python3` (for diff mode JSON escaping — only needed if `READ_ONCE_DIFF=1`)
+- `python3` (optional, for diff mode JSON escaping)
+- Claude Code with hooks support
+
+**Windows:**
+- PowerShell 7+ (`pwsh`), not the built-in Windows PowerShell 5.1
 - Claude Code with hooks support
 
 ## How much does it save?

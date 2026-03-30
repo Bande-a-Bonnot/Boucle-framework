@@ -147,6 +147,10 @@ JSONC_FIX
 fi
 
 echo ""
+# Download PS1 CLI for Windows users (best-effort, non-fatal)
+$DL "${REPO}/read-once.ps1" > "${INSTALL_DIR}/read-once.ps1" 2>/dev/null || true
+
+echo ""
 echo "read-once: installed. Start a new Claude Code session to activate."
 echo "  Stats:     ~/.claude/read-once/read-once stats"
 echo "  Uninstall: ~/.claude/read-once/read-once uninstall"
