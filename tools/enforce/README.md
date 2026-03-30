@@ -144,6 +144,76 @@ To activate enforcement, add @enforced to each rule:
   - Never modify .env files @enforced
 ```
 
+## Recipes
+
+Copy-paste CLAUDE.md snippets for common scenarios. Each block is self-contained; combine as needed.
+
+### Safety baseline
+
+The minimum for any project. Prevents the operations that cause the most damage in Claude Code sessions.
+
+```markdown
+## Safety @enforced
+- Never force push
+- Never use --no-verify
+- Never run rm -rf
+- Never run sudo
+- Never modify .env files
+- Don't commit directly to main
+```
+
+### React / TypeScript
+
+```markdown
+## Code Quality @enforced
+- Never write console.log
+- Never use inline styles
+- No `!important` in CSS
+
+## Code Quality @enforced(warn)
+- Interfaces only in types/
+```
+
+### Python
+
+```markdown
+## Code Quality @enforced
+- No eval() calls
+- No SQL queries in views/
+
+## Safety @enforced
+- Never modify .env files
+- Don't read files in secrets/
+```
+
+### Node.js API
+
+```markdown
+## Safety @enforced
+- Never modify .env files
+- Protected files: package-lock.json @enforced
+- No SQL queries in controllers/
+
+## Workflow @enforced(warn)
+- Always run tests before committing
+- Don't commit directly to main
+```
+
+### Cost control
+
+For sessions where token spend matters. These rules have no direct hook signal, but the file-guard and bash-guard rules limit the scope of what Claude can touch, reducing runaway sessions.
+
+```markdown
+## Boundaries @enforced
+- Protected files: package-lock.json, yarn.lock
+- Don't read files in node_modules/
+- Don't read files in dist/
+- Never modify .git/
+
+## Boundaries @enforced(warn)
+- Don't commit directly to main
+```
+
 ## Options
 
 ```
