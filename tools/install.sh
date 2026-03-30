@@ -7,6 +7,7 @@
 # Or:    curl ... | bash -s -- upgrade
 # Or:    curl ... | bash -s -- uninstall read-once
 # Or:    curl ... | bash -s -- uninstall all
+# Or:    curl ... | bash -s -- help
 set -euo pipefail
 
 REPO="https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools"
@@ -50,6 +51,40 @@ hook_desc() {
 
 ALL_HOOKS="read-once file-guard git-safe bash-guard branch-guard worktree-guard session-log"
 RECOMMENDED_HOOKS="bash-guard git-safe file-guard"
+
+# Handle help subcommand
+if [ $# -gt 0 ] && { [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; }; then
+  echo -e "${BOLD}Usage:${RESET} install.sh <command> [args]"
+  echo ""
+  echo -e "${BOLD}Commands:${RESET}"
+  echo "  recommended           Install the 3 essential hooks (bash-guard, git-safe, file-guard)"
+  echo "  all                   Install all 7 hooks"
+  echo "  <hook> [hook...]      Install specific hooks by name"
+  echo "  list                  Show which hooks are currently installed"
+  echo "  upgrade               Re-download all installed hooks to latest version"
+  echo "  uninstall <hook>      Remove a specific hook (files + settings.json entry)"
+  echo "  uninstall all         Remove all hooks"
+  echo "  help                  Show this help message"
+  echo ""
+  echo -e "${BOLD}Available hooks:${RESET}"
+  for hook in $ALL_HOOKS; do
+    desc=$(hook_desc "$hook")
+    rec=""
+    case " $RECOMMENDED_HOOKS " in
+      *" $hook "*) rec=" ${YELLOW}(recommended)${RESET}" ;;
+    esac
+    echo -e "  ${CYAN}${hook}${RESET}  ${desc}${rec}"
+  done
+  echo ""
+  echo -e "${BOLD}Examples:${RESET}"
+  echo "  install.sh recommended           # Start here"
+  echo "  install.sh all                    # Everything at once"
+  echo "  install.sh read-once git-safe     # Pick specific hooks"
+  echo "  install.sh list                   # See what you have"
+  echo "  install.sh upgrade                # Update to latest"
+  echo "  install.sh uninstall read-once    # Remove one hook"
+  exit 0
+fi
 
 # Handle list subcommand — show installed hooks
 if [ $# -gt 0 ] && [ "$1" = "list" ]; then

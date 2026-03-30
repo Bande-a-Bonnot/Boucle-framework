@@ -631,6 +631,59 @@ else
   pass "upgrade updated read-once CLI"
 fi
 
+# Test 31: Help subcommand
+echo "--- Help output ---"
+output=$(bash "$SCRIPT_DIR/install.sh" help 2>&1)
+if echo "$output" | grep -q "Commands:"; then
+  pass "help shows commands section"
+else
+  fail "help missing commands section"
+fi
+
+if echo "$output" | grep -q "recommended"; then
+  pass "help mentions recommended"
+else
+  fail "help missing recommended command"
+fi
+
+if echo "$output" | grep -q "Available hooks:"; then
+  pass "help shows available hooks"
+else
+  fail "help missing available hooks"
+fi
+
+if echo "$output" | grep -q "Examples:"; then
+  pass "help shows examples"
+else
+  fail "help missing examples"
+fi
+
+# Test 32: --help flag
+echo "--- --help flag ---"
+output2=$(bash "$SCRIPT_DIR/install.sh" --help 2>&1)
+if echo "$output2" | grep -q "Commands:"; then
+  pass "--help works same as help"
+else
+  fail "--help does not show help"
+fi
+
+# Test 33: -h flag
+echo "--- -h flag ---"
+output3=$(bash "$SCRIPT_DIR/install.sh" -h 2>&1)
+if echo "$output3" | grep -q "Commands:"; then
+  pass "-h works same as help"
+else
+  fail "-h does not show help"
+fi
+
+# Test 34: Help exits 0
+echo "--- Help exit code ---"
+if bash "$SCRIPT_DIR/install.sh" help >/dev/null 2>&1; then
+  pass "help exits 0"
+else
+  fail "help exits non-zero"
+fi
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed (total $((PASS + FAIL)))"
 [ "$FAIL" -eq 0 ] || exit 1
