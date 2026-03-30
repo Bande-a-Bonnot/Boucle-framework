@@ -81,6 +81,10 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
     Write-Host "  recommended           Install the 3 essential hooks (bash-guard, git-safe, file-guard)"
     Write-Host "  all                   Install all 7 hooks"
     Write-Host "  <hook> [hook...]      Install specific hooks by name"
+    Write-Host "  backup                Snapshot settings.json (protects against auto-update wipes)"
+    Write-Host "  backup list           Show available backups"
+    Write-Host "  restore               Restore the most recent backup"
+    Write-Host "  restore <file>        Restore a specific backup"
     Write-Host "  help                  Show this help message"
     Write-Host ""
     Write-Host "Available hooks:" -ForegroundColor White
@@ -97,6 +101,126 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
     Write-Host "  install.ps1 recommended           # Start here"
     Write-Host "  install.ps1 all                    # Everything at once"
     Write-Host "  install.ps1 read-once git-safe     # Pick specific hooks"
+    exit 0
+}
+
+# Handle backup subcommand
+$BackupDir = Join-Path (Split-Path $SettingsPath -Parent) "backups"
+if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'backup') {
+    if (-not (Test-Path $SettingsPath)) {
+        Write-Host "No settings.json found at $SettingsPath"
+        Write-Host "Nothing to back up."
+        exit 0
+    }
+
+    # backup list
+    if ($Hooks.Count -gt 1 -and $Hooks[1] -eq 'list') {
+        if (-not (Test-Path $BackupDir)) {
+            Write-Host "No backups found."
+            Write-Host ""
+            Write-Host "Create one with: install.ps1 backup"
+            exit 0
+        }
+        $files = Get-ChildItem -Path $BackupDir -Filter "settings.*.json" -ErrorAction SilentlyContinue | Sort-Object Name
+        if ($files.Count -eq 0) {
+            Write-Host "No backups found."
+            Write-Host ""
+            Write-Host "Create one with: install.ps1 backup"
+            exit 0
+        }
+        foreach ($f in $files) {
+            Write-Host "  " -NoNewline
+            Write-Host "$($f.Name)" -ForegroundColor Cyan -NoNewline
+            Write-Host "  $($f.Length) bytes"
+        }
+        Write-Host ""
+        Write-Host "  $($files.Count) backup(s) found in $BackupDir"
+        Write-Host ""
+        Write-Host "Restore with: install.ps1 restore"
+        exit 0
+    }
+
+    # Create backup
+    if (-not (Test-Path $BackupDir)) {
+        New-Item -ItemType Directory -Path $BackupDir -Force | Out-Null
+    }
+    $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+    $backupFile = Join-Path $BackupDir "settings.$timestamp.json"
+    Copy-Item $SettingsPath $backupFile
+
+    $size = (Get-Item $backupFile).Length
+    Write-Host "Backup created." -ForegroundColor Green
+    Write-Host ""
+    Write-Host "  File: $backupFile"
+    Write-Host "  Size: $size bytes"
+    Write-Host ""
+    Write-Host "Restore with: install.ps1 restore"
+    Write-Host ""
+    Write-Host "Tip: Run this before updating Claude Code. If an auto-update" -ForegroundColor DarkGray
+    Write-Host "wipes your settings.json, restore will bring your hooks back." -ForegroundColor DarkGray
+    exit 0
+}
+
+# Handle restore subcommand
+if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'restore') {
+    if (-not (Test-Path $BackupDir)) {
+        Write-Host "No backups found in $BackupDir"
+        Write-Host ""
+        Write-Host "Create one first with: install.ps1 backup"
+        exit 1
+    }
+
+    $target = $null
+    if ($Hooks.Count -gt 1) {
+        # Specific file requested
+        $name = $Hooks[1]
+        $candidate = Join-Path $BackupDir $name
+        if (Test-Path $candidate) {
+            $target = $candidate
+        } elseif (Test-Path $name) {
+            $target = $name
+        } else {
+            Write-Host "Backup not found: " -ForegroundColor Yellow -NoNewline
+            Write-Host "$name"
+            Write-Host ""
+            Write-Host "Available backups:"
+            Get-ChildItem -Path $BackupDir -Filter "settings.*.json" | ForEach-Object { Write-Host "  $($_.Name)" }
+            exit 1
+        }
+    } else {
+        # Find most recent backup
+        $files = Get-ChildItem -Path $BackupDir -Filter "settings.2*.json" -ErrorAction SilentlyContinue | Sort-Object Name
+        if ($files.Count -eq 0) {
+            Write-Host "No backups found in $BackupDir"
+            exit 1
+        }
+        $target = $files[-1].FullName
+    }
+
+    # Validate JSON
+    try {
+        $null = Get-Content $target -Raw | ConvertFrom-Json
+    } catch {
+        Write-Host "Warning: " -ForegroundColor Yellow -NoNewline
+        Write-Host "Backup is not valid JSON: $(Split-Path $target -Leaf)"
+        Write-Host "Aborting restore."
+        exit 1
+    }
+
+    # Save pre-restore copy
+    if (Test-Path $SettingsPath) {
+        $preRestore = Join-Path $BackupDir "settings.pre-restore-$(Get-Date -Format 'yyyyMMdd_HHmmss').json"
+        Copy-Item $SettingsPath $preRestore
+        Write-Host "  Current settings saved to $(Split-Path $preRestore -Leaf)" -ForegroundColor DarkGray
+    }
+
+    Copy-Item $target $SettingsPath
+    Write-Host "Restored!" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "  From: $(Split-Path $target -Leaf)"
+    Write-Host "  To:   $SettingsPath"
+    Write-Host ""
+    Write-Host "Changes take effect in your next Claude Code session."
     exit 0
 }
 

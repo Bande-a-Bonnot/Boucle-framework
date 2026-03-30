@@ -684,6 +684,212 @@ else
   fail "help exits non-zero"
 fi
 
+# ---- Backup/Restore Tests ----
+
+echo "--- Backup creates snapshot ---"
+# Fresh HOME for backup tests
+rm -rf "$TEST_HOME/.claude"
+mkdir -p "$TEST_HOME/.claude"
+cat > "$TEST_HOME/.claude/settings.json" << 'EOF'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "command": "/home/test/.claude/bash-guard/hook.sh"
+      }
+    ]
+  }
+}
+EOF
+output=$(bash "$SCRIPT_DIR/install.sh" backup 2>&1)
+if echo "$output" | grep -q "Backup created"; then
+  pass "backup reports success"
+else
+  fail "backup did not report success: $output"
+fi
+
+if ls "$TEST_HOME/.claude/backups"/settings.*.json >/dev/null 2>&1; then
+  pass "backup file created"
+else
+  fail "no backup file found"
+fi
+
+# Verify backup content matches original
+backup_file=$(ls -t "$TEST_HOME/.claude/backups"/settings.*.json | head -1)
+if diff -q "$TEST_HOME/.claude/settings.json" "$backup_file" >/dev/null 2>&1; then
+  pass "backup content matches original"
+else
+  fail "backup content differs from original"
+fi
+
+if echo "$output" | grep -q "1 unique hook"; then
+  pass "backup counts hooks"
+else
+  fail "backup hook count missing"
+fi
+
+echo "--- Backup list ---"
+output=$(bash "$SCRIPT_DIR/install.sh" backup list 2>&1)
+if echo "$output" | grep -q "settings\..*\.json"; then
+  pass "backup list shows files"
+else
+  fail "backup list shows no files"
+fi
+if echo "$output" | grep -q "1 backup"; then
+  pass "backup list shows count"
+else
+  fail "backup list count wrong"
+fi
+
+echo "--- Backup list empty ---"
+rm -rf "$TEST_HOME/.claude/backups"
+output=$(bash "$SCRIPT_DIR/install.sh" backup list 2>&1)
+if echo "$output" | grep -q "No backups found"; then
+  pass "backup list empty message"
+else
+  fail "backup list should show no backups"
+fi
+
+echo "--- Backup no settings ---"
+rm -f "$TEST_HOME/.claude/settings.json"
+output=$(bash "$SCRIPT_DIR/install.sh" backup 2>&1)
+if echo "$output" | grep -q "Nothing to back up"; then
+  pass "backup with no settings.json"
+else
+  fail "backup should warn about missing settings.json"
+fi
+
+echo "--- Restore latest ---"
+# Re-create settings and a backup
+cat > "$TEST_HOME/.claude/settings.json" << 'EOF'
+{"hooks": {"PreToolUse": [{"matcher": "Bash", "command": "/test/bash-guard/hook.sh"}]}}
+EOF
+bash "$SCRIPT_DIR/install.sh" backup >/dev/null 2>&1
+
+# Wipe settings (simulating auto-update)
+echo '{}' > "$TEST_HOME/.claude/settings.json"
+
+output=$(bash "$SCRIPT_DIR/install.sh" restore 2>&1)
+if echo "$output" | grep -q "Restored"; then
+  pass "restore reports success"
+else
+  fail "restore did not report success: $output"
+fi
+
+if python3 -c "
+import json
+with open('$TEST_HOME/.claude/settings.json') as f:
+    s = json.load(f)
+assert 'hooks' in s
+assert 'PreToolUse' in s['hooks']
+print('OK')
+" 2>/dev/null | grep -q OK; then
+  pass "restore recovered hooks"
+else
+  fail "restore did not recover hooks"
+fi
+
+echo "--- Restore saves pre-restore copy ---"
+if ls "$TEST_HOME/.claude/backups"/settings.pre-restore-*.json >/dev/null 2>&1; then
+  pass "pre-restore backup created"
+else
+  fail "pre-restore backup not found"
+fi
+
+echo "--- Restore specific file ---"
+# Create a second distinct backup (sleep to ensure different timestamp)
+sleep 1
+cat > "$TEST_HOME/.claude/settings.json" << 'EOF'
+{"hooks": {"PreToolUse": [{"matcher": "Write", "command": "/test/file-guard/hook.sh"}]}}
+EOF
+bash "$SCRIPT_DIR/install.sh" backup >/dev/null 2>&1
+
+# Find the first backup (older one, has bash-guard)
+first_backup=$(ls "$TEST_HOME/.claude/backups"/settings.2*.json | head -1)
+first_name=$(basename "$first_backup")
+
+# Wipe and restore the specific older backup
+echo '{}' > "$TEST_HOME/.claude/settings.json"
+output=$(bash "$SCRIPT_DIR/install.sh" restore "$first_name" 2>&1)
+if echo "$output" | grep -q "Restored"; then
+  pass "restore specific file works"
+else
+  fail "restore specific file failed: $output"
+fi
+
+if python3 -c "
+import json
+with open('$TEST_HOME/.claude/settings.json') as f:
+    s = json.load(f)
+cmds = [h.get('command','') for h in s.get('hooks',{}).get('PreToolUse',[])]
+assert any('bash-guard' in c for c in cmds), f'Expected bash-guard, got {cmds}'
+print('OK')
+" 2>/dev/null | grep -q OK; then
+  pass "restore specific file has correct content"
+else
+  fail "restore specific file has wrong content"
+fi
+
+echo "--- Restore nonexistent file ---"
+if output=$(bash "$SCRIPT_DIR/install.sh" restore "settings.fake.json" 2>&1); then
+  fail "restore nonexistent file should fail"
+else
+  if echo "$output" | grep -q "not found"; then
+    pass "restore nonexistent file fails"
+  else
+    fail "restore nonexistent file wrong message: $output"
+  fi
+fi
+
+echo "--- Restore no backups ---"
+rm -rf "$TEST_HOME/.claude/backups"
+if output=$(bash "$SCRIPT_DIR/install.sh" restore 2>&1); then
+  fail "restore should fail with no backups"
+else
+  if echo "$output" | grep -q "No backups found"; then
+    pass "restore with no backups fails"
+  else
+    fail "restore no backups wrong message: $output"
+  fi
+fi
+
+echo "--- Multiple backups ---"
+rm -rf "$TEST_HOME/.claude/backups"
+mkdir -p "$TEST_HOME/.claude"
+cat > "$TEST_HOME/.claude/settings.json" << 'EOF'
+{"version": 1}
+EOF
+bash "$SCRIPT_DIR/install.sh" backup >/dev/null 2>&1
+sleep 1
+cat > "$TEST_HOME/.claude/settings.json" << 'EOF'
+{"version": 2}
+EOF
+bash "$SCRIPT_DIR/install.sh" backup >/dev/null 2>&1
+
+# Restore should pick the latest (version 2)
+echo '{}' > "$TEST_HOME/.claude/settings.json"
+bash "$SCRIPT_DIR/install.sh" restore >/dev/null 2>&1
+if python3 -c "
+import json
+with open('$TEST_HOME/.claude/settings.json') as f:
+    s = json.load(f)
+assert s.get('version') == 2, f'Expected version 2, got {s}'
+print('OK')
+" 2>/dev/null | grep -q OK; then
+  pass "restore picks most recent backup"
+else
+  fail "restore did not pick most recent backup"
+fi
+
+output=$(bash "$SCRIPT_DIR/install.sh" backup list 2>&1)
+# 2 manual backups + 1 pre-restore = 3 total
+if echo "$output" | grep -q "backup.* found"; then
+  pass "backup list counts correctly"
+else
+  fail "backup list should show backup count"
+fi
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed (total $((PASS + FAIL)))"
 [ "$FAIL" -eq 0 ] || exit 1
