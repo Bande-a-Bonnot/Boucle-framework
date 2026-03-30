@@ -4,7 +4,7 @@ Standalone safety and efficiency hooks for Claude Code. Each works independently
 
 ## Quick Install
 
-Install all hooks:
+**macOS / Linux:**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash
@@ -16,6 +16,14 @@ Or pick specific hooks:
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- read-once git-safe file-guard
 ```
 
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1 | iex
+```
+
+All 7 hooks ship with native `.ps1` equivalents. No bash or jq required on Windows.
+
 ## Available Hooks
 
 | Hook | What it does | Type |
@@ -25,6 +33,7 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 | [bash-guard](bash-guard/) | Blocks dangerous commands: `rm -rf /`, `sudo`, Docker, database drops, credential exposure, cloud infra, compound commands | PreToolUse |
 | [file-guard](file-guard/) | Protects files matching patterns in `.file-guard` config | PreToolUse |
 | [branch-guard](branch-guard/) | Prevents commits to main/master/production | PreToolUse |
+| [worktree-guard](worktree-guard/) | Prevents data loss when exiting worktrees with unmerged commits | PreToolUse |
 | [session-log](session-log/) | Logs all tool calls to `~/.claude/session-logs/` | PostToolUse |
 | [safety-check](safety-check/) | Audits your Claude Code setup for common misconfigurations | CLI tool |
 | [diagnose](diagnose/) | Analyzes loop logs for drift, stagnation, feedback loops | CLI tool |
@@ -55,6 +64,20 @@ A hook can:
 
 Hooks catch compound commands (`cd repo && git push --force`), pipes, and subshells. They work even when Claude ignores CLAUDE.md instructions.
 
+## Manage Hooks
+
+The installer doubles as a management CLI:
+
+```bash
+install.sh help                  # Show all commands and available hooks
+install.sh list                  # See which hooks are currently installed
+install.sh upgrade               # Re-download all installed hooks to latest version
+install.sh uninstall <hook>      # Remove a specific hook (files + settings.json entry)
+install.sh uninstall all         # Remove all hooks
+```
+
+Each hook also has a `verify` subcommand in its own installer that checks the installation is working correctly.
+
 ## Per-Project Configuration
 
 Each safety hook supports allowlist configs so you can relax rules where needed:
@@ -66,6 +89,12 @@ Each safety hook supports allowlist configs so you can relax rules where needed:
 
 ## Requirements
 
-- Claude Code with hooks support
-- bash, jq
-- No other dependencies
+**macOS / Linux:** bash, jq
+
+**Windows:** PowerShell 5.1+ (no extra dependencies)
+
+All platforms need Claude Code with hooks support enabled.
+
+## Known Limitations
+
+Claude Code hooks have platform-level constraints that affect all hook implementations. See [Known Limitations](https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/enforce/README.md#known-limitations) for the full list, including bypass vectors and platform bugs.
