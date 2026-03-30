@@ -353,6 +353,27 @@ for hook in $installed; do
         verify_fail=$((verify_fail + 1))
       fi
       ;;
+    file-guard)
+      # file-guard always blocks relative paths in Write/Edit (no config needed)
+      result=$(echo '{"tool_name":"Write","tool_input":{"file_path":"relative/path.txt","content":"test"}}' | "$hook_path" 2>/dev/null || true)
+      if echo "$result" | grep -q '"block"'; then
+        echo -e "  ${GREEN}OK${RESET}: ${hook} blocked test payload (relative path write)"
+        verify_ok=$((verify_ok + 1))
+      else
+        echo -e "  ${YELLOW}WARN${RESET}: ${hook} did not block test payload"
+        verify_fail=$((verify_fail + 1))
+      fi
+      ;;
+    read-once)
+      # read-once should accept a valid Read payload without crashing
+      if echo '{"tool_name":"Read","tool_input":{"file_path":"/tmp/verify-test"}}' | "$hook_path" >/dev/null 2>&1; then
+        echo -e "  ${GREEN}OK${RESET}: ${hook} accepted test payload without error"
+        verify_ok=$((verify_ok + 1))
+      else
+        echo -e "  ${YELLOW}WARN${RESET}: ${hook} returned an error"
+        verify_fail=$((verify_fail + 1))
+      fi
+      ;;
     *)
       echo -e "  ${DIM}SKIP${RESET}: ${hook} (no automated test available)"
       verify_skip=$((verify_skip + 1))
