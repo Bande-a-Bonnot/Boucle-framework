@@ -482,6 +482,155 @@ else
   fail "duplicates after reinstall ($reinstall_count)"
 fi
 
+# === List Tests ===
+echo ""
+echo "=== List Tests ==="
+
+# Test 21: List shows installed hooks
+echo "--- List installed hooks ---"
+rm -rf "$TEST_HOME/.claude"
+bash "$SCRIPT_DIR/install.sh" read-once git-safe >/dev/null 2>&1
+
+output=$(bash "$SCRIPT_DIR/install.sh" list 2>&1)
+if echo "$output" | grep -q "read-once" && echo "$output" | grep -q "git-safe"; then
+  pass "list shows installed hooks"
+else
+  fail "list missing installed hooks"
+fi
+
+# Test 22: List does not show uninstalled hooks
+if echo "$output" | grep -q "bash-guard"; then
+  fail "list shows non-installed hook"
+else
+  pass "list hides non-installed hooks"
+fi
+
+# Test 23: List shows count
+if echo "$output" | grep -q "2 hook"; then
+  pass "list shows correct count"
+else
+  fail "list count wrong"
+fi
+
+# Test 24: List with nothing installed
+echo "--- List empty ---"
+rm -rf "$TEST_HOME/.claude"
+mkdir -p "$TEST_HOME/.claude"
+output=$(bash "$SCRIPT_DIR/install.sh" list 2>&1)
+if echo "$output" | grep -qi "no hooks"; then
+  pass "list reports no hooks"
+else
+  fail "list does not report empty state"
+fi
+
+# === Upgrade Tests ===
+echo ""
+echo "=== Upgrade Tests ==="
+
+# Test 25: Upgrade with no hooks installed
+echo "--- Upgrade empty ---"
+rm -rf "$TEST_HOME/.claude"
+mkdir -p "$TEST_HOME/.claude"
+output=$(bash "$SCRIPT_DIR/install.sh" upgrade 2>&1)
+if echo "$output" | grep -qi "up to date"; then
+  pass "upgrade with no hooks says up to date"
+else
+  fail "upgrade with no hooks unclear output"
+fi
+
+# Test 26: Upgrade fresh install (already up to date)
+echo "--- Upgrade fresh install ---"
+rm -rf "$TEST_HOME/.claude"
+bash "$SCRIPT_DIR/install.sh" git-safe >/dev/null 2>&1
+
+output=$(bash "$SCRIPT_DIR/install.sh" upgrade 2>&1)
+if echo "$output" | grep -qi "up to date"; then
+  pass "upgrade of fresh install says up to date"
+else
+  fail "upgrade of fresh install not detected as current"
+fi
+
+# Test 27: Upgrade detects modified hook
+echo "--- Upgrade modified hook ---"
+rm -rf "$TEST_HOME/.claude"
+bash "$SCRIPT_DIR/install.sh" git-safe >/dev/null 2>&1
+
+# Modify the hook to simulate outdated version
+echo "# outdated version" > "$TEST_HOME/.claude/git-safe/hook.sh"
+
+output=$(bash "$SCRIPT_DIR/install.sh" upgrade 2>&1)
+if echo "$output" | grep -qi "updated"; then
+  pass "upgrade detected and updated modified hook"
+else
+  fail "upgrade did not detect modified hook"
+fi
+
+# Verify the hook was actually restored
+if grep -q "outdated" "$TEST_HOME/.claude/git-safe/hook.sh" 2>/dev/null; then
+  fail "upgrade did not replace outdated hook"
+else
+  pass "upgrade replaced outdated hook content"
+fi
+
+# Test 28: Upgrade preserves non-installed hooks
+echo "--- Upgrade only touches installed ---"
+rm -rf "$TEST_HOME/.claude"
+bash "$SCRIPT_DIR/install.sh" git-safe >/dev/null 2>&1
+
+output=$(bash "$SCRIPT_DIR/install.sh" upgrade 2>&1)
+# Should not mention read-once or other non-installed hooks
+if echo "$output" | grep -q "read-once"; then
+  fail "upgrade mentioned non-installed hook"
+else
+  pass "upgrade only processes installed hooks"
+fi
+
+# Test 29: Upgrade preserves settings.json
+echo "--- Upgrade preserves settings ---"
+rm -rf "$TEST_HOME/.claude"
+mkdir -p "$TEST_HOME/.claude"
+echo '{"allowedTools": ["Bash"]}' > "$TEST_HOME/.claude/settings.json"
+bash "$SCRIPT_DIR/install.sh" git-safe >/dev/null 2>&1
+echo "# outdated" > "$TEST_HOME/.claude/git-safe/hook.sh"
+
+bash "$SCRIPT_DIR/install.sh" upgrade >/dev/null 2>&1
+
+preserved=$(python3 -c "
+import json, sys
+with open(sys.argv[1]) as f:
+    s = json.load(f)
+print('yes' if 'allowedTools' in s else 'no')
+" "$TEST_HOME/.claude/settings.json" 2>/dev/null)
+
+if [ "$preserved" = "yes" ]; then
+  pass "upgrade preserved settings.json"
+else
+  fail "upgrade corrupted settings.json"
+fi
+
+# Test 30: Upgrade read-once also updates CLI
+echo "--- Upgrade read-once extras ---"
+rm -rf "$TEST_HOME/.claude"
+bash "$SCRIPT_DIR/install.sh" read-once >/dev/null 2>&1
+
+# Modify both files
+echo "# outdated hook" > "$TEST_HOME/.claude/read-once/hook.sh"
+echo "# outdated cli" > "$TEST_HOME/.claude/read-once/read-once"
+
+bash "$SCRIPT_DIR/install.sh" upgrade >/dev/null 2>&1
+
+if grep -q "outdated" "$TEST_HOME/.claude/read-once/hook.sh" 2>/dev/null; then
+  fail "upgrade did not update read-once hook"
+else
+  pass "upgrade updated read-once hook"
+fi
+
+if grep -q "outdated" "$TEST_HOME/.claude/read-once/read-once" 2>/dev/null; then
+  fail "upgrade did not update read-once CLI"
+else
+  pass "upgrade updated read-once CLI"
+fi
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed (total $((PASS + FAIL)))"
 [ "$FAIL" -eq 0 ] || exit 1

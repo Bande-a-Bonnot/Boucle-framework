@@ -3,6 +3,8 @@
 # Usage: curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash
 # Or:    curl ... | bash -s -- recommended
 # Or:    curl ... | bash -s -- read-once file-guard git-safe
+# Or:    curl ... | bash -s -- list
+# Or:    curl ... | bash -s -- upgrade
 # Or:    curl ... | bash -s -- uninstall read-once
 # Or:    curl ... | bash -s -- uninstall all
 set -euo pipefail
@@ -48,6 +50,101 @@ hook_desc() {
 
 ALL_HOOKS="read-once file-guard git-safe bash-guard branch-guard worktree-guard session-log"
 RECOMMENDED_HOOKS="bash-guard git-safe file-guard"
+
+# Handle list subcommand — show installed hooks
+if [ $# -gt 0 ] && [ "$1" = "list" ]; then
+  found=0
+  for hook in $ALL_HOOKS; do
+    dir="${HOME}/.claude/${hook}"
+    if [ -d "$dir" ] && [ -f "$dir/hook.sh" ]; then
+      desc=$(hook_desc "$hook")
+      echo -e "  ${GREEN}installed${RESET}  ${CYAN}${hook}${RESET}  ${desc}"
+      found=$((found + 1))
+    fi
+  done
+  if [ "$found" -eq 0 ]; then
+    echo "  No hooks installed."
+  else
+    echo ""
+    echo "  $found hook(s) installed."
+  fi
+  exit 0
+fi
+
+# Handle upgrade subcommand — re-download all installed hooks
+if [ $# -gt 0 ] && [ "$1" = "upgrade" ]; then
+  DL="curl -fsSL"
+  if ! command -v curl >/dev/null 2>&1; then
+    if command -v wget >/dev/null 2>&1; then
+      DL="wget -q -O -"
+    else
+      echo "Error: curl or wget required" >&2
+      exit 1
+    fi
+  fi
+
+  upgraded=0
+  for hook in $ALL_HOOKS; do
+    dir="${HOME}/.claude/${hook}"
+    if [ -d "$dir" ] && [ -f "$dir/hook.sh" ]; then
+      echo -e "  Upgrading ${CYAN}${hook}${RESET}..."
+      if $DL "${REPO}/${hook}/hook.sh" > "${dir}/hook.sh.new" 2>/dev/null; then
+        if [ -s "${dir}/hook.sh.new" ]; then
+          if cmp -s "${dir}/hook.sh" "${dir}/hook.sh.new"; then
+            echo -e "    ${DIM}already up to date${RESET}"
+            rm -f "${dir}/hook.sh.new"
+          else
+            mv "${dir}/hook.sh.new" "${dir}/hook.sh"
+            chmod +x "${dir}/hook.sh"
+            echo -e "    ${GREEN}updated${RESET}"
+            upgraded=$((upgraded + 1))
+          fi
+        else
+          echo -e "    ${YELLOW}download empty, skipped${RESET}"
+          rm -f "${dir}/hook.sh.new"
+        fi
+        # Also upgrade extra files
+        case "$hook" in
+          read-once)
+            if $DL "${REPO}/${hook}/read-once" > "${dir}/read-once.new" 2>/dev/null && [ -s "${dir}/read-once.new" ]; then
+              if ! cmp -s "${dir}/read-once" "${dir}/read-once.new"; then
+                mv "${dir}/read-once.new" "${dir}/read-once"
+                chmod +x "${dir}/read-once"
+              else
+                rm -f "${dir}/read-once.new"
+              fi
+            else
+              rm -f "${dir}/read-once.new"
+            fi
+            ;;
+          file-guard)
+            if $DL "${REPO}/${hook}/init.sh" > "${dir}/init.sh.new" 2>/dev/null && [ -s "${dir}/init.sh.new" ]; then
+              if ! cmp -s "${dir}/init.sh" "${dir}/init.sh.new"; then
+                mv "${dir}/init.sh.new" "${dir}/init.sh"
+                chmod +x "${dir}/init.sh"
+              else
+                rm -f "${dir}/init.sh.new"
+              fi
+            else
+              rm -f "${dir}/init.sh.new"
+            fi
+            ;;
+        esac
+      else
+        echo -e "    ${YELLOW}download failed, skipped${RESET}"
+      fi
+    fi
+  done
+
+  if [ "$upgraded" -gt 0 ]; then
+    echo ""
+    echo -e "${GREEN}${BOLD}Done!${RESET} Updated $upgraded hook(s). Changes take effect in your next Claude Code session."
+  else
+    echo ""
+    echo "All hooks are up to date."
+  fi
+  exit 0
+fi
 
 # Handle uninstall subcommand (doesn't need jq)
 if [ $# -gt 0 ] && [ "$1" = "uninstall" ]; then
@@ -512,10 +609,12 @@ else
   echo -e "${GREEN}${BOLD}Done!${RESET} $verify_ok hooks verified, $verify_skip skipped. Active for your next Claude Code session."
 fi
 echo ""
+INSTALL_URL="https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh"
 echo "Manage hooks:"
-echo "  View config:  cat ~/.claude/settings.json"
-echo "  Uninstall:    curl -fsSL .../install.sh | bash -s -- uninstall <hook-name>"
-echo "  Uninstall all: curl -fsSL .../install.sh | bash -s -- uninstall all"
-echo "  Full check:   curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify"
+echo "  List installed: curl -fsSL $INSTALL_URL | bash -s -- list"
+echo "  Upgrade all:    curl -fsSL $INSTALL_URL | bash -s -- upgrade"
+echo "  Uninstall one:  curl -fsSL $INSTALL_URL | bash -s -- uninstall <hook-name>"
+echo "  Uninstall all:  curl -fsSL $INSTALL_URL | bash -s -- uninstall all"
+echo "  Full check:     curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify"
 echo ""
 echo -e "${DIM}https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools${RESET}"
