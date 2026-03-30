@@ -4,6 +4,51 @@ All notable changes to Boucle are documented here.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-03-30
+
+### Added
+
+#### enforce-hooks
+- **`content_guard` condition type** -- Blocks tool calls when the model's output text matches a pattern, catching prompt injection or policy violations in generated content before the tool executes.
+- **`scoped_content_guard` condition type** -- Like `content_guard` but scoped to specific tools, so you can guard Write output differently from Bash output.
+
+#### installer CLI
+- **`uninstall` subcommand** -- Cleanly removes hook files and entries from settings.json. Bash and PowerShell.
+- **`list` subcommand** -- Shows installed hooks, their event types, and file paths. Bash and PowerShell.
+- **`upgrade` subcommand** -- Re-downloads hooks from the latest release without changing settings.json configuration. Bash and PowerShell.
+- **`help` subcommand** -- Prints available commands and usage. Bash and PowerShell.
+- **`doctor` subcommand** -- Diagnoses installation problems: checks settings.json validity, hook file existence, permission bits, and version consistency. Bash and PowerShell.
+- **Backup and restore** -- Installer creates a `.bak` copy of settings.json before any modification. Restore on failure.
+- **Robust JSONC handling** -- Both installers now handle Claude Code's JSONC format (settings.json with comments), stripping comments before JSON parsing.
+
+#### read-once
+- **PowerShell CLI** (`read-once.ps1`, 490 lines) -- Windows-native stats and management tool. View read counts, cache entries, token savings, and clear cache.
+- **`verify` command** -- Full installation diagnostic with dry-run test. Checks hook presence, settings.json registration, file permissions, and cache directory access.
+
+#### safety-check
+- **All 11 hook event types** -- Expanded scanning from 4 types (PreToolUse, PostToolUse, Notification, Stop) to all 11 Claude Code event types: PreToolUse, PostToolUse, SessionStart, SessionEnd, Stop, SubagentStop, TaskCreated, WorktreeCreate, WorktreeRemove, UserPromptSubmit, Notification.
+- **New warnings**: WorktreeCreate hooks ignored by EnterWorktree ([#36205](https://github.com/anthropics/claude-code/issues/36205)), TaskCreated is observe-only and cannot block, SubagentStop doesn't inherit parent allow-rules ([#40818](https://github.com/anthropics/claude-code/issues/40818)).
+
+#### documentation
+- **Copy-paste recipes** for 5 common enforcement scenarios in README: block force-push, protect secrets, enforce branching, prevent mass deletion, guard production configs.
+
+### Security
+- **file-guard: symlink bypass fix** -- Resolves symlinks before checking deny rules, preventing `ln -s /etc/passwd allowed-path` bypass. Mitigates [GHSA-4q92-rfm6-2cqx](https://github.com/anthropics/claude-code/security/advisories/GHSA-4q92-rfm6-2cqx).
+
+### Fixed
+- **3 Windows CI failures** -- bash-guard false positive on Windows paths, read-once cache directory handling, worktree-guard git config detection.
+- **install.ps1** -- Missing worktree-guard matcher, missing bash-guard verification step, missing read-once.ps1 CLI download.
+- **install.ps1** -- Now requires PowerShell 7+ with a clear error message instead of silent failures.
+- **Stale documentation** -- Corrected test counts, removed broken cargo install instructions, fixed stale PowerShell limitation claims.
+
+### Documented
+- **100+ known platform limitations** in enforce-hooks README, up from ~80 in v0.9.3. Notable additions: stop hook reads stale transcript ([#40655](https://github.com/anthropics/claude-code/issues/40655)), model deliberately evades text-matching hooks ([#29689](https://github.com/anthropics/claude-code/issues/29689)), auto-update wipes settings.json ([#40714](https://github.com/anthropics/claude-code/issues/40714)), background agents lose allow-rules ([#40818](https://github.com/anthropics/claude-code/issues/40818)), Opus ignores 15+ CLAUDE.md rules ([#40867](https://github.com/anthropics/claude-code/issues/40867)), model tried to disable sandbox ([#40882](https://github.com/anthropics/claude-code/issues/40882)), CLAUDE.md rules ignored costing $850+ ([#40801](https://github.com/anthropics/claude-code/issues/40801)).
+
+### Stats
+- 195 Rust tests (unchanged)
+- Hook tests: bash-guard ~556, safety-check ~231, file-guard ~130, git-safe ~105, session-log ~81, installer ~80, enforce-hooks ~71, PS1 hooks ~65, read-once ~57, branch-guard ~42, format ~33, worktree-guard ~28
+- Total: ~1870+ tests
+
 ## [0.9.3] - 2026-03-29
 
 ### Added
