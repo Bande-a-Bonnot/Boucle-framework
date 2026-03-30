@@ -384,6 +384,91 @@ check "$(echo "$OUT_BLOCK" | python3 -c "import json,sys; d=json.load(sys.stdin)
 
 rm -rf "$WARN_TMPDIR"
 
+# --- content_guard tests ---
+echo ""
+echo "=== content_guard ==="
+
+CG_TMPDIR=$(mktemp -d)
+trap 'rm -rf "$CG_TMPDIR"' EXIT
+mkdir -p "$CG_TMPDIR/.claude/enforcements"
+mkdir -p "$CG_TMPDIR/.claude/session-logs"
+
+cat > "$CG_TMPDIR/.claude/enforcements/no-console-log.json" << 'EOF'
+{
+  "name": "No console.log",
+  "directive": "Never use console.log in production code.",
+  "trigger": { "tool": "Write|Edit" },
+  "condition": { "type": "content_guard", "patterns": ["console\\.log"] },
+  "action": "block",
+  "message": "console.log is banned"
+}
+EOF
+
+run_cg() {
+    echo "$1" | (cd "$CG_TMPDIR" && HOME="$CG_TMPDIR" bash "$ENGINE")
+}
+
+echo "Test: content_guard blocks Write with console.log"
+OUT=$(run_cg '{"tool_name":"Write","tool_input":{"file_path":"src/app.js","content":"function foo() {\n  console.log(\"debug\");\n}"}}')
+check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "content_guard blocks console.log in Write"
+
+echo "Test: content_guard blocks Edit with console.log"
+OUT=$(run_cg '{"tool_name":"Edit","tool_input":{"file_path":"src/app.js","old_string":"x","new_string":"console.log(y)"}}')
+check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "content_guard blocks console.log in Edit"
+
+echo "Test: content_guard allows clean content"
+OUT=$(run_cg '{"tool_name":"Write","tool_input":{"file_path":"src/app.js","content":"function foo() { return 42; }"}}')
+check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "content_guard allows clean content"
+
+echo "Test: content_guard ignores Bash tool"
+OUT=$(run_cg '{"tool_name":"Bash","tool_input":{"command":"echo console.log"}}')
+check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "content_guard ignores non-Write/Edit tools"
+
+echo "Test: content_guard case-insensitive"
+OUT=$(run_cg '{"tool_name":"Write","tool_input":{"file_path":"src/app.js","content":"Console.Log(\"debug\")"}}')
+check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "content_guard is case-insensitive"
+
+echo "Test: content_guard block message cites directive"
+OUT=$(run_cg '{"tool_name":"Write","tool_input":{"file_path":"src/app.js","content":"console.log(1)"}}')
+check "$(echo "$OUT" | grep -q 'CLAUDE.md' && echo true || echo false)" "content_guard block message cites CLAUDE.md"
+
+# --- scoped_content_guard tests ---
+echo ""
+echo "=== scoped_content_guard ==="
+
+cat > "$CG_TMPDIR/.claude/enforcements/no-sql-in-controllers.json" << 'EOF'
+{
+  "name": "No SQL in controllers",
+  "directive": "Never write raw SQL queries in controllers/.",
+  "trigger": { "tool": "Write|Edit" },
+  "condition": { "type": "scoped_content_guard", "scope": "controllers/*", "patterns": ["SELECT\\s|INSERT\\s|DELETE\\s|UPDATE\\s"] },
+  "action": "block",
+  "message": "Raw SQL is not allowed in controllers"
+}
+EOF
+
+echo "Test: scoped_content_guard blocks SQL in controllers/"
+OUT=$(run_cg '{"tool_name":"Write","tool_input":{"file_path":"controllers/users.js","content":"const users = db.query(\"SELECT * FROM users\")"}}')
+check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "scoped_content blocks SQL in controllers/"
+
+echo "Test: scoped_content_guard allows SQL outside controllers/"
+OUT=$(run_cg '{"tool_name":"Write","tool_input":{"file_path":"models/user.js","content":"const users = db.query(\"SELECT * FROM users\")"}}')
+check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "scoped_content allows SQL in models/"
+
+echo "Test: scoped_content_guard allows clean content in controllers/"
+OUT=$(run_cg '{"tool_name":"Write","tool_input":{"file_path":"controllers/users.js","content":"const users = UserModel.findAll()"}}')
+check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "scoped_content allows clean content in scope"
+
+echo "Test: scoped_content_guard with Edit new_string"
+OUT=$(run_cg '{"tool_name":"Edit","tool_input":{"file_path":"controllers/api.js","old_string":"old","new_string":"db.query(\"DELETE FROM logs\")"}}')
+check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "scoped_content blocks SQL in Edit new_string"
+
+echo "Test: scoped_content_guard ignores Read"
+OUT=$(run_cg '{"tool_name":"Read","tool_input":{"file_path":"controllers/users.js"}}')
+check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "scoped_content ignores Read tool"
+
+rm -rf "$CG_TMPDIR"
+
 echo ""
 echo "================================"
 echo "Results: $PASSED passed, $FAILED failed out of $((PASSED + FAILED)) tests"
