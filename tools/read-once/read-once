@@ -5,6 +5,7 @@
 #   read-once stats         Show token savings for current/recent sessions
 #   read-once gain          RTK-style savings summary
 #   read-once status        Quick health check (hook installed? data?)
+#   read-once verify        Full diagnostic: deps, settings, dry-run test
 #   read-once clear         Clear session cache (start fresh)
 #   read-once install       Install hook to ~/.claude/read-once/hook.sh
 #   read-once upgrade       Update installed hook to latest version
@@ -195,6 +196,202 @@ print('  Est. cost saved:     \$%.4f (Sonnet) / \$%.4f (Opus)' % (s, o))
     echo "  Disabled:      ${READ_ONCE_DISABLED:-0}"
     ;;
 
+  verify|check|test)
+    # Full diagnostic: dependencies, settings, and dry-run test
+    SETTINGS="${HOME}/.claude/settings.json"
+    INSTALLED_HOOK="${CACHE_DIR}/hook.sh"
+    ISSUES=0
+    CHECKS=0
+    PASSED=0
+
+    echo "read-once verify"
+    echo ""
+
+    check_pass() {
+      CHECKS=$((CHECKS + 1))
+      PASSED=$((PASSED + 1))
+      echo "  [ok]   $1"
+    }
+    check_fail() {
+      CHECKS=$((CHECKS + 1))
+      ISSUES=$((ISSUES + 1))
+      echo "  [FAIL] $1"
+      if [ -n "${2:-}" ]; then
+        echo "         Fix: $2"
+      fi
+    }
+    check_warn() {
+      CHECKS=$((CHECKS + 1))
+      echo "  [warn] $1"
+    }
+
+    # --- Dependencies ---
+    echo "Dependencies:"
+
+    if command -v jq &>/dev/null; then
+      JQ_VER=$(jq --version 2>&1 || echo "unknown")
+      check_pass "jq found ($JQ_VER)"
+    else
+      check_fail "jq not found" "brew install jq (macOS) or apt install jq (Linux)"
+    fi
+
+    BASH_VER="${BASH_VERSINFO[0]:-0}"
+    if [ "$BASH_VER" -ge 4 ]; then
+      check_pass "bash ${BASH_VERSION} (4+ recommended)"
+    else
+      check_warn "bash ${BASH_VERSION} (4+ recommended, but hook works on 3.2+)"
+    fi
+
+    if command -v python3 &>/dev/null; then
+      check_pass "python3 found (needed for diff mode)"
+    else
+      check_warn "python3 not found (diff mode will be unavailable)"
+    fi
+
+    if command -v stat &>/dev/null; then
+      check_pass "stat found"
+    else
+      check_fail "stat not found" "Part of coreutils, should be available on any Unix system"
+    fi
+
+    echo ""
+
+    # --- Installation ---
+    echo "Installation:"
+
+    if [ -f "$INSTALLED_HOOK" ]; then
+      check_pass "Hook file exists at ${INSTALLED_HOOK}"
+      if [ -x "$INSTALLED_HOOK" ]; then
+        check_pass "Hook file is executable"
+      else
+        check_fail "Hook file is not executable" "chmod +x ${INSTALLED_HOOK}"
+      fi
+      # Check if installed hook matches source
+      if [ -f "$HOOK_PATH" ] && [ "$HOOK_PATH" != "$INSTALLED_HOOK" ]; then
+        if diff -q "$HOOK_PATH" "$INSTALLED_HOOK" >/dev/null 2>&1; then
+          check_pass "Installed hook matches source (up to date)"
+        else
+          check_warn "Installed hook differs from source (run: read-once upgrade)"
+        fi
+      fi
+    else
+      check_fail "Hook file not found at ${INSTALLED_HOOK}" "read-once install"
+    fi
+
+    if [ -f "$SETTINGS" ]; then
+      check_pass "~/.claude/settings.json exists"
+      # Validate JSON
+      if jq empty "$SETTINGS" 2>/dev/null; then
+        check_pass "settings.json is valid JSON"
+      else
+        check_fail "settings.json is invalid JSON" "Check for syntax errors: jq . ~/.claude/settings.json"
+      fi
+      # Check for Read matcher
+      HAS_READ_HOOK=$(jq -r '.hooks.PreToolUse // [] | map(select(.matcher == "Read")) | length' "$SETTINGS" 2>/dev/null || echo "0")
+      if [ "$HAS_READ_HOOK" -gt 0 ]; then
+        check_pass "PreToolUse Read matcher configured"
+        # Check the command path exists
+        HOOK_CMD=$(jq -r '.hooks.PreToolUse[] | select(.matcher == "Read") | .hooks[0].command // empty' "$SETTINGS" 2>/dev/null | head -1)
+        # Expand ~ to HOME
+        HOOK_CMD_EXPANDED="${HOOK_CMD/#\~/$HOME}"
+        if [ -n "$HOOK_CMD_EXPANDED" ] && [ -f "$HOOK_CMD_EXPANDED" ]; then
+          check_pass "Hook command path resolves (${HOOK_CMD})"
+        elif [ -n "$HOOK_CMD" ]; then
+          check_fail "Hook command path does not exist: ${HOOK_CMD}" "read-once install"
+        fi
+      else
+        check_fail "No PreToolUse Read matcher in settings.json" "read-once install"
+      fi
+    else
+      check_fail "~/.claude/settings.json not found" "read-once install"
+    fi
+
+    echo ""
+
+    # --- Dry-run test ---
+    echo "Dry-run test:"
+
+    # Find the hook to test (prefer installed, fall back to source)
+    TEST_HOOK="$INSTALLED_HOOK"
+    if [ ! -f "$TEST_HOOK" ]; then
+      TEST_HOOK="$HOOK_PATH"
+    fi
+
+    if [ -f "$TEST_HOOK" ] && [ -x "$TEST_HOOK" ]; then
+      # Create a temp environment for the test
+      TEST_TMP=$(mktemp -d)
+      TEST_FILE="${TEST_TMP}/verify-test-file.txt"
+      echo "read-once verify test content" > "$TEST_FILE"
+
+      # Run the hook with a simulated Read input (first read = should pass)
+      TEST_SESSION="verify-$(date +%s)-$$"
+      TEST_INPUT=$(jq -cn --arg path "$TEST_FILE" --arg sid "$TEST_SESSION" \
+        '{tool_name:"Read", tool_input:{file_path:$path}, session_id:$sid}')
+
+      FIRST_OUTPUT=$(echo "$TEST_INPUT" | HOME="$TEST_TMP" "$TEST_HOOK" 2>/dev/null || true)
+      FIRST_EXIT=$?
+
+      if [ "$FIRST_EXIT" -eq 0 ] && [ -z "$FIRST_OUTPUT" ]; then
+        check_pass "First read: allowed (no output = pass-through)"
+      elif [ "$FIRST_EXIT" -eq 0 ]; then
+        check_warn "First read: unexpected output (expected empty for first read)"
+      else
+        check_fail "First read: hook exited with code $FIRST_EXIT" "Check hook.sh for syntax errors"
+      fi
+
+      # Second read of same file = should produce warn/deny output
+      SECOND_OUTPUT=$(echo "$TEST_INPUT" | HOME="$TEST_TMP" "$TEST_HOOK" 2>/dev/null || true)
+      SECOND_EXIT=$?
+
+      if [ "$SECOND_EXIT" -eq 0 ] && [ -n "$SECOND_OUTPUT" ]; then
+        # Verify it's valid JSON
+        if echo "$SECOND_OUTPUT" | jq empty 2>/dev/null; then
+          check_pass "Second read: produced valid JSON response"
+          # Check for expected fields
+          HAS_DECISION=$(echo "$SECOND_OUTPUT" | jq -r 'if .decision then "deny" elif .hookSpecificOutput.permissionDecision then "warn" else "unknown" end' 2>/dev/null)
+          if [ "$HAS_DECISION" = "warn" ] || [ "$HAS_DECISION" = "deny" ]; then
+            check_pass "Second read: correctly detected re-read (mode: ${HAS_DECISION})"
+          else
+            check_warn "Second read: output format unexpected"
+          fi
+        else
+          check_fail "Second read: output is not valid JSON" "Check hook.sh for output formatting issues"
+        fi
+      elif [ "$SECOND_EXIT" -eq 0 ] && [ -z "$SECOND_OUTPUT" ]; then
+        check_fail "Second read: no output (should have blocked or warned)" "Hook may not be caching reads correctly"
+      else
+        check_fail "Second read: hook exited with code $SECOND_EXIT" "Check hook.sh for errors"
+      fi
+
+      rm -rf "$TEST_TMP"
+    else
+      check_warn "Skipping dry-run (no executable hook found)"
+    fi
+
+    echo ""
+
+    # --- Configuration ---
+    echo "Configuration:"
+    MODE="${READ_ONCE_MODE:-warn}"
+    TTL="${READ_ONCE_TTL:-1200}"
+    DIFF="${READ_ONCE_DIFF:-0}"
+    DISABLED="${READ_ONCE_DISABLED:-0}"
+    echo "  Mode:     ${MODE} (READ_ONCE_MODE)"
+    echo "  TTL:      ${TTL}s ($((TTL/60))m) (READ_ONCE_TTL)"
+    echo "  Diff:     ${DIFF} (READ_ONCE_DIFF)"
+    echo "  Disabled: ${DISABLED} (READ_ONCE_DISABLED)"
+    echo ""
+
+    # --- Summary ---
+    if [ "$ISSUES" -eq 0 ]; then
+      echo "${PASSED}/${CHECKS} checks passed. read-once is ready."
+    else
+      echo "${PASSED}/${CHECKS} checks passed, ${ISSUES} issue(s) found."
+      echo "Fix the issues above, then run 'read-once verify' again."
+      exit 1
+    fi
+    ;;
+
   uninstall)
     SETTINGS="${HOME}/.claude/settings.json"
     if [ ! -f "$SETTINGS" ]; then
@@ -218,6 +415,7 @@ print('  Est. cost saved:     \$%.4f (Sonnet) / \$%.4f (Opus)' % (s, o))
     echo "  read-once stats       Show token savings"
     echo "  read-once gain        Same as stats (RTK-style)"
     echo "  read-once status      Quick health check"
+    echo "  read-once verify      Full diagnostic with dry-run test"
     echo "  read-once clear       Clear session cache"
     echo "  read-once install     Install hook to ~/.claude/"
     echo "  read-once upgrade     Update hook to latest version"
