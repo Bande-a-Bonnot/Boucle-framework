@@ -302,6 +302,186 @@ else
   fail "unnecessary backup created for pure JSON"
 fi
 
+# === Uninstall Tests ===
+echo ""
+echo "=== Uninstall Tests ==="
+
+# Test 12: Uninstall single hook removes directory
+echo "--- Uninstall single hook ---"
+rm -rf "$TEST_HOME/.claude"
+bash "$SCRIPT_DIR/install.sh" read-once git-safe >/dev/null 2>&1
+
+bash "$SCRIPT_DIR/install.sh" uninstall read-once >/dev/null 2>&1
+
+if [ ! -d "$TEST_HOME/.claude/read-once" ]; then
+  pass "uninstall removed hook directory"
+else
+  fail "uninstall did not remove hook directory"
+fi
+
+# Test 13: Uninstall removes hook from settings.json
+has_read_once=$(python3 -c "
+import json, sys
+def get_cmds(entry):
+    c = entry.get('command', '')
+    if c: return [c]
+    return [h.get('command','') for h in entry.get('hooks',[])]
+with open(sys.argv[1]) as f:
+    s = json.load(f)
+hooks = s.get('hooks', {}).get('PreToolUse', [])
+found = any('read-once' in c for h in hooks for c in get_cmds(h))
+print('yes' if found else 'no')
+" "$TEST_HOME/.claude/settings.json" 2>/dev/null)
+
+if [ "$has_read_once" = "no" ]; then
+  pass "uninstall removed hook from settings.json"
+else
+  fail "uninstall left hook in settings.json"
+fi
+
+# Test 14: Uninstall preserves other hooks
+has_git_safe=$(python3 -c "
+import json, sys
+def get_cmds(entry):
+    c = entry.get('command', '')
+    if c: return [c]
+    return [h.get('command','') for h in entry.get('hooks',[])]
+with open(sys.argv[1]) as f:
+    s = json.load(f)
+hooks = s.get('hooks', {}).get('PreToolUse', [])
+found = any('git-safe' in c for h in hooks for c in get_cmds(h))
+print('yes' if found else 'no')
+" "$TEST_HOME/.claude/settings.json" 2>/dev/null)
+
+if [ "$has_git_safe" = "yes" ]; then
+  pass "uninstall preserved other hooks"
+else
+  fail "uninstall removed other hooks"
+fi
+
+if [ -d "$TEST_HOME/.claude/git-safe" ]; then
+  pass "uninstall preserved other hook directory"
+else
+  fail "uninstall removed other hook directory"
+fi
+
+# Test 15: Uninstall unknown hook warns
+echo "--- Uninstall unknown hook ---"
+output=$(bash "$SCRIPT_DIR/install.sh" uninstall nonexistent 2>&1 || true)
+if echo "$output" | grep -q "Unknown hook"; then
+  pass "uninstall unknown hook warned"
+else
+  fail "uninstall unknown hook not handled"
+fi
+
+# Test 16: Uninstall hook not installed skips
+echo "--- Uninstall not-installed hook ---"
+output=$(bash "$SCRIPT_DIR/install.sh" uninstall branch-guard 2>&1 || true)
+if echo "$output" | grep -qi "skip\|not installed"; then
+  pass "uninstall skipped non-installed hook"
+else
+  fail "uninstall did not skip non-installed hook"
+fi
+
+# Test 17: Uninstall all
+echo "--- Uninstall all ---"
+rm -rf "$TEST_HOME/.claude"
+bash "$SCRIPT_DIR/install.sh" bash-guard git-safe file-guard >/dev/null 2>&1
+bash "$SCRIPT_DIR/install.sh" uninstall all >/dev/null 2>&1
+
+remaining=0
+for hook in bash-guard git-safe file-guard; do
+  if [ -d "$TEST_HOME/.claude/${hook}" ]; then
+    remaining=$((remaining + 1))
+  fi
+done
+
+if [ "$remaining" -eq 0 ]; then
+  pass "uninstall all removed all hook directories"
+else
+  fail "uninstall all left $remaining hook directories"
+fi
+
+# Check settings.json is clean
+hook_count=$(python3 -c "
+import json, sys
+with open(sys.argv[1]) as f:
+    s = json.load(f)
+hooks = s.get('hooks', {})
+total = sum(len(v) for v in hooks.values())
+print(total)
+" "$TEST_HOME/.claude/settings.json" 2>/dev/null)
+
+if [ "$hook_count" = "0" ] || [ -z "$hook_count" ]; then
+  pass "uninstall all cleaned settings.json"
+else
+  fail "uninstall all left $hook_count hooks in settings.json"
+fi
+
+# Test 18: Uninstall preserves non-hook settings
+echo "--- Uninstall preserves other settings ---"
+rm -rf "$TEST_HOME/.claude"
+mkdir -p "$TEST_HOME/.claude"
+echo '{"allowedTools": ["Bash"], "denyRead": [".env"]}' > "$TEST_HOME/.claude/settings.json"
+bash "$SCRIPT_DIR/install.sh" read-once >/dev/null 2>&1
+bash "$SCRIPT_DIR/install.sh" uninstall read-once >/dev/null 2>&1
+
+preserved=$(python3 -c "
+import json, sys
+with open(sys.argv[1]) as f:
+    s = json.load(f)
+has_tools = 'allowedTools' in s
+has_deny = 'denyRead' in s
+print('yes' if (has_tools and has_deny) else 'no')
+" "$TEST_HOME/.claude/settings.json" 2>/dev/null)
+
+if [ "$preserved" = "yes" ]; then
+  pass "uninstall preserved non-hook settings"
+else
+  fail "uninstall lost non-hook settings"
+fi
+
+# Test 19: Uninstall no args shows usage
+echo "--- Uninstall usage ---"
+output=$(bash "$SCRIPT_DIR/install.sh" uninstall 2>&1 || true)
+if echo "$output" | grep -qi "usage\|Usage"; then
+  pass "uninstall no args shows usage"
+else
+  fail "uninstall no args missing usage"
+fi
+
+# Test 20: Install after uninstall works (round-trip)
+echo "--- Install after uninstall ---"
+rm -rf "$TEST_HOME/.claude"
+bash "$SCRIPT_DIR/install.sh" read-once >/dev/null 2>&1
+bash "$SCRIPT_DIR/install.sh" uninstall read-once >/dev/null 2>&1
+bash "$SCRIPT_DIR/install.sh" read-once >/dev/null 2>&1
+
+if [ -f "$TEST_HOME/.claude/read-once/hook.sh" ]; then
+  pass "reinstall after uninstall works"
+else
+  fail "reinstall after uninstall failed"
+fi
+
+reinstall_count=$(python3 -c "
+import json, sys
+def get_cmds(entry):
+    c = entry.get('command', '')
+    if c: return [c]
+    return [h.get('command','') for h in entry.get('hooks',[])]
+with open(sys.argv[1]) as f:
+    s = json.load(f)
+hooks = s.get('hooks', {}).get('PreToolUse', [])
+n = sum(1 for h in hooks for c in get_cmds(h) if 'read-once' in c)
+print(n)
+" "$TEST_HOME/.claude/settings.json" 2>/dev/null)
+
+if [ "$reinstall_count" = "1" ]; then
+  pass "no duplicates after reinstall"
+else
+  fail "duplicates after reinstall ($reinstall_count)"
+fi
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed (total $((PASS + FAIL)))"
 [ "$FAIL" -eq 0 ] || exit 1
