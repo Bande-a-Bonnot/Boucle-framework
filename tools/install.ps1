@@ -29,7 +29,7 @@ $HookCatalog = [ordered]@{
 }
 
 $AllHookNames = @($HookCatalog.Keys)
-$RecommendedHooks = @('file-guard', 'git-safe')
+$RecommendedHooks = @('bash-guard', 'git-safe', 'file-guard')
 
 Write-Host ""
 Write-Host "Boucle Hooks for Claude Code (PowerShell)" -ForegroundColor White
@@ -62,13 +62,13 @@ if ($Hooks -and $Hooks.Count -gt 0) {
         $selected = $AllHookNames
     } elseif ($Hooks[0] -eq 'recommended') {
         $selected = $RecommendedHooks
-        Write-Host "Installing recommended hooks: file-guard, git-safe" -ForegroundColor White
+        Write-Host "Installing recommended hooks: bash-guard, git-safe, file-guard" -ForegroundColor White
     } else {
         $selected = $Hooks
     }
 } else {
     Write-Host "Which hooks to install?" -ForegroundColor White
-    Write-Host "  'recommended'  file-guard + git-safe (start here)"
+    Write-Host "  'recommended'  bash-guard + git-safe + file-guard (start here)"
     Write-Host "  'all'          all hooks"
     Write-Host "  or enter hook names separated by spaces"
     $userInput = Read-Host ">"
@@ -77,7 +77,7 @@ if ($Hooks -and $Hooks.Count -gt 0) {
         $selected = $AllHookNames
     } elseif ($userInput -eq 'recommended') {
         $selected = $RecommendedHooks
-        Write-Host "Installing recommended hooks: file-guard, git-safe" -ForegroundColor White
+        Write-Host "Installing recommended hooks: bash-guard, git-safe, file-guard" -ForegroundColor White
     } elseif ($userInput -ne '') {
         $selected = $userInput -split '\s+'
     } else {
@@ -304,13 +304,19 @@ foreach ($hook in $installed) {
             }
         }
         'file-guard' {
-            # file-guard needs a .file-guard config, just check it runs
-            $payload = '{"tool_name":"Read","tool_input":{"file_path":"test.txt"}}'
+            # file-guard always blocks relative paths in Write/Edit (no config needed)
+            $payload = '{"tool_name":"Write","tool_input":{"file_path":"relative/path.txt","content":"test"}}'
             try {
                 $result = $payload | pwsh -File $hookFile 2>$null
-                Write-Host "  OK" -ForegroundColor Green -NoNewline
-                Write-Host ": $hook accepted test payload (no .file-guard config = allow all)"
-                $verifyOk++
+                if ($result -match '"block"') {
+                    Write-Host "  OK" -ForegroundColor Green -NoNewline
+                    Write-Host ": $hook blocked test payload (relative path write)"
+                    $verifyOk++
+                } else {
+                    Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
+                    Write-Host ": $hook did not block test payload"
+                    $verifyFail++
+                }
             } catch {
                 Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
                 Write-Host ": $hook returned an error"
