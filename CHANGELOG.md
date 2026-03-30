@@ -46,8 +46,8 @@ All notable changes to Boucle are documented here.
 
 ### Stats
 - 195 Rust tests (unchanged)
-- Hook tests: bash-guard ~556, safety-check ~231, file-guard ~130, git-safe ~105, session-log ~81, installer ~80, enforce-hooks ~71, PS1 hooks ~65, read-once ~57, branch-guard ~42, format ~33, worktree-guard ~28
-- Total: ~1870+ tests
+- Hook tests (bash + PowerShell combined): bash-guard ~690, safety-check ~233, git-safe ~135, file-guard ~121, session-log ~107, installer ~81, read-once ~77, enforce-hooks ~71, worktree-guard ~64, branch-guard ~57, diagnose ~40, security/format/misc ~25
+- Total: ~1900 tests
 
 ## [0.9.3] - 2026-03-29
 
