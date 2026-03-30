@@ -199,6 +199,22 @@ The minimum for any project. Prevents the operations that cause the most damage 
 - Don't commit directly to main
 ```
 
+### Read-only / audit mode
+
+For sessions where Claude should analyze, test, and report without modifying anything. Addresses [#41063](https://github.com/anthropics/claude-code/issues/41063) (Claude ignores explicit read-only instructions and edits code, runs ALTER TABLE on staging, rebuilds Docker services).
+
+```markdown
+## Read-only mode @enforced
+- Never modify any files
+- Never run rm -rf
+- Never run ALTER, DROP, TRUNCATE, INSERT, UPDATE, or DELETE
+- Never run docker restart, docker stop, docker build, or docker rm
+- Never run sudo
+- Never run git commit, git push, or git merge
+```
+
+CLAUDE.md instructions alone will not prevent violations ([#41063](https://github.com/anthropics/claude-code/issues/41063), [#40537](https://github.com/anthropics/claude-code/issues/40537), [#40867](https://github.com/anthropics/claude-code/issues/40867)). Run `enforce-hooks.py --install-plugin` to convert these into PreToolUse hooks that hard-block at the runtime level. The model cannot bypass a hook block. For additional protection, install bash-guard (`install.sh recommended`) which catches destructive commands even when they are wrapped in compound shell expressions.
+
 ### Cost control
 
 For sessions where token spend matters. These rules have no direct hook signal, but the file-guard and bash-guard rules limit the scope of what Claude can touch, reducing runaway sessions.
