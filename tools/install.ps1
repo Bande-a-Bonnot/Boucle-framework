@@ -6,6 +6,7 @@
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } file-guard git-safe"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } all"
+#   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } help"
 
 param(
     [Parameter(ValueFromRemainingArguments = $true)]
@@ -55,6 +56,33 @@ foreach ($name in $AllHookNames) {
     Write-Host "]"
 }
 Write-Host ""
+
+# Handle help subcommand
+if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq '--help' -or $Hooks[0] -eq '-h')) {
+    Write-Host "Usage: install.ps1 <command> [args]" -ForegroundColor White
+    Write-Host ""
+    Write-Host "Commands:" -ForegroundColor White
+    Write-Host "  recommended           Install the 3 essential hooks (bash-guard, git-safe, file-guard)"
+    Write-Host "  all                   Install all 7 hooks"
+    Write-Host "  <hook> [hook...]      Install specific hooks by name"
+    Write-Host "  help                  Show this help message"
+    Write-Host ""
+    Write-Host "Available hooks:" -ForegroundColor White
+    foreach ($name in $AllHookNames) {
+        $info = $HookCatalog[$name]
+        $rec = ""
+        if ($RecommendedHooks -contains $name) { $rec = " (recommended)" }
+        Write-Host "  " -NoNewline
+        Write-Host "$name" -ForegroundColor Cyan -NoNewline
+        Write-Host "  $($info.Desc)$rec"
+    }
+    Write-Host ""
+    Write-Host "Examples:" -ForegroundColor White
+    Write-Host "  install.ps1 recommended           # Start here"
+    Write-Host "  install.ps1 all                    # Everything at once"
+    Write-Host "  install.ps1 read-once git-safe     # Pick specific hooks"
+    exit 0
+}
 
 # Parse arguments or ask interactively
 if ($Hooks -and $Hooks.Count -gt 0) {
