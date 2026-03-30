@@ -20,6 +20,8 @@
 #   require_args        — block unless tool args match a pattern
 #   block_args          — block if tool args match a pattern (e.g., block force-push)
 #   block_file_pattern  — block if file path matches a glob pattern
+#   content_guard       — block if written/edited content matches a pattern (e.g., console.log)
+#   scoped_content_guard — block if content matches a pattern AND file path matches a scope
 
 set -euo pipefail
 
@@ -144,6 +146,30 @@ for rule in rules:
             if fnmatch.fnmatch(file_path, pat):
                 blocked = True
                 break
+
+    elif cond_type == 'content_guard':
+        # Block if written/edited content contains a banned pattern
+        # Write has 'content', Edit has 'new_string'
+        content = tool_input.get('content', '') or tool_input.get('new_string', '')
+        patterns = condition.get('patterns', [])
+        for pat in patterns:
+            if re.search(pat, content, re.IGNORECASE):
+                blocked = True
+                break
+
+    elif cond_type == 'scoped_content_guard':
+        # Block if content matches a pattern AND file path matches a scope
+        file_path = tool_input.get('file_path', '')
+        scope = condition.get('scope', '')
+        content = tool_input.get('content', '') or tool_input.get('new_string', '')
+        patterns = condition.get('patterns', [])
+        # Check scope first (file must be in the scoped path)
+        in_scope = bool(scope and fnmatch.fnmatch(file_path, scope))
+        if in_scope:
+            for pat in patterns:
+                if re.search(pat, content, re.IGNORECASE):
+                    blocked = True
+                    break
 
     if blocked:
         directive = rule.get('directive', '')
