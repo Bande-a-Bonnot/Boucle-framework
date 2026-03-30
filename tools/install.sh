@@ -3,6 +3,8 @@
 # Usage: curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash
 # Or:    curl ... | bash -s -- recommended
 # Or:    curl ... | bash -s -- read-once file-guard git-safe
+# Or:    curl ... | bash -s -- uninstall read-once
+# Or:    curl ... | bash -s -- uninstall all
 set -euo pipefail
 
 REPO="https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools"
@@ -46,6 +48,126 @@ hook_desc() {
 
 ALL_HOOKS="read-once file-guard git-safe bash-guard branch-guard worktree-guard session-log"
 RECOMMENDED_HOOKS="bash-guard git-safe file-guard"
+
+# Handle uninstall subcommand (doesn't need jq)
+if [ $# -gt 0 ] && [ "$1" = "uninstall" ]; then
+  shift
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "Error: python3 required for settings.json cleanup" >&2
+    exit 1
+  fi
+
+  if [ $# -eq 0 ]; then
+    echo -e "${BOLD}Usage:${RESET} install.sh uninstall <hook-name> [hook-name...] | all"
+    echo ""
+    echo "Installed hooks:"
+    found=0
+    for hook in $ALL_HOOKS; do
+      if [ -d "${HOME}/.claude/${hook}" ]; then
+        desc=$(hook_desc "$hook")
+        echo -e "  ${CYAN}${hook}${RESET}  ${desc}"
+        found=1
+      fi
+    done
+    if [ $found -eq 0 ]; then
+      echo "  (none)"
+    fi
+    exit 0
+  fi
+
+  if [ "$1" = "all" ]; then
+    to_remove=""
+    for hook in $ALL_HOOKS; do
+      if [ -d "${HOME}/.claude/${hook}" ]; then
+        to_remove="${to_remove} ${hook}"
+      fi
+    done
+    if [ -z "$to_remove" ]; then
+      echo "No hooks installed. Nothing to remove."
+      exit 0
+    fi
+  else
+    to_remove="$*"
+  fi
+
+  echo ""
+  removed=""
+  for hook in $to_remove; do
+    case "$hook" in
+      read-once|file-guard|git-safe|bash-guard|branch-guard|worktree-guard|session-log) ;;
+      *)
+        echo -e "  ${YELLOW}Unknown hook: ${hook}${RESET} (available: ${ALL_HOOKS})"
+        continue
+        ;;
+    esac
+
+    dir="${HOME}/.claude/${hook}"
+    if [ -d "$dir" ]; then
+      rm -rf "$dir"
+      echo -e "  ${GREEN}✓${RESET} Removed ${CYAN}${hook}${RESET}"
+      removed="${removed} ${hook}"
+    else
+      echo -e "  ${DIM}SKIP${RESET} ${hook} (not installed)"
+    fi
+  done
+
+  # Clean up settings.json
+  if [ -n "$removed" ] && [ -f "$SETTINGS" ]; then
+    echo ""
+    echo "Cleaning settings.json..."
+    python3 - "$SETTINGS" $removed << 'PYEOF'
+import json, sys, os
+
+settings_path = sys.argv[1]
+hooks_to_remove = sys.argv[2:]
+
+with open(settings_path) as f:
+    settings = json.load(f)
+
+if "hooks" not in settings:
+    sys.exit(0)
+
+for hook in hooks_to_remove:
+    command = os.path.expanduser("~/.claude/" + hook + "/hook.sh")
+    for event in list(settings["hooks"].keys()):
+        entries = settings["hooks"][event]
+        original_len = len(entries)
+        settings["hooks"][event] = [
+            h for h in entries
+            if not (
+                isinstance(h, dict) and (
+                    h.get("command", "") == command or
+                    any(hk.get("command", "") == command
+                        for hk in h.get("hooks", []))
+                )
+            )
+        ]
+        if len(settings["hooks"][event]) < original_len:
+            print("  Removed " + hook + " from " + event)
+        # Clean up empty event arrays
+        if not settings["hooks"][event]:
+            del settings["hooks"][event]
+
+# Clean up empty hooks object
+if "hooks" in settings and not settings["hooks"]:
+    del settings["hooks"]
+
+with open(settings_path, "w") as f:
+    json.dump(settings, f, indent=2)
+    f.write("\n")
+PYEOF
+  fi
+
+  echo ""
+  count=$(echo $removed | wc -w | tr -d ' ')
+  if [ "$count" -gt "0" ]; then
+    echo -e "${GREEN}${BOLD}Done!${RESET} Removed ${count} hook(s). Changes take effect in your next Claude Code session."
+  else
+    echo "No hooks were removed."
+  fi
+  exit 0
+fi
 
 # Check prerequisites
 if ! command -v python3 >/dev/null 2>&1; then
@@ -392,7 +514,8 @@ fi
 echo ""
 echo "Manage hooks:"
 echo "  View config:  cat ~/.claude/settings.json"
-echo "  Uninstall:    rm -rf ~/.claude/<hook-name>"
+echo "  Uninstall:    curl -fsSL .../install.sh | bash -s -- uninstall <hook-name>"
+echo "  Uninstall all: curl -fsSL .../install.sh | bash -s -- uninstall all"
 echo "  Full check:   curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify"
 echo ""
 echo -e "${DIM}https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools${RESET}"
