@@ -7,6 +7,10 @@
 # Or:    curl ... | bash -s -- upgrade
 # Or:    curl ... | bash -s -- uninstall read-once
 # Or:    curl ... | bash -s -- uninstall all
+# Or:    curl ... | bash -s -- backup
+# Or:    curl ... | bash -s -- backup list
+# Or:    curl ... | bash -s -- restore
+# Or:    curl ... | bash -s -- restore <file>
 # Or:    curl ... | bash -s -- help
 set -euo pipefail
 
@@ -64,6 +68,10 @@ if [ $# -gt 0 ] && { [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]
   echo "  upgrade               Re-download all installed hooks to latest version"
   echo "  uninstall <hook>      Remove a specific hook (files + settings.json entry)"
   echo "  uninstall all         Remove all hooks"
+  echo "  backup                Snapshot settings.json (protects against auto-update wipes)"
+  echo "  backup list           Show available backups"
+  echo "  restore               Restore the most recent backup"
+  echo "  restore <file>        Restore a specific backup"
   echo "  help                  Show this help message"
   echo ""
   echo -e "${BOLD}Available hooks:${RESET}"
@@ -83,6 +91,8 @@ if [ $# -gt 0 ] && { [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]
   echo "  install.sh list                   # See what you have"
   echo "  install.sh upgrade                # Update to latest"
   echo "  install.sh uninstall read-once    # Remove one hook"
+  echo "  install.sh backup                 # Snapshot before updating Claude Code"
+  echo "  install.sh restore                # Restore after a wipe"
   exit 0
 fi
 
@@ -298,6 +308,159 @@ PYEOF
   else
     echo "No hooks were removed."
   fi
+  exit 0
+fi
+
+# Handle backup subcommand — snapshot settings.json before Claude Code updates
+BACKUP_DIR="${HOME}/.claude/backups"
+if [ $# -gt 0 ] && [ "$1" = "backup" ]; then
+  shift
+
+  if [ ! -f "$SETTINGS" ]; then
+    echo "No settings.json found at $SETTINGS"
+    echo "Nothing to back up."
+    exit 0
+  fi
+
+  # backup list — show available backups
+  if [ $# -gt 0 ] && [ "$1" = "list" ]; then
+    if [ ! -d "$BACKUP_DIR" ]; then
+      echo "No backups found."
+      echo ""
+      echo "Create one with: install.sh backup"
+      exit 0
+    fi
+    count=0
+    for f in "$BACKUP_DIR"/settings.*.json; do
+      [ -f "$f" ] || continue
+      fname=$(basename "$f")
+      ts=$(echo "$fname" | sed 's/settings\.\(.*\)\.json/\1/' | tr '-' ' ' | tr '_' ' ')
+      size=$(wc -c < "$f" | tr -d ' ')
+      echo -e "  ${CYAN}${fname}${RESET}  ${size} bytes  ${DIM}${ts}${RESET}"
+      count=$((count + 1))
+    done
+    if [ "$count" -eq 0 ]; then
+      echo "No backups found."
+      echo ""
+      echo "Create one with: install.sh backup"
+    else
+      echo ""
+      echo "  $count backup(s) found in $BACKUP_DIR"
+      echo ""
+      echo "Restore with: install.sh restore"
+    fi
+    exit 0
+  fi
+
+  # Create backup
+  mkdir -p "$BACKUP_DIR"
+  timestamp=$(date +%Y%m%d_%H%M%S)
+  backup_file="$BACKUP_DIR/settings.${timestamp}.json"
+  cp "$SETTINGS" "$backup_file"
+
+  # Count hooks in the backup
+  hook_count=0
+  if command -v python3 >/dev/null 2>&1; then
+    hook_count=$(python3 -c "
+import json, sys
+try:
+    with open(sys.argv[1]) as f:
+        s = json.load(f)
+    events = s.get('hooks', {})
+    cmds = set()
+    for ev in events.values():
+        for h in ev:
+            if isinstance(h, dict):
+                c = h.get('command', '')
+                if c: cmds.add(c)
+                for sub in h.get('hooks', []):
+                    c = sub.get('command', '')
+                    if c: cmds.add(c)
+    print(len(cmds))
+except: print(0)
+" "$backup_file" 2>/dev/null)
+  fi
+
+  size=$(wc -c < "$backup_file" | tr -d ' ')
+  echo -e "${GREEN}${BOLD}Backup created.${RESET}"
+  echo ""
+  echo "  File: $backup_file"
+  echo "  Size: $size bytes"
+  if [ "$hook_count" -gt 0 ]; then
+    echo "  Hooks: $hook_count unique hook command(s)"
+  fi
+  echo ""
+  echo "Restore with: install.sh restore"
+  echo ""
+  echo -e "${DIM}Tip: Run this before updating Claude Code. If an auto-update"
+  echo -e "wipes your settings.json, restore will bring your hooks back.${RESET}"
+  exit 0
+fi
+
+# Handle restore subcommand — restore a settings.json backup
+if [ $# -gt 0 ] && [ "$1" = "restore" ]; then
+  shift
+
+  if [ ! -d "$BACKUP_DIR" ]; then
+    echo "No backups found in $BACKUP_DIR"
+    echo ""
+    echo "Create one first with: install.sh backup"
+    exit 1
+  fi
+
+  # If a specific file is given, use it
+  if [ $# -gt 0 ]; then
+    target="$1"
+    # Allow bare filename or full path
+    if [ ! -f "$target" ] && [ -f "$BACKUP_DIR/$target" ]; then
+      target="$BACKUP_DIR/$target"
+    fi
+    if [ ! -f "$target" ]; then
+      echo -e "${YELLOW}Backup not found:${RESET} $1"
+      echo ""
+      echo "Available backups:"
+      for f in "$BACKUP_DIR"/settings.*.json; do
+        [ -f "$f" ] || continue
+        echo "  $(basename "$f")"
+      done
+      exit 1
+    fi
+  else
+    # Find the most recent backup
+    target=""
+    for f in "$BACKUP_DIR"/settings.*.json; do
+      [ -f "$f" ] || continue
+      target="$f"
+    done
+    if [ -z "$target" ]; then
+      echo "No backups found in $BACKUP_DIR"
+      exit 1
+    fi
+  fi
+
+  # Validate the backup is valid JSON
+  if command -v python3 >/dev/null 2>&1; then
+    if ! python3 -c "import json; json.load(open('$target'))" 2>/dev/null; then
+      echo -e "${YELLOW}Warning:${RESET} Backup is not valid JSON: $(basename "$target")"
+      echo "Aborting restore."
+      exit 1
+    fi
+  fi
+
+  # If current settings.json exists, back it up first
+  if [ -f "$SETTINGS" ]; then
+    pre_restore="$BACKUP_DIR/settings.pre-restore-$(date +%Y%m%d_%H%M%S).json"
+    cp "$SETTINGS" "$pre_restore"
+    echo -e "  ${DIM}Current settings saved to $(basename "$pre_restore")${RESET}"
+  fi
+
+  cp "$target" "$SETTINGS"
+  echo -e "${GREEN}${BOLD}Restored!${RESET}"
+  echo ""
+  echo "  From: $(basename "$target")"
+  echo "  To:   $SETTINGS"
+  echo ""
+  echo "Changes take effect in your next Claude Code session."
   exit 0
 fi
 
@@ -650,6 +813,8 @@ echo "  List installed: curl -fsSL $INSTALL_URL | bash -s -- list"
 echo "  Upgrade all:    curl -fsSL $INSTALL_URL | bash -s -- upgrade"
 echo "  Uninstall one:  curl -fsSL $INSTALL_URL | bash -s -- uninstall <hook-name>"
 echo "  Uninstall all:  curl -fsSL $INSTALL_URL | bash -s -- uninstall all"
+echo "  Backup:         curl -fsSL $INSTALL_URL | bash -s -- backup"
+echo "  Restore:        curl -fsSL $INSTALL_URL | bash -s -- restore"
 echo "  Full check:     curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify"
 echo ""
 echo -e "${DIM}https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools${RESET}"
