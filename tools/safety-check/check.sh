@@ -208,13 +208,13 @@ if command -v claude >/dev/null 2>&1; then
     CLI_VERSION=$(claude --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "")
     if [ -n "$CLI_VERSION" ]; then
         CLI_MINOR=$(echo "$CLI_VERSION" | cut -d. -f3)
-        # v2.1.78+: permissionDecision from PreToolUse hooks silently ignored (claude-code#37597)
-        if [ "$CLI_MINOR" -ge 78 ] 2>/dev/null; then
-            WARNINGS+=("Claude CLI v$CLI_VERSION: permissionDecision responses from PreToolUse hooks may be silently ignored (regression since v2.1.78, see claude-code#37597). Hooks using decision:block format still work.")
+        # v2.1.78-2.1.84: permissionDecision from PreToolUse hooks silently ignored (claude-code#37597, fixed upstream)
+        if [ "$CLI_MINOR" -ge 78 ] 2>/dev/null && [ "$CLI_MINOR" -le 84 ] 2>/dev/null; then
+            WARNINGS+=("Claude CLI v$CLI_VERSION: permissionDecision responses from PreToolUse hooks may be silently ignored (regression v2.1.78-v2.1.84, see claude-code#37597, now fixed upstream). Hooks using decision:block format still work. Update CLI to resolve.")
         fi
-        # v2.1.81+: crashes when invoked by launchd (claude-code#37878)
-        if [ "$CLI_MINOR" -ge 81 ] 2>/dev/null; then
-            WARNINGS+=("Claude CLI v$CLI_VERSION: crashes when invoked by launchd/cron (regression since v2.1.81, see claude-code#37878). If running automated loops, pin to v2.1.77 or earlier.")
+        # v2.1.81-2.1.84: crashes when invoked by launchd (claude-code#37878, fixed upstream)
+        if [ "$CLI_MINOR" -ge 81 ] 2>/dev/null && [ "$CLI_MINOR" -le 84 ] 2>/dev/null; then
+            WARNINGS+=("Claude CLI v$CLI_VERSION: crashes when invoked by launchd/cron (regression v2.1.81-v2.1.84, see claude-code#37878, now fixed upstream). Update CLI to resolve.")
         fi
     fi
 fi
