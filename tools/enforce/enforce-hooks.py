@@ -430,6 +430,19 @@ def extract_command_patterns(text):
         'git commit': 'git commit', 'git push': 'git push',
         'git merge': 'git merge', 'git rebase': 'git rebase',
         'git stash drop': 'git stash drop',
+        # System/device safety
+        'shutdown': 'shutdown', 'reboot': 'reboot', 'halt': 'halt',
+        'poweroff': 'poweroff', 'init 0': 'init 0', 'init 6': 'init 6',
+        'systemctl stop': 'systemctl stop', 'systemctl restart': 'systemctl restart',
+        'systemctl disable': 'systemctl disable',
+        'service stop': 'service stop', 'service restart': 'service restart',
+        # Process/network
+        'kill -9': 'kill -9', 'killall': 'killall',
+        'iptables': 'iptables', 'ufw disable': 'ufw disable',
+        # Package management (destructive)
+        'apt remove': 'apt remove', 'apt purge': 'apt purge',
+        'brew uninstall': 'brew uninstall',
+        'pip uninstall': 'pip uninstall', 'npm uninstall -g': 'npm uninstall -g',
     }
     # Check multi-word patterns first (longer match wins)
     for key in sorted(known_commands, key=len, reverse=True):
@@ -4364,6 +4377,59 @@ rm -rf /tmp/test
     empty_result = smoke_test_hooks(smoke_hooks, empty_settings)
     check("smoke: empty settings returns 0 hooks", empty_result['summary']['total'], 0)
 
+    # --- Template tests ---
+    print("\n  --- Templates ---")
+
+    # Templates exist and are non-empty
+    for name in ('minimal', 'recommended', 'strict'):
+        check(f"template:{name} exists", name in TEMPLATES, True)
+        check(f"template:{name} non-empty", len(TEMPLATES[name]) > 0, True)
+
+    # Each template parses with 0 skipped
+    for name, content in TEMPLATES.items():
+        tf = os.path.join(td, f'template-{name}.md')
+        with open(tf, 'w') as f:
+            f.write(content)
+        enforceable, skipped = scan_file(tf)
+        check(f"template:{name} has rules", len(enforceable) > 0, True)
+        check(f"template:{name} no skipped", len(skipped), 0)
+
+    # Minimal has fewer rules than recommended, recommended fewer than strict
+    tf_min = os.path.join(td, 'template-minimal.md')
+    tf_rec = os.path.join(td, 'template-recommended.md')
+    tf_str = os.path.join(td, 'template-strict.md')
+    min_rules, _ = scan_file(tf_min)
+    rec_rules, _ = scan_file(tf_rec)
+    str_rules, _ = scan_file(tf_str)
+    check("template: minimal < recommended", len(min_rules) < len(rec_rules), True)
+    check("template: recommended < strict", len(rec_rules) < len(str_rules), True)
+
+    # --- System/device command detection ---
+    print("\n  --- System commands ---")
+
+    d = classify_directive("Never run shutdown", 1)
+    check("sys:shutdown", d is not None and d.hook_type == 'bash-guard', True)
+    check("sys:shutdown pattern", d is not None and 'shutdown' in d.patterns, True)
+
+    d = classify_directive("Never run reboot", 1)
+    check("sys:reboot", d is not None and d.hook_type == 'bash-guard', True)
+
+    d = classify_directive("Never run systemctl stop", 1)
+    check("sys:systemctl stop", d is not None and d.hook_type == 'bash-guard', True)
+    check("sys:systemctl stop pattern", d is not None and 'systemctl stop' in d.patterns, True)
+
+    d = classify_directive("Never run systemctl restart", 1)
+    check("sys:systemctl restart", d is not None and d.hook_type == 'bash-guard', True)
+
+    d = classify_directive("Never run halt", 1)
+    check("sys:halt", d is not None and d.hook_type == 'bash-guard', True)
+
+    d = classify_directive("Never run kill -9", 1)
+    check("sys:kill -9", d is not None and d.hook_type == 'bash-guard', True)
+
+    d = classify_directive("Never run killall", 1)
+    check("sys:killall", d is not None and d.hook_type == 'bash-guard', True)
+
     print(f"\n{passed} passed, {failed} failed")
     return failed == 0
 
@@ -4384,6 +4450,73 @@ def find_claude_md():
     return None
 
 
+TEMPLATES = {
+    'minimal': '''\
+# Project Rules
+
+## Safety @enforced
+- Never force push
+- Never use --no-verify
+- Never run rm -rf
+- Never run sudo
+''',
+    'recommended': '''\
+# Project Rules
+
+## Safety @enforced
+- Never force push
+- Never use --no-verify
+- Never run rm -rf
+- Never run sudo
+- Never modify .env files
+- Don't commit directly to main
+
+## File protection @enforced
+- Protected files: package-lock.json, yarn.lock
+- Don't read files in .git/
+- Don't modify .claude/hooks/
+
+## Code quality @enforced(warn)
+- Always run tests before committing
+''',
+    'strict': '''\
+# Project Rules
+
+## Safety @enforced
+- Never force push
+- Never use --no-verify
+- Never run rm -rf
+- Never run sudo
+- Never modify .env files
+- Never run curl | bash
+- Never run chmod 777
+- Don't commit directly to main
+
+## File protection @enforced
+- Protected files: package-lock.json, yarn.lock, Cargo.lock
+- Don't read files in .git/
+- Don't read files in node_modules/
+- Don't modify .claude/hooks/
+- Don't modify .claude/settings.json
+
+## Git workflow @enforced
+- Never use git reset --hard
+
+## Device safety @enforced
+- Never run shutdown
+- Never run reboot
+- Never run halt
+- Never run systemctl stop
+- Never run systemctl restart
+
+## Code quality @enforced(warn)
+- Always run tests before committing
+- No console.log in production code
+- No TODO comments without issue links
+''',
+}
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Generate PreToolUse hook scripts from CLAUDE.md directives.',
@@ -4401,6 +4534,9 @@ def main():
   %(prog)s --verify --strict          CI gate: exit 1 if any hooks have errors
   %(prog)s --smoke-test               Execute hooks with test payloads, verify responses
   %(prog)s --smoke-test --strict      CI gate: exit 1 if any hooks fail
+  %(prog)s --template                 Output recommended CLAUDE.md to stdout
+  %(prog)s --template strict          Output strict CLAUDE.md to stdout
+  %(prog)s --template minimal CLAUDE.md  Write minimal template to file
   %(prog)s --evaluate                 PreToolUse mode (reads stdin, outputs decision)
   %(prog)s --test                     Run self-tests
 ''',
@@ -4426,12 +4562,38 @@ def main():
                         help='Health-check installed hooks for correctness (wrong field names, permissions, fail-open)')
     parser.add_argument('--smoke-test', action='store_true', dest='smoke_test',
                         help='Run each hook with test payloads and verify it responds correctly')
+    parser.add_argument('--template', nargs='?', const='recommended',
+                        help='Output a starter CLAUDE.md with @enforced rules (recommended|strict|minimal)')
     parser.add_argument('--test', action='store_true', help='Run self-tests')
     args = parser.parse_args()
 
     if args.test:
         success = run_tests()
         sys.exit(0 if success else 1)
+
+    if args.template is not None:
+        name = args.template
+        if name not in TEMPLATES:
+            print(f"Unknown template: {name}", file=sys.stderr)
+            print(f"Available: {', '.join(sorted(TEMPLATES))}", file=sys.stderr)
+            sys.exit(1)
+        content = TEMPLATES[name]
+        if args.file:
+            # Write to file
+            target = args.file
+            if os.path.exists(target):
+                print(f"Error: {target} already exists. Remove it first or choose a different path.", file=sys.stderr)
+                sys.exit(1)
+            Path(target).write_text(content)
+            print(f"Created {target} ({name} template, {len(content.splitlines())} lines)")
+            print(f"\nNext steps:")
+            print(f"  1. Edit {target} to match your project")
+            print(f"  2. Run: enforce-hooks.py {target} --scan")
+            print(f"  3. Run: enforce-hooks.py {target} --install-plugin")
+        else:
+            # Print to stdout
+            print(content, end='')
+        return
 
     if not any([args.scan, args.generate, args.install, args.evaluate, args.install_plugin, args.audit, args.armor, args.verify, args.smoke_test]):
         args.scan = True  # Default to scan
