@@ -15,6 +15,22 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# Require PowerShell 7+ (pwsh). Windows ships with 5.1 which lacks -AsHashtable
+# and Claude Code hooks need `pwsh -File` to run.
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    Write-Host "Error: PowerShell 7+ required." -ForegroundColor Red
+    Write-Host ""
+    Write-Host "You are running PowerShell $($PSVersionTable.PSVersion) (Windows built-in)."
+    Write-Host "The hooks need PowerShell 7+ (pwsh) to run."
+    Write-Host ""
+    Write-Host "Install it:" -ForegroundColor White
+    Write-Host "  winget install Microsoft.PowerShell"
+    Write-Host "  # or: https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows"
+    Write-Host ""
+    Write-Host "Then re-run this installer from pwsh (not powershell.exe)."
+    exit 1
+}
+
 $Repo = "https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools"
 $SettingsPath = Join-Path $HOME ".claude" "settings.json"
 

@@ -16,7 +16,9 @@ Or pick specific hooks:
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- read-once git-safe file-guard
 ```
 
-**Windows (PowerShell):**
+**Windows (PowerShell 7+):**
+
+Requires [PowerShell 7+](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (`pwsh`, not the built-in `powershell.exe`). Install with `winget install Microsoft.PowerShell` if needed.
 
 ```powershell
 irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1 | iex
@@ -91,7 +93,7 @@ Each safety hook supports allowlist configs so you can relax rules where needed:
 
 **macOS / Linux:** bash, jq
 
-**Windows:** PowerShell 5.1+ (no extra dependencies)
+**Windows:** [PowerShell 7+](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (pwsh, not the built-in 5.1)
 
 All platforms need Claude Code with hooks support enabled.
 
