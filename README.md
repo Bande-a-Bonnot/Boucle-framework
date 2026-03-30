@@ -47,7 +47,7 @@ These three hooks form the safety net every Claude Code user should have: block 
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- all
 ```
 
-**Windows (PowerShell)** — native PS1 hooks, no bash or jq required:
+**Windows (PowerShell 7+)** — native PS1 hooks, no bash or jq required. Requires [PowerShell 7](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (`pwsh`), not the built-in Windows PowerShell 5:
 
 ```powershell
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } all"
@@ -79,6 +79,16 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 # Show all commands and available hooks
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- help
+```
+
+**Windows equivalents** (same commands, PowerShell syntax):
+
+```powershell
+# List, upgrade, uninstall, doctor, backup/restore
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } list"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } upgrade"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } uninstall read-once"
 ```
 
 Or pick individual hooks:
@@ -498,7 +508,7 @@ boucle --version                 # Show version
 
 **Model can manipulate hook state files**: The model has filesystem access and [can overwrite files that hooks depend on](https://github.com/anthropics/claude-code/issues/38841) — checkpoint files, lock files, counters. In one documented case, Claude computed the SHA256 hash of a checkpoint filename and wrote a fresh timestamp to bypass a content-read-gate. Hooks that rely on external state files for enforcement should assume the model can read and modify those files. Cryptographic signatures or out-of-process validation can mitigate this.
 
-**Windows**: All seven hooks now have native **PowerShell** equivalents (`hook.ps1`) that require no external dependencies: **bash-guard**, **file-guard**, **git-safe**, **branch-guard**, **read-once**, **worktree-guard**, and **session-log**. Install them with the PowerShell installer:
+**Windows**: All seven hooks have native **PowerShell 7+** equivalents (`hook.ps1`) that require no external dependencies. Requires [PowerShell 7](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (`pwsh`), not the built-in Windows PowerShell 5. Install them with:
 
 ```powershell
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } all"
