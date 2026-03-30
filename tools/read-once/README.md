@@ -137,10 +137,53 @@ read-once — file read deduplication for Claude Code
 ```
 read-once stats       Show token savings
 read-once gain        Same as stats
+read-once verify      Full diagnostic with dry-run test
+read-once status      Quick health check
 read-once clear       Clear session cache
 read-once install     Add hook to settings
+read-once upgrade     Update installed hook to latest
 read-once uninstall   Remove hook
 ```
+
+### Verify
+
+After installing, run `read-once verify` to confirm everything works:
+
+```
+$ ./read-once verify
+
+read-once verify
+
+Dependencies:
+  [ok]   jq found (jq-1.7.1)
+  [ok]   bash 5.2.37 (4+ required)
+  [ok]   python3 found (needed for diff mode)
+  [ok]   stat found
+
+Installation:
+  [ok]   Hook file exists at ~/.claude/read-once/hook.sh
+  [ok]   Hook file is executable
+  [ok]   Installed hook matches source (up to date)
+  [ok]   ~/.claude/settings.json exists
+  [ok]   settings.json is valid JSON
+  [ok]   PreToolUse Read matcher configured
+  [ok]   Hook command path resolves (~/.claude/read-once/hook.sh)
+
+Dry-run test:
+  [ok]   First read: allowed (no output = pass-through)
+  [ok]   Second read: produced valid JSON response
+  [ok]   Second read: correctly detected re-read (mode: warn)
+
+Configuration:
+  Mode:     warn (READ_ONCE_MODE)
+  TTL:      1200s (20m) (READ_ONCE_TTL)
+  Diff:     0 (READ_ONCE_DIFF)
+  Disabled: 0 (READ_ONCE_DISABLED)
+
+13/13 checks passed. read-once is ready.
+```
+
+If any check fails, verify tells you exactly what to fix.
 
 ## Configuration
 

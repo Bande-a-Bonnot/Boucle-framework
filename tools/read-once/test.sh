@@ -452,6 +452,99 @@ else
 fi
 TOTAL=$((TOTAL + 1))
 
+# --- Group 21: Verify command ---
+echo ""
+echo "--- Group 21: Verify command ---"
+
+CLI="${SCRIPT_DIR}/read-once"
+
+# Set up a proper installed hook for verify to find
+mkdir -p "${TEST_DIR}/.claude/read-once"
+cp "$HOOK" "${TEST_DIR}/.claude/read-once/hook.sh"
+chmod +x "${TEST_DIR}/.claude/read-once/hook.sh"
+
+# Create settings.json with the hook configured
+cat > "${TEST_DIR}/.claude/settings.json" <<'EOJSON'
+{"hooks":{"PreToolUse":[{"matcher":"Read","hooks":[{"type":"command","command":"~/.claude/read-once/hook.sh"}]}]}}
+EOJSON
+
+VERIFY_OUTPUT=$(HOME="$TEST_DIR" "$CLI" verify 2>&1 || true)
+
+TOTAL=$((TOTAL + 1))
+if echo "$VERIFY_OUTPUT" | grep -q "read-once verify"; then
+  PASS=$((PASS + 1))
+  echo "  ✓ Verify: header present"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ Verify: header missing"
+fi
+
+TOTAL=$((TOTAL + 1))
+if echo "$VERIFY_OUTPUT" | grep -q "\[ok\].*jq found"; then
+  PASS=$((PASS + 1))
+  echo "  ✓ Verify: jq check passes"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ Verify: jq check missing"
+fi
+
+TOTAL=$((TOTAL + 1))
+if echo "$VERIFY_OUTPUT" | grep -q "\[ok\].*Hook file exists"; then
+  PASS=$((PASS + 1))
+  echo "  ✓ Verify: hook file detected"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ Verify: hook file not detected"
+fi
+
+TOTAL=$((TOTAL + 1))
+if echo "$VERIFY_OUTPUT" | grep -q "\[ok\].*settings.json is valid JSON"; then
+  PASS=$((PASS + 1))
+  echo "  ✓ Verify: settings.json validation"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ Verify: settings.json validation failed"
+fi
+
+TOTAL=$((TOTAL + 1))
+if echo "$VERIFY_OUTPUT" | grep -q "\[ok\].*First read"; then
+  PASS=$((PASS + 1))
+  echo "  ✓ Verify: dry-run first read"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ Verify: dry-run first read failed"
+fi
+
+TOTAL=$((TOTAL + 1))
+if echo "$VERIFY_OUTPUT" | grep -q "\[ok\].*Second read.*valid JSON"; then
+  PASS=$((PASS + 1))
+  echo "  ✓ Verify: dry-run second read"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ Verify: dry-run second read failed"
+fi
+
+TOTAL=$((TOTAL + 1))
+if echo "$VERIFY_OUTPUT" | grep -q "checks passed"; then
+  PASS=$((PASS + 1))
+  echo "  ✓ Verify: summary present"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ Verify: summary missing"
+fi
+
+# Test verify with missing settings (failure case)
+VERIFY_FAIL_OUTPUT=$(HOME="${TEST_DIR}/nonexistent" "$CLI" verify 2>&1 || true)
+
+TOTAL=$((TOTAL + 1))
+if echo "$VERIFY_FAIL_OUTPUT" | grep -q "\[FAIL\]"; then
+  PASS=$((PASS + 1))
+  echo "  ✓ Verify: detects missing installation"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ Verify: should detect missing installation"
+fi
+
 # --- Summary ---
 echo ""
 echo "===================="
