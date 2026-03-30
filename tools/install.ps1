@@ -167,7 +167,18 @@ foreach ($hook in $selected) {
     }
 
     # Download extra files depending on hook
-    if ($hook -eq 'file-guard') {
+    if ($hook -eq 'read-once') {
+        # Download the read-once.ps1 CLI tool (stats, gain, status, verify, clear, etc.)
+        $cliFile = Join-Path $installDir "read-once.ps1"
+        try {
+            $cliContent = Invoke-RestMethod -Uri "$Repo/read-once/read-once.ps1" -ErrorAction Stop
+            Set-Content -Path $cliFile -Value $cliContent -Encoding UTF8
+            Write-Host "  Downloaded read-once CLI (pwsh read-once.ps1 stats)" -ForegroundColor Green
+        } catch {
+            Write-Host "  Warning: failed to download read-once.ps1 CLI tool" -ForegroundColor Yellow
+        }
+    }
+    elseif ($hook -eq 'file-guard') {
         # Create a default .file-guard config if none exists in cwd
         $configPath = Join-Path (Get-Location) ".file-guard"
         if (-not (Test-Path $configPath)) {
