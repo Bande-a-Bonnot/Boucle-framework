@@ -123,6 +123,7 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
     Write-Host "  backup list           Show available backups"
     Write-Host "  restore               Restore the most recent backup"
     Write-Host "  restore <file>        Restore a specific backup"
+    Write-Host "  doctor                Diagnose installation health (files, settings, permissions)"
     Write-Host "  help                  Show this help message"
     Write-Host ""
     Write-Host "Available hooks:" -ForegroundColor White
@@ -265,6 +266,167 @@ if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'restore') {
     Write-Host ""
     Write-Host "Changes take effect in your next Claude Code session."
     exit 0
+}
+
+# Handle doctor subcommand — diagnose installation health
+if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'doctor') {
+    $doctorErrors = 0
+    $doctorWarnings = 0
+    $doctorOk = 0
+
+    Write-Host "Running diagnostics..." -ForegroundColor White
+    Write-Host ""
+
+    # 1. Check settings.json
+    $settings = $null
+    $isJsonc = $false
+    if (-not (Test-Path $SettingsPath)) {
+        Write-Host "  ERROR  settings.json not found at $SettingsPath" -ForegroundColor Red
+        Write-Host "         Run the installer to create it, or check Claude Code is installed."
+        $doctorErrors++
+    } else {
+        Write-Host "  OK     settings.json exists" -ForegroundColor Green
+        $doctorOk++
+
+        $raw = Get-Content $SettingsPath -Raw -ErrorAction SilentlyContinue
+        try {
+            $settings = $raw | ConvertFrom-Json -AsHashtable
+            Write-Host "  OK     settings.json is valid JSON" -ForegroundColor Green
+            $doctorOk++
+        } catch {
+            # Try JSONC
+            try {
+                $cleaned = Strip-JsonComments $raw
+                $settings = $cleaned | ConvertFrom-Json -AsHashtable
+                $isJsonc = $true
+                Write-Host "  WARN   settings.json uses JSONC (comments). Some tools may not parse it." -ForegroundColor Yellow
+                $doctorWarnings++
+            } catch {
+                Write-Host "  ERROR  settings.json is not valid JSON or JSONC" -ForegroundColor Red
+                $doctorErrors++
+            }
+        }
+    }
+
+    # 2. Check each hook
+    Write-Host ""
+    Write-Host "Installed hooks:" -ForegroundColor White
+
+    foreach ($name in $AllHookNames) {
+        $info = $HookCatalog[$name]
+        $hookDir = Join-Path $HOME ".claude" $name
+        $hookFile = Join-Path $hookDir "hook.ps1"
+
+        if (-not (Test-Path $hookDir)) {
+            Write-Host "  --     $name  not installed" -ForegroundColor DarkGray
+            continue
+        }
+
+        $issues = @()
+
+        # Check hook.ps1 exists
+        if (-not (Test-Path $hookFile)) {
+            # Also check hook.sh (bash hooks on Windows via WSL)
+            $hookBash = Join-Path $hookDir "hook.sh"
+            if (-not (Test-Path $hookBash)) {
+                $issues += "missing hook.ps1"
+            }
+        }
+
+        # Check extra files for read-once
+        if ($name -eq 'read-once') {
+            $cliPs1 = Join-Path $hookDir "read-once.ps1"
+            $cliBash = Join-Path $hookDir "read-once"
+            if (-not (Test-Path $cliPs1) -and -not (Test-Path $cliBash)) {
+                $issues += "read-once CLI not found (run: install.ps1 upgrade)"
+            }
+        }
+
+        # Check settings.json registration
+        if ($null -ne $settings -and $settings.ContainsKey('hooks')) {
+            $event = $info.Event
+            $found = $false
+            if ($settings['hooks'].ContainsKey($event)) {
+                foreach ($entry in $settings['hooks'][$event]) {
+                    foreach ($h in $entry['hooks']) {
+                        $cmd = $h['command']
+                        if ($cmd -and $cmd -like "*$name*") {
+                            $found = $true
+                            break
+                        }
+                    }
+                    if ($found) { break }
+                }
+            }
+            if (-not $found) {
+                $issues += "not registered in settings.json (run: install.ps1 $name)"
+            }
+        }
+
+        if ($issues.Count -eq 0) {
+            Write-Host "  OK     $name  $($info.Desc)" -ForegroundColor Green
+            $doctorOk++
+        } else {
+            Write-Host "  ERROR  $name" -ForegroundColor Red
+            foreach ($issue in $issues) {
+                Write-Host "         $issue"
+                $doctorErrors++
+            }
+        }
+    }
+
+    # 3. Check orphaned entries
+    if ($null -ne $settings -and $settings.ContainsKey('hooks')) {
+        Write-Host ""
+        Write-Host "Settings.json entries:" -ForegroundColor White
+
+        $orphans = @()
+        foreach ($event in $settings['hooks'].Keys) {
+            foreach ($entry in $settings['hooks'][$event]) {
+                foreach ($h in $entry['hooks']) {
+                    $cmd = $h['command']
+                    if ($cmd -and -not (Test-Path $cmd)) {
+                        $orphans += "${event}: $cmd"
+                    }
+                }
+            }
+        }
+
+        if ($orphans.Count -gt 0) {
+            foreach ($o in $orphans) {
+                Write-Host "  WARN   orphaned entry: $o" -ForegroundColor Yellow
+                $doctorWarnings++
+            }
+        } else {
+            Write-Host "  OK     no orphaned hook entries" -ForegroundColor Green
+            $doctorOk++
+        }
+
+        # 4. Check backups
+        if (Test-Path $BackupDir) {
+            $backups = Get-ChildItem $BackupDir -Filter "settings.*.json" -ErrorAction SilentlyContinue
+            if ($backups -and $backups.Count -gt 0) {
+                Write-Host "  OK     $($backups.Count) backup(s) available" -ForegroundColor Green
+                $doctorOk++
+            }
+        } else {
+            Write-Host "  WARN   no backups found (run: install.ps1 backup)" -ForegroundColor Yellow
+            $doctorWarnings++
+        }
+    }
+
+    # Summary
+    Write-Host ""
+    if ($doctorErrors -gt 0) {
+        Write-Host "$doctorErrors error(s), $doctorWarnings warning(s), $doctorOk ok" -ForegroundColor Red
+        exit 1
+    } elseif ($doctorWarnings -gt 0) {
+        Write-Host "$doctorWarnings warning(s), $doctorOk ok" -ForegroundColor Yellow
+        exit 0
+    } else {
+        Write-Host "All checks passed ($doctorOk ok)" -ForegroundColor Green
+        exit 0
+    }
 }
 
 # Parse arguments or ask interactively
