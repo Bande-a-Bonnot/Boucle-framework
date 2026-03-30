@@ -72,6 +72,7 @@ if [ $# -gt 0 ] && { [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]
   echo "  backup list           Show available backups"
   echo "  restore               Restore the most recent backup"
   echo "  restore <file>        Restore a specific backup"
+  echo "  doctor                Diagnose installation health (files, settings, permissions)"
   echo "  help                  Show this help message"
   echo ""
   echo -e "${BOLD}Available hooks:${RESET}"
@@ -93,7 +94,188 @@ if [ $# -gt 0 ] && { [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]
   echo "  install.sh uninstall read-once    # Remove one hook"
   echo "  install.sh backup                 # Snapshot before updating Claude Code"
   echo "  install.sh restore                # Restore after a wipe"
+  echo "  install.sh doctor                 # Check installation health"
   exit 0
+fi
+
+# Handle doctor subcommand — diagnose installation health
+if [ $# -gt 0 ] && [ "$1" = "doctor" ]; then
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "Error: python3 required for doctor command" >&2
+    exit 1
+  fi
+  python3 - "$SETTINGS" "$HOME" "$ALL_HOOKS" << 'PYEOF'
+import sys, json, os, re
+
+settings_path = sys.argv[1]
+home = sys.argv[2]
+all_hooks = sys.argv[3].split()
+
+# JSONC stripper (handles comments in settings.json)
+def strip_jsonc(text):
+    out = []; i = 0; n = len(text)
+    while i < n:
+        if text[i] == '"':
+            out.append(text[i]); i += 1
+            while i < n and text[i] != '"':
+                if text[i] == '\\': out.append(text[i]); i += 1
+                if i < n: out.append(text[i]); i += 1
+            if i < n: out.append(text[i]); i += 1
+        elif i + 1 < n and text[i:i+2] == '//':
+            while i < n and text[i] != '\n': i += 1
+        elif i + 1 < n and text[i:i+2] == '/*':
+            i += 2
+            while i + 1 < n and text[i:i+2] != '*/': i += 1
+            i += 2
+        else:
+            out.append(text[i]); i += 1
+    return ''.join(out)
+
+def load_settings(path):
+    """Load settings.json, handling JSONC. Returns (settings, is_jsonc, error)."""
+    if not os.path.isfile(path):
+        return None, False, "not_found"
+    with open(path) as f:
+        raw = f.read()
+    try:
+        return json.loads(raw), False, None
+    except (json.JSONDecodeError, ValueError):
+        pass
+    try:
+        return json.loads(strip_jsonc(raw)), True, None
+    except (json.JSONDecodeError, ValueError):
+        return None, False, "invalid"
+
+hook_descs = {
+    "read-once": "Skip re-reading unchanged files (saves tokens)",
+    "file-guard": "Block modifications to sensitive files (.env, keys)",
+    "git-safe": "Prevent destructive git operations (force push, reset --hard)",
+    "bash-guard": "Block dangerous bash commands (rm -rf /, sudo, curl|bash)",
+    "branch-guard": "Prevent direct commits to main/master (feature-branch workflow)",
+    "worktree-guard": "Prevent data loss when exiting worktrees (unmerged commits)",
+    "session-log": "Audit trail — log every tool call to JSONL",
+}
+
+errors = 0
+warnings = 0
+ok_count = 0
+
+def ok(msg):
+    global ok_count; ok_count += 1; print(f"  OK     {msg}")
+def warn(msg):
+    global warnings; warnings += 1; print(f"  WARN   {msg}")
+def error(msg):
+    global errors; errors += 1; print(f"  ERROR  {msg}")
+def dim(msg):
+    print(f"  --     {msg}")
+
+print("Running diagnostics...")
+print()
+
+# 1. Check settings.json
+settings, is_jsonc, err = load_settings(settings_path)
+if err == "not_found":
+    error(f"settings.json not found at {settings_path}")
+    print("         Run the installer to create it, or check Claude Code is installed.")
+elif err == "invalid":
+    ok("settings.json exists")
+    error("settings.json is not valid JSON or JSONC")
+else:
+    ok("settings.json exists")
+    if is_jsonc:
+        warn("settings.json uses JSONC (comments). Some tools may not parse it.")
+    else:
+        ok("settings.json is valid JSON")
+
+# 2. Check each hook
+print()
+print("Installed hooks:")
+
+for hook in all_hooks:
+    hook_dir = os.path.join(home, ".claude", hook)
+    if not os.path.isdir(hook_dir):
+        dim(f"{hook}  not installed")
+        continue
+
+    issues = []
+
+    # Check hook.sh exists
+    hook_sh = os.path.join(hook_dir, "hook.sh")
+    if not os.path.isfile(hook_sh):
+        issues.append(f"missing hook.sh")
+    elif not os.access(hook_sh, os.X_OK):
+        issues.append(f"hook.sh not executable (run: chmod +x {hook_sh})")
+
+    # Check extra files
+    if hook == "read-once":
+        cli_bash = os.path.join(hook_dir, "read-once")
+        cli_ps1 = os.path.join(hook_dir, "read-once.ps1")
+        if not os.path.isfile(cli_bash) and not os.path.isfile(cli_ps1):
+            issues.append("read-once CLI not found (run: install.sh upgrade)")
+
+    # Check settings.json registration
+    if settings is not None:
+        event = "PostToolUse" if hook == "session-log" else "PreToolUse"
+        found = False
+        if "hooks" in settings and event in settings["hooks"]:
+            for entry in settings["hooks"][event]:
+                for h in entry.get("hooks", []):
+                    if hook in h.get("command", ""):
+                        found = True
+                        break
+                if found:
+                    break
+        if not found:
+            issues.append(f"not registered in settings.json (run: install.sh {hook})")
+
+    if not issues:
+        desc = hook_descs.get(hook, "")
+        ok(f"{hook}  {desc}")
+    else:
+        error(hook)
+        for issue in issues:
+            print(f"         {issue}")
+
+# 3. Check orphaned entries
+if settings is not None:
+    print()
+    print("Settings.json entries:")
+    orphans = []
+    if "hooks" in settings:
+        for event, entries in settings["hooks"].items():
+            for entry in entries:
+                for h in entry.get("hooks", []):
+                    cmd = h.get("command", "")
+                    if cmd and not os.path.isfile(cmd):
+                        orphans.append(f"{event}: {cmd}")
+    if orphans:
+        for o in orphans:
+            warn(f"orphaned entry: {o}")
+    else:
+        ok("no orphaned hook entries")
+
+    # 4. Check backups
+    backup_dir = os.path.join(home, ".claude", "backups")
+    if os.path.isdir(backup_dir):
+        backups = [f for f in os.listdir(backup_dir) if f.startswith("settings.") and f.endswith(".json")]
+        if backups:
+            ok(f"{len(backups)} backup(s) available")
+    else:
+        warn("no backups found (run: install.sh backup)")
+
+# Summary
+print()
+if errors > 0:
+    print(f"{errors} error(s), {warnings} warning(s), {ok_count} ok")
+    sys.exit(1)
+elif warnings > 0:
+    print(f"{warnings} warning(s), {ok_count} ok")
+    sys.exit(0)
+else:
+    print(f"All checks passed ({ok_count} ok)")
+    sys.exit(0)
+PYEOF
+  exit $?
 fi
 
 # Handle list subcommand — show installed hooks

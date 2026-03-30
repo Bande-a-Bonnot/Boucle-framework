@@ -890,6 +890,128 @@ else
   fail "backup list should show backup count"
 fi
 
+echo "--- Doctor subcommand ---"
+
+# Re-install a hook so doctor has something to check
+bash "$SCRIPT_DIR/install.sh" bash-guard >/dev/null 2>&1
+output=$(bash "$SCRIPT_DIR/install.sh" doctor 2>&1)
+if echo "$output" | grep -q "Running diagnostics"; then
+  pass "doctor runs successfully"
+else
+  fail "doctor did not run"
+fi
+
+if echo "$output" | grep -q "settings.json exists"; then
+  pass "doctor detects settings.json"
+else
+  fail "doctor did not detect settings.json"
+fi
+
+if echo "$output" | grep -q "OK.*bash-guard"; then
+  pass "doctor detects installed hook"
+else
+  fail "doctor did not detect installed hook"
+fi
+
+if echo "$output" | grep -qi "not installed"; then
+  pass "doctor shows uninstalled hooks"
+else
+  fail "doctor did not show uninstalled hooks"
+fi
+
+# Doctor with no settings.json
+mv "$TEST_HOME/.claude/settings.json" "$TEST_HOME/.claude/settings.json.bak"
+output=$(bash "$SCRIPT_DIR/install.sh" doctor 2>&1 || true)
+if echo "$output" | grep -qi "error.*settings.json not found"; then
+  pass "doctor reports missing settings.json"
+else
+  fail "doctor did not report missing settings.json"
+fi
+mv "$TEST_HOME/.claude/settings.json.bak" "$TEST_HOME/.claude/settings.json"
+
+# Doctor with broken JSON
+echo "{{invalid json" > "$TEST_HOME/.claude/settings.json"
+output=$(bash "$SCRIPT_DIR/install.sh" doctor 2>&1 || true)
+if echo "$output" | grep -qi "error.*not valid"; then
+  pass "doctor reports invalid JSON"
+else
+  fail "doctor did not report invalid JSON"
+fi
+
+# Doctor with JSONC (comments in settings.json)
+cat > "$TEST_HOME/.claude/settings.json" <<'JSONC_EOF'
+{
+  // This is a comment
+  "hooks": {}
+}
+JSONC_EOF
+output=$(bash "$SCRIPT_DIR/install.sh" doctor 2>&1 || true)
+if echo "$output" | grep -qi "warn.*jsonc\|warn.*comment"; then
+  pass "doctor warns about JSONC comments"
+else
+  fail "doctor did not warn about JSONC comments"
+fi
+
+# Restore valid settings for remaining tests
+cat > "$TEST_HOME/.claude/settings.json" <<'EOF'
+{"hooks": {}}
+EOF
+
+# Doctor with orphaned entry (hook in settings.json but no files)
+cat > "$TEST_HOME/.claude/settings.json" <<'EOF'
+{"hooks": {"PreToolUse": [{"hooks": [{"type": "command", "command": "/nonexistent/hook.sh", "timeout": 5000}]}]}}
+EOF
+output=$(bash "$SCRIPT_DIR/install.sh" doctor 2>&1 || true)
+if echo "$output" | grep -qi "orphan"; then
+  pass "doctor detects orphaned entries"
+else
+  fail "doctor did not detect orphaned entries"
+fi
+
+# Doctor with non-executable hook.sh
+chmod -x "$TEST_HOME/.claude/bash-guard/hook.sh" 2>/dev/null || true
+cat > "$TEST_HOME/.claude/settings.json" <<'EOF'
+{"hooks": {"PreToolUse": [{"hooks": [{"type": "command", "command": "placeholder", "timeout": 5000}]}]}}
+EOF
+# Re-create a proper settings entry for bash-guard
+bash "$SCRIPT_DIR/install.sh" bash-guard >/dev/null 2>&1
+chmod -x "$TEST_HOME/.claude/bash-guard/hook.sh"
+output=$(bash "$SCRIPT_DIR/install.sh" doctor 2>&1 || true)
+if echo "$output" | grep -qi "not executable"; then
+  pass "doctor detects non-executable hook"
+else
+  fail "doctor did not detect non-executable hook"
+fi
+chmod +x "$TEST_HOME/.claude/bash-guard/hook.sh" 2>/dev/null || true
+
+# Doctor with hook not registered in settings.json
+cat > "$TEST_HOME/.claude/settings.json" <<'EOF'
+{"hooks": {}}
+EOF
+output=$(bash "$SCRIPT_DIR/install.sh" doctor 2>&1 || true)
+if echo "$output" | grep -qi "not registered"; then
+  pass "doctor detects unregistered hooks"
+else
+  fail "doctor did not detect unregistered hooks"
+fi
+
+# Doctor with backup check
+if echo "$output" | grep -qi "backup"; then
+  pass "doctor checks backups"
+else
+  fail "doctor did not check backups"
+fi
+
+# Doctor exit code on errors
+cat > "$TEST_HOME/.claude/settings.json" <<'EOF'
+not valid json at all
+EOF
+if bash "$SCRIPT_DIR/install.sh" doctor >/dev/null 2>&1; then
+  fail "doctor should exit non-zero on errors"
+else
+  pass "doctor exits non-zero on errors"
+fi
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed (total $((PASS + FAIL)))"
 [ "$FAIL" -eq 0 ] || exit 1
