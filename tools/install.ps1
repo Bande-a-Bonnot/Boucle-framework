@@ -48,6 +48,44 @@ $HookCatalog = [ordered]@{
 $AllHookNames = @($HookCatalog.Keys)
 $RecommendedHooks = @('bash-guard', 'git-safe', 'file-guard')
 
+# Strip // and /* */ comments from JSONC, respecting quoted strings.
+# Claude Code's settings.json uses JSONC format (JSON with comments).
+function Strip-JsonComments {
+    param([string]$Text)
+    $result = [System.Text.StringBuilder]::new()
+    $i = 0
+    $inString = $false
+    while ($i -lt $Text.Length) {
+        if ($inString) {
+            if ($Text[$i] -eq [char]'\' -and ($i + 1) -lt $Text.Length) {
+                [void]$result.Append($Text[$i])
+                [void]$result.Append($Text[$i + 1])
+                $i += 2
+                continue
+            }
+            if ($Text[$i] -eq [char]'"') { $inString = $false }
+            [void]$result.Append($Text[$i])
+            $i++
+        } else {
+            if ($Text[$i] -eq [char]'"') {
+                $inString = $true
+                [void]$result.Append($Text[$i])
+                $i++
+            } elseif (($i + 1) -lt $Text.Length -and $Text[$i] -eq [char]'/' -and $Text[$i + 1] -eq [char]'/') {
+                while ($i -lt $Text.Length -and $Text[$i] -ne "`n") { $i++ }
+            } elseif (($i + 1) -lt $Text.Length -and $Text[$i] -eq [char]'/' -and $Text[$i + 1] -eq [char]'*') {
+                $i += 2
+                while (($i + 1) -lt $Text.Length -and -not ($Text[$i] -eq [char]'*' -and $Text[$i + 1] -eq [char]'/')) { $i++ }
+                $i += 2
+            } else {
+                [void]$result.Append($Text[$i])
+                $i++
+            }
+        }
+    }
+    return $result.ToString()
+}
+
 Write-Host ""
 Write-Host "Boucle Hooks for Claude Code (PowerShell)" -ForegroundColor White
 Write-Host "Native Windows hooks - no bash or jq required" -ForegroundColor DarkGray
@@ -197,14 +235,19 @@ if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'restore') {
         $target = $files[-1].FullName
     }
 
-    # Validate JSON
+    # Validate JSON (accept JSONC with comments)
+    $backupRaw = Get-Content $target -Raw
     try {
-        $null = Get-Content $target -Raw | ConvertFrom-Json
+        $null = $backupRaw | ConvertFrom-Json
     } catch {
-        Write-Host "Warning: " -ForegroundColor Yellow -NoNewline
-        Write-Host "Backup is not valid JSON: $(Split-Path $target -Leaf)"
-        Write-Host "Aborting restore."
-        exit 1
+        try {
+            $null = (Strip-JsonComments $backupRaw) | ConvertFrom-Json
+        } catch {
+            Write-Host "Warning: " -ForegroundColor Yellow -NoNewline
+            Write-Host "Backup is not valid JSON: $(Split-Path $target -Leaf)"
+            Write-Host "Aborting restore."
+            exit 1
+        }
     }
 
     # Save pre-restore copy
@@ -335,21 +378,19 @@ if (Test-Path $SettingsPath) {
     if (-not $raw -or $raw.Trim() -eq '') {
         $settings = @{}
     } else {
-        # Strip JSONC comments (// and /* */) before parsing
-        $cleaned = $raw
-        # Remove single-line comments (not inside strings - simplified)
-        $cleaned = $cleaned -replace '(?m)^\s*//.*$', ''
-        # Remove inline comments after values (simplified, may not handle all edge cases)
-        $cleaned = $cleaned -replace '(?<=,|{|\[)\s*//.*$', ''
         try {
-            $settings = $cleaned | ConvertFrom-Json -AsHashtable -ErrorAction Stop
+            $settings = $raw | ConvertFrom-Json -AsHashtable -ErrorAction Stop
         } catch {
-            Write-Host "  Warning: settings.json contains JSONC comments. Creating backup." -ForegroundColor Yellow
-            Copy-Item $SettingsPath "$SettingsPath.bak" -Force
+            # JSON parse failed - try stripping JSONC comments
+            $cleaned = Strip-JsonComments $raw
             try {
                 $settings = $cleaned | ConvertFrom-Json -AsHashtable -ErrorAction Stop
+                Write-Host "  Warning: settings.json contains JSONC comments." -ForegroundColor Yellow
+                Write-Host "  Comments will be removed when saving. Backup created at $SettingsPath.bak" -ForegroundColor Yellow
+                Copy-Item $SettingsPath "$SettingsPath.bak" -Force
             } catch {
                 Write-Host "  Error: $SettingsPath is not valid JSON. Aborting." -ForegroundColor Red
+                Write-Host "  Try: Get-Content $SettingsPath | ConvertFrom-Json" -ForegroundColor DarkGray
                 exit 1
             }
         }
