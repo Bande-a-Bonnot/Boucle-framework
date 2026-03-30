@@ -87,7 +87,10 @@ try:
                "worktree-guard", "worktree_guard",
                "session-log", "session_log", "read-once", "read_once",
                "enforce-hooks", "enforce_hooks"]
-    for hook_type in ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd"]:
+    all_hook_types = ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd",
+                      "Stop", "SubagentStop", "TaskCreated", "WorktreeCreate",
+                      "WorktreeRemove", "UserPromptSubmit", "Notification"]
+    for hook_type in all_hook_types:
         for entry in s.get("hooks", {}).get(hook_type, []):
             cmds = []
             for hook in entry.get("hooks", []):
@@ -555,6 +558,21 @@ if has_hook_type "Stop"; then
     WARNINGS+=("Stop hooks fire before the transcript JSONL file is fully flushed to disk. Any Stop hook that reads the transcript to inspect the assistant's last output will see stale data missing the final content blocks (15-44ms race window, 64% failure rate measured). This affects completion detection, audit logging, and post-session analysis. No reliable workaround exists. (see claude-code#40655)")
 fi
 
+# WorktreeCreate/WorktreeRemove hooks ignored by EnterWorktree tool (claude-code#36205)
+if has_hook_type "WorktreeCreate" || has_hook_type "WorktreeRemove"; then
+    WARNINGS+=("WorktreeCreate/WorktreeRemove hooks are configured but the EnterWorktree tool does not fire them. Worktree hooks only fire when worktree isolation is triggered by the system (background agents), not when the model explicitly calls EnterWorktree. Custom VCS setup in worktree hooks may not execute. (see claude-code#36205)")
+fi
+
+# TaskCreated hooks — available since v2.1.84
+if has_hook_type "TaskCreated"; then
+    WARNINGS+=("TaskCreated hooks are configured. These fire when a task is created via TaskCreate. Note: TaskCreated hooks cannot block task creation (decision field is ignored). They are observe-only, useful for logging or notifications but not enforcement.")
+fi
+
+# SubagentStop hooks — subagent-scoped lifecycle
+if has_hook_type "SubagentStop"; then
+    WARNINGS+=("SubagentStop hooks are configured. These fire when a spawned subagent completes, providing the last_assistant_message field. Note: background agents may not inherit all hook configurations from the parent session. (see claude-code#40818)")
+fi
+
 # bypassPermissions in settings.local.json is silently ignored (claude-code#40014)
 SETTINGS_LOCAL="${HOME}/.claude/settings.local.json"
 [ ! -f "$SETTINGS_LOCAL" ] && SETTINGS_LOCAL=".claude/settings.local.json"
@@ -622,7 +640,10 @@ try:
     if announcements:
         flags.append(f"sets companyAnnouncements — messages will appear as if from your company (social engineering risk)")
     # Flag 4: Project hooks that reference external URLs or suspicious commands
-    for hook_type in ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd"]:
+    all_hook_types = ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd",
+                      "Stop", "SubagentStop", "TaskCreated", "WorktreeCreate",
+                      "WorktreeRemove", "UserPromptSubmit", "Notification"]
+    for hook_type in all_hook_types:
         for entry in s.get("hooks", {}).get(hook_type, []):
             cmds = []
             for hook in entry.get("hooks", []):
@@ -1056,7 +1077,10 @@ import json, sys
 try:
     with open(sys.argv[1]) as f:
         s = json.load(f)
-    for hook_type in ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd"]:
+    all_hook_types = ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd",
+                      "Stop", "SubagentStop", "TaskCreated", "WorktreeCreate",
+                      "WorktreeRemove", "UserPromptSubmit", "Notification"]
+    for hook_type in all_hook_types:
         for entry in s.get("hooks", {}).get(hook_type, []):
             for hook in entry.get("hooks", []):
                 cmd = hook.get("command", "")

