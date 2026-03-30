@@ -4,6 +4,16 @@ All notable changes to Boucle are documented here.
 
 ## [Unreleased]
 
+### Added
+
+#### bash-guard
+- **pip install --target detection** -- Blocks `pip install --target <path>` which writes packages to arbitrary directories, bypassing sandbox confinement ([#41103](https://github.com/anthropics/claude-code/issues/41103)).
+- **pip install --user detection** -- Blocks `pip install --user` which writes to `~/.local`, potentially outside the sandbox.
+- **Deep path traversal detection** -- Blocks commands with 4+ levels of `../` (e.g., `../../../../tmp/evil.py`), a common sandbox escape vector.
+
+#### safety-check
+- **Settings.json integrity warning** -- Warns when global settings.json contains keys (`mcpServers`, `permissions`, `hooks`) that plugin operations silently erase ([#41137](https://github.com/anthropics/claude-code/issues/41137), [#40714](https://github.com/anthropics/claude-code/issues/40714)).
+
 ## [0.10.0] - 2026-03-30
 
 ### Added

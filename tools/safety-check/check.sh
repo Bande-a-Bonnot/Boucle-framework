@@ -933,6 +933,29 @@ PYEOF_BPA
     fi
 fi
 
+# Plugin operations silently erase settings.json keys (claude-code#41137, #40714, #30109)
+# plugin install/update/marketplace-add rewrites settings.json, dropping unrecognized keys
+# including mcpServers, permissions, and custom configuration.
+if [ -f "$SETTINGS_FILE" ]; then
+    HAS_MCP_OR_CUSTOM=$(python3 - "$SETTINGS_FILE" << 'PYEOF_SETTINGS_INTEGRITY'
+import json, sys
+try:
+    with open(sys.argv[1]) as f:
+        s = json.load(f)
+    plugin_keys = {"enabledPlugins", "extraKnownMarketplaces", "plugins"}
+    custom_keys = set(s.keys()) - plugin_keys
+    important = [k for k in custom_keys if k in ("mcpServers", "permissions", "hooks")]
+    if important:
+        print(",".join(important))
+except Exception:
+    pass
+PYEOF_SETTINGS_INTEGRITY
+    )
+    if [ -n "$HAS_MCP_OR_CUSTOM" ]; then
+        WARNINGS+=("Your global settings.json contains keys (${HAS_MCP_OR_CUSTOM}) that plugin operations (install, update, marketplace add) will silently erase. Back up ~/.claude/settings.json before running plugin commands. The install.sh backup/restore commands can help. (see claude-code#41137, #40714)")
+    fi
+fi
+
 # === Section 7: Rule Enforcement ===
 echo ""
 printf "${BLUE}Rule Enforcement${NC}\n"

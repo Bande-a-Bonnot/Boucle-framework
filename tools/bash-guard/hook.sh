@@ -632,5 +632,20 @@ if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)passwd\b' 2>/dev/null; then
   is_allowed "passwd" || block "passwd changes user passwords. AI agents should not modify user credentials." "Add 'allow: passwd' to .bash-guard if you need this."
 fi
 
+# pip/pip3 install --target (writes packages to arbitrary paths, sandbox escape — #41103)
+if echo "$COMMAND" | grep -qE 'pip3?\s+install\s.*--target' 2>/dev/null; then
+  is_allowed "pip-target" || block "pip install --target writes packages to an arbitrary directory, bypassing sandbox confinement." "Install without --target (uses default location), or add 'allow: pip-target' to .bash-guard."
+fi
+
+# pip/pip3 install --user (writes to ~/.local outside sandbox — #41103)
+if echo "$COMMAND" | grep -qE 'pip3?\s+install\s.*--user' 2>/dev/null; then
+  is_allowed "pip-user" || block "pip install --user writes packages to ~/.local which may be outside the sandbox." "Install without --user (uses project virtualenv), or add 'allow: pip-user' to .bash-guard."
+fi
+
+# Deep path traversal (4+ levels of ../ is likely a sandbox escape attempt — #41103)
+if echo "$COMMAND" | grep -qE '(\.\./){4,}' 2>/dev/null; then
+  is_allowed "path-traversal" || block "Deep path traversal (4+ levels of ../) may be an attempt to escape a sandboxed directory." "Use absolute paths or navigate to the target directory first. Or add 'allow: path-traversal' to .bash-guard."
+fi
+
 log "ALLOW: $COMMAND"
 exit 0

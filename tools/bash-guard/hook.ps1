@@ -845,5 +845,26 @@ if ($command -match '(^|[;&\|]\s*)passwd\b') {
     }
 }
 
+# pip/pip3 install --target (writes packages to arbitrary paths, sandbox escape — #41103)
+if ($command -match 'pip3?\s+install\s.*--target') {
+    if (-not (Test-Allowed 'pip-target')) {
+        Block-Tool 'bash-guard: pip install --target writes packages to an arbitrary directory, bypassing sandbox confinement. Suggestion: Install without --target (uses default location), or add ''allow: pip-target'' to .bash-guard.'
+    }
+}
+
+# pip/pip3 install --user (writes to ~/.local outside sandbox — #41103)
+if ($command -match 'pip3?\s+install\s.*--user') {
+    if (-not (Test-Allowed 'pip-user')) {
+        Block-Tool 'bash-guard: pip install --user writes packages to ~/.local which may be outside the sandbox. Suggestion: Install without --user (uses project virtualenv), or add ''allow: pip-user'' to .bash-guard.'
+    }
+}
+
+# Deep path traversal (4+ levels of ../ is likely a sandbox escape attempt — #41103)
+if ($command -match '(\.\./){4,}') {
+    if (-not (Test-Allowed 'path-traversal')) {
+        Block-Tool 'bash-guard: Deep path traversal (4+ levels of ../) may be an attempt to escape a sandboxed directory. Suggestion: Use absolute paths or navigate to the target directory first. Or add ''allow: path-traversal'' to .bash-guard.'
+    }
+}
+
 Write-Log "ALLOW: $command"
 exit 0
