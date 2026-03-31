@@ -89,7 +89,8 @@ try:
                "enforce-hooks", "enforce_hooks"]
     all_hook_types = ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd",
                       "Stop", "SubagentStop", "TaskCreated", "WorktreeCreate",
-                      "WorktreeRemove", "UserPromptSubmit", "Notification"]
+                      "WorktreeRemove", "UserPromptSubmit", "Notification",
+                      "PermissionDenied"]
     for hook_type in all_hook_types:
         for entry in s.get("hooks", {}).get(hook_type, []):
             cmds = []
@@ -573,6 +574,12 @@ if has_hook_type "SubagentStop"; then
     WARNINGS+=("SubagentStop hooks are configured. These fire when a spawned subagent completes, providing the last_assistant_message field. Note: background agents may not inherit all hook configurations from the parent session. (see claude-code#40818)")
 fi
 
+# PermissionDenied hooks — new in v2.1.88 (claude-code#41261)
+# Fires after auto mode classifier denials. Return {retry: true} to tell model it can retry.
+if has_hook_type "PermissionDenied"; then
+    WARNINGS+=("PermissionDenied hooks are configured. This event fires after auto mode classifier denials (new in v2.1.88). Return {\"retry\": true} in hookSpecificOutput to tell the model it can retry the denied operation. Without this hook, denied operations are not retried. Note: this event is not yet documented in the official hooks reference. (see claude-code#41261)")
+fi
+
 # PreToolUse hooks on EnterPlanMode — hook output deprioritized (claude-code#41051)
 _check_planmode_matcher() {
     local sf="$1"
@@ -615,6 +622,26 @@ except: print('false')
 " "$SETTINGS_LOCAL" 2>/dev/null)
     if [ "$HAS_BYPASS_LOCAL" = "true" ]; then
         WARNINGS+=("settings.local.json sets permission/bypass configuration, but these settings are silently ignored. The only working method to enable bypass mode is the CLI flag --dangerously-skip-permissions. Remove the setting to avoid confusion. (see claude-code#40014)")
+    fi
+fi
+
+# settings.local.json permissions desync after Edit tool modifies it (claude-code#41259)
+# When Claude's Edit tool modifies settings.local.json, in-memory permission state desyncs from disk.
+# Allow rules stop being respected; user is repeatedly prompted even though the file is correct.
+if [ -f "$SETTINGS_LOCAL" ]; then
+    SETTINGS_LOCAL_EDIT_RISK=$(python3 -c "
+import json,sys
+try:
+    s=json.load(open(sys.argv[1]))
+    perms = s.get('permissions',{})
+    allow = perms.get('allow',{}) or perms.get('allow',[])
+    deny = perms.get('deny',{}) or perms.get('deny',[])
+    if allow or deny: print('true')
+    else: print('false')
+except: print('false')
+" "$SETTINGS_LOCAL" 2>/dev/null)
+    if [ "$SETTINGS_LOCAL_EDIT_RISK" = "true" ]; then
+        WARNINGS+=("settings.local.json contains permission rules. If Claude's Edit tool modifies this file during a session, in-memory permissions desync from disk: allow rules stop working and the user is repeatedly prompted. Let Claude Code manage this file through its own permission prompt mechanism, or restart the session after any manual edit. (see claude-code#41259)")
     fi
 fi
 
@@ -669,7 +696,8 @@ try:
     # Flag 4: Project hooks that reference external URLs or suspicious commands
     all_hook_types = ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd",
                       "Stop", "SubagentStop", "TaskCreated", "WorktreeCreate",
-                      "WorktreeRemove", "UserPromptSubmit", "Notification"]
+                      "WorktreeRemove", "UserPromptSubmit", "Notification",
+                      "PermissionDenied"]
     for hook_type in all_hook_types:
         for entry in s.get("hooks", {}).get(hook_type, []):
             cmds = []
@@ -1129,7 +1157,8 @@ try:
         s = json.load(f)
     all_hook_types = ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd",
                       "Stop", "SubagentStop", "TaskCreated", "WorktreeCreate",
-                      "WorktreeRemove", "UserPromptSubmit", "Notification"]
+                      "WorktreeRemove", "UserPromptSubmit", "Notification",
+                      "PermissionDenied"]
     for hook_type in all_hook_types:
         for entry in s.get("hooks", {}).get(hook_type, []):
             for hook in entry.get("hooks", []):
