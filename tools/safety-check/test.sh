@@ -3188,6 +3188,39 @@ assert "deny warning mentions hooks if condition fix" "hooks.*fire correctly" "$
 export HOME="$SAVE_HOME"
 rm -rf "$TMPDIR_DENY"
 
+# === Test: CLAUDE_CODE_SIMPLE warning ===
+TMPDIR_SIMPLE=$(mktemp -d)
+SAVE_HOME="$HOME"
+export HOME="$TMPDIR_SIMPLE"
+export CLAUDE_CODE_SIMPLE=true
+SIMPLE_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "CLAUDE_CODE_SIMPLE warning shown" "CLAUDE_CODE_SIMPLE" "$SIMPLE_OUTPUT"
+assert "CLAUDE_CODE_SIMPLE mentions hooks disabled" "disables ALL hooks" "$SIMPLE_OUTPUT"
+unset CLAUDE_CODE_SIMPLE
+export HOME="$SAVE_HOME"
+rm -rf "$TMPDIR_SIMPLE"
+
+# === Test: No CLAUDE_CODE_SIMPLE warning when unset ===
+TMPDIR_NOSIMPLE=$(mktemp -d)
+SAVE_HOME="$HOME"
+export HOME="$TMPDIR_NOSIMPLE"
+unset CLAUDE_CODE_SIMPLE 2>/dev/null || true
+NOSIMPLE_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no CLAUDE_CODE_SIMPLE warning when unset" "CLAUDE_CODE_SIMPLE" "$NOSIMPLE_OUTPUT"
+export HOME="$SAVE_HOME"
+rm -rf "$TMPDIR_NOSIMPLE"
+
+# === Test: CLAUDE_CODE_SIMPLE=1 also triggers warning ===
+TMPDIR_SIMPLE1=$(mktemp -d)
+SAVE_HOME="$HOME"
+export HOME="$TMPDIR_SIMPLE1"
+export CLAUDE_CODE_SIMPLE=1
+SIMPLE1_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "CLAUDE_CODE_SIMPLE=1 warning shown" "CLAUDE_CODE_SIMPLE" "$SIMPLE1_OUTPUT"
+unset CLAUDE_CODE_SIMPLE
+export HOME="$SAVE_HOME"
+rm -rf "$TMPDIR_SIMPLE1"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"

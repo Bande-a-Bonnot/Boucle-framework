@@ -179,6 +179,11 @@ if [ "${IS_DEMO:-}" = "1" ]; then
     WARNINGS+=("IS_DEMO=1 is set in your environment. This silently disables ALL hooks by suppressing workspace trust. Unset it: unset IS_DEMO (see claude-code#37780)")
 fi
 
+# CLAUDE_CODE_SIMPLE check: disables hooks, MCP tools, attachments, and CLAUDE.md loading entirely
+if [ "${CLAUDE_CODE_SIMPLE:-}" = "true" ] || [ "${CLAUDE_CODE_SIMPLE:-}" = "1" ]; then
+    WARNINGS+=("CLAUDE_CODE_SIMPLE is set in your environment. This disables ALL hooks, MCP tools, attachments, and CLAUDE.md file loading. No enforcement rules will fire. Unset it: unset CLAUDE_CODE_SIMPLE (see v2.1.50 changelog)")
+fi
+
 # GIT_INDEX_FILE check (claude-code#38181: corrupts git index when Claude launched from git hooks)
 if [ -n "${GIT_INDEX_FILE:-}" ]; then
     WARNINGS+=("GIT_INDEX_FILE is set ($GIT_INDEX_FILE). If Claude was launched from a git hook (post-commit, pre-push, etc.), plugin initialization can corrupt your git index by writing plugin entries into it. Unset this variable before invoking Claude, or run in a separate shell. (see claude-code#38181)")
