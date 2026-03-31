@@ -220,6 +220,10 @@ if command -v claude >/dev/null 2>&1; then
         if [ "$CLI_MINOR" -ge 81 ] 2>/dev/null && [ "$CLI_MINOR" -le 84 ] 2>/dev/null; then
             WARNINGS+=("Claude CLI v$CLI_VERSION: crashes when invoked by launchd/cron (regression v2.1.81-v2.1.84, see claude-code#37878, now fixed upstream). Update CLI to resolve.")
         fi
+        # v2.1.88: pulled from npm — custom commands broken + cli.js.map accidentally shipped (claude-code#41497)
+        if [ "$CLI_MINOR" -eq 88 ] 2>/dev/null; then
+            WARNINGS+=("Claude CLI v$CLI_VERSION: this version was pulled from npm. Known issues: custom commands in .claude/commands/ are not discovered (claude-code#41497), SessionStart systemMessage display broken (claude-code#41285). Downgrade to v2.1.87 or wait for the next release.")
+        fi
     fi
 fi
 
@@ -894,6 +898,14 @@ if [ "$_HAS_SKILLS" = "true" ]; then
         [ "$_PLUGIN_SKILL_COUNT" -gt 0 ] && _SKILL_SOURCES="${_SKILL_SOURCES:+${_SKILL_SOURCES}, }plugin skills (${_PLUGIN_SKILL_COUNT} plugin skill dirs)"
         WARNINGS+=("Skills/workflows can override CLAUDE.md directives. Active sources: ${_SKILL_SOURCES}. When a skill instructs the model to perform an action (e.g. 'commit all changed files'), CLAUDE.md rules prohibiting that action are deprioritized because skill instructions arrive as high-priority tool_result context. Use enforce-hooks (PreToolUse) to gate the specific operations you need protected — hooks enforce at the tool-call level and cannot be overridden by prompt content. (see claude-code#41437)")
     fi
+fi
+
+# Non-interactive sessions permanently stuck on usage limit (claude-code#41502, #41503)
+# In headless/remote-control/--print mode, hitting the usage limit shows a prompt
+# that cannot be answered — the session hangs indefinitely with no programmatic recovery.
+# Check if running non-interactively (common for autonomous agents, CI, cron)
+if [ ! -t 0 ] || [ -n "${CI:-}" ] || [ -n "${CLAUDE_NON_INTERACTIVE:-}" ]; then
+    WARNINGS+=("Running non-interactively (stdin is not a terminal). If a Claude session hits a usage limit, it will prompt for confirmation but cannot receive input — the session hangs permanently. There is no programmatic workaround. Set session time limits or monitor for stuck processes. (see claude-code#41502, claude-code#41503)")
 fi
 
 if [ ${#WARNINGS[@]} -gt 0 ]; then
