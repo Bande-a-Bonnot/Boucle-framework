@@ -861,6 +861,41 @@ except: print('false')
     fi
 fi
 
+# Skills/workflows can override CLAUDE.md directives (claude-code#41437)
+# When a skill instructs the model (e.g. "commit all files"), CLAUDE.md rules like "don't commit X"
+# are deprioritized because skill instructions arrive as tool_result context in the same turn.
+_SKILL_DIRS=""
+[ -d "${HOME}/.claude/skills" ] && _SKILL_DIRS="user:${HOME}/.claude/skills"
+[ -d ".claude/skills" ] && _SKILL_DIRS="${_SKILL_DIRS} project:.claude/skills"
+# Check for plugin skills
+_PLUGIN_SKILL_COUNT=0
+if [ -d "${HOME}/.claude/plugins" ]; then
+    _PLUGIN_SKILL_COUNT=$(find "${HOME}/.claude/plugins" -type d -name "skills" 2>/dev/null | wc -l | tr -d ' ')
+fi
+_HAS_SKILLS=false
+if [ -n "$_SKILL_DIRS" ] || [ "$_PLUGIN_SKILL_COUNT" -gt 0 ]; then
+    _HAS_SKILLS=true
+fi
+if [ "$_HAS_SKILLS" = "true" ]; then
+    # Check if CLAUDE.md exists and has restrictions/rules
+    _HAS_CLAUDEMD_RULES=false
+    for _cmd_file in "CLAUDE.md" "${HOME}/.claude/CLAUDE.md"; do
+        if [ -f "$_cmd_file" ]; then
+            if grep -qiE 'never|don.t|do not|must not|forbidden|prohibit|block|deny|restrict|@enforced' "$_cmd_file" 2>/dev/null; then
+                _HAS_CLAUDEMD_RULES=true
+                break
+            fi
+        fi
+    done
+    if [ "$_HAS_CLAUDEMD_RULES" = "true" ]; then
+        _SKILL_SOURCES=""
+        [ -d "${HOME}/.claude/skills" ] && _SKILL_SOURCES="user-level skills ($(ls "${HOME}/.claude/skills" 2>/dev/null | wc -l | tr -d ' ') items)"
+        [ -d ".claude/skills" ] && _SKILL_SOURCES="${_SKILL_SOURCES:+${_SKILL_SOURCES}, }project-level skills ($(ls ".claude/skills" 2>/dev/null | wc -l | tr -d ' ') items)"
+        [ "$_PLUGIN_SKILL_COUNT" -gt 0 ] && _SKILL_SOURCES="${_SKILL_SOURCES:+${_SKILL_SOURCES}, }plugin skills (${_PLUGIN_SKILL_COUNT} plugin skill dirs)"
+        WARNINGS+=("Skills/workflows can override CLAUDE.md directives. Active sources: ${_SKILL_SOURCES}. When a skill instructs the model to perform an action (e.g. 'commit all changed files'), CLAUDE.md rules prohibiting that action are deprioritized because skill instructions arrive as high-priority tool_result context. Use enforce-hooks (PreToolUse) to gate the specific operations you need protected — hooks enforce at the tool-call level and cannot be overridden by prompt content. (see claude-code#41437)")
+    fi
+fi
+
 if [ ${#WARNINGS[@]} -gt 0 ]; then
     printf "${RED}${BOLD}⚠ Environment Warnings${NC}\n"
     for warn in "${WARNINGS[@]}"; do

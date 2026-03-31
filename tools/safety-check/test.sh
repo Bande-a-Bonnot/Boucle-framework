@@ -2914,6 +2914,81 @@ NOTIME_OUTPUT=$(HOME="$TMPDIR_NOTIMING" bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no hook timing warning without SessionStart/UserPromptSubmit" "claude-code#41310" "$NOTIME_OUTPUT"
 rm -rf "$TMPDIR_NOTIMING"
 
+# === Test: Skills override CLAUDE.md warning (#41437) — skills + rules triggers warning ===
+TMPDIR_SKILL=$(mktemp -d)
+export HOME="$TMPDIR_SKILL"
+mkdir -p "$TMPDIR_SKILL/.claude/skills"
+echo "# My skill" > "$TMPDIR_SKILL/.claude/skills/test-skill.md"
+mkdir -p "$TMPDIR_SKILL/.claude"
+echo '{}' > "$TMPDIR_SKILL/.claude/settings.json"
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_SKILL"
+cat > CLAUDE.md << 'SKILLMD'
+## Rules
+- Never commit .env files
+- Do not push to main
+SKILLMD
+SKILL_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "skills override warning shown" "claude-code#41437" "$SKILL_OUTPUT"
+assert "skills override mentions enforce-hooks" "enforce-hooks" "$SKILL_OUTPUT"
+assert "skills override mentions skill sources" "user-level skills" "$SKILL_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_SKILL"
+
+# === Test: Skills override warning NOT shown without skills ===
+TMPDIR_NOSKILL=$(mktemp -d)
+export HOME="$TMPDIR_NOSKILL"
+mkdir -p "$TMPDIR_NOSKILL/.claude"
+echo '{}' > "$TMPDIR_NOSKILL/.claude/settings.json"
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_NOSKILL"
+cat > CLAUDE.md << 'NOSKILLMD'
+## Rules
+- Never commit .env files
+NOSKILLMD
+NOSKILL_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no skills warning without skills" "claude-code#41437" "$NOSKILL_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_NOSKILL"
+
+# === Test: Skills override warning NOT shown without CLAUDE.md rules ===
+TMPDIR_NORULES2=$(mktemp -d)
+export HOME="$TMPDIR_NORULES2"
+mkdir -p "$TMPDIR_NORULES2/.claude/skills"
+echo "# My skill" > "$TMPDIR_NORULES2/.claude/skills/test-skill.md"
+mkdir -p "$TMPDIR_NORULES2/.claude"
+echo '{}' > "$TMPDIR_NORULES2/.claude/settings.json"
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_NORULES2"
+cat > CLAUDE.md << 'NORULES2MD'
+## Guidelines
+- Write clean code
+- Use meaningful names
+NORULES2MD
+NORULES2_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no skills warning without restrictive rules" "claude-code#41437" "$NORULES2_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_NORULES2"
+
+# === Test: Skills override warning with project-level skills ===
+TMPDIR_PROJSKILL=$(mktemp -d)
+export HOME="$TMPDIR_PROJSKILL"
+mkdir -p "$TMPDIR_PROJSKILL/.claude"
+echo '{}' > "$TMPDIR_PROJSKILL/.claude/settings.json"
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_PROJSKILL"
+mkdir -p .claude/skills
+echo "# Project skill" > .claude/skills/deploy.md
+cat > CLAUDE.md << 'PROJSKILLMD'
+## Safety @enforced
+- Do not modify production configs
+PROJSKILLMD
+PROJSKILL_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "project skills override warning shown" "claude-code#41437" "$PROJSKILL_OUTPUT"
+assert "project skills source mentioned" "project-level skills" "$PROJSKILL_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_PROJSKILL"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
