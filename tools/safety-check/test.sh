@@ -3099,6 +3099,62 @@ assert "non-interactive references issue" "claude-code#41502" "$NI_OUTPUT"
 export HOME="$SAVE_HOME"
 rm -rf "$TMPDIR_NI"
 
+# === Test: Broad allow rules override "confirm individually" (#41551) ===
+SAVE_HOME="$HOME"
+TMPDIR_BROAD=$(mktemp -d)
+export HOME="$TMPDIR_BROAD"
+mkdir -p "$HOME/.claude"
+cat > "$HOME/.claude/settings.json" << 'BROAD_EOF'
+{
+  "permissions": {
+    "allow": ["Edit", "Write", "Bash(git *)"],
+    "deny": []
+  }
+}
+BROAD_EOF
+BROAD_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "broad allow warns about confirm individually" "claude-code#41551" "$BROAD_OUTPUT"
+assert "broad allow lists offending rules" "Edit" "$BROAD_OUTPUT"
+export HOME="$SAVE_HOME"
+rm -rf "$TMPDIR_BROAD"
+
+# Test: narrow allow rules do NOT trigger #41551 warning
+SAVE_HOME="$HOME"
+TMPDIR_NARROW=$(mktemp -d)
+export HOME="$TMPDIR_NARROW"
+mkdir -p "$HOME/.claude"
+cat > "$HOME/.claude/settings.json" << 'NARROW_EOF'
+{
+  "permissions": {
+    "allow": ["Bash(git status)", "Bash(npm test)"],
+    "deny": []
+  }
+}
+NARROW_EOF
+NARROW_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "narrow allow no confirm-individually warning" "claude-code#41551" "$NARROW_OUTPUT"
+export HOME="$SAVE_HOME"
+rm -rf "$TMPDIR_NARROW"
+
+# === Test: Deny rules without bash-guard references #41559 ===
+SAVE_HOME="$HOME"
+TMPDIR_DENY=$(mktemp -d)
+export HOME="$TMPDIR_DENY"
+mkdir -p "$HOME/.claude"
+cat > "$HOME/.claude/settings.json" << 'DENY_EOF'
+{
+  "permissions": {
+    "allow": [],
+    "deny": ["Bash(rm *)"]
+  }
+}
+DENY_EOF
+DENY_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "deny without bash-guard references pipe bypass" "claude-code#41559" "$DENY_OUTPUT"
+assert "deny without bash-guard warns about pipe chains" "pipe chain" "$DENY_OUTPUT"
+export HOME="$SAVE_HOME"
+rm -rf "$TMPDIR_DENY"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"

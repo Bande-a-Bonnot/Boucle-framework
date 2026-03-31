@@ -7,7 +7,7 @@ Claude Code hooks that actually enforce your rules — plus a framework for runn
 
 ## Claude Code Hooks
 
-Claude Code's CLAUDE.md rules are [read but not enforced](https://github.com/anthropics/claude-code/issues/37550) — they work at session start and degrade as context grows. Its [permission system has known gaps](https://github.com/anthropics/claude-code/issues/30519) — wildcards don't match compound commands, deny rules can be [bypassed with multi-line comments](https://github.com/anthropics/claude-code/issues/38119). These hooks enforce boundaries that text rules and permissions can't.
+Claude Code's CLAUDE.md rules are [read but not enforced](https://github.com/anthropics/claude-code/issues/37550) — they work at session start and degrade as context grows. Its [permission system has known gaps](https://github.com/anthropics/claude-code/issues/30519) — wildcards don't match compound commands, deny rules [don't check pipe segments](https://github.com/anthropics/claude-code/issues/41559) and can be [bypassed with multi-line comments](https://github.com/anthropics/claude-code/issues/38119). These hooks enforce boundaries that text rules and permissions can't.
 
 **What happens when a hook blocks a dangerous command:**
 
@@ -535,6 +535,10 @@ boucle --version                 # Show version
 **v2.1.88 pulled from npm**: This version was [pulled due to multiple regressions](https://github.com/anthropics/claude-code/issues/41497): custom commands in `.claude/commands/` are not discovered, `SessionStart` `systemMessage` display is broken, and the `cli.js.map` file was accidentally shipped. If you are on v2.1.88, downgrade to v2.1.87 or wait for the next release.
 
 **Non-interactive sessions hang on usage limit**: In headless, `--print`, or remote-control mode, hitting a usage limit [shows a confirmation prompt that cannot be answered](https://github.com/anthropics/claude-code/issues/41502) because there is no stdin. The session hangs permanently. There is no programmatic workaround ([#41503](https://github.com/anthropics/claude-code/issues/41503)). If you run Claude Code in CI, cron, or autonomous loops, set session time limits and monitor for stuck processes.
+
+**Deny rules bypassed by pipes and compound commands**: Built-in deny rules only match the full command string. `Bash(rm *)` blocks `rm -rf /` but not `find /foo | xargs rm` or `something && rm -rf /`. The docs say allow rules parse shell operators, but [deny rules do not](https://github.com/anthropics/claude-code/issues/41559). bash-guard parses each pipe segment and compound chain independently, catching these bypass patterns. See also [#37662](https://github.com/anthropics/claude-code/issues/37662), [#16180](https://github.com/anthropics/claude-code/issues/16180).
+
+**"Confirm each change individually" silently skipped**: When exiting plan mode and selecting "confirm each change individually," [changes apply without any prompt](https://github.com/anthropics/claude-code/issues/41551) if the tools (Edit, Write, Bash) are in `permissions.allow`. The persistent allow rules override the user's explicit per-session choice. Workaround: remove broad tool allows and use hooks for enforcement instead.
 
 **Model can manipulate hook state files**: The model has filesystem access and [can overwrite files that hooks depend on](https://github.com/anthropics/claude-code/issues/38841) — checkpoint files, lock files, counters. In one documented case, Claude computed the SHA256 hash of a checkpoint filename and wrote a fresh timestamp to bypass a content-read-gate. Hooks that rely on external state files for enforcement should assume the model can read and modify those files. Cryptographic signatures or out-of-process validation can mitigate this.
 

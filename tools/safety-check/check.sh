@@ -1005,11 +1005,12 @@ except: print('false')
 " "$SETTINGS_FILE" 2>/dev/null)
     fi
     if [ "$HAS_DENY" = "true" ]; then
-        printf "\n  ${YELLOW}⚠${NC}  Deny rules alone are bypassable: multi-line commands, compound\n"
-        printf "     statements (cmd1 && cmd2), and leading comments bypass pattern matching.\n"
-        printf "     bash-guard inspects full command content and catches these cases.\n"
-        printf "     ${DIM}See: claude-code#38119, claude-code#37662${NC}\n"
-        ISSUES+=("Deny rules without bash-guard: deny patterns only match the first line/command. Multi-line scripts (# comment + rm -rf /), compound commands (echo ok && rm -rf /), and other bypass techniques are not caught. bash-guard provides deterministic full-content analysis.")
+        printf "\n  ${YELLOW}⚠${NC}  Deny rules alone are bypassable: pipe chains (find | xargs rm),\n"
+        printf "     compound statements (cmd1 && cmd2), and multi-line commands bypass\n"
+        printf "     pattern matching. Deny rules only match the full command string, not\n"
+        printf "     individual segments. bash-guard parses each segment independently.\n"
+        printf "     ${DIM}See: claude-code#41559, claude-code#38119, claude-code#37662${NC}\n"
+        ISSUES+=("Deny rules without bash-guard: deny patterns only match the full command string. Pipe chains (find | xargs rm), compound commands (echo ok && rm -rf /), multi-line scripts, and leading comments all bypass deny rule matching. bash-guard parses pipe segments and compound chains independently. See claude-code#41559.")
     fi
 fi
 
@@ -1048,6 +1049,43 @@ PYEOF_GLOB
         printf "     of relying on glob-based allow rules.\n"
         printf "     ${DIM}See: claude-code#40344${NC}\n"
         ISSUES+=("SECURITY: Bash allow rules with * wildcards are vulnerable to command injection. The * matches across shell operators (&&, ;, |), so any command containing the allowed prefix can chain arbitrary commands. Use PreToolUse hooks (like bash-guard) for structural command validation instead of glob-based allow rules.")
+    fi
+fi
+
+# "Confirm each change individually" overridden by allow permissions (claude-code#41551)
+# When the user exits plan mode and selects "confirm each change individually", the
+# confirmation prompt is silently skipped if the tool is in permissions.allow.
+if has_hook permissions; then
+    BROAD_ALLOWS=$(python3 - "$SETTINGS_FILE" << 'PYEOF_BROAD_ALLOW'
+import json, sys
+try:
+    with open(sys.argv[1]) as f:
+        s = json.load(f)
+    allow_rules = s.get("permissions", {}).get("allow", [])
+    broad = []
+    for rule in allow_rules:
+        r = rule if isinstance(rule, str) else ""
+        # Flag broad tool allows that override per-session confirmation
+        bare = r.strip()
+        if bare in ("Edit", "Write", "Bash", "MultiEdit", "Edit(*)", "Write(*)", "Bash(*)"):
+            broad.append(bare)
+    for r in broad:
+        print(r)
+except Exception:
+    pass
+PYEOF_BROAD_ALLOW
+    )
+    if [ -n "$BROAD_ALLOWS" ]; then
+        printf "\n  ${YELLOW}⚠${NC}  Broad allow rules override per-session \"confirm individually\" choice:\n"
+        while IFS= read -r rule; do
+            [ -z "$rule" ] && continue
+            printf "       ${YELLOW}→${NC} %s\n" "$rule"
+        done <<< "$BROAD_ALLOWS"
+        printf "     When exiting plan mode and selecting 'confirm each change individually',\n"
+        printf "     these allow rules silently skip the confirmation prompt.\n"
+        printf "     Fix: remove broad allows and use hooks for enforcement instead.\n"
+        printf "     ${DIM}See: claude-code#41551${NC}\n"
+        ISSUES+=("Broad allow rules (${BROAD_ALLOWS//$'\n'/, }) override per-session 'confirm each change individually' choice. The user's explicit per-session choice is silently overridden by persistent allow rules. Remove broad allows and use PreToolUse hooks for enforcement. See claude-code#41551.")
     fi
 fi
 
