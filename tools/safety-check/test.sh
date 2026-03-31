@@ -3221,6 +3221,68 @@ unset CLAUDE_CODE_SIMPLE
 export HOME="$SAVE_HOME"
 rm -rf "$TMPDIR_SIMPLE1"
 
+# === Test: WorktreeCreate hook triggers #41614 hang warning ===
+TMPDIR_WTC2=$(mktemp -d)
+SAVE_HOME="$HOME"
+export HOME="$TMPDIR_WTC2"
+mkdir -p "$TMPDIR_WTC2/.claude"
+echo '{}' > "$TMPDIR_WTC2/.claude/settings.json"
+mkdir -p "$TMPDIR_WTC2/project/.claude"
+cat > "$TMPDIR_WTC2/project/.claude/settings.json" << 'WTC2EOF'
+{
+  "hooks": {
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo ok"
+          }
+        ]
+      }
+    ]
+  }
+}
+WTC2EOF
+WTC2_OUTPUT=$(cd "$TMPDIR_WTC2/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "WorktreeCreate hang warning" "hang indefinitely" "$WTC2_OUTPUT"
+assert "WorktreeCreate hang warning mentions 41614" "41614" "$WTC2_OUTPUT"
+export HOME="$SAVE_HOME"
+rm -rf "$TMPDIR_WTC2"
+
+# === Test: bypassPermissions triggers .claude/ sensitive-file warning ===
+TMPDIR_SENS=$(mktemp -d)
+SAVE_HOME="$HOME"
+export HOME="$TMPDIR_SENS"
+mkdir -p "$TMPDIR_SENS/.claude"
+cat > "$TMPDIR_SENS/.claude/settings.json" << 'SENSEOF'
+{
+  "permissions": {
+    "permissionMode": "bypassPermissions"
+  }
+}
+SENSEOF
+mkdir -p "$TMPDIR_SENS/project/.claude"
+echo '{}' > "$TMPDIR_SENS/project/.claude/settings.json"
+SENS_OUTPUT=$(cd "$TMPDIR_SENS/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "bypassPermissions triggers sensitive-file warning" "sensitive-file prompt" "$SENS_OUTPUT"
+assert "sensitive-file warning mentions 41615" "41615" "$SENS_OUTPUT"
+export HOME="$SAVE_HOME"
+rm -rf "$TMPDIR_SENS"
+
+# === Test: no bypassPermissions means no sensitive-file warning ===
+TMPDIR_NOSENS=$(mktemp -d)
+SAVE_HOME="$HOME"
+export HOME="$TMPDIR_NOSENS"
+mkdir -p "$TMPDIR_NOSENS/.claude"
+echo '{}' > "$TMPDIR_NOSENS/.claude/settings.json"
+mkdir -p "$TMPDIR_NOSENS/project/.claude"
+echo '{}' > "$TMPDIR_NOSENS/project/.claude/settings.json"
+NOSENS_OUTPUT=$(cd "$TMPDIR_NOSENS/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no bypassPermissions means no sensitive-file warning" "sensitive-file prompt" "$NOSENS_OUTPUT"
+export HOME="$SAVE_HOME"
+rm -rf "$TMPDIR_NOSENS"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
