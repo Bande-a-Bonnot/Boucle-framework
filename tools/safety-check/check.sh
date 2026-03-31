@@ -580,6 +580,12 @@ if has_hook_type "PermissionDenied"; then
     WARNINGS+=("PermissionDenied hooks are configured. This event fires after auto mode classifier denials (new in v2.1.88). Return {\"retry\": true} in hookSpecificOutput to tell the model it can retry the denied operation. Without this hook, denied operations are not retried. Note: this event is not yet documented in the official hooks reference. (see claude-code#41261)")
 fi
 
+# SessionStart hook systemMessage not rendered in terminal (claude-code#41285)
+# The hook fires and additionalContext is injected, but systemMessage visual output is missing.
+if has_hook_type "SessionStart"; then
+    WARNINGS+=("SessionStart hooks are configured but their systemMessage field is no longer displayed in the terminal (v2.1.88 regression). The hook runs and additionalContext is still injected into model context, but the visual feedback that used to appear (e.g. 'SessionStart:startup says: ...') is silently dropped. If your SessionStart hook uses systemMessage for operator notifications or session identification, the output will not be visible. (see claude-code#41285)")
+fi
+
 # PreToolUse hooks on EnterPlanMode — hook output deprioritized (claude-code#41051)
 _check_planmode_matcher() {
     local sf="$1"

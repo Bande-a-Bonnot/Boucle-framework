@@ -2621,6 +2621,85 @@ PDSC_OUTPUT=$(cd "$TMPDIR_PDSC/project" && bash "$CHECK_SCRIPT" 2>&1) || true
 assert "supply-chain detects PermissionDenied hooks with external URL" "contacts external URL" "$PDSC_OUTPUT"
 rm -rf "$TMPDIR_PDSC"
 
+# === Test: SessionStart hook triggers systemMessage rendering warning (#41285) ===
+TMPDIR_SS285=$(mktemp -d)
+export HOME="$TMPDIR_SS285"
+mkdir -p "$TMPDIR_SS285/.claude"
+echo '{}' > "$TMPDIR_SS285/.claude/settings.json"
+mkdir -p "$TMPDIR_SS285/project/.claude"
+cat > "$TMPDIR_SS285/project/.claude/settings.json" << 'SS285EOF'
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"systemMessage\": \"Session started\"}'"
+          }
+        ]
+      }
+    ]
+  }
+}
+SS285EOF
+SS285_OUTPUT=$(cd "$TMPDIR_SS285/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "SessionStart hook triggers systemMessage warning" "systemMessage field is no longer displayed" "$SS285_OUTPUT"
+assert "SessionStart warning mentions 41285" "41285" "$SS285_OUTPUT"
+rm -rf "$TMPDIR_SS285"
+
+# === Test: No SessionStart hook means no #41285 warning ===
+TMPDIR_NOSS285=$(mktemp -d)
+export HOME="$TMPDIR_NOSS285"
+mkdir -p "$TMPDIR_NOSS285/.claude"
+echo '{}' > "$TMPDIR_NOSS285/.claude/settings.json"
+mkdir -p "$TMPDIR_NOSS285/project/.claude"
+cat > "$TMPDIR_NOSS285/project/.claude/settings.json" << 'NOSS285EOF'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo test"
+          }
+        ]
+      }
+    ]
+  }
+}
+NOSS285EOF
+NOSS285_OUTPUT=$(cd "$TMPDIR_NOSS285/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no SessionStart hook means no 41285 warning" "systemMessage field is no longer displayed" "$NOSS285_OUTPUT"
+rm -rf "$TMPDIR_NOSS285"
+
+# === Test: SessionStart in user settings also triggers #41285 warning ===
+TMPDIR_SSUSER285=$(mktemp -d)
+export HOME="$TMPDIR_SSUSER285"
+mkdir -p "$TMPDIR_SSUSER285/.claude"
+cat > "$TMPDIR_SSUSER285/.claude/settings.json" << 'SSUSER285EOF'
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /tmp/session-start.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+SSUSER285EOF
+mkdir -p "$TMPDIR_SSUSER285/project/.claude"
+echo '{}' > "$TMPDIR_SSUSER285/project/.claude/settings.json"
+SSUSER285_OUTPUT=$(cd "$TMPDIR_SSUSER285/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "user-level SessionStart hook also triggers 41285 warning" "systemMessage field is no longer displayed" "$SSUSER285_OUTPUT"
+rm -rf "$TMPDIR_SSUSER285"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
