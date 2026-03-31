@@ -123,6 +123,7 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
     Write-Host "  backup list           Show available backups"
     Write-Host "  restore               Restore the most recent backup"
     Write-Host "  restore <file>        Restore a specific backup"
+    Write-Host "  check                 Run safety audit on your Claude Code setup"
     Write-Host "  doctor                Diagnose installation health (files, settings, permissions)"
     Write-Host "  help                  Show this help message"
     Write-Host ""
@@ -140,6 +141,40 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
     Write-Host "  install.ps1 recommended           # Start here"
     Write-Host "  install.ps1 all                    # Everything at once"
     Write-Host "  install.ps1 read-once git-safe     # Pick specific hooks"
+    exit 0
+}
+
+# Handle check subcommand — download and run safety-check audit
+if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'check') {
+    Write-Host "Running safety audit..." -ForegroundColor White
+    Write-Host ""
+
+    $checkUrl = "https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh"
+    $tmpFile = [System.IO.Path]::GetTempFileName()
+
+    try {
+        # Safety-check is bash-only; check for bash availability
+        $bashCmd = Get-Command bash -ErrorAction SilentlyContinue
+        if (-not $bashCmd) {
+            Write-Host "Warning: safety-check requires bash (Git Bash, WSL, or similar)." -ForegroundColor Yellow
+            Write-Host "Install Git for Windows (includes bash) or run under WSL." -ForegroundColor Yellow
+            exit 1
+        }
+
+        Invoke-WebRequest -Uri $checkUrl -OutFile $tmpFile -UseBasicParsing -ErrorAction Stop
+        if ((Get-Item $tmpFile).Length -gt 0) {
+            & bash $tmpFile
+        } else {
+            Write-Host "Warning: downloaded empty file. Check your network connection." -ForegroundColor Yellow
+            exit 1
+        }
+    } catch {
+        Write-Host "Warning: could not download safety-check. Check your network connection." -ForegroundColor Yellow
+        Write-Host "  Error: $_" -ForegroundColor DarkGray
+        exit 1
+    } finally {
+        Remove-Item $tmpFile -ErrorAction SilentlyContinue
+    }
     exit 0
 }
 

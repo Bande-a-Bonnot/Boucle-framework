@@ -1013,5 +1013,31 @@ else
 fi
 
 echo ""
+echo "=== Check Subcommand Tests ==="
+
+# Check subcommand appears in help
+output=$(bash "$SCRIPT_DIR/install.sh" help 2>&1)
+if echo "$output" | grep -q "check"; then
+  pass "help lists check subcommand"
+else
+  fail "help does not list check subcommand"
+fi
+
+if echo "$output" | grep -q "safety audit"; then
+  pass "help describes check as safety audit"
+else
+  fail "help missing safety audit description for check"
+fi
+
+# Check subcommand requires network (will fail in test env, but should not crash)
+output=$(bash "$SCRIPT_DIR/install.sh" check 2>&1 || true)
+# It should either run safety-check or show a network error, not crash
+if echo "$output" | grep -qi "safety audit\|Running\|Warning.*network\|Warning.*download"; then
+  pass "check subcommand runs without crash"
+else
+  fail "check subcommand did not produce expected output: $output"
+fi
+
+echo ""
 echo "Results: $PASS passed, $FAIL failed (total $((PASS + FAIL)))"
 [ "$FAIL" -eq 0 ] || exit 1
