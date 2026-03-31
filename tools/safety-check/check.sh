@@ -1148,6 +1148,46 @@ if [ -L ".claude" ] || [ -L ".claude/commands" ] || [ -L ".claude/hooks" ]; then
     WARNINGS+=("Symlinked .claude directories detected:${SYMLINK_TARGETS}. On Linux, slash commands from symlinked .claude/commands/ are not discovered (regression). Hooks and skills may also fail to load if .claude/ itself is a symlink. Workaround: copy files instead of symlinking, or use a post-checkout git hook to sync. (see claude-code#41451)")
 fi
 
+# Project-scoped plugins active outside projectPath: #41523
+if [ -f "${HOME}/.claude/plugins.json" ]; then
+    LEAKED_PLUGINS=$(python3 -c "
+import json, sys
+try:
+    with open(sys.argv[1]) as f: plugins = json.load(f)
+    leaked = []
+    for p in plugins if isinstance(plugins, list) else []:
+        scope = p.get('scope', '')
+        path = p.get('projectPath', '')
+        if scope in ('project', 'local') and path:
+            leaked.append(p.get('name', path))
+    if leaked:
+        print(','.join(leaked[:5]))
+except Exception:
+    pass
+" "${HOME}/.claude/plugins.json" 2>/dev/null)
+    if [ -n "$LEAKED_PLUGINS" ]; then
+        WARNINGS+=("Project-scoped plugins detected: ${LEAKED_PLUGINS}. These plugins fire in ALL directories, not just their declared projectPath. A plugin meant for one project runs its hooks and tools everywhere. Audit ~/.claude/plugins.json and remove unwanted entries. (see claude-code#41523)")
+    fi
+fi
+
+# MCP tool calls silently rejected by parameter value: #41528
+# Universal warning — affects anyone using MCP tools in allow lists
+if [ -f "$SETTINGS_FILE" ]; then
+    HAS_MCP_ALLOW=$(python3 -c "
+import json, sys
+try:
+    with open(sys.argv[1]) as f: s = json.load(f)
+    allows = s.get('permissions', {}).get('allow', [])
+    has_mcp = any('mcp__' in str(a) for a in allows)
+    print('true' if has_mcp else 'false')
+except Exception:
+    print('false')
+" "$SETTINGS_FILE" 2>/dev/null || echo "false")
+    if [ "$HAS_MCP_ALLOW" = "true" ]; then
+        WARNINGS+=("MCP tools in your permission allow list may be silently rejected for certain parameter values. The same tool works with some parameters but is blocked without a prompt for others. If MCP calls fail silently, check if the parameter value triggers stricter matching. (see claude-code#41528)")
+    fi
+fi
+
 # === Section 7: Rule Enforcement ===
 echo ""
 printf "${BLUE}Rule Enforcement${NC}\n"

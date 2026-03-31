@@ -115,6 +115,10 @@ Beyond the scored checks, safety-check detects platform bugs and configuration p
 | WorktreeCreate ignored | EnterWorktree tool does not fire WorktreeCreate/WorktreeRemove hooks ([#36205](https://github.com/anthropics/claude-code/issues/36205)) |
 | TaskCreated observe-only | TaskCreated hooks cannot block task creation; decision field is ignored |
 | SubagentStop inheritance | Background agents may not inherit all hook configurations ([#40818](https://github.com/anthropics/claude-code/issues/40818)) |
+| Plan-mode writes | Model writes and pushes code despite plan-mode read-only ([#41517](https://github.com/anthropics/claude-code/issues/41517), [#40324](https://github.com/anthropics/claude-code/issues/40324)) |
+| Plugin scope leak | Project-scoped plugins fire in all directories ([#41523](https://github.com/anthropics/claude-code/issues/41523)) |
+| MCP silent rejection | MCP tool calls silently rejected by parameter value ([#41528](https://github.com/anthropics/claude-code/issues/41528)) |
+| Bash cd+pipe deadlock | `cd /path && cmd \| filter` auto-backgrounded, session hangs ([#41509](https://github.com/anthropics/claude-code/issues/41509)) |
 
 ### Hook event types scanned
 
