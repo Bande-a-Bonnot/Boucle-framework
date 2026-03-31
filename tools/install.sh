@@ -72,6 +72,7 @@ if [ $# -gt 0 ] && { [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]
   echo "  backup list           Show available backups"
   echo "  restore               Restore the most recent backup"
   echo "  restore <file>        Restore a specific backup"
+  echo "  check                 Run safety audit on your Claude Code setup"
   echo "  doctor                Diagnose installation health (files, settings, permissions)"
   echo "  help                  Show this help message"
   echo ""
@@ -94,7 +95,41 @@ if [ $# -gt 0 ] && { [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]
   echo "  install.sh uninstall read-once    # Remove one hook"
   echo "  install.sh backup                 # Snapshot before updating Claude Code"
   echo "  install.sh restore                # Restore after a wipe"
+  echo "  install.sh check                  # Run safety audit"
   echo "  install.sh doctor                 # Check installation health"
+  exit 0
+fi
+
+# Handle check subcommand — download and run safety-check audit
+if [ $# -gt 0 ] && [ "$1" = "check" ]; then
+  DL="curl -fsSL"
+  if ! command -v curl >/dev/null 2>&1; then
+    if command -v wget >/dev/null 2>&1; then
+      DL="wget -q -O -"
+    else
+      echo "Error: curl or wget required" >&2
+      exit 1
+    fi
+  fi
+
+  echo -e "${BOLD}Running safety audit...${RESET}"
+  echo ""
+
+  tmpfile=$(mktemp)
+  trap 'rm -f "$tmpfile"' EXIT
+
+  if $DL "https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh" > "$tmpfile" 2>/dev/null; then
+    if [ -s "$tmpfile" ]; then
+      chmod +x "$tmpfile"
+      bash "$tmpfile"
+    else
+      echo -e "${YELLOW}Warning: downloaded empty file. Check your network connection.${RESET}" >&2
+      exit 1
+    fi
+  else
+    echo -e "${YELLOW}Warning: could not download safety-check. Check your network connection.${RESET}" >&2
+    exit 1
+  fi
   exit 0
 fi
 
