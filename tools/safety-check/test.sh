@@ -2323,6 +2323,7 @@ BYPASSEOF
 
 BYPASS_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert "bypass+plan mode warning" "plan mode does NOT deactivate bypass" "$BYPASS_OUTPUT"
+assert "bypass+plan mode references #41545" "claude-code#41545" "$BYPASS_OUTPUT"
 rm -rf "$TMPDIR_BYPASS"
 
 # === Test: No bypass warning when bypassPermissions is false ===
@@ -3067,6 +3068,7 @@ chmod +x "$TMPDIR_V88/bin/claude"
 V88_OUTPUT=$(PATH="$TMPDIR_V88/bin:$PATH" bash "$CHECK_SCRIPT" 2>&1) || true
 assert "v2.1.88 warning shown" "pulled from npm" "$V88_OUTPUT"
 assert "v2.1.88 references commands issue" "claude-code#41497" "$V88_OUTPUT"
+assert "v2.1.88 references skills regression" "claude-code#41530" "$V88_OUTPUT"
 export HOME="$SAVE_HOME"
 rm -rf "$TMPDIR_V88"
 

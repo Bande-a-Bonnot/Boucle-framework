@@ -4,15 +4,63 @@ All notable changes to Boucle are documented here.
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-03-31
+
 ### Added
+
+#### enforce-hooks
+- **`--template` command** -- Generate starter enforcement configs: `--template minimal` (3 rules), `--template recommended` (8 rules), `--template strict` (12 rules). Each template produces a working `.claude/enforcements/*.json` file.
+- **`require-prior-read-file` condition type** -- Ensures the model reads specified files (CLAUDE.md, AGENTS.md, etc.) before taking action. Enforces startup reading order. Inspired by [#41473](https://github.com/anthropics/claude-code/issues/41473).
+- **Read-only / audit mode recipe** -- `tool-block` rules for Write/Edit/MultiEdit plus bash-guard for git push/commit. Blocks all writes while allowing reads and analysis.
+- **Common Problems table** -- 9 common enforcement issues mapped to solutions in README (plan-mode violations, skills override, permission resets, etc.).
+- **System/device command detection** -- Recognizes `shutdown`, `reboot`, `diskutil`, `fdisk`, and similar commands that affect the host system.
+- **Dot-prefixed path extraction fix** -- Correctly extracts paths like `.claude/`, `.vscode/` from CLAUDE.md rules.
+- **Expanded command recognition** -- Comma-separated command lists, tool-preference rules ([#41222](https://github.com/anthropics/claude-code/issues/41222)).
+
+#### safety-check
+- **Compact shareable summary** -- Generates a plain-text block with grade, hook count, and status for easy copy-paste sharing.
+- **Hook timing warning** -- Detects hooks that take >2s to execute, risking timeout ([#41310](https://github.com/anthropics/claude-code/issues/41310)).
+- **Self-execution warning** -- Detects hooks that call `claude` CLI recursively ([#41307](https://github.com/anthropics/claude-code/issues/41307)).
+- **Worktree GIT_INDEX_FILE leak** -- Warns when hooks inherit GIT_INDEX_FILE from parent git operations ([#41314](https://github.com/anthropics/claude-code/issues/41314)).
+- **Deprecated format warning** -- Detects hooks using `decision:block` without `hookSpecificOutput.permissionDecision:deny` wrapper.
+- **SessionStart systemMessage regression** -- Warns about rendering regression in system message injection ([#41285](https://github.com/anthropics/claude-code/issues/41285)).
+- **PermissionDenied hook event** -- Scans for the new PermissionDenied event type ([#41261](https://github.com/anthropics/claude-code/issues/41261)).
+- **settings.local.json Edit desync** -- Warns when local settings diverge from project settings ([#41259](https://github.com/anthropics/claude-code/issues/41259)).
+- **Skills override CLAUDE.md** -- Warns when built-in skills can override CLAUDE.md rules ([#41437](https://github.com/anthropics/claude-code/issues/41437)).
+- **v2.1.88 version warning** -- Detects v2.1.88 installation (pulled release with multiple regressions).
+- **Non-interactive hang detection** -- Warns when `-p` mode hits usage limits causing silent hangs.
+- **Plugin scope leak** -- Warns about project-scoped plugins loading outside their declared project ([#41523](https://github.com/anthropics/claude-code/issues/41523)).
+- **MCP silent rejection** -- Warns about MCP tool calls silently rejected based on parameter values ([#41528](https://github.com/anthropics/claude-code/issues/41528)).
+- **Background agent control** -- Warns about background agents running without hook enforcement ([#41461](https://github.com/anthropics/claude-code/issues/41461)).
+- **Ripgrep permission** -- Warns about Grep tool bypassing file permission checks ([#41463](https://github.com/anthropics/claude-code/issues/41463)).
+- **Symlinked .claude dirs** -- Warns about symlinked .claude directories causing config confusion ([#41451](https://github.com/anthropics/claude-code/issues/41451)).
+- **Settings.json integrity warning** -- Warns when global settings.json contains keys that plugin operations silently erase ([#41137](https://github.com/anthropics/claude-code/issues/41137), [#40714](https://github.com/anthropics/claude-code/issues/40714)).
 
 #### bash-guard
 - **pip install --target detection** -- Blocks `pip install --target <path>` which writes packages to arbitrary directories, bypassing sandbox confinement ([#41103](https://github.com/anthropics/claude-code/issues/41103)).
 - **pip install --user detection** -- Blocks `pip install --user` which writes to `~/.local`, potentially outside the sandbox.
 - **Deep path traversal detection** -- Blocks commands with 4+ levels of `../` (e.g., `../../../../tmp/evil.py`), a common sandbox escape vector.
 
-#### safety-check
-- **Settings.json integrity warning** -- Warns when global settings.json contains keys (`mcpServers`, `permissions`, `hooks`) that plugin operations silently erase ([#41137](https://github.com/anthropics/claude-code/issues/41137), [#40714](https://github.com/anthropics/claude-code/issues/40714)).
+#### installer
+- **`check` subcommand** -- Downloads and runs safety-check audit from the installer, no separate install needed.
+
+### Changed
+- **All hooks migrated to `hookSpecificOutput` format** -- 27 hook files updated from deprecated `{"decision":"block","reason":"..."}` to `{"hookSpecificOutput":{"permissionDecision":"deny","reason":"..."}}`. This is the format recommended by Claude Code v2.1.85+. The old format still works but may be removed in a future Claude Code version.
+
+### Documented
+- **6 new Known Limitations** in enforce-hooks README: `--dangerously-skip-permissions` overrides plan mode ([#41545](https://github.com/anthropics/claude-code/issues/41545)), skills subsystem regression in v2.1.88 ([#41530](https://github.com/anthropics/claude-code/issues/41530)), project-scoped plugins load outside declared project ([#41523](https://github.com/anthropics/claude-code/issues/41523)), MCP tool calls silently rejected ([#41528](https://github.com/anthropics/claude-code/issues/41528)), Bash `cd`+pipe deadlocks ([#41509](https://github.com/anthropics/claude-code/issues/41509)), `bypassPermissions` does not suppress SKILL.md prompts ([#41526](https://github.com/anthropics/claude-code/issues/41526)).
+- **README Common Problems table** mapping 9 frequent issues to solutions.
+- **README troubleshooting** entries for hook stderr path leak, v2.1.88 changes, PowerShell 7+ requirement.
+
+### Fixed
+- **grep -c zero-match arithmetic error** on WSL/Linux ([#4](https://github.com/Bande-a-Bonnot/Boucle-framework/issues/4)). Thanks @floatinglogic.
+- **enforce: dot-prefixed path extraction** -- `.claude/` and `.vscode/` paths now correctly detected in CLAUDE.md rules.
+- **Stale test counts and version** in README and CHANGELOG.
+
+### Stats
+- 195 Rust tests (unchanged)
+- Hook tests: bash-guard ~713, safety-check ~267, git-safe ~135, file-guard ~121, session-log ~107, installer ~84, read-once ~77, enforce-hooks ~71 (472 self-test assertions), worktree-guard ~64, branch-guard ~57, diagnose ~40
+- Total: ~1736+ tests
 
 ## [0.10.0] - 2026-03-30
 

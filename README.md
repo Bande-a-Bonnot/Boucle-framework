@@ -567,11 +567,11 @@ bash tools/worktree-guard/test.sh
 
 ## Status
 
-**v0.10.0** — 195 Rust tests + ~1700 hook tests (bash + PowerShell). Zero clippy warnings. CI on Ubuntu + macOS + Windows. Docker support.
+**v0.11.0** — 195 Rust tests + ~1736 hook tests (bash + PowerShell). Zero clippy warnings. CI on Ubuntu + macOS + Windows. Docker support.
 
-New in v0.10.0: Installer CLI (install, uninstall, list, upgrade, doctor, backup/restore). Content guards for enforce-hooks (`content_guard`, `scoped_content_guard`). Safety-check scans all 11 hook event types. JSONC settings.json handling. read-once PowerShell CLI. Symlink bypass security fix. See [CHANGELOG](CHANGELOG.md) for details.
+New in v0.11.0: All hooks migrated to `hookSpecificOutput` format (27 files). enforce-hooks `--template` command and `require-prior-read-file` condition. safety-check: 15+ new warnings (v2.1.88 regressions, plugin scope leak, plan-mode+bypass overlap, MCP silent rejection). bash-guard: pip sandbox escape detection. See [CHANGELOG](CHANGELOG.md) for details.
 
-15 stars, 3 external contributors, 2 forks.
+16 stars, 4 external contributors, 2 forks.
 
 ## Contributing
 
