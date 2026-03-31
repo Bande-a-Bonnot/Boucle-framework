@@ -189,8 +189,8 @@ echo ""
 echo "9. Stats tracking"
 STATS="${TEST_DIR}/.claude/read-once/stats.jsonl"
 if [ -f "$STATS" ]; then
-  HIT_COUNT=$(grep -c '"event":"hit"' "$STATS" 2>/dev/null || echo 0)
-  MISS_COUNT=$(grep -c '"event":"miss"' "$STATS" 2>/dev/null || echo 0)
+  HIT_COUNT=$(grep -c '"event":"hit"' "$STATS" 2>/dev/null || true)
+  MISS_COUNT=$(grep -c '"event":"miss"' "$STATS" 2>/dev/null || true)
   assert_eq "Stats has hit events" "1" "$([ "$HIT_COUNT" -gt 0 ] && echo 1 || echo 0)"
   assert_eq "Stats has miss events" "1" "$([ "$MISS_COUNT" -gt 0 ] && echo 1 || echo 0)"
 else
@@ -233,7 +233,7 @@ OUTPUT=$(run_hook "$(make_input Read "$TTL_FILE" "$TTL_SESSION")")
 assert_empty "TTL: read after expiry passes through" "$OUTPUT"
 
 # Verify expired event in stats
-EXPIRED_COUNT=$(grep -c '"event":"expired"' "$STATS" 2>/dev/null || echo 0)
+EXPIRED_COUNT=$(grep -c '"event":"expired"' "$STATS" 2>/dev/null || true)
 assert_eq "TTL: expired event logged in stats" "1" "$([ "$EXPIRED_COUNT" -gt 0 ] && echo 1 || echo 0)"
 
 # --- Test 11: Custom TTL via environment variable ---
@@ -303,7 +303,7 @@ echo "modified" > "$CHANGE_FILE"
 # Second read after change
 run_hook "$(make_input Read "$CHANGE_FILE" "$CHANGE_SESSION")" > /dev/null
 
-CHANGED_COUNT=$(grep -c '"event":"changed"' "$STATS" 2>/dev/null || echo 0)
+CHANGED_COUNT=$(grep -c '"event":"changed"' "$STATS" 2>/dev/null || true)
 assert_eq "Changed file event logged" "1" "$([ "$CHANGED_COUNT" -gt 0 ] && echo 1 || echo 0)"
 
 # --- Test 14: Diff mode — small change shows diff instead of full re-read ---
@@ -393,7 +393,7 @@ assert_contains "Diff unchanged: normal hit message" "already in context" "$OUTP
 echo ""
 echo "17. Diff mode — diff events in stats"
 
-DIFF_EVENTS=$(grep -c '"event":"diff"' "$STATS" 2>/dev/null || echo 0)
+DIFF_EVENTS=$(grep -c '"event":"diff"' "$STATS" 2>/dev/null || true)
 assert_eq "Diff: diff events logged in stats" "1" "$([ "$DIFF_EVENTS" -gt 0 ] && echo 1 || echo 0)"
 
 # --- Test 18: Diff mode disabled — changed file gets full re-read ---
