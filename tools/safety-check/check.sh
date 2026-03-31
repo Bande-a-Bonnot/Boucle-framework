@@ -222,7 +222,7 @@ if command -v claude >/dev/null 2>&1; then
         fi
         # v2.1.88: pulled from npm — custom commands broken + cli.js.map accidentally shipped (claude-code#41497)
         if [ "$CLI_MINOR" -eq 88 ] 2>/dev/null; then
-            WARNINGS+=("Claude CLI v$CLI_VERSION: this version was pulled from npm. Known issues: custom commands in .claude/commands/ are not discovered (claude-code#41497), SessionStart systemMessage display broken (claude-code#41285). Downgrade to v2.1.87 or wait for the next release.")
+            WARNINGS+=("Claude CLI v$CLI_VERSION: this version was pulled from npm. Known issues: custom commands in .claude/commands/ are not discovered (claude-code#41497), SessionStart systemMessage display broken (claude-code#41285), custom skills (.claude/skills/) completely non-functional (claude-code#41530). Downgrade to v2.1.87 or wait for the next release.")
         fi
     fi
 fi
@@ -499,7 +499,7 @@ try:
 except: pass
 " "$SETTINGS_FILE" 2>/dev/null)
     if [ "$HAS_BYPASS" = "yes" ]; then
-        WARNINGS+=("bypassPermissions is enabled globally. Note: entering plan mode does NOT deactivate bypass permissions — the model can execute write operations during what you expect to be a read-only analysis phase. PreToolUse hooks fire regardless of both modes and are the only reliable constraint during plan+bypass overlap. (see claude-code#40623)")
+        WARNINGS+=("bypassPermissions is enabled globally. Note: entering plan mode does NOT deactivate bypass permissions — the model can execute write operations during what you expect to be a read-only analysis phase (claude-code#41545 confirms this with --dangerously-skip-permissions). PreToolUse hooks fire regardless of both modes and are the only reliable constraint during plan+bypass overlap. (see claude-code#40623, claude-code#41545)")
     fi
 fi
 
