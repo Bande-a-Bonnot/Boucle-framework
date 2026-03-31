@@ -25,7 +25,7 @@ assert_blocked() {
   TOTAL=$((TOTAL + 1))
 
   result=$(echo "$input" | bash "$HOOK" 2>/dev/null) || true
-  if echo "$result" | grep -q '"decision":"block"'; then
+  if echo "$result" | grep -q '"permissionDecision":"deny"'; then
     PASS=$((PASS + 1))
     echo "  PASS: $desc"
   else
@@ -40,7 +40,7 @@ assert_allowed() {
   TOTAL=$((TOTAL + 1))
 
   result=$(echo "$input" | bash "$HOOK" 2>/dev/null) || true
-  if echo "$result" | grep -q '"decision":"block"'; then
+  if echo "$result" | grep -q '"permissionDecision":"deny"'; then
     FAIL=$((FAIL + 1))
     echo "  FAIL: $desc (expected allow, got blocked: $result)"
   else
@@ -199,7 +199,7 @@ EOF
 
 TOTAL=$((TOTAL + 1))
 result=$(FILE_GUARD_DISABLED=1 echo '{"tool_name":"Write","tool_input":{"file_path":".env","content":"x"}}' | FILE_GUARD_DISABLED=1 bash "$HOOK" 2>/dev/null) || true
-if echo "$result" | grep -q '"decision":"block"'; then
+if echo "$result" | grep -q '"permissionDecision":"deny"'; then
   FAIL=$((FAIL + 1))
   echo "  FAIL: Disabled mode should allow everything"
 else
@@ -214,7 +214,7 @@ TOTAL=$((TOTAL + 1))
 old_config="$FILE_GUARD_CONFIG"
 export FILE_GUARD_CONFIG="$TMPDIR/nonexistent"
 result=$(echo '{"tool_name":"Write","tool_input":{"file_path":"/tmp/test/.env","content":"x"}}' | bash "$HOOK" 2>/dev/null) || true
-if echo "$result" | grep -q '"decision":"block"'; then
+if echo "$result" | grep -q '"permissionDecision":"deny"'; then
   FAIL=$((FAIL + 1))
   echo "  FAIL: No config should allow everything"
 else
@@ -288,7 +288,7 @@ fi
 
 # Verify reason field contains expected text
 TOTAL=$((TOTAL + 1))
-if echo "$result" | jq -e '.reason | test("file-guard")' >/dev/null 2>&1; then
+if echo "$result" | jq -e '.hookSpecificOutput.permissionDecisionReason | test("file-guard")' >/dev/null 2>&1; then
   PASS=$((PASS + 1))
   echo "  PASS: Block reason contains hook name"
 else
@@ -517,7 +517,7 @@ else
 fi
 
 TOTAL=$((TOTAL + 1))
-if echo "$result" | jq -e '.reason | test("denied")' >/dev/null 2>&1; then
+if echo "$result" | jq -e '.hookSpecificOutput.permissionDecisionReason | test("denied")' >/dev/null 2>&1; then
   PASS=$((PASS + 1))
   echo "  PASS: [deny] block reason says 'denied'"
 else
@@ -589,7 +589,7 @@ assert_blocked "Write with relative path blocked even with config" \
 # Verify the block message is helpful
 result=$(echo '{"tool_name":"Write","tool_input":{"file_path":"src/foo.ts","content":"x"}}' | bash "$HOOK" 2>/dev/null) || true
 TOTAL=$((TOTAL + 1))
-if echo "$result" | jq -e '.reason | test("relative path")' >/dev/null 2>&1; then
+if echo "$result" | jq -e '.hookSpecificOutput.permissionDecisionReason | test("relative path")' >/dev/null 2>&1; then
   PASS=$((PASS + 1))
   echo "  PASS: Relative path block reason mentions 'relative path'"
 else
@@ -598,7 +598,7 @@ else
 fi
 
 TOTAL=$((TOTAL + 1))
-if echo "$result" | jq -e '.reason | test("/")' >/dev/null 2>&1; then
+if echo "$result" | jq -e '.hookSpecificOutput.permissionDecisionReason | test("/")' >/dev/null 2>&1; then
   PASS=$((PASS + 1))
   echo "  PASS: Relative path block suggests absolute path"
 else

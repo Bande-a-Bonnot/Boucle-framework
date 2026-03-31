@@ -188,7 +188,12 @@ for rule in rules:
                 }
             }))
         else:
-            print(json.dumps({'decision': action, 'reason': full_message}))
+            print(json.dumps({
+                'hookSpecificOutput': {
+                    'permissionDecision': 'deny',
+                    'permissionDecisionReason': full_message
+                }
+            }))
         sys.exit(0)
 
 # No rules blocked

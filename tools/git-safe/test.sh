@@ -19,7 +19,7 @@ assert_blocked() {
   TOTAL=$((TOTAL + 1))
 
   result=$(echo "$input" | bash "$HOOK" 2>/dev/null || true)
-  if echo "$result" | grep -q '"decision":"block"'; then
+  if echo "$result" | grep -q '"permissionDecision":"deny"'; then
     PASS=$((PASS + 1))
     echo -e "  ${GREEN}PASS${NC}: $desc"
   else
@@ -34,7 +34,7 @@ assert_allowed() {
   TOTAL=$((TOTAL + 1))
 
   result=$(echo "$input" | bash "$HOOK" 2>/dev/null || true)
-  if echo "$result" | grep -q '"decision":"block"'; then
+  if echo "$result" | grep -q '"permissionDecision":"deny"'; then
     FAIL=$((FAIL + 1))
     echo -e "  ${RED}FAIL${NC}: $desc (expected allow, got: $result)"
   else
@@ -244,7 +244,7 @@ echo ""
 echo "Disable via env var:"
 TOTAL=$((TOTAL + 1))
 result=$(echo '{"tool_name":"Bash","tool_input":{"command":"git push --force origin feature"}}' | GIT_SAFE_DISABLED=1 bash "$HOOK" 2>/dev/null || true)
-if echo "$result" | grep -q '"decision":"block"'; then
+if echo "$result" | grep -q '"permissionDecision":"deny"'; then
   FAIL=$((FAIL + 1))
   echo -e "  ${RED}FAIL${NC}: disabled hook should allow everything"
 else

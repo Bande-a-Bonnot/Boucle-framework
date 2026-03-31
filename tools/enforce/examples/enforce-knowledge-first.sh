@@ -12,5 +12,5 @@ if [ -f "$LOG" ]; then
     exit 0
   fi
 fi
-echo '{"decision": "block", "reason": "Search docs/ with Grep before using WebSearch. (CLAUDE.md: Knowledge Retrieval @enforced)"}'
+echo '{"hookSpecificOutput": {"permissionDecision": "deny", "permissionDecisionReason": "Search docs/ with Grep before using WebSearch. (CLAUDE.md: Knowledge Retrieval @enforced)"}}'
 exit 0

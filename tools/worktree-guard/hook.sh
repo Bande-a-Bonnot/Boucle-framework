@@ -55,7 +55,7 @@ block() {
     msg="$msg $suggestion"
   fi
   log "BLOCK: $msg"
-  printf '{"decision":"block","reason":"%s"}\n' "$(echo "$msg" | sed 's/"/\\"/g')"
+  jq -cn --arg r "$msg" '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$r}}'
   exit 0
 }
 
