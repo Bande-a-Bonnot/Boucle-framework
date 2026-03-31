@@ -160,6 +160,7 @@ People hit the same enforcement gaps repeatedly. Here is what each looks like an
 | Read-only session ignored | "Only analyze, don't modify" leads to ALTER TABLE on staging ([#41063](https://github.com/anthropics/claude-code/issues/41063)) | `tool-block` Write/Edit/MultiEdit + `bash-guard` for destructive commands. See [Read-only](#read-only--audit-mode) recipe. |
 | Permission prompt bypassed | User clicks "No" but command executes anyway ([#40302](https://github.com/anthropics/claude-code/issues/40302)) | PreToolUse hooks fire before the permission prompt. A hook block prevents the tool call entirely. |
 | Skill/workflow overrides CLAUDE.md rules | Skill says "commit the plan" but CLAUDE.md says "never commit plans" — model follows the skill ([#41437](https://github.com/anthropics/claude-code/issues/41437)) | `file-guard` + `bash-guard` block the file writes and git commands regardless of skill instructions. See [Protect CLAUDE.md rules from skill overrides](#protect-claudemd-rules-from-skill-overrides) recipe. |
+| Startup reads skipped under context pressure | MEMORY.md/project.md reading order followed at 10% context, skipped at 80%+ ([#41473](https://github.com/anthropics/claude-code/issues/41473), [#40489](https://github.com/anthropics/claude-code/issues/40489)) | `require-prior-read-file` blocks Edit/Write until the specified file appears in the session log. See [Startup reading order](#startup-reading-order) recipe. |
 
 ## Recipes
 
@@ -312,6 +313,23 @@ The `file-guard` rules block Write/Edit to plan documents regardless of what a s
 **Why this works when CLAUDE.md alone does not:** Skills inject their instructions into the conversation alongside (or after) CLAUDE.md content. The model resolves the conflict by following whichever instruction is more specific or more recent — usually the skill. Hooks do not participate in this priority resolution. They fire on the tool call itself, after the model has already decided what to do. A skill can tell the model to commit; the hook blocks the commit before it executes.
 
 **Note:** Built-in skills that use the `Skill` tool wrapper bypass individual file-operation hooks (see [Known Limitations](#known-limitations)). The recipe above protects against custom skills and workflows that use standard Write/Edit/Bash tool calls. For built-in skill protection, `bash-guard` on `git commit` and `git add` still works because git operations always go through the Bash tool.
+
+### Startup reading order
+
+The single most impactful technique for session quality is enforcing that specific files are read before any edits begin. Without enforcement, Claude skips startup reads as context pressure increases, and rule compliance degrades. See [#41473](https://github.com/anthropics/claude-code/issues/41473) for the empirical evidence (6 weeks, 5 concurrent projects, before/after comparison).
+
+```markdown
+## Session startup @enforced
+- Read MEMORY.md before editing any file
+- Read project.md before editing any file
+- Read CLAUDE.md before editing any file
+```
+
+This generates `require-prior-read-file` hooks that check the session log for a Read of the specific file before allowing Edit/Write/MultiEdit. If Claude tries to edit without reading MEMORY.md first, the hook denies the tool call with "Read MEMORY.md first."
+
+**Why this works:** CLAUDE.md instructions like "always read MEMORY.md first" degrade under context pressure. At 80%+ context usage, Claude skips steps it followed reliably at 10%. Hooks enforce at the tool-call level. The model cannot Edit a file until the Read appears in the session log. No amount of context pressure changes this.
+
+**Requires:** [session-log](../session-log/) hook installed (tracks tool calls for the read check).
 
 ### Quick start with templates
 
