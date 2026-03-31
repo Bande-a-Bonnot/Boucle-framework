@@ -1090,6 +1090,52 @@ PYEOF_SETTINGS_INTEGRITY
     fi
 fi
 
+# Background agent control: #41461
+WARNINGS+=("Background agents spawned via the Agent tool cannot be reliably stopped by the user. In one reported case, 14 parallel agents wrote to the same file and consumed ~1.4M tokens (\$55-106) before the session could be terminated. If you use Agent tool with run_in_background, monitor token usage closely. There is no built-in kill mechanism for spawned agents. (see claude-code#41461)")
+
+# cleanupPeriodDays setting ignored: #41458
+if [ -f "$SETTINGS_FILE" ]; then
+    HAS_CLEANUP=$(python3 -c "
+import json, sys
+try:
+    with open('$SETTINGS_FILE') as f: s = json.load(f)
+    v = s.get('cleanupPeriodDays')
+    if v is not None and int(v) > 365:
+        print('true')
+    else:
+        print('false')
+except Exception:
+    print('false')
+" 2>/dev/null || echo "false")
+    if [ "$HAS_CLEANUP" = "true" ]; then
+        WARNINGS+=("cleanupPeriodDays is set to a high value in settings.json but may be silently ignored. One user lost 490 session files despite setting cleanupPeriodDays:99999 since January. If you rely on session persistence, back up ~/.claude/projects/ independently. (see claude-code#41458)")
+    fi
+fi
+
+# Bundled ripgrep execute permission: #41463
+if [ "$(uname)" = "Linux" ]; then
+    # Find the bundled rg binary if it exists
+    BUNDLED_RG=""
+    for rg_candidate in "$HOME/.claude/local/rg" "$HOME/.claude/bin/rg" /usr/local/lib/node_modules/@anthropic-ai/claude-code/vendor/rg; do
+        if [ -f "$rg_candidate" ]; then
+            BUNDLED_RG="$rg_candidate"
+            break
+        fi
+    done
+    if [ -n "$BUNDLED_RG" ] && [ ! -x "$BUNDLED_RG" ]; then
+        WARNINGS+=("Bundled ripgrep binary ($BUNDLED_RG) is missing execute permission. This silently breaks all user-defined slash commands in ~/.claude/commands/ and may affect file search. Fix: chmod +x \"$BUNDLED_RG\" (see claude-code#41463)")
+    fi
+fi
+
+# Symlinked .claude/ directories: #41451
+if [ -L ".claude" ] || [ -L ".claude/commands" ] || [ -L ".claude/hooks" ]; then
+    SYMLINK_TARGETS=""
+    [ -L ".claude" ] && SYMLINK_TARGETS=" .claude"
+    [ -L ".claude/commands" ] && SYMLINK_TARGETS="${SYMLINK_TARGETS} .claude/commands"
+    [ -L ".claude/hooks" ] && SYMLINK_TARGETS="${SYMLINK_TARGETS} .claude/hooks"
+    WARNINGS+=("Symlinked .claude directories detected:${SYMLINK_TARGETS}. On Linux, slash commands from symlinked .claude/commands/ are not discovered (regression). Hooks and skills may also fail to load if .claude/ itself is a symlink. Workaround: copy files instead of symlinking, or use a post-checkout git hook to sync. (see claude-code#41451)")
+fi
+
 # === Section 7: Rule Enforcement ===
 echo ""
 printf "${BLUE}Rule Enforcement${NC}\n"

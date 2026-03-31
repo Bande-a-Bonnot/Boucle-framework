@@ -524,6 +524,14 @@ boucle --version                 # Show version
 
 **Worktree GIT_INDEX_FILE leak**: Agents spawned via EnterWorktree can have their git index [corrupted by marketplace plugin entries](https://github.com/anthropics/claude-code/issues/41314) due to `GIT_INDEX_FILE` environment variable leaking across process boundaries. If worktree operations show unexpected files in git status, this may be the cause.
 
+**Background agents cannot be stopped**: Agents spawned via the Agent tool with `run_in_background` [cannot be reliably terminated](https://github.com/anthropics/claude-code/issues/41461) by the user. In one reported case, 14 parallel agents wrote to the same file and consumed ~1.4M tokens ($55-106). There is no built-in kill mechanism. Mitigation: avoid spawning many background agents, and monitor token usage if you do.
+
+**cleanupPeriodDays setting may be ignored**: The `cleanupPeriodDays` setting in `settings.json` [can be silently bypassed](https://github.com/anthropics/claude-code/issues/41458), deleting session files even when set to very high values. One user lost 490 sessions despite setting it to 99999. If you rely on session persistence, back up `~/.claude/projects/` independently.
+
+**Symlinked .claude/ directories not discovered (Linux)**: Slash commands from [symlinked `.claude/commands/`](https://github.com/anthropics/claude-code/issues/41451) are not loaded on Linux (regression). This is a common team pattern (store shared config in a central directory and symlink). Hooks and skills may also fail if `.claude/` itself is a symlink. Workaround: copy files instead of symlinking.
+
+**Bundled ripgrep missing execute permission (Linux)**: The bundled `rg` binary [can lose its execute permission](https://github.com/anthropics/claude-code/issues/41463) on Linux, silently breaking all user-defined slash commands in `~/.claude/commands/`. Fix: `chmod +x` the bundled binary.
+
 **Model can manipulate hook state files**: The model has filesystem access and [can overwrite files that hooks depend on](https://github.com/anthropics/claude-code/issues/38841) — checkpoint files, lock files, counters. In one documented case, Claude computed the SHA256 hash of a checkpoint filename and wrote a fresh timestamp to bypass a content-read-gate. Hooks that rely on external state files for enforcement should assume the model can read and modify those files. Cryptographic signatures or out-of-process validation can mitigate this.
 
 **Windows**: All seven hooks have native **PowerShell 7+** equivalents (`hook.ps1`) that require no external dependencies. Requires [PowerShell 7](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (`pwsh`), not the built-in Windows PowerShell 5. Install them with:

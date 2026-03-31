@@ -2989,6 +2989,71 @@ assert "project skills source mentioned" "project-level skills" "$PROJSKILL_OUTP
 cd "$ORIG_DIR"
 rm -rf "$TMPDIR_PROJSKILL"
 
+# === Test: Background agent warning (#41461) ===
+# This warning is unconditional — always shown
+assert "background agent warning shown" "claude-code#41461" "$OUTPUT"
+assert "background agent warning mentions token waste" "1.4M tokens" "$OUTPUT"
+
+# === Test: cleanupPeriodDays warning (#41458) ===
+TMPDIR_CLEANUP=$(mktemp -d)
+ORIG_DIR=$(pwd)
+cd "$TMPDIR_CLEANUP"
+export HOME="$TMPDIR_CLEANUP"
+mkdir -p "$HOME/.claude"
+cat > "$HOME/.claude/settings.json" << 'CLEANUPJSON'
+{
+  "cleanupPeriodDays": 99999
+}
+CLEANUPJSON
+CLEANUP_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "cleanupPeriodDays warning shown" "claude-code#41458" "$CLEANUP_OUTPUT"
+assert "cleanupPeriodDays mentions session persistence" "session persistence" "$CLEANUP_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_CLEANUP"
+
+# Test: normal cleanupPeriodDays (<=365) should NOT trigger
+TMPDIR_CLEANUP2=$(mktemp -d)
+cd "$TMPDIR_CLEANUP2"
+export HOME="$TMPDIR_CLEANUP2"
+mkdir -p "$HOME/.claude"
+cat > "$HOME/.claude/settings.json" << 'CLEANUPJSON2'
+{
+  "cleanupPeriodDays": 30
+}
+CLEANUPJSON2
+CLEANUP2_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "cleanupPeriodDays normal value no warning" "claude-code#41458" "$CLEANUP2_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_CLEANUP2"
+
+# === Test: Symlinked .claude/ warning (#41451) ===
+TMPDIR_SYMLINK=$(mktemp -d)
+cd "$TMPDIR_SYMLINK"
+export HOME="$TMPDIR_SYMLINK"
+mkdir -p "$HOME/.claude"
+# Create a real .claude/commands dir elsewhere and symlink it
+mkdir -p "$TMPDIR_SYMLINK/real-commands"
+mkdir -p "$TMPDIR_SYMLINK/project/.claude"
+ln -s "$TMPDIR_SYMLINK/real-commands" "$TMPDIR_SYMLINK/project/.claude/commands"
+cd "$TMPDIR_SYMLINK/project"
+SYMLINK_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "symlinked .claude warning shown" "claude-code#41451" "$SYMLINK_OUTPUT"
+assert "symlink warning mentions commands" ".claude/commands" "$SYMLINK_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_SYMLINK"
+
+# Test: non-symlinked .claude should NOT trigger
+TMPDIR_NOSYM=$(mktemp -d)
+cd "$TMPDIR_NOSYM"
+export HOME="$TMPDIR_NOSYM"
+mkdir -p "$HOME/.claude"
+mkdir -p "$TMPDIR_NOSYM/project/.claude/commands"
+cd "$TMPDIR_NOSYM/project"
+NOSYM_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "non-symlinked .claude no warning" "claude-code#41451" "$NOSYM_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_NOSYM"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
