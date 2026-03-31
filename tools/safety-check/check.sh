@@ -303,6 +303,11 @@ except: print('')
     fi
 fi
 
+# .claude/ sensitive-file prompt cannot be overridden (claude-code#41615)
+if [ "$BYPASS_MODE" = "bypassPermissions" ]; then
+    WARNINGS+=("Writes to ~/.claude/ trigger a hardcoded sensitive-file prompt that cannot be suppressed by permissions.allow, PreToolUse hooks returning 'allow', bypassPermissions mode, or skipDangerousModePermissionPrompt. Automated sessions (tmux, CI, autonomous loops) that write to ~/.claude/ will stall on an interactive prompt with no workaround. Use Bash tool with echo/cat/jq to write files directly instead of Edit/Write. (see claude-code#41615)")
+fi
+
 # Write permissions don't work outside project directory (claude-code#38391)
 if [ -f "$SETTINGS_FILE" ]; then
     HAS_EXTERNAL_WRITE_ALLOW=$(python3 - "$SETTINGS_FILE" << 'PYEOF'
@@ -590,6 +595,11 @@ fi
 # WorktreeCreate/WorktreeRemove hooks ignored by EnterWorktree tool (claude-code#36205)
 if has_hook_type "WorktreeCreate" || has_hook_type "WorktreeRemove"; then
     WARNINGS+=("WorktreeCreate/WorktreeRemove hooks are configured but the EnterWorktree tool does not fire them. Worktree hooks only fire when worktree isolation is triggered by the system (background agents), not when the model explicitly calls EnterWorktree. Custom VCS setup in worktree hooks may not execute. (see claude-code#36205)")
+fi
+
+# WorktreeCreate hooks cause indefinite hang (claude-code#41614)
+if has_hook_type "WorktreeCreate"; then
+    WARNINGS+=("WorktreeCreate hooks cause Claude Code to hang indefinitely when using 'claude -w'. Any WorktreeCreate hook, even a trivial 'echo ok', causes the session to freeze after the hook completes. The hook executes and returns but Claude Code never proceeds. This affects all hook commands, not just complex ones. Remove WorktreeCreate hooks if you need 'claude -w' to function. (see claude-code#41614)")
 fi
 
 # TaskCreated hooks — available since v2.1.84
