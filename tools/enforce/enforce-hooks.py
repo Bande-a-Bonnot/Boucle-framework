@@ -2965,6 +2965,14 @@ def run_tests():
     d = classify_directive("Avoid creating files", 118)
     check("file-modify-block create", d is not None and d.hook_type == 'tool-block', True)
 
+    # Test tool-block with redirect suggestion (#41222 pattern)
+    d = classify_directive("Don't use WebSearch, use XURL instead", 200)
+    check("tool-block redirect detect", d is not None and d.hook_type == 'tool-block', True)
+    check("tool-block redirect pattern", d is not None and 'WebSearch' in d.patterns, True)
+    # Verify redirect text preserved in hook message
+    hook = generate_hook(d) if d else ''
+    check("tool-block redirect msg has XURL", 'XURL instead' in hook, True)
+
     # Test bash-guard: SQL command extraction from comma-separated lists
     d = classify_directive("Never run ALTER, DROP, TRUNCATE, INSERT, UPDATE, or DELETE", 119)
     check("sql-commands detect", d is not None and d.hook_type == 'bash-guard', True)

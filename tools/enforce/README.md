@@ -144,6 +144,22 @@ To activate enforcement, add @enforced to each rule:
   - Never modify .env files @enforced
 ```
 
+## Common Problems This Solves
+
+People hit the same enforcement gaps repeatedly. Here is what each looks like and what fixes it.
+
+| Problem | What happens | Fix |
+|---------|-------------|-----|
+| Rules ignored after long conversation | CLAUDE.md directives lose influence as context compacts ([#37550](https://github.com/anthropics/claude-code/issues/37550), [#41217](https://github.com/anthropics/claude-code/issues/41217)) | `@enforced` hooks are stateless. They fire on every tool call regardless of conversation length. |
+| Model uses wrong tool despite explicit instruction | User says "use X" but a hook or the model picks Y instead ([#41222](https://github.com/anthropics/claude-code/issues/41222)) | `tool-block` the unwanted tools. The model cannot call a blocked tool. See [Tool preference](#tool-preference) recipe. |
+| Force push / --no-verify despite rules | Git safety rules in CLAUDE.md are narrated then violated ([#40695](https://github.com/anthropics/claude-code/issues/40695), [#33097](https://github.com/anthropics/claude-code/issues/33097)) | `bash-guard` blocks the command pattern before execution. |
+| Subagents ignore all rules | Spawned agents run with `omitClaudeMd: true` since v2.1.84 ([#40459](https://github.com/anthropics/claude-code/issues/40459), [#32906](https://github.com/anthropics/claude-code/issues/32906)) | Hooks fire in subagents even when CLAUDE.md is stripped. |
+| Model edits protected files | "Never modify .env" works initially, then stops ([#32163](https://github.com/anthropics/claude-code/issues/32163)) | `file-guard` blocks Write/Edit to matched paths. |
+| "ABSOLUTE RULE" still violated | Emphasis markers do not change compliance ([#40284](https://github.com/anthropics/claude-code/issues/40284), [#40289](https://github.com/anthropics/claude-code/issues/40289)) | Hooks block at runtime. The model never sees the tool call succeed. |
+| Model attests compliance then violates | 4 attestations followed by immediate violation ([#41217](https://github.com/anthropics/claude-code/issues/41217)) | Hooks do not rely on model cooperation. Block is enforced by Claude Code, not by the model. |
+| Read-only session ignored | "Only analyze, don't modify" leads to ALTER TABLE on staging ([#41063](https://github.com/anthropics/claude-code/issues/41063)) | `tool-block` Write/Edit/MultiEdit + `bash-guard` for destructive commands. See [Read-only](#read-only--audit-mode) recipe. |
+| Permission prompt bypassed | User clicks "No" but command executes anyway ([#40302](https://github.com/anthropics/claude-code/issues/40302)) | PreToolUse hooks fire before the permission prompt. A hook block prevents the tool call entirely. |
+
 ## Recipes
 
 Copy-paste CLAUDE.md snippets for common scenarios. Each block is self-contained; combine as needed.
@@ -253,6 +269,26 @@ For environments where Claude has access to system commands. Addresses [#40537](
 - Never run halt
 - Never run systemctl stop
 - Never run systemctl restart
+```
+
+### Tool preference
+
+Force the model to use a specific tool by blocking alternatives. Addresses [#41222](https://github.com/anthropics/claude-code/issues/41222) (model follows hook redirect instead of explicit user instruction to use a specific tool).
+
+```markdown
+## Tool preferences @enforced
+- Don't use WebSearch, use XURL instead @enforced
+- Don't use WebFetch @enforced
+```
+
+The block message includes your rule text, so the model sees "Tool WebSearch is blocked. (CLAUDE.md: Don't use WebSearch, use XURL instead)" and knows what to use. This is deterministic: the model cannot call blocked tools regardless of other hooks or prompt content.
+
+For temporary per-session preferences, combine with `@enforced(warn)` for tools you want to discourage but not hard-block:
+
+```markdown
+## Tool preferences @enforced
+- Don't use WebSearch @enforced
+- Don't use WebFetch @enforced(warn)
 ```
 
 ### Quick start with templates
