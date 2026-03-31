@@ -960,7 +960,7 @@ if [ -f "$LOG" ]; then
     exit 0
   fi
 fi
-echo '{{"decision": "block", "reason": "Run {required_tool} first. (CLAUDE.md: {short})"}}'
+echo '{{"hookSpecificOutput": {{"permissionDecision": "deny", "permissionDecisionReason": "Run {required_tool} first. (CLAUDE.md: {short})"}}}}'
 exit 0
 '''
 
@@ -981,7 +981,7 @@ if [ -f "$LOG" ]; then
     exit 0
   fi
 fi
-echo '{{"decision": "block", "reason": "Run {required_cmd} first. (CLAUDE.md: {short})"}}'
+echo '{{"hookSpecificOutput": {{"permissionDecision": "deny", "permissionDecisionReason": "Run {required_cmd} first. (CLAUDE.md: {short})"}}}}'
 exit 0
 '''
 
@@ -1035,8 +1035,8 @@ TOOL=$(echo "$INPUT" | jq -r '.tool_name')
 case "$TOOL" in Write|Edit|MultiEdit) ;; *) exit 0 ;; esac
 FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
 [ -z "$FILE" ] && exit 0
-[[ "$FILE" == *".claude/hooks/"* ]] && echo '{"decision": "block", "reason": "Armored: hook files in .claude/hooks/ are protected. (enforce-hooks --armor)"}' && exit 0
-[[ "$FILE" == *".claude/settings.json"* ]] && echo '{"decision": "block", "reason": "Armored: .claude/settings.json is protected. (enforce-hooks --armor)"}' && exit 0
+[[ "$FILE" == *".claude/hooks/"* ]] && echo '{"hookSpecificOutput": {"permissionDecision": "deny", "permissionDecisionReason": "Armored: hook files in .claude/hooks/ are protected. (enforce-hooks --armor)"}}' && exit 0
+[[ "$FILE" == *".claude/settings.json"* ]] && echo '{"hookSpecificOutput": {"permissionDecision": "deny", "permissionDecisionReason": "Armored: .claude/settings.json is protected. (enforce-hooks --armor)"}}' && exit 0
 exit 0
 '''
 
@@ -1050,14 +1050,14 @@ CMD=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 if [[ "$CMD" == *".claude/hooks"* ]]; then
   case "$CMD" in
     *rm*|*mv*|*chmod*|*chown*|*truncate*|*unlink*|*">"*|*sed*-i*)
-      echo '{"decision": "block", "reason": "Armored: destructive commands targeting .claude/hooks/ are blocked. (enforce-hooks --armor)"}'
+      echo '{"hookSpecificOutput": {"permissionDecision": "deny", "permissionDecisionReason": "Armored: destructive commands targeting .claude/hooks/ are blocked. (enforce-hooks --armor)"}}'
       exit 0 ;;
   esac
 fi
 if [[ "$CMD" == *".claude/settings.json"* ]]; then
   case "$CMD" in
     *rm*|*mv*|*truncate*|*unlink*|*">"*|*sed*-i*)
-      echo '{"decision": "block", "reason": "Armored: destructive commands targeting .claude/settings.json are blocked. (enforce-hooks --armor)"}'
+      echo '{"hookSpecificOutput": {"permissionDecision": "deny", "permissionDecisionReason": "Armored: destructive commands targeting .claude/settings.json are blocked. (enforce-hooks --armor)"}}'
       exit 0 ;;
   esac
 fi
@@ -1143,7 +1143,7 @@ def generate_scoped_content_guard(directive):
         else:
             content_lines.append(
                 f'if echo "$CONTENT" | grep {grep_flag} \'{escaped}\'; then\n'
-                f'  echo \'{{"decision": "block", "reason": "Content blocked: {escaped} not allowed here. (CLAUDE.md: {short_escaped})"}}\'\n'
+                f'  echo \'{{"hookSpecificOutput": {{"permissionDecision": "deny", "permissionDecisionReason": "Content blocked: {escaped} not allowed here. (CLAUDE.md: {short_escaped})"}}}}\'\n'
                 f'  exit 0\n'
                 f'fi'
             )
@@ -1174,7 +1174,7 @@ def generate_content_guard_checks(patterns, short_directive, severity='block'):
         else:
             lines.append(
                 f'if echo "$CONTENT" | grep {grep_flag} \'{escaped}\'; then\n'
-                f'  echo \'{{"decision": "block", "reason": "Content blocked: {escaped} is not allowed. (CLAUDE.md: {short})"}}\'\n'
+                f'  echo \'{{"hookSpecificOutput": {{"permissionDecision": "deny", "permissionDecisionReason": "Content blocked: {escaped} is not allowed. (CLAUDE.md: {short})"}}}}\'\n'
                 f'  exit 0\n'
                 f'fi'
             )
@@ -1195,7 +1195,7 @@ def generate_file_guard_checks(patterns, short_directive, severity='block'):
         else:
             lines.append(
                 f'[[ "$FILE" == *"{escaped}"* ]] && '
-                f'echo "{{\\"decision\\": \\"block\\", \\"reason\\": \\"Protected: $FILE matches {escaped}. (CLAUDE.md: {short})\\"}}\" && exit 0'
+                f'echo "{{\\"hookSpecificOutput\\": {{\\"permissionDecision\\": \\"deny\\", \\"permissionDecisionReason\\": \\"Protected: $FILE matches {escaped}. (CLAUDE.md: {short})\\"}}}}\" && exit 0'
             )
     return '\n'.join(lines)
 
@@ -1214,7 +1214,7 @@ def generate_bash_guard_checks(patterns, short_directive, severity='block'):
         else:
             lines.append(
                 f'[[ "$CMD" == *"{escaped}"* ]] && '
-                f'echo \'{{"decision": "block", "reason": "Blocked: {escaped}. (CLAUDE.md: {short})"}}\' && exit 0'
+                f'echo \'{{"hookSpecificOutput": {{"permissionDecision": "deny", "permissionDecisionReason": "Blocked: {escaped}. (CLAUDE.md: {short})"}}}}\' && exit 0'
             )
     return '\n'.join(lines)
 
@@ -1235,7 +1235,7 @@ fi''')
             lines.append(f'''if [ "$BRANCH" = "{branch}" ]; then
   case "$CMD" in
     *"git commit"*|*"git merge"*|*"git push"*)
-      echo '{{"decision": "block", "reason": "Branch {branch} is protected. (CLAUDE.md: {short})"}}'
+      echo '{{"hookSpecificOutput": {{"permissionDecision": "deny", "permissionDecisionReason": "Branch {branch} is protected. (CLAUDE.md: {short})"}}}}'
       exit 0 ;;
   esac
 fi''')
@@ -1255,7 +1255,7 @@ def generate_tool_block_checks(tools, short_directive, severity='block'):
         else:
             lines.append(
                 f'[ "$TOOL" = "{tool}" ] && '
-                f'echo \'{{"decision": "block", "reason": "Tool {tool} is blocked. (CLAUDE.md: {short})"}}\' && exit 0'
+                f'echo \'{{"hookSpecificOutput": {{"permissionDecision": "deny", "permissionDecisionReason": "Tool {tool} is blocked. (CLAUDE.md: {short})"}}}}\' && exit 0'
             )
     return '\n'.join(lines)
 
@@ -2503,17 +2503,28 @@ def _run_hook_test(command, payload, label):
             result['message'] = f'Invalid JSON output: {stdout[:100]}'
             return result
 
-        # Check for decision field
-        decision = parsed.get('decision')
+        # Check for decision field (supports both new and deprecated formats)
+        hso = parsed.get('hookSpecificOutput', {})
+        decision = hso.get('permissionDecision')
+        reason = hso.get('permissionDecisionReason', '')
+        if decision is None:
+            # Fall back to deprecated top-level format
+            decision = parsed.get('decision')
+            reason = parsed.get('reason', '')
+            # Map old values to new
+            if decision == 'block':
+                decision = 'deny'
+            elif decision == 'approve':
+                decision = 'allow'
         if decision is None:
             result['status'] = 'error'
-            result['message'] = f'Missing "decision" field in output: {stdout[:100]}'
+            result['message'] = f'Missing decision field in output: {stdout[:100]}'
             return result
 
         result['decision'] = decision
-        result['reason'] = parsed.get('reason', '')
+        result['reason'] = reason
 
-        if decision == 'block':
+        if decision == 'deny':
             result['status'] = 'blocked'
         elif decision == 'allow':
             result['status'] = 'allowed'
@@ -2718,7 +2729,7 @@ def run_tests():
     hook = generate_hook(d)
     check("hook gen file-guard", hook is not None, True)
     check("hook has jq", hook is not None and 'jq' in hook, True)
-    check("hook has block", hook is not None and 'block' in hook, True)
+    check("hook has deny", hook is not None and 'deny' in hook, True)
 
     d = Directive(
         text="Never run rm -rf",
@@ -2868,7 +2879,7 @@ def run_tests():
     hook = generate_hook(d)
     check("hook gen tool-block", hook is not None, True)
     check("hook tool-block has tool name", hook is not None and 'WebSearch' in hook, True)
-    check("hook tool-block has block", hook is not None and '"block"' in hook, True)
+    check("hook tool-block has deny", hook is not None and '"deny"' in hook, True)
 
     # Test force-push alias expansion
     pats = extract_command_patterns('force push is not allowed')
@@ -3834,7 +3845,7 @@ rm -rf /tmp/test
     script = generate_hook(d)
     check("warn: hook script generated", script is not None, True)
     if script:
-        check("warn: no block JSON in script", '"decision": "block"' not in script
+        check("warn: no block JSON in script", '"permissionDecision": "deny"' not in script
               and '"decision\\": \\"block\\"' not in script, True)
         check("warn: has stderr redirect", '>&2' in script, True)
         check("warn: has WARN prefix", 'WARN' in script, True)
@@ -3849,7 +3860,7 @@ rm -rf /tmp/test
         severity='block',
     )
     script_block = generate_hook(d_block)
-    check("block: has block decision", 'block' in script_block and 'decision' in script_block, True)
+    check("block: has block decision", 'deny' in script_block and 'permissionDecision' in script_block, True)
 
     # 6. Warn mode in bash-guard
     d = Directive(
@@ -3861,7 +3872,7 @@ rm -rf /tmp/test
         severity='warn',
     )
     script = generate_hook(d)
-    check("warn bash-guard: no block JSON", '"decision": "block"' not in script, True)
+    check("warn bash-guard: no block JSON", '"permissionDecision": "deny"' not in script, True)
     check("warn bash-guard: has stderr", '>&2' in script, True)
 
     # 7. Warn mode in branch-guard
@@ -3874,7 +3885,7 @@ rm -rf /tmp/test
         severity='warn',
     )
     script = generate_hook(d)
-    check("warn branch-guard: no block JSON", '"decision": "block"' not in script, True)
+    check("warn branch-guard: no block JSON", '"permissionDecision": "deny"' not in script, True)
     check("warn branch-guard: has stderr", '>&2' in script, True)
 
     # 8. Warn mode in tool-block
@@ -3887,7 +3898,7 @@ rm -rf /tmp/test
         severity='warn',
     )
     script = generate_hook(d)
-    check("warn tool-block: no block JSON", '"decision": "block"' not in script, True)
+    check("warn tool-block: no block JSON", '"permissionDecision": "deny"' not in script, True)
     check("warn tool-block: has stderr", '>&2' in script, True)
 
     # 9. Warn mode in content-guard
@@ -3900,7 +3911,7 @@ rm -rf /tmp/test
         severity='warn',
     )
     script = generate_hook(d)
-    check("warn content-guard: no block JSON", '"decision": "block"' not in script, True)
+    check("warn content-guard: no block JSON", '"permissionDecision": "deny"' not in script, True)
     check("warn content-guard: has stderr", '>&2' in script, True)
 
     # 10. Evaluate mode: warn returns allow, not block
@@ -3994,7 +4005,7 @@ rm -rf /tmp/test
         severity='warn',
     )
     script = generate_hook(d)
-    check("warn scoped-content: no block JSON", '"decision": "block"' not in script, True)
+    check("warn scoped-content: no block JSON", '"permissionDecision": "deny"' not in script, True)
     check("warn scoped-content: has stderr", '>&2' in script, True)
 
     # 18. Armor: hook self-protection
@@ -4009,8 +4020,8 @@ rm -rf /tmp/test
     check("armor bash-guard: references hooks dir", '.claude/hooks' in ARMOR_BASH_GUARD, True)
     check("armor file-guard: references settings", '.claude/settings.json' in ARMOR_FILE_GUARD, True)
     check("armor bash-guard: references settings", '.claude/settings.json' in ARMOR_BASH_GUARD, True)
-    check("armor file-guard: outputs block JSON", '"decision": "block"' in ARMOR_FILE_GUARD, True)
-    check("armor bash-guard: outputs block JSON", '"decision": "block"' in ARMOR_BASH_GUARD, True)
+    check("armor file-guard: outputs block JSON", '"permissionDecision": "deny"' in ARMOR_FILE_GUARD, True)
+    check("armor bash-guard: outputs block JSON", '"permissionDecision": "deny"' in ARMOR_BASH_GUARD, True)
 
     # 18b. Armor install creates files and updates settings
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -4071,14 +4082,14 @@ rm -rf /tmp/test
             'tool_name': 'Write',
             'tool_input': {'file_path': '/project/.claude/hooks/my-hook.sh'}
         }))
-        check("armor file-guard: blocks Write to hooks/", '"block"' in out, True)
+        check("armor file-guard: blocks Write to hooks/", '"deny"' in out, True)
 
         # File guard: blocks Edit to .claude/settings.json
         out = run_hook('armor_file_guard.sh', json.dumps({
             'tool_name': 'Edit',
             'tool_input': {'file_path': '/project/.claude/settings.json'}
         }))
-        check("armor file-guard: blocks Edit to settings.json", '"block"' in out, True)
+        check("armor file-guard: blocks Edit to settings.json", '"deny"' in out, True)
 
         # File guard: allows Write to other files
         out = run_hook('armor_file_guard.sh', json.dumps({
@@ -4099,35 +4110,35 @@ rm -rf /tmp/test
             'tool_name': 'Bash',
             'tool_input': {'command': 'rm .claude/hooks/my-hook.sh'}
         }))
-        check("armor bash-guard: blocks rm on hooks/", '"block"' in out, True)
+        check("armor bash-guard: blocks rm on hooks/", '"deny"' in out, True)
 
         # Bash guard: blocks rm -rf targeting hooks
         out = run_hook('armor_bash_guard.sh', json.dumps({
             'tool_name': 'Bash',
             'tool_input': {'command': 'rm -rf .claude/hooks/'}
         }))
-        check("armor bash-guard: blocks rm -rf on hooks/", '"block"' in out, True)
+        check("armor bash-guard: blocks rm -rf on hooks/", '"deny"' in out, True)
 
         # Bash guard: blocks mv targeting hooks
         out = run_hook('armor_bash_guard.sh', json.dumps({
             'tool_name': 'Bash',
             'tool_input': {'command': 'mv .claude/hooks/guard.sh /tmp/'}
         }))
-        check("armor bash-guard: blocks mv on hooks/", '"block"' in out, True)
+        check("armor bash-guard: blocks mv on hooks/", '"deny"' in out, True)
 
         # Bash guard: blocks chmod targeting hooks
         out = run_hook('armor_bash_guard.sh', json.dumps({
             'tool_name': 'Bash',
             'tool_input': {'command': 'chmod -x .claude/hooks/guard.sh'}
         }))
-        check("armor bash-guard: blocks chmod on hooks/", '"block"' in out, True)
+        check("armor bash-guard: blocks chmod on hooks/", '"deny"' in out, True)
 
         # Bash guard: blocks truncate targeting settings.json
         out = run_hook('armor_bash_guard.sh', json.dumps({
             'tool_name': 'Bash',
             'tool_input': {'command': 'truncate -s 0 .claude/settings.json'}
         }))
-        check("armor bash-guard: blocks truncate on settings.json", '"block"' in out, True)
+        check("armor bash-guard: blocks truncate on settings.json", '"deny"' in out, True)
 
         # Bash guard: allows normal bash commands
         out = run_hook('armor_bash_guard.sh', json.dumps({
@@ -4323,7 +4334,7 @@ rm -rf /tmp/test
         f.write('TOOL=$(echo "$INPUT" | jq -r \'.tool_name\')\n')
         f.write('FILE=$(echo "$INPUT" | jq -r \'.tool_input.file_path // empty\')\n')
         f.write('if [[ "$TOOL" == "Write" ]] && [[ "$FILE" == *".env"* ]]; then\n')
-        f.write('  echo \'{"decision": "block", "reason": "Protected file"}\'\n')
+        f.write('  echo \'{"hookSpecificOutput": {"permissionDecision": "deny", "permissionDecisionReason": "Protected file"}}\'\n')
         f.write('else\n')
         f.write('  echo \'{"decision": "allow"}\'\n')
         f.write('fi\n')
@@ -4364,7 +4375,7 @@ rm -rf /tmp/test
     block_allows = [t for t in block_r['tests'] if t.get('decision') == 'allow']
     check("smoke: file-guard allows benign payloads", len(block_allows) >= 3, True)
     # Block payload (Write to .env) should be blocked
-    block_blocks = [t for t in block_r['tests'] if t.get('decision') == 'block']
+    block_blocks = [t for t in block_r['tests'] if t.get('decision') == 'deny']
     check("smoke: file-guard blocks .env write", len(block_blocks) >= 1, True)
     check("smoke: file-guard status ok", block_r['status'], 'ok')
 

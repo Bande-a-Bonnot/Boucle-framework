@@ -79,11 +79,11 @@ run_engine() {
 # === File guard tests ===
 echo "Test: File guard blocks .env write"
 OUT=$(run_engine '{"tool_name":"Write","tool_input":{"file_path":".env","content":"x"}}')
-check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "blocks .env write"
+check "$(echo "$OUT" | grep -q '"deny"' && echo true || echo false)" "blocks .env write"
 
 echo "Test: File guard blocks secrets/ write"
 OUT=$(run_engine '{"tool_name":"Edit","tool_input":{"file_path":"secrets/key.pem","old":"a","new":"b"}}')
-check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "blocks secrets/ edit"
+check "$(echo "$OUT" | grep -q '"deny"' && echo true || echo false)" "blocks secrets/ edit"
 
 echo "Test: File guard allows normal file"
 OUT=$(run_engine '{"tool_name":"Write","tool_input":{"file_path":"src/main.rs","content":"fn main() {}"}}')
@@ -96,11 +96,11 @@ check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "allows Re
 # === Bash guard tests ===
 echo "Test: Bash guard blocks force push"
 OUT=$(run_engine '{"tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}')
-check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "blocks force push"
+check "$(echo "$OUT" | grep -q '"deny"' && echo true || echo false)" "blocks force push"
 
 echo "Test: Bash guard blocks -f push"
 OUT=$(run_engine '{"tool_name":"Bash","tool_input":{"command":"git push -f origin main"}}')
-check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "blocks -f push"
+check "$(echo "$OUT" | grep -q '"deny"' && echo true || echo false)" "blocks -f push"
 
 echo "Test: Bash guard allows normal push"
 OUT=$(run_engine '{"tool_name":"Bash","tool_input":{"command":"git push origin main"}}')
@@ -113,7 +113,7 @@ check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "allows ca
 # === Require prior tool tests ===
 echo "Test: WebSearch blocked without prior Grep"
 OUT=$(run_engine '{"tool_name":"WebSearch","tool_input":{"query":"how to fix auth"}}')
-check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "blocks WebSearch without Grep"
+check "$(echo "$OUT" | grep -q '"deny"' && echo true || echo false)" "blocks WebSearch without Grep"
 
 echo "Test: WebSearch allowed after Grep of docs/"
 TODAY=$(date -u +%Y-%m-%d)
@@ -124,7 +124,7 @@ check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "allows We
 # === Tool blocker tests ===
 echo "Test: WebFetch unconditionally blocked"
 OUT=$(run_engine '{"tool_name":"WebFetch","tool_input":{"url":"https://example.com"}}')
-check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "blocks WebFetch"
+check "$(echo "$OUT" | grep -q '"deny"' && echo true || echo false)" "blocks WebFetch"
 
 echo "Test: WebSearch not blocked by WebFetch rule"
 # Reset session log (remove the Grep entry to test isolation)
@@ -194,7 +194,7 @@ EOF
 
 echo "Test: require_args blocks when pattern missing"
 OUT=$(run_engine '{"tool_name":"Bash","tool_input":{"command":"deploy production"}}')
-check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "require_args blocks missing pattern"
+check "$(echo "$OUT" | grep -q '"deny"' && echo true || echo false)" "require_args blocks missing pattern"
 
 echo "Test: require_args allows when pattern present"
 OUT=$(run_engine '{"tool_name":"Bash","tool_input":{"command":"deploy production --dry-run"}}')
@@ -248,7 +248,7 @@ echo "Test: First matching rule wins (WebFetch has both block_tool and require_p
 # WebFetch triggers both no-web-fetch (block_tool) and knowledge-first (require_prior_tool)
 # knowledge-first.json sorts before no-web-fetch.json, so it blocks first
 OUT=$(run_engine '{"tool_name":"WebFetch","tool_input":{"url":"https://example.com"}}')
-check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "first matching rule blocks WebFetch"
+check "$(echo "$OUT" | grep -q '"deny"' && echo true || echo false)" "first matching rule blocks WebFetch"
 
 # === block_file_pattern edge cases ===
 echo ""
@@ -256,7 +256,7 @@ echo "--- block_file_pattern edge cases ---"
 
 echo "Test: Nested .env path blocked"
 OUT=$(run_engine '{"tool_name":"Write","tool_input":{"file_path":"config/.env","content":"x"}}')
-check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "config/.env blocked"
+check "$(echo "$OUT" | grep -q '"deny"' && echo true || echo false)" "config/.env blocked"
 
 echo "Test: .env.local NOT blocked (*.env requires .env suffix)"
 OUT=$(run_engine '{"tool_name":"Write","tool_input":{"file_path":".env.local","content":"x"}}')
@@ -264,7 +264,7 @@ check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" ".env.loca
 
 echo "Test: staging.env blocked by *.env"
 OUT=$(run_engine '{"tool_name":"Write","tool_input":{"file_path":"staging.env","content":"x"}}')
-check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "staging.env blocked by *.env"
+check "$(echo "$OUT" | grep -q '"deny"' && echo true || echo false)" "staging.env blocked by *.env"
 
 echo "Test: .envrc not blocked (not .env)"
 OUT=$(run_engine '{"tool_name":"Write","tool_input":{"file_path":".envrc","content":"x"}}')
@@ -301,7 +301,7 @@ rm "$TMPDIR/.claude/enforcements/empty-pattern.json"
 
 echo "Test: block_args is case-insensitive"
 OUT=$(run_engine '{"tool_name":"Bash","tool_input":{"command":"git PUSH --FORCE origin main"}}')
-check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "block_args case-insensitive"
+check "$(echo "$OUT" | grep -q '"deny"' && echo true || echo false)" "block_args case-insensitive"
 
 # === Invalid JSON input ===
 echo ""
@@ -326,7 +326,7 @@ echo "--- Session log edge cases ---"
 echo "Test: Missing session log file doesn't crash require_prior_tool"
 rm -f "$TMPDIR/.claude/session-logs/"*.jsonl 2>/dev/null || true
 OUT=$(run_engine '{"tool_name":"WebSearch","tool_input":{"query":"test"}}')
-check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "missing session log blocks require_prior_tool"
+check "$(echo "$OUT" | grep -q '"deny"' && echo true || echo false)" "missing session log blocks require_prior_tool"
 
 echo "Test: Corrupt session log entry is skipped"
 TODAY=$(date -u +%Y-%m-%d)
@@ -378,9 +378,9 @@ check "$(echo "$OUT" | python3 -c "import json,sys; d=json.load(sys.stdin); ctx=
 echo "Test: Warn action does NOT use bare decision:warn"
 check "$(echo "$OUT" | python3 -c "import json,sys; d=json.load(sys.stdin); print('true' if 'decision' not in d else 'false')" 2>/dev/null)" "warn does not output bare decision:warn (would be silently dropped)"
 
-echo "Test: Block action still uses decision:block (unchanged)"
+echo "Test: Block action uses hookSpecificOutput permissionDecision:deny format"
 OUT_BLOCK=$(run_engine '{"tool_name":"Write","tool_input":{"file_path":".env","content":"SECRET=x"}}')
-check "$(echo "$OUT_BLOCK" | python3 -c "import json,sys; d=json.load(sys.stdin); print('true' if d.get('decision')=='block' else 'false')" 2>/dev/null)" "block action still uses decision:block format"
+check "$(echo "$OUT_BLOCK" | python3 -c "import json,sys; d=json.load(sys.stdin); hso=d.get('hookSpecificOutput',{}); print('true' if hso.get('permissionDecision')=='deny' else 'false')" 2>/dev/null)" "block action uses hookSpecificOutput permissionDecision:deny format"
 
 rm -rf "$WARN_TMPDIR"
 
@@ -410,11 +410,11 @@ run_cg() {
 
 echo "Test: content_guard blocks Write with console.log"
 OUT=$(run_cg '{"tool_name":"Write","tool_input":{"file_path":"src/app.js","content":"function foo() {\n  console.log(\"debug\");\n}"}}')
-check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "content_guard blocks console.log in Write"
+check "$(echo "$OUT" | grep -q '"deny"' && echo true || echo false)" "content_guard blocks console.log in Write"
 
 echo "Test: content_guard blocks Edit with console.log"
 OUT=$(run_cg '{"tool_name":"Edit","tool_input":{"file_path":"src/app.js","old_string":"x","new_string":"console.log(y)"}}')
-check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "content_guard blocks console.log in Edit"
+check "$(echo "$OUT" | grep -q '"deny"' && echo true || echo false)" "content_guard blocks console.log in Edit"
 
 echo "Test: content_guard allows clean content"
 OUT=$(run_cg '{"tool_name":"Write","tool_input":{"file_path":"src/app.js","content":"function foo() { return 42; }"}}')
@@ -426,7 +426,7 @@ check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "content_g
 
 echo "Test: content_guard case-insensitive"
 OUT=$(run_cg '{"tool_name":"Write","tool_input":{"file_path":"src/app.js","content":"Console.Log(\"debug\")"}}')
-check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "content_guard is case-insensitive"
+check "$(echo "$OUT" | grep -q '"deny"' && echo true || echo false)" "content_guard is case-insensitive"
 
 echo "Test: content_guard block message cites directive"
 OUT=$(run_cg '{"tool_name":"Write","tool_input":{"file_path":"src/app.js","content":"console.log(1)"}}')
@@ -449,7 +449,7 @@ EOF
 
 echo "Test: scoped_content_guard blocks SQL in controllers/"
 OUT=$(run_cg '{"tool_name":"Write","tool_input":{"file_path":"controllers/users.js","content":"const users = db.query(\"SELECT * FROM users\")"}}')
-check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "scoped_content blocks SQL in controllers/"
+check "$(echo "$OUT" | grep -q '"deny"' && echo true || echo false)" "scoped_content blocks SQL in controllers/"
 
 echo "Test: scoped_content_guard allows SQL outside controllers/"
 OUT=$(run_cg '{"tool_name":"Write","tool_input":{"file_path":"models/user.js","content":"const users = db.query(\"SELECT * FROM users\")"}}')
@@ -461,7 +461,7 @@ check "$(echo "$OUT" | grep -q '"allow"' && echo true || echo false)" "scoped_co
 
 echo "Test: scoped_content_guard with Edit new_string"
 OUT=$(run_cg '{"tool_name":"Edit","tool_input":{"file_path":"controllers/api.js","old_string":"old","new_string":"db.query(\"DELETE FROM logs\")"}}')
-check "$(echo "$OUT" | grep -q '"block"' && echo true || echo false)" "scoped_content blocks SQL in Edit new_string"
+check "$(echo "$OUT" | grep -q '"deny"' && echo true || echo false)" "scoped_content blocks SQL in Edit new_string"
 
 echo "Test: scoped_content_guard ignores Read"
 OUT=$(run_cg '{"tool_name":"Read","tool_input":{"file_path":"controllers/users.js"}}')

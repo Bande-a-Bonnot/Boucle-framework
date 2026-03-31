@@ -13,5 +13,5 @@ if [ -f "$LOG" ]; then
     exit 0
   fi
 fi
-echo '{"decision": "block", "reason": "Run cargo test before committing. (CLAUDE.md: Testing @required)"}'
+echo '{"hookSpecificOutput": {"permissionDecision": "deny", "permissionDecisionReason": "Run cargo test before committing. (CLAUDE.md: Testing @required)"}}'
 exit 0

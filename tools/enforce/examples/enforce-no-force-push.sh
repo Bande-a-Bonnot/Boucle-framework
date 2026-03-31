@@ -5,6 +5,6 @@ INPUT=$(cat)
 [ "$(echo "$INPUT" | jq -r '.tool_name')" != "Bash" ] && exit 0
 CMD=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 for pat in "push --force" "push -f"; do
-  [[ "$CMD" == *"$pat"* ]] && echo '{"decision": "block", "reason": "Force push blocked. Use --force-with-lease instead. (CLAUDE.md: No Force Push @enforced)"}' && exit 0
+  [[ "$CMD" == *"$pat"* ]] && echo '{"hookSpecificOutput": {"permissionDecision": "deny", "permissionDecisionReason": "Force push blocked. Use --force-with-lease instead. (CLAUDE.md: No Force Push @enforced)"}}' && exit 0
 done
 exit 0

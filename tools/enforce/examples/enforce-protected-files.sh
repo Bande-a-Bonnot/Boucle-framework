@@ -7,6 +7,6 @@ case "$TOOL" in Write|Edit|MultiEdit) ;; *) exit 0 ;; esac
 FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
 [ -z "$FILE" ] && exit 0
 for pat in ".env" "secrets/" ".pem"; do
-  [[ "$FILE" == *"$pat"* ]] && echo "{\"decision\": \"block\", \"reason\": \"Protected file: $FILE. (CLAUDE.md: Protected Files @enforced)\"}" && exit 0
+  [[ "$FILE" == *"$pat"* ]] && echo "{\"hookSpecificOutput\": {\"permissionDecision\": \"deny\", \"permissionDecisionReason\": \"Protected file: $FILE. (CLAUDE.md: Protected Files @enforced)\"}}" && exit 0
 done
 exit 0

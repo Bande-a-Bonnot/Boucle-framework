@@ -19,7 +19,7 @@ assert_blocked() {
   TOTAL=$((TOTAL + 1))
 
   result=$(echo "$input" | bash "$HOOK" 2>/dev/null || true)
-  if echo "$result" | grep -q '"decision":"block"'; then
+  if echo "$result" | grep -q '"permissionDecision":"deny"'; then
     PASS=$((PASS + 1))
     echo -e "  ${GREEN}PASS${NC}: $desc"
   else
@@ -34,7 +34,7 @@ assert_allowed() {
   TOTAL=$((TOTAL + 1))
 
   result=$(echo "$input" | bash "$HOOK" 2>/dev/null || true)
-  if echo "$result" | grep -q '"decision":"block"'; then
+  if echo "$result" | grep -q '"permissionDecision":"deny"'; then
     FAIL=$((FAIL + 1))
     echo -e "  ${RED}FAIL${NC}: $desc (expected allow, got: $result)"
   else
@@ -88,7 +88,7 @@ echo ""
 echo "Disabled mode:"
 TOTAL=$((TOTAL + 1))
 result=$(echo '{"tool_name":"ExitWorktree","tool_input":{}}' | WORKTREE_GUARD_DISABLED=1 bash "$HOOK" 2>/dev/null || true)
-if echo "$result" | grep -q '"decision":"block"'; then
+if echo "$result" | grep -q '"permissionDecision":"deny"'; then
   FAIL=$((FAIL + 1))
   echo -e "  ${RED}FAIL${NC}: disabled mode allows exit"
 else
@@ -346,7 +346,7 @@ echo "uncommitted" >> file.txt
 echo "untracked" > untracked.txt
 TOTAL=$((TOTAL + 1))
 result=$(echo '{"tool_name":"ExitWorktree","tool_input":{}}' | bash "$HOOK" 2>/dev/null || true)
-if echo "$result" | grep -q '"decision":"block"'; then
+if echo "$result" | grep -q '"permissionDecision":"deny"'; then
   PASS=$((PASS + 1))
   echo -e "  ${GREEN}PASS${NC}: Multiple issues still blocks"
 else
@@ -370,18 +370,18 @@ else
 fi
 
 TOTAL=$((TOTAL + 1))
-if echo "$result" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['decision']=='block'" 2>/dev/null; then
+if echo "$result" | python3 -c "import sys,json; d=json.load(sys.stdin); hso=d['hookSpecificOutput']; assert hso['permissionDecision']=='deny'" 2>/dev/null; then
   PASS=$((PASS + 1))
-  echo -e "  ${GREEN}PASS${NC}: JSON has decision field"
+  echo -e "  ${GREEN}PASS${NC}: JSON has permissionDecision:deny"
 else
   FAIL=$((FAIL + 1))
-  echo -e "  ${RED}FAIL${NC}: JSON missing decision field"
+  echo -e "  ${RED}FAIL${NC}: JSON missing permissionDecision field"
 fi
 
 TOTAL=$((TOTAL + 1))
-if echo "$result" | python3 -c "import sys,json; d=json.load(sys.stdin); assert len(d['reason']) > 0" 2>/dev/null; then
+if echo "$result" | python3 -c "import sys,json; d=json.load(sys.stdin); hso=d['hookSpecificOutput']; assert len(hso['permissionDecisionReason']) > 0" 2>/dev/null; then
   PASS=$((PASS + 1))
-  echo -e "  ${GREEN}PASS${NC}: JSON has non-empty reason"
+  echo -e "  ${GREEN}PASS${NC}: JSON has non-empty permissionDecisionReason"
 else
   FAIL=$((FAIL + 1))
   echo -e "  ${RED}FAIL${NC}: JSON missing or empty reason"

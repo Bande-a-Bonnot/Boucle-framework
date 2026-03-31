@@ -180,7 +180,7 @@ if ($cachedMtime -and $cachedMtime -eq $currentMtime) {
     $reason = "read-once: ${baseName} (~${estimatedTokens} tokens) already in context (read ${minutesAgo}m ago, unchanged). Re-read allowed after ${ttlMin}m. Session savings: ~${sessionSaved} tokens${costInfo}."
 
     if ($mode -eq 'deny') {
-        $result = @{ decision = 'block'; reason = $reason } | ConvertTo-Json -Compress
+        $result = @{ hookSpecificOutput = @{ permissionDecision = 'deny'; permissionDecisionReason = $reason } } | ConvertTo-Json -Compress -Depth 3
         Write-Output $result
     } else {
         # Warn mode (default) -- allow with advisory
@@ -229,7 +229,7 @@ if ($cachedMtime -and $diffMode -and (Test-Path $snapFile -ErrorAction SilentlyC
         $reason = "read-once: ${baseName} changed since last read. You already have the previous version in context. Here are only the changes (saving ~${tokensSaved} tokens):\n\n${diffText}\n\nApply this diff mentally to your cached version of the file."
 
         if ($mode -eq 'deny') {
-            $result = @{ decision = 'block'; reason = $reason } | ConvertTo-Json -Compress
+            $result = @{ hookSpecificOutput = @{ permissionDecision = 'deny'; permissionDecisionReason = $reason } } | ConvertTo-Json -Compress -Depth 3
             Write-Output $result
         } else {
             $output = @{

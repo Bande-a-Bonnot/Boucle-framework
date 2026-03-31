@@ -182,9 +182,8 @@ if [ -n "$CACHED_MTIME" ] && [ "$CACHED_MTIME" = "$CURRENT_MTIME" ]; then
 
   if [ "$MODE" = "deny" ]; then
     # Hard block — saves tokens but breaks Edit tool and parallel reads.
-    # Uses top-level "decision":"block" format (robust against claude-code#37597
-    # regression where permissionDecision inside hookSpecificOutput is silently ignored).
-    jq -cn --arg r "$REASON" '{"decision":"block","reason":$r}'
+    # Uses hookSpecificOutput format (claude-code#37597 is fixed upstream).
+    jq -cn --arg r "$REASON" '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$r}}'
   else
     # Warn mode (default) — allow the read with advisory message.
     # Prevents Edit tool deadlock (Edit requires a prior Read to succeed)
@@ -241,8 +240,8 @@ print(prefix + escaped_diff + suffix)
       :
     else
       if [ "$MODE" = "deny" ]; then
-        # Hard block with diff in reason (robust format, see claude-code#37597)
-        jq -cn --arg r "$REASON" '{"decision":"block","reason":$r}'
+        # Hard block with diff in reason (claude-code#37597 is fixed upstream)
+        jq -cn --arg r "$REASON" '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$r}}'
       else
         cat <<EOF
 {

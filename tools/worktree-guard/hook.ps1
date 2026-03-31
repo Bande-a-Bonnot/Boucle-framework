@@ -43,7 +43,7 @@ function Write-Log {
 # Helper: output a block decision as JSON
 function Block-Tool {
     param([string]$Reason)
-    $result = @{ decision = 'block'; reason = $Reason } | ConvertTo-Json -Compress
+    $result = @{ hookSpecificOutput = @{ permissionDecision = 'deny'; permissionDecisionReason = $Reason } } | ConvertTo-Json -Compress -Depth 3
     Write-Output $result
     exit 0
 }

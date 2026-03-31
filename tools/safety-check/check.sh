@@ -355,7 +355,9 @@ fi
 
 # Hooks using exit code 2 for deny may be silently ignored (claude-code#37210)
 # Exit 2 can be treated as a hook crash, causing Claude to proceed despite the deny.
-# Correct pattern: exit 0 with {"decision":"block","reason":"..."} JSON on stdout.
+# Correct pattern: exit 0 with hookSpecificOutput JSON on stdout.
+# Current format: {"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"..."}}
+# Deprecated format (still works): {"decision":"block","reason":"..."}
 for hookdir in "${HOME}/.claude/hooks" ".claude/hooks"; do
     [ -d "$hookdir" ] || continue
     EXIT2_HOOKS=""
@@ -1296,8 +1298,8 @@ if [ "$VERIFY_MODE" = "1" ] && [ -n "$HOOK_PATHS" ]; then
         fi
 
         if [ "$expect_block" = "true" ]; then
-            # Should have blocked — look for "decision":"block" in JSON output
-            if [ -n "$output" ] && echo "$output" | grep -qE '"decision"[[:space:]]*:[[:space:]]*"block"'; then
+            # Should have blocked — look for deny in JSON output (both old and new format)
+            if [ -n "$output" ] && echo "$output" | grep -qE '"permissionDecision"[[:space:]]*:[[:space:]]*"deny"|"decision"[[:space:]]*:[[:space:]]*"block"'; then
                 VERIFY_PASS=$((VERIFY_PASS + 1))
                 printf "  ${GREEN}✓${NC} %s — blocks correctly\n" "$name"
             else

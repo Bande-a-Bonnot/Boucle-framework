@@ -13,7 +13,7 @@ Claude Code's CLAUDE.md rules are [read but not enforced](https://github.com/ant
 
 ```
 Claude tries:  rm -rf ~/projects
-bash-guard:    {"decision":"block","reason":"rm -rf targets home directory"}
+bash-guard:    {"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"rm -rf targets home directory"}}
 Claude sees:   ⚠ Hook blocked this action. Suggesting safer alternative...
 ```
 
@@ -500,7 +500,7 @@ boucle --version                 # Show version
 
 **IS_DEMO environment variable disables all hooks**: If `IS_DEMO=1` is set in your environment (sometimes via IDE or cloud workspace settings), Claude Code [silently skips all hook execution](https://github.com/anthropics/claude-code/issues/37780) by suppressing workspace trust without granting it. Run `echo $IS_DEMO` to check. Our `safety-check` tool detects this automatically.
 
-**Hook permission decisions may be ignored**: Since v2.1.78, `permissionDecision` returned by PreToolUse hooks [may be silently ignored](https://github.com/anthropics/claude-code/issues/37597). Our hooks use `decision: "block"` in stdout JSON, which still works. If you write custom hooks that return `permissionDecision: "allow"`, users may still be prompted.
+**Hook permission decisions may be ignored (fixed)**: Prior to ~v2.1.84, `permissionDecision` returned by PreToolUse hooks [could be silently ignored](https://github.com/anthropics/claude-code/issues/37597). This is now fixed upstream. Our hooks use the current `hookSpecificOutput.permissionDecision` format. If you have custom hooks still using the deprecated `decision: "block"` format, they will continue to work but should be migrated to `hookSpecificOutput: {permissionDecision: "deny"}`.
 
 **Subagents may skip hook settings**: Agents spawned via the Agent tool [don't consistently inherit permission settings](https://github.com/anthropics/claude-code/issues/37730). Hooks in `.claude/settings.json` should still fire (shared config), but verify hook behavior when using subagent workflows.
 

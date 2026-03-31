@@ -1376,7 +1376,7 @@ TMPDIR_NOUPDINPUT=$(mktemp -d)
 mkdir -p "$TMPDIR_NOUPDINPUT/.claude/hooks"
 cat > "$TMPDIR_NOUPDINPUT/.claude/hooks/blocker.sh" << 'HOOKEOF'
 #!/bin/bash
-echo '{"decision":"block","reason":"nope"}'
+echo '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"nope"}}'
 exit 0
 HOOKEOF
 cat > "$TMPDIR_NOUPDINPUT/.claude/settings.json" << 'SETTINGSEOF'
@@ -1395,7 +1395,7 @@ TMPDIR_WTISOLATION=$(mktemp -d)
 mkdir -p "$TMPDIR_WTISOLATION/.claude/hooks"
 cat > "$TMPDIR_WTISOLATION/.claude/hooks/worktree-guard.sh" << 'HOOKEOF'
 #!/bin/bash
-echo '{"decision":"block","reason":"uncommitted changes"}'
+echo '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"uncommitted changes"}}'
 exit 0
 HOOKEOF
 chmod +x "$TMPDIR_WTISOLATION/.claude/hooks/worktree-guard.sh"
