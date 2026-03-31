@@ -2700,6 +2700,52 @@ SSUSER285_OUTPUT=$(cd "$TMPDIR_SSUSER285/project" && bash "$CHECK_SCRIPT" 2>&1) 
 assert "user-level SessionStart hook also triggers 41285 warning" "systemMessage field is no longer displayed" "$SSUSER285_OUTPUT"
 rm -rf "$TMPDIR_SSUSER285"
 
+# === Summary block tests ===
+# Test: summary block is present in output
+assert "summary block present" "Safety Summary" "$OUTPUT"
+assert "summary has grade line" "Grade .* | " "$OUTPUT"
+assert "summary has hook status" "bash-guard" "$OUTPUT"
+assert "summary has repo link" "github.com/Bande-a-Bonnot/Boucle-framework" "$OUTPUT"
+
+# Test: summary with hooks installed shows + markers
+TMPDIR_SUMMARY=$(mktemp -d)
+SETTINGS_SUMMARY="$TMPDIR_SUMMARY/.claude/settings.json"
+mkdir -p "$TMPDIR_SUMMARY/.claude/hooks"
+cat > "$SETTINGS_SUMMARY" << 'SUMEOF'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          { "command": "/path/to/bash-guard.sh" }
+        ]
+      },
+      {
+        "hooks": [
+          { "command": "/path/to/git-safe.sh" }
+        ]
+      }
+    ]
+  }
+}
+SUMEOF
+SUMMARY_OUTPUT=$(HOME="$TMPDIR_SUMMARY" bash "$CHECK_SCRIPT" 2>&1) || true
+assert "summary shows + for installed bash-guard" "\\[+\\] bash-guard" "$SUMMARY_OUTPUT"
+assert "summary shows + for installed git-safe" "\\[+\\] git-safe" "$SUMMARY_OUTPUT"
+assert "summary shows - for missing file-guard" "\\[-\\] file-guard" "$SUMMARY_OUTPUT"
+assert "summary shows - for missing enforce" "\\[-\\] enforce" "$SUMMARY_OUTPUT"
+assert "summary hook count with 2 installed" "2/8 hooks" "$SUMMARY_OUTPUT"
+rm -rf "$TMPDIR_SUMMARY"
+
+# Test: summary with no hooks shows 0/8
+TMPDIR_NOHOOK=$(mktemp -d)
+mkdir -p "$TMPDIR_NOHOOK/.claude"
+echo '{}' > "$TMPDIR_NOHOOK/.claude/settings.json"
+NOHOOK_OUTPUT=$(HOME="$TMPDIR_NOHOOK" bash "$CHECK_SCRIPT" 2>&1) || true
+assert "summary with no hooks shows 0/8" "0/8 hooks" "$NOHOOK_OUTPUT"
+assert "all hooks show - with none installed" "\\[-\\] bash-guard" "$NOHOOK_OUTPUT"
+rm -rf "$TMPDIR_NOHOOK"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"

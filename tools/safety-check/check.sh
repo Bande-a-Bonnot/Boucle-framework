@@ -1432,6 +1432,20 @@ if [ "$MISSING" -gt 2 ]; then
     printf "  ${DIM}\$${NC} curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- all\n"
 fi
 
+# Compact plain-text summary (no colors, easy to copy/share)
+_hook_mark() { has_hook "$1" && printf "+" || printf "-"; }
+_installed_count=0
+for _h in bash-guard git-safe file-guard read-once branch-guard session-log enforce-hooks worktree-guard; do
+    has_hook "$_h" && _installed_count=$((_installed_count + 1))
+done
+echo "--- Safety Summary (copy/paste) ---"
+printf "Grade %s | %d%% | %d/8 hooks\n" "$GRADE" "$PCT" "$_installed_count"
+printf "[%s] bash-guard  [%s] git-safe  [%s] file-guard  [%s] read-once\n" \
+    "$(_hook_mark bash-guard)" "$(_hook_mark git-safe)" "$(_hook_mark file-guard)" "$(_hook_mark read-once)"
+printf "[%s] branch-guard  [%s] session-log  [%s] enforce  [%s] worktree-guard\n" \
+    "$(_hook_mark branch-guard)" "$(_hook_mark session-log)" "$(_hook_mark enforce-hooks)" "$(_hook_mark worktree-guard)"
+printf "github.com/Bande-a-Bonnot/Boucle-framework\n"
+
 echo ""
 printf "${DIM}https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools${NC}\n"
 echo ""
