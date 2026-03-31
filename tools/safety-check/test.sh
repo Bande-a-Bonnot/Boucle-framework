@@ -2746,6 +2746,73 @@ assert "summary with no hooks shows 0/8" "0/8 hooks" "$NOHOOK_OUTPUT"
 assert "all hooks show - with none installed" "\\[-\\] bash-guard" "$NOHOOK_OUTPUT"
 rm -rf "$TMPDIR_NOHOOK"
 
+# === Test: SessionStart/UserPromptSubmit hook timing warning (#41310) ===
+TMPDIR_TIMING=$(mktemp -d)
+mkdir -p "$TMPDIR_TIMING/.claude"
+cat > "$TMPDIR_TIMING/.claude/settings.json" << 'TIMINGEOF'
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [{"type": "command", "command": "echo test"}]
+      }
+    ]
+  }
+}
+TIMINGEOF
+TIMING_OUTPUT=$(HOME="$TMPDIR_TIMING" bash "$CHECK_SCRIPT" 2>&1) || true
+assert "hook timing warning for SessionStart (#41310)" "project directory.*exists" "$TIMING_OUTPUT"
+assert "hook timing warning references claude-code#41310" "claude-code#41310" "$TIMING_OUTPUT"
+rm -rf "$TMPDIR_TIMING"
+
+# Test: UserPromptSubmit also triggers hook timing warning
+TMPDIR_TIMING2=$(mktemp -d)
+mkdir -p "$TMPDIR_TIMING2/.claude"
+cat > "$TMPDIR_TIMING2/.claude/settings.json" << 'TIMING2EOF'
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [{"type": "command", "command": "echo test"}]
+      }
+    ]
+  }
+}
+TIMING2EOF
+TIMING2_OUTPUT=$(HOME="$TMPDIR_TIMING2" bash "$CHECK_SCRIPT" 2>&1) || true
+assert "hook timing warning for UserPromptSubmit (#41310)" "project directory.*exists" "$TIMING2_OUTPUT"
+rm -rf "$TMPDIR_TIMING2"
+
+# === Test: Model self-execution warning (#41307) ===
+TMPDIR_SELFEXEC=$(mktemp -d)
+mkdir -p "$TMPDIR_SELFEXEC/.claude"
+echo '{}' > "$TMPDIR_SELFEXEC/.claude/settings.json"
+SELFEXEC_OUTPUT=$(HOME="$TMPDIR_SELFEXEC" bash "$CHECK_SCRIPT" 2>&1) || true
+assert "self-execution warning always shown (#41307)" "hallucinate.*Human" "$SELFEXEC_OUTPUT"
+assert "self-execution warning references claude-code#41307" "claude-code#41307" "$SELFEXEC_OUTPUT"
+rm -rf "$TMPDIR_SELFEXEC"
+
+# === Test: No hook timing warning without SessionStart/UserPromptSubmit ===
+TMPDIR_NOTIMING=$(mktemp -d)
+mkdir -p "$TMPDIR_NOTIMING/.claude"
+cat > "$TMPDIR_NOTIMING/.claude/settings.json" << 'NOTIMEOF'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "echo test"}]
+      }
+    ]
+  }
+}
+NOTIMEOF
+NOTIME_OUTPUT=$(HOME="$TMPDIR_NOTIMING" bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no hook timing warning without SessionStart/UserPromptSubmit" "claude-code#41310" "$NOTIME_OUTPUT"
+rm -rf "$TMPDIR_NOTIMING"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"

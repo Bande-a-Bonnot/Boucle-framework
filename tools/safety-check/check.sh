@@ -586,6 +586,18 @@ if has_hook_type "SessionStart"; then
     WARNINGS+=("SessionStart hooks are configured but their systemMessage field is no longer displayed in the terminal (v2.1.88 regression). The hook runs and additionalContext is still injected into model context, but the visual feedback that used to appear (e.g. 'SessionStart:startup says: ...') is silently dropped. If your SessionStart hook uses systemMessage for operator notifications or session identification, the output will not be visible. (see claude-code#41285)")
 fi
 
+# SessionStart/UserPromptSubmit hooks fire before project directory exists (claude-code#41310)
+# On first-ever session in a project, the hooks fire before ~/.claude/projects/<encoded-path>/ is created.
+# Hooks that derive file paths from transcript_path will fail because the parent directory doesn't exist yet.
+if has_hook_type "SessionStart" || has_hook_type "UserPromptSubmit"; then
+    WARNINGS+=("SessionStart and UserPromptSubmit hooks can fire before the project directory (~/.claude/projects/<path>/) exists on first-ever sessions in a project. If your hooks write files derived from transcript_path, they will fail because the parent directory has not been created yet. Workaround: add 'mkdir -p' for any transcript_path-derived paths before writing. (see claude-code#41310)")
+fi
+
+# Model self-execution after long sessions (claude-code#41307)
+# In long sessions, after task-notification, the model can hallucinate 'Human:' text and execute it.
+# This is a model-level issue — hooks cannot distinguish real vs hallucinated user requests.
+WARNINGS+=("In long sessions, the model can hallucinate 'Human:' prefixed text after task-notification delivery and then execute it as if it were a real user request, causing unauthorized tool calls. Hooks cannot distinguish these from real user requests because the tool calls themselves are genuine — only the trigger is hallucinated. Mitigation: use session time limits, avoid very long unattended sessions. (see claude-code#41307)")
+
 # PreToolUse hooks on EnterPlanMode — hook output deprioritized (claude-code#41051)
 _check_planmode_matcher() {
     local sf="$1"
