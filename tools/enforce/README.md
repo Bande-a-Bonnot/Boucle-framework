@@ -159,6 +159,7 @@ People hit the same enforcement gaps repeatedly. Here is what each looks like an
 | Model attests compliance then violates | 4 attestations followed by immediate violation ([#41217](https://github.com/anthropics/claude-code/issues/41217)) | Hooks do not rely on model cooperation. Block is enforced by Claude Code, not by the model. |
 | Read-only session ignored | "Only analyze, don't modify" leads to ALTER TABLE on staging ([#41063](https://github.com/anthropics/claude-code/issues/41063)) | `tool-block` Write/Edit/MultiEdit + `bash-guard` for destructive commands. See [Read-only](#read-only--audit-mode) recipe. |
 | Permission prompt bypassed | User clicks "No" but command executes anyway ([#40302](https://github.com/anthropics/claude-code/issues/40302)) | PreToolUse hooks fire before the permission prompt. A hook block prevents the tool call entirely. |
+| Skill/workflow overrides CLAUDE.md rules | Skill says "commit the plan" but CLAUDE.md says "never commit plans" — model follows the skill ([#41437](https://github.com/anthropics/claude-code/issues/41437)) | `file-guard` + `bash-guard` block the file writes and git commands regardless of skill instructions. See [Protect CLAUDE.md rules from skill overrides](#protect-claudemd-rules-from-skill-overrides) recipe. |
 
 ## Recipes
 
@@ -290,6 +291,27 @@ For temporary per-session preferences, combine with `@enforced(warn)` for tools 
 - Don't use WebSearch @enforced
 - Don't use WebFetch @enforced(warn)
 ```
+
+### Protect CLAUDE.md rules from skill overrides
+
+Skills and workflows can include instructions that contradict your CLAUDE.md. When a skill says "commit the implementation plan" but your CLAUDE.md says "never commit plan documents," the model follows the skill because skill instructions arrive later in context and override earlier directives. Addresses [#41437](https://github.com/anthropics/claude-code/issues/41437) (skill workflow overrides explicit CLAUDE.md rule against committing implementation plans).
+
+```markdown
+## Document policy @enforced
+- Never write implementation plan files
+- Never write files matching *-plan.md, *-plan.txt, implementation-*.md
+- Protected files: PLAN.md, IMPLEMENTATION.md, ARCHITECTURE.md
+
+## Git safety @enforced
+- Never run git commit with plan, implementation, or architecture in the message
+- Never run git add with plan or implementation in the filename
+```
+
+The `file-guard` rules block Write/Edit to plan documents regardless of what a skill workflow requests. The `bash-guard` rules block `git commit` and `git add` commands that target plan files. Together, they create a deterministic boundary that no skill, workflow, or prompt injection can cross.
+
+**Why this works when CLAUDE.md alone does not:** Skills inject their instructions into the conversation alongside (or after) CLAUDE.md content. The model resolves the conflict by following whichever instruction is more specific or more recent — usually the skill. Hooks do not participate in this priority resolution. They fire on the tool call itself, after the model has already decided what to do. A skill can tell the model to commit; the hook blocks the commit before it executes.
+
+**Note:** Built-in skills that use the `Skill` tool wrapper bypass individual file-operation hooks (see [Known Limitations](#known-limitations)). The recipe above protects against custom skills and workflows that use standard Write/Edit/Bash tool calls. For built-in skill protection, `bash-guard` on `git commit` and `git add` still works because git operations always go through the Bash tool.
 
 ### Quick start with templates
 
