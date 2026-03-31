@@ -532,6 +532,10 @@ boucle --version                 # Show version
 
 **Bundled ripgrep missing execute permission (Linux)**: The bundled `rg` binary [can lose its execute permission](https://github.com/anthropics/claude-code/issues/41463) on Linux, silently breaking all user-defined slash commands in `~/.claude/commands/`. Fix: `chmod +x` the bundled binary.
 
+**v2.1.88 pulled from npm**: This version was [pulled due to multiple regressions](https://github.com/anthropics/claude-code/issues/41497): custom commands in `.claude/commands/` are not discovered, `SessionStart` `systemMessage` display is broken, and the `cli.js.map` file was accidentally shipped. If you are on v2.1.88, downgrade to v2.1.87 or wait for the next release.
+
+**Non-interactive sessions hang on usage limit**: In headless, `--print`, or remote-control mode, hitting a usage limit [shows a confirmation prompt that cannot be answered](https://github.com/anthropics/claude-code/issues/41502) because there is no stdin. The session hangs permanently. There is no programmatic workaround ([#41503](https://github.com/anthropics/claude-code/issues/41503)). If you run Claude Code in CI, cron, or autonomous loops, set session time limits and monitor for stuck processes.
+
 **Model can manipulate hook state files**: The model has filesystem access and [can overwrite files that hooks depend on](https://github.com/anthropics/claude-code/issues/38841) — checkpoint files, lock files, counters. In one documented case, Claude computed the SHA256 hash of a checkpoint filename and wrote a fresh timestamp to bypass a content-read-gate. Hooks that rely on external state files for enforcement should assume the model can read and modify those files. Cryptographic signatures or out-of-process validation can mitigate this.
 
 **Windows**: All seven hooks have native **PowerShell 7+** equivalents (`hook.ps1`) that require no external dependencies. Requires [PowerShell 7](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (`pwsh`), not the built-in Windows PowerShell 5. Install them with:

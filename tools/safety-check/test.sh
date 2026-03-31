@@ -3054,6 +3054,49 @@ assert_not "non-symlinked .claude no warning" "claude-code#41451" "$NOSYM_OUTPUT
 cd "$ORIG_DIR"
 rm -rf "$TMPDIR_NOSYM"
 
+# Test: v2.1.88 version warning
+SAVE_HOME="$HOME"
+TMPDIR_V88=$(mktemp -d)
+export HOME="$TMPDIR_V88"
+mkdir -p "$HOME/.claude"
+echo '{}' > "$HOME/.claude/settings.json"
+# Create a mock claude that reports v2.1.88
+mkdir -p "$TMPDIR_V88/bin"
+printf '#!/bin/bash\necho "claude v2.1.88"' > "$TMPDIR_V88/bin/claude"
+chmod +x "$TMPDIR_V88/bin/claude"
+V88_OUTPUT=$(PATH="$TMPDIR_V88/bin:$PATH" bash "$CHECK_SCRIPT" 2>&1) || true
+assert "v2.1.88 warning shown" "pulled from npm" "$V88_OUTPUT"
+assert "v2.1.88 references commands issue" "claude-code#41497" "$V88_OUTPUT"
+export HOME="$SAVE_HOME"
+rm -rf "$TMPDIR_V88"
+
+# Test: v2.1.87 should NOT trigger 2.1.88 warning
+SAVE_HOME="$HOME"
+TMPDIR_V87=$(mktemp -d)
+export HOME="$TMPDIR_V87"
+mkdir -p "$HOME/.claude"
+echo '{}' > "$HOME/.claude/settings.json"
+mkdir -p "$TMPDIR_V87/bin"
+printf '#!/bin/bash\necho "claude v2.1.87"' > "$TMPDIR_V87/bin/claude"
+chmod +x "$TMPDIR_V87/bin/claude"
+V87_OUTPUT=$(PATH="$TMPDIR_V87/bin:$PATH" bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "v2.1.87 no pulled-from-npm warning" "pulled from npm" "$V87_OUTPUT"
+export HOME="$SAVE_HOME"
+rm -rf "$TMPDIR_V87"
+
+# Test: non-interactive session usage limit warning
+SAVE_HOME="$HOME"
+TMPDIR_NI=$(mktemp -d)
+export HOME="$TMPDIR_NI"
+mkdir -p "$HOME/.claude"
+echo '{}' > "$HOME/.claude/settings.json"
+# Run with stdin from /dev/null to simulate non-interactive
+NI_OUTPUT=$(bash "$CHECK_SCRIPT" < /dev/null 2>&1) || true
+assert "non-interactive usage limit warning" "usage limit" "$NI_OUTPUT"
+assert "non-interactive references issue" "claude-code#41502" "$NI_OUTPUT"
+export HOME="$SAVE_HOME"
+rm -rf "$TMPDIR_NI"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
