@@ -506,6 +506,8 @@ boucle --version                 # Show version
 
 **CLAUDE_CODE_SIMPLE disables all hooks**: When the `CLAUDE_CODE_SIMPLE` environment variable is set (to `true` or `1`), Claude Code disables hooks, MCP tools, attachments, and CLAUDE.md file loading entirely (introduced in v2.1.50). No enforcement rules will fire. Run `echo $CLAUDE_CODE_SIMPLE` to check. Our `safety-check` tool detects this automatically.
 
+**`--bare` flag skips all hooks**: The `--bare` CLI flag disables hooks, LSP, plugin sync, and skill directory walks for scripted `-p` calls. If your autonomous pipeline uses `claude --bare -p`, no hooks fire. Use OS-level controls (file permissions, containerization) for enforcement in bare mode.
+
 **Hook permission decisions may be ignored (fixed)**: Prior to ~v2.1.84, `permissionDecision` returned by PreToolUse hooks [could be silently ignored](https://github.com/anthropics/claude-code/issues/37597). This is now fixed upstream. Our hooks use the current `hookSpecificOutput.permissionDecision` format. If you have custom hooks still using the deprecated `decision: "block"` format, they will continue to work but should be migrated to `hookSpecificOutput: {permissionDecision: "deny"}`.
 
 **Subagents may skip hook settings**: Agents spawned via the Agent tool [don't consistently inherit permission settings](https://github.com/anthropics/claude-code/issues/37730). Hooks in `.claude/settings.json` should still fire (shared config), but verify hook behavior when using subagent workflows.
