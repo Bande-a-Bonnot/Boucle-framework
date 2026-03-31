@@ -904,6 +904,7 @@ rm -rf "$TMPDIR_NOPERM"
 
 # === Test 58: Deny bypass warning references compound commands ===
 assert "deny bypass code references compound" "compound" "$(cat "$CHECK_SCRIPT")"
+assert "deny bypass code references upstream if-condition fix" "if.*condition" "$(cat "$CHECK_SCRIPT")"
 
 # === Test 59: Project-level hooks detected ===
 TMPDIR_PROJHOOK=$(mktemp -d)
@@ -3183,6 +3184,7 @@ DENY_EOF
 DENY_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert "deny without bash-guard references pipe bypass" "claude-code#41559" "$DENY_OUTPUT"
 assert "deny without bash-guard warns about pipe chains" "pipe chain" "$DENY_OUTPUT"
+assert "deny warning mentions hooks if condition fix" "hooks.*fire correctly" "$DENY_OUTPUT"
 export HOME="$SAVE_HOME"
 rm -rf "$TMPDIR_DENY"
 

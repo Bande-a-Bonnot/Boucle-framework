@@ -1026,8 +1026,11 @@ except: print('false')
         printf "     compound statements (cmd1 && cmd2), and multi-line commands bypass\n"
         printf "     pattern matching. Deny rules only match the full command string, not\n"
         printf "     individual segments. bash-guard parses each segment independently.\n"
+        printf "     Note: hooks 'if' conditions were fixed upstream (late March 2026) to\n"
+        printf "     match compound commands and env-var prefixes, so hooks now fire correctly\n"
+        printf "     for these patterns. The gap is in deny rules, not hooks.\n"
         printf "     ${DIM}See: claude-code#41559, claude-code#38119, claude-code#37662${NC}\n"
-        ISSUES+=("Deny rules without bash-guard: deny patterns only match the full command string. Pipe chains (find | xargs rm), compound commands (echo ok && rm -rf /), multi-line scripts, and leading comments all bypass deny rule matching. bash-guard parses pipe segments and compound chains independently. See claude-code#41559.")
+        ISSUES+=("Deny rules without bash-guard: deny patterns only match the full command string. Pipe chains (find | xargs rm), compound commands (echo ok && rm -rf /), multi-line scripts, and leading comments all bypass deny rule matching. Hooks 'if' conditions now handle compound commands (upstream fix, late March 2026), so hooks fire correctly. The gap is in deny rules only. bash-guard parses pipe segments and compound chains independently. See claude-code#41559.")
     fi
 fi
 
