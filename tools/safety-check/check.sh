@@ -795,6 +795,57 @@ PYEOF_WARN
     fi
 done
 
+# Hooks using deprecated decision:block format without hookSpecificOutput (claude-code#15486)
+# The old format {"decision":"block","reason":"..."} still works but is deprecated.
+# New format: {"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"..."}}
+# Migration avoids breakage if the old format is removed in a future CLI version.
+for hookdir in "${HOME}/.claude/hooks" ".claude/hooks"; do
+    [ -d "$hookdir" ] || continue
+    DEPRECATED_HOOKS=""
+    for hookfile in "$hookdir"/*; do
+        [ -f "$hookfile" ] || continue
+        # Detect hooks that output decision:block but don't use hookSpecificOutput
+        if grep -qlE '"decision".*"block"|"block".*"decision"' "$hookfile" 2>/dev/null; then
+            if ! grep -qlE 'hookSpecificOutput' "$hookfile" 2>/dev/null; then
+                DEPRECATED_HOOKS="${DEPRECATED_HOOKS} $(basename "$hookfile")"
+            fi
+        fi
+    done
+    if [ -n "$DEPRECATED_HOOKS" ]; then
+        scope="Hook(s)"
+        [ "$hookdir" = ".claude/hooks" ] && scope="Project hook(s)"
+        WARNINGS+=("${scope} use deprecated decision:block format:${DEPRECATED_HOOKS}. This format still works but is deprecated. Migrate to {\"hookSpecificOutput\":{\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"...\"}} to avoid breakage in future CLI versions. (see claude-code#15486)")
+    fi
+done
+# Also check settings.json hook commands for deprecated decision:block
+for _cfg in "$SETTINGS_FILE" "$PROJECT_SETTINGS"; do
+    [ -f "$_cfg" ] || continue
+    _DEPRECATED_BLOCK=$(python3 - "$_cfg" << 'PYEOF_DEPRECATED'
+import json, sys, re
+try:
+    s = json.load(open(sys.argv[1]))
+    hooks = s.get("hooks", {})
+    for hook_type in hooks:
+        for entry in hooks[hook_type]:
+            cmd = ""
+            for h in entry.get("hooks", []):
+                cmd += h.get("command", "") + " "
+            cmd += entry.get("command", "")
+            if re.search(r'"decision".*"block"|"block".*"decision"', cmd):
+                if "hookSpecificOutput" not in cmd:
+                    print("true")
+                    sys.exit(0)
+    print("false")
+except:
+    print("false")
+PYEOF_DEPRECATED
+    )
+    if [ "$_DEPRECATED_BLOCK" = "true" ]; then
+        WARNINGS+=("Settings hook commands use deprecated decision:block format. Migrate to hookSpecificOutput with permissionDecision:deny. The old format still works but may be removed in a future CLI version. (see claude-code#15486)")
+        break
+    fi
+done
+
 # Session-level permission caching bypasses allow list in sandbox mode (claude-code#40384)
 # Approving one git commit auto-approves ALL subsequent git commits without prompting.
 if [ -f "$SETTINGS_FILE" ]; then

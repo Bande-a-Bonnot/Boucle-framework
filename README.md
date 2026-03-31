@@ -31,7 +31,7 @@ Scores your Claude Code safety configuration from A to F and shows one-liner fix
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
-Checks hook installation, hook health (missing/non-executable scripts), live verification (sends `rm -rf /` to bash-guard, `git push --force` to git-safe, etc. and confirms they block), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings, jq/python3 dependencies, Windows hook reliability), and known CLI version regressions. Scans both user-level (`~/.claude/settings.json`) and project-level (`.claude/settings.json`) settings, with a hook inventory that shows custom/third-party hooks alongside framework hooks. Also warns when deny rules are configured without bash-guard, since deny patterns [can be bypassed](https://github.com/anthropics/claude-code/issues/38119) by compound commands and multi-line scripts. No installation required. ~230 tests.
+Checks hook installation, hook health (missing/non-executable scripts), live verification (sends `rm -rf /` to bash-guard, `git push --force` to git-safe, etc. and confirms they block), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings, jq/python3 dependencies, Windows hook reliability), and known CLI version regressions. Scans both user-level (`~/.claude/settings.json`) and project-level (`.claude/settings.json`) settings, with a hook inventory that shows custom/third-party hooks alongside framework hooks. Also warns when deny rules are configured without bash-guard, since deny patterns [can be bypassed](https://github.com/anthropics/claude-code/issues/38119) by compound commands and multi-line scripts. No installation required. ~260 tests.
 
 **Start with the essentials** (bash-guard + git-safe + file-guard):
 
@@ -555,7 +555,7 @@ bash tools/worktree-guard/test.sh
 
 New in v0.10.0: Installer CLI (install, uninstall, list, upgrade, doctor, backup/restore). Content guards for enforce-hooks (`content_guard`, `scoped_content_guard`). Safety-check scans all 11 hook event types. JSONC settings.json handling. read-once PowerShell CLI. Symlink bypass security fix. See [CHANGELOG](CHANGELOG.md) for details.
 
-14 stars, 3 external contributors, 2 forks.
+15 stars, 3 external contributors, 2 forks.
 
 ## Contributing
 
