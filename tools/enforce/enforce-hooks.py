@@ -373,7 +373,7 @@ def extract_file_patterns(text):
         patterns.append(m.group(1))
     # Match common file patterns without quotes
     # Use (?:^|\W) instead of \b since dot-prefixed names don't have word boundary before them
-    for m in re.finditer(r'(?:^|\W)(\.env\b|\.env\.\w+|\.env\.local\b|secrets?/|\.pem\b|\.key\b|\.p12\b|\.pfx\b|\.cert\b|\.crt\b|credentials?\.\w+|vendor/|node_modules/|\.git/|\*\.\w{1,5})', text):
+    for m in re.finditer(r'(?:^|\W)(\.claude/hooks/?|\.claude/settings\.json|\.claude/|\.env\b|\.env\.\w+|\.env\.local\b|secrets?/|\.pem\b|\.key\b|\.p12\b|\.pfx\b|\.cert\b|\.crt\b|credentials?\.\w+|vendor/|node_modules/|\.git/|\*\.\w{1,5})', text):
         patterns.append(m.group(1))
     # Match common bare filenames (Makefile, Dockerfile, lock files, etc.)
     # NOTE: Longer compound names (Gemfile.lock) MUST appear before shorter
@@ -381,11 +381,17 @@ def extract_file_patterns(text):
     for m in re.finditer(r'\b(package-lock\.json|Gemfile\.lock|Cargo\.lock|Pipfile\.lock|Cargo\.toml|pnpm-lock\.yaml|shrinkwrap\.json|composer\.lock|poetry\.lock|bun\.lockb|flake\.lock|CHANGELOG\.md|CLAUDE\.md|README\.md|package\.json|tsconfig\.json|go\.mod|go\.sum|yarn\.lock|Makefile|Dockerfile|Gemfile|Rakefile|Procfile|Vagrantfile|Brewfile|Guardfile|Thorfile|Berksfile|Capfile|Podfile|Fastfile|Dangerfile|LICENSE|\.gitignore|\.dockerignore)\b', text):
         if m.group(1) not in patterns:
             patterns.append(m.group(1))
-    # Match paths with slashes
+    # Match paths with slashes (including dot-prefixed like .claude/hooks/)
+    for m in re.finditer(r'(?:^|(?<=\s)|(?<=\())(\.\w+/\w+(?:/\w+)*/?)', text):
+        candidate = m.group(1)
+        if candidate not in patterns:
+            patterns.append(candidate)
     for m in re.finditer(r'\b(\w+/\w+(?:/\w+)*/?)\b', text):
         candidate = m.group(1)
         if candidate not in patterns and not candidate.startswith('http'):
-            patterns.append(candidate)
+            # Skip if a dot-prefixed version already captured (e.g. skip "claude/hooks" if ".claude/hooks/" exists)
+            if not any(p.endswith(candidate) or p.endswith(candidate.rstrip('/') + '/') for p in patterns):
+                patterns.append(candidate)
     # Strip leading * from glob patterns (bash check already wraps in *...*)
     cleaned = []
     for p in patterns:
@@ -4403,6 +4409,24 @@ rm -rf /tmp/test
     str_rules, _ = scan_file(tf_str)
     check("template: minimal < recommended", len(min_rules) < len(rec_rules), True)
     check("template: recommended < strict", len(rec_rules) < len(str_rules), True)
+
+    # Dot-prefixed paths are correctly captured (regression test for .claude/ extraction)
+    d_hooks = classify_directive("Don't modify .claude/hooks/ @enforced", 1)
+    check("dot-path: .claude/hooks/ captured", d_hooks is not None, True)
+    check("dot-path: .claude/hooks/ is file-guard", d_hooks.hook_type, 'file-guard')
+    check("dot-path: .claude/hooks/ has dot prefix", any('.claude/hooks' in p for p in d_hooks.patterns), True)
+    check("dot-path: .claude/hooks/ no bare duplicate", not any(p == 'claude/hooks' or p == 'claude/hooks/' for p in d_hooks.patterns), True)
+
+    d_settings = classify_directive("Don't modify .claude/settings.json @enforced", 1)
+    check("dot-path: .claude/settings.json captured", d_settings is not None, True)
+    check("dot-path: .claude/settings.json is file-guard", d_settings.hook_type, 'file-guard')
+    check("dot-path: .claude/settings.json has dot prefix", any('.claude/settings' in p for p in d_settings.patterns), True)
+
+    # Generic dot-prefixed path (not in special-case list)
+    d_vscode = classify_directive("Don't modify .vscode/settings.json @enforced", 1)
+    check("dot-path: .vscode/settings.json captured", d_vscode is not None, True)
+    check("dot-path: .vscode/settings.json is file-guard", d_vscode.hook_type, 'file-guard')
+    check("dot-path: .vscode/ has dot prefix", any('.vscode/' in p for p in d_vscode.patterns), True)
 
     # --- System/device command detection ---
     print("\n  --- System commands ---")
