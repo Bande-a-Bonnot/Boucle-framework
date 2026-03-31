@@ -413,6 +413,23 @@ except: print('false')
     fi
 done
 
+# SessionEnd hooks killed before completion (claude-code#41577)
+for _se_cfg in "$SETTINGS_FILE" "$PROJECT_SETTINGS"; do
+    [ -f "$_se_cfg" ] || continue
+    _HAS_SESSION_END=$(python3 -c "
+import json,sys
+try:
+    s=json.load(open(sys.argv[1]))
+    se = s.get('hooks',{}).get('SessionEnd',[])
+    print('true' if se else 'false')
+except: print('false')
+" "$_se_cfg" 2>/dev/null)
+    if [ "$_HAS_SESSION_END" = "true" ]; then
+        WARNINGS+=("SessionEnd hooks detected. Claude Code exits the process without waiting for SessionEnd hooks to complete — any async work (API calls, LLM summarization, network requests) is killed mid-execution. Workaround: detach heavy work into a background process with nohup/disown so it survives parent exit, then exit 0 immediately. (see claude-code#41577)")
+        break
+    fi
+done
+
 # Hooks using updatedInput with Agent tool (claude-code#39814)
 for hookdir in "${HOME}/.claude/hooks" ".claude/hooks"; do
     [ -d "$hookdir" ] || continue
@@ -479,7 +496,7 @@ except: pass
 " "$SETTINGS_FILE" 2>/dev/null)
     if [ -n "$ADDITIONAL_DIRS" ]; then
         DIR_COUNT=$(echo "$ADDITIONAL_DIRS" | wc -l | tr -d ' ')
-        WARNINGS+=("Global settings.json contains ${DIR_COUNT} additionalDirectories entry/entries. These directories are shared across ALL projects — approving file access outside the working directory in one project makes those paths available in every other project, and subagents will search them. Review and remove entries not needed for the current project. (see claude-code#40606)")
+        WARNINGS+=("Global settings.json contains ${DIR_COUNT} additionalDirectories entry/entries. These directories are shared across ALL projects — approving file access outside the working directory in one project makes those paths available in every other project, and subagents will search them. Additionally, 'always allow' directory access is flaky and may not persist across sessions — Claude will re-prompt for access despite prior approval (claude-code#41579). Review and remove entries not needed for the current project. (see claude-code#40606, claude-code#41579)")
     fi
 fi
 

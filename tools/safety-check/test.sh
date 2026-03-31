@@ -1352,6 +1352,36 @@ NOSTOPHOOK_OUTPUT=$(cd "$TMPDIR_NOSTOPHOOK" && bash "$CHECK_SCRIPT" 2>&1) || tru
 assert_not "no stop hook warning for PreToolUse only" "39530" "$NOSTOPHOOK_OUTPUT"
 rm -rf "$TMPDIR_NOSTOPHOOK"
 
+# === Test: SessionEnd hooks killed before completion (#41577) ===
+TMPDIR_SEEND=$(mktemp -d)
+mkdir -p "$TMPDIR_SEEND/.claude"
+cat > "$TMPDIR_SEEND/.claude/settings.json" << 'SETTINGSEOF'
+{
+  "hooks": {
+    "SessionEnd": [{"matcher":"","hooks":[{"type":"command","command":"bash session-log.sh","timeout":90}]}]
+  }
+}
+SETTINGSEOF
+SEEND_OUTPUT=$(cd "$TMPDIR_SEEND" && HOME="$TMPDIR_SEEND" bash "$CHECK_SCRIPT" 2>&1) || true
+assert "SessionEnd killed warning present" "41577" "$SEEND_OUTPUT"
+assert "SessionEnd warning mentions nohup" "nohup" "$SEEND_OUTPUT"
+assert "SessionEnd warning mentions async" "async" "$SEEND_OUTPUT"
+rm -rf "$TMPDIR_SEEND"
+
+# === Test: No SessionEnd warning when only PreToolUse hooks ===
+TMPDIR_NOSEEND=$(mktemp -d)
+mkdir -p "$TMPDIR_NOSEEND/.claude"
+cat > "$TMPDIR_NOSEEND/.claude/settings.json" << 'SETTINGSEOF'
+{
+  "hooks": {
+    "PreToolUse": [{"matcher":"","hooks":[{"type":"command","command":"bash guard.sh"}]}]
+  }
+}
+SETTINGSEOF
+NOSEEND_OUTPUT=$(cd "$TMPDIR_NOSEEND" && HOME="$TMPDIR_NOSEEND" bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no SessionEnd warning for PreToolUse only" "41577" "$NOSEEND_OUTPUT"
+rm -rf "$TMPDIR_NOSEEND"
+
 # === Test: updatedInput warning for Agent tool (#39814) ===
 TMPDIR_UPDINPUT=$(mktemp -d)
 mkdir -p "$TMPDIR_UPDINPUT/.claude/hooks"
@@ -2247,6 +2277,7 @@ ADDDIREOF
 ADDDIR_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert "additionalDirectories warning present" "additionalDirectories" "$ADDDIR_OUTPUT"
 assert "additionalDirectories cites issue" "40606" "$ADDDIR_OUTPUT"
+assert "additionalDirectories cites flaky access" "41579" "$ADDDIR_OUTPUT"
 assert "additionalDirectories mentions cross-project" "ALL projects" "$ADDDIR_OUTPUT"
 rm -rf "$TMPDIR_ADDDIR"
 
