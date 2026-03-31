@@ -2100,6 +2100,107 @@ BOTH_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no false positive when hook has warn + hookSpecificOutput" "decision:warn without hookSpecificOutput" "$BOTH_OUTPUT"
 rm -rf "$TMPDIR_BOTH"
 
+# === Test: Deprecated decision:block format warning (claude-code#15486) ===
+TMPDIR_DEPBLK=$(mktemp -d)
+export HOME="$TMPDIR_DEPBLK"
+mkdir -p "$TMPDIR_DEPBLK/.claude/hooks"
+
+# Hook with deprecated decision:block (should trigger warning)
+cat > "$TMPDIR_DEPBLK/.claude/hooks/old-hook.sh" << 'DEPBLKEOF'
+#!/usr/bin/env bash
+echo '{"decision": "block", "reason": "blocked by old format"}'
+DEPBLKEOF
+chmod +x "$TMPDIR_DEPBLK/.claude/hooks/old-hook.sh"
+
+DEPBLK_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "deprecated block warning present" "deprecated decision:block format" "$DEPBLK_OUTPUT"
+assert "deprecated block cites issue" "15486" "$DEPBLK_OUTPUT"
+rm -rf "$TMPDIR_DEPBLK"
+
+# === Test: Hook with hookSpecificOutput does NOT trigger deprecated warning ===
+TMPDIR_NEWBLK=$(mktemp -d)
+export HOME="$TMPDIR_NEWBLK"
+mkdir -p "$TMPDIR_NEWBLK/.claude/hooks"
+
+cat > "$TMPDIR_NEWBLK/.claude/hooks/new-hook.sh" << 'NEWBLKEOF'
+#!/usr/bin/env bash
+echo '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"blocked properly"}}'
+NEWBLKEOF
+chmod +x "$TMPDIR_NEWBLK/.claude/hooks/new-hook.sh"
+
+NEWBLK_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no deprecated warning for hookSpecificOutput hook" "deprecated decision:block format" "$NEWBLK_OUTPUT"
+rm -rf "$TMPDIR_NEWBLK"
+
+# === Test: Hook with both block and hookSpecificOutput does NOT trigger deprecated warning ===
+TMPDIR_MIGBLK=$(mktemp -d)
+export HOME="$TMPDIR_MIGBLK"
+mkdir -p "$TMPDIR_MIGBLK/.claude/hooks"
+
+cat > "$TMPDIR_MIGBLK/.claude/hooks/migrated-hook.sh" << 'MIGBLKEOF'
+#!/usr/bin/env bash
+# Old format commented out, new format in use
+# was: echo '{"decision": "block", "reason": "old"}'
+echo '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"new format"}}'
+MIGBLKEOF
+chmod +x "$TMPDIR_MIGBLK/.claude/hooks/migrated-hook.sh"
+
+MIGBLK_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no false positive for migrated hook with block in comments" "deprecated decision:block format" "$MIGBLK_OUTPUT"
+rm -rf "$TMPDIR_MIGBLK"
+
+# === Test: Settings.json with deprecated decision:block command ===
+TMPDIR_DEPSET=$(mktemp -d)
+export HOME="$TMPDIR_DEPSET"
+mkdir -p "$TMPDIR_DEPSET/.claude"
+cat > "$TMPDIR_DEPSET/.claude/settings.json" << 'DEPSETEOF'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"decision\":\"block\",\"reason\":\"old format\"}'"
+          }
+        ]
+      }
+    ]
+  }
+}
+DEPSETEOF
+
+DEPSET_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "settings deprecated block warning" "deprecated decision:block format" "$DEPSET_OUTPUT"
+rm -rf "$TMPDIR_DEPSET"
+
+# === Test: Settings.json with hookSpecificOutput does NOT trigger deprecated warning ===
+TMPDIR_NEWSET=$(mktemp -d)
+export HOME="$TMPDIR_NEWSET"
+mkdir -p "$TMPDIR_NEWSET/.claude"
+cat > "$TMPDIR_NEWSET/.claude/settings.json" << 'NEWSETEOF'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"proper\"}}'"
+          }
+        ]
+      }
+    ]
+  }
+}
+NEWSETEOF
+
+NEWSET_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no settings deprecated warning for hookSpecificOutput" "deprecated decision:block format" "$NEWSET_OUTPUT"
+rm -rf "$TMPDIR_NEWSET"
+
 # === Test: Sandbox permission caching warning (claude-code#40384) ===
 TMPDIR_SANDBOX=$(mktemp -d)
 export HOME="$TMPDIR_SANDBOX"
