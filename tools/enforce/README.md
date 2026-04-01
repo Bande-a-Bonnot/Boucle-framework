@@ -1,6 +1,6 @@
 # enforce-hooks
 
-Turn CLAUDE.md rules into PreToolUse hooks that actually block violations.
+Turn CLAUDE.md rules into enforced boundaries that Claude cannot bypass.
 
 Claude Code's CLAUDE.md lets you write project rules, but Claude follows them on a best-effort basis. enforce-hooks reads your rules and generates hooks that deterministically block violations before they happen.
 
