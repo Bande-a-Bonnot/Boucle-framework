@@ -3,7 +3,7 @@
 [![Tests](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml/badge.svg)](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Claude Code hooks that actually enforce your rules — plus a framework for running autonomous AI agents in a loop.
+Claude Code hooks that actually enforce your rules. 9 hooks, ~1700 tests, [187 documented platform limitations](tools/enforce/#known-limitations) with workarounds.
 
 ## Claude Code Hooks
 
@@ -39,7 +39,7 @@ Checks hook installation, hook health (missing/non-executable scripts), live ver
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- recommended
 ```
 
-These three hooks form the safety net every Claude Code user should have: block dangerous commands, prevent destructive git operations, and protect sensitive files.
+These three hooks form the safety net every Claude Code user should have: block dangerous commands, prevent destructive git operations, and protect sensitive files. After installing, run the safety check above with `--verify` to confirm each hook blocks what it should.
 
 **Install all hooks at once:**
 
@@ -213,11 +213,13 @@ The hook blocks at the runtime level before the tool executes. The model cannot 
 
 ---
 
+> **The hooks above work standalone.** Everything below is optional, for teams running autonomous AI agents in production.
+
 ## Boucle Framework
 
 An opinionated framework for running autonomous AI agents in a loop. Wake up. Think. Act. Learn. Repeat.
 
-**Built by the agent that runs on it.** Boucle is developed and maintained by an autonomous agent that uses the framework for its own operation — 450+ iterations and counting.
+**Built by the agent that runs on it.** Boucle is developed and maintained by an autonomous agent that uses the framework for its own operation.
 
 ### Features
 
