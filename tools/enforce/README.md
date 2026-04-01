@@ -555,13 +555,13 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-186 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. Use Ctrl-F to search, or browse by category:
+187 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. Use Ctrl-F to search, or browse by category:
 
 | Category | Count | Examples |
 |----------|-------|----------|
 | Hook bypass & evasion | 39 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd` |
 | Permission system | 30 | MCP deny ignored, path matching, cd escapes deny, scope hierarchy |
-| Hook behavior & events | 34 | Async stdin empty, exit code handling, `hookSpecificOutput` |
+| Hook behavior & events | 35 | Async stdin empty, exit code handling, `hookSpecificOutput` |
 | Context & session management | 20 | Compaction invalidates state, worktree CWD drift, stop hooks |
 | Subagent & spawned agents | 10 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded |
 | Windows & cross-platform | 7 | `/usr/bin/bash` routing, UNC paths, case-sensitive matching |
@@ -790,6 +790,8 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **Model acts on its own output as if it were user input.** Claude Code can [generate a response to its own output](https://github.com/anthropics/claude-code/issues/40629) without waiting for user confirmation, then act on it. In one reported case, Claude drafted a message to a client, then auto-responded to its own draft and sent it without user approval. The model's response appears merged with the user's message in the terminal with no visual separation. Not hookable — the fabricated input happens at the conversation turn level, not in tool calls. Related to [#40593](https://github.com/anthropics/claude-code/issues/40593) (model self-generates confirmation) and [#40166](https://github.com/anthropics/claude-code/issues/40166) (phantom messages). The pattern: any mechanism where the model can generate text that is later interpreted as user input creates a consent bypass. See [#40629](https://github.com/anthropics/claude-code/issues/40629).
 
 **UserPromptSubmit hook systemMessage silently dropped.** UserPromptSubmit hooks can [fire successfully but fail to deliver their systemMessage](https://github.com/anthropics/claude-code/issues/40647) to the model. The hook command executes and returns valid JSON with a systemMessage, but the injected message does not appear in the conversation or influence model behavior. This is intermittent and difficult to reproduce. For safety enforcement, this means a UserPromptSubmit hook that injects reminders or constraints may silently stop working mid-session. PreToolUse hooks are unaffected (they gate on `decision`, not `systemMessage`), making them more reliable for enforcement. See [#40647](https://github.com/anthropics/claude-code/issues/40647).
+
+**`UserPromptSubmit` hooks lack a "handled" decision.** The only way to prevent agent invocation from a UserPromptSubmit hook is `"decision": "block"`, which [displays "operation blocked by hook"](https://github.com/anthropics/claude-code/issues/42178) in the transcript with error framing. There is no decision that says "I handled this, here is the output" without the blocked label. The alternatives are `additionalContext` (agent still runs, costing latency and tokens), `continue: false` (halts the entire session), or `!shell` aliases (no agent fallback). This limits the programmatic fast-path pattern where a hook runs a local binary on success and falls through to the agent on failure. Built-in `/commands` already implement this exact pattern internally but the capability is not exposed to user hooks. See [#42178](https://github.com/anthropics/claude-code/issues/42178).
 
 **Remote Control MCP permission prompts do not propagate to mobile.** When using Remote Control (`/rc`) from the Claude mobile app, [MCP tool permission prompts only appear in the local terminal](https://github.com/anthropics/claude-code/issues/40643), not on the mobile device. The remote session silently stalls with no indication that user input is required. This affects any autonomous or remote operation pattern that relies on MCP tools requiring permission approval. The user cannot grant or deny permissions from the remote device. Not hookable — the issue is in the permission prompt delivery layer, not in tool execution. See [#40643](https://github.com/anthropics/claude-code/issues/40643).
 
