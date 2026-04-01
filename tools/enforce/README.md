@@ -891,6 +891,8 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **PreToolUse hook "allow" bypassing deny rules re-fixed (v2.1.89).** The [original fix in v2.1.77](#pretooluse-hook-allow-no-longer-bypasses-deny-rules) for hooks overriding deny rules (including enterprise managed settings) was [incomplete or regressed](https://github.com/anthropics/claude-code/releases/tag/v2.1.89). v2.1.89 re-fixes this. If you updated past v2.1.77 and still saw hooks overriding deny rules, update to v2.1.89.
 
+**Windows: hook command paths with `..` intermittently resolve wrong.** On Windows, hook commands that reference sibling directories via `..` (e.g., `node "../other-repo/.claude/scripts/hooks.mjs"`) [intermittently drop the `..` component](https://github.com/anthropics/claude-code/issues/42065), treating the target as a subdirectory instead of a sibling. Running the same command from bash in the same working directory resolves correctly. Affects all hook events (Stop, PreToolUse, PostToolUse). Quoting the path does not fix it. Workaround: use absolute paths in hook commands on Windows, or resolve paths in a wrapper script before invoking the hook. Related to [#39478](https://github.com/anthropics/claude-code/issues/39478) (spaces in working directory) and [#40084](https://github.com/anthropics/claude-code/issues/40084) (spaces in user profile path). See [#42065](https://github.com/anthropics/claude-code/issues/42065).
+
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
 ## Tests
