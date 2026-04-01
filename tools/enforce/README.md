@@ -166,6 +166,8 @@ People hit the same enforcement gaps repeatedly. Here is what each looks like an
 | All hooks silently disabled | `CLAUDE_CODE_SIMPLE` env var, `IS_DEMO=1`, or `--bare` flag silently disables every hook, MCP tool, and CLAUDE.md loading | `safety-check` warns when env vars are detected. For `--bare`/`-p`, use OS-level controls instead of hooks. |
 | Automated session stalls on `~/.claude/` write | Edit/Write to `~/.claude/` triggers hardcoded prompt that `bypassPermissions`, `permissions.allow`, and hooks cannot suppress ([#41615](https://github.com/anthropics/claude-code/issues/41615)) | Use Bash tool (`echo`, `cat`, `jq`) to write config files directly instead of Edit/Write. |
 | `claude -w` hangs with WorktreeCreate hooks | Any `WorktreeCreate` hook causes indefinite hang regardless of hook content ([#41614](https://github.com/anthropics/claude-code/issues/41614)) | Remove all `WorktreeCreate` hooks if you need `claude -w`. |
+| CLAUDE.md prohibition ignored by fallback logic | Explicit "never fall back" directive in CLAUDE.md is overridden by built-in fallback behavior ([#41957](https://github.com/anthropics/claude-code/issues/41957)) | `bash-guard` or `file-guard` blocks the fallback action at tool level. CLAUDE.md directives cannot override built-in fallback logic; hooks can. |
+| Memory files read but not applied in long sessions | Files in `~/.claude/projects/.../memory/` are loaded into context but instructions drift as the session extends ([#41951](https://github.com/anthropics/claude-code/issues/41951)) | Hooks enforce rules regardless of context length. For critical rules, use `file-guard` or `bash-guard` instead of relying on memory file instructions alone. |
 
 ## Recipes
 
