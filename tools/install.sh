@@ -755,16 +755,22 @@ if ! command -v python3 >/dev/null 2>&1; then
 fi
 
 if ! command -v jq >/dev/null 2>&1; then
-    echo -e "${YELLOW}Warning: jq not found. Hooks require jq to parse Claude Code input.${RESET}"
-    echo "  Install: brew install jq (macOS) or apt install jq (Linux)"
-    echo "  Without jq, installed hooks will fail silently at runtime."
+    echo -e "${YELLOW}Warning: jq not found.${RESET}"
     echo ""
-    echo -n "Continue anyway? [y/N] "
+    echo "  Hooks use jq to parse JSON from Claude Code. Without it,"
+    echo "  hooks will silently pass through every command unblocked."
+    echo ""
+    echo "  Install jq first:"
+    echo "    macOS:  brew install jq"
+    echo "    Ubuntu: sudo apt install jq"
+    echo "    Alpine: apk add jq"
+    echo ""
     if [ -t 0 ]; then
+      echo -n "Continue anyway? [y/N] "
       read -r answer
       [ "$answer" = "y" ] || [ "$answer" = "Y" ] || exit 1
     else
-      echo "Non-interactive mode: aborting. Install jq first." >&2
+      echo "  Install jq, then re-run this command." >&2
       exit 1
     fi
 fi
@@ -832,6 +838,16 @@ fi
 
 echo ""
 
+# Verify ~/.claude is writable before downloading anything
+claude_dir="${HOME}/.claude"
+mkdir -p "$claude_dir" 2>/dev/null || true
+if [ ! -d "$claude_dir" ] || [ ! -w "$claude_dir" ]; then
+  echo -e "${YELLOW}Error: ${claude_dir} is not writable.${RESET}" >&2
+  echo "  Hooks are installed to ~/.claude/<hook-name>/hook.sh" >&2
+  echo "  Check directory permissions and try again." >&2
+  exit 1
+fi
+
 # Install each selected hook
 installed=""
 for hook in $selected; do
@@ -855,9 +871,15 @@ for hook in $selected; do
   fi
   chmod +x "${install_dir}/hook.sh"
 
-  # Verify download is not empty
+  # Verify download is not empty or an HTML error page
   if [ ! -s "${install_dir}/hook.sh" ]; then
     echo -e "  ${YELLOW}Error: downloaded ${hook}/hook.sh is empty. Skipping.${RESET}" >&2
+    rm -f "${install_dir}/hook.sh"
+    continue
+  fi
+  if head -1 "${install_dir}/hook.sh" | grep -qi '<html\|<!doctype\|404:'; then
+    echo -e "  ${YELLOW}Error: downloaded ${hook}/hook.sh is not a script (got HTML). Skipping.${RESET}" >&2
+    rm -f "${install_dir}/hook.sh"
     continue
   fi
 
