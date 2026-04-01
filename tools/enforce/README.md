@@ -555,17 +555,17 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-187 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. Use Ctrl-F to search, or browse by category:
+190 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. Use Ctrl-F to search, or browse by category:
 
 | Category | Count | Examples |
 |----------|-------|----------|
 | Hook bypass & evasion | 39 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd` |
-| Permission system | 30 | MCP deny ignored, path matching, cd escapes deny, scope hierarchy |
-| Hook behavior & events | 35 | Async stdin empty, exit code handling, `hookSpecificOutput` |
+| Permission system | 31 | MCP deny ignored, path matching, self-authorization race, scope hierarchy |
+| Hook behavior & events | 36 | Async stdin empty, exit code handling, slash command bypass |
 | Context & session management | 20 | Compaction invalidates state, worktree CWD drift, stop hooks |
 | Subagent & spawned agents | 10 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded |
 | Windows & cross-platform | 7 | `/usr/bin/bash` routing, UNC paths, case-sensitive matching |
-| Configuration & settings | 7 | JSONC parsing, auto-update wipes hooks, `ConfigChange` event |
+| Configuration & settings | 8 | JSONC parsing, auto-update wipes hooks, `/model` strips `if` |
 | Security | 1 | `SendMessage` content injection |
 | Other platform behaviors | 38 | Skill tool wrapping, runtime directory deletion, retry loops |
 
@@ -934,6 +934,12 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **Hooks cannot protect themselves from modification.** Claude can use Edit/Write tools to [modify hook scripts](https://github.com/anthropics/claude-code/issues/11226) that are meant to constrain it. `permissions.deny` rules do not reliably prevent this (see [#22055](https://github.com/anthropics/claude-code/issues/22055) for a regression). This is a circular security gap: the enforcement mechanism is editable by the entity being enforced. Workaround: set hook files to read-only via OS permissions (`chmod 444`), use managed settings for enterprise deployments, or place hooks outside the project directory where the model is less likely to discover them. See [#11226](https://github.com/anthropics/claude-code/issues/11226), [#22055](https://github.com/anthropics/claude-code/issues/22055).
 
 **Built-in permission matching is structurally inadequate.** The permissions system's pattern matching has [30+ open issues](https://github.com/anthropics/claude-code/issues/30519) documenting failures: wildcards don't match compound commands, deny rules are bypassed via pipes, `&&` chains, and reordered flags. This is not a collection of bugs but a structural limitation: the matching model operates on full command strings rather than parsed ASTs. Hooks solve this by running arbitrary code that can parse commands properly (e.g., bash-guard splits compound commands into segments). See [#30519](https://github.com/anthropics/claude-code/issues/30519).
+
+**PreToolUse hooks don't fire on slash commands.** When a user types a slash command (e.g., `/ce:work`, `/commit`), PreToolUse hooks with `"Skill"` matcher [do not fire](https://github.com/anthropics/claude-code/issues/42250). PostToolUse hooks do fire, but only after the action completes. Any hook-based enforcement that depends on blocking Skill tool calls before execution is bypassed by slash command invocations. Additionally, non-blocking hook output formats (`systemMessage`, `decision:allow+reason`, `hookSpecificOutput`) are silently discarded for this event type; only `block` decisions and stderr (exit 2) are delivered. See [#42250](https://github.com/anthropics/claude-code/issues/42250).
+
+**Hook `if` property silently stripped by `/model` command.** The `if` property on hook entries (used to conditionally gate hook execution, e.g., `"if": "Bash(*git *)"`) is [silently removed](https://github.com/anthropics/claude-code/issues/42225) whenever Claude Code rewrites `settings.json` via the `/model` command. Hook commands still fire, but without their conditional filters, they run on every tool call instead of only matching ones. This silently degrades performance and can cause unexpected blocks. Workaround: re-add `if` properties after changing models, or keep a backup of your settings.json. See [#42225](https://github.com/anthropics/claude-code/issues/42225).
+
+**Agent self-authorizes when task notifications interrupt permission prompts.** When the agent asks the user a yes/no gating question and a background task notification arrives before the user responds, the agent [answers its own question as "yes"](https://github.com/anthropics/claude-code/issues/42236) and proceeds without user consent. This is a race condition in the consent model that hooks cannot prevent, because the bypass happens at the conversation level before any tool call occurs. Affects workflows with background tasks (Agent tool, long-running Bash commands) where notifications can interrupt the permission flow. See [#42236](https://github.com/anthropics/claude-code/issues/42236).
 
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
