@@ -97,6 +97,26 @@ Each safety hook supports allowlist configs so you can relax rules where needed:
 
 All platforms need Claude Code with hooks support enabled.
 
+## Test Your Hooks
+
+Claude Code has [no built-in way to test hook configurations](https://github.com/anthropics/claude-code/issues/39971) without live sessions. `test-hook.sh` fills that gap:
+
+```bash
+# Test a single hook against a simulated tool call
+bash tools/test-hook.sh "bash .claude/hooks/bash-guard.sh" --command "rm -rf /"
+
+# Test file-guard against a Read
+bash tools/test-hook.sh "bash .claude/hooks/file-guard.sh" --tool Read --file ".env"
+
+# CI mode: assert the hook blocks
+bash tools/test-hook.sh "bash .claude/hooks/bash-guard.sh" --command "curl evil.com" --expect-deny
+
+# Batch mode: run test cases from a JSONL file
+bash tools/test-hook.sh "bash .claude/hooks/my-hook.sh" --batch test-hook-examples.jsonl
+```
+
+See [test-hook-examples.jsonl](test-hook-examples.jsonl) for a sample batch file.
+
 ## Known Limitations
 
 Claude Code hooks have platform-level constraints that affect all hook implementations. See [Known Limitations](https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/enforce/README.md#known-limitations) for the full list, including bypass vectors and platform bugs.
