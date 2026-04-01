@@ -555,6 +555,22 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
+181 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. Use Ctrl-F to search, or browse by category:
+
+| Category | Count | Examples |
+|----------|-------|----------|
+| Hook bypass & evasion | 39 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd` |
+| Permission system | 27 | MCP deny ignored, path matching, heuristic misparsing |
+| Hook behavior & events | 34 | Async stdin empty, exit code handling, `hookSpecificOutput` |
+| Context & session management | 20 | Compaction invalidates state, worktree CWD drift, stop hooks |
+| Subagent & spawned agents | 8 | Settings not inherited, output trusted without verification |
+| Windows & cross-platform | 7 | `/usr/bin/bash` routing, UNC paths, case-sensitive matching |
+| Configuration & settings | 7 | JSONC parsing, auto-update wipes hooks, `ConfigChange` event |
+| Security | 1 | `SendMessage` content injection |
+| Other platform behaviors | 38 | Skill tool wrapping, runtime directory deletion, retry loops |
+
+---
+
 **@-autocomplete bypasses hooks.** When a user types `@.env` in the prompt, Claude Code injects the file content directly into the conversation. No tool call happens, so PreToolUse hooks never fire. A file-guard rule for `.env` blocks `Read .env` and `Edit .env` but cannot block `@.env`. This is a [known gap](https://github.com/anthropics/claude-code/issues/32928) in the hook system. Workaround: use managed-settings.json `denyRead` patterns alongside hooks for defense in depth.
 
 **Windows: hooks run via `/usr/bin/bash` regardless of shell setting.** On Windows, Claude Code [routes all hook commands through `/usr/bin/bash`](https://github.com/anthropics/claude-code/issues/32930) even when a different shell is configured. Bash-based hooks work if Git Bash is installed (it provides `/usr/bin/bash`). All 7 Boucle hooks now ship native PowerShell equivalents (`.ps1`) that bypass this limitation. Use `pwsh -File path/to/hook.ps1` in your hook command to run them directly. See [install.ps1](../install.ps1) for one-line setup.
