@@ -304,7 +304,7 @@ except: print('')
 fi
 
 # .claude/ sensitive-file prompt cannot be overridden (claude-code#41615)
-if [ "$BYPASS_MODE" = "bypassPermissions" ]; then
+if [ "${BYPASS_MODE:-}" = "bypassPermissions" ]; then
     WARNINGS+=("Writes to ~/.claude/ trigger a hardcoded sensitive-file prompt that cannot be suppressed by permissions.allow, PreToolUse hooks returning 'allow', bypassPermissions mode, or skipDangerousModePermissionPrompt. Automated sessions (tmux, CI, autonomous loops) that write to ~/.claude/ will stall on an interactive prompt with no workaround. Use Bash tool with echo/cat/jq to write files directly instead of Edit/Write. (see claude-code#41615)")
 fi
 
@@ -821,7 +821,7 @@ try:
                     print("true")
                     sys.exit(0)
     print("false")
-except:
+except Exception:
     print("false")
 PYEOF_WARN
     )
@@ -872,7 +872,7 @@ try:
                     print("true")
                     sys.exit(0)
     print("false")
-except:
+except Exception:
     print("false")
 PYEOF_DEPRECATED
     )
@@ -940,6 +940,7 @@ if [ ! -t 0 ] || [ -n "${CI:-}" ] || [ -n "${CLAUDE_NON_INTERACTIVE:-}" ]; then
     WARNINGS+=("Running non-interactively (stdin is not a terminal). If a Claude session hits a usage limit, it will prompt for confirmation but cannot receive input — the session hangs permanently. There is no programmatic workaround. Set session time limits or monitor for stuck processes. (see claude-code#41502, claude-code#41503)")
 fi
 
+EARLY_WARNING_COUNT=${#WARNINGS[@]}
 if [ ${#WARNINGS[@]} -gt 0 ]; then
     printf "${RED}${BOLD}⚠ Environment Warnings${NC}\n"
     for warn in "${WARNINGS[@]}"; do
@@ -1259,6 +1260,19 @@ except Exception:
     if [ "$HAS_MCP_ALLOW" = "true" ]; then
         WARNINGS+=("MCP tools in your permission allow list may be silently rejected for certain parameter values. The same tool works with some parameters but is blocked without a prompt for others. If MCP calls fail silently, check if the parameter value triggers stricter matching. (see claude-code#41528)")
     fi
+fi
+
+# Display any warnings added after the initial display
+if [ ${#WARNINGS[@]} -gt ${EARLY_WARNING_COUNT} ]; then
+    if [ ${EARLY_WARNING_COUNT} -eq 0 ]; then
+        printf "${RED}${BOLD}⚠ Environment Warnings${NC}\n"
+    else
+        printf "${RED}${BOLD}⚠ Additional Warnings${NC}\n"
+    fi
+    for ((i=EARLY_WARNING_COUNT; i<${#WARNINGS[@]}; i++)); do
+        printf "  ${RED}!${NC} %s\n" "${WARNINGS[$i]}"
+    done
+    echo ""
 fi
 
 # === Section 7: Rule Enforcement ===
