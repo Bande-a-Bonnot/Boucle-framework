@@ -177,6 +177,24 @@ Your CLAUDE.md says "never edit .env" but Claude edits it anyway. This tool read
 
 Scan first to preview: `enforce-hooks.py --scan`. Generate a starter CLAUDE.md: `enforce-hooks.py --template` (also `--template strict` or `--template minimal`). Installs as one dynamic hook that re-reads CLAUDE.md on every call, so enforcement updates when your rules change. Supports file-guard, bash-guard, branch-guard, tool-block, require-prior-tool, content-guard, scoped-content-guard, bare filename protection, flag blocking (`--no-verify`, `--no-gpg-sign`), system/device commands (`shutdown`, `reboot`, `systemctl`), and command substitution patterns. Subjective rules ("write clean code") are skipped. Self-protection mode (`--armor`) prevents Claude from deleting its own hooks. Hook health-check (`--verify`) catches silent fail-open bugs like wrong field names. Smoke test (`--smoke-test`) runs hooks with real payloads to verify they respond correctly at runtime. ~70 tests.
 
+### [test-hook](tools/test-hook.sh) — Dry-run any hook without a live session
+
+```sh
+# Test bash-guard against a dangerous command
+bash tools/test-hook.sh "bash hooks/bash-guard.sh" --command "rm -rf /"
+
+# Test file-guard against reading .env
+bash tools/test-hook.sh "bash hooks/file-guard.sh" --tool Read --file ".env"
+
+# CI mode: assert the hook blocks
+bash tools/test-hook.sh "bash hooks/bash-guard.sh" --command "curl evil.com" --expect-deny
+
+# Batch mode: run multiple test cases from a JSONL file
+bash tools/test-hook.sh "bash hooks/my-hook.sh" --batch tests.jsonl
+```
+
+Feeds synthetic `PreToolUse` payloads to any hook script and reports whether it allows, denies, or crashes. Works with any hook (ours or third-party). Batch mode runs test suites from JSONL files. Addresses [claude-code#39971](https://github.com/anthropics/claude-code/issues/39971) (`--test-permission` does not exist).
+
 ### Quick recipe: Read-only audit mode
 
 Claude [ignores explicit "do not edit" instructions](https://github.com/anthropics/claude-code/issues/41063) and edits files, runs ALTER TABLE, rebuilds Docker. CLAUDE.md rules alone cannot prevent this. Add to your CLAUDE.md and run `enforce-hooks.py --install-plugin`:
@@ -344,7 +362,7 @@ Works with Claude Desktop, Claude Code, or any MCP-compatible client.
 
 ## All Tools
 
-Each tool has its own README with full documentation: [read-once](tools/read-once/), [file-guard](tools/file-guard/), [git-safe](tools/git-safe/), [bash-guard](tools/bash-guard/), [branch-guard](tools/branch-guard/), [session-log](tools/session-log/), [enforce-hooks](tools/enforce/), [safety-check](tools/safety-check/), [worktree-guard](tools/worktree-guard/), [diagnose](tools/diagnose/).
+Each tool has its own README with full documentation: [read-once](tools/read-once/), [file-guard](tools/file-guard/), [git-safe](tools/git-safe/), [bash-guard](tools/bash-guard/), [branch-guard](tools/branch-guard/), [session-log](tools/session-log/), [enforce-hooks](tools/enforce/), [safety-check](tools/safety-check/), [worktree-guard](tools/worktree-guard/), [diagnose](tools/diagnose/), [test-hook](tools/test-hook.sh).
 
 ### Architecture
 
