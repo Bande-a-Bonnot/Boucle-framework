@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-HOOK="$(dirname "$0")/hook.sh"
+HOOK="$(cd "$(dirname "$0")" && pwd)/hook.sh"
 PASS=0
 FAIL=0
 TOTAL=0

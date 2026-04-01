@@ -135,8 +135,13 @@ normalize_path() {
   # Make absolute path relative to project root
   if [[ "$p" == /* ]]; then
     local root
-    root=$(pwd)
+    root=$(pwd -P)
     p="${p#"$root"/}"
+    # Fallback: also try logical pwd (covers non-symlinked paths)
+    if [[ "$p" == /* ]]; then
+      root=$(pwd)
+      p="${p#"$root"/}"
+    fi
     # Still absolute = outside project root, return as-is
     if [[ "$p" == /* ]]; then
       echo "$p"
