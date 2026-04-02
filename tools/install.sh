@@ -207,6 +207,19 @@ def dim(msg):
 print("Running diagnostics...")
 print()
 
+# 0. Check Claude Code is available
+import shutil, subprocess
+claude_path = shutil.which("claude")
+if claude_path:
+    ok(f"Claude Code found at {claude_path}")
+    try:
+        ver = subprocess.check_output([claude_path, "--version"], stderr=subprocess.DEVNULL, timeout=5).decode().strip()
+        ok(f"Version: {ver}")
+    except Exception:
+        warn("Could not determine Claude Code version")
+else:
+    warn("'claude' not found on PATH (hooks run inside Claude Code sessions, not standalone)")
+
 # 1. Check settings.json
 settings, is_jsonc, err = load_settings(settings_path)
 if err == "not_found":
@@ -302,9 +315,12 @@ if settings is not None:
 print()
 if errors > 0:
     print(f"{errors} error(s), {warnings} warning(s), {ok_count} ok")
+    print()
+    print("Fix errors above, then re-run: install.sh doctor")
+    print("Still stuck? https://github.com/Bande-a-Bonnot/Boucle-framework/issues")
     sys.exit(1)
 elif warnings > 0:
-    print(f"{warnings} warning(s), {ok_count} ok")
+    print(f"{warnings} warning(s), {ok_count} ok. Hooks should work fine.")
     sys.exit(0)
 else:
     print(f"All checks passed ({ok_count} ok)")
@@ -313,22 +329,28 @@ PYEOF
   exit $?
 fi
 
-# Handle list subcommand — show installed hooks
+# Handle list subcommand — show all hooks with install status
 if [ $# -gt 0 ] && [ "$1" = "list" ]; then
   found=0
+  total=0
   for hook in $ALL_HOOKS; do
+    total=$((total + 1))
     dir="${HOME}/.claude/${hook}"
+    desc=$(hook_desc "$hook")
     if [ -d "$dir" ] && [ -f "$dir/hook.sh" ]; then
-      desc=$(hook_desc "$hook")
-      echo -e "  ${GREEN}installed${RESET}  ${CYAN}${hook}${RESET}  ${desc}"
+      echo -e "  ${GREEN}✓${RESET}  ${CYAN}${hook}${RESET}  ${desc}"
       found=$((found + 1))
+    else
+      echo -e "  ${DIM}·  ${hook}  ${desc}${RESET}"
     fi
   done
+  echo ""
   if [ "$found" -eq 0 ]; then
-    echo "  No hooks installed."
+    echo "  No hooks installed. Get started: install.sh recommended"
+  elif [ "$found" -lt "$total" ]; then
+    echo "  $found of $total installed. Add more: install.sh <hook-name>"
   else
-    echo ""
-    echo "  $found hook(s) installed."
+    echo "  All $total hooks installed."
   fi
   exit 0
 fi
@@ -1122,5 +1144,29 @@ echo "  Uninstall all:  curl -fsSL $INSTALL_URL | bash -s -- uninstall all"
 echo "  Backup:         curl -fsSL $INSTALL_URL | bash -s -- backup"
 echo "  Restore:        curl -fsSL $INSTALL_URL | bash -s -- restore"
 echo "  Full check:     curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify"
+echo "  Diagnose:       curl -fsSL $INSTALL_URL | bash -s -- doctor"
 echo ""
-echo -e "${DIM}https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools${RESET}"
+echo -e "${BOLD}Verify it works:${RESET}"
+echo "  1. Start a new Claude Code session (hooks activate on next session)"
+# Show one concrete example based on which hooks were installed
+_showed=0
+for _h in $installed; do
+  case "$_h" in
+    bash-guard)
+      echo "  2. Ask Claude to run a dangerous command. bash-guard will block it."
+      _showed=1; break ;;
+    git-safe)
+      echo "  2. Ask Claude to force-push. git-safe will prevent it."
+      _showed=1; break ;;
+    file-guard)
+      echo "  2. Ask Claude to edit .env. file-guard will block it."
+      _showed=1; break ;;
+  esac
+done
+if [ "$_showed" -eq 0 ]; then
+  echo "  2. Your hooks will automatically protect your next session"
+fi
+echo "  3. If something seems off, run: install.sh doctor"
+echo ""
+echo -e "${DIM}Docs: https://github.com/Bande-a-Bonnot/Boucle-framework${RESET}"
+echo -e "${DIM}Issues: https://github.com/Bande-a-Bonnot/Boucle-framework/issues${RESET}"
