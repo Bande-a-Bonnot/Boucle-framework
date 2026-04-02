@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Common Problems & Solutions - Boucle Safety Hooks for Claude Code</title>
+    <meta name="description" content="Fix common Claude Code problems: rules ignored, files deleted, dangerous commands, force pushes. Each problem mapped to the specific hook that solves it.">
+    <meta name="keywords" content="Claude Code, CLAUDE.md ignored, file deletion, force push, dangerous commands, safety hooks, PreToolUse, enforce rules">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <header>
+                <h1><a href="/" style="color: var(--accent-color); text-decoration: none;">boucle</a> / recipes</h1>
+                <p class="brief">Common Claude Code problems and the hooks that fix them.</p>
+            </header>
+
+            <main>
+                <nav class="recipe-nav">
+                    <p class="brief" style="color: var(--muted-color);">Jump to:
+                        <a href="#rules-ignored">Rules ignored</a> &middot;
+                        <a href="#files-deleted">Files deleted</a> &middot;
+                        <a href="#dangerous-commands">Dangerous commands</a> &middot;
+                        <a href="#git-disasters">Git disasters</a> &middot;
+                        <a href="#token-waste">Token waste</a> &middot;
+                        <a href="#tool-switching">Tool switching bypass</a>
+                    </p>
+                </nav>
+
+                <div class="recipe" id="rules-ignored">
+                    <h2>"Claude ignores my CLAUDE.md rules"</h2>
+                    <p class="brief">CLAUDE.md instructions are text appended to the context window. The model reads them and usually follows them, but nothing prevents deviation. As context grows, rule-following degrades. This is documented behavior (<a href="https://github.com/anthropics/claude-code/issues/37599">#37599</a>, <a href="https://github.com/anthropics/claude-code/issues/38065">#38065</a>, <a href="https://github.com/anthropics/claude-code/issues/40425">#40425</a>).</p>
+                    <p class="brief"><strong>Fix: enforce-hooks</strong></p>
+                    <p class="brief">Tag rules in CLAUDE.md with <code>@enforced</code>, then run the enforce skill. It generates PreToolUse hooks that block violations at the tool-call level. The model cannot override <code>exit 2</code>.</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">#</span> Install enforce, then ask Claude: "Enforce my CLAUDE.md rules"</code>
+                    </div>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- enforce</code>
+                    </div>
+                    <p class="brief" style="color: var(--muted-color);">Also helps: fewer rules placed more prominently, shorter sessions, and accepting that CLAUDE.md is guidance while hooks are enforcement.</p>
+                </div>
+
+                <div class="recipe" id="files-deleted">
+                    <h2>"Claude deleted/overwrote my files"</h2>
+                    <p class="brief">Users have lost <a href="https://github.com/anthropics/claude-code/issues/37984">87GB of personal data</a>, had <a href="https://github.com/anthropics/claude-code/issues/37888">30+ files destroyed</a>, and seen <a href="https://github.com/anthropics/claude-code/issues/38193">explicit "don't touch" instructions ignored</a>. The permission system has known bypass patterns (<a href="https://github.com/anthropics/claude-code/issues/38119">#38119</a>).</p>
+                    <p class="brief"><strong>Fix: file-guard</strong></p>
+                    <p class="brief">Protects files matching patterns you define in <code>.file-guard</code>. Blocks Read, Edit, Write, and Bash access to matching paths. Works on absolute and relative paths.</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- file-guard</code>
+                    </div>
+                    <div class="code-block">
+                        <code><span class="prompt-char">#</span> Create .file-guard in your project root:</code><br>
+                        <code>.env</code><br>
+                        <code>*.pem</code><br>
+                        <code>credentials.*</code><br>
+                        <code>/etc/*</code><br>
+                        <code>~/.ssh/*</code>
+                    </div>
+                    <p class="brief"><strong>Also: bash-guard</strong> blocks <code>rm -rf /</code>, <code>rm -rf ~</code>, and recursive deletion of system paths, even inside compound commands and pipes.</p>
+                </div>
+
+                <div class="recipe" id="dangerous-commands">
+                    <h2>"Claude ran a dangerous command"</h2>
+                    <p class="brief">Claude can run <code>sudo</code>, drop databases, delete Docker volumes, expose credentials via <code>env</code>/<code>printenv</code>, or modify cloud infrastructure. The built-in permission system sometimes approves these in bypass mode (<a href="https://github.com/anthropics/claude-code/issues/39981">#39981</a>).</p>
+                    <p class="brief"><strong>Fix: bash-guard</strong></p>
+                    <p class="brief">Blocks dangerous Bash commands before execution. Catches compound commands (<code>cd /tmp && rm -rf /</code>), pipes, subshells, and common evasion patterns. 713 tests.</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- bash-guard</code>
+                    </div>
+                    <p class="brief">Blocked categories: recursive deletion, <code>sudo</code>, Docker/container commands, database drops, credential exposure, cloud infrastructure (<code>aws</code>/<code>gcloud</code>/<code>az</code> destructive operations), <code>chmod 777</code>, disk operations.</p>
+                </div>
+
+                <div class="recipe" id="git-disasters">
+                    <h2>"Claude force-pushed / reset my branch / deleted commits"</h2>
+                    <p class="brief">Claude can run <code>git push --force</code>, <code>git reset --hard</code>, <code>git checkout .</code>, <code>git clean -f</code>, or <code>push --delete</code>. It can also bypass pre-commit hooks with <code>--no-verify</code> (<a href="https://github.com/anthropics/claude-code/issues/40117">#40117</a>).</p>
+                    <p class="brief"><strong>Fix: git-safe + branch-guard</strong></p>
+                    <p class="brief"><strong>git-safe</strong> blocks force pushes, hard resets, <code>checkout .</code>, <code>clean -f</code>, <code>push --delete</code>, and <code>--no-verify</code>. <strong>branch-guard</strong> prevents commits directly to main/master/production.</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- git-safe branch-guard</code>
+                    </div>
+                </div>
+
+                <div class="recipe" id="token-waste">
+                    <h2>"Claude re-reads the same files and wastes tokens"</h2>
+                    <p class="brief">Claude often reads the same file multiple times in a session, each time consuming tokens for content already in context.</p>
+                    <p class="brief"><strong>Fix: read-once</strong></p>
+                    <p class="brief">Tracks file reads and blocks redundant re-reads within a session. Allows re-reads when the file has changed on disk. Typical savings: 20-40% fewer tokens per session.</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- read-once</code>
+                    </div>
+                    <p class="brief" style="color: var(--muted-color);">Note: if you need to Edit a file, read-once allows the re-read. It only blocks reads where the file content hasn't changed.</p>
+                </div>
+
+                <div class="recipe" id="tool-switching">
+                    <h2>"Claude bypasses a denied tool by using a different tool"</h2>
+                    <p class="brief">When Bash(<code>rm</code>) is denied, Claude may use Python <code>os.remove()</code> instead (<a href="https://github.com/anthropics/claude-code/issues/39459">#39459</a>). When a pre-commit hook blocks a commit, Claude may use <code>--no-verify</code> (<a href="https://github.com/anthropics/claude-code/issues/40117">#40117</a>). The tool is blocked but the goal is not.</p>
+                    <p class="brief"><strong>Partial fix: bash-guard + enforce-hooks</strong></p>
+                    <p class="brief">bash-guard catches common equivalences (blocks <code>rm</code> in both shell and Python patterns). enforce-hooks can define broader rules that span multiple tools. But goal-level enforcement is a <a href="/limitations.html">known limitation</a> of the hook architecture: hooks gate tool calls, not intentions.</p>
+                    <p class="brief" style="color: var(--muted-color);">For critical paths, combine hooks with OS-level controls (file permissions, network policy, containerization). See the <a href="/limitations.html">full list of 242 known gaps</a>.</p>
+                </div>
+
+                <h2 style="margin-top: 3em;">Quick reference</h2>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 1em;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.2);">
+                            <th style="text-align: left; padding: 0.5em 1em 0.5em 0; color: var(--muted-color);">Problem</th>
+                            <th style="text-align: left; padding: 0.5em 0; color: var(--muted-color);">Hook</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">CLAUDE.md rules ignored</td>
+                            <td style="padding: 0.5em 0;"><code>enforce</code></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Files deleted or overwritten</td>
+                            <td style="padding: 0.5em 0;"><code>file-guard</code> + <code>bash-guard</code></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Dangerous shell commands</td>
+                            <td style="padding: 0.5em 0;"><code>bash-guard</code></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Force push / hard reset / checkout .</td>
+                            <td style="padding: 0.5em 0;"><code>git-safe</code></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Commits to main/master</td>
+                            <td style="padding: 0.5em 0;"><code>branch-guard</code></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">--no-verify / bypass pre-commit</td>
+                            <td style="padding: 0.5em 0;"><code>git-safe</code></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Redundant file re-reads (token waste)</td>
+                            <td style="padding: 0.5em 0;"><code>read-once</code></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Lost work exiting worktrees</td>
+                            <td style="padding: 0.5em 0;"><code>worktree-guard</code></td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.5em 1em 0.5em 0;">Audit all tool calls</td>
+                            <td style="padding: 0.5em 0;"><code>session-log</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h2>Install everything</h2>
+                <div class="code-block">
+                    <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- all</code>
+                </div>
+                <p class="brief">Or start with the safety essentials: <code>bash -s -- recommended</code> installs bash-guard + git-safe + file-guard.</p>
+
+                <div style="margin-top: 3em; padding-top: 1.5em; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <p class="brief" style="color: var(--muted-color);">
+                        <a href="/">Home</a> &middot;
+                        <a href="/limitations.html">242 Known Limitations</a> &middot;
+                        <a href="https://github.com/Bande-a-Bonnot/Boucle-framework">GitHub</a>
+                    </p>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

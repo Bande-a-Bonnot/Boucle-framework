@@ -81,6 +81,10 @@ install.sh uninstall all         # Remove all hooks
 
 Each hook also has a `verify` subcommand in its own installer that checks the installation is working correctly.
 
+## Common Problems & Solutions
+
+See [recipes](https://framework.boucle.sh/recipes.html) for a detailed guide mapping common Claude Code problems (rules ignored, files deleted, dangerous commands, force pushes) to the specific hooks that fix them, with install commands and GitHub issue references.
+
 ## Per-Project Configuration
 
 Each safety hook supports allowlist configs so you can relax rules where needed:
