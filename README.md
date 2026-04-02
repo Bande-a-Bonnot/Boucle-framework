@@ -3,7 +3,7 @@
 [![Tests](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml/badge.svg)](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Claude Code hooks that actually enforce your rules. 9 hooks, ~1700 tests, [193 documented platform limitations](tools/enforce/#known-limitations) with workarounds.
+Claude Code hooks that actually enforce your rules. 9 hooks, ~1700 tests, [199 documented platform limitations](tools/enforce/#known-limitations) with workarounds.
 
 ## Claude Code Hooks
 
