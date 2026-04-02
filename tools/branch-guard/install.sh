@@ -1,6 +1,6 @@
 #!/bin/bash
 # branch-guard installer for Claude Code
-# Usage: curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/branch-guard/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/branch-guard/install.sh | bash
 
 set -euo pipefail
 

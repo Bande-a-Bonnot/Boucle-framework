@@ -1,6 +1,6 @@
 #!/bin/bash
 # git-safe installer for Claude Code
-# Usage: curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/git-safe/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/git-safe/install.sh | bash
 
 set -euo pipefail
 

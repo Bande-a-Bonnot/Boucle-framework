@@ -18,7 +18,7 @@
 #   - git reflog expire (destroys recovery data)
 #
 # Install:
-#   curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/git-safe/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/git-safe/install.sh | bash
 #
 # Config (.git-safe):
 #   allow: push --force    # whitelist specific operations

@@ -268,5 +268,5 @@ fi
 echo ""
 echo "Next steps:"
 echo "  1. Review .file-guard and adjust patterns"
-echo "  2. Install the hook: curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/file-guard/install.sh | bash"
+echo "  2. Install the hook: curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/file-guard/install.sh | bash"
 echo "  3. Test it: ask Claude to 'write to .env' -- it should be blocked"

@@ -1,6 +1,6 @@
 #!/bin/bash
 # file-guard installer for Claude Code
-# Usage: curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/file-guard/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/file-guard/install.sh | bash
 #
 # Installs the file-guard hook into your Claude Code settings
 # and creates a default .file-guard config if none exists.

@@ -13,7 +13,7 @@
 #   - Commits not pushed to remote (if upstream is set)
 #
 # Install:
-#   curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/worktree-guard/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/worktree-guard/install.sh | bash
 #
 # Config (.worktree-guard):
 #   allow: uncommitted     # skip uncommitted changes check

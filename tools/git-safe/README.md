@@ -7,7 +7,7 @@ When Claude runs `git push --force`, `git reset --hard`, `git checkout HEAD -- p
 ## Install
 
 ```bash
-curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/git-safe/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/git-safe/install.sh | bash
 ```
 
 ## What it blocks

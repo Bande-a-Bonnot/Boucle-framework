@@ -68,12 +68,12 @@ Safe variants are allowed: `rm -rf ./build`, `chmod 644 file.txt`, `curl -o file
 ## Install
 
 ```bash
-curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
 ```
 
 Or install all hooks at once:
 ```bash
-curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- all
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- all
 ```
 
 ## Configure exceptions

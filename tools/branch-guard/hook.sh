@@ -6,7 +6,7 @@
 # Protected branches (default): main, master, production, release
 #
 # Install:
-#   curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/branch-guard/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/branch-guard/install.sh | bash
 #
 # Config (.branch-guard):
 #   protect: main

@@ -24,7 +24,7 @@ Requires [PowerShell 7+](https://learn.microsoft.com/en-us/powershell/scripting/
 irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1 | iex
 ```
 
-All 7 hooks ship with native `.ps1` equivalents. No bash or jq required on Windows.
+All 7 hooks (read-once through session-log) ship with native `.ps1` equivalents. No bash or jq required on Windows.
 
 ## Available Hooks
 
@@ -37,13 +37,14 @@ All 7 hooks ship with native `.ps1` equivalents. No bash or jq required on Windo
 | [branch-guard](branch-guard/) | Prevents commits to main/master/production | PreToolUse |
 | [worktree-guard](worktree-guard/) | Prevents data loss when exiting worktrees with unmerged commits | PreToolUse |
 | [session-log](session-log/) | Logs all tool calls to `~/.claude/session-logs/` | PostToolUse |
+| | | |
 | [safety-check](safety-check/) | Audits your Claude Code setup for common misconfigurations | CLI tool |
 | [diagnose](diagnose/) | Analyzes loop logs for drift, stagnation, feedback loops | CLI tool |
 | [enforce](enforce/) | Generates hooks from your CLAUDE.md rules (Claude Code skill) | Skill |
 
 ## Generate Hooks from CLAUDE.md
 
-The [enforce](enforce/) skill reads your CLAUDE.md, identifies rules that can be enforced at tool-call time, and generates hook scripts for each one. No tagging required.
+The [enforce](enforce/) skill reads your CLAUDE.md, identifies rules that can be enforced at tool-call time, and generates hook scripts for each one. Tag rules with `@enforced` to activate them (run `--scan` to preview what's enforceable).
 
 ```
 # Copy the skill to your project
@@ -88,6 +89,7 @@ Each safety hook supports allowlist configs so you can relax rules where needed:
 - `bash-guard`: `.bash-guard` (e.g., `allow: sudo` or `deny: rm`)
 - `file-guard`: `.file-guard` (define which files to protect)
 - `branch-guard`: `.branch-guard` (e.g., `allow: main`)
+- `worktree-guard`: `.worktree-guard` (e.g., `allow: uncommitted` or `base: develop`)
 
 ## Requirements
 
@@ -119,4 +121,4 @@ See [test-hook-examples.jsonl](test-hook-examples.jsonl) for 60 ready-made test 
 
 ## Known Limitations
 
-Claude Code hooks have platform-level constraints that affect all hook implementations. See [Known Limitations](https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/enforce/README.md#known-limitations) for the full list, including bypass vectors and platform bugs.
+Claude Code hooks have platform-level constraints that affect all hook implementations. Browse all [242 known limitations](https://framework.boucle.sh/limitations.html) (searchable, severity-rated), or see the [enforce README](https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/enforce/README.md#known-limitations) for the summary.

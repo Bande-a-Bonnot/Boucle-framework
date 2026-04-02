@@ -1,6 +1,6 @@
 #!/bin/bash
 # worktree-guard installer for Claude Code
-# Usage: curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/worktree-guard/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/worktree-guard/install.sh | bash
 
 set -euo pipefail
 

@@ -3,7 +3,7 @@
 # Installs the PreToolUse hook that prevents dangerous bash commands.
 #
 # Usage:
-#   curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
 #
 # What it does:
 #   1. Downloads hook.sh to ~/.claude/bash-guard/

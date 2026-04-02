@@ -15,7 +15,7 @@ AI coding assistants are powerful — but sometimes too powerful. You might not 
 ### One-liner
 
 ```bash
-curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/file-guard/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/file-guard/install.sh | bash
 ```
 
 ### Manual

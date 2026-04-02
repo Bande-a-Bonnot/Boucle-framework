@@ -5,7 +5,7 @@ A Claude Code hook that prevents direct commits to protected branches (main, mas
 ## Install
 
 ```sh
-curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/branch-guard/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/branch-guard/install.sh | bash
 ```
 
 ## What it does

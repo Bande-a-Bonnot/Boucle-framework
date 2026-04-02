@@ -48,7 +48,7 @@
 #   - yarn/pnpm global installs
 #
 # Install:
-#   curl -sL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
 #
 # Config (.bash-guard):
 #   allow: sudo           # whitelist specific operations
