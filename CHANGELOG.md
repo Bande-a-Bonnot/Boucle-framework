@@ -4,6 +4,46 @@ All notable changes to Boucle are documented here.
 
 ## [Unreleased]
 
+### Added
+
+#### Searchable Known Limitations page
+- **Interactive limitations page** (`docs/limitations.html`) -- Browse, search, and filter all 211 known Claude Code hook limitations in a single page. Supports text search, category filtering, and URL query parameters (`?q=subagent&cat=Bypass+techniques`) for deep linking to specific results.
+
+#### test-hook.sh (new tool)
+- **Dry-run hook tester** -- Test any hook against sample inputs without a live Claude Code session. Ships with 60 example test cases covering all hook event types. Validates JSON output format, decision logic, and error handling. Addresses [#39971](https://github.com/anthropics/claude-code/issues/39971).
+
+#### installer
+- **Post-install verification** -- After installation, the installer now runs basic verification checks and shows discovered hooks with `list` output.
+- **`doctor` version checking** -- Doctor subcommand now checks installed hook versions against the latest release.
+
+#### README
+- **Navigation banner** with quick links (Install, Hooks, KL Database, Safety Check).
+- **Platform compatibility matrix** (macOS, Linux, Windows, WSL).
+- **Recommended Claude Code version table** with known-good and known-bad versions.
+- **Category index** for Known Limitations (10 categories with counts).
+
+### Fixed
+- **file-guard: absolute path handling** -- Claude Code v2.1.89 changed `file_path` in PreToolUse/PostToolUse from relative to absolute. file-guard's directory-pattern matching broke because it expected relative paths. Now handles both formats correctly. 114 tests (was 121).
+- **file-guard: macOS symlink detection** -- `/var` vs `/private/var` mismatch caused false negatives on macOS. Fixed by resolving symlinks before path comparison. 103/103 tests pass (was 96).
+- **safety-check: 3 silent failures** -- Warnings were silently dropped due to: (1) missing newline between warning blocks, (2) variable shadowing in nested checks, (3) early return before appending to output. 311/311 tests pass (was 277).
+- **install.sh: 3 UX bugs** -- Fixed jq dependency message (now shows install instructions), HTML detection (curl getting GitHub page instead of raw file), and writable directory check (failed on read-only /usr/local).
+
+### Documented
+- **211 Known Limitations** in enforce-hooks README, up from ~130 in v0.11.0. Notable additions:
+  - **Security**: CVE-2026-24887 find injection (CVSS 7.7, fixed v2.0.72), 50-subcommand deny bypass (Adversa, unfixed)
+  - **v2.1.89 changes**: PermissionDenied event, absolute file_path, defer decision, HTTP hook type, disableAllHooks setting
+  - **v2.1.90 changes**: rate-limit loop fix, resume cache miss, auto-mode boundary fix
+  - **Platform**: Windows `..` path resolution, macOS symlink mismatches, WSL arithmetic errors
+  - **Bypass techniques**: `--bare` flag, `CLAUDE_CODE_SIMPLE`, slash command hook bypass, self-authorization race, model obfuscation patterns
+  - **Subagent behavior**: banner re-render, Stop event gaps, escalation via Task tools, hooks bypass in background agents
+- **Recommended version** updated to v2.1.90.
+
+### Stats
+- 195 Rust tests (unchanged)
+- Hook tests: bash-guard ~713, safety-check ~267, git-safe ~135, file-guard ~138, session-log ~107, installer ~84, read-once ~77, enforce-hooks ~71 (472 self-test assertions), worktree-guard ~64, branch-guard ~57, diagnose ~40
+- Total: ~1753+ tests
+- Known Limitations: 211 entries across 10 categories
+
 ## [0.11.0] - 2026-03-31
 
 ### Added
