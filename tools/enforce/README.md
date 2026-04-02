@@ -1019,6 +1019,8 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **Notification hook not triggered in Plan Mode when `AskUserQuestion` fires.** The Notification hook event does not fire in Plan Mode when Claude calls `AskUserQuestion` to prompt user input. The `Stop` hook fires correctly in Plan Mode, but [Notification hooks are silently skipped](https://github.com/anthropics/claude-code/issues/42487) for elicitation events. Tested with `matcher: "*"`, `"idle_prompt"`, and `"elicitation_dialog"` on Windows. Users building notification systems (e.g., toast alerts when Claude needs input) will miss prompts during Plan Mode. No workaround. See [#42487](https://github.com/anthropics/claude-code/issues/42487).
 
+**Bypass permissions mode silently downgrades to `autoaccept-edits` during long sessions.** During long sessions (600+ API calls, 3+ hours), bypass permissions mode can [silently switch to autoaccept-edits](https://github.com/anthropics/claude-code/issues/42500) without user action. Correlates with Write/Edit operations on files outside the project root (`~/.claude/`, other drives). Observed 5 times in one session on Windows. The user must manually switch back, but the downgrade can recur. Only starting a new session fully resolves it. Affects automated workflows that depend on consistent permission enforcement. See [#42500](https://github.com/anthropics/claude-code/issues/42500).
+
 ## Tests
 
 ```sh
