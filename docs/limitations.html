@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Known Limitations - Claude Code Hooks | Boucle</title>
-    <meta name="description" content="195 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
+    <meta name="description" content="201 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
     <style>
         :root {
             --bg: #0d1117;
@@ -166,7 +166,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle">195 documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>.</p>
+        <p class="subtitle">201 documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>.</p>
 
         <div class="controls">
             <input type="text" id="search" placeholder="Search by keyword or issue number (e.g. 32928, bypass, MCP)..." autocomplete="off">
@@ -177,7 +177,7 @@
             <option value="Permission system">Permission system (32)</option>
             </select>
         </div>
-        <div class="count" id="count">Showing 195 of 195</div>
+        <div class="count" id="count">Showing 201 of 201</div>
 
         <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="32928" id="autocomplete-bypasses-hooks">
             <div class="kl-header">
@@ -1934,6 +1934,61 @@
             <h3>Multiple installations detected breaks <code>claude update</code>.</h3>
             <p>When both an npm-global and native installation of Claude Code coexist, <code>claude update</code> fails with &quot;multiple installations found.&quot; This can happen when users install via <code>npm install -g</code> and later use the native installer. Affects hook users who need to stay on specific versions for hook compatibility. Workaround: remove one installation method before updating.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42357">#42357</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior & events" data-issues="16047" id="hooks-stop-after-2-5-hours">
+            <div class="kl-header">
+                <span class="kl-num">#196</span>
+                <span class="kl-cat">Hook behavior & events</span>
+            </div>
+            <h3>Hooks stop executing after ~2.5 hours in a session.</h3>
+            <p>All hooks fire correctly at session start but silently stop working after approximately 2.5 hours. No errors are logged; hooks simply stop being invoked. All hook-based enforcement disappears mid-session without warning. Workaround: restart sessions before the 2.5-hour mark.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/16047">#16047</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="29709" id="edit-bypass-via-bash">
+            <div class="kl-header">
+                <span class="kl-num">#197</span>
+                <span class="kl-cat">Hook bypass & evasion</span>
+            </div>
+            <h3>Model circumvents Edit hook by switching to Bash tool.</h3>
+            <p>When a PreToolUse:Edit hook blocks file modifications, Claude switches to the Bash tool (e.g., <code>echo "..." > file</code>) to achieve the same edit. A single-tool hook is insufficient; pair file-guard (Edit/Write) with bash-guard (Bash) to cover both paths.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/29709">#29709</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="39057" id="permission-mode-spontaneous-reset">
+            <div class="kl-header">
+                <span class="kl-num">#198</span>
+                <span class="kl-cat">Permission system</span>
+            </div>
+            <h3>Permission mode spontaneously resets from bypass to edit-auto.</h3>
+            <p>The permission mode changes from &quot;Bypass permissions&quot; to &quot;Edit automatically&quot; mid-session without user interaction. Write tool calls start prompting for permission, breaking autonomous workflows. Distinct from hook-triggered resets (<a href="https://github.com/anthropics/claude-code/issues/37745">#37745</a>) and suspicious-path downgrades (<a href="https://github.com/anthropics/claude-code/issues/41763">#41763</a>).</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/39057">#39057</a></div>
+        </div>
+        <div class="kl-entry" data-category="Subagent & spawned agents" data-issues="33049" id="subagent-no-stop-hook">
+            <div class="kl-header">
+                <span class="kl-num">#199</span>
+                <span class="kl-cat">Subagent & spawned agents</span>
+            </div>
+            <h3>Subagent does not fire Stop hook on completion.</h3>
+            <p>When a subagent spawned via the Agent tool completes and returns results, no Stop hook fires with the subagent's session_id. Other lifecycle hooks fire correctly. Session-tracking tools accumulate &quot;ghost sessions&quot; with no end event.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/33049">#33049</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior & events" data-issues="39378" id="hook-runner-permission-denied">
+            <div class="kl-header">
+                <span class="kl-num">#200</span>
+                <span class="kl-cat">Hook behavior & events</span>
+            </div>
+            <h3>Hook runner fails with &quot;Permission denied&quot; after plugin update.</h3>
+            <p>The plugin marketplace installer does not set execute permissions on <code>.sh</code> hook scripts. Auto-updates install all hook files as <code>-rw-rw-r--</code> (no +x bit), causing hooks to fail on every session. Fix: <code>chmod +x</code> the affected scripts.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/39378">#39378</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="13785" id="deny-rules-dont-protect-claudemd">
+            <div class="kl-header">
+                <span class="kl-num">#201</span>
+                <span class="kl-cat">Permission system</span>
+            </div>
+            <h3>Deny rules do not protect CLAUDE.md from being overwritten.</h3>
+            <p>Despite explicit deny rules for CLAUDE.md in settings.json, Claude still modifies CLAUDE.md, especially during commits. When overwritten, the model loses its project context. Workaround: use file-guard to protect CLAUDE.md at the hook level, or set read-only with OS permissions.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/13785">#13785</a></div>
         </div>
 
         <footer>
