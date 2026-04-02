@@ -1012,19 +1012,27 @@ if [ $# -gt 0 ]; then
     selected="$*"
   fi
 else
-  echo -e "${BOLD}Which hooks to install?${RESET}"
-  echo "  'recommended'  bash-guard + git-safe + file-guard (start here)"
-  echo "  'all'          all 7 hooks"
-  echo "  or enter hook names separated by spaces"
-  echo -n "> "
-  read -r input
-  if [ "$input" = "all" ]; then
-    selected="$ALL_HOOKS"
-  elif [ "$input" = "recommended" ]; then
+  if [ -t 0 ]; then
+    # Interactive: prompt for selection
+    echo -e "${BOLD}Which hooks to install?${RESET}"
+    echo "  'recommended'  bash-guard + git-safe + file-guard (start here)"
+    echo "  'all'          all 7 hooks"
+    echo "  or enter hook names separated by spaces"
+    echo -n "> "
+    read -r input
+    if [ "$input" = "all" ]; then
+      selected="$ALL_HOOKS"
+    elif [ "$input" = "recommended" ] || [ -z "$input" ]; then
+      selected="$RECOMMENDED_HOOKS"
+      echo -e "${BOLD}Installing recommended hooks:${RESET} bash-guard, git-safe, file-guard"
+    else
+      selected="$input"
+    fi
+  else
+    # Piped (curl | bash): default to recommended
     selected="$RECOMMENDED_HOOKS"
     echo -e "${BOLD}Installing recommended hooks:${RESET} bash-guard, git-safe, file-guard"
-  else
-    selected="$input"
+    echo -e "${DIM}(Use 'curl ... | bash -s -- all' to install all hooks)${RESET}"
   fi
 fi
 
@@ -1314,15 +1322,10 @@ fi
 echo ""
 INSTALL_URL="https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh"
 echo "Manage hooks:"
-echo "  List installed: curl -fsSL $INSTALL_URL | bash -s -- list"
-echo "  Verify hooks:   curl -fsSL $INSTALL_URL | bash -s -- verify"
-echo "  Upgrade all:    curl -fsSL $INSTALL_URL | bash -s -- upgrade"
-echo "  Uninstall one:  curl -fsSL $INSTALL_URL | bash -s -- uninstall <hook-name>"
-echo "  Uninstall all:  curl -fsSL $INSTALL_URL | bash -s -- uninstall all"
-echo "  Backup:         curl -fsSL $INSTALL_URL | bash -s -- backup"
-echo "  Restore:        curl -fsSL $INSTALL_URL | bash -s -- restore"
-echo "  Full check:     curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify"
-echo "  Diagnose:       curl -fsSL $INSTALL_URL | bash -s -- doctor"
+echo "  Verify:    curl -fsSL $INSTALL_URL | bash -s -- verify"
+echo "  Upgrade:   curl -fsSL $INSTALL_URL | bash -s -- upgrade"
+echo "  Uninstall: curl -fsSL $INSTALL_URL | bash -s -- uninstall <hook-name>"
+echo "  More:      curl -fsSL $INSTALL_URL | bash -s -- help"
 echo ""
 echo -e "${BOLD}Verify it works:${RESET}"
 echo "  1. Start a new Claude Code session (hooks activate on next session)"
