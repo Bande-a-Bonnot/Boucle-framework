@@ -1043,6 +1043,14 @@ fi
 
 echo ""
 
+# Warn if Claude Code is not installed (hooks need it to run)
+if ! command -v claude >/dev/null 2>&1; then
+  echo -e "${YELLOW}Note: 'claude' not found on PATH.${RESET}"
+  echo "  Hooks run inside Claude Code sessions. Install Claude Code first if you haven't."
+  echo "  Continuing anyway (hooks will activate once Claude Code is installed)."
+  echo ""
+fi
+
 # Verify ~/.claude is writable before downloading anything
 claude_dir="${HOME}/.claude"
 mkdir -p "$claude_dir" 2>/dev/null || true
@@ -1092,7 +1100,8 @@ for hook in $selected; do
   case "$hook" in
     read-once)
       if ! $DL "${REPO}/${hook}/read-once" > "${install_dir}/read-once" 2>/dev/null; then
-        echo -e "  ${YELLOW}Warning: failed to download read-once CLI${RESET}" >&2
+        echo -e "  ${YELLOW}Warning: failed to download read-once CLI. Hook will not work without it.${RESET}" >&2
+        echo -e "  ${DIM}Try again, or download manually from: ${REPO}/${hook}/read-once${RESET}" >&2
       else
         chmod +x "${install_dir}/read-once"
       fi
