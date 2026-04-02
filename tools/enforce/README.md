@@ -555,19 +555,19 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-206 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+208 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
 | Hook behavior & events | 44 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App PostToolUse silent failure, hooks stop after 2.5h |
 | Other platform behaviors | 39 | Skill tool wrapping, runtime directory deletion, retry loops, background task file growth |
 | Hook bypass & evasion | 36 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch |
-| Permission system | 35 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md |
+| Permission system | 36 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass |
 | Context & session management | 16 | Compaction invalidates state, worktree CWD drift, stop hooks, no context metrics, auto-compact ignores disable |
 | Configuration & settings | 12 | JSONC parsing, auto-update wipes hooks, `/model` strips `if`, env.PATH ignored, multi-install update failure |
 | Subagent & spawned agents | 13 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, plugin tools:all silent block, no Stop hook, teammate hooks bypass, team spawn 255-byte split |
 | Windows & cross-platform | 10 | `/usr/bin/bash` routing, UNC paths, case-sensitive matching, subagent 2>&1 crash, full re-render on tool calls |
-| Security | 1 | `SendMessage` content injection |
+| Security | 2 | `SendMessage` content injection, `find` command injection (CVE-2026-24887) |
 
 ---
 
@@ -980,6 +980,10 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **Agent team spawning fails silently at ~255 byte command boundary.** When using experimental agent teams (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`), the tmux `send-keys` command used to launch teammates is [split at ~255 bytes](https://github.com/anthropics/claude-code/issues/42391). The second fragment executes as a standalone command (`bash: earch-agent: command not found`), the agent never starts, but the parent session reports "Spawned successfully." Long project paths, agent names, or session UUIDs push the launch command past the threshold. Manual `tmux send-keys` with the same command does not reproduce, so the split is in Claude Code's tmux integration. Workaround: write launch commands to a temp script and `source` it. See [#42391](https://github.com/anthropics/claude-code/issues/42391).
 
 **Background task output files grow unbounded, no cleanup.** Claude Code stores background task output in `/private/tmp/claude-{UID}/` with [no size limits, no TTL, and no automatic cleanup](https://github.com/anthropics/claude-code/issues/42388). A single runaway task output file consumed 405 GB, silently filling the disk to 99% capacity. The path is hidden from normal disk usage tools. Affects autonomous agents and heavy `run_in_background` users. Workaround: periodically clean `/private/tmp/claude-*/` manually or via cron. See [#42388](https://github.com/anthropics/claude-code/issues/42388).
+
+**`find` command injection bypasses user approval prompt (CVE-2026-24887).** Due to a command parsing error, untrusted content in the context window could trigger execution of arbitrary commands through `find` [without the user approval prompt firing](https://github.com/anthropics/claude-code/security/advisories/GHSA-qgqw-h4xq-7w8w). CVSS v4.0: 7.7 (HIGH). CWE-78 (OS Command Injection). Fixed in Claude Code v2.0.72. Users on older versions are vulnerable. This demonstrates that even approved tool calls can contain injection payloads that bypass the permission layer. bash-guard catches dangerous `find` patterns (e.g., `find -exec rm`) regardless of version. See [CVE-2026-24887](https://nvd.nist.gov/vuln/detail/cve-2026-24887), [GHSA-qgqw-h4xq-7w8w](https://github.com/anthropics/claude-code/security/advisories/GHSA-qgqw-h4xq-7w8w).
+
+**Deny rules bypassed when pipeline exceeds 50 subcommands.** Claude Code's deny rule parser has a [hard cap of 50 subcommands](https://www.theregister.com/2026/04/01/claude_code_rule_cap_raises/) per pipeline. When a bash command chains more than 50 subcommands (e.g., 50 `true` no-ops followed by `curl`), the deny rule evaluation falls through to "ask" instead of "deny." Reported by Adversa (security firm). Attack vector: a malicious CLAUDE.md instructs the model to generate a 50+ subcommand pipeline disguised as a build process. A fix exists internally (tree-sitter parser, one-line change in `bashPermissions.ts`). bash-guard is not affected by this limit because it evaluates each pipe segment independently rather than using the built-in deny rule parser.
 
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 

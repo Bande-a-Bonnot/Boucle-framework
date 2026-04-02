@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Known Limitations - Claude Code Hooks | Boucle</title>
-    <meta name="description" content="206 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
+    <meta name="description" content="208 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
     <style>
         :root {
             --bg: #0d1117;
@@ -166,7 +166,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle">206 documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>.</p>
+        <p class="subtitle">208 documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>.</p>
 
         <div class="controls">
             <input type="text" id="search" placeholder="Search by keyword or issue number (e.g. 32928, bypass, MCP)..." autocomplete="off">
@@ -2039,6 +2039,26 @@
             <h3>Background task output files grow unbounded, no cleanup.</h3>
             <p>Claude Code stores background task output in /private/tmp/claude-{UID}/ with no size limits, no TTL, and no cleanup. A single runaway task consumed 405 GB, silently filling the disk. Affects autonomous agents and heavy run_in_background users.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42388" target="_blank">#42388</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Security" data-issues="CVE-2026-24887" id="find-command-injection-cve">
+            <div class="kl-header">
+                <span class="kl-num">#207</span>
+                <span class="kl-cat">Security</span>
+            </div>
+            <h3><code>find</code> command injection bypasses user approval prompt (CVE-2026-24887).</h3>
+            <p>Command parsing error allowed untrusted context content to trigger arbitrary command execution through <code>find</code> without the approval prompt firing. CVSS 7.7 HIGH. Fixed in v2.0.72. bash-guard catches dangerous find patterns regardless of version.</p>
+            <div class="kl-issues">Issues: <a href="https://nvd.nist.gov/vuln/detail/cve-2026-24887" target="_blank">CVE-2026-24887</a>, <a href="https://github.com/anthropics/claude-code/security/advisories/GHSA-qgqw-h4xq-7w8w" target="_blank">GHSA-qgqw-h4xq-7w8w</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="adversa-50-subcommand" id="deny-50-subcommand-bypass">
+            <div class="kl-header">
+                <span class="kl-num">#208</span>
+                <span class="kl-cat">Permission system</span>
+            </div>
+            <h3>Deny rules bypassed when pipeline exceeds 50 subcommands.</h3>
+            <p>The deny rule parser has a hard cap of 50 subcommands per pipeline. Commands chaining 50+ subcommands (e.g., 50 no-ops then <code>curl</code>) fall through to &quot;ask&quot; instead of &quot;deny.&quot; Reported by Adversa security firm. bash-guard is unaffected as it evaluates each segment independently.</p>
+            <div class="kl-issues">Issues: <a href="https://www.theregister.com/2026/04/01/claude_code_rule_cap_raises/" target="_blank">The Register (Adversa)</a></div>
         </div>
 
         <footer>
