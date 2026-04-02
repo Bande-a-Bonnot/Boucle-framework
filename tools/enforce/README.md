@@ -555,19 +555,19 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-205 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+201 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
-| Hook bypass & evasion | 40 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch |
-| Permission system | 33 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md |
-| Hook behavior & events | 40 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App silent failure, hooks stop after 2.5h |
-| Context & session management | 21 | Compaction invalidates state, worktree CWD drift, stop hooks, no context metrics |
-| Subagent & spawned agents | 13 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, plugin tools:all silent block, no Stop hook |
-| Windows & cross-platform | 9 | `/usr/bin/bash` routing, UNC paths, case-sensitive matching, subagent 2>&1 crash, full re-render on tool calls |
-| Configuration & settings | 10 | JSONC parsing, auto-update wipes hooks, `/model` strips `if`, env.PATH ignored, multi-install update failure |
-| Security | 1 | `SendMessage` content injection |
+| Hook behavior & events | 43 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App silent failure, hooks stop after 2.5h |
 | Other platform behaviors | 38 | Skill tool wrapping, runtime directory deletion, retry loops |
+| Hook bypass & evasion | 36 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch |
+| Permission system | 35 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md |
+| Context & session management | 15 | Compaction invalidates state, worktree CWD drift, stop hooks, no context metrics |
+| Configuration & settings | 12 | JSONC parsing, auto-update wipes hooks, `/model` strips `if`, env.PATH ignored, multi-install update failure |
+| Subagent & spawned agents | 11 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, plugin tools:all silent block, no Stop hook |
+| Windows & cross-platform | 10 | `/usr/bin/bash` routing, UNC paths, case-sensitive matching, subagent 2>&1 crash, full re-render on tool calls |
+| Security | 1 | `SendMessage` content injection |
 
 ---
 
