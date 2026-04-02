@@ -3,7 +3,7 @@
 [![Tests](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml/badge.svg)](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Claude Code hooks that actually enforce your rules. 9 hooks, ~1900 tests, [208 known Claude Code gaps documented](tools/enforce/#known-limitations) with workarounds.
+Claude Code hooks that actually enforce your rules. 9 hooks, ~1900 tests, [211 known Claude Code gaps documented](tools/enforce/#known-limitations) with workarounds.
 
 > **Quick links:** [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
 
@@ -546,10 +546,11 @@ boucle --version                 # Show version
 
 ## Recommended Claude Code Version
 
-**Use v2.1.89 or later.** Earlier versions have hook-related regressions:
+**Use v2.1.90 or later.** Earlier versions have hook-related regressions:
 
 | Version | Issue |
 |---|---|
+| v2.1.90 | Current recommended. Fixes: exit 2 + JSON blocking, PostToolUse format-on-save, 4 PowerShell permission bypasses |
 | v2.1.89 | [Pulled from npm](https://github.com/anthropics/claude-code/issues/41497) — custom commands broken, systemMessage display broken, source map leak |
 | v2.1.81-84 | [Permission bypass resets mid-session](https://github.com/anthropics/claude-code/issues/37745) when PreToolUse hooks are installed |
 | < v2.1.50 | No `hookSpecificOutput` format support (deprecated `decision: "block"` still works but should be migrated) |
