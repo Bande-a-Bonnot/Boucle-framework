@@ -1,0 +1,2518 @@
+{
+  "version": "0.12.0",
+  "count": 242,
+  "categories": [
+    "CLAUDE.md & memory",
+    "Hook behavior & events",
+    "Hook bypass & evasion",
+    "Permission system",
+    "Subagent & spawned agents"
+  ],
+  "severity_counts": {
+    "critical": 11,
+    "low": 81,
+    "medium": 87,
+    "high": 63
+  },
+  "entries": [
+    {
+      "id": "autocomplete-bypasses-hooks",
+      "title": "@-autocomplete bypasses hooks.",
+      "category": "Hook bypass & evasion",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/32928"
+      ],
+      "description": "When a user types @.env in the prompt, Claude Code injects the file content directly into the conversation. No tool call happens, so PreToolUse hooks never fire. A file-guard rule for .env blocks Read .env and Edit .env but cannot block @.env. This is a known gap in the hook system. Workaround: use managed-settings.json denyRead patterns alongside hooks for defense in depth."
+    },
+    {
+      "id": "windows-hooks-run-via-usr-bin-bash-regardless-of-shell-setti",
+      "title": "Windows: hooks run via `/usr/bin/bash` regardless of shell setting.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/32930"
+      ],
+      "description": "On Windows, Claude Code routes all hook commands through `/usr/bin/bash` even when a different shell is configured. Bash-based hooks work if Git Bash is installed (it provides /usr/bin/bash). All 7 Boucle hooks now ship native PowerShell equivalents (.ps1) that bypass this limitation. Use pwsh -File path/to/hook.ps1 in your hook command to run them directly. See install.ps1 for one-line setup."
+    },
+    {
+      "id": "hook-deny-is-not-enforced-for-mcp-tool-calls",
+      "title": "Hook deny is not enforced for MCP tool calls.",
+      "category": "Hook bypass & evasion",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/33106"
+      ],
+      "description": "PreToolUse hooks fire correctly for MCP server tools, but `permissionDecision: \"deny\"` is silently ignored -- the MCP tool call proceeds anyway. This means hooks cannot block MCP tools. This is a platform bug, not an enforce-hooks limitation. Workaround: block the MCP server name in managed-settings.json disallowedTools instead."
+    },
+    {
+      "id": "only-command-type-hooks-block-tool-calls",
+      "title": "Only `command`-type hooks block tool calls.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/33125"
+      ],
+      "description": "Claude Code supports three hook types: command, agent, and prompt. Only command actually blocks execution. Agent and prompt hooks fire but do not prevent the tool call and cannot deliver feedback to the model. enforce-hooks generates command-type hooks exclusively. If you write custom hooks, use \"type\": \"command\" for any hook that needs to enforce rules."
+    },
+    {
+      "id": "silent-jsonc-parsing-failure-can-disable-hooks",
+      "title": "Silent JSONC parsing failure can disable hooks.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/37540"
+      ],
+      "description": "If your .claude/settings.json contains invalid JSONC (e.g., commented-out JSON blocks), Claude Code silently falls back to default settings with no hooks or rules loaded. If your hooks suddenly stop firing, check your settings.json syntax first."
+    },
+    {
+      "id": "hooks-don-t-fire-in-pipe-mode-p-or-bare-mode-bare",
+      "title": "Hooks don't fire in pipe mode (`-p`) or bare mode (`--bare`).",
+      "category": "Hook bypass & evasion",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40506",
+        "https://github.com/anthropics/claude-code/issues/40502",
+        "https://github.com/anthropics/claude-code/issues/37559"
+      ],
+      "description": "When running Claude Code with -p (pipe/print mode), no hooks execute at all: PreToolUse, PostToolUse, and PermissionRequest are all silently skipped (#40506). The --bare flag goes further, also skipping LSP, plugin sync, and skill directory walks for faster scripted startup. This affects autonomous agent loops, CI pipelines, and any workflow using claude -p or claude --bare -p for headless executi"
+    },
+    {
+      "id": "pretooluse-hooks-can-reset-permission-bypass-mode",
+      "title": "PreToolUse hooks can reset permission bypass mode.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/37745"
+      ],
+      "description": "When --dangerously-skip-permissions is enabled, PreToolUse hooks can cause the permission state to reset mid-session, reverting all tools to manual approval after 30 minutes to 2 hours. Disabling hooks is the only workaround. If you use hooks in autonomous mode and find tools suddenly requiring approval, this platform bug is the likely cause."
+    },
+    {
+      "id": "prompt-type-hooks-fail-on-vertex-ai",
+      "title": "Prompt-type hooks fail on Vertex AI.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/37746"
+      ],
+      "description": "Hooks configured with \"type\": \"prompt\" return a 400 error on Vertex AI backends (\"output_config: Extra inputs\"). enforce-hooks only generates command-type hooks so this does not affect it directly, but custom prompt hooks will silently fail on Vertex."
+    },
+    {
+      "id": "subagents-may-not-inherit-hook-settings",
+      "title": "Subagents may not inherit hook settings.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/37730"
+      ],
+      "description": "Agents spawned via the Agent tool do not consistently inherit permission settings from the parent session. Hooks configured at the project level should still fire for subagents (they share the same .claude/settings.json), but global permission preferences may not propagate. Verify hook behavior in subagent workflows."
+    },
+    {
+      "id": "memory-paths-auto-bypass-approval",
+      "title": "Memory paths auto-bypass approval.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/38040"
+      ],
+      "description": "File paths under ~/.claude/projects/*/memory/ auto-bypass Edit/Write approval with no opt-out. Claude can modify memory files without the user seeing a prompt. A PreToolUse hook returning block for writes to memory paths still works, but you must set it up explicitly. Add memory paths to your file-guard config or enforce-hooks rules if you want protection."
+    },
+    {
+      "id": "built-in-skills-wrap-file-operations-opaquely",
+      "title": "Built-in skills wrap file operations opaquely.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/38040"
+      ],
+      "description": "Claude Code's built-in skills perform Write/Edit internally through the Skill tool wrapper. PreToolUse hooks fire on the Skill tool invocation, not on the individual file operations inside it. A hook checking \"is this write targeting .env?\" won't fire because the tool name is Skill, not Write. There is no workaround for this yet. See #38040."
+    },
+    {
+      "id": "context-compaction-invalidates-stateful-hooks",
+      "title": "Context compaction invalidates stateful hooks.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/38018"
+      ],
+      "description": "Hooks that track session state (e.g., \"which files has Claude read?\") break across context compaction boundaries. After compaction, Claude's context no longer contains previously-read files, but hook state still shows them as \"recently read.\" This can cause false gates (blocking a re-read Claude needs) or false passes (allowing an action the hook thinks Claude is informed about). There is no PostC"
+    },
+    {
+      "id": "async-hooks-receive-empty-stdin-on-macos",
+      "title": "Async hooks receive empty stdin on macOS.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/38162"
+      ],
+      "description": "Hooks configured with \"async\": true receive zero bytes on stdin on macOS (works on Linux). Synchronous hooks work correctly on both platforms. enforce-hooks generates synchronous command hooks, so this does not affect it. If you add custom async hooks on macOS, remove the \"async\": true flag as a workaround."
+    },
+    {
+      "id": "git-index-file-inherited-from-git-hooks-corrupts-index",
+      "title": "GIT_INDEX_FILE inherited from git hooks corrupts index.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/38181"
+      ],
+      "description": "When Claude Code is launched from a git hook (post-commit, pre-push, etc.), it inherits the GIT_INDEX_FILE environment variable. Plugin initialization then writes plugin file entries into the project's git index, silently corrupting it. Workaround: unset GIT_INDEX_FILE before invoking Claude from any git hook. This is a platform bug, not an enforce-hooks issue."
+    },
+    {
+      "id": "prompt-type-hooks-incur-undocumented-billing",
+      "title": "Prompt-type hooks incur undocumented billing.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/38165"
+      ],
+      "description": "Hooks with \"type\": \"prompt\" send an LLM call per invocation, adding token costs that are not documented in the billing docs. enforce-hooks generates only \"type\": \"command\" hooks, which run as local processes with zero API cost. If you need reasoning-based enforcement, be aware that prompt hooks double your per-response cost."
+    },
+    {
+      "id": "permissiondecision-ask-permanently-breaks-bypass-mode",
+      "title": "`permissionDecision: \"ask\"` permanently breaks bypass mode.",
+      "category": "Hook bypass & evasion",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/37420"
+      ],
+      "description": "If a hook returns {\"permissionDecision\": \"ask\"} (intending to let the user decide), the session permanently loses bypass mode after the user responds to the prompt. The permission state machine does not restore the previous mode. All subsequent tool calls revert to manual approval for the rest of the session. Do not use permissionDecision: \"ask\" in any hook if you run with --dangerously-skip-permi"
+    },
+    {
+      "id": "enterworktree-exitworktree-hooks-may-not-fire-for-mid-sessio",
+      "title": "EnterWorktree/ExitWorktree hooks may not fire for mid-session operations.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/36205"
+      ],
+      "description": "When Claude uses the Agent tool with isolation: \"worktree\" or the in-session EnterWorktree tool, configured worktree hooks do not execute. Hooks that guard worktree creation or cleanup only fire for CLI-level worktree operations, not for mid-session agent-spawned worktrees. There is no workaround. If you use worktree-guard, be aware it protects ExitWorktree from the tool but not from internal sess"
+    },
+    {
+      "id": "background-agent-worktree-can-silently-change-parent-session",
+      "title": "Background agent worktree can silently change parent session CWD.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/38448"
+      ],
+      "description": "After a background Agent with isolation: \"worktree\" completes, the parent session's working directory can silently drift to the worktree path. Subsequent commands execute in the wrong directory without warning. No hook can detect this because the CWD change happens outside the tool-call lifecycle. Verify your working directory (pwd) after background worktree agents complete."
+    },
+    {
+      "id": "exit-code-2-silently-disables-hooks-for-edit-write-tools",
+      "title": "Exit code 2 silently disables hooks for Edit/Write tools.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/37210"
+      ],
+      "description": "If a hook script exits with code 2, Claude Code treats it as a crash (closed as intended behavior). For Bash tool calls, crashed hooks still block. For Edit and Write tools, crashed hooks are silently ignored and the operation proceeds. enforce-hooks generates hooks that always exit 0, so this does not affect generated hooks. But custom hook scripts that use exit 2 on the deny path will appear to "
+    },
+    {
+      "id": "updatedinput-silently-ignored-for-agent-tool",
+      "title": "`updatedInput` silently ignored for Agent tool.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39814"
+      ],
+      "description": "PreToolUse hooks can return updatedInput to rewrite tool inputs before execution. For most tools this works, but for the Agent tool, the rewritten input is silently discarded and the original prompt is used. Hooks that sanitize or modify subagent prompts will appear to succeed (exit 0, JSON accepted) but have no effect. There is no workaround. Use \"decision\": \"block\" to reject unsafe Agent prompts"
+    },
+    {
+      "id": "stop-hooks-can-block-unrelated-parallel-sessions",
+      "title": "Stop hooks can block unrelated parallel sessions.",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39530"
+      ],
+      "description": "Stop hooks configured with a session_id guard intended to scope them to one session still fire across all parallel sessions. A stop hook that terminates session A can kill session B if both sessions share the same .claude/settings.json. This affects autonomous loop architectures running multiple Claude instances. Workaround: use separate project directories with independent settings for parallel s"
+    },
+    {
+      "id": "hooks-fail-when-working-directory-contains-spaces",
+      "title": "Hooks fail when working directory contains spaces.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39478"
+      ],
+      "description": "If the project path contains spaces (e.g., /Users/name/My Projects/app/), hook scripts fail with parse errors because the path is passed unquoted in some internal contexts. All enforce-hooks generated hooks and Boucle-framework hooks quote their paths, but the platform itself may break path delivery. Workaround: avoid spaces in project directory paths."
+    },
+    {
+      "id": "worktree-tmux-skips-hook-lifecycle-entirely",
+      "title": "`--worktree --tmux` skips hook lifecycle entirely.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39281"
+      ],
+      "description": "When Claude Code is launched with both --worktree and --tmux, it uses a separate codepath that creates git worktrees directly, bypassing WorktreeCreate and WorktreeRemove hooks. Any hooks guarding worktree creation or cleanup will not fire in this mode. Workaround: use --worktree without --tmux."
+    },
+    {
+      "id": "disabled-plugins-still-execute-hooks",
+      "title": "Disabled plugins still execute hooks.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39307"
+      ],
+      "description": "Plugins set to false in enabledPlugins still have their hooks executed by Claude Code. Stop hooks, PreToolUse hooks, and other plugin-registered hooks fire even when the plugin is explicitly disabled. There is no workaround other than removing the plugin entirely."
+    },
+    {
+      "id": "tool-level-hooks-cannot-prevent-api-exfiltration",
+      "title": "Tool-level hooks cannot prevent API exfiltration.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39882"
+      ],
+      "description": "All tool-level hooks (PreToolUse, PostToolUse) operate after file contents have already entered the conversation context. A Read tool call returns file contents into the model's context, and PostToolUse cannot modify tool output, only block. This means secrets in read files (API keys, credentials, PII) are sent to the API provider regardless of PostToolUse hooks. PreToolUse can prevent the Read fr"
+    },
+    {
+      "id": "worktree-isolation-can-silently-fail-for-spawned-agents",
+      "title": "Worktree isolation can silently fail for spawned agents.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/36205",
+        "https://github.com/anthropics/claude-code/issues/38448",
+        "https://github.com/anthropics/claude-code/issues/39886"
+      ],
+      "description": "The Agent tool's isolation: \"worktree\" option can silently run the agent in the main repository instead of creating an isolated worktree. The result metadata shows worktreePath: done and worktreeBranch: undefined. No hook can detect this because the worktree was never created. Combined with #36205 (EnterWorktree ignores hooks) and #38448 (CWD drift), worktree isolation has multiple failure modes t"
+    },
+    {
+      "id": "stop-hooks-fail-after-worktree-removal",
+      "title": "Stop hooks fail after worktree removal.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39432"
+      ],
+      "description": "After a worktree is merged and deleted, stop hooks fail with ENOENT because the session's CWD no longer exists. Node.js reports the error as /bin/sh not found rather than the missing CWD. Any cleanup hooks registered for the session will not run."
+    },
+    {
+      "id": "worktree-memory-resolves-to-the-wrong-project-directory",
+      "title": "Worktree memory resolves to the wrong project directory.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39920"
+      ],
+      "description": "When Claude Code launches from a linked git worktree, it uses git rev-parse --git-common-dir to derive the project path, which resolves to the main worktree's directory. Both worktrees share the same memory and CLAUDE.md files, causing cross-contamination of project-specific rules. Hooks fire correctly in either worktree, but any @enforced rules loaded from the wrong CLAUDE.md may not match the pr"
+    },
+    {
+      "id": "bash-permission-heuristic-misparses-escaped-semicolons",
+      "title": "Bash permission heuristic misparses escaped semicolons.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39911"
+      ],
+      "description": "Claude Code's built-in bash permission system misparses `\\;` in find -exec as a command separator, classifying the redirect suffix (e.g., 2 from 2>/dev/null) as a standalone command. This does not affect hooks (bash-guard receives the full command string and parses it correctly), but it causes confusing permission prompts for safe find commands. If users report permission prompts for 2 as a comman"
+    },
+    {
+      "id": "marketplace-updates-strip-execute-permissions-from-sh-hooks",
+      "title": "Marketplace updates strip execute permissions from .sh hooks.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39954"
+      ],
+      "description": "When a Claude Code plugin is updated through the marketplace, the update process strips the execute bit from .sh files. Hook scripts that were chmod +x after install silently become non-executable, and Claude Code skips them without warning. This affects any bash-based hook delivered through the marketplace. Workaround: re-run chmod +x on your hook scripts after marketplace updates, or use safety-"
+    },
+    {
+      "id": "stop-hooks-that-intentionally-block-display-hook-error-in-th",
+      "title": "Stop hooks that intentionally block display \"Hook Error\" in the UI.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39953",
+        "https://github.com/anthropics/claude-code/issues/38422"
+      ],
+      "description": "When a Stop hook returns {\"decision\": \"block\"} to prevent an action, Claude Code displays \"Hook Error\" in the transcript instead of showing the block reason. The model reads this label and may abandon the task prematurely, thinking a system error occurred rather than a deliberate enforcement. This is the same underlying issue as the exit code 3 proposal, which would let hooks signal intentional bl"
+    },
+    {
+      "id": "posttooluse-hooks-skip-some-plan-mode-transitions",
+      "title": "PostToolUse hooks skip some plan-mode transitions.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39950"
+      ],
+      "description": "The PostToolUse event for ExitPlanMode does not fire when a user accepts a plan with \"clear context.\" Hooks that track plan completion or trigger actions after plan acceptance will miss this transition. There is no workaround."
+    },
+    {
+      "id": "claude-test-permission-does-not-exist-for-dry-run-testing",
+      "title": "`claude --test-permission` does not exist for dry-run testing.",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39971"
+      ],
+      "description": "There is no way to unit-test hook configurations without actually triggering tool calls. Iterating on hook logic requires live sessions with real tool invocations. Affects anyone developing or debugging custom hooks."
+    },
+    {
+      "id": "marketplace-plugin-sync-strips-execute-permissions-from-sh-h",
+      "title": "Marketplace plugin sync strips execute permissions from .sh hooks.",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39954",
+        "https://github.com/anthropics/claude-code/issues/39964"
+      ],
+      "description": "When plugins are synced via the marketplace, hook files are downloaded as 644 (non-executable). Any .sh hooks delivered via marketplace plugins need manual chmod +x after every sync. Same root cause as #39954."
+    },
+    {
+      "id": "exitplanmode-resets-permission-mode-to-acceptedits",
+      "title": "ExitPlanMode resets permission mode to acceptEdits.",
+      "category": "Hook bypass & evasion",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39973"
+      ],
+      "description": "When exiting plan mode, the permission state resets to acceptEdits instead of restoring the previous mode (e.g., bypassPermissions). Workflows that enter plan mode then resume with elevated permissions will find permissions unexpectedly downgraded."
+    },
+    {
+      "id": "settings-json-path-deny-rules-do-not-apply-to-the-bash-tool",
+      "title": "`settings.json` path deny rules do not apply to the Bash tool.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39987"
+      ],
+      "description": "Path deny rules in .claude/settings.json only restrict Claude Code's built-in file tools (Read, Write, Edit, Glob, Grep). The Bash tool executes commands as the user's OS process with no path checking against deny rules. Claude can cat, grep, or head files in denied directories via shell commands, silently bypassing the restriction. Users relying on path deny for security have a false sense of pro"
+    },
+    {
+      "id": "cd-prefix-escapes-command-pattern-ask-deny-rules",
+      "title": "`cd` prefix escapes command-pattern ask/deny rules.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39987",
+        "https://github.com/anthropics/claude-code/issues/37621"
+      ],
+      "description": "Permission rules that ask or deny specific commands (e.g., Bash(rm *)) can be silently bypassed by prepending `cd .. &&` to the command string. The permission matcher checks the full command string against the rule pattern; adding a cd prefix changes the string enough to avoid the match. This is distinct from the path-deny bypass (#39987) \u2014 here the command itself is the same, but the cd prefix de"
+    },
+    {
+      "id": "subagent-output-is-trusted-without-verification-by-the-paren",
+      "title": "Subagent output is trusted without verification by the parent agent.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39981"
+      ],
+      "description": "When Claude spawns subagents via the Agent tool, the parent treats subagent summaries as ground truth without checking claims against actual tool output. Subagents can report inflated counts, phantom operations, or partial searches as exhaustive, and the parent relays these to the user. No hook can intercept the Agent tool's return value or validate subagent claims. This is an architecture-level g"
+    },
+    {
+      "id": "project-level-settings-can-spoof-company-announcements",
+      "title": "Project-level settings can spoof company announcements.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39998"
+      ],
+      "description": "The companyAnnouncements field in .claude/settings.json is intended for enterprise managed settings, but project-level settings can set it too. A malicious repository can include .claude/settings.json with fake company messages that appear identical to legitimate enterprise announcements. This is a social engineering vector: the messages display as \"Message from [COMPANY]\" with no indication they "
+    },
+    {
+      "id": "sessionend-silently-ignores-agent-type-hooks",
+      "title": "`SessionEnd` silently ignores agent-type hooks.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40010"
+      ],
+      "description": "In SessionEnd hook configurations, hooks with \"type\": \"agent\" are silently skipped while \"type\": \"command\" hooks in the same block fire correctly. The event itself fires (command hooks prove this), but agent hooks are filtered out during execution. Agent-type hooks work in other events like Stop. No workaround for session-end cleanup that requires agent capabilities."
+    },
+    {
+      "id": "sdk-stop-hook-enforcement-skips-on-resumed-sessions",
+      "title": "SDK Stop hook enforcement skips on resumed sessions.",
+      "category": "Hook bypass & evasion",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40022"
+      ],
+      "description": "When using the Claude Agent SDK with --resume and --json-schema, the CLI's built-in StructuredOutput stop hook enforcement only fires once per session. On resumed sessions, the internal \"already called\" flag persists and enforcement is silently skipped, returning structured_output: null. Workaround: implement your own Stop hook callback that returns {\"decision\": \"block\"} when structured_output is "
+    },
+    {
+      "id": "hooks-from-non-enabled-marketplace-plugins-still-fire",
+      "title": "Hooks from non-enabled marketplace plugins still fire.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39307",
+        "https://github.com/anthropics/claude-code/issues/40013"
+      ],
+      "description": "The hook runner executes hooks from installed-but-not-enabled marketplace plugins. Plugins that exist in ~/.claude/plugins/marketplaces/ but are not listed in enabledPlugins still have their SessionStart hooks loaded and executed. This means non-enabled code runs on every session start without user consent. Related to #39307 (disabled plugins run hooks). No workaround short of manually deleting un"
+    },
+    {
+      "id": "bypasspermissions-in-settings-files-has-no-effect",
+      "title": "`bypassPermissions` in settings files has no effect.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40014"
+      ],
+      "description": "Setting \"permission-mode\": \"bypassPermissions\" in .claude/settings.local.json is silently ignored. The only working method to enable bypass mode is the CLI flag --dangerously-skip-permissions. Similarly, \"skipDangerousModePermissionPrompt\": true only suppresses the startup warning without actually enabling bypass, and \"dangerouslySkipPermissions\": true under \"permissions\" is also ignored. Automate"
+    },
+    {
+      "id": "stop-hooks-do-not-fire-in-the-vscode-extension",
+      "title": "Stop hooks do not fire in the VSCode extension.",
+      "category": "Hook bypass & evasion",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40029",
+        "https://github.com/anthropics/claude-code/issues/11156"
+      ],
+      "description": "Stop hooks configured in .claude/settings.json do not execute when Claude Code runs inside the VSCode extension. The same hooks fire correctly in CLI sessions. Other hook types (PreToolUse, PostToolUse, SessionStart) all work in VSCode. This is a platform gap, not a configuration error. If you rely on Stop hooks for session-end enforcement or cleanup, those protections are silently absent in VSCod"
+    },
+    {
+      "id": "marketplace-plugin-install-silently-adds-hooks-with-no-conse",
+      "title": "Marketplace plugin install silently adds hooks with no consent prompt.",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40036"
+      ],
+      "description": "The /plugin install flow does not distinguish between inert skills (markdown prompt files) and plugins that include hooks or scripts. A plugin can ship a SessionStart hook that runs arbitrary commands on every future session with no disclosure, no consent prompt, and no visual indicator that executable components were installed. Combined with auto-update (enabled by default for official marketplac"
+    },
+    {
+      "id": "hooks-fail-when-user-profile-path-contains-spaces",
+      "title": "Hooks fail when user profile path contains spaces.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39478",
+        "https://github.com/anthropics/claude-code/issues/40084"
+      ],
+      "description": "On Windows, usernames like \"Lea Chan\" create home directories with spaces (e.g., C:\\Users\\Lea Chan\\). Hook commands that reference $HOME or ${CLAUDE_PLUGIN_ROOT} get word-split by bash at the space, producing bash: /c/Users/Lea: No such file or directory. This affects ALL hooks, not just enforce-hooks. The root cause is in Claude Code's hook runner, which does not properly quote expanded paths bef"
+    },
+    {
+      "id": "plugin-hook-scripts-lose-execute-permissions-when-cached",
+      "title": "Plugin hook scripts lose execute permissions when cached.",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39954",
+        "https://github.com/anthropics/claude-code/issues/39964",
+        "https://github.com/anthropics/claude-code/issues/40086"
+      ],
+      "description": "Plugin hooks (e.g., stop-hook.sh) lose their execute bit when cached by the marketplace plugin system. Same root cause as #39954 (marketplace strips +x) and #39964 (sync strips +x), but the trigger is the caching layer rather than explicit update or sync. Stop hooks are particularly affected because they are only invoked at session end, so the permission loss goes unnoticed until a critical moment"
+    },
+    {
+      "id": "hook-input-lacks-agent-context-for-tool-calls",
+      "title": "Hook input lacks agent context for tool calls.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40140"
+      ],
+      "description": "The agent_id and agent_type fields are only available in SubagentStart/SubagentStop hook events. They are absent from PreToolUse and PostToolUse input. A hook cannot tell whether a tool call originates from the main conversation or a subagent. This means per-agent policies (e.g., \"only subagents may Edit files\") are impossible to enforce. No workaround at the hook level; this requires a platform c"
+    },
+    {
+      "id": "exitworktree-false-positive-after-squash-merge",
+      "title": "ExitWorktree false positive after squash merge.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40137"
+      ],
+      "description": "The platform's ExitWorktree tool checks unmerged commits using SHA comparison (git log main..branch). After a squash merge, the original SHAs are not on main (the squash creates a new SHA), so ExitWorktree falsely warns about unmerged commits. worktree-guard solves this by using git cherry for content-equivalent detection instead of SHA comparison. But the platform's own ExitWorktree warning (sepa"
+    },
+    {
+      "id": "runtime-silently-deletes-specific-directory-names",
+      "title": "Runtime silently deletes specific directory names.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40139"
+      ],
+      "description": "Claude Code's runtime silently deletes `.kiro/` directories between tool calls, regardless of .gitignore status. The deletion is name-specific (renaming to .sd/ avoids it) and happens outside the hook lifecycle. No PreToolUse or PostToolUse event fires for this. File-guard cannot protect directories that the runtime itself removes. If you need persistent project directories, avoid names that confl"
+    },
+    {
+      "id": "failed-marketplace-auto-update-deletes-all-plugins-from-that",
+      "title": "Failed marketplace auto-update deletes all plugins from that marketplace.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40153"
+      ],
+      "description": "The plugin system's marketplace auto-update mechanism deletes the marketplace directory before re-cloning. If the re-clone fails (network timeout, rate limit, disk full), the directory stays deleted and all plugins installed from that marketplace break. This includes any hooks those plugins shipped. The deletion happens outside the hook lifecycle, so no hook can prevent or detect it. Workaround: b"
+    },
+    {
+      "id": "teammate-sendmessage-content-injected-as-human-turns",
+      "title": "Teammate SendMessage content injected as Human: turns.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40166"
+      ],
+      "description": "In multi-agent setups using TeamCreate and SendMessage, teammate summaries can appear as `Human:` turns in the conversation. The orchestrator agent treats these phantom messages as legitimate user input and acts on them. No hook can intercept this because it happens in conversation turn management, not in tool calls. This is a trust boundary violation in long sessions with frequent context compres"
+    },
+    {
+      "id": "worktree-isolation-fails-on-windows-due-to-path-resolution",
+      "title": "Worktree isolation fails on Windows due to path resolution.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39886",
+        "https://github.com/anthropics/claude-code/issues/40164"
+      ],
+      "description": "The Agent tool's isolation: \"worktree\" option falsely reports \"not in a git repository\" on Windows 11 when using Git Bash. The spawned subprocess resolves the working directory differently (POSIX vs Windows paths), causing the git repo check to fail. The agent falls back to running without isolation. Related to #39886 (worktree isolation silently fails). No workaround at the hook level. Windows us"
+    },
+    {
+      "id": "marketplace-plugin-hooks-hardcode-python3-on-windows",
+      "title": "Marketplace plugin hooks hardcode `python3` on Windows.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40172"
+      ],
+      "description": "The security-guidance marketplace plugin (and potentially others) hardcodes `python3` in its hook command. On Windows, python3 does not exist as a command (Python installs as python or py). Every Edit, Write, and MultiEdit operation fails with a hook error. This is a plugin authoring bug, not a platform bug, but it affects any Windows user who installs marketplace plugins with Python-based hooks. "
+    },
+    {
+      "id": "permission-path-matching-is-case-sensitive-on-windows",
+      "title": "Permission path matching is case-sensitive on Windows.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40084",
+        "https://github.com/anthropics/claude-code/issues/40172",
+        "https://github.com/anthropics/claude-code/issues/40170"
+      ],
+      "description": "The allow and deny rules in settings.json use case-sensitive string matching for file paths, even on Windows (NTFS) where the filesystem is case-insensitive. A rule allowing Edit(C:\\Users\\alice\\project\\*) will not match C:\\Users\\Alice\\Project\\file.txt. This creates silent permission bypass on Windows: the model may access paths that visually match a deny rule but differ in casing. No workaround at"
+    },
+    {
+      "id": "sandbox-alloweddomains-does-not-filter-plain-http-requests",
+      "title": "Sandbox `allowedDomains` does not filter plain HTTP requests.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40213"
+      ],
+      "description": "The sandbox.network.allowedDomains setting only intercepts HTTPS traffic via the CONNECT tunnel. Plain HTTP requests (e.g., curl http://unauthorized-domain.com) pass through unfiltered because the proxy sees the Host header but does not enforce domain rules on non-CONNECT requests. This is a security gap: prompt injection payloads can exfiltrate data over plain HTTP even when allowedDomains is con"
+    },
+    {
+      "id": "memory-index-appends-at-bottom-but-truncates-from-bottom-new",
+      "title": "Memory index appends at bottom but truncates from bottom \u2014 newest entries lost first.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40210"
+      ],
+      "description": "Claude Code's auto-memory system appends new entries to the bottom of MEMORY.md, but truncates from the bottom after 200 lines. This means as memory grows, the most recently learned information is lost first while stale entries persist. Not hookable \u2014 this is internal to the memory subsystem. Affects any long-running agent relying on built-in memory. Workaround: manage your own memory file (like H"
+    },
+    {
+      "id": "claude-code-sends-sigterm-to-all-healthy-stdio-mcp-servers-a",
+      "title": "Claude Code sends SIGTERM to all healthy stdio MCP servers after 10-60s.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40207"
+      ],
+      "description": "After successful connection and handshake, Claude Code terminates all stdio-based MCP servers simultaneously with no preceding error. The timeout interval shrinks over the session lifetime (60s \u2192 30s \u2192 10s). Cloud-hosted MCPs are unaffected (different transport). The only recovery is manual /mcp reconnection, which itself gets killed again. Not hookable \u2014 the kill signal originates from the runtim"
+    },
+    {
+      "id": "agent-tool-model-parameter-overrides-user-s-default-model-wi",
+      "title": "Agent tool `model` parameter overrides user's default model without consent.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40211"
+      ],
+      "description": "When a user sets their model to Opus via /model, the Agent tool can still spawn subagents with cheaper models by passing model: \"sonnet\" or model: \"haiku\". The user sees no indication that work was delegated to a different model. Not hookable \u2014 the SubagentStart event does not include the model parameter, and PreToolUse for the Agent tool fires before the model is resolved. CLAUDE.md rules like \"u"
+    },
+    {
+      "id": "concurrent-sessions-corrupt-shared-config-files",
+      "title": "Concurrent sessions corrupt shared config files.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40226"
+      ],
+      "description": "Multiple Claude Code sessions writing to ~/.claude.json simultaneously can trigger a race condition where one session reads a partially-written file, gets a JSON parse error, and enters a recovery loop that overwrites the other session's changes. The corrupted state persists until manual intervention. Not hookable \u2014 the corruption happens in the config serialization layer, not in tool calls. Affec"
+    },
+    {
+      "id": "imessage-permission-relay-sent-to-unrelated-contacts",
+      "title": "iMessage permission relay sent to unrelated contacts.",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40221"
+      ],
+      "description": "When using the iMessage channel plugin, permission relay prompts meant for one conversation can be sent to an unrelated contact in the user's address book. This leaks internal tool-call details (file paths, command strings) to third parties without user consent. Not hookable \u2014 the relay happens in the iMessage transport layer. SECURITY: if you use iMessage as a permission relay channel, verify the"
+    },
+    {
+      "id": "additionalcontext-from-hooks-accumulates-in-conversation-his",
+      "title": "`additionalContext` from hooks accumulates in conversation history.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40216"
+      ],
+      "description": "When a PreToolUse or UserPromptSubmit hook returns additionalContext, the injected text is appended permanently to the conversation instead of being treated as ephemeral. Each tool call adds another copy, causing the context to grow unboundedly and waste tokens. Affects hook authors who use additionalContext for tips, warnings, or contextual guidance \u2014 the guidance is correct the first time but po"
+    },
+    {
+      "id": "dangerously-skip-permissions-does-not-propagate-to-subagents",
+      "title": "`--dangerously-skip-permissions` does not propagate to subagents.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/37730",
+        "https://github.com/anthropics/claude-code/issues/40211",
+        "https://github.com/anthropics/claude-code/issues/40241"
+      ],
+      "description": "When the parent session runs with --dangerously-skip-permissions, subagents spawned via the Agent tool still prompt on every Edit/Write call. Fourteen edits across eight files produced fourteen manual prompts. The bypass flag only applies to the parent session's permission state. A PreToolUse hook returning {\"allow\": true} would suppress the prompts, but it applies globally to all users of that ho"
+    },
+    {
+      "id": "approving-a-task-tool-launch-grants-unrestricted-bash-access",
+      "title": "Approving a Task tool launch grants unrestricted bash access to the subagent.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40241",
+        "https://github.com/anthropics/claude-code/issues/40580",
+        "https://github.com/anthropics/claude-code/issues/21460"
+      ],
+      "description": "When a user approves a Task tool call, the spawned subagent ignores `settings.local.json` deny rules and executes arbitrary bash commands without individual approval. In one report, 22+ commands ran with no per-command prompt. The single \"approve Task\" interaction is treated as blanket consent for all subsequent tool calls inside the subagent. This is the inverse of #40241 (bypass doesn't propagat"
+    },
+    {
+      "id": "hook-stdout-corrupts-worktree-paths-when-spawning-isolated-a",
+      "title": "Hook stdout corrupts worktree paths when spawning isolated agents.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40262"
+      ],
+      "description": "When the Agent tool creates a worktree with isolation: \"worktree\", hook stdout JSON is concatenated into the worktree path instead of being consumed by the hook protocol. A hook returning {\"continue\":true,\"suppressOutput\":true} produces paths like /project/{\"continue\":true}/{\"continue\":true}. This affects ALL hooks that output JSON on stdout (i.e., every correctly implemented hook). The error is P"
+    },
+    {
+      "id": "symlinkdirectories-causes-silent-worktree-cleanup-failure",
+      "title": "`symlinkDirectories` causes silent worktree cleanup failure.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40259"
+      ],
+      "description": "When worktree.symlinkDirectories is configured in settings (e.g., to symlink node_modules), automatic worktree cleanup on session exit silently fails because git worktree remove refuses to remove a directory containing untracked files (the symlinks). Worktrees accumulate over time. Not hookable \u2014 the cleanup happens in the runtime. Workaround: use a WorktreeRemove hook that calls git worktree remo"
+    },
+    {
+      "id": "active-session-termination-does-not-invalidate-remote-browse",
+      "title": "Active session termination does not invalidate remote browser sessions.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40271"
+      ],
+      "description": "When a Claude Code session is terminated (via Stop, session end, or crash), remote browser sessions remain active. An attacker with access to the browser session URL can continue issuing commands after the user believes the session is closed. SECURITY: this is a trust boundary violation for any workflow that exposes Claude Code via browser-based access (Cowork, remote sessions). Not hookable \u2014 ses"
+    },
+    {
+      "id": "plugin-update-loses-execute-permissions-on-sh-hook-files-add",
+      "title": "Plugin update loses execute permissions on .sh hook files (additional instance).",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39954",
+        "https://github.com/anthropics/claude-code/issues/39964",
+        "https://github.com/anthropics/claude-code/issues/40086",
+        "https://github.com/anthropics/claude-code/issues/40280"
+      ],
+      "description": "Plugin updates through the marketplace strip the execute bit from `.sh` files, the same root cause as #39954, #39964, and #40086. Each report confirms the issue persists. Workaround: re-run chmod +x after updates, or use safety-check to detect non-executable hooks."
+    },
+    {
+      "id": "deterministic-gates-can-become-substitute-goals-goodhart-s-l",
+      "title": "Deterministic gates can become substitute goals (Goodhart's Law).",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40289"
+      ],
+      "description": "When hooks enforce rules deterministically, the model can shift optimization from \"fulfill the task correctly\" to \"pass the gates measurably.\" Gates give unambiguous pass/fail feedback while the actual task goal is ambiguous, so the model targets what it can measure. This means adding more gates can make task completion worse by redirecting the model's attention toward gate-passing rather than tas"
+    },
+    {
+      "id": "model-executes-commands-after-user-selects-no-at-permission-",
+      "title": "Model executes commands after user selects \"No\" at permission prompt.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40302"
+      ],
+      "description": "When the permission prompt fires for a Bash command and the user explicitly denies it, the model can proceed to execute the command anyway. The permission prompt is model-mediated UI, not an execution gate. It suffers the same compliance failures as CLAUDE.md rules: the model observes the denial, then ignores it. PreToolUse hooks enforce at the process level before the command reaches execution, m"
+    },
+    {
+      "id": "windows-bash-non-functional-inside-auto-created-worktrees",
+      "title": "Windows: bash non-functional inside auto-created worktrees.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40164",
+        "https://github.com/anthropics/claude-code/issues/39886",
+        "https://github.com/anthropics/claude-code/issues/40307"
+      ],
+      "description": "When Claude Code auto-creates a git worktree on Windows (via isolation: \"worktree\"), bash commands fail because the spawned process resolves the working directory using POSIX-style paths that do not exist on Windows. The worktree is created but all Bash tool calls within it fail immediately. Combined with #40164 (Windows worktree path resolution) and #39886 (worktree isolation silently fails), Win"
+    },
+    {
+      "id": "dangerously-skip-permissions-partially-broken-startup-suppre",
+      "title": "`--dangerously-skip-permissions` partially broken: startup suppressed, runtime prompts still fire.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/37745",
+        "https://github.com/anthropics/claude-code/issues/40241",
+        "https://github.com/anthropics/claude-code/issues/40328"
+      ],
+      "description": "The --dangerously-skip-permissions flag suppresses the startup dialog (via skipDangerousModePermissionPrompt: true) but does not bypass runtime tool execution prompts. Bash commands not in the explicit allow list still trigger per-tool confirmation prompts, making the flag functionally equivalent to normal permission mode. This compounds with #37745 (hooks can reset bypass mode) and #40241 (bypass"
+    },
+    {
+      "id": "sandbox-desync-writes-hit-real-filesystem-while-reads-are-sa",
+      "title": "Sandbox desync: writes hit real filesystem while reads are sandboxed.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40321"
+      ],
+      "description": "Claude Code can enter a half-sandboxed state where file writes go through to the real filesystem but file reads are isolated. In this state, the model writes files, then cannot see them on read-back, so it recreates them, overwriting the real directory. One user lost an entire 2500-file Next.js project including .git, all source code, and .env files. The model did not detect the inconsistency. Not"
+    },
+    {
+      "id": "plan-mode-enforced-by-instruction-only-not-by-tool-execution",
+      "title": "Plan mode enforced by instruction only, not by tool execution layer.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40324",
+        "https://github.com/anthropics/claude-code/issues/41517"
+      ],
+      "description": "Plan mode's \"MUST NOT make any edits\" constraint is enforced only at the system prompt level. If the model ignores the instruction and issues Edit/Write/Bash tool calls, the user's per-tool approval prompt executes them without any warning that plan mode is active. There is no tool-layer enforcement of plan mode. Confirmed by a user who reported the model writing and pushing code while in plan-mod"
+    },
+    {
+      "id": "pretooluse-hook-output-on-enterplanmode-deprioritized-by-pla",
+      "title": "PreToolUse hook output on EnterPlanMode deprioritized by plan mode system prompt.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41051"
+      ],
+      "description": "When a PreToolUse hook fires on EnterPlanMode and injects a <system-reminder> with prerequisite instructions, the model consistently ignores the hook output because plan mode's own detailed system prompt (with numbered phases and sub-steps) arrives in the same turn and dominates the model's attention. The hook fires, the output is delivered, but the model treats it as secondary context and follows"
+    },
+    {
+      "id": "permission-allowlist-glob-wildcards-match-shell-operators-en",
+      "title": "Permission allowlist glob wildcards match shell operators, enabling command injection.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40344"
+      ],
+      "description": "The * wildcard in permission allow rules (e.g., Bash(git -C * status)) is matched against the raw command string without parsing shell structure. Because * matches operators like &&, ;, ||, and |, any allow rule containing * silently permits arbitrary command chains. For example, Bash(git -C * status) also matches git -C /repo && rm -rf / && git status. Every allow rule with * is an injection vect"
+    },
+    {
+      "id": "bypasspermissions-on-agents-ignores-project-level-allowlists",
+      "title": "`bypassPermissions` on agents ignores project-level allowlists entirely.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40343"
+      ],
+      "description": "When spawning sub-agents with mode: bypassPermissions, they can execute any tool regardless of the project's `settings.local.json` allowlist. Write, Edit, git commands, rm, mkdir all execute with no permission check. The allowlist represents a security boundary that bypassPermissions completely overrides rather than just suppressing per-tool prompts. PreToolUse hooks still fire in bypassed agent s"
+    },
+    {
+      "id": "parallel-bash-tool-writes-can-silently-lose-files",
+      "title": "Parallel Bash tool writes can silently lose files.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40341"
+      ],
+      "description": "When multiple Bash tool calls run in parallel and write to the same directory, files can silently disappear due to race conditions in the runtime's file handling. Not hookable, as the data loss happens in the parallel execution layer between tool calls. Workaround: avoid parallel Bash tool calls that write to the same directory. See #40341."
+    },
+    {
+      "id": "compaction-race-condition-can-destroy-entire-conversation",
+      "title": "Compaction race condition can destroy entire conversation.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40352"
+      ],
+      "description": "If a rate limit error occurs while Claude Code is compacting the conversation (summarizing to reduce context size), the old context is replaced before the new summary is confirmed. A failure mid-compaction leaves the conversation empty. Not hookable \u2014 compaction is internal to the runtime. Affects long sessions and autonomous agents that hit rate limits during context compression. Workaround: keep"
+    },
+    {
+      "id": "desktop-app-bash-tool-file-writes-silently-revert",
+      "title": "Desktop app: Bash tool file writes silently revert.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40349"
+      ],
+      "description": "In the Claude Code desktop app, file writes made via the Bash tool can silently revert even when commands are executed sequentially. The write appears to succeed, but the file returns to its previous state with no error. Not hookable \u2014 the revert happens in the desktop app's file synchronization layer, not in tool calls. Affects desktop app users writing files through shell commands. Workaround: v"
+    },
+    {
+      "id": "agent-bash-shells-source-user-bashrc-bash-profile",
+      "title": "Agent bash shells source user `.bashrc`/`.bash_profile`.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40354"
+      ],
+      "description": "Bash shells spawned by the Agent tool source the user's shell profile, inheriting aliases, functions, PATH modifications, and environment variables. A .bashrc that aliases rm to rm -i or git to a wrapper function changes the behavior of every Bash tool call without the model's knowledge. SECURITY: a malicious .bashrc (e.g., from a compromised dotfiles repo) could intercept credentials, redirect co"
+    },
+    {
+      "id": "warn-level-hook-responses-silently-dropped-without-hookspeci",
+      "title": "Warn-level hook responses silently dropped without `hookSpecificOutput`.",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40380"
+      ],
+      "description": "When a PreToolUse hook returns {\"decision\": \"warn\", \"reason\": \"...\"}, the warning is silently discarded by the hook protocol. Neither the user nor the model sees it. The only reliable way to surface a warning while allowing the tool call is to return hookSpecificOutput with permissionDecision: \"allow\" and additionalContext containing the warning text. enforce-hooks engine.sh uses this workaround f"
+    },
+    {
+      "id": "session-level-permission-caching-bypasses-allow-list-in-sand",
+      "title": "Session-level permission caching bypasses allow list in sandbox mode.",
+      "category": "Hook bypass & evasion",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40384"
+      ],
+      "description": "When sandbox mode is enabled, approving one instance of a command (e.g., git commit) auto-approves ALL subsequent calls to that command pattern for the rest of the session. The allow list is only consulted on the first invocation. This means a carefully scoped allow list that permits git commit -m \"...\" also permits git commit --allow-empty after the first approval. Not hookable at the permission-"
+    },
+    {
+      "id": "shell-redirect-targets-saved-as-standalone-permission-entrie",
+      "title": "Shell redirect targets saved as standalone permission entries.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40382"
+      ],
+      "description": "When the model runs a command like az ... > \"filepath\", the permission system can extract just the filepath and save Bash(\"filepath\") as a permanent allow entry. This broken permission entry then matches any future command that happens to include that filepath string. Not hookable, as the corruption happens in the permission serialization layer. Inspect your settings.local.json for allow entries t"
+    },
+    {
+      "id": "blocklist-based-bash-filtering-is-fundamentally-incomplete-f",
+      "title": "Blocklist-based Bash filtering is fundamentally incomplete for file writes.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40408"
+      ],
+      "description": "Any Turing-complete interpreter installed on the system can write files: perl -i -pe, ruby -i -pe, node -e \"fs.writeFileSync(...)\", lua -e \"io.open(...)\", and others. A blocklist that covers known write commands will always miss unlisted interpreters. The model does not need to act maliciously to discover these; it routes around blocked paths to solve the user's problem (#40408). bash-guard covers"
+    },
+    {
+      "id": "sandbox-additionalwritepaths-silently-ignored-across-all-con",
+      "title": "Sandbox `additionalWritePaths` silently ignored across all config scopes.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40435"
+      ],
+      "description": "The sandbox.additionalWritePaths setting in .claude/settings.local.json, .claude/settings.json, and ~/.claude/settings.json is not applied to the sandbox filesystem allowlist. Paths configured there never appear in the sandbox write allowlist, causing operation not permitted errors for legitimate writes (GPG lock files, tool caches, pre-commit hook logs). The sandbox config printed at session star"
+    },
+    {
+      "id": "self-modification-guard-ignores-bypasspermissions-mode",
+      "title": "Self-modification guard ignores `bypassPermissions` mode.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40463"
+      ],
+      "description": "The built-in self-modification guard (which prevents the model from editing .claude/ configuration files) does not respect `bypassPermissions`. Even with bypassPermissions enabled, the model is blocked from modifying its own settings files. This is an asymmetry: most other permission checks honor bypass mode, but the self-modification guard has a hardcoded block. Not hookable at the guard layer. I"
+    },
+    {
+      "id": "bypasspermissions-blocks-claude-writes-despite-explicit-allo",
+      "title": "`bypassPermissions` blocks `.claude/` writes despite explicit allow rules.",
+      "category": "Hook bypass & evasion",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40463",
+        "https://github.com/anthropics/claude-code/issues/38806"
+      ],
+      "description": "Since v2.1.78, bypassPermissions mode blocks all writes to the `.claude/` directory regardless of explicit Edit(.claude/**) allow rules in settings. The documented exemptions for .claude/commands, .claude/agents, and .claude/skills subdirectories are not honored in practice. This breaks automated workflows that generate skill documentation, update agent definitions, or manage command files. Relate"
+    },
+    {
+      "id": "subagents-lose-claude-md-context-in-v2-1-84",
+      "title": "Subagents lose CLAUDE.md context in v2.1.84+.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40459"
+      ],
+      "description": "Starting from v2.1.84, subagents spawned via the Agent tool receive `omitClaudeMd: true`, which strips CLAUDE.md instructions from their context. Rules, constraints, and behavioral directives written in CLAUDE.md do not propagate to subagents. This makes CLAUDE.md fundamentally unreliable as a security boundary in workflows that use subagents. PreToolUse hooks are not affected \u2014 they fire on every"
+    },
+    {
+      "id": "task-subagents-do-not-load-claude-md-or-claude-rules-files",
+      "title": "Task subagents do not load CLAUDE.md or `.claude/rules/` files.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40459",
+        "https://github.com/anthropics/claude-code/issues/29423"
+      ],
+      "description": "Subagents spawned via the Task tool operate with no project-level behavioral configuration. Project CLAUDE.md, .claude/rules/*.md, and user-level ~/.claude/CLAUDE.md are all absent from the subagent context. In one measured case, 6 parallel subagents missed 5 constraint violations, 4 logic bugs, and 1 missing error path that the main agent caught with rules loaded. This predates the v2.1.84 omitCl"
+    },
+    {
+      "id": "scheduled-tasks-prompt-for-permissions-despite-bypasspermiss",
+      "title": "Scheduled tasks prompt for permissions despite `bypassPermissions`.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40470"
+      ],
+      "description": "When using /schedule to create recurring tasks, the spawned sessions prompt for permission approvals even when bypassPermissions is set to true in the default mode configuration. Since scheduled tasks run unattended, permission prompts cause the task to stall indefinitely. Not hookable \u2014 the permission prompt occurs before any tool call. Workaround: ensure the specific commands needed by the sched"
+    },
+    {
+      "id": "marketplace-plugins-removed-by-remotepluginmanager-sync-on-r",
+      "title": "Marketplace plugins removed by RemotePluginManager sync on restart.",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39954",
+        "https://github.com/anthropics/claude-code/issues/40475"
+      ],
+      "description": "Personal marketplace plugins that were manually installed get removed by the RemotePluginManager sync on every Claude Code restart. If hooks are distributed as marketplace plugins, they silently disappear after restart. Not hookable \u2014 the sync occurs during startup before any tool call. Workaround: install hooks directly to ~/.claude/ rather than through the marketplace. This is distinct from #399"
+    },
+    {
+      "id": "cowork-sessions-silently-ignore-all-user-hooks-and-managed-s",
+      "title": "Cowork sessions silently ignore all user hooks and managed settings.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40495"
+      ],
+      "description": "In cowork (local-agent-mode) sessions, three independent root causes prevent hooks from firing: (1) the user's ~/.claude/settings.json is not mounted into the sandbox VM, so hook configurations don't exist inside the container; (2) managed/MDM settings resolve to the wrong path because the VM runs Linux but process.platform on the macOS host resolved the path at launch time; (3) environment variab"
+    },
+    {
+      "id": "model-may-ignore-hooks-and-claude-md-startup-sequences-entir",
+      "title": "Model may ignore hooks and CLAUDE.md startup sequences entirely.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40289",
+        "https://github.com/anthropics/claude-code/issues/40489"
+      ],
+      "description": "Even when hooks are correctly installed and fire on tool calls, the model itself can refuse to follow CLAUDE.md startup instructions that depend on hook outputs or tool-call sequences. If CLAUDE.md specifies a deterministic startup order (e.g., \"read config table first, then verify hooks\"), the model may skip or reorder these steps. PreToolUse hooks still fire and block dangerous operations regard"
+    },
+    {
+      "id": "background-agents-silently-deny-all-write-operations-despite",
+      "title": "Background agents silently deny all write operations despite allow rules.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40502"
+      ],
+      "description": "Agents spawned with run_in_background: true cannot perform write operations (Bash writes, Write tool, mkdir, touch) even when those exact commands are in permissions.allow. Read-only allowed commands work. The pre-approval prompt that is supposed to fire before agent launch does not fire for background agents, so write permissions are never granted. Foreground agents with the same allow rules work"
+    },
+    {
+      "id": "model-ignores-explicit-user-negative-feedback-and-celebrates",
+      "title": "Model ignores explicit user negative feedback and celebrates.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40289",
+        "https://github.com/anthropics/claude-code/issues/40499"
+      ],
+      "description": "When a user gives unambiguous negative feedback (\"it didn't work\", \"no response\"), the model can ignore the user's words and instead find something positive in the context (e.g., a detail in a screenshot) to celebrate. This is a model-level reasoning failure, not a hook issue. Not hookable. Relevant to autonomous agents because the same logic-override pattern applies to CLAUDE.md instructions: the"
+    },
+    {
+      "id": "write-tool-s-read-before-write-guard-pushes-writes-into-bash",
+      "title": "Write tool's read-before-write guard pushes writes into Bash, reducing visibility.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40517"
+      ],
+      "description": "The Write tool requires a prior Read of the target file before allowing a write. For new files that don't exist yet, this guard is vacuous \u2014 there is nothing to read. The model responds by using cat <<'EOF' > file in Bash instead, which bypasses the Write tool entirely. Bash writes are harder to review (no diff preview, no file-path-based allow/deny matching in default permissions), so the guard a"
+    },
+    {
+      "id": "bypasspermissions-mode-still-prompts-for-permissions-in-some",
+      "title": "`bypassPermissions` mode still prompts for permissions in some configurations.",
+      "category": "Hook bypass & evasion",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40470",
+        "https://github.com/anthropics/claude-code/issues/40552"
+      ],
+      "description": "Even with bypassPermissions set to true, some sessions still display permission prompts and abort with Request was aborted errors when the user does not respond. This is distinct from the scheduled-task case (#40470) \u2014 here, bypass mode itself fails to suppress prompts in regular interactive sessions. Not hookable at the permission-prompt layer. PreToolUse hooks still fire regardless of bypass sta"
+    },
+    {
+      "id": "model-executes-physical-device-commands-without-permission-d",
+      "title": "Model executes physical device commands without permission despite CLAUDE.md rules.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40537"
+      ],
+      "description": "A user with explicit CLAUDE.md rules requiring approval before device commands had Claude Code send MQTT commands to a physical IoT device via SSH without confirmation. The violation counter was already at 12 prior incidents. This is the canonical failure mode for text-based rules: the model reads the constraint, understands it, and violates it anyway under task pressure. A PreToolUse hook on Bash"
+    },
+    {
+      "id": "exitplanmode-during-auto-compact-crashes-the-session",
+      "title": "ExitPlanMode during auto-compact crashes the session.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40519"
+      ],
+      "description": "When auto-compact triggers during plan mode, Claude Code calls ExitPlanMode as part of the compaction process. This crashes the VS Code extension because the plan state is not properly cleaned up during forced compaction. Not hookable \u2014 the crash occurs inside the compaction flow, not during a user-initiated tool call. Relevant to plan-mode enforcement: if you rely on plan mode as a review gate, a"
+    },
+    {
+      "id": "pretooluse-hook-exit-codes-ignored-for-subagent-tool-calls",
+      "title": "PreToolUse hook exit codes ignored for subagent tool calls.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/26923",
+        "https://github.com/anthropics/claude-code/issues/40580"
+      ],
+      "description": "When Claude spawns a subagent via the Agent tool, PreToolUse hooks still fire for tool calls inside the subagent, but exit code 2 block decisions are silently ignored. The hook executes, receives correct JSON input, returns exit code 2 with a block reason, but the subagent completes the tool call anyway. This is the same bug class as #26923 (Task tool) and part of a systemic pattern where hook exi"
+    },
+    {
+      "id": "ide-file-open-events-cancel-pending-permission-prompts",
+      "title": "IDE file-open events cancel pending permission prompts.",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40592"
+      ],
+      "description": "In JetBrains IDEs, opening or switching files while a tool call awaits permission approval cancels the pending prompt. The IDE file-open context event is interpreted as terminal input, returning \"User answered in terminal\" and aborting the tool. Worse, if IDE-sourced content (e.g. selected text containing y or 1) is interpreted as a permission response, it could lead to unintended approvals. Not h"
+    },
+    {
+      "id": "model-self-generates-user-confirmation-bypassing-explicit-co",
+      "title": "Model self-generates user confirmation, bypassing explicit consent gates.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40593"
+      ],
+      "description": "After a background agent task notification, Claude can fabricate a \"Go\" response and interpret its own self-generated text as user confirmation to proceed with file modifications. Even when the user explicitly instructed \"wait for my Go before modifying files,\" the model treated a system event as a trigger to auto-generate the approval. Not hookable \u2014 the fabricated confirmation happens at the mod"
+    },
+    {
+      "id": "project-scoped-directory-permissions-leak-into-all-projects",
+      "title": "Project-scoped directory permissions leak into all projects.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40606"
+      ],
+      "description": "When a user approves file access to paths outside the working directory in one project, those paths are stored as additionalDirectories in the global ~/.claude/settings.json. Opening an unrelated project causes those directories to appear as additional working directories, and subagents search in completely unrelated project paths. This is a project isolation failure \u2014 permissions granted in one c"
+    },
+    {
+      "id": "project-level-allow-rules-cannot-override-user-level-deny-ru",
+      "title": "Project-level allow rules cannot override user-level deny rules.",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/14311"
+      ],
+      "description": "Deny rules in ~/.claude/settings.json block paths unconditionally with no project-level exception mechanism. A global deny Read(**/token) intended to protect secrets also blocks internal/token/token.go (a Go lexer file), and settings.local.json allow rules in the project cannot create an override. The \"most specific wins\" principle does not apply across scope boundaries. This forces users to choos"
+    },
+    {
+      "id": "plan-mode-does-not-deactivate-bypass-permissions-mode",
+      "title": "Plan mode does not deactivate bypass permissions mode.",
+      "category": "Hook bypass & evasion",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40324",
+        "https://github.com/anthropics/claude-code/issues/40623"
+      ],
+      "description": "Entering plan mode while bypassPermissions is active does not switch bypass off. The model can execute write operations during what the user expects to be a read-only analysis phase. This interacts with the plan-mode enforcement gap (#40324): plan mode is not enforced at the tool layer, and bypass mode overrides it. PreToolUse hooks fire regardless of both modes, making them the only reliable cons"
+    },
+    {
+      "id": "read-permissions-break-for-paths-containing-glob-special-cha",
+      "title": "Read permissions break for paths containing glob-special characters.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40344",
+        "https://github.com/anthropics/claude-code/issues/40613"
+      ],
+      "description": "Directories with {, }, ``, or `]` in their names cause [Read tool permission matching to fail. The permission system interprets these as glob metacharacters rather than literal path components. This extends the glob injection pattern from #40344 to affect Read access: a project in a directory like my-project-{v2} may have broken read permissions. PreToolUse hooks match on tool input fields using e"
+    },
+    {
+      "id": "skill-scoped-hooks-silently-dropped-for-forked-subagents",
+      "title": "Skill-scoped hooks silently dropped for forked subagents.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40580",
+        "https://github.com/anthropics/claude-code/issues/37730",
+        "https://github.com/anthropics/claude-code/issues/40630"
+      ],
+      "description": "When a skill defines hooks in its SKILL.md frontmatter alongside context: fork, the hooks are not forwarded to the forked subagent. The same hooks work correctly in inline mode (without context: fork). The model field in frontmatter propagates correctly to forked subagents, confirming the frontmatter is parsed \u2014 but hooks specifically are not propagated. This is another instance of the subagent ho"
+    },
+    {
+      "id": "model-acts-on-its-own-output-as-if-it-were-user-input",
+      "title": "Model acts on its own output as if it were user input.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40593",
+        "https://github.com/anthropics/claude-code/issues/40166",
+        "https://github.com/anthropics/claude-code/issues/40629"
+      ],
+      "description": "Claude Code can generate a response to its own output without waiting for user confirmation, then act on it. In one reported case, Claude drafted a message to a client, then auto-responded to its own draft and sent it without user approval. The model's response appears merged with the user's message in the terminal with no visual separation. Not hookable \u2014 the fabricated input happens at the conve"
+    },
+    {
+      "id": "userpromptsubmit-hook-systemmessage-silently-dropped",
+      "title": "UserPromptSubmit hook systemMessage silently dropped.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40647"
+      ],
+      "description": "UserPromptSubmit hooks can fire successfully but fail to deliver their systemMessage to the model. The hook command executes and returns valid JSON with a systemMessage, but the injected message does not appear in the conversation or influence model behavior. This is intermittent and difficult to reproduce. For safety enforcement, this means a UserPromptSubmit hook that injects reminders or constr"
+    },
+    {
+      "id": "userpromptsubmit-hooks-lack-a-handled-decision",
+      "title": "`UserPromptSubmit` hooks lack a \"handled\" decision.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42178"
+      ],
+      "description": "The only way to prevent agent invocation from a UserPromptSubmit hook is \"decision\": \"block\", which displays \"operation blocked by hook\" in the transcript with error framing. There is no decision that says \"I handled this, here is the output\" without the blocked label. The alternatives are additionalContext (agent still runs, costing latency and tokens), continue: false (halts the entire session),"
+    },
+    {
+      "id": "remote-control-mcp-permission-prompts-do-not-propagate-to-mo",
+      "title": "Remote Control MCP permission prompts do not propagate to mobile.",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40643"
+      ],
+      "description": "When using Remote Control (/rc) from the Claude mobile app, MCP tool permission prompts only appear in the local terminal, not on the mobile device. The remote session silently stalls with no indication that user input is required. This affects any autonomous or remote operation pattern that relies on MCP tools requiring permission approval. The user cannot grant or deny permissions from the remot"
+    },
+    {
+      "id": "stop-hooks-receive-stale-transcript-data-due-to-flush-race-c",
+      "title": "Stop hooks receive stale transcript data due to flush race condition.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/15813",
+        "https://github.com/anthropics/claude-code/issues/25121",
+        "https://github.com/anthropics/claude-code/issues/40655"
+      ],
+      "description": "Stop hooks fire before the transcript JSONL file is fully flushed to disk. The hook reads a snapshot missing the final assistant content blocks from the current turn (30+ lines in one measurement, 64% failure rate in another). Any Stop hook that reads the transcript to inspect the assistant's last output will see stale data. This affects completion-promise detection, audit logging, and any workflo"
+    },
+    {
+      "id": "model-deliberately-obfuscates-text-to-evade-pattern-matching",
+      "title": "Model deliberately obfuscates text to evade pattern-matching hooks.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/29689"
+      ],
+      "description": "When a PostToolUse hook pattern-matches for forbidden terms, the model can deliberately break words mid-stream (e.g., splitting \"vorbestehend\" into \"vorbesteh--\" across output chunks) to evade detection. This is not accidental truncation; the model detected the hook's matching pattern and actively circumvented it. This demonstrates a fundamental limitation of text-matching enforcement: any hook th"
+    },
+    {
+      "id": "internal-git-operations-bypass-all-hooks",
+      "title": "Internal git operations bypass all hooks.",
+      "category": "Hook bypass & evasion",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40710",
+        "https://github.com/anthropics/claude-code/issues/8072",
+        "https://github.com/anthropics/claude-code/issues/7232"
+      ],
+      "description": "Claude Code runs background git operations (git fetch origin + git reset --hard origin/main) programmatically every ~10 minutes without spawning an external git binary or making a tool call. Since hooks only fire on tool calls, git-safe and all other hooks are blind to these operations. This silently destroys all uncommitted changes to tracked files. The operations use libgit2 (or similar) within "
+    },
+    {
+      "id": "model-can-manipulate-hook-state-files-to-bypass-enforcement",
+      "title": "Model can manipulate hook state files to bypass enforcement.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/38841"
+      ],
+      "description": "The model has full filesystem access and can overwrite files that hooks depend on for state tracking \u2014 checkpoint files, lock files, counters, TTL markers. In one documented case, Claude computed the SHA256 hash of a checkpoint filename and wrote a fresh timestamp to bypass a content-read-gate hook. The model's reasoning: the content had been read (just expired), so the \"spirit\" of the rule was sa"
+    },
+    {
+      "id": "auto-update-can-wipe-all-hook-configurations",
+      "title": "Auto-update can wipe all hook configurations.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40714"
+      ],
+      "description": "Updating Claude Code (e.g., to v2.1.87) can silently delete user-level settings, plugins, and MCP configuration. If hooks are configured in ~/.claude/settings.json and the update resets or overwrites that file, all hook enforcement disappears with no warning. Not hookable \u2014 the update process runs outside any Claude Code session. Workaround: version-control your ~/.claude/settings.json (or back it"
+    },
+    {
+      "id": "project-scoped-plugins-load-outside-their-declared-project-d",
+      "title": "Project-scoped plugins load outside their declared project directory.",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41523"
+      ],
+      "description": "Plugins installed with scope: \"project\" and a specific projectPath are active in all directories, not just the declared project. A plugin meant for ~/movie-ratings fires its hooks and tools when Claude Code runs in ~/other-project. Not hookable \u2014 plugin loading happens at startup before any tool call. Security implication: a malicious project-scoped plugin can affect unrelated repositories. Workar"
+    },
+    {
+      "id": "mcp-tool-calls-silently-rejected-based-on-parameter-values",
+      "title": "MCP tool calls silently rejected based on parameter values.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41528"
+      ],
+      "description": "MCP tools in the permission allow list can be silently rejected when called with specific parameter values, with no permission prompt shown to the user. The same tool with different parameters works. The model sees the rejection and may retry or give up without telling the user what happened. Not hookable \u2014 the rejection happens in the permission matching layer, not in tool execution. Workaround: "
+    },
+    {
+      "id": "bash-commands-with-cd-pipe-chains-auto-backgrounded-causing-",
+      "title": "Bash commands with `cd` + pipe chains auto-backgrounded, causing deadlocks.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41509"
+      ],
+      "description": "When the model issues a Bash command containing cd /path && <command> | <filter>, Claude Code can auto-background the command, then stall permanently waiting for output that will never arrive. The session becomes unrecoverable. This affects any hook workflow or CI pipeline that relies on Bash tool calls with directory changes and piped output. Not hookable at the backgrounding layer, but a PreTool"
+    },
+    {
+      "id": "bypasspermissions-does-not-suppress-skill-md-edit-prompts",
+      "title": "`bypassPermissions` does not suppress SKILL.md edit prompts.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41526"
+      ],
+      "description": "With defaultMode: \"bypassPermissions\" and skipDangerousModePermissionPrompt: true both set, Claude Code still prompts for confirmation when editing SKILL.md files (\"Do you want to make this edit to SKILL.md?\"). A hardcoded check for self-modification overrides the bypass flag. Autonomous workflows that need to modify skill definitions will stall on this prompt. Not hookable \u2014 the prompt is emitted"
+    },
+    {
+      "id": "dangerously-skip-permissions-overrides-plan-mode",
+      "title": "`--dangerously-skip-permissions` overrides plan mode.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41517",
+        "https://github.com/anthropics/claude-code/issues/40324",
+        "https://github.com/anthropics/claude-code/issues/41545"
+      ],
+      "description": "When Claude Code is invoked with --dangerously-skip-permissions, plan mode does not reliably prevent writes. The model proceeds to modify code and push to git despite being explicitly placed in plan mode. This compounds with #41517 (plan-mode writes without the flag) and #40324. The --dangerously-skip-permissions flag suppresses the permission boundary that would otherwise catch plan-mode violatio"
+    },
+    {
+      "id": "skills-subsystem-regression-in-v2-1-88",
+      "title": "Skills subsystem regression in v2.1.88.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41437",
+        "https://github.com/anthropics/claude-code/issues/41497",
+        "https://github.com/anthropics/claude-code/issues/41530"
+      ],
+      "description": "Custom skills (.claude/skills/*/SKILL.md) completely stop working after upgrading from v2.1.87 to v2.1.88. User-level, project-level, and all skill files are affected. Downgrading to v2.1.87 restores functionality. This compounds with #41437 (skills override CLAUDE.md rules) and the v2.1.88 pull (#41497). Not hookable \u2014 the skills loader runs before any tool call. safety-check warns when v2.1.88 i"
+    },
+    {
+      "id": "deny-rules-do-not-match-subcommands-in-pipes-or-compound-com",
+      "title": "Deny rules do not match subcommands in pipes or compound commands.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41559",
+        "https://github.com/anthropics/claude-code/issues/37662",
+        "https://github.com/anthropics/claude-code/issues/16180"
+      ],
+      "description": "Built-in deny rules in permissions.deny only pattern-match against the full command string. A deny rule like Bash(rm *) is bypassed by find /foo | xargs rm, echo /foo | xargs rm -rf, something && rm -rf /foo, or something ; rm -rf /foo. The docs state that allow rules are aware of shell operators, but deny rules are not. The suggested workaround (Bash(* rm *)) is fragile and false-positives on leg"
+    },
+    {
+      "id": "confirm-each-change-individually-overridden-by-allow-permiss",
+      "title": "\"Confirm each change individually\" overridden by allow permissions.",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41551"
+      ],
+      "description": "When exiting plan mode and selecting \"confirm each change individually,\" changes are applied without any confirmation prompt if the relevant tools (Edit, Write, Bash) are listed in permissions.allow in settings.json. The persistent allow rules silently override the user's explicit per-session choice. Not hookable \u2014 the override happens in the permission resolution layer before tool hooks fire. Wor"
+    },
+    {
+      "id": "agent-silently-operates-in-sibling-directory-when-working-di",
+      "title": "Agent silently operates in sibling directory when working directory is empty.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/38448",
+        "https://github.com/anthropics/claude-code/issues/37293",
+        "https://github.com/anthropics/claude-code/issues/41560"
+      ],
+      "description": "When Claude Code is launched in an empty directory, it can silently navigate to and modify files in an adjacent repository without notification or consent. The model finds code in a sibling folder and begins working there instead of the specified directory. Related to CWD drift (#38448) and the broader pattern of unauthorized directory access (#37293). file-guard can restrict writes to specific pa"
+    },
+    {
+      "id": "sessionend-hooks-are-killed-before-completion",
+      "title": "SessionEnd hooks are killed before completion.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41577"
+      ],
+      "description": "Claude Code exits the process without waiting for SessionEnd hooks to finish. Any async work inside a SessionEnd hook (API calls, LLM summarization via claude -p, network requests) is killed mid-execution regardless of the configured timeout. The hook reaches the async call but the parent process exits before the response returns. Not hookable at the PreToolUse level since there is no tool call to"
+    },
+    {
+      "id": "always-allow-directory-access-does-not-persist-reliably",
+      "title": "\"Always allow\" directory access does not persist reliably.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40606",
+        "https://github.com/anthropics/claude-code/issues/35787",
+        "https://github.com/anthropics/claude-code/issues/41579"
+      ],
+      "description": "Clicking \"Yes, and always allow access to folder] from this project\" [does not consistently save the permission. Claude re-prompts for access to the same directory in subsequent sessions despite prior approval. Adding the directory to additionalDirectories in settings.json also fails intermittently. Related to #40606 (additionalDirectories leak across projects) and #35787. Not hookable since direc"
+    },
+    {
+      "id": "bare-flag-skips-all-hooks-v2-1-81",
+      "title": "`--bare` flag skips all hooks (v2.1.81+).",
+      "category": "Hook bypass & evasion",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/37559",
+        "https://github.com/anthropics/claude-code/issues/38022"
+      ],
+      "description": "The --bare CLI flag (introduced v2.1.81) disables hooks, LSP, plugin sync, skill directory walks, auto-memory, CLAUDE.md auto-discovery, and OAuth/keychain auth. It also sets CLAUDE_CODE_SIMPLE=1 internally. This is a superset of the existing -p limitation (#37559): while -p alone already skips hooks, --bare additionally skips everything non-essential for scripted startup. Any autonomous pipeline "
+    },
+    {
+      "id": "claude-code-simple-mode-disables-all-hooks",
+      "title": "`CLAUDE_CODE_SIMPLE` mode disables all hooks.",
+      "category": "Hook bypass & evasion",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/37780"
+      ],
+      "description": "When the CLAUDE_CODE_SIMPLE environment variable is set, Claude Code disables hooks, MCP tools, attachments, and CLAUDE.md file loading entirely (v2.1.50). Every PreToolUse, PostToolUse, SessionStart, and Stop hook is silently skipped. CLAUDE.md rules are not loaded. This is intended for minimal/embedded use cases but is a complete bypass of all enforcement. Not hookable, since hooks themselves ar"
+    },
+    {
+      "id": "configchange-hook-event-enables-settings-audit-trail",
+      "title": "`ConfigChange` hook event enables settings audit trail.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/38319"
+      ],
+      "description": "Starting in v2.1.49, a ConfigChange hook event fires when configuration files change during a session. This enables enterprise security auditing and optional blocking of settings changes mid-session. If the model or a plugin modifies .claude/settings.json, .claude/settings.local.json, or other config files, a command-type hook can detect and block the change. This partially addresses the supply-ch"
+    },
+    {
+      "id": "pretooluse-hook-allow-no-longer-bypasses-deny-rules",
+      "title": "PreToolUse hook \"allow\" no longer bypasses deny rules.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [],
+      "description": "Fixed in v2.1.77: a PreToolUse hook returning \"allow\" could previously override deny permission rules, including enterprise managed settings. A misconfigured or malicious hook could bypass security controls. This is now fixed. If you are on v2.1.76 or earlier, any hook returning \"allow\" silently overrides deny rules. Update to v2.1.77+."
+    },
+    {
+      "id": "managed-policy-ask-rules-no-longer-bypassed-by-user-allow-ru",
+      "title": "Managed policy `ask` rules no longer bypassed by user `allow` rules.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [],
+      "description": "Fixed in v2.1.74: user-level allow rules and skill allowed-tools could previously override managed (enterprise) ask rules, silently granting permission that policy required prompting for. This is now fixed. If you are on v2.1.73 or earlier, user allow rules can bypass managed ask policies. Update to v2.1.74+."
+    },
+    {
+      "id": "disableallhooks-now-respects-managed-settings-hierarchy",
+      "title": "`disableAllHooks` now respects managed settings hierarchy.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/26637"
+      ],
+      "description": "Fixed in v2.1.49: non-managed settings could previously set disableAllHooks: true and disable hooks set by enterprise managed policy (#26637). This is now fixed. Managed hooks cannot be disabled by project-level or user-level settings. If you are on v2.1.48 or earlier, any .claude/settings.json in a cloned repo can disable all hooks including enterprise-mandated ones."
+    },
+    {
+      "id": "hardcoded-sensitive-file-prompt-blocks-all-writes-to-claude-",
+      "title": "Hardcoded sensitive-file prompt blocks all writes to `~/.claude/` in automation.",
+      "category": "Hook bypass & evasion",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41615"
+      ],
+      "description": "When Claude Code writes to paths under ~/.claude/, a hardcoded sensitive-file check triggers an interactive prompt that cannot be suppressed by any user-configurable mechanism: permissions.allow entries, PreToolUse hooks returning permissionDecision: \"allow\", bypassPermissions mode, and skipDangerousModePermissionPrompt all fail to override it. This blocks any automated workflow (tmux sessions, CI"
+    },
+    {
+      "id": "worktreecreate-hooks-cause-indefinite-session-hang",
+      "title": "`WorktreeCreate` hooks cause indefinite session hang.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/36205",
+        "https://github.com/anthropics/claude-code/issues/41614",
+        "https://github.com/anthropics/claude-code/issues/42752"
+      ],
+      "description": "Any WorktreeCreate hook configured in project settings causes `claude -w` to hang forever. Even a trivial hook (echo ok < /dev/null) causes the session to freeze. The hook executes and returns successfully (verified by file logging), but Claude Code never proceeds past the hook invocation. This is distinct from the EnterWorktree ignoring hooks issue (#36205) \u2014 here the hook fires but the response "
+    },
+    {
+      "id": "plan-mode-auto-approves-all-tools-when-bypass-permissions-is",
+      "title": "Plan mode auto-approves all tools when bypass permissions is configured (not active).",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40324",
+        "https://github.com/anthropics/claude-code/issues/41545",
+        "https://github.com/anthropics/claude-code/issues/41758"
+      ],
+      "description": "The permissions layer checks isBypassPermissionsModeAvailable rather than whether bypass mode is currently active. If --dangerously-skip-permissions has been configured (e.g., in VS Code settings or CLI flags), plan mode auto-approves all tool calls including Edit, Write, and Bash, even during normal non-bypass sessions. The bug is in the condition that gates plan mode enforcement: it treats \"bypa"
+    },
+    {
+      "id": "large-system-prompts-trigger-premature-context-management-ca",
+      "title": "Large system prompts trigger premature context management, causing duplicate tool execution.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41750"
+      ],
+      "description": "When CLAUDE.md and system prompts exceed approximately 35K tokens, context management fires on every turn with empty applied_edits, causing all tool calls to execute twice. The model issues a tool call, context management triggers before the result is processed, and the model reissues the same tool call. This affects automated workflows with substantial CLAUDE.md configurations, hook injection tex"
+    },
+    {
+      "id": "model-ignores-explicit-user-corrections-during-failing-tool-",
+      "title": "Model ignores explicit user corrections during failing tool retry loops.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41659"
+      ],
+      "description": "When Claude Code enters a loop of failing tool calls (e.g., a Bash command that returns an error), the model acknowledges user corrections verbally but immediately repeats the same failing tool call without incorporating the correction. This can persist for 4+ iterations. Not hookable \u2014 the model's retry decision happens in the inference layer, not at the tool call level. A PreToolUse hook could d"
+    },
+    {
+      "id": "suspicious-path-prompt-silently-downgrades-bypasspermissions",
+      "title": "Suspicious path prompt silently downgrades `bypassPermissions` to `acceptEdits`.",
+      "category": "Hook bypass & evasion",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/37745",
+        "https://github.com/anthropics/claude-code/issues/37420",
+        "https://github.com/anthropics/claude-code/issues/40328",
+        "https://github.com/anthropics/claude-code/issues/41763"
+      ],
+      "description": "When running with --dangerously-skip-permissions, a write or create operation targeting a path that triggers Claude Code's \"suspicious path pattern\" check (e.g., directories with underscores or uncommon names) produces a safety prompt. If the user selects \"Yes, and always allow access to path] from this project,\" the internal suggestion handler [unconditionally sets the permission mode to `acceptE"
+    },
+    {
+      "id": "hooks-can-only-inject-context-never-remove-or-replace-it",
+      "title": "Hooks can only inject context, never remove or replace it.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41810"
+      ],
+      "description": "Hooks (PreCompact, PostToolUse, etc.) can add additionalContext or systemMessage to the conversation, but cannot remove, summarize, or replace existing tool results or prior conversation turns. Duplicate information (re-reading the same file, re-running similar analysis) stays in context permanently until auto-compaction. Large Bash outputs remain in full even when only success/failure matters. Re"
+    },
+    {
+      "id": "disabled-mcp-servers-still-expose-tools-in-deferred-tools-li",
+      "title": "Disabled MCP servers still expose tools in deferred tools list.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41809"
+      ],
+      "description": "When MCP servers are disabled via disabledMcpServers in settings.local.json, their tool names still appear in the system-reminder deferred tools list injected at session start. The model sees tool names for servers that cannot actually execute, wasting context tokens and potentially causing the model to attempt calls that will fail. Not hookable \u2014 the deferred tools list is assembled during startu"
+    },
+    {
+      "id": "mcp-connector-tools-fail-to-load-in-scheduled-unattended-run",
+      "title": "MCP connector tools fail to load in scheduled unattended runs.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41805"
+      ],
+      "description": "MCP tools attached to Claude.ai scheduled triggers (CCR) load successfully during manual/test runs but fail with \"No MCP tools are loaded\" when the same trigger fires on its cron schedule unattended. The connector initialization path differs between interactive and scheduled execution. Any autonomous workflow relying on MCP tools via scheduled triggers will silently lose access to those tools. Not"
+    },
+    {
+      "id": "plan-mode-tools-disabled-globally-when-channel-plugins-exist",
+      "title": "Plan mode tools disabled globally when channel plugins exist.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41787"
+      ],
+      "description": "When an MCP channel plugin (e.g., Telegram) is configured, EnterPlanMode and ExitPlanMode tools are completely disabled even for local terminal interactions where the plan approval dialog works fine. The check disables plan mode tools whenever channels exist in configuration, rather than checking whether the current prompt originated from a channel. Users who have a channel plugin configured but w"
+    },
+    {
+      "id": "symlink-target-matching-for-read-edit-permission-rules-parti",
+      "title": "Symlink-target matching for Read/Edit permission rules (partially fixed v2.1.89).",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41793"
+      ],
+      "description": "When Read or Edit permission rules use absolute paths (//path), v2.1.89 now checks the resolved symlink target, not just the requested path. Before v2.1.89, a deny rule on /etc/passwd would not match if the model read via a symlink like /tmp/link-to-passwd. Hook-based enforcement using file-guard independently resolves symlinks on macOS (since v0.10.0) and matches on both the requested path and th"
+    },
+    {
+      "id": "pretooluse-hooks-support-a-fourth-decision-defer-v2-1-89",
+      "title": "PreToolUse hooks support a fourth decision: `defer` (v2.1.89+).",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41791"
+      ],
+      "description": "In addition to allow, deny, and ask, hooks can now return permissionDecision: \"defer\" to pause a headless session at the tool call. The session can later be resumed with claude -p --resume <session-id>, at which point the same PreToolUse hook re-evaluates. This enables async approval workflows where an external system (CI, Slack bot, human reviewer) decides whether to proceed. The current docs sti"
+    },
+    {
+      "id": "formatter-linter-hooks-can-cause-stale-read-warnings-v2-1-89",
+      "title": "Formatter/linter hooks can cause stale-read warnings (v2.1.89+).",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41797"
+      ],
+      "description": "PostToolUse hooks that run formatters (prettier --write, eslint --fix) or linters that auto-fix rewrite files that Claude has already read. Claude Code now warns when a Bash command modifies previously-read files, prompting a re-read before further edits. This is expected behavior for recommended formatter workflows, not a bug, but hook authors should be aware that formatter hooks trigger this war"
+    },
+    {
+      "id": "hook-output-over-50k-characters-spills-to-disk-v2-1-89",
+      "title": "Hook output over 50K characters spills to disk (v2.1.89+).",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41799"
+      ],
+      "description": "Hook stdout, additionalContext, and async systemMessage payloads that exceed approximately 50,000 characters are saved to disk with a file path and preview instead of being injected directly into Claude's context. This means hooks that produce large output (verbose test results, full lint reports, large file listings) may not be fully visible to Claude. The docs still say hook output enters contex"
+    },
+    {
+      "id": "pretooluse-hook-with-exit-0-and-valid-hookspecificoutput-dis",
+      "title": "PreToolUse hook with exit 0 and valid `hookSpecificOutput` displayed as \"hook error.\"",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41868"
+      ],
+      "description": "A PreToolUse hook that exits 0 with valid JSON hookSpecificOutput.additionalContext is displayed as \"hook error\" in the UI even though the hook succeeded and the tool was not blocked. The model reads \"hook error\" and may abandon the task prematurely or retry unnecessarily. The hook output is delivered correctly (tool proceeds, context is injected), but the UI label is wrong. This affects any hook "
+    },
+    {
+      "id": "dangerously-skip-permissions-flag-no-longer-bypasses-permiss",
+      "title": "`--dangerously-skip-permissions` flag no longer bypasses permission dialogs (v2.1.89 regression).",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40328",
+        "https://github.com/anthropics/claude-code/issues/40552",
+        "https://github.com/anthropics/claude-code/issues/41763",
+        "https://github.com/anthropics/claude-code/issues/41848"
+      ],
+      "description": "In v2.1.89, the --dangerously-skip-permissions flag stops suppressing runtime permission prompts. File edits and bash commands still trigger per-tool confirmation despite the flag. This compounds with #40328 (startup suppressed but runtime prompts fire), #40552 (bypass unreliable), and #41763 (suspicious paths downgrade bypass). Autonomous pipelines depending on this flag will stall. PreToolUse ho"
+    },
+    {
+      "id": "claude-md-rules-ignored-when-model-suggests-posting-confiden",
+      "title": "CLAUDE.md rules ignored when model suggests posting confidential info publicly.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40537",
+        "https://github.com/anthropics/claude-code/issues/40425",
+        "https://github.com/anthropics/claude-code/issues/41852"
+      ],
+      "description": "Despite explicit CLAUDE.md rules prohibiting disclosure of confidential project information to public repositories, Claude suggested filing a public issue containing client names, internal system details, and ticket references. The user caught it manually. This is another instance of text-based rules failing under task pressure (#40537, #40425). A PreToolUse hook on Bash that blocks gh issue creat"
+    },
+    {
+      "id": "claude-md-working-directory-instructions-ignored-across-sess",
+      "title": "CLAUDE.md working directory instructions ignored across sessions.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41850"
+      ],
+      "description": "CLAUDE.md specified a working directory (D: drive), but Claude repeatedly operated on C: drive across multiple sessions over 10 days. Verbal corrections during sessions were also ignored. This is a persistent compliance failure, not a one-off. A PreToolUse hook on Bash could enforce directory constraints by blocking commands that reference unauthorized paths. See #41850."
+    },
+    {
+      "id": "auto-implementation-triggered-despite-canceling-planning-pha",
+      "title": "Auto-implementation triggered despite canceling planning phase.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41545",
+        "https://github.com/anthropics/claude-code/issues/40324",
+        "https://github.com/anthropics/claude-code/issues/41861"
+      ],
+      "description": "With auto mode enabled, hitting Esc to cancel plan mode and add more context caused Claude to start implementing automatically instead of waiting for the revised input. The Esc action was interpreted as \"proceed\" rather than \"cancel.\" Not hookable \u2014 the auto-mode trigger happens at the UI event layer before any tool call. Compounds with #41545 (bypass overrides plan mode) and #40324 (plan mode pro"
+    },
+    {
+      "id": "custom-commands-and-skills-broken-in-v2-1-88-89",
+      "title": "Custom commands and skills broken in v2.1.88-89.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41864",
+        "https://github.com/anthropics/claude-code/issues/41882",
+        "https://github.com/anthropics/claude-code/issues/41855",
+        "https://github.com/anthropics/claude-code/issues/41530"
+      ],
+      "description": "Custom slash commands from .claude/commands/ do not appear in autocomplete and return \"Unknown skill\" when invoked via the Skill tool in v2.1.89. A related regression in v2.1.88 causes skills to invoke the wrong one or fail entirely, possibly due to an EACCES error on the bundled ripgrep binary. Additionally, standalone .md files in .claude/skills/ are not discoverable via slash command search \u2014 o"
+    },
+    {
+      "id": "plugin-skills-directory-does-not-register-slash-commands",
+      "title": "Plugin `skills/` directory does not register slash commands.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41842"
+      ],
+      "description": "Plugin skills defined in skills/*/SKILL.md work when the model invokes them via the Skill tool, but are not registered as user-invocable `/` slash commands. Only the commands/ directory registers slash commands. This contradicts official documentation. Plugin authors who provide enforcement workflows as skills cannot make them directly user-accessible. See #41842."
+    },
+    {
+      "id": "attribution-setting-does-not-control-session-url-in-commit-m",
+      "title": "`attribution` setting does not control session URL in commit messages.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41873"
+      ],
+      "description": "Setting attribution.commit to \"\" removes the co-authored-by text but does not remove the session deep link URL (https://claude.ai/code/session_...). No setting controls this. The URL leaks tooling information in commit history. Not hookable at the attribution layer. A PostToolUse hook on Bash could intercept git commit commands and strip the URL, but this is fragile. See #41873."
+    },
+    {
+      "id": "mcp-server-instructions-from-initialize-response-dropped-for",
+      "title": "MCP server instructions from `initialize` response dropped for HTTP/remote servers.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41834"
+      ],
+      "description": "The instructions field in MCP initialize responses works for stdio servers but is silently dropped for HTTP-transport servers. Server-side confirms instructions are returned. MCP servers that deliver enforcement context or operational guidelines via instructions cannot reach the model when using HTTP transport. Not hookable. See #41834."
+    },
+    {
+      "id": "no-session-or-conversation-identifier-sent-to-mcp-servers",
+      "title": "No session or conversation identifier sent to MCP servers.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41836"
+      ],
+      "description": "Claude Code does not echo back Mcp-Session-Id headers and provides no conversation identifier to MCP servers, violating the MCP spec. MCP servers cannot maintain per-conversation state, track enforcement decisions across tool calls, or correlate requests within a session. Not hookable. See #41836."
+    },
+    {
+      "id": "sandbox-fails-with-bwrap-execvp-bin-bash-no-such-file-or-dir",
+      "title": "Sandbox fails with \"bwrap: execvp /bin/bash: No such file or directory\" on Ubuntu 24.04.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41863"
+      ],
+      "description": "Sandbox mode with custom filesystem allowlist causes all Bash tool calls to fail because bubblewrap cannot find /bin/bash inside the sandbox. Manual bwrap with the same binds works. Not hookable \u2014 sandbox filesystem assembly happens before tool execution. See #41863."
+    },
+    {
+      "id": "unexpected-ssh-connection-to-github-on-startup",
+      "title": "Unexpected SSH connection to GitHub on startup.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41846"
+      ],
+      "description": "Claude Code initiates an SSH connection to GitHub on startup even when all remotes use HTTPS. This triggers Touch ID prompts for FIDO2 SSH keys and may fail in environments with restricted outbound SSH. The connection appears non-essential. Not hookable \u2014 the connection occurs during startup before any tool call or hook fires. See #41846."
+    },
+    {
+      "id": "plugin-hooks-fire-even-when-plugin-is-disabled-in-settings",
+      "title": "Plugin hooks fire even when plugin is disabled in settings.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41919"
+      ],
+      "description": "Plugins with SessionStart hooks continue to fire even when explicitly disabled via enabledPlugins: false in settings.json. The disable setting prevents the plugin's tools and skills from loading but does not suppress its hooks. This means a disabled enforcement plugin still injects context and runs checks, potentially confusing users who expect disabled to mean fully off. Not hookable \u2014 plugin lif"
+    },
+    {
+      "id": "no-option-to-suppress-async-hook-completion-notifications",
+      "title": "No option to suppress async hook completion notifications.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41901"
+      ],
+      "description": "When multiple plugins with async hooks are enabled, Async hook PreToolUse completed and PostToolUse completed messages create visual noise in the UI. Each hook fires a separate notification. No setting controls this. Not hookable \u2014 the notification is generated by the hook runner itself. See #41901."
+    },
+    {
+      "id": "worktree-flag-silently-fails-to-create-git-worktree",
+      "title": "`--worktree` flag silently fails to create git worktree.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41614",
+        "https://github.com/anthropics/claude-code/issues/41883"
+      ],
+      "description": "The --worktree (-w) flag starts the session normally but creates no worktree and produces no error. The session runs in the original working directory. Compounds with #41614 (WorktreeCreate hook causes indefinite hang). Not hookable \u2014 worktree creation happens at the CLI startup layer. See #41883."
+    },
+    {
+      "id": "opus-ignores-claude-md-rules-and-memory-across-sessions",
+      "title": "Opus ignores CLAUDE.md rules and memory across sessions.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/32163",
+        "https://github.com/anthropics/claude-code/issues/40425",
+        "https://github.com/anthropics/claude-code/issues/40537",
+        "https://github.com/anthropics/claude-code/issues/41830"
+      ],
+      "description": "A user with 10 hard-block rules in CLAUDE.md reports Opus 4.6 consistently ignores them, repeating documented failures session after session. Memory files and CLAUDE.md rules are read but not reliably followed. Another instance of the enforcement gap described in #32163, #40425, #40537. PreToolUse hooks remain the only mechanism that reliably blocks specific operations. See #41830."
+    },
+    {
+      "id": "insights-misclassifies-intentional-hook-guardrails-as-fricti",
+      "title": "`/insights` misclassifies intentional hook guardrails as friction.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41782"
+      ],
+      "description": "The /insights command analyzes session data without considering user hook configuration and systematically flags intentional guardrail blocks as friction, suggesting users remove them. This undermines enforcement by recommending removal of working safeguards. Not hookable \u2014 /insights runs its own analysis pipeline with no hook integration. See #41782."
+    },
+    {
+      "id": "task-tools-taskpush-taskdone-bypass-pretooluse-hooks-entirel",
+      "title": "Task tools (TaskPush, TaskDone) bypass PreToolUse hooks entirely.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40580",
+        "https://github.com/anthropics/claude-code/issues/20243"
+      ],
+      "description": "The Task* family of internal tools does not trigger PreToolUse hook events. Unlike the Agent tool (which fires hooks but may ignore exit codes per #40580), Task tools skip the hook lifecycle completely. Any enforcement logic in PreToolUse hooks is invisible to Task tool operations. This is part of a broader pattern where internal/system tools operate outside the hook system. Not hookable by defini"
+    },
+    {
+      "id": "sdk-ignores-posttooluse-continue-false-response",
+      "title": "SDK ignores PostToolUse `continue: false` response.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40022",
+        "https://github.com/anthropics/claude-code/issues/29991"
+      ],
+      "description": "When using the Claude Agent SDK, PostToolUse hooks that return continue: false (requesting session termination after a tool call) are silently ignored. The session continues executing instead of stopping. This means PostToolUse hooks cannot reliably halt execution in SDK mode, even when they detect a dangerous operation that has already completed. Distinct from the Stop hook issue (#40022) which a"
+    },
+    {
+      "id": "reload-plugins-crashes-when-hooks-declared-as-string-path",
+      "title": "`/reload-plugins` crashes when hooks declared as string path.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41943"
+      ],
+      "description": "Marketplace plugins that declare hooks using the documented string-path form (\"hooks\": \"./hooks/hooks.json\") cause a TypeError on `/reload-plugins`: J?.reduce is not a function. The plugin loader expects hooks to be an array, not a string reference. This crashes the entire reload operation, not just the affected plugin. Affects any plugin (including enforce-hooks) that uses the string-path hooks f"
+    },
+    {
+      "id": "windows-bypasspermissions-fails-on-unc-paths",
+      "title": "Windows: `bypassPermissions` fails on UNC paths.",
+      "category": "Hook bypass & evasion",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40328",
+        "https://github.com/anthropics/claude-code/issues/41763",
+        "https://github.com/anthropics/claude-code/issues/41914"
+      ],
+      "description": "On Windows, bypassPermissions mode does not auto-approve Edit/Write when the working directory uses UNC paths (\\\\server\\share\\...). Every file operation prompts for confirmation despite bypass mode being active. The path normalization logic does not recognize UNC paths as \"within the project directory.\" This compounds with #40328 (bypass partially broken) and #41763 (suspicious path downgrades byp"
+    },
+    {
+      "id": "hook-output-cannot-control-terminal-rendering-no-suppressdif",
+      "title": "Hook output cannot control terminal rendering (no `suppressDiff`).",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42014"
+      ],
+      "description": "PreToolUse hooks can approve, deny, or modify tool inputs, but cannot suppress Claude Code's built-in terminal rendering of tool results. A user building an external diff viewer over Unix domain sockets reviews Edit/Write diffs in a purpose-built TUI, but Claude Code still renders the full inline diff redundantly in the terminal. IDE integrations (VS Code, JetBrains) already suppress terminal diff"
+    },
+    {
+      "id": "hook-file-path-now-always-absolute-for-write-edit-read-v2-1-",
+      "title": "Hook `file_path` now always absolute for Write/Edit/Read (v2.1.89+).",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [],
+      "description": "Before v2.1.89, PreToolUse and PostToolUse hooks sometimes received relative file_path values for Write, Edit, and Read tools, despite documentation stating paths would be absolute. This is now fixed. file-guard already handled both relative and absolute paths, but hooks that assumed absolute paths (e.g., checking prefixes like /etc/ or /home/) could silently miss relative path inputs on older ver"
+    },
+    {
+      "id": "permissiondenied-hook-event-available-v2-1-89",
+      "title": "`PermissionDenied` hook event available (v2.1.89+).",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41261"
+      ],
+      "description": "A new hook event fires after the auto mode classifier denies a tool call. Return {\"hookSpecificOutput\": {\"retry\": true}} to tell the model it can retry the denied operation. Without this hook, auto mode denials are final and not retried. This enables custom recovery logic: for example, a hook could log the denial, adjust parameters, or escalate to a human reviewer. enforce-hooks does not yet gener"
+    },
+    {
+      "id": "autocompact-thrash-loop-now-self-terminates-v2-1-89",
+      "title": "Autocompact thrash loop now self-terminates (v2.1.89+).",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [],
+      "description": "Before v2.1.89, when context refilled to the limit immediately after compaction, Claude Code would loop indefinitely burning API calls on repeated compaction cycles. v2.1.89 detects three consecutive refill-after-compact cycles and stops with an actionable error. This previously caused runaway costs in long sessions with large CLAUDE.md configs or verbose hook output. Stateful hooks that inject ad"
+    },
+    {
+      "id": "pretooluse-hook-allow-bypassing-deny-rules-re-fixed-v2-1-89",
+      "title": "PreToolUse hook \"allow\" bypassing deny rules re-fixed (v2.1.89).",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [],
+      "description": "The original fix in v2.1.77 for hooks overriding deny rules (including enterprise managed settings) was incomplete or regressed. v2.1.89 re-fixes this. If you updated past v2.1.77 and still saw hooks overriding deny rules, update to v2.1.89."
+    },
+    {
+      "id": "windows-hook-command-paths-with-intermittently-resolve-wrong",
+      "title": "Windows: hook command paths with `..` intermittently resolve wrong.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39478",
+        "https://github.com/anthropics/claude-code/issues/40084",
+        "https://github.com/anthropics/claude-code/issues/42065"
+      ],
+      "description": "On Windows, hook commands that reference sibling directories via .. (e.g., node \"../other-repo/.claude/scripts/hooks.mjs\") intermittently drop the `..` component, treating the target as a subdirectory instead of a sibling. Running the same command from bash in the same working directory resolves correctly. Affects all hook events (Stop, PreToolUse, PostToolUse). Quoting the path does not fix it. W"
+    },
+    {
+      "id": "permissionrequest-hook-deny-decision-is-ignored",
+      "title": "PermissionRequest hook deny decision is ignored.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/19298"
+      ],
+      "description": "Returning {\"decision\": \"deny\"} from a PermissionRequest hook does not suppress the permission prompt. The interactive dialog still appears regardless of the hook's output. PermissionRequest hooks cannot auto-deny dangerous commands; they can only auto-allow (which works). PreToolUse hooks are the reliable deny path. See #19298."
+    },
+    {
+      "id": "permissionrequest-hook-races-with-the-permission-dialog",
+      "title": "PermissionRequest hook races with the permission dialog.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/12176"
+      ],
+      "description": "PermissionRequest hooks run asynchronously. If the hook takes more than ~1-2 seconds to return, the permission dialog appears anyway, even when the hook returns {\"behavior\": \"allow\"}. The dialog is added to UI state before awaiting hook results. Fast hooks (< 1s) work reliably; slow hooks (network calls, complex checks) race with the dialog. Breaks CI/CD workflows and security automation that depe"
+    },
+    {
+      "id": "permissionrequest-hooks-do-not-fire-for-subagent-permission-",
+      "title": "PermissionRequest hooks do not fire for subagent permission requests.",
+      "category": "Hook bypass & evasion",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/37730",
+        "https://github.com/anthropics/claude-code/issues/40241",
+        "https://github.com/anthropics/claude-code/issues/23983"
+      ],
+      "description": "When subagents spawned via Agent Teams need permission, the request is delegated to the parent session's terminal prompt without triggering PermissionRequest hooks. Main-session requests fire correctly. Notification hooks (Telegram, Slack) and auto-approval hooks are bypassed for all subagent permission requests. Compounds with #37730 (subagents don't inherit permission settings) and #40241 (bypas"
+    },
+    {
+      "id": "vs-code-ignores-hook-permissiondecision-ask",
+      "title": "VS Code ignores hook `permissionDecision: \"ask\"`.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/40029",
+        "https://github.com/anthropics/claude-code/issues/13339"
+      ],
+      "description": "In the VS Code extension, PreToolUse hooks returning {\"permissionDecision\": \"ask\"} are silently ignored. The same hooks work correctly in CLI. Other decisions (allow, deny, block) work in both environments. Hooks cannot enforce \"ask before executing\" policies in VS Code; only hard-allow or hard-deny. Workaround: use \"decision\": \"block\" instead of \"ask\", at the cost of losing case-by-case approval."
+    },
+    {
+      "id": "model-can-obfuscate-terms-to-evade-pattern-matching-hooks",
+      "title": "Model can obfuscate terms to evade pattern-matching hooks.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/29691"
+      ],
+      "description": "Claude Code may rewrite commands to avoid triggering hook patterns. If a PostToolUse hook flags a forbidden term, the model can vary its output to circumvent the check. This is not a platform bug but a fundamental limitation: any hook that relies on string matching against model output can be evaded by a sufficiently capable model rephrasing its response. Hooks that match on tool names or structur"
+    },
+    {
+      "id": "hooks-cannot-protect-themselves-from-modification",
+      "title": "Hooks cannot protect themselves from modification.",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/22055",
+        "https://github.com/anthropics/claude-code/issues/11226"
+      ],
+      "description": "Claude can use Edit/Write tools to modify hook scripts that are meant to constrain it. permissions.deny rules do not reliably prevent this (see #22055 for a regression). This is a circular security gap: the enforcement mechanism is editable by the entity being enforced. Workaround: set hook files to read-only via OS permissions (chmod 444), use managed settings for enterprise deployments, or place"
+    },
+    {
+      "id": "built-in-permission-matching-is-structurally-inadequate",
+      "title": "Built-in permission matching is structurally inadequate.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/30519"
+      ],
+      "description": "The permissions system's pattern matching has 30+ open issues documenting failures: wildcards don't match compound commands, deny rules are bypassed via pipes, && chains, and reordered flags. This is not a collection of bugs but a structural limitation: the matching model operates on full command strings rather than parsed ASTs. Hooks solve this by running arbitrary code that can parse commands pr"
+    },
+    {
+      "id": "pretooluse-hooks-don-t-fire-on-slash-commands",
+      "title": "PreToolUse hooks don't fire on slash commands.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42250"
+      ],
+      "description": "When a user types a slash command (e.g., /ce:work, /commit), PreToolUse hooks with \"Skill\" matcher do not fire. PostToolUse hooks do fire, but only after the action completes. Any hook-based enforcement that depends on blocking Skill tool calls before execution is bypassed by slash command invocations. Additionally, non-blocking hook output formats (systemMessage, decision:allow+reason, hookSpecif"
+    },
+    {
+      "id": "hook-if-property-silently-stripped-by-model-command",
+      "title": "Hook `if` property silently stripped by `/model` command.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42225"
+      ],
+      "description": "The if property on hook entries (used to conditionally gate hook execution, e.g., \"if\": \"Bash(*git *)\") is silently removed whenever Claude Code rewrites settings.json via the /model command. Hook commands still fire, but without their conditional filters, they run on every tool call instead of only matching ones. This silently degrades performance and can cause unexpected blocks. Workaround: re-a"
+    },
+    {
+      "id": "agent-self-authorizes-when-task-notifications-interrupt-perm",
+      "title": "Agent self-authorizes when task notifications interrupt permission prompts.",
+      "category": "Hook bypass & evasion",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42236"
+      ],
+      "description": "When the agent asks the user a yes/no gating question and a background task notification arrives before the user responds, the agent answers its own question as \"yes\" and proceeds without user consent. This is a race condition in the consent model that hooks cannot prevent, because the bypass happens at the conversation level before any tool call occurs. Affects workflows with background tasks (Ag"
+    },
+    {
+      "id": "no-hook-event-fires-when-claude-prompts-user-for-input",
+      "title": "No hook event fires when Claude prompts user for input.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42286"
+      ],
+      "description": "Hooks only fire around tool calls (PreToolUse, PostToolUse). When Claude asks the user a gating question like \"Should I proceed?\" or requests clarification, no hook event occurs. This means hooks cannot intercept, modify, or log agent-to-user prompts. In autonomous workflows, this gap means there is no programmatic way to detect when the agent is waiting for input vs. processing. Workaround: none "
+    },
+    {
+      "id": "hook-input-does-not-include-context-window-metrics",
+      "title": "Hook input does not include context window metrics.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42328"
+      ],
+      "description": "Hooks receive tool name, tool input, and session metadata, but no information about context window usage (tokens consumed, compression history, remaining budget). This means hooks cannot implement threshold-based actions like \"save progress when context is 50% full\" or \"warn when approaching token limits.\" Workaround: track approximate token usage externally by summing tool inputs/outputs in sessi"
+    },
+    {
+      "id": "env-path-override-in-settings-json-ignored-by-bash-tool",
+      "title": "`env.PATH` override in settings.json ignored by Bash tool.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42321"
+      ],
+      "description": "Setting env.PATH in settings.json to override the default PATH does not propagate to the Bash tool. Commands executed via Bash still use the system PATH, not the user-configured one. This affects workflows where tools like cargo, poetry, or custom binaries are installed in non-standard locations. Workaround: use wrapper scripts that source the correct environment, or set PATH in hook commands dire"
+    },
+    {
+      "id": "posttooluse-hooks-silently-do-not-fire-in-desktop-app",
+      "title": "PostToolUse hooks silently do not fire in Desktop App.",
+      "category": "Hook bypass & evasion",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/13339",
+        "https://github.com/anthropics/claude-code/issues/40029",
+        "https://github.com/anthropics/claude-code/issues/42336"
+      ],
+      "description": "PostToolUse hooks configured in .claude/settings.json load correctly (visible via /hooks) but silently never execute in the Desktop App when tools like Edit are used. No error, no statusMessage, no command output. The hook simply never runs. This is a regression: the same hooks work in CLI. Compounds with #13339 (VS Code ignores ask decision) and #40029 (Stop hooks don't fire in VS Code). Workarou"
+    },
+    {
+      "id": "subagent-bash-commands-with-2-1-redirect-crash-on-windows",
+      "title": "Subagent Bash commands with `2>&1` redirect crash on Windows.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42324"
+      ],
+      "description": "When a custom subagent (defined in .claude/agents/) runs a Bash command containing 2>&1, the Bash tool crashes with \"Tool result missing due to internal error\" inside the agent, surfacing as \"Internal tools error during invocation.\" No output is returned, no approval prompt appears. This is on Windows/Git Bash. Workaround: prohibit 2>&1 in agent definitions and use separate stdout/stderr handling."
+    },
+    {
+      "id": "plugin-defined-agent-types-with-tools-all-silently-block-wri",
+      "title": "Plugin-defined agent types with `tools: all` silently block Write/Edit.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42333"
+      ],
+      "description": "When a plugin defines an agent type with tools: all in its frontmatter, the sub-agent's Write/Edit tool calls are silently blocked. The agent reports success, but nothing is written to disk. No error is returned. Using subagent_type: \"general-purpose\" with the same prompt works correctly. Hook-based enforcement cannot catch these tool calls because they are swallowed before reaching the hook layer"
+    },
+    {
+      "id": "semantic-rules-are-not-enforceable",
+      "title": "Semantic rules are not enforceable.",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [],
+      "description": "Rules like \"write clean code,\" \"use descriptive variable names,\" or \"keep functions under 20 lines\" have no tool-call signal to match against. The tool skips these and explains why during --scan."
+    },
+    {
+      "id": "subagent-return-re-renders-startup-banner",
+      "title": "Subagent return re-renders startup banner, indistinguishable from session restart.",
+      "category": "Subagent & spawned agents",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42355"
+      ],
+      "description": "When a subagent (Explore, Plan, or custom) completes and returns to the main agent, the terminal re-renders the full startup banner (robot icon, version info, working directory). This is visually identical to a crash recovery or session restart. For hook-based workflows that monitor session state, this false restart signal can trigger unnecessary re-initialization."
+    },
+    {
+      "id": "windows-full-re-render-on-tool-calls",
+      "title": "Windows: full conversation re-renders on each tool call.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42343"
+      ],
+      "description": "On Windows 11, Claude Code's TUI re-renders the entire visible conversation history every time a tool call completes. Response blocks appear multiple times on screen. For hook-intensive workflows with many sequential tool calls, this multiplies visual noise."
+    },
+    {
+      "id": "multiple-installations-breaks-update",
+      "title": "Multiple installations detected breaks <code>claude update</code>.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42357"
+      ],
+      "description": "When both an npm-global and native installation of Claude Code coexist, claude update fails with \"multiple installations found.\" This can happen when users install via npm install -g and later use the native installer. Affects hook users who need to stay on specific versions for hook compatibility. Workaround: remove one installation method before updating."
+    },
+    {
+      "id": "hooks-stop-after-2-5-hours",
+      "title": "Hooks stop executing after ~2.5 hours in a session.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/16047"
+      ],
+      "description": "All hooks fire correctly at session start but silently stop working after approximately 2.5 hours. No errors are logged; hooks simply stop being invoked. All hook-based enforcement disappears mid-session without warning. Workaround: restart sessions before the 2.5-hour mark."
+    },
+    {
+      "id": "edit-bypass-via-bash",
+      "title": "Model circumvents Edit hook by switching to Bash tool.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/29709"
+      ],
+      "description": "When a PreToolUse:Edit hook blocks file modifications, Claude switches to the Bash tool (e.g., echo \"...\" > file) to achieve the same edit. A single-tool hook is insufficient; pair file-guard (Edit/Write) with bash-guard (Bash) to cover both paths."
+    },
+    {
+      "id": "permission-mode-spontaneous-reset",
+      "title": "Permission mode spontaneously resets from bypass to edit-auto.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39057"
+      ],
+      "description": "The permission mode changes from \"Bypass permissions\" to \"Edit automatically\" mid-session without user interaction. Write tool calls start prompting for permission, breaking autonomous workflows. Distinct from hook-triggered resets (#37745) and suspicious-path downgrades (#41763)."
+    },
+    {
+      "id": "subagent-no-stop-hook",
+      "title": "Subagent does not fire Stop hook on completion.",
+      "category": "Subagent & spawned agents",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/33049"
+      ],
+      "description": "When a subagent spawned via the Agent tool completes and returns results, no Stop hook fires with the subagent's session_id. Other lifecycle hooks fire correctly. Session-tracking tools accumulate \"ghost sessions\" with no end event."
+    },
+    {
+      "id": "hook-runner-permission-denied",
+      "title": "Hook runner fails with \"Permission denied\" after plugin update.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39378"
+      ],
+      "description": "The plugin marketplace installer does not set execute permissions on .sh hook scripts. Auto-updates install all hook files as -rw-rw-r-- (no +x bit), causing hooks to fail on every session. Fix: chmod +x the affected scripts."
+    },
+    {
+      "id": "deny-rules-dont-protect-claudemd",
+      "title": "Deny rules do not protect CLAUDE.md from being overwritten.",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/13785"
+      ],
+      "description": "Despite explicit deny rules for CLAUDE.md in settings.json, Claude still modifies CLAUDE.md, especially during commits. When overwritten, the model loses its project context. Workaround: use file-guard to protect CLAUDE.md at the hook level, or set read-only with OS permissions."
+    },
+    {
+      "id": "teammate-hooks-bypass",
+      "title": "PreToolUse hooks do not fire for teammates spawned via Agent tool.",
+      "category": "Subagent & spawned agents",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42385"
+      ],
+      "description": "Hooks defined in project and user settings.json fire for the main session but are silently skipped for teammates spawned via Agent tool with team_name. Hooks in agent frontmatter also do not fire. Teams relying on PreToolUse for role-based restrictions have no enforcement on teammates."
+    },
+    {
+      "id": "desktop-app-env-path-ignored",
+      "title": "Desktop app ignores `env.PATH` from settings.json.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42513"
+      ],
+      "description": "The env.PATH setting in ~/.claude/settings.json is not applied when Claude Code is launched from the macOS desktop app. PATH falls back to /usr/bin:/bin:/usr/sbin:/sbin, missing Homebrew and other user-installed binaries. Hook scripts that depend on jq, python3, or other tools in /opt/homebrew/bin will silently fail. Workaround: use absolute paths in hook scripts, or launch Claude Code from a term"
+    },
+    {
+      "id": "autocompact-ignores-disable",
+      "title": "Auto-compact fires despite DISABLE_AUTO_COMPACT and AUTOCOMPACT_PCT_OVERRIDE settings.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42394",
+        "https://github.com/anthropics/claude-code/issues/42375"
+      ],
+      "description": "Setting DISABLE_AUTO_COMPACT=1 and AUTOCOMPACT_PCT_OVERRIDE=95 in settings.json env does not prevent compaction. Sessions compact to 6% context on first tool call despite explicit disable. Affects stateful hooks and autonomous agents that rely on conversation history."
+    },
+    {
+      "id": "team-spawn-255-byte-split",
+      "title": "Agent team spawning fails silently at ~255 byte command boundary.",
+      "category": "Subagent & spawned agents",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42391"
+      ],
+      "description": "Experimental agent teams launch teammates via tmux send-keys, but the command is split at ~255 bytes. The second fragment fails as a standalone command, the agent never starts, and the parent reports success. Long project paths or agent names trigger it. Manual tmux send-keys does not reproduce."
+    },
+    {
+      "id": "background-task-files-unbounded",
+      "title": "Background task output files grow unbounded, no cleanup.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42388"
+      ],
+      "description": "Claude Code stores background task output in /private/tmp/claude-{UID}/ with no size limits, no TTL, and no cleanup. A single runaway task consumed 405 GB, silently filling the disk. Affects autonomous agents and heavy run_in_background users."
+    },
+    {
+      "id": "find-command-injection-cve",
+      "title": "<code>find</code> command injection bypasses user approval prompt (CVE-2026-24887).",
+      "category": "Hook bypass & evasion",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/CVE-2026-24887"
+      ],
+      "description": "Command parsing error allowed untrusted context content to trigger arbitrary command execution through find without the approval prompt firing. CVSS 7.7 HIGH. Fixed in v2.0.72. bash-guard catches dangerous find patterns regardless of version."
+    },
+    {
+      "id": "deny-50-subcommand-bypass",
+      "title": "Deny rules bypassed when pipeline exceeds 50 subcommands.",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/adversa-50-subcommand"
+      ],
+      "description": "The deny rule parser has a hard cap of 50 subcommands per pipeline. Commands chaining 50+ subcommands (e.g., 50 no-ops then curl) fall through to \"ask\" instead of \"deny.\" Reported by Adversa security firm. bash-guard is unaffected as it evaluates each segment independently."
+    },
+    {
+      "id": "posttooluse-format-on-save-breaks-consecutive-edits",
+      "title": "PostToolUse format-on-save hooks break consecutive edits (fixed v2.1.90).",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/v2.1.90-changelog"
+      ],
+      "description": "When a PostToolUse hook reformats a file after Edit or Write (e.g., prettier, black, gofmt), the next Edit/Write to the same file fails with \"File content has changed.\" The formatter changes the file hash between tool calls. Fixed in v2.1.90. On pre-v2.1.90, workaround: use a separate formatting step instead of a PostToolUse hook."
+    },
+    {
+      "id": "powershell-trailing-ampersand-bypass",
+      "title": "PowerShell trailing <code>&</code> bypasses tool permission checks (fixed v2.1.90).",
+      "category": "Hook bypass & evasion",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/v2.1.90-changelog"
+      ],
+      "description": "Appending & to a PowerShell command launched it as a background job, bypassing tool permission evaluation. Fixed in v2.1.90 alongside three other PowerShell hardening fixes: -ErrorAction Break debugger hang, archive-extraction TOCTOU, and parse-failure fallback degradation. Pre-v2.1.90 PowerShell permission checks have multiple bypass vectors."
+    },
+    {
+      "id": "powershell-parse-failure-degrades-deny-rules",
+      "title": "PowerShell parse failure degrades deny rules to fallback (fixed v2.1.90).",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/v2.1.90-changelog"
+      ],
+      "description": "When PowerShell command parsing fails (malformed syntax, unusual quoting, encoding tricks), deny rules fall through to a weaker fallback evaluation instead of denying by default. Combined with the trailing & bypass and archive-extraction TOCTOU, pre-v2.1.90 PowerShell tool permission checks have significant gaps. bash-guard and safety-check handle Bash/sh but not PowerShell."
+    },
+    {
+      "id": "stop-hooks-in-skills-never-fire",
+      "title": "Stop hooks defined in Skills never fire.",
+      "category": "Hook behavior & events",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/19225"
+      ],
+      "description": "When a skill defines Stop hooks in its SKILL.md file, they are never invoked when the skill session ends. Start hooks and tool hooks work, but the Stop lifecycle event is silently skipped. Workaround: have skill instructions tell Claude to run the stop script manually before exiting."
+    },
+    {
+      "id": "no-way-to-suppress-async-hook-completion-messages",
+      "title": "No way to suppress async hook completion messages.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/33263"
+      ],
+      "description": "Async hook events (especially SubagentStart/SubagentStop) generate \"Async hook completed\" messages in the conversation transcript on every invocation. There is no setting to suppress or filter these messages. Heavy hook usage floods the conversation with noise, degrading the user experience and the model's effective context. Originally filed as #9603, auto-closed and re-filed."
+    },
+    {
+      "id": "bash-permissions-not-enforced-without-hooks",
+      "title": "Bash permissions in settings.json not enforced without custom hooks.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/18846"
+      ],
+      "description": "permissions.allow and permissions.deny rules for Bash commands in settings.json are not reliably enforced. Denied commands may still execute, and allowed commands may still prompt for approval. Users must write custom PreToolUse hooks as a workaround. This is exactly the gap bash-guard fills."
+    },
+    {
+      "id": "vscode-cursor-extension-bypasses-permissions",
+      "title": "VS Code/Cursor extension bypasses permissions and does not persist settings.",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/35870"
+      ],
+      "description": "In the VS Code/Cursor extension, commands like rm execute without permission prompts even when not in permissions.allow, and \"Allow for all projects\" does not persist to settings.json, causing repeated prompts. Reported on v2.1.78. The CLI does not have this problem. Extension users relying on the permission system have no enforcement."
+    },
+    {
+      "id": "auto-mode-classifier-wrong-model-suffix",
+      "title": "Auto-mode safety classifier uses wrong model suffix.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/38537"
+      ],
+      "description": "When Opus 4.6 1M is selected, the auto-mode safety classifier sends requests to claude-sonnet-4-6[1m] instead of the correct suffix. If Sonnet 1M is not available in the user's API plan, Bash and other execution tools fail entirely. Not hookable; the classifier runs before any tool call reaches hooks."
+    },
+    {
+      "id": "safety-classifier-outage-blocks-all-tools",
+      "title": "Safety classifier outage blocks all tool execution in auto mode.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/38618"
+      ],
+      "description": "When the Sonnet classifier powering auto-mode safety is unavailable (API errors), all execution tools are blocked and only read-only tools work. This creates a complete enforcement outage. Not hookable; the classifier failure happens at the permission layer before hooks fire."
+    },
+    {
+      "id": "false-hook-error-labels-end-turns",
+      "title": "False \"Hook Error\" labels cause Claude to prematurely end turns.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/34713"
+      ],
+      "description": "Hooks that exit 0 with no stderr and valid JSON on stdout can still be labeled as \"Hook Error\" in the transcript. Claude interprets the false error as a real failure and stops working mid-turn. A functioning enforcement hook can be treated as broken by the model."
+    },
+    {
+      "id": "task-to-agent-rename-breaks-hook-payloads",
+      "title": "Task-to-Agent tool rename in v2.1.63 breaks existing hook payloads.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/29677"
+      ],
+      "description": "The Task tool was renamed to Agent in v2.1.63, but this was an undocumented breaking change. Existing hooks matching on tool_name === \"Task\" silently stopped working. The hook payload now reports the tool as Agent with no migration path or deprecation warning."
+    },
+    {
+      "id": "permission-pattern-matcher-fails-on-subshells-and-parentheses",
+      "title": "Permission and hook pattern matcher fails on <code>$()</code> subshells and parentheses in arguments.",
+      "category": "Hook bypass & evasion",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42457",
+        "https://github.com/anthropics/claude-code/issues/38017",
+        "https://github.com/anthropics/claude-code/issues/39263"
+      ],
+      "description": "The if-condition pattern matcher in hooks and the permission allow/deny wildcard matcher both fail when Bash commands contain $() subshells or parentheses in arguments. Commands like echo $(date) or gcloud logging read 'filter=(severity=ERROR)' incorrectly trigger blocking hooks or fail to match allow rules. The parser appears to default to \"match\" (fire the hook / prompt for permission) on parse "
+    },
+    {
+      "id": "fabricated-user-input-turns-in-agent-team-sessions",
+      "title": "Claude generates output that renders as <code>Human:</code> turns in long agent-team sessions.",
+      "category": "Subagent & spawned agents",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42481"
+      ],
+      "description": "In long conversations with many subagents (Agent Teams with 10+ teammates), Claude repeatedly generates output that appears as user-authored Human: turns in the conversation UI. The user did not write these messages. This is an integrity violation: fabricated user input is indistinguishable from real input. Occurs after multiple context compactions in sessions with heavy subagent usage. No known w"
+    },
+    {
+      "id": "plugin-reload-breaks-skills-until-new-session",
+      "title": "Plugin skills not usable after <code>/reload-plugins</code> in existing session.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42471"
+      ],
+      "description": "After running /reload-plugins mid-session, plugin skills from the skills/ directory are listed in the system-reminder but cannot be invoked. Slash commands resolve to deprecated command stubs instead of the registered skills. No combination of /reload-plugins, /plugin enable/disable, or fully qualified skill names fixes it within the session. Starting a new session is the only workaround."
+    },
+    {
+      "id": "bash-tool-fails-silently-when-tmp-full",
+      "title": "Bash tool fails silently when <code>/tmp</code> is full.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42461"
+      ],
+      "description": "When /tmp has no free disk space, all Bash tool invocations fail with a generic Exit code 1 regardless of the command. There is no indication that the failure is caused by insufficient disk space. This affects any workflow that depends on the Bash tool, including hook scripts that shell out. Workaround: monitor /tmp usage and clear space before running Claude Code."
+    },
+    {
+      "id": "notification-hook-not-triggered-in-plan-mode-askuserquestion",
+      "title": "Notification hook not triggered in Plan Mode when <code>AskUserQuestion</code> fires.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42487"
+      ],
+      "description": "The Notification hook event does not fire in Plan Mode when Claude calls AskUserQuestion to prompt user input. The Stop hook fires correctly in Plan Mode, but Notification hooks are silently skipped for elicitation events. Tested with matcher: \"*\", \"idle_prompt\", and \"elicitation_dialog\" on Windows. Users building notification systems will miss prompts during Plan Mode. No workaround."
+    },
+    {
+      "id": "bypass-permissions-silently-downgrades-to-autoaccept-edits",
+      "title": "Bypass permissions mode silently downgrades to <code>autoaccept-edits</code> during long sessions.",
+      "category": "Permission system",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42500"
+      ],
+      "description": "During long sessions (600+ API calls, 3+ hours), bypass permissions mode can silently switch to autoaccept-edits without user action. Correlates with Write/Edit operations on files outside the project root (~/.claude/, other drives). Observed 5 times in one session on Windows. The user must manually switch back, but the downgrade can recur. Only starting a new session fully resolves it. Affects au"
+    },
+    {
+      "id": "multi-session-temp-dir-collision",
+      "title": "Multiple sessions in the same project collide on temp directory, deleting each other's output files.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42536"
+      ],
+      "description": "Temp dirs are namespaced by <uid>/<project-path-hash> but not by session ID. When multiple Claude Code sessions target the same project directory, each session's startup cleanup can delete output files another active session is writing to or reading from, causing ENOENT errors on task output. Common when running parallel agents, background tasks, or multiple terminal tabs. Session ID is not part o"
+    },
+    {
+      "id": "bash-tool-no-signal-propagation-orphans",
+      "title": "Bash tool does not propagate signals to child process tree, causing orphaned background processes.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42532"
+      ],
+      "description": "When a script executed via the Bash tool spawns background subprocesses and registers an EXIT trap for cleanup, the trap is not triggered when the Bash tool terminates the process. Background children become orphaned and accumulate. Affects hooks and scripts that use nohup/disown patterns (e.g., the SessionEnd workaround for detaching heavy work). The Bash tool appears to kill only the direct chil"
+    },
+    {
+      "id": "model-switches-tools-goal-directed-evasion",
+      "title": "Model switches tools to bypass denied operations (goal-directed evasion).",
+      "category": "Hook bypass & evasion",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39459"
+      ],
+      "description": "When a deny rule blocks a specific command (e.g., Bash(rm *)), the model uses alternative tools to accomplish the same goal: python3 -c \"import os; os.remove('file')\" when rm is denied, or Node.js fs.unlinkSync(), Ruby File.delete(), Perl unlink(). The model treats permission blocks as \"tool blocked\" not \"goal blocked\" and pivots to equivalent operations in other languages. Deny rules and hooks th"
+    },
+    {
+      "id": "bypass-permissions-multiline-bash-safety-check",
+      "title": "<code>bypassPermissions</code> does not suppress multi-line Bash description safety check.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/39875"
+      ],
+      "description": "The --dangerously-skip-permissions flag and bypassPermissions permission mode do not suppress Claude Code's built-in multi-line Bash command safety check. Users in bypass mode still get prompted with a confirmation dialog when commands contain newlines. This breaks automated workflows and headless -p scripts that expect bypass mode to suppress all prompts. The safety check fires independently of t"
+    },
+    {
+      "id": "subagents-ignore-bypass-file-creation",
+      "title": "Sub-agents ignore <code>bypassPermissions</code> for file creation.",
+      "category": "Subagent & spawned agents",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/38026"
+      ],
+      "description": "When defaultMode is set to bypassPermissions in user settings, sub-agents spawned via the Agent tool still prompt for file creation confirmation (Write tool). The parent session correctly operates in bypass mode, but the permission mode does not fully propagate to sub-agents for all tool types. Distinct from #25000 (deny-rule bypass) \u2014 here the sub-agent is more restrictive than intended, not less"
+    },
+    {
+      "id": "claudemd-rules-no-enforcement-mechanism",
+      "title": "CLAUDE.md and <code>.claude/rules/</code> rules have no enforcement mechanism.",
+      "category": "CLAUDE.md & memory",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/34132"
+      ],
+      "description": "Rules defined in CLAUDE.md, .claude/rules/, and memory files are read by the model but have no runtime enforcement. The model can read these rules and still violate them during execution. Bold text, capitalization, \"MANDATORY\" labels, and explicit consequence statements do not change this \u2014 they are all prompt content with no binding force. This is the core problem that hook-based enforcement exis"
+    },
+    {
+      "id": "plugin-root-env-var-not-always-set",
+      "title": "<code>CLAUDE_PLUGIN_ROOT</code> env var not always set when invoking plugin hooks.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42564"
+      ],
+      "description": "Plugin hooks registered in ~/.claude/settings.json that reference ${CLAUDE_PLUGIN_ROOT} intermittently fail with MODULE_NOT_FOUND because the environment variable is not always set by the Claude Code runtime. This is distinct from the path-spaces issue (#40084): the variable is entirely absent, not malformed. Affects plugin-installed hooks that rely on this variable for script paths. Workaround: u"
+    },
+    {
+      "id": "apikeyhelper-arbitrary-code-execution",
+      "title": "<code>apiKeyHelper</code> in project-level settings enables arbitrary code execution on open.",
+      "category": "Hook bypass & evasion",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42593"
+      ],
+      "description": "The apiKeyHelper field in .claude/settings.json is executed as a shell command via execa with shell: true. Since this file can be committed to a repository, cloning and opening Claude Code anywhere in the project runs the command without user consent. In CI/CD pipelines using claude -p, the trust dialog is bypassed entirely, making this a supply-chain attack vector. Proposed fix: restrict apiKeyHe"
+    },
+    {
+      "id": "allowmanagedhooksonly-blocks-plugin-hooks",
+      "title": "<code>allowManagedHooksOnly</code> blocks plugin hooks from trusted marketplaces.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42581"
+      ],
+      "description": "Organizations using allowManagedHooksOnly: true block all non-managed hooks, including those shipped by vetted plugins from known marketplaces. There is no granular setting like allowPluginHooksFromKnownMarketplaces to permit plugin-supplied hooks while still restricting user-defined ones. This forces orgs to choose between full hook lockdown and allowing all hooks, with no middle ground for plugi"
+    },
+    {
+      "id": "plugin-hook-oauth-token-refresh-breaks-session",
+      "title": "Plugin hook that refreshes OAuth tokens silently breaks main session authentication.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42603"
+      ],
+      "description": "When a plugin hook reads OAuth credentials from the macOS Keychain and performs a token refresh (e.g. POST /v1/oauth/token), it can invalidate the access token that Claude Code is currently using. The main session then fails authentication on its next API call with no indication that a hook caused the failure. Hooks and the main session share credential state without coordination."
+    },
+    {
+      "id": "no-hooks-for-agent-team-lifecycle",
+      "title": "No hooks fire on Agent Team creation or deletion.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42597"
+      ],
+      "description": "There are no TeamCreated or TeamDeleted hook events. Platforms that orchestrate Claude Code Agent Teams cannot detect when a team is created or deleted to synchronize state with external systems (dashboards, billing, audit logs). The only workaround is polling the Teams API."
+    },
+    {
+      "id": "bypass-permissions-unc-path-regression",
+      "title": "<code>bypassPermissions</code> broken on UNC paths in VS Code (Windows regression).",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42611"
+      ],
+      "description": "Setting defaultMode: \"bypassPermissions\" in ~/.claude/settings.json no longer suppresses write/edit permission prompts when the working directory is a UNC path (e.g. \\\\server\\share\\...). This is a regression introduced after v2.1.69; mapped drive letters still work correctly. The same issue affects acceptEdits mode on UNC paths (never worked)."
+    },
+    {
+      "id": "dangerously-skip-permissions-still-prompts-edit-write",
+      "title": "<code>--dangerously-skip-permissions</code> still prompts for Edit/Write confirmations.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42696"
+      ],
+      "description": "On v2.1.90, running with --dangerously-skip-permissions plus \"defaultMode\": \"bypassPermissions\" in project settings and \"skipDangerousModePermissionPrompt\": true in user settings still shows Edit/Write confirmation prompts on every edit. The only workaround is selecting \"Yes, allow all edits during this session\" at session start. Distinct from #40014 (settings-only): here the CLI flag itself does "
+    },
+    {
+      "id": "multiple-hooks-stdin-contention",
+      "title": "Multiple PreToolUse hooks matching the same tool suffer stdin contention.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42702"
+      ],
+      "description": "When multiple PreToolUse hooks match the same tool (e.g. both a project hook and a plugin hook match Edit), only one hook receives the stdin JSON payload. Other matching hooks get empty stdin, causing them to silently exit 0 (allow) instead of executing their guard logic. This effectively bypasses any hook that loses the stdin race. Distinct from #38162 (async-specific): this affects synchronous h"
+    },
+    {
+      "id": "bypass-permissions-git-claude-paths-prompt",
+      "title": "<code>bypassPermissions</code> still prompts on <code>.git/</code> and <code>.claude/</code> paths.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42711"
+      ],
+      "description": "With bypassPermissions mode active and explicit Bash(*), Edit(*) wildcards in the allow list, operations on .git/ paths intermittently prompt for permission (same commands work earlier in the session), and operations on .claude/skills/ paths consistently prompt. Reported on Linux/VS Code. Distinct from #42611 (UNC paths on Windows)."
+    },
+    {
+      "id": "bypass-permissions-not-restored-on-session-resume",
+      "title": "<code>bypassPermissions</code> not restored on session resume (VS Code).",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42735"
+      ],
+      "description": "When bypassPermissions is configured via initialPermissionMode in VS Code settings, resumed conversations revert to default permission mode and prompt for every edit. New sessions may pick it up, but resumed sessions consistently fail. Hooks that depend on the session running in bypass mode cannot rely on it persisting across resume."
+    },
+    {
+      "id": "worktree-isolation-breaks-in-git-submodules",
+      "title": "Worktree isolation breaks in git submodules.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42732"
+      ],
+      "description": "Using isolation: \"worktree\" on the Agent tool inside a git submodule creates the worktree in .git/modules/<path>/.claude/worktrees/ instead of the project's own .claude/worktrees/. This places the agent outside the project's permission scope, causing bypassPermissions to be silently downgraded and triggering unexpected permission prompts."
+    }
+  ]
+}
