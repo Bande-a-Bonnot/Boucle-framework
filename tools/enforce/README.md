@@ -555,7 +555,7 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-195 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+196 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
@@ -563,7 +563,7 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 | Permission system | 31 | MCP deny ignored, path matching, self-authorization race, scope hierarchy |
 | Hook behavior & events | 38 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App silent failure |
 | Context & session management | 21 | Compaction invalidates state, worktree CWD drift, stop hooks, no context metrics |
-| Subagent & spawned agents | 10 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded |
+| Subagent & spawned agents | 11 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, plugin tools:all silent block |
 | Windows & cross-platform | 8 | `/usr/bin/bash` routing, UNC paths, case-sensitive matching, subagent 2>&1 crash |
 | Configuration & settings | 9 | JSONC parsing, auto-update wipes hooks, `/model` strips `if`, env.PATH ignored |
 | Security | 1 | `SendMessage` content injection |
@@ -950,6 +950,8 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **PostToolUse hooks silently do not fire in Desktop App.** PostToolUse hooks configured in `.claude/settings.json` load correctly (visible via `/hooks`) but [silently never execute](https://github.com/anthropics/claude-code/issues/42336) in the Desktop App when tools like Edit are used. No error, no statusMessage, no command output. The hook simply never runs. This is a regression: the same hooks work in CLI. Compounds with [#13339](https://github.com/anthropics/claude-code/issues/13339) (VS Code ignores `ask` decision) and [#40029](https://github.com/anthropics/claude-code/issues/40029) (Stop hooks don't fire in VS Code). Workaround: use CLI instead of Desktop App for workflows that depend on PostToolUse hooks (formatters, type-checkers, audit logs). See [#42336](https://github.com/anthropics/claude-code/issues/42336).
 
 **Subagent Bash commands with `2>&1` redirect crash on Windows.** When a custom subagent (defined in `.claude/agents/`) runs a Bash command containing `2>&1`, the Bash tool [crashes with "Tool result missing due to internal error"](https://github.com/anthropics/claude-code/issues/42324) inside the agent, surfacing as "Internal tools error during invocation." No output is returned, no approval prompt appears. This is on Windows/Git Bash. Workaround: prohibit `2>&1` in agent definitions and use separate stdout/stderr handling. See [#42324](https://github.com/anthropics/claude-code/issues/42324).
+
+**Plugin-defined agent types with `tools: all` silently block Write/Edit.** When a plugin defines an agent type with `tools: all` in its frontmatter, the sub-agent's Write/Edit tool calls are [silently blocked](https://github.com/anthropics/claude-code/issues/42333). The agent reports success, but nothing is written to disk. No error is returned. Using `subagent_type: "general-purpose"` with the same prompt works correctly. Hook-based enforcement cannot catch these tool calls because they are swallowed before reaching the hook layer. See [#42333](https://github.com/anthropics/claude-code/issues/42333).
 
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
