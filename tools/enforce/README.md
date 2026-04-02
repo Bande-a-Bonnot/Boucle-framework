@@ -555,17 +555,17 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-203 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+206 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
 | Hook behavior & events | 44 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App PostToolUse silent failure, hooks stop after 2.5h |
-| Other platform behaviors | 38 | Skill tool wrapping, runtime directory deletion, retry loops |
+| Other platform behaviors | 39 | Skill tool wrapping, runtime directory deletion, retry loops, background task file growth |
 | Hook bypass & evasion | 36 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch |
 | Permission system | 35 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md |
-| Context & session management | 15 | Compaction invalidates state, worktree CWD drift, stop hooks, no context metrics |
+| Context & session management | 16 | Compaction invalidates state, worktree CWD drift, stop hooks, no context metrics, auto-compact ignores disable |
 | Configuration & settings | 12 | JSONC parsing, auto-update wipes hooks, `/model` strips `if`, env.PATH ignored, multi-install update failure |
-| Subagent & spawned agents | 12 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, plugin tools:all silent block, no Stop hook, teammate hooks bypass |
+| Subagent & spawned agents | 13 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, plugin tools:all silent block, no Stop hook, teammate hooks bypass, team spawn 255-byte split |
 | Windows & cross-platform | 10 | `/usr/bin/bash` routing, UNC paths, case-sensitive matching, subagent 2>&1 crash, full re-render on tool calls |
 | Security | 1 | `SendMessage` content injection |
 
@@ -974,6 +974,12 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **PreToolUse hooks do not fire for teammates spawned via Agent tool.** Hooks defined in both project `.claude/settings.json` and user `~/.claude/settings.json` fire correctly for the main session but [are silently skipped for teammates](https://github.com/anthropics/claude-code/issues/42385) spawned via the Agent tool with `team_name`. Hooks defined in agent frontmatter (`hooks:` field in `.claude/agents/*.md`) also do not fire. Teams relying on PreToolUse hooks for role-based tool restrictions (file path limits, dangerous command blocking) have no enforcement on teammates. See [#42385](https://github.com/anthropics/claude-code/issues/42385).
 
 **PostToolUse hooks do not trigger in the Desktop App.** PostToolUse hooks configured in `.claude/settings.json` load correctly (visible via `/hooks`) but [do not fire](https://github.com/anthropics/claude-code/issues/42336) when tools execute in the Claude Desktop App. No statusMessage is shown and no hook command runs. Affects workflows using PostToolUse for auto-formatting, type-checking, or logging after edits. The same hooks work correctly in the CLI. See [#42336](https://github.com/anthropics/claude-code/issues/42336).
+
+**Auto-compact fires despite DISABLE_AUTO_COMPACT and AUTOCOMPACT_PCT_OVERRIDE settings.** Setting `DISABLE_AUTO_COMPACT=1` and `AUTOCOMPACT_PCT_OVERRIDE=95` in `~/.claude/settings.json` env [does not prevent compaction](https://github.com/anthropics/claude-code/issues/42394). Sessions compact to 6% context on first tool call despite explicit disable. Affects stateful hooks that track session state across compaction boundaries, and autonomous agents that rely on conversation history. Related: [#42375](https://github.com/anthropics/claude-code/issues/42375) (same behavior on Opus 4.6 1M context). See [#42394](https://github.com/anthropics/claude-code/issues/42394).
+
+**Agent team spawning fails silently at ~255 byte command boundary.** When using experimental agent teams (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`), the tmux `send-keys` command used to launch teammates is [split at ~255 bytes](https://github.com/anthropics/claude-code/issues/42391). The second fragment executes as a standalone command (`bash: earch-agent: command not found`), the agent never starts, but the parent session reports "Spawned successfully." Long project paths, agent names, or session UUIDs push the launch command past the threshold. Manual `tmux send-keys` with the same command does not reproduce, so the split is in Claude Code's tmux integration. Workaround: write launch commands to a temp script and `source` it. See [#42391](https://github.com/anthropics/claude-code/issues/42391).
+
+**Background task output files grow unbounded, no cleanup.** Claude Code stores background task output in `/private/tmp/claude-{UID}/` with [no size limits, no TTL, and no automatic cleanup](https://github.com/anthropics/claude-code/issues/42388). A single runaway task output file consumed 405 GB, silently filling the disk to 99% capacity. The path is hidden from normal disk usage tools. Affects autonomous agents and heavy `run_in_background` users. Workaround: periodically clean `/private/tmp/claude-*/` manually or via cron. See [#42388](https://github.com/anthropics/claude-code/issues/42388).
 
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
