@@ -119,7 +119,7 @@ Saves ~2000 tokens per prevented re-read. Includes [diff mode](tools/read-once/#
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/file-guard/install.sh | bash
 ```
 
-Define protected files in `.file-guard` (one pattern per line). Two modes: **write-protect** (default) blocks writes, edits, and destructive bash commands. **`[deny]`** blocks all access including Read, Grep, and Glob, useful for large codegen directories where Claude should use an MCP server instead of reading files directly. Resolves symlinks to prevent [bypass via symbolic links](https://github.com/anthropics/claude-code/security/advisories/GHSA-4q92-rfm6-2cqx). ~120 tests (bash + PowerShell).
+Define protected files in `.file-guard` (one pattern per line). Two modes: **write-protect** (default) blocks writes, edits, and destructive bash commands. **`[deny]`** blocks all access including Read, Grep, and Glob, useful for large codegen directories where Claude should use an MCP server instead of reading files directly. Resolves symlinks to prevent [bypass via symbolic links](https://github.com/anthropics/claude-code/security/advisories/GHSA-4q92-rfm6-2cqx). Handles absolute paths (v2.1.88+ compatibility). ~140 tests (bash + PowerShell).
 
 ### [git-safe](tools/git-safe/) — Prevent destructive git operations
 
