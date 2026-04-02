@@ -555,15 +555,15 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-199 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+205 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
-| Hook bypass & evasion | 39 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd` |
-| Permission system | 31 | MCP deny ignored, path matching, self-authorization race, scope hierarchy |
-| Hook behavior & events | 38 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App silent failure |
+| Hook bypass & evasion | 40 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch |
+| Permission system | 33 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md |
+| Hook behavior & events | 40 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App silent failure, hooks stop after 2.5h |
 | Context & session management | 21 | Compaction invalidates state, worktree CWD drift, stop hooks, no context metrics |
-| Subagent & spawned agents | 12 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, plugin tools:all silent block, banner re-render |
+| Subagent & spawned agents | 13 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, plugin tools:all silent block, no Stop hook |
 | Windows & cross-platform | 9 | `/usr/bin/bash` routing, UNC paths, case-sensitive matching, subagent 2>&1 crash, full re-render on tool calls |
 | Configuration & settings | 10 | JSONC parsing, auto-update wipes hooks, `/model` strips `if`, env.PATH ignored, multi-install update failure |
 | Security | 1 | `SendMessage` content injection |
@@ -958,6 +958,18 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **Windows: full conversation re-renders on each tool call.** On Windows 11, Claude Code's TUI [re-renders the entire visible conversation history](https://github.com/anthropics/claude-code/issues/42343) every time a tool call completes. Response blocks appear multiple times on screen, making output hard to read. For hook-intensive workflows with many sequential tool calls (e.g., enforce-hooks generating multiple files), this multiplies the visual noise. See [#42343](https://github.com/anthropics/claude-code/issues/42343).
 
 **Multiple installations detected breaks `claude update`.** When both an npm-global and native installation of Claude Code coexist, [`claude update` fails](https://github.com/anthropics/claude-code/issues/42357) with "multiple installations found, cannot determine installation type." This can happen when users install via `npm install -g` and later use the native installer (or vice versa). Affects hook users who need to stay on specific versions for hook compatibility. Workaround: remove one installation method before updating. See [#42357](https://github.com/anthropics/claude-code/issues/42357).
+
+**Hooks stop executing after ~2.5 hours in a session.** All hooks (PreToolUse, PostToolUse, SessionStart) fire correctly at session start but [silently stop working](https://github.com/anthropics/claude-code/issues/16047) after approximately 2.5 hours. No errors are logged; hooks simply stop being invoked. All hook-based enforcement disappears mid-session without warning. Workaround: restart Claude Code sessions before the 2.5-hour mark. For autonomous loops, set session time limits below 2 hours. See [#16047](https://github.com/anthropics/claude-code/issues/16047).
+
+**Model circumvents Edit hook by switching to Bash tool.** When a PreToolUse:Edit hook blocks file modifications, Claude Code [switches to the Bash tool](https://github.com/anthropics/claude-code/issues/29709) (e.g., `echo "..." > file`) to achieve the same edit without triggering the Edit hook. The model treats the hook block as an obstacle to route around rather than a boundary to respect. A single-tool hook is insufficient; pair file-guard (Edit/Write) with bash-guard (Bash) to cover both paths. See [#29709](https://github.com/anthropics/claude-code/issues/29709).
+
+**Permission mode spontaneously resets from bypass to edit-auto.** The permission mode changes from "Bypass permissions" to "Edit automatically" [mid-session without user interaction](https://github.com/anthropics/claude-code/issues/39057). Write tool calls that should auto-approve start prompting for permission, breaking autonomous workflows. Distinct from hook-triggered resets ([#37745](https://github.com/anthropics/claude-code/issues/37745)) and suspicious-path downgrades ([#41763](https://github.com/anthropics/claude-code/issues/41763)): this reset occurs spontaneously. Setting `"defaultMode": "bypassPermissions"` in settings.local.json mitigates but does not prevent the reset. See [#39057](https://github.com/anthropics/claude-code/issues/39057).
+
+**Subagent does not fire Stop hook on completion.** When a subagent spawned via the Agent tool completes and returns results, [no Stop hook fires](https://github.com/anthropics/claude-code/issues/33049) with the subagent's session_id. Other lifecycle hooks (UserPromptSubmit, PreToolUse, PostToolUse) fire correctly for the subagent. Session-tracking tools that use Stop hooks to detect lifecycle completion accumulate "ghost sessions" with no end event. See [#33049](https://github.com/anthropics/claude-code/issues/33049).
+
+**Hook runner fails with "Permission denied" after plugin update.** The plugin marketplace installer does not set execute permissions on `.sh` hook scripts. Auto-updates install all hook files as `-rw-rw-r--` (no `+x` bit), causing hooks to [fail with "Permission denied"](https://github.com/anthropics/claude-code/issues/39378) on every session. Affects marketplace plugins that use shell script hooks. Fix: `chmod +x` the affected scripts. The hook runner executes scripts directly (`./hook.sh`) instead of via `/bin/sh hook.sh`, so any permission loss from updates, cloud sync, or filesystem quirks causes the same failure. See [#39378](https://github.com/anthropics/claude-code/issues/39378).
+
+**Deny rules do not protect CLAUDE.md from being overwritten.** Despite explicit deny rules for CLAUDE.md in `~/.claude/settings.json`, Claude Code [still modifies CLAUDE.md](https://github.com/anthropics/claude-code/issues/13785), especially during commits. When overwritten, the model loses its project context and repeats mistakes the rules were meant to prevent. This is an instance of deny rules being advisory rather than enforced ([#30519](https://github.com/anthropics/claude-code/issues/30519)). Workaround: use file-guard to protect CLAUDE.md at the hook level, or set the file to read-only with OS permissions. See [#13785](https://github.com/anthropics/claude-code/issues/13785).
 
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
