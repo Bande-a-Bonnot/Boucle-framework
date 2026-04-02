@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Known Limitations - Claude Code Hooks | Boucle</title>
-    <meta name="description" content="211 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
+    <meta name="description" content="215 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
     <style>
         :root {
             --bg: #0d1117;
@@ -166,7 +166,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle">211 documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>.</p>
+        <p class="subtitle">215 documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>.</p>
 
         <div class="controls">
             <input type="text" id="search" placeholder="Search by keyword or issue number (e.g. 32928, bypass, MCP)..." autocomplete="off">
@@ -2089,6 +2089,46 @@
             <h3>PowerShell parse failure degrades deny rules to fallback (fixed v2.1.90).</h3>
             <p>When PowerShell command parsing fails (malformed syntax, unusual quoting, encoding tricks), deny rules fall through to a weaker fallback evaluation instead of denying by default. Combined with the trailing <code>&amp;</code> bypass and archive-extraction TOCTOU, pre-v2.1.90 PowerShell tool permission checks have significant gaps. bash-guard and safety-check handle Bash/sh but not PowerShell.</p>
             <div class="kl-issues">Source: v2.1.90 changelog</div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior & events" data-issues="19225" id="stop-hooks-in-skills-never-fire">
+            <div class="kl-header">
+                <span class="kl-num">#212</span>
+                <span class="kl-cat">Hook behavior & events</span>
+            </div>
+            <h3>Stop hooks defined in Skills never fire.</h3>
+            <p>When a skill defines Stop hooks in its SKILL.md file, they are never invoked when the skill session ends. Start hooks and tool hooks work, but the Stop lifecycle event is silently skipped. Workaround: have skill instructions tell Claude to run the stop script manually before exiting.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/19225" target="_blank">#19225</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior & events" data-issues="33263" id="no-way-to-suppress-async-hook-completion-messages">
+            <div class="kl-header">
+                <span class="kl-num">#213</span>
+                <span class="kl-cat">Hook behavior & events</span>
+            </div>
+            <h3>No way to suppress async hook completion messages.</h3>
+            <p>Async hook events (especially SubagentStart/SubagentStop) generate "Async hook completed" messages in the conversation transcript on every invocation. There is no setting to suppress or filter these messages. Heavy hook usage floods the conversation with noise, degrading the user experience and the model's effective context. Originally filed as #9603, auto-closed and re-filed.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/33263" target="_blank">#33263</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="18846" id="bash-permissions-not-enforced-without-hooks">
+            <div class="kl-header">
+                <span class="kl-num">#214</span>
+                <span class="kl-cat">Permission system</span>
+            </div>
+            <h3>Bash permissions in settings.json not enforced without custom hooks.</h3>
+            <p><code>permissions.allow</code> and <code>permissions.deny</code> rules for Bash commands in settings.json are not reliably enforced. Denied commands may still execute, and allowed commands may still prompt for approval. Users must write custom PreToolUse hooks as a workaround. This is exactly the gap bash-guard fills.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/18846" target="_blank">#18846</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="35870" id="vscode-cursor-extension-bypasses-permissions">
+            <div class="kl-header">
+                <span class="kl-num">#215</span>
+                <span class="kl-cat">Permission system</span>
+            </div>
+            <h3>VS Code/Cursor extension bypasses permissions and does not persist settings.</h3>
+            <p>In the VS Code/Cursor extension, commands like <code>rm</code> execute without permission prompts even when not in <code>permissions.allow</code>, and "Allow for all projects" does not persist to settings.json, causing repeated prompts. Reported on v2.1.78. The CLI does not have this problem. Extension users relying on the permission system have no enforcement.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/35870" target="_blank">#35870</a></div>
         </div>
 
         <footer>
