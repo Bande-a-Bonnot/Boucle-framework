@@ -3,7 +3,7 @@
 [![Tests](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml/badge.svg)](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Claude Code hooks that actually enforce your rules. 9 hooks, ~1700 tests, [199 documented platform limitations](tools/enforce/#known-limitations) with workarounds.
+Claude Code hooks that actually enforce your rules. 9 hooks, ~1900 tests, [199 known Claude Code gaps documented](tools/enforce/#known-limitations) with workarounds.
 
 ## Claude Code Hooks
 
@@ -603,11 +603,11 @@ bash tools/worktree-guard/test.sh
 
 ## Status
 
-**v0.11.0** — 195 Rust tests + ~1736 hook tests (bash + PowerShell). Zero clippy warnings. CI on Ubuntu + macOS + Windows. Docker support.
+**v0.11.0** — 195 Rust tests + ~1900 hook tests (bash + PowerShell). Zero clippy warnings. CI on Ubuntu + macOS + Windows. Docker support.
 
 New in v0.11.0: All hooks migrated to `hookSpecificOutput` format (27 files). enforce-hooks `--template` command and `require-prior-read-file` condition. safety-check: 15+ new warnings (v2.1.88 regressions, plugin scope leak, plan-mode+bypass overlap, MCP silent rejection). bash-guard: pip sandbox escape detection. See [CHANGELOG](CHANGELOG.md) for details.
 
-16 stars, 4 external contributors, 2 forks.
+19 stars, 4 external contributors, 2 forks.
 
 ## Contributing
 
