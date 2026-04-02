@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Known Limitations - Claude Code Hooks | Boucle</title>
-    <meta name="description" content="225 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
+    <meta name="description" content="227 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
     <style>
         :root {
             --bg: #0d1117;
@@ -166,7 +166,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">225</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>.</p>
+        <p class="subtitle"><span id="total-count">227</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>.</p>
 
         <div class="controls">
             <input type="text" id="search" placeholder="Search by keyword or issue number (e.g. 32928, bypass, MCP)..." autocomplete="off">
@@ -2226,6 +2226,26 @@
             <h3>Bypass permissions mode silently downgrades to <code>autoaccept-edits</code> during long sessions.</h3>
             <p>During long sessions (600+ API calls, 3+ hours), bypass permissions mode can silently switch to autoaccept-edits without user action. Correlates with Write/Edit operations on files outside the project root (<code>~/.claude/</code>, other drives). <a href="https://github.com/anthropics/claude-code/issues/42500" target="_blank">Observed 5 times in one session on Windows</a>. The user must manually switch back, but the downgrade can recur. Only starting a new session fully resolves it. Affects automated workflows that depend on consistent permission enforcement.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42500" target="_blank">#42500</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Context & session management" data-issues="42536" id="multi-session-temp-dir-collision">
+            <div class="kl-header">
+                <span class="kl-num">#226</span>
+                <span class="kl-cat">Context &amp; session management</span>
+            </div>
+            <h3>Multiple sessions in the same project collide on temp directory, deleting each other's output files.</h3>
+            <p>Temp dirs are namespaced by <code>&lt;uid&gt;/&lt;project-path-hash&gt;</code> but not by session ID. When multiple Claude Code sessions target the same project directory, each session's startup cleanup can delete output files another active session is writing to or reading from, causing <code>ENOENT</code> errors on task output. Common when running parallel agents, background tasks, or multiple terminal tabs. Session ID is not part of the namespace. Workaround: use separate project directories for parallel sessions.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42536" target="_blank">#42536</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior & events" data-issues="42532" id="bash-tool-no-signal-propagation-orphans">
+            <div class="kl-header">
+                <span class="kl-num">#227</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+            </div>
+            <h3>Bash tool does not propagate signals to child process tree, causing orphaned background processes.</h3>
+            <p>When a script executed via the Bash tool spawns background subprocesses and registers an EXIT trap for cleanup, the trap is not triggered when the Bash tool terminates the process. Background children become orphaned and accumulate. Affects hooks and scripts that use <code>nohup</code>/<code>disown</code> patterns (e.g., the SessionEnd workaround for detaching heavy work). The Bash tool appears to kill only the direct child, not the process group.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42532" target="_blank">#42532</a></div>
         </div>
 
         <footer>
