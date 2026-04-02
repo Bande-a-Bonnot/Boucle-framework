@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Boucle - Safety Hooks for Claude Code</title>
-    <meta name="description" content="Prevent Claude Code from deleting files, running dangerous commands, or ignoring your rules. Deterministic safety hooks with ~1810 tests. Zero dependencies.">
+    <meta name="description" content="Prevent Claude Code from deleting files, running dangerous commands, or ignoring your rules. 9 deterministic safety hooks, ~1720 tests, 190 documented platform limitations. Zero dependencies.">
     <meta name="keywords" content="Claude Code, safety hooks, PreToolUse, bash-guard, git-safe, enforce-hooks, file protection, CLAUDE.md enforcement">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -19,7 +19,7 @@
             <main>
                 <h2>The problem</h2>
                 <p class="brief">Claude Code's CLAUDE.md rules are <a href="https://github.com/anthropics/claude-code/issues/37599">probabilistic, not deterministic</a>. Its permission system has <a href="https://github.com/anthropics/claude-code/issues/38119">known bypass patterns</a>. Users have lost <a href="https://github.com/anthropics/claude-code/issues/37984">87GB of personal data</a>, had <a href="https://github.com/anthropics/claude-code/issues/37888">30+ files destroyed</a> despite 100+ rules, and seen <a href="https://github.com/anthropics/claude-code/issues/38193">explicit instructions ignored</a>.</p>
-                <p class="brief">These hooks enforce boundaries that text rules and permissions can't. Zero dependencies beyond bash and jq. ~1500 tests.</p>
+                <p class="brief">These hooks enforce boundaries that text rules and permissions can't. Zero dependencies beyond bash and jq. ~1720 tests. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">190 documented platform limitations</a> with workarounds.</p>
 
                 <h2>Check your setup</h2>
                 <div class="code-block">
@@ -41,13 +41,13 @@
 
                 <ul>
                     <li id="enforce-hooks">
-                        <strong>enforce-hooks</strong> — turn CLAUDE.md rules into actual enforcement. Your rules say "never edit .env" but Claude edits it anyway. This reads your rules and blocks violations deterministically. One dynamic hook, re-reads CLAUDE.md on every tool call. Self-protection mode (<code>--armor</code>) prevents Claude from deleting its own hooks. 52 tests. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce">Details</a>.<br>
+                        <strong>enforce-hooks</strong> — turn CLAUDE.md rules into actual enforcement. Your rules say "never edit .env" but Claude edits it anyway. This reads your rules and blocks violations deterministically. One dynamic hook, re-reads CLAUDE.md on every tool call. Self-protection mode (<code>--armor</code>) prevents Claude from deleting its own hooks. ~71 tests. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce">Details</a>.<br>
                         <div class="code-block">
                             <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/install.sh | bash</code>
                         </div>
                     </li>
                     <li id="safety-check">
-                        <strong>safety-check</strong> — audit your Claude Code setup in 5 seconds. Scores your configuration from A to F, shows one-liner fixes for each gap, detects 20+ platform bugs and permission pitfalls that silently break your setup (<a href="https://github.com/anthropics/claude-code/issues/38409">colon in paths</a>, <a href="https://github.com/anthropics/claude-code/issues/38375">deny+denyWrite conflicts</a>, <a href="https://github.com/anthropics/claude-code/issues/38372">bypassPermissions resets</a>, and more), scans your CLAUDE.md for rules that could be enforced by hooks. No installation required. ~146 tests.<br>
+                        <strong>safety-check</strong> — audit your Claude Code setup in 5 seconds. Scores your configuration from A to F, shows one-liner fixes for each gap, detects 20+ platform bugs and permission pitfalls that silently break your setup (<a href="https://github.com/anthropics/claude-code/issues/38409">colon in paths</a>, <a href="https://github.com/anthropics/claude-code/issues/38375">deny+denyWrite conflicts</a>, <a href="https://github.com/anthropics/claude-code/issues/38372">bypassPermissions resets</a>, and more), scans your CLAUDE.md for rules that could be enforced by hooks. No installation required. ~267 tests.<br>
                         <div class="code-block">
                             <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash</code>
                         </div>
@@ -71,7 +71,7 @@
                         </div>
                     </li>
                     <li id="bash-guard">
-                        <strong>bash-guard</strong> — blocks dangerous bash commands (rm -rf /, sudo/pkexec/doas, curl|bash, chmod -R 777, disk utilities (diskutil erase, fdisk, parted, wipefs), Docker destruction, database drops, credential exposure, cloud infra deletion (terraform destroy, kubectl delete/drain/scale-to-zero, helm uninstall, aws ec2 terminate/rds delete/cloudformation delete-stack, az group delete, doctl destroy, flyctl destroy, heroku apps:destroy, vercel rm, netlify sites:delete), mass file deletion, shred, truncate, data exfiltration, programmatic env dumps, sensitive file reads, system database corruption, mount point destruction, git push --force). Detects encoding bypasses (base64/hex decode piped to shell, reversed strings, process substitution downloads). Catches programming language shell wrappers (python subprocess, ruby system, perl exec, node child_process). Evaluates compound commands. Catches multi-line comment bypass (<a href="https://github.com/anthropics/claude-code/issues/38119">#38119</a>). ~560 tests.<br>
+                        <strong>bash-guard</strong> — blocks dangerous bash commands (rm -rf /, sudo/pkexec/doas, curl|bash, chmod -R 777, disk utilities (diskutil erase, fdisk, parted, wipefs), Docker destruction, database drops, credential exposure, cloud infra deletion (terraform destroy, kubectl delete/drain/scale-to-zero, helm uninstall, aws ec2 terminate/rds delete/cloudformation delete-stack, az group delete, doctl destroy, flyctl destroy, heroku apps:destroy, vercel rm, netlify sites:delete), mass file deletion, shred, truncate, data exfiltration, programmatic env dumps, sensitive file reads, system database corruption, mount point destruction, git push --force). Detects encoding bypasses (base64/hex decode piped to shell, reversed strings, process substitution downloads). Catches programming language shell wrappers (python subprocess, ruby system, perl exec, node child_process). Evaluates compound commands. Catches multi-line comment bypass (<a href="https://github.com/anthropics/claude-code/issues/38119">#38119</a>). ~713 tests.<br>
                         <div class="code-block">
                             <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash</code>
                         </div>
