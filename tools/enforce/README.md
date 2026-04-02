@@ -555,14 +555,14 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-215 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+219 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
-| Hook behavior & events | 47 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App PostToolUse silent failure, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits |
+| Hook behavior & events | 49 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App PostToolUse silent failure, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits, false hook error labels, Task-to-Agent rename breaks payloads |
 | Other platform behaviors | 39 | Skill tool wrapping, runtime directory deletion, retry loops, background task file growth |
 | Hook bypass & evasion | 36 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch |
-| Permission system | 40 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, PowerShell trailing `&` bypass, parse-failure fallback |
+| Permission system | 42 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, PowerShell trailing `&` bypass, parse-failure fallback, auto-mode classifier wrong model, classifier outage blocks all tools |
 | Context & session management | 16 | Compaction invalidates state, worktree CWD drift, stop hooks, no context metrics, auto-compact ignores disable |
 | Configuration & settings | 12 | JSONC parsing, auto-update wipes hooks, `/model` strips `if`, env.PATH ignored, multi-install update failure |
 | Subagent & spawned agents | 13 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, plugin tools:all silent block, no Stop hook, teammate hooks bypass, team spawn 255-byte split |
@@ -1000,6 +1000,14 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **Bash permissions in settings.json not enforced without custom hooks.** `permissions.allow` and `permissions.deny` rules for Bash commands in settings.json are [not reliably enforced](https://github.com/anthropics/claude-code/issues/18846). Denied commands may still execute, and allowed commands may still prompt for approval. Users must write custom PreToolUse hooks as a workaround to get reliable Bash command enforcement. This is exactly the gap bash-guard fills. See [#18846](https://github.com/anthropics/claude-code/issues/18846).
 
 **VS Code/Cursor extension bypasses permissions and does not persist settings.** In the VS Code/Cursor extension, two permission problems occur: (1) commands like `rm` [execute without permission prompts](https://github.com/anthropics/claude-code/issues/35870) even when not in `permissions.allow`, and (2) "Allow for all projects" does not persist to settings.json, causing repeated permission prompts on every session. Reported on v2.1.78. The CLI does not have this problem. Extension users relying on the permission system for safety have no enforcement. See [#35870](https://github.com/anthropics/claude-code/issues/35870).
+
+**Auto-mode safety classifier uses wrong model suffix.** When Opus 4.6 1M is selected as the model, the auto-mode safety classifier [sends requests to `claude-sonnet-4-6[1m]`](https://github.com/anthropics/claude-code/issues/38537) instead of the correct suffix. If the Sonnet 1M variant is not available in the user's API plan, Bash and other execution tools fail entirely. Not hookable — the classifier runs before any tool call reaches hooks. See [#38537](https://github.com/anthropics/claude-code/issues/38537).
+
+**Safety classifier outage blocks all tool execution in auto mode.** When the Sonnet classifier powering auto-mode safety is unavailable (API errors), [all execution tools are blocked](https://github.com/anthropics/claude-code/issues/38618) and only read-only tools work. This creates a complete enforcement outage where nothing can execute. Not hookable — the classifier failure happens at the permission layer before hooks fire. Users must switch to manual mode or wait for the classifier to recover. See [#38618](https://github.com/anthropics/claude-code/issues/38618).
+
+**False "Hook Error" labels cause Claude to prematurely end turns.** Hooks that exit 0 with no stderr and valid JSON on stdout can still be [labeled as "Hook Error"](https://github.com/anthropics/claude-code/issues/34713) in the conversation transcript. When this happens, Claude interprets the false error as a real failure and stops working mid-turn. This affects hook reliability — a perfectly functioning enforcement hook can be treated as broken by the model. See [#34713](https://github.com/anthropics/claude-code/issues/34713).
+
+**Task-to-Agent tool rename in v2.1.63 breaks existing hook payloads.** The `Task` tool was [renamed to `Agent`](https://github.com/anthropics/claude-code/issues/29677) in v2.1.63, but this was an undocumented breaking change. Existing hooks that match on `tool_name === "Task"` silently stopped working. The hook payload now reports the tool as `Agent` with no migration path or deprecation warning. Any custom hooks targeting subagent spawning by tool name needed updating. See [#29677](https://github.com/anthropics/claude-code/issues/29677).
 
 ## Tests
 
