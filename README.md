@@ -5,6 +5,8 @@
 
 Claude Code hooks that actually enforce your rules. 9 hooks, ~1900 tests, [199 known Claude Code gaps documented](tools/enforce/#known-limitations) with workarounds.
 
+> **Quick links:** [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
+
 ## Claude Code Hooks
 
 Claude Code's CLAUDE.md rules are [read but not enforced](https://github.com/anthropics/claude-code/issues/37550) — they work at session start and degrade as context grows. Its [permission system has known gaps](https://github.com/anthropics/claude-code/issues/30519) — wildcards don't match compound commands, deny rules [don't check pipe segments](https://github.com/anthropics/claude-code/issues/41559) and can be [bypassed with multi-line comments](https://github.com/anthropics/claude-code/issues/38119). These hooks enforce boundaries that text rules and permissions can't.
@@ -19,6 +21,8 @@ Claude sees:   ⚠ Hook blocked this action. Suggesting safer alternative...
 
 No prompts, no "are you sure" dialogs. The command never runs.
 
+<a id="check-your-setup"></a>
+
 **Check your current setup:**
 
 ```sh
@@ -32,6 +36,8 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 ```
 
 Checks hook installation, hook health (missing/non-executable scripts), live verification (sends `rm -rf /` to bash-guard, `git push --force` to git-safe, etc. and confirms they block), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings, jq/python3 dependencies, Windows hook reliability), and known CLI version regressions. Scans both user-level (`~/.claude/settings.json`) and project-level (`.claude/settings.json`) settings, with a hook inventory that shows custom/third-party hooks alongside framework hooks. Also warns when deny rules are configured without bash-guard, since deny patterns [can be bypassed](https://github.com/anthropics/claude-code/issues/38119) by compound commands and multi-line scripts. No installation required. ~260 tests.
+
+<a id="install-hooks"></a>
 
 **Start with the essentials** (bash-guard + git-safe + file-guard):
 
@@ -94,6 +100,8 @@ iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } uninstall read-once"
 ```
+
+<a id="individual-hooks"></a>
 
 Or pick individual hooks:
 
@@ -513,6 +521,40 @@ boucle --version                 # Show version
 3. **Compound knowledge.** Every iteration should leave the agent smarter. Memory isn't a cache — it's an investment.
 
 4. **Transparency by default.** If you can't see what the agent did and why, something is wrong.
+
+<a id="platform-support"></a>
+
+## Platform Support
+
+| | macOS | Linux | Windows (WSL) | Windows (native PS7) |
+|---|:---:|:---:|:---:|:---:|
+| bash-guard | Yes | Yes | Yes | Yes (.ps1) |
+| git-safe | Yes | Yes | Yes | Yes (.ps1) |
+| file-guard | Yes | Yes | Yes | Yes (.ps1) |
+| read-once | Yes | Yes | Yes | Yes (.ps1) |
+| branch-guard | Yes | Yes | Yes | Yes (.ps1) |
+| worktree-guard | Yes | Yes | Yes | Yes (.ps1) |
+| session-log | Yes | Yes | Yes | Yes (.ps1) |
+| enforce-hooks | Yes | Yes | Yes (bash) | WSL or Git Bash |
+| safety-check | Yes | Yes | Yes | Partial (bash required) |
+| Installer | `install.sh` | `install.sh` | `install.sh` | `install.ps1` |
+| Hook reliability | Full | Full | Full | [~18%](https://github.com/anthropics/claude-code/issues/37988) |
+
+**Best experience:** macOS or Linux. **Windows:** Use WSL for full reliability. Native PowerShell hooks work but Claude Code fires them inconsistently ([#37988](https://github.com/anthropics/claude-code/issues/37988)).
+
+<a id="recommended-claude-code-version"></a>
+
+## Recommended Claude Code Version
+
+**Use v2.1.89 or later.** Earlier versions have hook-related regressions:
+
+| Version | Issue |
+|---|---|
+| v2.1.88 | [Pulled from npm](https://github.com/anthropics/claude-code/issues/41497) — custom commands broken, systemMessage display broken, source map leak |
+| v2.1.81-84 | [Permission bypass resets mid-session](https://github.com/anthropics/claude-code/issues/37745) when PreToolUse hooks are installed |
+| < v2.1.50 | No `hookSpecificOutput` format support (deprecated `decision: "block"` still works but should be migrated) |
+
+Run `claude --version` to check. Run `safety-check` with `--verify` to confirm hooks fire correctly on your version.
 
 ## Troubleshooting
 
