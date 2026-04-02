@@ -555,13 +555,13 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-236 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+237 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
 | Hook behavior & events | 103 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits, allowManagedHooksOnly blocks plugin hooks, OAuth token refresh collision, no Team lifecycle hooks, auto-compact ignores disable, env.PATH ignored |
 | Hook bypass & evasion | 84 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch, `$()` subshell pattern-match failure, goal-directed tool switching, apiKeyHelper arbitrary code execution, `find` command injection (CVE-2026-24887) |
-| Permission system | 42 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, PowerShell trailing `&` bypass, parse-failure fallback, auto-mode classifier wrong model, bypassPermissions multiline gap |
+| Permission system | 43 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, PowerShell trailing `&` bypass, parse-failure fallback, auto-mode classifier wrong model, bypassPermissions UNC path regression |
 | Subagent & spawned agents | 6 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, teammate hooks bypass, subagent file creation bypass |
 | CLAUDE.md & memory | 1 | CLAUDE.md rules are advisory-only with no enforcement mechanism |
 
@@ -1036,6 +1036,8 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **Plugin hook that refreshes OAuth tokens silently breaks main session authentication.** When a plugin hook reads OAuth credentials from the macOS Keychain and performs a token refresh (e.g. `POST /v1/oauth/token`), it can invalidate the access token that Claude Code is currently using. The main session then fails authentication on its next API call with no indication that a hook caused the failure. Hooks and the main session share credential state without coordination. See [#42603](https://github.com/anthropics/claude-code/issues/42603).
 
 **No hooks fire on Agent Team creation or deletion.** There are no `TeamCreated` or `TeamDeleted` hook events. Platforms that orchestrate Claude Code Agent Teams cannot detect when a team is created or deleted to synchronize state with external systems (dashboards, billing, audit logs). The only workaround is polling the Teams API. See [#42597](https://github.com/anthropics/claude-code/issues/42597).
+
+**`bypassPermissions` broken on UNC paths in VS Code (Windows regression).** Setting `defaultMode: "bypassPermissions"` in `~/.claude/settings.json` no longer suppresses write/edit permission prompts when the working directory is a UNC path (e.g. `\\server\share\...`). This is a regression introduced after v2.1.69; mapped drive letters still work correctly. The same issue affects `acceptEdits` mode on UNC paths (never worked). See [#42611](https://github.com/anthropics/claude-code/issues/42611).
 
 ## Tests
 
