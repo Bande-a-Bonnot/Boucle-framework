@@ -555,13 +555,13 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-219 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+220 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
 | Hook behavior & events | 49 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App PostToolUse silent failure, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits, false hook error labels, Task-to-Agent rename breaks payloads |
 | Other platform behaviors | 39 | Skill tool wrapping, runtime directory deletion, retry loops, background task file growth |
-| Hook bypass & evasion | 36 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch |
+| Hook bypass & evasion | 37 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch, `$()` subshell pattern-match failure |
 | Permission system | 42 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, PowerShell trailing `&` bypass, parse-failure fallback, auto-mode classifier wrong model, classifier outage blocks all tools |
 | Context & session management | 16 | Compaction invalidates state, worktree CWD drift, stop hooks, no context metrics, auto-compact ignores disable |
 | Configuration & settings | 12 | JSONC parsing, auto-update wipes hooks, `/model` strips `if`, env.PATH ignored, multi-install update failure |
@@ -1008,6 +1008,8 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **False "Hook Error" labels cause Claude to prematurely end turns.** Hooks that exit 0 with no stderr and valid JSON on stdout can still be [labeled as "Hook Error"](https://github.com/anthropics/claude-code/issues/34713) in the conversation transcript. When this happens, Claude interprets the false error as a real failure and stops working mid-turn. This affects hook reliability — a perfectly functioning enforcement hook can be treated as broken by the model. See [#34713](https://github.com/anthropics/claude-code/issues/34713).
 
 **Task-to-Agent tool rename in v2.1.63 breaks existing hook payloads.** The `Task` tool was [renamed to `Agent`](https://github.com/anthropics/claude-code/issues/29677) in v2.1.63, but this was an undocumented breaking change. Existing hooks that match on `tool_name === "Task"` silently stopped working. The hook payload now reports the tool as `Agent` with no migration path or deprecation warning. Any custom hooks targeting subagent spawning by tool name needed updating. See [#29677](https://github.com/anthropics/claude-code/issues/29677).
+
+**Permission and hook pattern matcher fails on `$()` subshells and parentheses in arguments.** The `if`-condition pattern matcher in hooks and the permission `allow`/`deny` wildcard matcher both fail when Bash commands contain `$()` subshells or parentheses in arguments. Commands like `echo $(date)` or `gcloud logging read 'filter=(severity=ERROR)'` [incorrectly trigger blocking hooks](https://github.com/anthropics/claude-code/issues/42457) or [fail to match allow rules](https://github.com/anthropics/claude-code/issues/38017). The parser defaults to "match" on parse failure, making this a false-positive issue. Compound constructs like pipes and heredocs [also break matching](https://github.com/anthropics/claude-code/issues/39263). Workaround: use PreToolUse hooks that parse the full command string instead of relying on `if`-condition patterns. [bash-guard](../bash-guard/) does this. See [#42457](https://github.com/anthropics/claude-code/issues/42457), [#38017](https://github.com/anthropics/claude-code/issues/38017), [#39263](https://github.com/anthropics/claude-code/issues/39263).
 
 ## Tests
 

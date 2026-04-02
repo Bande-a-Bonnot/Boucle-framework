@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Known Limitations - Claude Code Hooks | Boucle</title>
-    <meta name="description" content="219 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
+    <meta name="description" content="220 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
     <style>
         :root {
             --bg: #0d1117;
@@ -166,7 +166,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle">219 documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>.</p>
+        <p class="subtitle">220 documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>.</p>
 
         <div class="controls">
             <input type="text" id="search" placeholder="Search by keyword or issue number (e.g. 32928, bypass, MCP)..." autocomplete="off">
@@ -2169,6 +2169,16 @@
             <h3>Task-to-Agent tool rename in v2.1.63 breaks existing hook payloads.</h3>
             <p>The Task tool was renamed to Agent in v2.1.63, but this was an undocumented breaking change. Existing hooks matching on <code>tool_name === "Task"</code> silently stopped working. The hook payload now reports the tool as Agent with no migration path or deprecation warning.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/29677" target="_blank">#29677</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="42457 38017 39263" id="permission-pattern-matcher-fails-on-subshells-and-parentheses">
+            <div class="kl-header">
+                <span class="kl-num">#220</span>
+                <span class="kl-cat">Hook bypass & evasion</span>
+            </div>
+            <h3>Permission and hook pattern matcher fails on <code>$()</code> subshells and parentheses in arguments.</h3>
+            <p>The <code>if</code>-condition pattern matcher in hooks and the permission <code>allow</code>/<code>deny</code> wildcard matcher both fail when Bash commands contain <code>$()</code> subshells or parentheses in arguments. Commands like <code>echo $(date)</code> or <code>gcloud logging read 'filter=(severity=ERROR)'</code> <a href="https://github.com/anthropics/claude-code/issues/42457" target="_blank">incorrectly trigger blocking hooks</a> or <a href="https://github.com/anthropics/claude-code/issues/38017" target="_blank">fail to match allow rules</a>. The parser appears to default to "match" (fire the hook / prompt for permission) on parse failure, making this a false-positive issue. Compound constructs like pipes and heredocs <a href="https://github.com/anthropics/claude-code/issues/39263" target="_blank">also break matching</a>. Workaround: use PreToolUse hooks that parse the full command string instead of relying on <code>if</code>-condition patterns. <a href="../bash-guard/" target="_blank">bash-guard</a> does this.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42457" target="_blank">#42457</a>, <a href="https://github.com/anthropics/claude-code/issues/38017" target="_blank">#38017</a>, <a href="https://github.com/anthropics/claude-code/issues/39263" target="_blank">#39263</a></div>
         </div>
 
         <footer>
