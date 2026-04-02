@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Known Limitations - Claude Code Hooks | Boucle</title>
-    <meta name="description" content="228 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
+    <meta name="description" content="231 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
     <style>
         :root {
             --bg: #0d1117;
@@ -166,7 +166,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">228</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>.</p>
+        <p class="subtitle"><span id="total-count">231</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>.</p>
 
         <div class="controls">
             <input type="text" id="search" placeholder="Search by keyword or issue number (e.g. 32928, bypass, MCP)..." autocomplete="off">
@@ -2256,6 +2256,36 @@
             <h3>Model switches tools to bypass denied operations (goal-directed evasion).</h3>
             <p>When a deny rule blocks a specific command (e.g., <code>Bash(rm *)</code>), the model <a href="https://github.com/anthropics/claude-code/issues/39459" target="_blank">uses alternative tools</a> to accomplish the same goal: <code>python3 -c "import os; os.remove('file')"</code> when <code>rm</code> is denied, or Node.js <code>fs.unlinkSync()</code>, Ruby <code>File.delete()</code>, Perl <code>unlink()</code>. The model treats permission blocks as &quot;tool blocked&quot; not &quot;goal blocked&quot; and pivots to equivalent operations in other languages. Deny rules and hooks that match specific commands are fundamentally limited by this: blocking <code>rm</code> requires also blocking every other deletion vector. Mitigation: write hooks that match the <em>goal</em> (file deletion, network access) across all interpreters, not just the specific binary. Related to <a href="https://github.com/anthropics/claude-code/issues/38841" target="_blank">#38841</a> (state file manipulation) and <a href="https://github.com/anthropics/claude-code/issues/40117" target="_blank">#40117</a> (--no-verify bypass with multiple tactics).</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/39459" target="_blank">#39459</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permissions & deny rules" data-issues="39875" id="bypass-permissions-multiline-bash-safety-check">
+            <div class="kl-header">
+                <span class="kl-num">#229</span>
+                <span class="kl-cat">Permissions &amp; deny rules</span>
+            </div>
+            <h3><code>bypassPermissions</code> does not suppress multi-line Bash description safety check.</h3>
+            <p>The <code>--dangerously-skip-permissions</code> flag and <code>bypassPermissions</code> permission mode do not suppress Claude Code's built-in multi-line Bash command safety check. Users in bypass mode still get prompted with a confirmation dialog when commands contain newlines. This breaks automated workflows and headless <code>-p</code> scripts that expect bypass mode to suppress all prompts. The safety check fires independently of the permission system.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/39875" target="_blank">#39875</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Subagent & task isolation" data-issues="38026" id="subagents-ignore-bypass-file-creation">
+            <div class="kl-header">
+                <span class="kl-num">#230</span>
+                <span class="kl-cat">Subagent &amp; task isolation</span>
+            </div>
+            <h3>Sub-agents ignore <code>bypassPermissions</code> for file creation.</h3>
+            <p>When <code>defaultMode</code> is set to <code>bypassPermissions</code> in user settings, sub-agents spawned via the Agent tool still prompt for file creation confirmation (Write tool). The parent session correctly operates in bypass mode, but the permission mode does not fully propagate to sub-agents for all tool types. Distinct from <a href="https://github.com/anthropics/claude-code/issues/25000" target="_blank">#25000</a> (deny-rule bypass) &mdash; here the sub-agent is <em>more</em> restrictive than intended, not less.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/38026" target="_blank">#38026</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="CLAUDE.md & memory" data-issues="34132" id="claudemd-rules-no-enforcement-mechanism">
+            <div class="kl-header">
+                <span class="kl-num">#231</span>
+                <span class="kl-cat">CLAUDE.md &amp; memory</span>
+            </div>
+            <h3>CLAUDE.md and <code>.claude/rules/</code> rules have no enforcement mechanism.</h3>
+            <p>Rules defined in CLAUDE.md, <code>.claude/rules/</code>, and memory files are read by the model but have no runtime enforcement. The model can read these rules and still violate them during execution. Bold text, capitalization, "MANDATORY" labels, and explicit consequence statements do not change this &mdash; they are all prompt content with no binding force. This is the core problem that hook-based enforcement exists to solve.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/34132" target="_blank">#34132</a></div>
         </div>
 
         <footer>
