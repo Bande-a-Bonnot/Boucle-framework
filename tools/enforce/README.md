@@ -555,7 +555,7 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-223 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+225 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
@@ -973,7 +973,7 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **PreToolUse hooks do not fire for teammates spawned via Agent tool.** Hooks defined in both project `.claude/settings.json` and user `~/.claude/settings.json` fire correctly for the main session but [are silently skipped for teammates](https://github.com/anthropics/claude-code/issues/42385) spawned via the Agent tool with `team_name`. Hooks defined in agent frontmatter (`hooks:` field in `.claude/agents/*.md`) also do not fire. Teams relying on PreToolUse hooks for role-based tool restrictions (file path limits, dangerous command blocking) have no enforcement on teammates. See [#42385](https://github.com/anthropics/claude-code/issues/42385).
 
-**PostToolUse hooks do not trigger in the Desktop App.** PostToolUse hooks configured in `.claude/settings.json` load correctly (visible via `/hooks`) but [do not fire](https://github.com/anthropics/claude-code/issues/42336) when tools execute in the Claude Desktop App. No statusMessage is shown and no hook command runs. Affects workflows using PostToolUse for auto-formatting, type-checking, or logging after edits. The same hooks work correctly in the CLI. See [#42336](https://github.com/anthropics/claude-code/issues/42336).
+**Desktop app ignores `env.PATH` from settings.json.** The `env.PATH` setting in `~/.claude/settings.json` is [not applied](https://github.com/anthropics/claude-code/issues/42513) when Claude Code is launched from the macOS desktop app. PATH falls back to `/usr/bin:/bin:/usr/sbin:/sbin`, missing Homebrew and other user-installed binaries. Hook scripts that depend on `jq`, `python3`, or other tools in `/opt/homebrew/bin` will silently fail. Workaround: use absolute paths in hook scripts, or launch Claude Code from a terminal where PATH is correctly set. See [#42513](https://github.com/anthropics/claude-code/issues/42513).
 
 **Auto-compact fires despite DISABLE_AUTO_COMPACT and AUTOCOMPACT_PCT_OVERRIDE settings.** Setting `DISABLE_AUTO_COMPACT=1` and `AUTOCOMPACT_PCT_OVERRIDE=95` in `~/.claude/settings.json` env [does not prevent compaction](https://github.com/anthropics/claude-code/issues/42394). Sessions compact to 6% context on first tool call despite explicit disable. Affects stateful hooks that track session state across compaction boundaries, and autonomous agents that rely on conversation history. Related: [#42375](https://github.com/anthropics/claude-code/issues/42375) (same behavior on Opus 4.6 1M context). See [#42394](https://github.com/anthropics/claude-code/issues/42394).
 
