@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Known Limitations - Claude Code Hooks | Boucle</title>
-    <meta name="description" content="243 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
+    <meta name="description" content="242 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
     <style>
         :root {
             --bg: #0d1117;
@@ -166,7 +166,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">243</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>.</p>
+        <p class="subtitle"><span id="total-count">242</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>.</p>
 
         <div class="controls">
             <input type="text" id="search" placeholder="Search by keyword or issue number (e.g. 32928, bypass, MCP)..." autocomplete="off">
@@ -1533,7 +1533,7 @@
             <p>When Claude Code writes to paths under <code>~/.claude/</code>, a hardcoded sensitive-file check triggers an interactive prompt that <a href="https://github.com/anthropics/claude-code/issues/41615" target="_blank">cannot be suppressed</a> by any user-configurable mechanism: <code>permissions.allow</code> entries, PreToolUse hooks returning <code>permissionDecision: &quot;allow&quot;</code>, <code>bypassPermissions</code> mode, and <code>skipDangerousModePermissionPrompt</code> all fail to override it. This blocks any automated workflow (tmux sessions, CI pipelines, autonomous agent loops) that needs to modify Claude Code configuration files. The prompt is hardcoded in the runtime, not in the permission system, so hooks cannot intercept it. Workaround: use Bash tool commands (<code>echo</code>, <code>cat</code>, <code>jq</code>) to write files directly rather than the Edit/Write tools, since the sensitive-file check only applies to Claude Code&#x27;s built-in file tools. See <a href="https://github.com/anthropics/claude-code/issues/41615" target="_blank">#41615</a>.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/41615" target="_blank">#41615</a></div>
         </div>
-        <div class="kl-entry" data-category="Hook behavior & events" data-issues="36205 41614" id="worktreecreate-hooks-cause-indefinite-session-hang" data-severity="low">
+        <div class="kl-entry" data-category="Hook behavior & events" data-issues="36205 41614 42752" id="worktreecreate-hooks-cause-indefinite-session-hang" data-severity="low">
             <div class="kl-header">
                 <span class="kl-num">#136</span>
                 <span class="kl-cat">Hook behavior & events</span>
@@ -1541,7 +1541,7 @@
             </div>
             <h3>`WorktreeCreate` hooks cause indefinite session hang.</h3>
             <p>Any <code>WorktreeCreate</code> hook configured in project settings causes <a href="https://github.com/anthropics/claude-code/issues/41614" target="_blank">`claude -w` to hang forever</a>. Even a trivial hook (<code>echo ok &lt; /dev/null</code>) causes the session to freeze. The hook executes and returns successfully (verified by file logging), but Claude Code never proceeds past the hook invocation. This is distinct from the <a href="#known-limitations" target="_blank">EnterWorktree ignoring hooks</a> issue (<a href="https://github.com/anthropics/claude-code/issues/36205" target="_blank">#36205</a>) — here the hook fires but the response is never consumed. Remove all <code>WorktreeCreate</code> hooks if you need <code>claude -w</code> to function. See <a href="https://github.com/anthropics/claude-code/issues/41614" target="_blank">#41614</a>.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/36205" target="_blank">#36205</a>, <a href="https://github.com/anthropics/claude-code/issues/41614" target="_blank">#41614</a></div>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/36205" target="_blank">#36205</a>, <a href="https://github.com/anthropics/claude-code/issues/41614" target="_blank">#41614</a>, <a href="https://github.com/anthropics/claude-code/issues/42752" target="_blank">#42752</a></div>
         </div>
         <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="40324 41545 41758" id="plan-mode-auto-approves-all-tools-when-bypass-permissions-is" data-severity="low">
             <div class="kl-header">
@@ -2645,17 +2645,6 @@
             <h3>Worktree isolation breaks in git submodules.</h3>
             <p>Using <code>isolation: &quot;worktree&quot;</code> on the Agent tool inside a git submodule <a href="https://github.com/anthropics/claude-code/issues/42732" target="_blank">creates the worktree in <code>.git/modules/&lt;path&gt;/.claude/worktrees/</code></a> instead of the project&#x27;s own <code>.claude/worktrees/</code>. This places the agent outside the project&#x27;s permission scope, causing <code>bypassPermissions</code> to be silently downgraded and triggering unexpected permission prompts.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42732" target="_blank">#42732</a></div>
-        </div>
-
-        <div class="kl-entry" data-category="Hook execution" data-issues="42752" id="worktreecreate-hook-hangs-worktree-flag" data-severity="high">
-            <div class="kl-header">
-                <span class="kl-num">#243</span>
-                <span class="kl-cat">Hook execution</span>
-                <span class="kl-sev" style="font-size:0.7rem;background:#ef4444;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
-            </div>
-            <h3>WorktreeCreate hook hangs <code>--worktree</code> flag indefinitely.</h3>
-            <p>Configuring a <code>WorktreeCreate</code> hook in settings causes <code>claude --worktree</code> to <a href="https://github.com/anthropics/claude-code/issues/42752" target="_blank">hang indefinitely</a> before the hook script is ever executed. The hang occurs during worktree setup, not during hook execution. Removing the hook makes <code>--worktree</code> work normally. Manual worktree creation followed by running <code>claude</code> inside it works as a workaround. Affects v2.1.90 on macOS.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42752" target="_blank">#42752</a></div>
         </div>
 
         <footer>
