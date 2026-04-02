@@ -265,19 +265,25 @@ for hook in all_hooks:
             issues.append("read-once CLI not found (run: install.sh upgrade)")
 
     # Check settings.json registration
+    expected_matchers = {"read-once": "Read", "worktree-guard": "ExitWorktree"}
     if settings is not None:
         event = "PostToolUse" if hook == "session-log" else "PreToolUse"
         found = False
+        found_entry = None
         if "hooks" in settings and event in settings["hooks"]:
             for entry in settings["hooks"][event]:
                 for h in entry.get("hooks", []):
                     if hook in h.get("command", ""):
                         found = True
+                        found_entry = entry
                         break
                 if found:
                     break
         if not found:
             issues.append(f"not registered in settings.json (run: install.sh {hook})")
+        elif hook in expected_matchers and found_entry is not None:
+            if found_entry.get("matcher") != expected_matchers[hook]:
+                issues.append(f"missing matcher (fires on ALL tools instead of just {expected_matchers[hook]}; run: install.sh upgrade)")
 
     if not issues:
         desc = hook_descs.get(hook, "")
@@ -411,12 +417,18 @@ if [ $# -gt 0 ] && [ "$1" = "verify" ]; then
         fi
         ;;
       branch-guard)
-        result=$(echo '{"tool_name":"Bash","tool_input":{"command":"git commit -m test"}}' | BRANCH_GUARD_PROTECTED="main" GIT_BRANCH="main" "$hook_path" 2>/dev/null || true)
+        # branch-guard uses git rev-parse to detect the current branch, so we
+        # can only test it meaningfully when actually on a protected branch
+        current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+        result=$(echo '{"tool_name":"Bash","tool_input":{"command":"git commit -m test"}}' | BRANCH_GUARD_PROTECTED="main,master" "$hook_path" 2>/dev/null || true)
         if echo "$result" | grep -q '"deny"'; then
-          echo -e "  ${GREEN}OK${RESET}  ${hook}  blocked commit on main"
+          echo -e "  ${GREEN}OK${RESET}  ${hook}  blocked commit on ${current_branch}"
           v_ok=$((v_ok + 1))
+        elif [ "$current_branch" = "main" ] || [ "$current_branch" = "master" ]; then
+          echo -e "  ${YELLOW}WARN${RESET}  ${hook}  did not block commit on ${current_branch}"
+          v_fail=$((v_fail + 1))
         else
-          echo -e "  ${DIM}SKIP${RESET}  ${hook}  needs git repo context"
+          echo -e "  ${DIM}SKIP${RESET}  ${hook}  current branch '${current_branch}' is not protected (test requires main/master)"
           v_skip=$((v_skip + 1))
         fi
         ;;
@@ -534,9 +546,58 @@ if [ $# -gt 0 ] && [ "$1" = "upgrade" ]; then
     fi
   done
 
-  if [ "$upgraded" -gt 0 ]; then
+  # Fix missing matchers in settings.json (read-once should only fire on Read)
+  matcher_fixes=0
+  if [ -f "$SETTINGS" ] && command -v python3 >/dev/null 2>&1; then
+    matcher_fixes=$(python3 - "$SETTINGS" << 'PYEOF'
+import json, sys, os
+sf = sys.argv[1]
+try:
+    with open(sf) as f:
+        raw = f.read()
+    # Strip JSONC comments
+    lines = []
+    for line in raw.split('\n'):
+        stripped = line.lstrip()
+        if stripped.startswith('//'):
+            continue
+        lines.append(line)
+    settings = json.loads('\n'.join(lines))
+except:
+    print("0"); sys.exit(0)
+fixes = 0
+matchers = {"read-once": "Read", "worktree-guard": "ExitWorktree"}
+for event in settings.get("hooks", {}):
+    for entry in settings["hooks"][event]:
+        if not isinstance(entry, dict):
+            continue
+        # Check nested hooks format
+        cmd = ""
+        for h in entry.get("hooks", []):
+            c = h.get("command", "")
+            if c: cmd = c; break
+        if not cmd:
+            cmd = entry.get("command", "")
+        for hook_name, expected_matcher in matchers.items():
+            if hook_name in cmd and entry.get("matcher") != expected_matcher:
+                entry["matcher"] = expected_matcher
+                fixes += 1
+if fixes > 0:
+    with open(sf, 'w') as f:
+        json.dump(settings, f, indent=2)
+        f.write('\n')
+print(fixes)
+PYEOF
+    )
+    if [ "$matcher_fixes" -gt 0 ] 2>/dev/null; then
+      echo -e "  ${GREEN}Fixed${RESET} $matcher_fixes missing matcher(s) in settings.json"
+      echo "    (read-once now only fires on Read tool calls, not every tool call)"
+    fi
+  fi
+
+  if [ "$upgraded" -gt 0 ] || [ "${matcher_fixes:-0}" -gt 0 ] 2>/dev/null; then
     echo ""
-    echo -e "${GREEN}${BOLD}Done!${RESET} Updated $upgraded hook(s). Changes take effect in your next Claude Code session."
+    echo -e "${GREEN}${BOLD}Done!${RESET} Changes take effect in your next Claude Code session."
   else
     echo ""
     echo "All hooks are up to date."
@@ -1114,9 +1175,11 @@ for hook in hooks_to_add:
     event = "PostToolUse" if hook == "session-log" else "PreToolUse"
     command = os.path.expanduser("~/.claude/" + hook + "/hook.sh")
     entry = {"hooks": [{"type": "command", "command": command, "timeout": 5000}]}
-    # worktree-guard uses ExitWorktree matcher for efficiency
+    # matchers limit which tool calls trigger the hook, improving performance
     if hook == "worktree-guard":
         entry["matcher"] = "ExitWorktree"
+    elif hook == "read-once":
+        entry["matcher"] = "Read"
 
     if event not in settings["hooks"]:
         settings["hooks"][event] = []
