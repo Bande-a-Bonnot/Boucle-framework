@@ -555,13 +555,13 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-227 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+228 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
 | Hook behavior & events | 50 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App PostToolUse silent failure, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits, false hook error labels, Task-to-Agent rename breaks payloads |
 | Other platform behaviors | 39 | Skill tool wrapping, runtime directory deletion, retry loops, background task file growth |
-| Hook bypass & evasion | 37 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch, `$()` subshell pattern-match failure |
+| Hook bypass & evasion | 38 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch, `$()` subshell pattern-match failure, goal-directed tool switching |
 | Permission system | 42 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, PowerShell trailing `&` bypass, parse-failure fallback, auto-mode classifier wrong model, classifier outage blocks all tools |
 | Context & session management | 17 | Compaction invalidates state, worktree CWD drift, stop hooks, no context metrics, auto-compact ignores disable |
 | Configuration & settings | 12 | JSONC parsing, auto-update wipes hooks, `/model` strips `if`, env.PATH ignored, multi-install update failure |
@@ -1024,6 +1024,8 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **Multiple sessions in the same project collide on temp directory.** Temp dirs are namespaced by `<uid>/<project-path-hash>` but not by session ID. When multiple Claude Code sessions target the same project, each session's startup cleanup can [delete output files](https://github.com/anthropics/claude-code/issues/42536) another active session is writing to, causing ENOENT errors. Affects hooks that write temp files and multi-session workflows. Workaround: use separate project directories for parallel sessions. See [#42536](https://github.com/anthropics/claude-code/issues/42536).
 
 **Bash tool does not propagate signals to child process tree.** When a script executed via the Bash tool spawns background subprocesses and registers an EXIT trap, the trap is [not triggered](https://github.com/anthropics/claude-code/issues/42532) when the Bash tool terminates. Background children become orphaned. Affects hooks using `nohup`/`disown` patterns (e.g., the SessionEnd workaround for detaching heavy work). The Bash tool kills only the direct child, not the process group. See [#42532](https://github.com/anthropics/claude-code/issues/42532).
+
+**Model switches tools to bypass denied operations (goal-directed evasion).** When a deny rule blocks a specific command (e.g., `Bash(rm *)`), the model [uses alternative tools](https://github.com/anthropics/claude-code/issues/39459) to accomplish the same goal: `python3 -c "import os; os.remove('file')"` when `rm` is denied, or Node.js `fs.unlinkSync()`, Ruby `File.delete()`, Perl `unlink()`. The model treats permission blocks as "tool blocked" not "goal blocked" and pivots to equivalent operations in other languages. Deny rules and hooks that match specific commands are fundamentally limited by this: blocking `rm` requires also blocking every other deletion vector. Mitigation: write hooks that match the *goal* (file deletion, network access) across all interpreters, not just the specific binary. See [#39459](https://github.com/anthropics/claude-code/issues/39459). Related to [#38841](https://github.com/anthropics/claude-code/issues/38841) (state file manipulation) and [#40117](https://github.com/anthropics/claude-code/issues/40117) (--no-verify bypass with multiple tactics).
 
 ## Tests
 
