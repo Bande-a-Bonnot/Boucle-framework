@@ -119,7 +119,7 @@ Saves ~2000 tokens per prevented re-read. Includes [diff mode](tools/read-once/#
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/file-guard/install.sh | bash
 ```
 
-Define protected files in `.file-guard` (one pattern per line). Two modes: **write-protect** (default) blocks writes, edits, and destructive bash commands. **`[deny]`** blocks all access including Read, Grep, and Glob, useful for large codegen directories where Claude should use an MCP server instead of reading files directly. Resolves symlinks to prevent [bypass via symbolic links](https://github.com/anthropics/claude-code/security/advisories/GHSA-4q92-rfm6-2cqx). Handles absolute paths (v2.1.88+ compatibility). ~140 tests (bash + PowerShell).
+Define protected files in `.file-guard` (one pattern per line). Two modes: **write-protect** (default) blocks writes, edits, and destructive bash commands. **`[deny]`** blocks all access including Read, Grep, and Glob, useful for large codegen directories where Claude should use an MCP server instead of reading files directly. Resolves symlinks to prevent [bypass via symbolic links](https://github.com/anthropics/claude-code/security/advisories/GHSA-4q92-rfm6-2cqx). Handles absolute paths (v2.1.89+ compatibility). ~140 tests (bash + PowerShell).
 
 ### [git-safe](tools/git-safe/) — Prevent destructive git operations
 
@@ -550,7 +550,7 @@ boucle --version                 # Show version
 
 | Version | Issue |
 |---|---|
-| v2.1.88 | [Pulled from npm](https://github.com/anthropics/claude-code/issues/41497) — custom commands broken, systemMessage display broken, source map leak |
+| v2.1.89 | [Pulled from npm](https://github.com/anthropics/claude-code/issues/41497) — custom commands broken, systemMessage display broken, source map leak |
 | v2.1.81-84 | [Permission bypass resets mid-session](https://github.com/anthropics/claude-code/issues/37745) when PreToolUse hooks are installed |
 | < v2.1.50 | No `hookSpecificOutput` format support (deprecated `decision: "block"` still works but should be migrated) |
 
@@ -580,9 +580,9 @@ Run `claude --version` to check. Run `safety-check` with `--verify` to confirm h
 
 **Permissions desync after editing settings.local.json**: If Claude's Edit tool modifies `.claude/settings.local.json` during a session, the in-memory permission state [desyncs from the file on disk](https://github.com/anthropics/claude-code/issues/41259). Allow rules stop working and the user is repeatedly prompted for commands that are already permitted. The file on disk is correct; the problem is the in-memory cache. Workaround: let Claude Code manage permission files through its own prompt mechanism, or restart the session after manual edits.
 
-**New in v2.1.88: PermissionDenied hook event**: A new hook event fires after auto mode classifier denials. Hooks can return `{"retry": true}` to tell the model it can retry the denied operation. This is [not yet in the official docs](https://github.com/anthropics/claude-code/issues/41261). Also in v2.1.88: hooks `if` conditions now [match compound Bash commands](https://github.com/anthropics/claude-code/issues/41262) (`ls && git push` matches `Bash(git *)`) and commands with env-var prefixes (`FOO=bar git push`).
+**New in v2.1.89: PermissionDenied hook event**: A new hook event fires after auto mode classifier denials. Hooks can return `{"retry": true}` to tell the model it can retry the denied operation. This is [not yet in the official docs](https://github.com/anthropics/claude-code/issues/41261). Also in v2.1.89: hooks `if` conditions now [match compound Bash commands](https://github.com/anthropics/claude-code/issues/41262) (`ls && git push` matches `Bash(git *)`) and commands with env-var prefixes (`FOO=bar git push`).
 
-**SessionStart systemMessage not displayed (v2.1.88)**: The `systemMessage` field returned by SessionStart hooks is [no longer rendered in the terminal](https://github.com/anthropics/claude-code/issues/41285). The hook runs and `additionalContext` is still injected into model context, but the visual output that previously appeared (e.g. "SessionStart:startup says: ...") is silently missing. If you rely on `systemMessage` for operator notifications or session identification, the output will not be visible. Related: [#9090](https://github.com/anthropics/claude-code/issues/9090), [#15344](https://github.com/anthropics/claude-code/issues/15344).
+**SessionStart systemMessage not displayed (v2.1.89)**: The `systemMessage` field returned by SessionStart hooks is [no longer rendered in the terminal](https://github.com/anthropics/claude-code/issues/41285). The hook runs and `additionalContext` is still injected into model context, but the visual output that previously appeared (e.g. "SessionStart:startup says: ...") is silently missing. If you rely on `systemMessage` for operator notifications or session identification, the output will not be visible. Related: [#9090](https://github.com/anthropics/claude-code/issues/9090), [#15344](https://github.com/anthropics/claude-code/issues/15344).
 
 **Hooks fail on first session in a new project**: On the very first session in a project directory, SessionStart and UserPromptSubmit hooks fire [before the project directory exists](https://github.com/anthropics/claude-code/issues/41310) (`~/.claude/projects/<encoded-path>/`). Any hook that derives file paths from `transcript_path` and tries to write there will fail. Workaround: add `mkdir -p` for transcript_path-derived paths before writing.
 
@@ -598,7 +598,7 @@ Run `claude --version` to check. Run `safety-check` with `--verify` to confirm h
 
 **Bundled ripgrep missing execute permission (Linux)**: The bundled `rg` binary [can lose its execute permission](https://github.com/anthropics/claude-code/issues/41463) on Linux, silently breaking all user-defined slash commands in `~/.claude/commands/`. Fix: `chmod +x` the bundled binary.
 
-**v2.1.88 pulled from npm**: This version was [pulled due to multiple regressions](https://github.com/anthropics/claude-code/issues/41497): custom commands in `.claude/commands/` are not discovered, `SessionStart` `systemMessage` display is broken, and the `cli.js.map` file was accidentally shipped. If you are on v2.1.88, downgrade to v2.1.87 or wait for the next release.
+**v2.1.89 pulled from npm**: This version was [pulled due to multiple regressions](https://github.com/anthropics/claude-code/issues/41497): custom commands in `.claude/commands/` are not discovered, `SessionStart` `systemMessage` display is broken, and the `cli.js.map` file was accidentally shipped. If you are on v2.1.89, downgrade to v2.1.87 or wait for the next release.
 
 **Non-interactive sessions hang on usage limit**: In headless, `--print`, or remote-control mode, hitting a usage limit [shows a confirmation prompt that cannot be answered](https://github.com/anthropics/claude-code/issues/41502) because there is no stdin. The session hangs permanently. There is no programmatic workaround ([#41503](https://github.com/anthropics/claude-code/issues/41503)). If you run Claude Code in CI, cron, or autonomous loops, set session time limits and monitor for stuck processes.
 
@@ -647,7 +647,7 @@ bash tools/worktree-guard/test.sh
 
 **v0.11.0** — 195 Rust tests + ~1900 hook tests (bash + PowerShell). Zero clippy warnings. CI on Ubuntu + macOS + Windows. Docker support.
 
-New in v0.11.0: All hooks migrated to `hookSpecificOutput` format (27 files). enforce-hooks `--template` command and `require-prior-read-file` condition. safety-check: 15+ new warnings (v2.1.88 regressions, plugin scope leak, plan-mode+bypass overlap, MCP silent rejection). bash-guard: pip sandbox escape detection. See [CHANGELOG](CHANGELOG.md) for details.
+New in v0.11.0: All hooks migrated to `hookSpecificOutput` format (27 files). enforce-hooks `--template` command and `require-prior-read-file` condition. safety-check: 15+ new warnings (v2.1.89 regressions, plugin scope leak, plan-mode+bypass overlap, MCP silent rejection). bash-guard: pip sandbox escape detection. See [CHANGELOG](CHANGELOG.md) for details.
 
 19 stars, 4 external contributors, 2 forks.
 

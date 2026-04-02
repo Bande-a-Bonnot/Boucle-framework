@@ -660,9 +660,9 @@ assert_blocked "Direct write to .env still blocked" \
 
 cd "$TMPDIR"
 
-# --- Absolute paths (v2.1.88+: file_path now absolute in PreToolUse) ---
+# --- Absolute paths (v2.1.89+: file_path now absolute in PreToolUse) ---
 echo ""
-echo "--- Absolute path resolution (v2.1.88 compat) ---"
+echo "--- Absolute path resolution (v2.1.89 compat) ---"
 
 # Create fresh test dir for absolute path tests
 ABSTEST=$(mktemp -d)
