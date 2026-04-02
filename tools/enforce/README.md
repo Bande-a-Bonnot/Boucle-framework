@@ -555,19 +555,15 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-234 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+236 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
-| Hook behavior & events | 51 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App PostToolUse silent failure, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits, false hook error labels, Task-to-Agent rename breaks payloads, allowManagedHooksOnly blocks plugin hooks |
-| Other platform behaviors | 39 | Skill tool wrapping, runtime directory deletion, retry loops, background task file growth |
-| Hook bypass & evasion | 39 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch, `$()` subshell pattern-match failure, goal-directed tool switching, apiKeyHelper arbitrary code execution |
-| Permission system | 42 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, PowerShell trailing `&` bypass, parse-failure fallback, auto-mode classifier wrong model, classifier outage blocks all tools |
-| Context & session management | 17 | Compaction invalidates state, worktree CWD drift, stop hooks, no context metrics, auto-compact ignores disable |
-| Configuration & settings | 12 | JSONC parsing, auto-update wipes hooks, `/model` strips `if`, env.PATH ignored, multi-install update failure |
-| Subagent & spawned agents | 13 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, plugin tools:all silent block, no Stop hook, teammate hooks bypass, team spawn 255-byte split |
-| Windows & cross-platform | 10 | `/usr/bin/bash` routing, UNC paths, case-sensitive matching, subagent 2>&1 crash, full re-render on tool calls |
-| Security | 2 | `SendMessage` content injection, `find` command injection (CVE-2026-24887) |
+| Hook behavior & events | 103 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits, allowManagedHooksOnly blocks plugin hooks, OAuth token refresh collision, no Team lifecycle hooks, auto-compact ignores disable, env.PATH ignored |
+| Hook bypass & evasion | 84 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch, `$()` subshell pattern-match failure, goal-directed tool switching, apiKeyHelper arbitrary code execution, `find` command injection (CVE-2026-24887) |
+| Permission system | 42 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, PowerShell trailing `&` bypass, parse-failure fallback, auto-mode classifier wrong model, bypassPermissions multiline gap |
+| Subagent & spawned agents | 6 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, teammate hooks bypass, subagent file creation bypass |
+| CLAUDE.md & memory | 1 | CLAUDE.md rules are advisory-only with no enforcement mechanism |
 
 ---
 
@@ -1036,6 +1032,10 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **`apiKeyHelper` in project-level settings enables arbitrary code execution on open.** The `apiKeyHelper` field in `.claude/settings.json` is executed as a shell command via `execa` with `shell: true`. Since this file can be committed to a repository, [cloning and opening Claude Code anywhere in the project runs the command without user consent](https://github.com/anthropics/claude-code/issues/42593). In CI/CD pipelines using `claude -p`, the trust dialog is bypassed entirely, making this a supply-chain attack vector. Proposed fix: restrict `apiKeyHelper` to user-level config only, or require explicit confirmation before execution. See [#42593](https://github.com/anthropics/claude-code/issues/42593).
 
 **`allowManagedHooksOnly` blocks plugin hooks from trusted marketplaces.** Organizations using `allowManagedHooksOnly: true` block all non-managed hooks, including those shipped by vetted plugins from known marketplaces. There is [no granular setting](https://github.com/anthropics/claude-code/issues/42581) to permit plugin-supplied hooks while still restricting user-defined ones. This forces orgs to choose between full hook lockdown and allowing all hooks, with no middle ground for plugin trust. See [#42581](https://github.com/anthropics/claude-code/issues/42581).
+
+**Plugin hook that refreshes OAuth tokens silently breaks main session authentication.** When a plugin hook reads OAuth credentials from the macOS Keychain and performs a token refresh (e.g. `POST /v1/oauth/token`), it can invalidate the access token that Claude Code is currently using. The main session then fails authentication on its next API call with no indication that a hook caused the failure. Hooks and the main session share credential state without coordination. See [#42603](https://github.com/anthropics/claude-code/issues/42603).
+
+**No hooks fire on Agent Team creation or deletion.** There are no `TeamCreated` or `TeamDeleted` hook events. Platforms that orchestrate Claude Code Agent Teams cannot detect when a team is created or deleted to synchronize state with external systems (dashboards, billing, audit logs). The only workaround is polling the Teams API. See [#42597](https://github.com/anthropics/claude-code/issues/42597).
 
 ## Tests
 
