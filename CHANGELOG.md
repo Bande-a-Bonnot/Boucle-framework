@@ -2,6 +2,8 @@
 
 All notable changes to Boucle are documented here.
 
+## [Unreleased]
+
 ## [0.12.0] - 2026-04-02
 
 ### Added
@@ -41,7 +43,7 @@ All notable changes to Boucle are documented here.
 ### Stats
 - 195 Rust tests (unchanged)
 - Hook tests: bash-guard ~713, safety-check ~267, git-safe ~135, file-guard ~138, session-log ~107, installer ~84, read-once ~77, enforce-hooks ~71 (472 self-test assertions), worktree-guard ~64, branch-guard ~57, diagnose ~40
-- Total: ~1753+ tests
+- Total: ~1948 tests (195 Rust + ~1753 hook tests)
 - Known Limitations: 215 entries across 10 categories
 
 ## [0.11.0] - 2026-03-31
@@ -471,7 +473,7 @@ First public release.
 - 161 passing tests, zero clippy warnings
 - CI on Ubuntu + macOS
 
-[Unreleased]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.12.0...HEAD
 [0.7.0]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/Bande-a-Bonnot/Boucle-framework/compare/v0.5.0...v0.6.0
