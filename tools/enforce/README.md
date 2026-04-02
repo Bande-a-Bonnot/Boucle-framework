@@ -555,17 +555,17 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-201 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+203 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
-| Hook behavior & events | 43 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App silent failure, hooks stop after 2.5h |
+| Hook behavior & events | 44 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App PostToolUse silent failure, hooks stop after 2.5h |
 | Other platform behaviors | 38 | Skill tool wrapping, runtime directory deletion, retry loops |
 | Hook bypass & evasion | 36 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch |
 | Permission system | 35 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md |
 | Context & session management | 15 | Compaction invalidates state, worktree CWD drift, stop hooks, no context metrics |
 | Configuration & settings | 12 | JSONC parsing, auto-update wipes hooks, `/model` strips `if`, env.PATH ignored, multi-install update failure |
-| Subagent & spawned agents | 11 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, plugin tools:all silent block, no Stop hook |
+| Subagent & spawned agents | 12 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, plugin tools:all silent block, no Stop hook, teammate hooks bypass |
 | Windows & cross-platform | 10 | `/usr/bin/bash` routing, UNC paths, case-sensitive matching, subagent 2>&1 crash, full re-render on tool calls |
 | Security | 1 | `SendMessage` content injection |
 
@@ -970,6 +970,10 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **Hook runner fails with "Permission denied" after plugin update.** The plugin marketplace installer does not set execute permissions on `.sh` hook scripts. Auto-updates install all hook files as `-rw-rw-r--` (no `+x` bit), causing hooks to [fail with "Permission denied"](https://github.com/anthropics/claude-code/issues/39378) on every session. Affects marketplace plugins that use shell script hooks. Fix: `chmod +x` the affected scripts. The hook runner executes scripts directly (`./hook.sh`) instead of via `/bin/sh hook.sh`, so any permission loss from updates, cloud sync, or filesystem quirks causes the same failure. See [#39378](https://github.com/anthropics/claude-code/issues/39378).
 
 **Deny rules do not protect CLAUDE.md from being overwritten.** Despite explicit deny rules for CLAUDE.md in `~/.claude/settings.json`, Claude Code [still modifies CLAUDE.md](https://github.com/anthropics/claude-code/issues/13785), especially during commits. When overwritten, the model loses its project context and repeats mistakes the rules were meant to prevent. This is an instance of deny rules being advisory rather than enforced ([#30519](https://github.com/anthropics/claude-code/issues/30519)). Workaround: use file-guard to protect CLAUDE.md at the hook level, or set the file to read-only with OS permissions. See [#13785](https://github.com/anthropics/claude-code/issues/13785).
+
+**PreToolUse hooks do not fire for teammates spawned via Agent tool.** Hooks defined in both project `.claude/settings.json` and user `~/.claude/settings.json` fire correctly for the main session but [are silently skipped for teammates](https://github.com/anthropics/claude-code/issues/42385) spawned via the Agent tool with `team_name`. Hooks defined in agent frontmatter (`hooks:` field in `.claude/agents/*.md`) also do not fire. Teams relying on PreToolUse hooks for role-based tool restrictions (file path limits, dangerous command blocking) have no enforcement on teammates. See [#42385](https://github.com/anthropics/claude-code/issues/42385).
+
+**PostToolUse hooks do not trigger in the Desktop App.** PostToolUse hooks configured in `.claude/settings.json` load correctly (visible via `/hooks`) but [do not fire](https://github.com/anthropics/claude-code/issues/42336) when tools execute in the Claude Desktop App. No statusMessage is shown and no hook command runs. Affects workflows using PostToolUse for auto-formatting, type-checking, or logging after edits. The same hooks work correctly in the CLI. See [#42336](https://github.com/anthropics/claude-code/issues/42336).
 
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
