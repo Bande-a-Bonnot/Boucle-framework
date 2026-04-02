@@ -555,7 +555,7 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-196 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+199 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
@@ -563,9 +563,9 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 | Permission system | 31 | MCP deny ignored, path matching, self-authorization race, scope hierarchy |
 | Hook behavior & events | 38 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App silent failure |
 | Context & session management | 21 | Compaction invalidates state, worktree CWD drift, stop hooks, no context metrics |
-| Subagent & spawned agents | 11 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, plugin tools:all silent block |
-| Windows & cross-platform | 8 | `/usr/bin/bash` routing, UNC paths, case-sensitive matching, subagent 2>&1 crash |
-| Configuration & settings | 9 | JSONC parsing, auto-update wipes hooks, `/model` strips `if`, env.PATH ignored |
+| Subagent & spawned agents | 12 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, plugin tools:all silent block, banner re-render |
+| Windows & cross-platform | 9 | `/usr/bin/bash` routing, UNC paths, case-sensitive matching, subagent 2>&1 crash, full re-render on tool calls |
+| Configuration & settings | 10 | JSONC parsing, auto-update wipes hooks, `/model` strips `if`, env.PATH ignored, multi-install update failure |
 | Security | 1 | `SendMessage` content injection |
 | Other platform behaviors | 38 | Skill tool wrapping, runtime directory deletion, retry loops |
 
@@ -952,6 +952,12 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **Subagent Bash commands with `2>&1` redirect crash on Windows.** When a custom subagent (defined in `.claude/agents/`) runs a Bash command containing `2>&1`, the Bash tool [crashes with "Tool result missing due to internal error"](https://github.com/anthropics/claude-code/issues/42324) inside the agent, surfacing as "Internal tools error during invocation." No output is returned, no approval prompt appears. This is on Windows/Git Bash. Workaround: prohibit `2>&1` in agent definitions and use separate stdout/stderr handling. See [#42324](https://github.com/anthropics/claude-code/issues/42324).
 
 **Plugin-defined agent types with `tools: all` silently block Write/Edit.** When a plugin defines an agent type with `tools: all` in its frontmatter, the sub-agent's Write/Edit tool calls are [silently blocked](https://github.com/anthropics/claude-code/issues/42333). The agent reports success, but nothing is written to disk. No error is returned. Using `subagent_type: "general-purpose"` with the same prompt works correctly. Hook-based enforcement cannot catch these tool calls because they are swallowed before reaching the hook layer. See [#42333](https://github.com/anthropics/claude-code/issues/42333).
+
+**Subagent return re-renders startup banner, indistinguishable from session restart.** When a subagent (Explore, Plan, or custom) spawned via the Agent tool completes and returns to the main agent, the terminal [re-renders the full startup banner](https://github.com/anthropics/claude-code/issues/42355) (robot icon, version info, working directory) with "Philosophising..." or "Galloping..." text. This is visually identical to a crash recovery or session restart. For hook-based workflows that monitor session state, this false restart signal can trigger unnecessary re-initialization. Hooks cannot distinguish a subagent return from a real restart because both produce the same visual output. See [#42355](https://github.com/anthropics/claude-code/issues/42355).
+
+**Windows: full conversation re-renders on each tool call.** On Windows 11, Claude Code's TUI [re-renders the entire visible conversation history](https://github.com/anthropics/claude-code/issues/42343) every time a tool call completes. Response blocks appear multiple times on screen, making output hard to read. For hook-intensive workflows with many sequential tool calls (e.g., enforce-hooks generating multiple files), this multiplies the visual noise. See [#42343](https://github.com/anthropics/claude-code/issues/42343).
+
+**Multiple installations detected breaks `claude update`.** When both an npm-global and native installation of Claude Code coexist, [`claude update` fails](https://github.com/anthropics/claude-code/issues/42357) with "multiple installations found, cannot determine installation type." This can happen when users install via `npm install -g` and later use the native installer (or vice versa). Affects hook users who need to stay on specific versions for hook compatibility. Workaround: remove one installation method before updating. See [#42357](https://github.com/anthropics/claude-code/issues/42357).
 
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
