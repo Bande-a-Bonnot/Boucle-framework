@@ -134,13 +134,43 @@ normalize_path() {
 
   # Make absolute path relative to project root
   if [[ "$p" == /* ]]; then
-    local root
+    local root stripped
     root=$(pwd -P)
-    p="${p#"$root"/}"
-    # Fallback: also try logical pwd (covers non-symlinked paths)
-    if [[ "$p" == /* ]]; then
+    stripped="${p#"$root"/}"
+    if [[ "$stripped" != /* ]]; then
+      p="$stripped"
+    else
+      # Fallback: also try logical pwd (covers non-symlinked paths)
       root=$(pwd)
-      p="${p#"$root"/}"
+      stripped="${p#"$root"/}"
+      if [[ "$stripped" != /* ]]; then
+        p="$stripped"
+      else
+        # Resolve the input path to its physical form.
+        # Handles macOS symlinks: /var->/private/var, /tmp->/private/tmp
+        # where input is /var/... but pwd -P returns /private/var/...
+        local dir_part base_part walk_dir walk_base resolved_dir
+        dir_part=$(dirname "$p")
+        base_part=$(basename "$p")
+        walk_dir="$dir_part"
+        walk_base="$base_part"
+        # Walk up to find nearest existing ancestor directory
+        while [ ! -d "$walk_dir" ] && [ "$walk_dir" != "/" ]; do
+          walk_base="$(basename "$walk_dir")/$walk_base"
+          walk_dir="$(dirname "$walk_dir")"
+        done
+        if [ -d "$walk_dir" ]; then
+          resolved_dir=$(cd "$walk_dir" 2>/dev/null && pwd -P) || resolved_dir=""
+          if [ -n "$resolved_dir" ]; then
+            root=$(pwd -P)
+            stripped="${resolved_dir}/${walk_base}"
+            stripped="${stripped#"$root"/}"
+            if [[ "$stripped" != /* ]]; then
+              p="$stripped"
+            fi
+          fi
+        fi
+      fi
     fi
     # Still absolute = outside project root, return as-is
     if [[ "$p" == /* ]]; then

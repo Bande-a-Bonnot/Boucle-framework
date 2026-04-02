@@ -660,6 +660,68 @@ assert_blocked "Direct write to .env still blocked" \
 
 cd "$TMPDIR"
 
+# --- Absolute paths (v2.1.88+: file_path now absolute in PreToolUse) ---
+echo ""
+echo "--- Absolute path resolution (v2.1.88 compat) ---"
+
+# Create fresh test dir for absolute path tests
+ABSTEST=$(mktemp -d)
+cat > "$ABSTEST/.file-guard" << 'ABSEOF'
+.env
+secrets/
+*.pem
+
+[deny]
+codegen/
+private.key
+ABSEOF
+
+# Run tests from ABSTEST so pwd matches
+cd "$ABSTEST"
+export FILE_GUARD_CONFIG="$ABSTEST/.file-guard"
+
+# Write-protect patterns with absolute paths
+assert_blocked "Write .env (absolute path)" \
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$ABSTEST/.env"'","content":"secret"}}'
+
+assert_blocked "Write to secrets/ dir (absolute path)" \
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$ABSTEST/secrets/key.txt"'","content":"s"}}'
+
+assert_blocked "Write .pem glob (absolute path)" \
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$ABSTEST/cert.pem"'","content":"c"}}'
+
+assert_blocked "Edit .env (absolute path)" \
+  '{"tool_name":"Edit","tool_input":{"file_path":"'"$ABSTEST/.env"'","old_string":"a","new_string":"b"}}'
+
+assert_allowed "Write safe.txt (absolute path)" \
+  '{"tool_name":"Write","tool_input":{"file_path":"'"$ABSTEST/safe.txt"'","content":"ok"}}'
+
+# Deny patterns with absolute paths
+mkdir -p "$ABSTEST/codegen"
+
+assert_blocked "Read codegen/ file (absolute, deny)" \
+  '{"tool_name":"Read","tool_input":{"file_path":"'"$ABSTEST/codegen/gen.js"'"}}'
+
+assert_blocked "Read private.key (absolute, deny)" \
+  '{"tool_name":"Read","tool_input":{"file_path":"'"$ABSTEST/private.key"'"}}'
+
+assert_allowed "Read .env (absolute, write-protect allows read)" \
+  '{"tool_name":"Read","tool_input":{"file_path":"'"$ABSTEST/.env"'"}}'
+
+assert_blocked "Grep codegen/ (absolute, deny)" \
+  '{"tool_name":"Grep","tool_input":{"pattern":"foo","path":"'"$ABSTEST/codegen/"'"}}'
+
+assert_blocked "Glob codegen/ (absolute, deny)" \
+  '{"tool_name":"Glob","tool_input":{"pattern":"*.js","path":"'"$ABSTEST/codegen/"'"}}'
+
+# Outside project root should not match relative patterns
+assert_allowed "Write /etc/hosts (outside project)" \
+  '{"tool_name":"Write","tool_input":{"file_path":"/etc/hosts","content":"x"}}'
+
+rm -rf "$ABSTEST"
+cd "$TMPDIR"
+export FILE_GUARD_CONFIG="$CONFIG"
+
 # --- Summary ---
 echo ""
 echo "=== Results: $PASS/$TOTAL passed, $FAIL failed ==="
