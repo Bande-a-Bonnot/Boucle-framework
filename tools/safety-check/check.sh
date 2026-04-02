@@ -638,7 +638,10 @@ fi
 # Model self-execution after long sessions (claude-code#41307)
 # In long sessions, after task-notification, the model can hallucinate 'Human:' text and execute it.
 # This is a model-level issue — hooks cannot distinguish real vs hallucinated user requests.
-WARNINGS+=("In long sessions, the model can hallucinate 'Human:' prefixed text after task-notification delivery and then execute it as if it were a real user request, causing unauthorized tool calls. Hooks cannot distinguish these from real user requests because the tool calls themselves are genuine — only the trigger is hallucinated. Mitigation: use session time limits, avoid very long unattended sessions. (see claude-code#41307)")
+# Only warn when bypass mode is active (indicates unattended/autonomous sessions where this is a real risk).
+if [ "${BYPASS_MODE:-}" = "bypassPermissions" ]; then
+    WARNINGS+=("In long sessions, the model can hallucinate 'Human:' prefixed text after task-notification delivery and then execute it as if it were a real user request, causing unauthorized tool calls. Hooks cannot distinguish these from real user requests because the tool calls themselves are genuine — only the trigger is hallucinated. Mitigation: use session time limits, avoid very long unattended sessions. (see claude-code#41307)")
+fi
 
 # PreToolUse hooks on EnterPlanMode — hook output deprioritized (claude-code#41051)
 _check_planmode_matcher() {
@@ -1182,7 +1185,10 @@ PYEOF_SETTINGS_INTEGRITY
 fi
 
 # Background agent control: #41461
-WARNINGS+=("Background agents spawned via the Agent tool cannot be reliably stopped by the user. In one reported case, 14 parallel agents wrote to the same file and consumed ~1.4M tokens (\$55-106) before the session could be terminated. If you use Agent tool with run_in_background, monitor token usage closely. There is no built-in kill mechanism for spawned agents. (see claude-code#41461)")
+# Only warn when bypass mode is active (automated sessions are more likely to spawn background agents unsupervised).
+if [ "${BYPASS_MODE:-}" = "bypassPermissions" ]; then
+    WARNINGS+=("Background agents spawned via the Agent tool cannot be reliably stopped by the user. In one reported case, 14 parallel agents wrote to the same file and consumed ~1.4M tokens (\$55-106) before the session could be terminated. If you use Agent tool with run_in_background, monitor token usage closely. There is no built-in kill mechanism for spawned agents. (see claude-code#41461)")
+fi
 
 # cleanupPeriodDays setting ignored: #41458
 if [ -f "$SETTINGS_FILE" ]; then
@@ -1520,7 +1526,8 @@ if [ "$VERIFY_MODE" = "1" ] && [ -n "$HOOK_PATHS" ]; then
     # Test payloads for known hooks
     BASH_GUARD_PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}'
     GIT_SAFE_PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}'
-    FILE_GUARD_PAYLOAD='{"tool_name":"Write","tool_input":{"file_path":".env","content":"SECRET=exposed"}}'
+    # Use absolute path so file-guard tests config pattern matching, not the relative-path rejection
+    FILE_GUARD_PAYLOAD="{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$(pwd)/.env\",\"content\":\"SECRET=exposed\"}}"
     BRANCH_GUARD_PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"git commit -m test"}}'
     NONMATCH_PAYLOAD='{"tool_name":"Read","tool_input":{"file_path":"README.md"}}'
 

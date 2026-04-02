@@ -2919,14 +2919,30 @@ TIMING2_OUTPUT=$(HOME="$TMPDIR_TIMING2" bash "$CHECK_SCRIPT" 2>&1) || true
 assert "hook timing warning for UserPromptSubmit (#41310)" "project directory.*exists" "$TIMING2_OUTPUT"
 rm -rf "$TMPDIR_TIMING2"
 
-# === Test: Model self-execution warning (#41307) ===
+# === Test: Model self-execution warning (#41307) — only in bypass mode ===
 TMPDIR_SELFEXEC=$(mktemp -d)
 mkdir -p "$TMPDIR_SELFEXEC/.claude"
-echo '{}' > "$TMPDIR_SELFEXEC/.claude/settings.json"
+cat > "$TMPDIR_SELFEXEC/.claude/settings.json" << 'SELFEXECEOF'
+{
+  "permissions": {
+    "allow": [],
+    "deny": []
+  },
+  "permissionMode": "bypassPermissions"
+}
+SELFEXECEOF
 SELFEXEC_OUTPUT=$(HOME="$TMPDIR_SELFEXEC" bash "$CHECK_SCRIPT" 2>&1) || true
-assert "self-execution warning always shown (#41307)" "hallucinate.*Human" "$SELFEXEC_OUTPUT"
+assert "self-execution warning shown in bypass mode (#41307)" "hallucinate.*Human" "$SELFEXEC_OUTPUT"
 assert "self-execution warning references claude-code#41307" "claude-code#41307" "$SELFEXEC_OUTPUT"
 rm -rf "$TMPDIR_SELFEXEC"
+
+# === Test: Model self-execution warning NOT shown without bypass ===
+TMPDIR_SELFEXEC2=$(mktemp -d)
+mkdir -p "$TMPDIR_SELFEXEC2/.claude"
+echo '{}' > "$TMPDIR_SELFEXEC2/.claude/settings.json"
+SELFEXEC2_OUTPUT=$(HOME="$TMPDIR_SELFEXEC2" bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "self-execution warning not shown without bypass (#41307)" "hallucinate.*Human" "$SELFEXEC2_OUTPUT"
+rm -rf "$TMPDIR_SELFEXEC2"
 
 # === Test: No hook timing warning without SessionStart/UserPromptSubmit ===
 TMPDIR_NOTIMING=$(mktemp -d)
@@ -3022,10 +3038,25 @@ assert "project skills source mentioned" "project-level skills" "$PROJSKILL_OUTP
 cd "$ORIG_DIR"
 rm -rf "$TMPDIR_PROJSKILL"
 
-# === Test: Background agent warning (#41461) ===
-# This warning is unconditional — always shown
-assert "background agent warning shown" "claude-code#41461" "$OUTPUT"
-assert "background agent warning mentions token waste" "1.4M tokens" "$OUTPUT"
+# === Test: Background agent warning (#41461) — only in bypass mode ===
+# Not shown without bypass mode
+assert_not "background agent warning not shown without bypass (#41461)" "claude-code#41461" "$OUTPUT"
+# Set up bypass mode to trigger the warning
+TMPDIR_BGAGENT=$(mktemp -d)
+mkdir -p "$TMPDIR_BGAGENT/.claude"
+cat > "$TMPDIR_BGAGENT/.claude/settings.json" << 'BGAGENTEOF'
+{
+  "permissions": {
+    "allow": [],
+    "deny": []
+  },
+  "permissionMode": "bypassPermissions"
+}
+BGAGENTEOF
+BGAGENT_OUTPUT=$(HOME="$TMPDIR_BGAGENT" bash "$CHECK_SCRIPT" 2>&1) || true
+assert "background agent warning shown in bypass mode (#41461)" "claude-code#41461" "$BGAGENT_OUTPUT"
+assert "background agent warning mentions token waste" "1.4M tokens" "$BGAGENT_OUTPUT"
+rm -rf "$TMPDIR_BGAGENT"
 
 # === Test: cleanupPeriodDays warning (#41458) ===
 TMPDIR_CLEANUP=$(mktemp -d)
