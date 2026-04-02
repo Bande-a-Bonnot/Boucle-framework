@@ -555,7 +555,7 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-220 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+223 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
@@ -1010,6 +1010,12 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **Task-to-Agent tool rename in v2.1.63 breaks existing hook payloads.** The `Task` tool was [renamed to `Agent`](https://github.com/anthropics/claude-code/issues/29677) in v2.1.63, but this was an undocumented breaking change. Existing hooks that match on `tool_name === "Task"` silently stopped working. The hook payload now reports the tool as `Agent` with no migration path or deprecation warning. Any custom hooks targeting subagent spawning by tool name needed updating. See [#29677](https://github.com/anthropics/claude-code/issues/29677).
 
 **Permission and hook pattern matcher fails on `$()` subshells and parentheses in arguments.** The `if`-condition pattern matcher in hooks and the permission `allow`/`deny` wildcard matcher both fail when Bash commands contain `$()` subshells or parentheses in arguments. Commands like `echo $(date)` or `gcloud logging read 'filter=(severity=ERROR)'` [incorrectly trigger blocking hooks](https://github.com/anthropics/claude-code/issues/42457) or [fail to match allow rules](https://github.com/anthropics/claude-code/issues/38017). The parser defaults to "match" on parse failure, making this a false-positive issue. Compound constructs like pipes and heredocs [also break matching](https://github.com/anthropics/claude-code/issues/39263). Workaround: use PreToolUse hooks that parse the full command string instead of relying on `if`-condition patterns. [bash-guard](../bash-guard/) does this. See [#42457](https://github.com/anthropics/claude-code/issues/42457), [#38017](https://github.com/anthropics/claude-code/issues/38017), [#39263](https://github.com/anthropics/claude-code/issues/39263).
+
+**Claude generates output that renders as `Human:` turns in long agent-team sessions.** In long conversations with many subagents (Agent Teams with 10+ teammates), Claude repeatedly generates output that [appears as user-authored `Human:` turns](https://github.com/anthropics/claude-code/issues/42481) in the conversation UI. The user did not write these messages. This is an integrity violation: fabricated user input is indistinguishable from real input. Occurs after multiple context compactions in sessions with heavy subagent usage. No known workaround other than starting shorter sessions. See [#42481](https://github.com/anthropics/claude-code/issues/42481).
+
+**Plugin skills not usable after `/reload-plugins` in existing session.** After running `/reload-plugins` mid-session, plugin skills from the `skills/` directory are listed in the system-reminder but [cannot be invoked](https://github.com/anthropics/claude-code/issues/42471). Slash commands resolve to deprecated command stubs instead of the registered skills. No combination of `/reload-plugins`, `/plugin` enable/disable, or fully qualified skill names fixes it within the session. Starting a new session is the only workaround. See [#42471](https://github.com/anthropics/claude-code/issues/42471).
+
+**Bash tool fails silently when `/tmp` is full.** When `/tmp` has no free disk space, all Bash tool invocations [fail with a generic `Exit code 1`](https://github.com/anthropics/claude-code/issues/42461) regardless of the command. There is no indication that the failure is caused by insufficient disk space. This affects any workflow that depends on the Bash tool, including hook scripts that shell out. Workaround: monitor `/tmp` usage and clear space before running Claude Code. See [#42461](https://github.com/anthropics/claude-code/issues/42461).
 
 ## Tests
 

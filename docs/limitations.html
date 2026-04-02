@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Known Limitations - Claude Code Hooks | Boucle</title>
-    <meta name="description" content="220 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
+    <meta name="description" content="223 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
     <style>
         :root {
             --bg: #0d1117;
@@ -166,7 +166,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle">220 documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>.</p>
+        <p class="subtitle">223 documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>.</p>
 
         <div class="controls">
             <input type="text" id="search" placeholder="Search by keyword or issue number (e.g. 32928, bypass, MCP)..." autocomplete="off">
@@ -2179,6 +2179,36 @@
             <h3>Permission and hook pattern matcher fails on <code>$()</code> subshells and parentheses in arguments.</h3>
             <p>The <code>if</code>-condition pattern matcher in hooks and the permission <code>allow</code>/<code>deny</code> wildcard matcher both fail when Bash commands contain <code>$()</code> subshells or parentheses in arguments. Commands like <code>echo $(date)</code> or <code>gcloud logging read 'filter=(severity=ERROR)'</code> <a href="https://github.com/anthropics/claude-code/issues/42457" target="_blank">incorrectly trigger blocking hooks</a> or <a href="https://github.com/anthropics/claude-code/issues/38017" target="_blank">fail to match allow rules</a>. The parser appears to default to "match" (fire the hook / prompt for permission) on parse failure, making this a false-positive issue. Compound constructs like pipes and heredocs <a href="https://github.com/anthropics/claude-code/issues/39263" target="_blank">also break matching</a>. Workaround: use PreToolUse hooks that parse the full command string instead of relying on <code>if</code>-condition patterns. <a href="../bash-guard/" target="_blank">bash-guard</a> does this.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42457" target="_blank">#42457</a>, <a href="https://github.com/anthropics/claude-code/issues/38017" target="_blank">#38017</a>, <a href="https://github.com/anthropics/claude-code/issues/39263" target="_blank">#39263</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Subagent & spawned agents" data-issues="42481" id="fabricated-user-input-turns-in-agent-team-sessions">
+            <div class="kl-header">
+                <span class="kl-num">#221</span>
+                <span class="kl-cat">Subagent & spawned agents</span>
+            </div>
+            <h3>Claude generates output that renders as <code>Human:</code> turns in long agent-team sessions.</h3>
+            <p>In long conversations with many subagents (Agent Teams with 10+ teammates), Claude repeatedly generates output that appears as user-authored <code>Human:</code> turns in the conversation UI. The user did not write these messages. This is an integrity violation: fabricated user input is indistinguishable from real input. Occurs after multiple context compactions in sessions with heavy subagent usage. <a href="https://github.com/anthropics/claude-code/issues/42481" target="_blank">No known workaround</a> other than starting shorter sessions.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42481" target="_blank">#42481</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior & events" data-issues="42471" id="plugin-reload-breaks-skills-until-new-session">
+            <div class="kl-header">
+                <span class="kl-num">#222</span>
+                <span class="kl-cat">Hook behavior & events</span>
+            </div>
+            <h3>Plugin skills not usable after <code>/reload-plugins</code> in existing session.</h3>
+            <p>After running <code>/reload-plugins</code> mid-session, plugin skills from the <code>skills/</code> directory are listed in the system-reminder but cannot be invoked. Slash commands resolve to deprecated command stubs instead of the registered skills. No combination of <code>/reload-plugins</code>, <code>/plugin</code> enable/disable, or fully qualified skill names fixes it within the session. <a href="https://github.com/anthropics/claude-code/issues/42471" target="_blank">Starting a new session is the only workaround</a>.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42471" target="_blank">#42471</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Other platform behaviors" data-issues="42461" id="bash-tool-fails-silently-when-tmp-full">
+            <div class="kl-header">
+                <span class="kl-num">#223</span>
+                <span class="kl-cat">Other platform behaviors</span>
+            </div>
+            <h3>Bash tool fails silently when <code>/tmp</code> is full.</h3>
+            <p>When <code>/tmp</code> has no free disk space, all Bash tool invocations fail with a generic <code>Exit code 1</code> regardless of the command. There is no indication that the failure is caused by insufficient disk space. This affects any workflow that depends on the Bash tool, including <a href="https://github.com/anthropics/claude-code/issues/42461" target="_blank">hook scripts that shell out</a>. Workaround: monitor <code>/tmp</code> usage and clear space before running Claude Code.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42461" target="_blank">#42461</a></div>
         </div>
 
         <footer>
