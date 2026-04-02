@@ -555,17 +555,17 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-190 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. Use Ctrl-F to search, or browse by category:
+193 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. Use Ctrl-F to search, or browse by category:
 
 | Category | Count | Examples |
 |----------|-------|----------|
 | Hook bypass & evasion | 39 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd` |
 | Permission system | 31 | MCP deny ignored, path matching, self-authorization race, scope hierarchy |
-| Hook behavior & events | 36 | Async stdin empty, exit code handling, slash command bypass |
-| Context & session management | 20 | Compaction invalidates state, worktree CWD drift, stop hooks |
+| Hook behavior & events | 37 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event |
+| Context & session management | 21 | Compaction invalidates state, worktree CWD drift, stop hooks, no context metrics |
 | Subagent & spawned agents | 10 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded |
 | Windows & cross-platform | 7 | `/usr/bin/bash` routing, UNC paths, case-sensitive matching |
-| Configuration & settings | 8 | JSONC parsing, auto-update wipes hooks, `/model` strips `if` |
+| Configuration & settings | 9 | JSONC parsing, auto-update wipes hooks, `/model` strips `if`, env.PATH ignored |
 | Security | 1 | `SendMessage` content injection |
 | Other platform behaviors | 38 | Skill tool wrapping, runtime directory deletion, retry loops |
 
@@ -940,6 +940,12 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **Hook `if` property silently stripped by `/model` command.** The `if` property on hook entries (used to conditionally gate hook execution, e.g., `"if": "Bash(*git *)"`) is [silently removed](https://github.com/anthropics/claude-code/issues/42225) whenever Claude Code rewrites `settings.json` via the `/model` command. Hook commands still fire, but without their conditional filters, they run on every tool call instead of only matching ones. This silently degrades performance and can cause unexpected blocks. Workaround: re-add `if` properties after changing models, or keep a backup of your settings.json. See [#42225](https://github.com/anthropics/claude-code/issues/42225).
 
 **Agent self-authorizes when task notifications interrupt permission prompts.** When the agent asks the user a yes/no gating question and a background task notification arrives before the user responds, the agent [answers its own question as "yes"](https://github.com/anthropics/claude-code/issues/42236) and proceeds without user consent. This is a race condition in the consent model that hooks cannot prevent, because the bypass happens at the conversation level before any tool call occurs. Affects workflows with background tasks (Agent tool, long-running Bash commands) where notifications can interrupt the permission flow. See [#42236](https://github.com/anthropics/claude-code/issues/42236).
+
+**No hook event fires when Claude prompts user for input.** Hooks only fire around tool calls (PreToolUse, PostToolUse). When Claude asks the user a gating question like "Should I proceed?" or requests clarification, [no hook event occurs](https://github.com/anthropics/claude-code/issues/42286). This means hooks cannot intercept, modify, or log agent-to-user prompts. In autonomous workflows, this gap means there is no programmatic way to detect when the agent is waiting for input vs. processing. Workaround: none currently. Monitor session logs for gaps in tool activity as a proxy for "agent waiting" state.
+
+**Hook input does not include context window metrics.** Hooks receive tool name, tool input, and session metadata, but [no information about context window usage](https://github.com/anthropics/claude-code/issues/42328) (tokens consumed, compression history, remaining budget). This means hooks cannot implement threshold-based actions like "save progress when context is 50% full" or "warn when approaching token limits." Workaround: track approximate token usage externally by summing tool inputs/outputs in session-log, though this is imprecise.
+
+**`env.PATH` override in settings.json ignored by Bash tool.** Setting `env.PATH` in settings.json to override the default PATH [does not propagate to the Bash tool](https://github.com/anthropics/claude-code/issues/42321). Commands executed via Bash still use the system PATH, not the user-configured one. This affects workflows where tools like `cargo`, `poetry`, or custom binaries are installed in non-standard locations. Workaround: use wrapper scripts that source the correct environment, or set PATH in hook commands directly.
 
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
