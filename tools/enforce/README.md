@@ -555,14 +555,14 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-208 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+211 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
-| Hook behavior & events | 44 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App PostToolUse silent failure, hooks stop after 2.5h |
+| Hook behavior & events | 45 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App PostToolUse silent failure, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits |
 | Other platform behaviors | 39 | Skill tool wrapping, runtime directory deletion, retry loops, background task file growth |
 | Hook bypass & evasion | 36 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch |
-| Permission system | 36 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass |
+| Permission system | 38 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, PowerShell trailing `&` bypass, parse-failure fallback |
 | Context & session management | 16 | Compaction invalidates state, worktree CWD drift, stop hooks, no context metrics, auto-compact ignores disable |
 | Configuration & settings | 12 | JSONC parsing, auto-update wipes hooks, `/model` strips `if`, env.PATH ignored, multi-install update failure |
 | Subagent & spawned agents | 13 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, plugin tools:all silent block, no Stop hook, teammate hooks bypass, team spawn 255-byte split |
