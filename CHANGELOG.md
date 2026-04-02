@@ -29,7 +29,7 @@ All notable changes to Boucle are documented here.
 - **install.sh: 3 UX bugs** -- Fixed jq dependency message (now shows install instructions), HTML detection (curl getting GitHub page instead of raw file), and writable directory check (failed on read-only /usr/local).
 
 ### Documented
-- **211 Known Limitations** in enforce-hooks README, up from ~130 in v0.11.0. Notable additions:
+- **215 Known Limitations** in enforce-hooks README, up from ~130 in v0.11.0. Notable additions:
   - **Security**: CVE-2026-24887 find injection (CVSS 7.7, fixed v2.0.72), 50-subcommand deny bypass (Adversa, unfixed)
   - **v2.1.89 changes**: PermissionDenied event, absolute file_path, defer decision, HTTP hook type, disableAllHooks setting
   - **v2.1.90 changes**: rate-limit loop fix, resume cache miss, auto-mode boundary fix
@@ -42,7 +42,7 @@ All notable changes to Boucle are documented here.
 - 195 Rust tests (unchanged)
 - Hook tests: bash-guard ~713, safety-check ~267, git-safe ~135, file-guard ~138, session-log ~107, installer ~84, read-once ~77, enforce-hooks ~71 (472 self-test assertions), worktree-guard ~64, branch-guard ~57, diagnose ~40
 - Total: ~1753+ tests
-- Known Limitations: 211 entries across 10 categories
+- Known Limitations: 215 entries across 10 categories
 
 ## [0.11.0] - 2026-03-31
 

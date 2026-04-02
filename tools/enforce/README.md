@@ -555,14 +555,14 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-211 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+215 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
-| Hook behavior & events | 45 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App PostToolUse silent failure, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits |
+| Hook behavior & events | 47 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App PostToolUse silent failure, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits |
 | Other platform behaviors | 39 | Skill tool wrapping, runtime directory deletion, retry loops, background task file growth |
 | Hook bypass & evasion | 36 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch |
-| Permission system | 38 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, PowerShell trailing `&` bypass, parse-failure fallback |
+| Permission system | 40 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, PowerShell trailing `&` bypass, parse-failure fallback |
 | Context & session management | 16 | Compaction invalidates state, worktree CWD drift, stop hooks, no context metrics, auto-compact ignores disable |
 | Configuration & settings | 12 | JSONC parsing, auto-update wipes hooks, `/model` strips `if`, env.PATH ignored, multi-install update failure |
 | Subagent & spawned agents | 13 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, plugin tools:all silent block, no Stop hook, teammate hooks bypass, team spawn 255-byte split |
@@ -992,6 +992,14 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **PowerShell parse failure degrades deny rules to fallback (fixed v2.1.90).** When PowerShell command parsing fails (malformed syntax, unusual quoting, encoding tricks), deny rules fall through to a weaker fallback evaluation instead of denying by default. Combined with the trailing `&` bypass and archive-extraction TOCTOU (both fixed in v2.1.90), this means pre-v2.1.90 PowerShell tool permission checks have significant gaps. bash-guard and safety-check handle Bash/sh but not PowerShell; Windows users on pre-v2.1.90 should update.
 
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
+
+**Stop hooks defined in Skills never fire.** When a skill defines Stop hooks in its SKILL.md file, they are [never invoked](https://github.com/anthropics/claude-code/issues/19225) when the skill session ends. The skill's start hooks and tool hooks work, but the Stop lifecycle event is silently skipped. Workaround: have skill instructions tell Claude to run the stop script manually before exiting. See [#19225](https://github.com/anthropics/claude-code/issues/19225).
+
+**No way to suppress async hook completion messages.** Async hook events (especially SubagentStart/SubagentStop) generate ["Async hook completed" messages](https://github.com/anthropics/claude-code/issues/33263) in the conversation transcript on every invocation. There is no setting to suppress or filter these messages. Heavy hook usage (multiple hooks across multiple events) floods the conversation with noise, degrading both the user experience and the model's effective context. Originally filed as [#9603](https://github.com/anthropics/claude-code/issues/9603), auto-closed and re-filed. See [#33263](https://github.com/anthropics/claude-code/issues/33263).
+
+**Bash permissions in settings.json not enforced without custom hooks.** `permissions.allow` and `permissions.deny` rules for Bash commands in settings.json are [not reliably enforced](https://github.com/anthropics/claude-code/issues/18846). Denied commands may still execute, and allowed commands may still prompt for approval. Users must write custom PreToolUse hooks as a workaround to get reliable Bash command enforcement. This is exactly the gap bash-guard fills. See [#18846](https://github.com/anthropics/claude-code/issues/18846).
+
+**VS Code/Cursor extension bypasses permissions and does not persist settings.** In the VS Code/Cursor extension, two permission problems occur: (1) commands like `rm` [execute without permission prompts](https://github.com/anthropics/claude-code/issues/35870) even when not in `permissions.allow`, and (2) "Allow for all projects" does not persist to settings.json, causing repeated permission prompts on every session. Reported on v2.1.78. The CLI does not have this problem. Extension users relying on the permission system for safety have no enforcement. See [#35870](https://github.com/anthropics/claude-code/issues/35870).
 
 ## Tests
 
