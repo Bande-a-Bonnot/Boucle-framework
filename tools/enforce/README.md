@@ -555,16 +555,16 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-193 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+195 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
 | Hook bypass & evasion | 39 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd` |
 | Permission system | 31 | MCP deny ignored, path matching, self-authorization race, scope hierarchy |
-| Hook behavior & events | 37 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event |
+| Hook behavior & events | 38 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App silent failure |
 | Context & session management | 21 | Compaction invalidates state, worktree CWD drift, stop hooks, no context metrics |
 | Subagent & spawned agents | 10 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded |
-| Windows & cross-platform | 7 | `/usr/bin/bash` routing, UNC paths, case-sensitive matching |
+| Windows & cross-platform | 8 | `/usr/bin/bash` routing, UNC paths, case-sensitive matching, subagent 2>&1 crash |
 | Configuration & settings | 9 | JSONC parsing, auto-update wipes hooks, `/model` strips `if`, env.PATH ignored |
 | Security | 1 | `SendMessage` content injection |
 | Other platform behaviors | 38 | Skill tool wrapping, runtime directory deletion, retry loops |
@@ -946,6 +946,10 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **Hook input does not include context window metrics.** Hooks receive tool name, tool input, and session metadata, but [no information about context window usage](https://github.com/anthropics/claude-code/issues/42328) (tokens consumed, compression history, remaining budget). This means hooks cannot implement threshold-based actions like "save progress when context is 50% full" or "warn when approaching token limits." Workaround: track approximate token usage externally by summing tool inputs/outputs in session-log, though this is imprecise.
 
 **`env.PATH` override in settings.json ignored by Bash tool.** Setting `env.PATH` in settings.json to override the default PATH [does not propagate to the Bash tool](https://github.com/anthropics/claude-code/issues/42321). Commands executed via Bash still use the system PATH, not the user-configured one. This affects workflows where tools like `cargo`, `poetry`, or custom binaries are installed in non-standard locations. Workaround: use wrapper scripts that source the correct environment, or set PATH in hook commands directly.
+
+**PostToolUse hooks silently do not fire in Desktop App.** PostToolUse hooks configured in `.claude/settings.json` load correctly (visible via `/hooks`) but [silently never execute](https://github.com/anthropics/claude-code/issues/42336) in the Desktop App when tools like Edit are used. No error, no statusMessage, no command output. The hook simply never runs. This is a regression: the same hooks work in CLI. Compounds with [#13339](https://github.com/anthropics/claude-code/issues/13339) (VS Code ignores `ask` decision) and [#40029](https://github.com/anthropics/claude-code/issues/40029) (Stop hooks don't fire in VS Code). Workaround: use CLI instead of Desktop App for workflows that depend on PostToolUse hooks (formatters, type-checkers, audit logs). See [#42336](https://github.com/anthropics/claude-code/issues/42336).
+
+**Subagent Bash commands with `2>&1` redirect crash on Windows.** When a custom subagent (defined in `.claude/agents/`) runs a Bash command containing `2>&1`, the Bash tool [crashes with "Tool result missing due to internal error"](https://github.com/anthropics/claude-code/issues/42324) inside the agent, surfacing as "Internal tools error during invocation." No output is returned, no approval prompt appears. This is on Windows/Git Bash. Workaround: prohibit `2>&1` in agent definitions and use separate stdout/stderr handling. See [#42324](https://github.com/anthropics/claude-code/issues/42324).
 
 **Semantic rules are not enforceable.** Rules like "write clean code," "use descriptive variable names," or "keep functions under 20 lines" have no tool-call signal to match against. The tool skips these and explains why during `--scan`.
 
