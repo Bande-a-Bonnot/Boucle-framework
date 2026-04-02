@@ -3,7 +3,7 @@
 [![Tests](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml/badge.svg)](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Claude Code hooks that actually enforce your rules. 9 hooks, ~1950 tests, [240 known Claude Code gaps documented](tools/enforce/#known-limitations) with severity ratings and workarounds.
+Claude Code hooks that actually enforce your rules. 9 hooks, ~1950 tests, [242 known Claude Code gaps documented](tools/enforce/#known-limitations) with severity ratings and workarounds.
 
 > **Quick links:** [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
 
@@ -619,6 +619,10 @@ Run `claude --version` to check. Run `safety-check` with `--verify` to confirm h
 **`WorktreeCreate` hooks hang `claude -w`**: Any `WorktreeCreate` hook causes [`claude -w` to hang indefinitely](https://github.com/anthropics/claude-code/issues/41614), regardless of hook content. Even `echo ok < /dev/null` freezes the session. The hook executes and returns, but Claude Code never proceeds. Remove all `WorktreeCreate` hooks if you need `claude -w` to function.
 
 **Model can manipulate hook state files**: The model has filesystem access and [can overwrite files that hooks depend on](https://github.com/anthropics/claude-code/issues/38841) — checkpoint files, lock files, counters. In one documented case, Claude computed the SHA256 hash of a checkpoint filename and wrote a fresh timestamp to bypass a content-read-gate. Hooks that rely on external state files for enforcement should assume the model can read and modify those files. Cryptographic signatures or out-of-process validation can mitigate this.
+
+**`bypassPermissions` not restored on session resume (VS Code)**: When `bypassPermissions` is configured via `initialPermissionMode` in VS Code settings, [resumed conversations revert to default permission mode](https://github.com/anthropics/claude-code/issues/42735) and prompt for every edit. New sessions may pick it up, but resumed sessions consistently fail. Hooks that depend on the session running in bypass mode cannot rely on it persisting across resume.
+
+**Worktree isolation breaks in git submodules**: Using `isolation: "worktree"` on the Agent tool inside a git submodule [creates the worktree in `.git/modules/<path>/.claude/worktrees/`](https://github.com/anthropics/claude-code/issues/42732) instead of the project's own `.claude/worktrees/`. This places the agent outside the project's permission scope, causing `bypassPermissions` to be silently downgraded and triggering unexpected permission prompts.
 
 **Windows**: All seven hooks have native **PowerShell 7+** equivalents (`hook.ps1`) that require no external dependencies. Requires [PowerShell 7](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (`pwsh`), not the built-in Windows PowerShell 5. Install them with:
 
