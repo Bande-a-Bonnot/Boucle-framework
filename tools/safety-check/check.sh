@@ -216,18 +216,22 @@ fi
 if command -v claude >/dev/null 2>&1; then
     CLI_VERSION=$(claude --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "")
     if [ -n "$CLI_VERSION" ]; then
-        CLI_MINOR=$(echo "$CLI_VERSION" | cut -d. -f3)
-        # v2.1.78-2.1.84: permissionDecision from PreToolUse hooks silently ignored (claude-code#37597, fixed upstream)
-        if [ "$CLI_MINOR" -ge 78 ] 2>/dev/null && [ "$CLI_MINOR" -le 84 ] 2>/dev/null; then
-            WARNINGS+=("Claude CLI v$CLI_VERSION: permissionDecision responses from PreToolUse hooks may be silently ignored (regression v2.1.78-v2.1.84, see claude-code#37597, now fixed upstream). Hooks using decision:block format still work. Update CLI to resolve.")
-        fi
-        # v2.1.81-2.1.84: crashes when invoked by launchd (claude-code#37878, fixed upstream)
-        if [ "$CLI_MINOR" -ge 81 ] 2>/dev/null && [ "$CLI_MINOR" -le 84 ] 2>/dev/null; then
-            WARNINGS+=("Claude CLI v$CLI_VERSION: crashes when invoked by launchd/cron (regression v2.1.81-v2.1.84, see claude-code#37878, now fixed upstream). Update CLI to resolve.")
-        fi
-        # v2.1.88: pulled from npm — custom commands broken + cli.js.map accidentally shipped (claude-code#41497)
-        if [ "$CLI_MINOR" -eq 88 ] 2>/dev/null; then
-            WARNINGS+=("Claude CLI v$CLI_VERSION: this version was pulled from npm. Known issues: custom commands in .claude/commands/ are not discovered (claude-code#41497), SessionStart systemMessage display broken (claude-code#41285), custom skills (.claude/skills/) completely non-functional (claude-code#41530). Downgrade to v2.1.87 or wait for the next release.")
+        CLI_MAJOR_MINOR=$(echo "$CLI_VERSION" | cut -d. -f1-2)
+        CLI_PATCH=$(echo "$CLI_VERSION" | cut -d. -f3)
+        # Only check regressions for the 2.1.x series where they were found
+        if [ "$CLI_MAJOR_MINOR" = "2.1" ]; then
+            # v2.1.78-2.1.84: permissionDecision from PreToolUse hooks silently ignored (claude-code#37597, fixed upstream)
+            if [ "$CLI_PATCH" -ge 78 ] 2>/dev/null && [ "$CLI_PATCH" -le 84 ] 2>/dev/null; then
+                WARNINGS+=("Claude CLI v$CLI_VERSION: permissionDecision responses from PreToolUse hooks may be silently ignored (regression v2.1.78-v2.1.84, see claude-code#37597, now fixed upstream). Hooks using decision:block format still work. Update CLI to resolve.")
+            fi
+            # v2.1.81-2.1.84: crashes when invoked by launchd (claude-code#37878, fixed upstream)
+            if [ "$CLI_PATCH" -ge 81 ] 2>/dev/null && [ "$CLI_PATCH" -le 84 ] 2>/dev/null; then
+                WARNINGS+=("Claude CLI v$CLI_VERSION: crashes when invoked by launchd/cron (regression v2.1.81-v2.1.84, see claude-code#37878, now fixed upstream). Update CLI to resolve.")
+            fi
+            # v2.1.88: pulled from npm — custom commands broken + cli.js.map accidentally shipped (claude-code#41497)
+            if [ "$CLI_PATCH" -eq 88 ] 2>/dev/null; then
+                WARNINGS+=("Claude CLI v$CLI_VERSION: this version was pulled from npm. Known issues: custom commands in .claude/commands/ are not discovered (claude-code#41497), SessionStart systemMessage display broken (claude-code#41285), custom skills (.claude/skills/) completely non-functional (claude-code#41530). Downgrade to v2.1.87 or wait for the next release.")
+            fi
         fi
     fi
 fi
@@ -664,8 +668,8 @@ for sf in "$SETTINGS_FILE" "$PROJECT_SETTINGS"; do
 done
 
 # bypassPermissions in settings.local.json is silently ignored (claude-code#40014)
-SETTINGS_LOCAL="${HOME}/.claude/settings.local.json"
-[ ! -f "$SETTINGS_LOCAL" ] && SETTINGS_LOCAL=".claude/settings.local.json"
+# Check both user-level and project-level settings.local.json
+for SETTINGS_LOCAL in "${HOME}/.claude/settings.local.json" ".claude/settings.local.json"; do
 if [ -f "$SETTINGS_LOCAL" ]; then
     HAS_BYPASS_LOCAL=$(python3 -c "
 import json,sys
@@ -700,6 +704,7 @@ except: print('false')
         WARNINGS+=("settings.local.json contains permission rules. If Claude's Edit tool modifies this file during a session, in-memory permissions desync from disk: allow rules stop working and the user is repeatedly prompted. Let Claude Code manage this file through its own permission prompt mechanism, or restart the session after any manual edit. (see claude-code#41259)")
     fi
 fi
+done  # end settings.local.json loop (user-level + project-level)
 
 # Sandbox allowedDomains HTTP bypass (claude-code#40213)
 # allowedDomains only filters HTTPS CONNECT — plain HTTP passes through unfiltered.
@@ -1008,7 +1013,7 @@ check "session-log (audit trail of all actions)" 15 \
 echo ""
 printf "${BLUE}Efficiency${NC}\n"
 
-check "read-once (prevents redundant file reads)" 10 \
+check "read-once (prevents redundant file reads)" 5 \
     "$(has_hook read-once && echo true || echo false)" \
     "No read-once: Claude re-reads files it already has, wasting tokens" \
     "curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/read-once/install.sh | bash"
