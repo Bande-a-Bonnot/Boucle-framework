@@ -555,13 +555,13 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-237 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+240 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
-| Hook behavior & events | 103 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits, allowManagedHooksOnly blocks plugin hooks, OAuth token refresh collision, no Team lifecycle hooks, auto-compact ignores disable, env.PATH ignored |
+| Hook behavior & events | 104 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits, allowManagedHooksOnly blocks plugin hooks, OAuth token refresh collision, no Team lifecycle hooks, auto-compact ignores disable, env.PATH ignored, multiple-hook stdin contention |
 | Hook bypass & evasion | 84 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch, `$()` subshell pattern-match failure, goal-directed tool switching, apiKeyHelper arbitrary code execution, `find` command injection (CVE-2026-24887) |
-| Permission system | 43 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, PowerShell trailing `&` bypass, parse-failure fallback, auto-mode classifier wrong model, bypassPermissions UNC path regression |
+| Permission system | 45 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, PowerShell trailing `&` bypass, parse-failure fallback, auto-mode classifier wrong model, bypassPermissions UNC path regression, skip-permissions still prompts Edit/Write, .git/.claude path prompts |
 | Subagent & spawned agents | 6 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, teammate hooks bypass, subagent file creation bypass |
 | CLAUDE.md & memory | 1 | CLAUDE.md rules are advisory-only with no enforcement mechanism |
 
@@ -1038,6 +1038,12 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **No hooks fire on Agent Team creation or deletion.** There are no `TeamCreated` or `TeamDeleted` hook events. Platforms that orchestrate Claude Code Agent Teams cannot detect when a team is created or deleted to synchronize state with external systems (dashboards, billing, audit logs). The only workaround is polling the Teams API. See [#42597](https://github.com/anthropics/claude-code/issues/42597).
 
 **`bypassPermissions` broken on UNC paths in VS Code (Windows regression).** Setting `defaultMode: "bypassPermissions"` in `~/.claude/settings.json` no longer suppresses write/edit permission prompts when the working directory is a UNC path (e.g. `\\server\share\...`). This is a regression introduced after v2.1.69; mapped drive letters still work correctly. The same issue affects `acceptEdits` mode on UNC paths (never worked). See [#42611](https://github.com/anthropics/claude-code/issues/42611).
+
+**`--dangerously-skip-permissions` still prompts for Edit/Write confirmations.** On v2.1.90, running with `--dangerously-skip-permissions` plus `"defaultMode": "bypassPermissions"` in project settings and `"skipDangerousModePermissionPrompt": true` in user settings [still shows Edit/Write confirmation prompts](https://github.com/anthropics/claude-code/issues/42696) on every edit. The only workaround is selecting "Yes, allow all edits during this session" at session start. Distinct from [#40014](https://github.com/anthropics/claude-code/issues/40014) (settings-only bypass ignored): here the CLI flag itself does not fully bypass. See [#42696](https://github.com/anthropics/claude-code/issues/42696).
+
+**Multiple PreToolUse hooks matching the same tool suffer stdin contention.** When multiple `PreToolUse` hooks match the same tool (e.g. both a project hook and a plugin hook match `Edit`), only one hook receives the stdin JSON payload. Other matching hooks [get empty stdin](https://github.com/anthropics/claude-code/issues/42702), causing them to silently exit 0 (allow) instead of executing their guard logic. This effectively bypasses any hook that loses the stdin race. Distinct from [#38162](https://github.com/anthropics/claude-code/issues/38162) (async-specific empty stdin on macOS): this affects synchronous hooks when multiple match. See [#42702](https://github.com/anthropics/claude-code/issues/42702).
+
+**`bypassPermissions` still prompts on `.git/` and `.claude/` paths.** With `bypassPermissions` mode active and explicit `Bash(*)`, `Edit(*)` wildcards in the allow list, operations on `.git/` paths [intermittently prompt](https://github.com/anthropics/claude-code/issues/42711) for permission (same commands work earlier in the session), and operations on `.claude/skills/` paths consistently prompt. Reported on Linux/VS Code. Distinct from [#42611](https://github.com/anthropics/claude-code/issues/42611) (UNC paths on Windows). See [#42711](https://github.com/anthropics/claude-code/issues/42711).
 
 ## Tests
 

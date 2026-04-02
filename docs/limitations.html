@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Known Limitations - Claude Code Hooks | Boucle</title>
-    <meta name="description" content="237 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
+    <meta name="description" content="240 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
     <style>
         :root {
             --bg: #0d1117;
@@ -166,7 +166,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">232</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>.</p>
+        <p class="subtitle"><span id="total-count">240</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>.</p>
 
         <div class="controls">
             <input type="text" id="search" placeholder="Search by keyword or issue number (e.g. 32928, bypass, MCP)..." autocomplete="off">
@@ -2590,6 +2590,39 @@
             <h3><code>bypassPermissions</code> broken on UNC paths in VS Code (Windows regression).</h3>
             <p>Setting <code>defaultMode: "bypassPermissions"</code> in <code>~/.claude/settings.json</code> no longer suppresses write/edit permission prompts when the working directory is a UNC path (e.g. <code>\\server\share\...</code>). This is a regression introduced after v2.1.69; mapped drive letters still work correctly. The same issue affects <code>acceptEdits</code> mode on UNC paths (never worked).</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42611" target="_blank">#42611</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="42696" id="dangerously-skip-permissions-still-prompts-edit-write" data-severity="high">
+            <div class="kl-header">
+                <span class="kl-num">#238</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3><code>--dangerously-skip-permissions</code> still prompts for Edit/Write confirmations.</h3>
+            <p>On v2.1.90, running with <code>--dangerously-skip-permissions</code> plus <code>"defaultMode": "bypassPermissions"</code> in project settings and <code>"skipDangerousModePermissionPrompt": true</code> in user settings still shows Edit/Write confirmation prompts on every edit. The only workaround is selecting "Yes, allow all edits during this session" at session start. Distinct from <a href="#bypass-mode-via-settings-file-is-silently-ignored">#40014</a> (settings-only): here the CLI flag itself does not fully bypass.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42696" target="_blank">#42696</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior & events" data-issues="42702" id="multiple-hooks-stdin-contention" data-severity="high">
+            <div class="kl-header">
+                <span class="kl-num">#239</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Multiple PreToolUse hooks matching the same tool suffer stdin contention.</h3>
+            <p>When multiple <code>PreToolUse</code> hooks match the same tool (e.g. both a project hook and a plugin hook match <code>Edit</code>), only one hook receives the stdin JSON payload. Other matching hooks get empty stdin, causing them to silently exit 0 (allow) instead of executing their guard logic. This effectively bypasses any hook that loses the stdin race. Distinct from <a href="#async-hooks-receive-empty-stdin-on-macos">#38162</a> (async-specific): this affects synchronous hooks when multiple match.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42702" target="_blank">#42702</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="42711" id="bypass-permissions-git-claude-paths-prompt" data-severity="medium">
+            <div class="kl-header">
+                <span class="kl-num">#240</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f59e0b;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3><code>bypassPermissions</code> still prompts on <code>.git/</code> and <code>.claude/</code> paths.</h3>
+            <p>With <code>bypassPermissions</code> mode active and explicit <code>Bash(*)</code>, <code>Edit(*)</code> wildcards in the allow list, operations on <code>.git/</code> paths intermittently prompt for permission (same commands work earlier in the session), and operations on <code>.claude/skills/</code> paths consistently prompt. Reported on Linux/VS Code. Distinct from <a href="#bypass-permissions-unc-path-regression">#42611</a> (UNC paths on Windows).</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42711" target="_blank">#42711</a></div>
         </div>
 
         <footer>
