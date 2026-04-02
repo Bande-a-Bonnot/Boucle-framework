@@ -2,12 +2,12 @@
 
 All notable changes to Boucle are documented here.
 
-## [Unreleased]
+## [0.12.0] - 2026-04-02
 
 ### Added
 
 #### Searchable Known Limitations page
-- **Interactive limitations page** (`docs/limitations.html`) -- Browse, search, and filter all 211 known Claude Code hook limitations in a single page. Supports text search, category filtering, and URL query parameters (`?q=subagent&cat=Bypass+techniques`) for deep linking to specific results.
+- **Interactive limitations page** (`docs/limitations.html`) -- Browse, search, and filter all 215 known Claude Code hook limitations in a single page. Supports text search, category filtering, and URL query parameters (`?q=subagent&cat=Bypass+techniques`) for deep linking to specific results.
 
 #### test-hook.sh (new tool)
 - **Dry-run hook tester** -- Test any hook against sample inputs without a live Claude Code session. Ships with 60 example test cases covering all hook event types. Validates JSON output format, decision logic, and error handling. Addresses [#39971](https://github.com/anthropics/claude-code/issues/39971).
