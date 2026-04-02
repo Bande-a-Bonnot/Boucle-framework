@@ -4,6 +4,7 @@
 # Or:    curl ... | bash -s -- recommended
 # Or:    curl ... | bash -s -- read-once file-guard git-safe
 # Or:    curl ... | bash -s -- list
+# Or:    curl ... | bash -s -- verify
 # Or:    curl ... | bash -s -- upgrade
 # Or:    curl ... | bash -s -- uninstall read-once
 # Or:    curl ... | bash -s -- uninstall all
@@ -65,6 +66,7 @@ if [ $# -gt 0 ] && { [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]
   echo "  all                   Install all 7 hooks"
   echo "  <hook> [hook...]      Install specific hooks by name"
   echo "  list                  Show which hooks are currently installed"
+  echo "  verify                Test all installed hooks with real payloads"
   echo "  upgrade               Re-download all installed hooks to latest version"
   echo "  uninstall <hook>      Remove a specific hook (files + settings.json entry)"
   echo "  uninstall all         Remove all hooks"
@@ -91,6 +93,7 @@ if [ $# -gt 0 ] && { [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]
   echo "  install.sh all                    # Everything at once"
   echo "  install.sh read-once git-safe     # Pick specific hooks"
   echo "  install.sh list                   # See what you have"
+  echo "  install.sh verify                 # Test hooks with payloads"
   echo "  install.sh upgrade                # Update to latest"
   echo "  install.sh uninstall read-once    # Remove one hook"
   echo "  install.sh backup                 # Snapshot before updating Claude Code"
@@ -351,6 +354,117 @@ if [ $# -gt 0 ] && [ "$1" = "list" ]; then
     echo "  $found of $total installed. Add more: install.sh <hook-name>"
   else
     echo "  All $total hooks installed."
+  fi
+  exit 0
+fi
+
+# Handle verify subcommand — test all installed hooks with real payloads
+if [ $# -gt 0 ] && [ "$1" = "verify" ]; then
+  echo -e "${BOLD}Verifying installed hooks...${RESET}"
+  echo ""
+
+  v_ok=0
+  v_fail=0
+  v_skip=0
+  v_found=0
+
+  for hook in $ALL_HOOKS; do
+    hook_path="${HOME}/.claude/${hook}/hook.sh"
+    [ -d "${HOME}/.claude/${hook}" ] && [ -f "$hook_path" ] || continue
+    v_found=$((v_found + 1))
+
+    if [ ! -x "$hook_path" ]; then
+      echo -e "  ${YELLOW}WARN${RESET}: ${hook} is not executable"
+      v_fail=$((v_fail + 1))
+      continue
+    fi
+
+    case "$hook" in
+      bash-guard)
+        result=$(echo '{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}' | "$hook_path" 2>/dev/null || true)
+        if echo "$result" | grep -q '"deny"'; then
+          echo -e "  ${GREEN}OK${RESET}  ${hook}  blocked rm -rf /"
+          v_ok=$((v_ok + 1))
+        else
+          echo -e "  ${YELLOW}WARN${RESET}  ${hook}  did not block rm -rf /"
+          v_fail=$((v_fail + 1))
+        fi
+        ;;
+      git-safe)
+        result=$(echo '{"tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}' | "$hook_path" 2>/dev/null || true)
+        if echo "$result" | grep -q '"deny"'; then
+          echo -e "  ${GREEN}OK${RESET}  ${hook}  blocked git push --force"
+          v_ok=$((v_ok + 1))
+        else
+          echo -e "  ${YELLOW}WARN${RESET}  ${hook}  did not block git push --force"
+          v_fail=$((v_fail + 1))
+        fi
+        ;;
+      file-guard)
+        result=$(echo '{"tool_name":"Write","tool_input":{"file_path":"relative/path.txt","content":"test"}}' | "$hook_path" 2>/dev/null || true)
+        if echo "$result" | grep -q '"deny"'; then
+          echo -e "  ${GREEN}OK${RESET}  ${hook}  blocked relative path write"
+          v_ok=$((v_ok + 1))
+        else
+          echo -e "  ${YELLOW}WARN${RESET}  ${hook}  did not block relative path write"
+          v_fail=$((v_fail + 1))
+        fi
+        ;;
+      branch-guard)
+        result=$(echo '{"tool_name":"Bash","tool_input":{"command":"git commit -m test"}}' | BRANCH_GUARD_PROTECTED="main" GIT_BRANCH="main" "$hook_path" 2>/dev/null || true)
+        if echo "$result" | grep -q '"deny"'; then
+          echo -e "  ${GREEN}OK${RESET}  ${hook}  blocked commit on main"
+          v_ok=$((v_ok + 1))
+        else
+          echo -e "  ${DIM}SKIP${RESET}  ${hook}  needs git repo context"
+          v_skip=$((v_skip + 1))
+        fi
+        ;;
+      worktree-guard)
+        if echo '{"tool_name":"Bash","tool_input":{"command":"echo test"}}' | "$hook_path" >/dev/null 2>&1; then
+          echo -e "  ${GREEN}OK${RESET}  ${hook}  passes non-ExitWorktree tools"
+          v_ok=$((v_ok + 1))
+        else
+          echo -e "  ${YELLOW}WARN${RESET}  ${hook}  returned an error"
+          v_fail=$((v_fail + 1))
+        fi
+        ;;
+      session-log)
+        if echo '{"tool_name":"Read","tool_input":{"file_path":"/tmp/verify-test"}}' | "$hook_path" >/dev/null 2>&1; then
+          echo -e "  ${GREEN}OK${RESET}  ${hook}  accepted payload without error"
+          v_ok=$((v_ok + 1))
+        else
+          echo -e "  ${YELLOW}WARN${RESET}  ${hook}  returned an error"
+          v_fail=$((v_fail + 1))
+        fi
+        ;;
+      read-once)
+        if echo '{"tool_name":"Read","tool_input":{"file_path":"/tmp/verify-test"}}' | "$hook_path" >/dev/null 2>&1; then
+          echo -e "  ${GREEN}OK${RESET}  ${hook}  accepted payload without error"
+          v_ok=$((v_ok + 1))
+        else
+          echo -e "  ${YELLOW}WARN${RESET}  ${hook}  returned an error"
+          v_fail=$((v_fail + 1))
+        fi
+        ;;
+      *)
+        echo -e "  ${DIM}SKIP${RESET}  ${hook}  no automated test"
+        v_skip=$((v_skip + 1))
+        ;;
+    esac
+  done
+
+  if [ "$v_found" -eq 0 ]; then
+    echo "  No hooks installed. Run: install.sh recommended"
+    exit 1
+  fi
+
+  echo ""
+  if [ "$v_fail" -gt 0 ]; then
+    echo -e "${YELLOW}${BOLD}$v_ok passed, $v_fail warnings, $v_skip skipped.${RESET}"
+    echo "  Run doctor for details: install.sh doctor"
+  else
+    echo -e "${GREEN}${BOLD}All $v_ok hooks verified, $v_skip skipped.${RESET}"
   fi
   exit 0
 fi
@@ -1049,7 +1163,7 @@ for hook in $installed; do
   case "$hook" in
     bash-guard)
       result=$(echo '{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}' | "$hook_path" 2>/dev/null || true)
-      if echo "$result" | grep -q '"block"'; then
+      if echo "$result" | grep -q '"deny"'; then
         echo -e "  ${GREEN}OK${RESET}: ${hook} blocked test payload (rm -rf /)"
         verify_ok=$((verify_ok + 1))
       else
@@ -1059,7 +1173,7 @@ for hook in $installed; do
       ;;
     git-safe)
       result=$(echo '{"tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}' | "$hook_path" 2>/dev/null || true)
-      if echo "$result" | grep -q '"block"'; then
+      if echo "$result" | grep -q '"deny"'; then
         echo -e "  ${GREEN}OK${RESET}: ${hook} blocked test payload (git push --force)"
         verify_ok=$((verify_ok + 1))
       else
@@ -1069,7 +1183,7 @@ for hook in $installed; do
       ;;
     branch-guard)
       result=$(echo '{"tool_name":"Bash","tool_input":{"command":"git commit -m test"}}' | BRANCH_GUARD_PROTECTED="main" GIT_BRANCH="main" "$hook_path" 2>/dev/null || true)
-      if echo "$result" | grep -q '"block"'; then
+      if echo "$result" | grep -q '"deny"'; then
         echo -e "  ${GREEN}OK${RESET}: ${hook} blocked test payload (commit on main)"
         verify_ok=$((verify_ok + 1))
       else
@@ -1101,7 +1215,7 @@ for hook in $installed; do
     file-guard)
       # file-guard always blocks relative paths in Write/Edit (no config needed)
       result=$(echo '{"tool_name":"Write","tool_input":{"file_path":"relative/path.txt","content":"test"}}' | "$hook_path" 2>/dev/null || true)
-      if echo "$result" | grep -q '"block"'; then
+      if echo "$result" | grep -q '"deny"'; then
         echo -e "  ${GREEN}OK${RESET}: ${hook} blocked test payload (relative path write)"
         verify_ok=$((verify_ok + 1))
       else
@@ -1138,6 +1252,7 @@ echo ""
 INSTALL_URL="https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh"
 echo "Manage hooks:"
 echo "  List installed: curl -fsSL $INSTALL_URL | bash -s -- list"
+echo "  Verify hooks:   curl -fsSL $INSTALL_URL | bash -s -- verify"
 echo "  Upgrade all:    curl -fsSL $INSTALL_URL | bash -s -- upgrade"
 echo "  Uninstall one:  curl -fsSL $INSTALL_URL | bash -s -- uninstall <hook-name>"
 echo "  Uninstall all:  curl -fsSL $INSTALL_URL | bash -s -- uninstall all"
