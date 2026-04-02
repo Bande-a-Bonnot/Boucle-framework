@@ -1017,6 +1017,8 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **Bash tool fails silently when `/tmp` is full.** When `/tmp` has no free disk space, all Bash tool invocations [fail with a generic `Exit code 1`](https://github.com/anthropics/claude-code/issues/42461) regardless of the command. There is no indication that the failure is caused by insufficient disk space. This affects any workflow that depends on the Bash tool, including hook scripts that shell out. Workaround: monitor `/tmp` usage and clear space before running Claude Code. See [#42461](https://github.com/anthropics/claude-code/issues/42461).
 
+**Notification hook not triggered in Plan Mode when `AskUserQuestion` fires.** The Notification hook event does not fire in Plan Mode when Claude calls `AskUserQuestion` to prompt user input. The `Stop` hook fires correctly in Plan Mode, but [Notification hooks are silently skipped](https://github.com/anthropics/claude-code/issues/42487) for elicitation events. Tested with `matcher: "*"`, `"idle_prompt"`, and `"elicitation_dialog"` on Windows. Users building notification systems (e.g., toast alerts when Claude needs input) will miss prompts during Plan Mode. No workaround. See [#42487](https://github.com/anthropics/claude-code/issues/42487).
+
 ## Tests
 
 ```sh
