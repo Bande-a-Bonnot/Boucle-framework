@@ -1049,6 +1049,8 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **Worktree isolation breaks in git submodules.** Using `isolation: "worktree"` on the Agent tool inside a git submodule [creates the worktree in `.git/modules/<path>/.claude/worktrees/`](https://github.com/anthropics/claude-code/issues/42732) instead of the project's own `.claude/worktrees/`. This places the agent outside the project's permission scope, causing `bypassPermissions` to be silently downgraded and triggering unexpected permission prompts. See [#42732](https://github.com/anthropics/claude-code/issues/42732).
 
+**WorktreeCreate hook hangs `--worktree` flag indefinitely.** Configuring a `WorktreeCreate` hook in settings causes `claude --worktree` to [hang indefinitely](https://github.com/anthropics/claude-code/issues/42752) before the hook script is ever executed. The hang occurs during worktree setup, not during hook execution. Removing the hook from settings makes `--worktree` work normally. Manual worktree creation followed by running `claude` inside it works as a workaround. Affects v2.1.90 on macOS. See [#42752](https://github.com/anthropics/claude-code/issues/42752).
+
 ## Tests
 
 ```sh
