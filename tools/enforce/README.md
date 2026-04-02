@@ -555,13 +555,13 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-228 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+234 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
-| Hook behavior & events | 50 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App PostToolUse silent failure, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits, false hook error labels, Task-to-Agent rename breaks payloads |
+| Hook behavior & events | 51 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, Desktop App PostToolUse silent failure, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits, false hook error labels, Task-to-Agent rename breaks payloads, allowManagedHooksOnly blocks plugin hooks |
 | Other platform behaviors | 39 | Skill tool wrapping, runtime directory deletion, retry loops, background task file growth |
-| Hook bypass & evasion | 38 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch, `$()` subshell pattern-match failure, goal-directed tool switching |
+| Hook bypass & evasion | 39 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch, `$()` subshell pattern-match failure, goal-directed tool switching, apiKeyHelper arbitrary code execution |
 | Permission system | 42 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, PowerShell trailing `&` bypass, parse-failure fallback, auto-mode classifier wrong model, classifier outage blocks all tools |
 | Context & session management | 17 | Compaction invalidates state, worktree CWD drift, stop hooks, no context metrics, auto-compact ignores disable |
 | Configuration & settings | 12 | JSONC parsing, auto-update wipes hooks, `/model` strips `if`, env.PATH ignored, multi-install update failure |
@@ -1032,6 +1032,10 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **Sub-agents ignore `bypassPermissions` for file creation.** When `defaultMode` is set to `bypassPermissions` in user settings, sub-agents spawned via the Agent tool [still prompt for file creation confirmation](https://github.com/anthropics/claude-code/issues/38026) (Write tool). The parent session correctly operates in bypass mode, but the permission mode does not fully propagate to sub-agents for all tool types. This is distinct from the deny-rule sub-agent bypass ([#25000](https://github.com/anthropics/claude-code/issues/25000)) — here the sub-agent is *more* restrictive than intended, not less. Affects multi-agent workflows where sub-agents need to create files autonomously. See [#38026](https://github.com/anthropics/claude-code/issues/38026).
 
 **CLAUDE.md and `.claude/rules/` rules have no enforcement mechanism.** Rules defined in CLAUDE.md, `.claude/rules/`, and memory files are read by the model but [have no runtime enforcement](https://github.com/anthropics/claude-code/issues/34132). The model can read these rules and still violate them during execution. Bold text, capitalization, "MANDATORY" labels, and explicit consequence statements do not change this — they are all prompt content with no binding force. This is the core problem that hook-based enforcement exists to solve: converting advisory text into deterministic runtime gates. See [#34132](https://github.com/anthropics/claude-code/issues/34132).
+
+**`apiKeyHelper` in project-level settings enables arbitrary code execution on open.** The `apiKeyHelper` field in `.claude/settings.json` is executed as a shell command via `execa` with `shell: true`. Since this file can be committed to a repository, [cloning and opening Claude Code anywhere in the project runs the command without user consent](https://github.com/anthropics/claude-code/issues/42593). In CI/CD pipelines using `claude -p`, the trust dialog is bypassed entirely, making this a supply-chain attack vector. Proposed fix: restrict `apiKeyHelper` to user-level config only, or require explicit confirmation before execution. See [#42593](https://github.com/anthropics/claude-code/issues/42593).
+
+**`allowManagedHooksOnly` blocks plugin hooks from trusted marketplaces.** Organizations using `allowManagedHooksOnly: true` block all non-managed hooks, including those shipped by vetted plugins from known marketplaces. There is [no granular setting](https://github.com/anthropics/claude-code/issues/42581) to permit plugin-supplied hooks while still restricting user-defined ones. This forces orgs to choose between full hook lockdown and allowing all hooks, with no middle ground for plugin trust. See [#42581](https://github.com/anthropics/claude-code/issues/42581).
 
 ## Tests
 

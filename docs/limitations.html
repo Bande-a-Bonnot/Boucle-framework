@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Known Limitations - Claude Code Hooks | Boucle</title>
-    <meta name="description" content="231 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
+    <meta name="description" content="234 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
     <style>
         :root {
             --bg: #0d1117;
@@ -2535,6 +2535,28 @@
             <h3><code>CLAUDE_PLUGIN_ROOT</code> env var not always set when invoking plugin hooks.</h3>
             <p>Plugin hooks registered in <code>~/.claude/settings.json</code> that reference <code>${CLAUDE_PLUGIN_ROOT}</code> intermittently fail with <code>MODULE_NOT_FOUND</code> because the environment variable is not always set by the Claude Code runtime. This is distinct from the path-spaces issue (<a href="https://github.com/anthropics/claude-code/issues/40084" target="_blank">#40084</a>): the variable is entirely absent, not malformed. Affects plugin-installed hooks that rely on this variable for script paths. Workaround: use absolute paths in hook commands instead of <code>${CLAUDE_PLUGIN_ROOT}</code>.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42564" target="_blank">#42564</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="42593" id="apikeyhelper-arbitrary-code-execution" data-severity="critical">
+            <div class="kl-header">
+                <span class="kl-num">#233</span>
+                <span class="kl-cat">Hook bypass &amp; evasion</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3><code>apiKeyHelper</code> in project-level settings enables arbitrary code execution on open.</h3>
+            <p>The <code>apiKeyHelper</code> field in <code>.claude/settings.json</code> is executed as a shell command via <code>execa</code> with <code>shell: true</code>. Since this file can be committed to a repository, cloning and opening Claude Code anywhere in the project runs the command without user consent. In CI/CD pipelines using <code>claude -p</code>, the trust dialog is bypassed entirely, making this a supply-chain attack vector. Proposed fix: restrict <code>apiKeyHelper</code> to user-level config only, or require explicit confirmation before execution.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42593" target="_blank">#42593</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior & events" data-issues="42581" id="allowmanagedhooksonly-blocks-plugin-hooks" data-severity="medium">
+            <div class="kl-header">
+                <span class="kl-num">#234</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ca8a04;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3><code>allowManagedHooksOnly</code> blocks plugin hooks from trusted marketplaces.</h3>
+            <p>Organizations using <code>allowManagedHooksOnly: true</code> block all non-managed hooks, including those shipped by vetted plugins from known marketplaces. There is no granular setting like <code>allowPluginHooksFromKnownMarketplaces</code> to permit plugin-supplied hooks while still restricting user-defined ones. This forces orgs to choose between full hook lockdown and allowing all hooks, with no middle ground for plugin trust.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42581" target="_blank">#42581</a></div>
         </div>
 
         <footer>
