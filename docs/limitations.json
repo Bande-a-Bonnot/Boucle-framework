@@ -1,17 +1,17 @@
 {
   "version": "0.12.0",
-  "count": 273,
+  "count": 275,
   "categories": {
-    "Hook behavior & events": 117,
+    "Hook behavior & events": 116,
     "Hook bypass & evasion": 86,
-    "Permission system": 59,
-    "Subagent & spawned agents": 6,
+    "Permission system": 60,
+    "Subagent & spawned agents": 7,
     "Configuration behavior": 4,
     "CLAUDE.md & memory": 1,
     "Hook behavior": 1
   },
   "severity_counts": {
-    "medium": 102,
+    "medium": 103,
     "low": 87,
     "high": 72,
     "critical": 13
@@ -2836,6 +2836,26 @@
         "https://github.com/anthropics/claude-code/issues/43191"
       ],
       "description": "There is no mechanism to declare MCP tools as preferred over built-in tools (e.g., prefer an MCP semantic search over Grep/Glob). Tool description hints in MCP servers compete with built-in system prompt instructions and almost always lose. This forces MCP tool authors to rely on fragile prompt engineering rather than explicit priority configuration. Affects any plugin architecture where MCP tools should be the primary path for specific operations."
+    },
+    {
+      "id": "cowork-rejects-cloud-filesystems-by-ftype",
+      "title": "Cowork rejects cloud/virtual filesystems based on f_type, ignoring actual mount permissions.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43204"
+      ],
+      "description": "Cowork's request_cowork_directory uses statfs() f_type detection to reject all virtual and cloud-based filesystems (iCloud Drive, Dropbox, Google Drive, OneDrive, NFS, SMB). It does not check whether the mount is actually writable via ST_RDONLY or host-side ACLs. Users with code on cloud-synced or network-mounted directories cannot use cowork, even when the mount has full read-write access. Labeled as a regression. Affects both macOS and Windows."
+    },
+    {
+      "id": "nested-subagent-spawning-no-depth-or-token-limit",
+      "title": "Nested subagent spawning has no depth or token budget limit.",
+      "category": "Subagent & spawned agents",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43198"
+      ],
+      "description": "When the model spawns a subagent (e.g., statusline-setup), that subagent can spawn further subagents with no enforced depth limit or token budget cap. A single simple task (fixing a statusline display issue) consumed 30% of a 5-hour rate limit through uncontrolled nested spawning. The parent agent has no visibility into subagent token consumption and no mechanism to abort runaway chains. Particularly affects Windows users where agent tools may behave differently."
     }
   ]
 }
