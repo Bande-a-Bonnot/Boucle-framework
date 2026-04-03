@@ -1,20 +1,20 @@
 {
   "version": "0.12.0",
-  "count": 275,
+  "count": 280,
   "categories": {
-    "Hook behavior & events": 116,
     "Hook bypass & evasion": 86,
-    "Permission system": 60,
-    "Subagent & spawned agents": 7,
-    "Configuration behavior": 4,
+    "Hook behavior & events": 116,
+    "Permission system": 61,
+    "Subagent & spawned agents": 9,
     "CLAUDE.md & memory": 1,
-    "Hook behavior": 1
+    "Hook behavior": 1,
+    "Configuration behavior": 6
   },
   "severity_counts": {
-    "medium": 103,
+    "critical": 13,
     "low": 87,
-    "high": 72,
-    "critical": 13
+    "medium": 106,
+    "high": 74
   },
   "entries": [
     {
@@ -2856,6 +2856,56 @@
         "https://github.com/anthropics/claude-code/issues/43198"
       ],
       "description": "When the model spawns a subagent (e.g., statusline-setup), that subagent can spawn further subagents with no enforced depth limit or token budget cap. A single simple task (fixing a statusline display issue) consumed 30% of a 5-hour rate limit through uncontrolled nested spawning. The parent agent has no visibility into subagent token consumption and no mechanism to abort runaway chains. Particularly affects Windows users where agent tools may behave differently."
+    },
+    {
+      "id": "auto-compact-subagent-context-miscount",
+      "title": "Auto-Compact counts subagent context in main window after cancel+resume.",
+      "category": "Subagent & spawned agents",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43226"
+      ],
+      "description": "When auto-compact triggers and the user cancels then resumes the session, the reported context usage drops dramatically (e.g., 85% to 17%). The subagent context that was part of the main window gets incorrectly counted or discarded. This suggests the compact+resume path does not correctly reconcile subagent context contributions with the main conversation window."
+    },
+    {
+      "id": "settings-watcher-kills-inflight-streams",
+      "title": "Settings file watcher flushes network caches, killing in-flight API streams.",
+      "category": "Configuration behavior",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43227"
+      ],
+      "description": "When ~/.claude/settings.json is modified during an active streaming API call, the ConfigChange handler unconditionally clears network caches. This kills in-flight Bedrock streams through custom CA agents. Any tool or hook that writes to settings.json (e.g., updating configuration) can silently break ongoing API calls. The file watcher fires on every inode change, including saves from editors with atomic write (rename) behavior."
+    },
+    {
+      "id": "permission-mode-cycling-drops-dontask",
+      "title": "Shift+Tab permission cycling permanently drops 'don't ask' mode.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43281"
+      ],
+      "description": "When cycling through permission modes using Shift+Tab in the status bar, the dontAsk mode gets permanently dropped from the rotation after leaving it. The user cannot return to dontAsk mode via keyboard cycling. This means hooks relying on the permission mode state may see unexpected mode transitions. Users must use the menu or restart to re-enter dontAsk mode."
+    },
+    {
+      "id": "sendmessage-to-agent-silently-dropped",
+      "title": "SendMessage to running agent: queued message silently dropped on completion.",
+      "category": "Subagent & spawned agents",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43285"
+      ],
+      "description": "When a parent agent sends a message to a running subagent via SendMessage, if the subagent completes before processing the queued message, the message is silently dropped. No error is returned to the parent. The parent agent believes the message was delivered. This affects coordination patterns where agents need to communicate results or instructions to in-flight subagents."
+    },
+    {
+      "id": "mcp-timeout-env-var-ineffective",
+      "title": "MCP_TIMEOUT env var is ineffective; inner SDK timeout (60s) overrides it.",
+      "category": "Configuration behavior",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43299"
+      ],
+      "description": "The MCP_TIMEOUT environment variable does not control MCP server connection timeout. The MCP Client from @modelcontextprotocol/sdk is instantiated without passing requestTimeout, so it defaults to 60 seconds. This inner timeout fires before the outer MCP_TIMEOUT wrapper, making the env var completely ineffective. MCP servers that take longer than 60s to initialize (e.g., large Slack workspaces caching users/channels) are always marked as failed regardless of MCP_TIMEOUT value."
     }
   ]
 }

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Known Limitations - Claude Code Hooks | Boucle</title>
-    <meta name="description" content="275 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
+    <meta name="description" content="280 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
     <style>
         :root {
             --bg: #0d1117;
@@ -206,7 +206,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">275</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, issues, description">JSON</a>.</p>
+        <p class="subtitle"><span id="total-count">280</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, issues, description">JSON</a>.</p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -3055,6 +3055,61 @@
             <h3>Nested subagent spawning has no depth or token budget limit.</h3>
             <p>When the model spawns a subagent (e.g., statusline-setup), that subagent can <a href="https://github.com/anthropics/claude-code/issues/43198" target="_blank">spawn further subagents with no enforced depth limit or token budget cap</a>. A single simple task consumed 30% of a 5-hour rate limit through uncontrolled nested spawning. The parent agent has no visibility into subagent token consumption and no mechanism to abort runaway chains.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43198" target="_blank">#43198</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="43226" id="auto-compact-subagent-context-miscount" data-severity="medium">
+            <div class="kl-meta">
+                <span class="kl-num">#276</span>
+                <span class="kl-cat">Subagent &amp; spawned agents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f59e0b;color:black;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Auto-Compact counts subagent context in main window after cancel+resume.</h3>
+            <p>When auto-compact triggers and the user cancels then resumes the session, the reported context usage drops dramatically (e.g., <a href="https://github.com/anthropics/claude-code/issues/43226" target="_blank">85% to 17%</a>). The compact+resume path does not correctly reconcile subagent context contributions with the main conversation window.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43226" target="_blank">#43226</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Configuration behavior" data-issues="43227" id="settings-watcher-kills-inflight-streams" data-severity="high">
+            <div class="kl-meta">
+                <span class="kl-num">#277</span>
+                <span class="kl-cat">Configuration behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f85149;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Settings file watcher flushes network caches, killing in-flight API streams.</h3>
+            <p>When <code>~/.claude/settings.json</code> is modified during an active streaming API call, the <a href="https://github.com/anthropics/claude-code/issues/43227" target="_blank">ConfigChange handler unconditionally clears network caches</a>. This kills in-flight Bedrock streams through custom CA agents. Any tool or hook that writes to settings.json can silently break ongoing API calls.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43227" target="_blank">#43227</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="43281" id="permission-mode-cycling-drops-dontask" data-severity="medium">
+            <div class="kl-meta">
+                <span class="kl-num">#278</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f59e0b;color:black;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Shift+Tab permission cycling permanently drops 'don't ask' mode.</h3>
+            <p>When cycling through permission modes using Shift+Tab in the status bar, the <a href="https://github.com/anthropics/claude-code/issues/43281" target="_blank">dontAsk mode gets permanently dropped from the rotation</a> after leaving it. Users cannot return to dontAsk mode via keyboard cycling and must restart to re-enter it.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43281" target="_blank">#43281</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="43285" id="sendmessage-to-agent-silently-dropped" data-severity="medium">
+            <div class="kl-meta">
+                <span class="kl-num">#279</span>
+                <span class="kl-cat">Subagent &amp; spawned agents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f59e0b;color:black;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>SendMessage to running agent: queued message silently dropped on completion.</h3>
+            <p>When a parent agent sends a message via SendMessage, if the <a href="https://github.com/anthropics/claude-code/issues/43285" target="_blank">subagent completes before processing the queued message, the message is silently dropped</a>. No error is returned to the parent. This breaks coordination patterns where agents need to communicate to in-flight subagents.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43285" target="_blank">#43285</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Configuration behavior" data-issues="43299" id="mcp-timeout-env-var-ineffective" data-severity="high">
+            <div class="kl-meta">
+                <span class="kl-num">#280</span>
+                <span class="kl-cat">Configuration behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f85149;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>MCP_TIMEOUT env var is ineffective; inner SDK timeout (60s) overrides it.</h3>
+            <p><code>MCP_TIMEOUT</code> does not control MCP server connection timeout. The MCP Client from <code>@modelcontextprotocol/sdk</code> is <a href="https://github.com/anthropics/claude-code/issues/43299" target="_blank">instantiated without passing requestTimeout</a>, defaulting to 60 seconds. This inner timeout fires before the outer MCP_TIMEOUT wrapper. MCP servers needing longer than 60s to initialize are always marked as failed.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43299" target="_blank">#43299</a></div>
         </div>
 
         <footer>
