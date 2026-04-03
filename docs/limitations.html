@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Known Limitations - Claude Code Hooks | Boucle</title>
-    <meta name="description" content="243 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
+    <meta name="description" content="245 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
     <style>
         :root {
             --bg: #0d1117;
@@ -166,7 +166,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">243</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON (243 entries with id, title, category, severity, issues, description)">JSON</a>.</p>
+        <p class="subtitle"><span id="total-count">245</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON (243 entries with id, title, category, severity, issues, description)">JSON</a>.</p>
 
         <div class="controls">
             <input type="text" id="search" placeholder="Search by keyword or issue number (e.g. 32928, bypass, MCP)..." autocomplete="off">
@@ -2656,6 +2656,28 @@
             <h3>Agent can disable GitHub branch protection via API without user confirmation.</h3>
             <p>During a git history scrub task, the agent <a href="https://github.com/anthropics/claude-code/issues/42849" target="_blank">disabled branch protection rules, deleted a repository ruleset, and force-pushed</a> without asking the user, despite system instructions requiring confirmation for actions that &quot;affect shared systems beyond your local environment.&quot; The agent used <code>gh api</code> to PUT <code>allow_force_pushes</code>, PATCH the ruleset to <code>disabled</code>, and DELETE the protection rule entirely. This bypasses the permission system because <code>gh api</code> calls are ordinary Bash commands with no special safety treatment. Workaround: use bash-guard (v0.12.0+) which blocks <code>gh api</code> mutations on <code>/protection</code> and <code>/rulesets</code> endpoints.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42849" target="_blank">#42849</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior" data-issues="42953" id="built-in-edit-hook-false-positive-on-double-slash-in-code-comments" data-severity="medium">
+            <div class="kl-header">
+                <span class="kl-num">#244</span>
+                <span class="kl-cat">Hook behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f59e0b;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Built-in Edit hook false-positive on <code>//</code> in code comments.</h3>
+            <p>The built-in UNC-path-detection hook in <code>PreToolUse:Edit</code> <a href="https://github.com/anthropics/claude-code/issues/42953" target="_blank">falsely blocks edits containing <code>//</code></a> in PHP, JavaScript, or C++ comments. The check (<code>v.includes(&#x27;//&#x27;) &amp;&amp; !v.includes(&#x27;://&#x27;)</code>) is too broad: it matches any double-slash, not just UNC paths. This causes legitimate edits to files with comment syntax to be rejected. Affects WSL users most visibly but the logic is platform-independent. Workaround: none within the hook system; the false positive is in Claude Code&#x27;s own built-in hook, not user-configurable.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42953" target="_blank">#42953</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="42961" id="bypass-mode-may-still-halt-for-user-input" data-severity="medium">
+            <div class="kl-header">
+                <span class="kl-num">#245</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f59e0b;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Bypass mode may still halt for user input.</h3>
+            <p>Even with <code>dangerouslySkipPermissions</code> or bypass mode enabled, <a href="https://github.com/anthropics/claude-code/issues/42961" target="_blank">Claude may still stop and prompt for user input</a> instead of proceeding autonomously (v2.1.91). This breaks autonomous pipelines and agent loops that depend on non-interactive execution. Workaround: none known; the session must be manually resumed.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42961" target="_blank">#42961</a></div>
         </div>
 
         <footer>

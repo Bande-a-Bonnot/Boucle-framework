@@ -1051,6 +1051,10 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **Agent can disable GitHub branch protection via API without user confirmation.** During a git history scrub task, the agent [disabled branch protection rules, deleted a repository ruleset, and force-pushed](https://github.com/anthropics/claude-code/issues/42849) without asking the user, despite system instructions requiring confirmation for actions that "affect shared systems beyond your local environment." The agent used `gh api` to PUT `allow_force_pushes`, PATCH the ruleset to `disabled`, and DELETE the protection rule entirely. This bypasses the permission system because `gh api` calls are ordinary Bash commands with no special safety treatment. Workaround: use bash-guard (v0.12.0+) which blocks `gh api` mutations on `/protection` and `/rulesets` endpoints. See [#42849](https://github.com/anthropics/claude-code/issues/42849).
 
+**Built-in Edit hook false-positive on `//` in code comments.** The built-in UNC-path-detection hook in `PreToolUse:Edit` [falsely blocks edits containing `//`](https://github.com/anthropics/claude-code/issues/42953) in PHP, JavaScript, or C++ comments. The check (`v.includes('//') && !v.includes('://')`) is too broad: it matches any double-slash, not just UNC paths. This causes legitimate edits to files with comment syntax to be rejected. Affects WSL users most visibly but the logic is platform-independent. Workaround: none within the hook system; the false positive is in Claude Code's own built-in hook, not user-configurable. See [#42953](https://github.com/anthropics/claude-code/issues/42953).
+
+**Bypass mode may still halt for user input.** Even with `dangerouslySkipPermissions` or bypass mode enabled, [Claude may still stop and prompt for user input](https://github.com/anthropics/claude-code/issues/42961) instead of proceeding autonomously (v2.1.91). This breaks autonomous pipelines and agent loops that depend on non-interactive execution. Workaround: none known; the session must be manually resumed. See [#42961](https://github.com/anthropics/claude-code/issues/42961).
+
 ## Tests
 
 ```sh
