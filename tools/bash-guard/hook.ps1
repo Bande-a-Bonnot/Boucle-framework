@@ -866,5 +866,19 @@ if ($command -match '(\.\./){4,}') {
     }
 }
 
+# gh repo delete (permanent repo deletion — irreversible)
+if ($command -match '(^|[;&|]\s*)gh\s+repo\s+delete\b') {
+    if (-not (Test-Allowed 'gh-repo-delete')) {
+        Block-Tool 'bash-guard: gh repo delete permanently destroys a GitHub repository and all its data. Suggestion: Add ''allow: gh-repo-delete'' to .bash-guard if you really need this.'
+    }
+}
+
+# gh api mutations on repo security settings (branch protection, rulesets — #42849)
+if ($command -match 'gh\s+api\s.*(-X\s+(PUT|PATCH|DELETE)\s.*(/protection|/rulesets)|(/protection|/rulesets).*-X\s+(PUT|PATCH|DELETE))') {
+    if (-not (Test-Allowed 'gh-repo-settings')) {
+        Block-Tool 'bash-guard: Modifying branch protection rules or rulesets via the GitHub API changes shared security controls without team visibility. Suggestion: Modify branch protection through the GitHub web UI instead. Or add ''allow: gh-repo-settings'' to .bash-guard.'
+    }
+}
+
 Write-Log "ALLOW: $command"
 exit 0

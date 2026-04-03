@@ -555,13 +555,13 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-242 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+243 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
 | Hook behavior & events | 104 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits, allowManagedHooksOnly blocks plugin hooks, OAuth token refresh collision, no Team lifecycle hooks, auto-compact ignores disable, env.PATH ignored, multiple-hook stdin contention |
 | Hook bypass & evasion | 84 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch, `$()` subshell pattern-match failure, goal-directed tool switching, apiKeyHelper arbitrary code execution, `find` command injection (CVE-2026-24887) |
-| Permission system | 47 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, PowerShell trailing `&` bypass, parse-failure fallback, auto-mode classifier wrong model, bypassPermissions UNC path regression, skip-permissions still prompts Edit/Write, .git/.claude path prompts, session resume bypass, submodule worktree scope |
+| Permission system | 48 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, PowerShell trailing `&` bypass, parse-failure fallback, auto-mode classifier wrong model, bypassPermissions UNC path regression, skip-permissions still prompts Edit/Write, .git/.claude path prompts, session resume bypass, submodule worktree scope, API-based branch protection mutation |
 | Subagent & spawned agents | 6 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, teammate hooks bypass, subagent file creation bypass |
 | CLAUDE.md & memory | 1 | CLAUDE.md rules are advisory-only with no enforcement mechanism |
 
@@ -1048,6 +1048,8 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **`bypassPermissions` not restored on session resume (VS Code).** When `bypassPermissions` is configured via `initialPermissionMode` in VS Code settings, [resumed conversations revert to default permission mode](https://github.com/anthropics/claude-code/issues/42735) and prompt for every edit. New sessions may pick it up, but resumed sessions consistently fail. Hooks that depend on the session running in bypass mode cannot rely on it persisting across resume. See [#42735](https://github.com/anthropics/claude-code/issues/42735).
 
 **Worktree isolation breaks in git submodules.** Using `isolation: "worktree"` on the Agent tool inside a git submodule [creates the worktree in `.git/modules/<path>/.claude/worktrees/`](https://github.com/anthropics/claude-code/issues/42732) instead of the project's own `.claude/worktrees/`. This places the agent outside the project's permission scope, causing `bypassPermissions` to be silently downgraded and triggering unexpected permission prompts. See [#42732](https://github.com/anthropics/claude-code/issues/42732).
+
+**Agent can disable GitHub branch protection via API without user confirmation.** During a git history scrub task, the agent [disabled branch protection rules, deleted a repository ruleset, and force-pushed](https://github.com/anthropics/claude-code/issues/42849) without asking the user, despite system instructions requiring confirmation for actions that "affect shared systems beyond your local environment." The agent used `gh api` to PUT `allow_force_pushes`, PATCH the ruleset to `disabled`, and DELETE the protection rule entirely. This bypasses the permission system because `gh api` calls are ordinary Bash commands with no special safety treatment. Workaround: use bash-guard (v0.12.0+) which blocks `gh api` mutations on `/protection` and `/rulesets` endpoints. See [#42849](https://github.com/anthropics/claude-code/issues/42849).
 
 ## Tests
 

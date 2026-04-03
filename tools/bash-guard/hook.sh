@@ -46,6 +46,8 @@
 #   - passwd (credential modification)
 #   - pkill -9 (mass process termination)
 #   - yarn/pnpm global installs
+#   - gh repo delete (permanent repository destruction)
+#   - gh api mutations on branch protection and rulesets (#42849)
 #
 # Install:
 #   curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
@@ -645,6 +647,17 @@ fi
 # Deep path traversal (4+ levels of ../ is likely a sandbox escape attempt — #41103)
 if echo "$COMMAND" | grep -qE '(\.\./){4,}' 2>/dev/null; then
   is_allowed "path-traversal" || block "Deep path traversal (4+ levels of ../) may be an attempt to escape a sandboxed directory." "Use absolute paths or navigate to the target directory first. Or add 'allow: path-traversal' to .bash-guard."
+fi
+
+# gh repo delete (permanent repo deletion — irreversible)
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)gh\s+repo\s+delete\b' 2>/dev/null; then
+  is_allowed "gh-repo-delete" || block "gh repo delete permanently destroys a GitHub repository and all its data." "Add 'allow: gh-repo-delete' to .bash-guard if you really need this."
+fi
+
+# gh api mutations on repo security settings (branch protection, rulesets — #42849)
+# Blocks PUT/PATCH/DELETE on branch protection and ruleset endpoints
+if echo "$COMMAND" | grep -qE 'gh\s+api\s.*(-X\s+(PUT|PATCH|DELETE)\s.*(/protection|/rulesets)|(/protection|/rulesets).*-X\s+(PUT|PATCH|DELETE))' 2>/dev/null; then
+  is_allowed "gh-repo-settings" || block "Modifying branch protection rules or rulesets via the GitHub API changes shared security controls without team visibility." "Modify branch protection through the GitHub web UI instead. Or add 'allow: gh-repo-settings' to .bash-guard."
 fi
 
 log "ALLOW: $COMMAND"
