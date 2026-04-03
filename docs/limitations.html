@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Known Limitations - Claude Code Hooks | Boucle</title>
-    <meta name="description" content="246 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
+    <meta name="description" content="265 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
     <style>
         :root {
             --bg: #0d1117;
@@ -2854,6 +2854,50 @@
             <h3>MCP servers not loaded in <code>.claude-personal</code> profile (subscription/OAuth sessions).</h3>
             <p>MCP servers configured via <code>claude mcp add</code> are <a href="https://github.com/anthropics/claude-code/issues/43059" target="_blank">not loaded in interactive sessions</a> when using the <code>.claude-personal</code> profile (personal subscription / OAuth auth). <code>claude mcp list</code> shows servers as connected, but <code>/mcp</code> inside the session says &ldquo;No MCP servers configured.&rdquo; Servers added to every config location are ignored. The same servers work correctly in the API key profile (<code>~/.claude/</code>).</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43059" target="_blank">#43059</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="43142" id="subagent-bypasses-git-deny-rules-in-settings-local" data-severity="high">
+            <div class="kl-header">
+                <span class="kl-num">#262</span>
+                <span class="kl-cat">Hook bypass & evasion</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Subagent bypasses git deny rules in settings.local.json.</h3>
+            <p>Deny rules in <code>.claude/settings.local.json</code> (e.g. <code>Bash(git *)</code>) are <a href="https://github.com/anthropics/claude-code/issues/43142" target="_blank">not inherited by subagents</a> launched via the Agent tool. A subagent can execute <code>git checkout</code> or <code>git restore</code>, reverting files and destroying uncommitted work, even though the parent session has an explicit deny rule. This extends the known pattern that subagents do not fully inherit permission settings. Workaround: add deny rules to <code>.claude/settings.json</code> (project-level, shared) instead of settings.local.json, or use managed-settings.json for organization-wide enforcement.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43142" target="_blank">#43142</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior & events" data-issues="43123" id="sessionstart-hook-background-process-blocks-claude-code" data-severity="high">
+            <div class="kl-header">
+                <span class="kl-num">#263</span>
+                <span class="kl-cat">Hook behavior & events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>SessionStart hook with background process silently blocks claude-code.</h3>
+            <p>A SessionStart hook that spawns a background process (e.g. <code>caffeinate -s &amp;</code>) <a href="https://github.com/anthropics/claude-code/issues/43123" target="_blank">causes Claude Code to hang indefinitely</a> in the Desktop App after v2.1.87. The background process inherits stdin/stdout file descriptors used for stream-json IPC, so the parent blocks waiting for pipe EOF. This was tolerated in earlier versions but became fatal after v2.1.87 tightened subprocess communication. Workaround: redirect background process I/O explicitly (e.g. <code>caffeinate -s &lt;/dev/null &gt;/dev/null 2&gt;&amp;1 &amp;</code>).</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43123" target="_blank">#43123</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="43116" id="allow-for-session-permission-not-persisted" data-severity="medium">
+            <div class="kl-header">
+                <span class="kl-num">#264</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f59e0b;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Permission prompts ignore &lsquo;Allow for Session&rsquo; selection.</h3>
+            <p>When editing files in <code>~/.claude/</code> directory, selecting &ldquo;Allow for Session&rdquo; <a href="https://github.com/anthropics/claude-code/issues/43116" target="_blank">does not persist the permission</a>. Claude Code re-prompts for the same permission on subsequent tool calls within the same session. Reported on macOS with Bedrock API (Sonnet 4.5). This breaks autonomous workflows that need to modify Claude Code configuration files. Workaround: add explicit allow rules in settings.json for the specific file paths.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43116" target="_blank">#43116</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Configuration behavior" data-issues="43127" id="shell-snapshot-drops-user-path-additions" data-severity="low">
+            <div class="kl-header">
+                <span class="kl-num">#265</span>
+                <span class="kl-cat">Configuration behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
+            </div>
+            <h3>Shell snapshot drops user PATH additions, causing spurious startup warnings.</h3>
+            <p>The Bash tool <a href="https://github.com/anthropics/claude-code/issues/43127" target="_blank">shell snapshot mechanism</a> writes a hardcoded <code>export PATH=...</code> derived from the launch-time process environment, not from the user shell config. User-level PATH additions (including <code>~/.local/bin</code> where the installer places the binary) are silently dropped. This causes spurious startup warnings and can make hooks fail silently if they depend on commands in user-added PATH directories. Workaround: none within hooks; the snapshot behavior is internal to Claude Code.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43127" target="_blank">#43127</a></div>
         </div>
 
         <footer>

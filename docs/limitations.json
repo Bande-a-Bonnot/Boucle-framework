@@ -1,20 +1,20 @@
 {
   "version": "0.12.0",
-  "count": 261,
+  "count": 265,
   "categories": {
-    "Hook behavior & events": 112,
-    "Hook bypass & evasion": 85,
-    "Permission system": 54,
+    "Hook bypass & evasion": 86,
+    "Hook behavior & events": 113,
+    "Permission system": 55,
     "Subagent & spawned agents": 6,
-    "Configuration behavior": 2,
     "CLAUDE.md & memory": 1,
-    "Hook behavior": 1
+    "Hook behavior": 1,
+    "Configuration behavior": 3
   },
   "severity_counts": {
     "critical": 12,
-    "high": 68,
-    "low": 85,
-    "medium": 96
+    "low": 86,
+    "medium": 97,
+    "high": 70
   },
   "entries": [
     {
@@ -2716,6 +2716,46 @@
       "status": "open",
       "workaround": "Use the API key profile (~/.claude/) instead of .claude-personal for MCP server support.",
       "added": "2026-04-03"
+    },
+    {
+      "id": "subagent-bypasses-git-deny-rules-in-settings-local",
+      "title": "Subagent bypasses git deny rules in settings.local.json.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43142"
+      ],
+      "description": "Deny rules in .claude/settings.local.json (e.g. Bash(git *)) are not inherited by subagents launched via the Agent tool. A subagent can execute git checkout or git restore, reverting files and destroying uncommitted work, even though the parent session has an explicit deny rule blocking git commands. This extends the known pattern that subagents do not fully inherit permission settings. Workaround: add deny rules to .claude/settings.json (project-level, shared) instead of settings.local.json, or use managed-settings.json for organization-wide enforcement."
+    },
+    {
+      "id": "sessionstart-hook-background-process-blocks-claude-code",
+      "title": "SessionStart hook with background process silently blocks claude-code.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43123"
+      ],
+      "description": "A SessionStart hook that spawns a background process (e.g. caffeinate -s &) causes Claude Code to hang indefinitely in the Desktop App after v2.1.87. The background process inherits stdin/stdout file descriptors that claude-code uses for stream-json IPC with the Desktop App, so the parent blocks waiting for pipe EOF. This was tolerated in earlier versions but became fatal after v2.1.87 tightened subprocess communication. Workaround: redirect background process I/O explicitly (e.g. caffeinate -s </dev/null >/dev/null 2>&1 &) so it does not hold the parent pipes open."
+    },
+    {
+      "id": "allow-for-session-permission-not-persisted",
+      "title": "Permission prompts ignore 'Allow for Session' selection.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43116"
+      ],
+      "description": "When editing files in ~/.claude/ directory, selecting 'Yes, and allow Claude to edit its own config' or 'Allow for Session' does not persist the permission. Claude Code re-prompts for the same permission on subsequent tool calls within the same session. Reported on macOS with Bedrock API (Sonnet 4.5). This breaks autonomous workflows that need to modify Claude Code configuration files. Workaround: add explicit allow rules in settings.json for the specific file paths."
+    },
+    {
+      "id": "shell-snapshot-drops-user-path-additions",
+      "title": "Shell snapshot drops user PATH additions, causing spurious startup warnings.",
+      "category": "Configuration behavior",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43127"
+      ],
+      "description": "The Bash tool shell snapshot mechanism writes a hardcoded export PATH=... derived from the launch-time process environment, not from the user shell config. User-level PATH additions (including ~/.local/bin where the installer places the binary) are silently dropped. This causes Claude Code to warn at every startup that ~/.local/bin is not in PATH, even though the user is running the binary from there. Hooks that depend on commands in user-added PATH directories may also fail silently. Workaround: none within hooks; the snapshot behavior is internal to Claude Code."
     }
   ]
 }
