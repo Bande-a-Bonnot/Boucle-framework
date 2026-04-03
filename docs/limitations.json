@@ -1,20 +1,20 @@
 {
   "version": "0.12.0",
-  "count": 268,
+  "count": 273,
   "categories": {
-    "Hook behavior & events": 114,
+    "Hook behavior & events": 117,
     "Hook bypass & evasion": 86,
-    "Permission system": 57,
+    "Permission system": 59,
     "Subagent & spawned agents": 6,
-    "Configuration behavior": 3,
+    "Configuration behavior": 4,
     "CLAUDE.md & memory": 1,
     "Hook behavior": 1
   },
   "severity_counts": {
-    "medium": 99,
-    "low": 86,
-    "high": 71,
-    "critical": 12
+    "medium": 102,
+    "low": 87,
+    "high": 72,
+    "critical": 13
   },
   "entries": [
     {
@@ -2786,6 +2786,56 @@
         "https://github.com/anthropics/claude-code/issues/43147"
       ],
       "description": "After completing one plan-approve-implement cycle, entering plan mode again for a new task does not reliably enforce read-only restrictions. Claude carries over the approved mental state and begins editing files before the user approves the new plan and before ExitPlanMode is called. Hooks that rely on plan mode as a safety boundary cannot trust it across multiple cycles in the same session."
+    },
+    {
+      "id": "managed-settings-deny-ignored",
+      "title": "Managed settings file deny rules silently ignored on macOS.",
+      "category": "Permission system",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43181"
+      ],
+      "description": "Deny rules in the managed settings file (/Library/Application Support/ClaudeCode/managed-settings.json) are silently ignored. The same rules work correctly in ~/.claude/settings.json. This breaks the enterprise/MDM enforcement path: organization-level security policies deployed via managed settings have no effect. Any hook or permission deny rule intended to be enforced system-wide via managed settings is bypassed."
+    },
+    {
+      "id": "model-ignores-hook-feedback-loop",
+      "title": "Model ignores PreToolUse hook error feedback and loops instead of adapting.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43189"
+      ],
+      "description": "When a PreToolUse hook blocks a tool call and returns a detailed error message with fix instructions, the model does not incorporate the feedback into its retry. Instead it apologizes and resubmits the same blocked command in a loop. This undermines enforcement hooks that guide the model toward correct behavior rather than just blocking. The hook fires correctly, the error message is delivered, but the model treats it as a transient failure rather than actionable guidance."
+    },
+    {
+      "id": "jsonl-logs-no-permission-prompt-events",
+      "title": "JSONL session logs do not record whether tool calls were user-prompted or auto-allowed.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43187"
+      ],
+      "description": "JSONL session logs record tool_use and tool_result events but do not distinguish between tool calls that were auto-allowed by settings.json rules and those where the user was prompted and clicked Allow. Audit scripts and improvement engines that analyze session logs cannot identify which tool calls triggered permission prompts, making it impossible to build data-driven allow-list recommendations or detect permission fatigue patterns."
+    },
+    {
+      "id": "sandbox-disable-flags-ignored-immutable-fs",
+      "title": "Sandbox disable flags (sandbox.enabled, CLAUDE_CODE_DISABLE_SANDBOX) ignored on immutable filesystems.",
+      "category": "Configuration behavior",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43188"
+      ],
+      "description": "On immutable-filesystem Linux distributions (Fedora Silverblue, /var/home), bwrap fails because it cannot mkdir /usr/local/bin. Setting sandbox.enabled: false in settings.json and CLAUDE_CODE_DISABLE_SANDBOX=1 both fail to actually disable the sandbox. Users on immutable-FS distributions cannot use Claude Code at all. The sandbox escape hatch does not work when explicitly requested."
+    },
+    {
+      "id": "mcp-tool-priority-not-configurable",
+      "title": "MCP tools cannot be configured as preferred over built-in tools.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43191"
+      ],
+      "description": "There is no mechanism to declare MCP tools as preferred over built-in tools (e.g., prefer an MCP semantic search over Grep/Glob). Tool description hints in MCP servers compete with built-in system prompt instructions and almost always lose. This forces MCP tool authors to rely on fragile prompt engineering rather than explicit priority configuration. Affects any plugin architecture where MCP tools should be the primary path for specific operations."
     }
   ]
 }

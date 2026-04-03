@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Known Limitations - Claude Code Hooks | Boucle</title>
-    <meta name="description" content="268 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
+    <meta name="description" content="273 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
     <style>
         :root {
             --bg: #0d1117;
@@ -2931,6 +2931,61 @@
             <h3>Plan mode write restrictions bypassed after first plan cycle.</h3>
             <p>After completing one plan-approve-implement cycle, entering plan mode again for a new task <a href="https://github.com/anthropics/claude-code/issues/43147" target="_blank">does not reliably enforce read-only restrictions</a>. Claude carries over the &ldquo;approved&rdquo; mental state and begins editing files before the user approves the new plan. Hooks that rely on plan mode as a safety boundary cannot trust it across multiple cycles in the same session.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43147" target="_blank">#43147</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="43181" id="managed-settings-deny-ignored" data-severity="critical">
+            <div class="kl-header">
+                <span class="kl-num">#269</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ef4444;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Managed settings file deny rules silently ignored on macOS.</h3>
+            <p>Deny rules in the managed settings file (<code>/Library/Application Support/ClaudeCode/managed-settings.json</code>) are <a href="https://github.com/anthropics/claude-code/issues/43181" target="_blank">silently ignored</a>. The same rules work correctly in <code>~/.claude/settings.json</code>. This breaks the enterprise/MDM enforcement path: organization-level security policies deployed via managed settings have no effect.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43181" target="_blank">#43181</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="43189" id="model-ignores-hook-feedback-loop" data-severity="high">
+            <div class="kl-header">
+                <span class="kl-num">#270</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Model ignores PreToolUse hook error feedback and loops instead of adapting.</h3>
+            <p>When a PreToolUse hook blocks a tool call and returns a detailed error message with fix instructions, the model <a href="https://github.com/anthropics/claude-code/issues/43189" target="_blank">does not incorporate the feedback</a> into its retry. Instead it apologizes and resubmits the same blocked command in a loop. This undermines enforcement hooks that guide the model toward correct behavior rather than just blocking.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43189" target="_blank">#43189</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="43187" id="jsonl-logs-no-permission-prompt-events" data-severity="medium">
+            <div class="kl-header">
+                <span class="kl-num">#271</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f59e0b;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>JSONL session logs do not record whether tool calls were user-prompted or auto-allowed.</h3>
+            <p>JSONL session logs record tool_use and tool_result events but <a href="https://github.com/anthropics/claude-code/issues/43187" target="_blank">do not distinguish</a> between tool calls auto-allowed by settings.json rules and those where the user was prompted. Audit scripts cannot identify which calls triggered permission prompts, making data-driven allow-list recommendations impossible.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43187" target="_blank">#43187</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Configuration behavior" data-issues="43188" id="sandbox-disable-flags-ignored-immutable-fs" data-severity="medium">
+            <div class="kl-header">
+                <span class="kl-num">#272</span>
+                <span class="kl-cat">Configuration behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f59e0b;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Sandbox disable flags ignored on immutable filesystems.</h3>
+            <p>On immutable-filesystem Linux distributions (Fedora Silverblue), bwrap fails because it cannot mkdir <code>/usr/local/bin</code>. Setting <code>sandbox.enabled: false</code> and <code>CLAUDE_CODE_DISABLE_SANDBOX=1</code> both <a href="https://github.com/anthropics/claude-code/issues/43188" target="_blank">fail to actually disable the sandbox</a>. Users on immutable-FS distributions cannot use Claude Code at all.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43188" target="_blank">#43188</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="43191" id="mcp-tool-priority-not-configurable" data-severity="low">
+            <div class="kl-header">
+                <span class="kl-num">#273</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
+            </div>
+            <h3>MCP tools cannot be configured as preferred over built-in tools.</h3>
+            <p>There is no mechanism to declare MCP tools as preferred over built-in tools. Tool description hints in MCP servers <a href="https://github.com/anthropics/claude-code/issues/43191" target="_blank">compete with built-in system prompt instructions</a> and almost always lose. This forces MCP tool authors to rely on fragile prompt engineering rather than explicit priority configuration.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43191" target="_blank">#43191</a></div>
         </div>
 
         <footer>
