@@ -3,7 +3,7 @@
 [![Tests](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml/badge.svg)](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Claude Code hooks that actually enforce your rules. 9 hooks, ~1950 tests, [253 known Claude Code gaps documented](tools/enforce/#known-limitations) with severity ratings and workarounds.
+Claude Code hooks that actually enforce your rules. 9 hooks, ~1950 tests, [254 known Claude Code gaps documented](tools/enforce/#known-limitations) with severity ratings and workarounds.
 
 > **Quick links:** [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
 
@@ -615,6 +615,8 @@ Run `claude --version` to check. Run `safety-check` with `--verify` to confirm h
 **"Always allow" directory access not persisted**: Clicking "Yes, and always allow access to [folder]" [does not reliably save](https://github.com/anthropics/claude-code/issues/41579). Claude re-prompts for the same directory in subsequent sessions. Adding to `additionalDirectories` in settings.json is also flaky. Related to [#40606](https://github.com/anthropics/claude-code/issues/40606) (additionalDirectories leak across projects).
 
 **`~/.claude/` writes stall automated sessions**: Writes to paths under `~/.claude/` trigger a hardcoded sensitive-file prompt that [cannot be suppressed](https://github.com/anthropics/claude-code/issues/41615) by `permissions.allow`, PreToolUse hooks returning `"allow"`, `bypassPermissions` mode, or `skipDangerousModePermissionPrompt`. Automated sessions (tmux, CI, autonomous loops) that need to modify Claude Code config files will hang on the interactive prompt. Workaround: use Bash tool commands (`echo`, `cat`, `jq`) to write files directly instead of the Edit/Write tools.
+
+**`bash -c` wrapping bypasses `.claude/` directory write protection**: The permission system protects `.claude/` files from modification (edit, write, direct bash commands all trigger a confirmation modal). But wrapping the command in [`bash -c 'echo "..." >> .claude/file'`](https://github.com/anthropics/claude-code/issues/43085) bypasses the check entirely: no modal, write succeeds silently. The pattern matching inspects the top-level command string but not nested subshells. This means a model (or prompt injection via tool results) could modify hooks, settings.json, skills, or agent definitions without user confirmation. file-guard catches this if `.claude/` is added to the `.file-guard` config, because it scans the full Bash command string for protected paths (including inside quoted arguments). Users relying solely on built-in permission checks are exposed.
 
 **`WorktreeCreate` hooks hang `claude -w`**: Any `WorktreeCreate` hook causes [`claude -w` to hang indefinitely](https://github.com/anthropics/claude-code/issues/41614), regardless of hook content. Even `echo ok < /dev/null` freezes the session. The hook executes and returns, but Claude Code never proceeds. Remove all `WorktreeCreate` hooks if you need `claude -w` to function.
 
