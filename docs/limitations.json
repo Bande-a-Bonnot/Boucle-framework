@@ -1,19 +1,19 @@
 {
   "version": "0.12.0",
-  "count": 250,
+  "count": 253,
   "categories": {
-    "Hook behavior & events": 106,
+    "Hook behavior & events": 108,
     "Hook bypass & evasion": 84,
-    "Permission system": 52,
+    "Permission system": 53,
     "Subagent & spawned agents": 6,
     "CLAUDE.md & memory": 1,
     "Hook behavior": 1
   },
   "severity_counts": {
     "medium": 91,
-    "low": 83,
-    "high": 65,
-    "critical": 11
+    "low": 84,
+    "high": 66,
+    "critical": 12
   },
   "entries": [
     {
@@ -2594,6 +2594,36 @@
         "https://github.com/anthropics/claude-code/issues/43013"
       ],
       "description": "In v2.1.90, combining --continue with -p silently creates a new session instead of continuing the most recent one. No error or warning is emitted. Root cause: a 2.1.90 change excluded sessions created by `claude -p` or SDK from the --resume picker, which also broke --continue session lookup. Labeled as regression. Affects any automation or scripting that chains prompts across sessions using --continue -p."
+    },
+    {
+      "id": "resume-loads-zero-context-v2191",
+      "title": "--resume loads 0% context on v2.1.91: three regressions in session loading pipeline.",
+      "category": "Hook behavior & events",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43044"
+      ],
+      "description": "In v2.1.91, --resume and /resume silently load 0% of conversation history. Three regressions compound: (1) new synchronous reader skips fork pruning for files >5 MB, (2) new timestamp fallback bridges across fork boundaries connecting messages from different forks, (3) getLastSessionLog uses findLatestMessage without leafUuids check, picking synthetic messages from resume attempts. Each failed resume further corrupts the session JSONL by forking the parentUuid DAG. Labeled data-loss. Reporter documented $364 in extra API costs from broken resume plus cache invalidation in a single day."
+    },
+    {
+      "id": "deny-allow-path-precedence-bypass",
+      "title": "DenyRead/Write overridden by user AllowRead/Write on matching path.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43043"
+      ],
+      "description": "When an admin sets denyRead or denyWrite on a path in managed settings, a user can override it by adding the same path to allowRead or allowWrite in their own settings.json. The allow rule wins over the deny rule on exact path matches regardless of settings scope. allowManagedReadPathsOnly exists as a workaround but adds friction. Reporter notes this never worked (not a regression). Labeled as security issue."
+    },
+    {
+      "id": "statusline-receives-hook-stdout",
+      "title": "Statusline command receives hook stdout instead of structured JSON metadata.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43035"
+      ],
+      "description": "The statusline command (configured in settings.json for HUD display) occasionally receives raw hook stdout instead of Claude Code structured JSON metadata (model, context_window, rate_limits). Hook output is incorrectly routed to the statusline stdin instead of being routed exclusively to the hook result parser. Causes raw JSON or truncated text in the statusline display. Affects v2.1.91 when using statusline with hooks that return output."
     }
   ]
 }

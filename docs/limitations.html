@@ -166,7 +166,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">250</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON (247 entries with id, title, category, severity, issues, description)">JSON</a>.</p>
+        <p class="subtitle"><span id="total-count">253</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON (253 entries with id, title, category, severity, issues, description)">JSON</a>.</p>
 
         <div class="controls">
             <input type="text" id="search" placeholder="Search by keyword or issue number (e.g. 32928, bypass, MCP)..." autocomplete="off">
@@ -2733,6 +2733,39 @@
             <h3>--continue and -p flags broken together in v2.1.90.</h3>
             <p>Combining <code>--continue</code> with <code>-p</code> <a href="https://github.com/anthropics/claude-code/issues/43013" target="_blank">silently creates a new session</a> instead of continuing the most recent one. No error or warning is emitted. Root cause: a 2.1.90 change excluded sessions created by <code>claude -p</code> or SDK from the <code>--resume</code> picker, which also broke <code>--continue</code> session lookup. Labeled as regression. Affects any automation or scripting that chains prompts across sessions using <code>--continue -p</code>.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43013" target="_blank">#43013</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior & events" data-issues="43044" id="resume-loads-zero-context-v2191" data-severity="critical">
+            <div class="kl-header">
+                <span class="kl-num">#251</span>
+                <span class="kl-cat">Hook behavior & events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>--resume loads 0% context on v2.1.91: three regressions in session loading pipeline.</h3>
+            <p>In v2.1.91, <code>--resume</code> and <code>/resume</code> <a href="https://github.com/anthropics/claude-code/issues/43044" target="_blank">silently load 0% of conversation history</a>. Three regressions compound: (1) new synchronous reader skips fork pruning for files &gt;5 MB, (2) new timestamp fallback bridges across fork boundaries connecting messages from different forks, (3) <code>getLastSessionLog</code> uses <code>findLatestMessage</code> without <code>leafUuids</code> check, picking synthetic messages from resume attempts. Each failed resume further corrupts the session JSONL by forking the parentUuid DAG. Labeled data-loss. Reporter documented $364 in extra API costs in a single day.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43044" target="_blank">#43044</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="43043" id="deny-allow-path-precedence-bypass" data-severity="high">
+            <div class="kl-header">
+                <span class="kl-num">#252</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ef4444;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>DenyRead/Write overridden by user AllowRead/Write on matching path.</h3>
+            <p>When an admin sets <code>denyRead</code> or <code>denyWrite</code> on a path in managed settings, a user can <a href="https://github.com/anthropics/claude-code/issues/43043" target="_blank">override it by adding the same path to <code>allowRead</code> or <code>allowWrite</code></a> in their own settings.json. The allow rule wins over the deny rule on exact path matches regardless of settings scope. <code>allowManagedReadPathsOnly</code> exists as a workaround but adds friction. Reporter notes this never worked (not a regression). Labeled as security issue.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43043" target="_blank">#43043</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior & events" data-issues="43035" id="statusline-receives-hook-stdout" data-severity="low">
+            <div class="kl-header">
+                <span class="kl-num">#253</span>
+                <span class="kl-cat">Hook behavior & events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
+            </div>
+            <h3>Statusline command receives hook stdout instead of structured JSON metadata.</h3>
+            <p>The statusline command (configured in settings.json for HUD display) <a href="https://github.com/anthropics/claude-code/issues/43035" target="_blank">occasionally receives raw hook stdout</a> instead of Claude Code's structured JSON metadata (model, context_window, rate_limits). Hook output is incorrectly routed to the statusline command's stdin instead of being routed exclusively to the hook result parser. Causes raw JSON or truncated text in the statusline display. Affects v2.1.91 when using statusline with hooks that return output.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43035" target="_blank">#43035</a></div>
         </div>
 
         <footer>
