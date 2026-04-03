@@ -75,7 +75,7 @@ Add to `.claude/settings.json` by hand:
 }
 ```
 
-On Windows, use `"command": "pwsh -File ~/.claude/read-once/hook.ps1"` instead.
+On Windows, use `"command": "pwsh -File ~/.claude/read-once/hook.ps1"` for PreToolUse and `"command": "pwsh -File ~/.claude/read-once/compact.ps1"` for PostCompact.
 
 ## How it works
 

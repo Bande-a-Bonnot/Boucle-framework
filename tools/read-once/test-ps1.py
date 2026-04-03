@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for read-once PowerShell hook (hook.ps1).
+"""Tests for read-once PowerShell hooks (hook.ps1, compact.ps1).
 
 Requires: pwsh (PowerShell 7+).
 Skips all tests if pwsh is not found.
@@ -14,6 +14,7 @@ import tempfile
 import time
 
 HOOK = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hook.ps1")
+COMPACT_HOOK = os.path.join(os.path.dirname(os.path.abspath(__file__)), "compact.ps1")
 PASS = 0
 FAIL = 0
 TOTAL = 0
@@ -116,6 +117,20 @@ def assert_warned(desc, json_input, substring=None, **kwargs):
     except Exception as e:
         FAIL += 1
         print(f"  {RED}FAIL{NC}: {desc} (exception: {e})")
+
+
+def run_compact(json_input):
+    """Run compact.ps1 with JSON input on stdin."""
+    env = os.environ.copy()
+    result = subprocess.run(
+        ["pwsh", "-NoProfile", "-File", COMPACT_HOOK],
+        input=json.dumps(json_input),
+        capture_output=True,
+        text=True,
+        timeout=15,
+        env=env,
+    )
+    return result.stdout.strip(), result.returncode
 
 
 # ============================================================
@@ -336,6 +351,159 @@ def test_token_savings_in_reason():
 
 
 # ============================================================
+# PostCompact hook (compact.ps1) tests
+# ============================================================
+
+def test_compact_clears_cache():
+    """Compaction clears session cache so re-reads are allowed."""
+    global PASS, FAIL, TOTAL
+    TOTAL += 1
+    tmpdir = tempfile.mkdtemp()
+    try:
+        fp = os.path.join(tmpdir, "file.txt")
+        with open(fp, "w") as f:
+            f.write("hello world")
+        sid = "compact-test-session"
+        # First read: cache miss, allowed
+        run_hook(make_input("Read", file_path=fp, session_id=sid))
+        # Second read: cache hit, warned
+        stdout, _ = run_hook(make_input("Read", file_path=fp, session_id=sid))
+        if "already in context" not in stdout:
+            FAIL += 1
+            print(f"  {RED}FAIL{NC}: compact clears cache (pre-check: expected warn)")
+            return
+        # Run compact hook
+        compact_input = {"session_id": sid, "hook_event_name": "PostCompact"}
+        cout, rc = run_compact(compact_input)
+        if rc != 0:
+            FAIL += 1
+            print(f"  {RED}FAIL{NC}: compact clears cache (compact exit code: {rc})")
+            return
+        # After compaction, re-read should be allowed (cache cleared)
+        stdout2, _ = run_hook(make_input("Read", file_path=fp, session_id=sid))
+        if "already in context" in stdout2:
+            FAIL += 1
+            print(f"  {RED}FAIL{NC}: compact clears cache (still cached after compact)")
+        else:
+            PASS += 1
+            print(f"  {GREEN}PASS{NC}: compact clears cache")
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_compact_logs_stats():
+    """Compaction logs event to stats file."""
+    global PASS, FAIL, TOTAL
+    TOTAL += 1
+    tmpdir = tempfile.mkdtemp()
+    try:
+        fp = os.path.join(tmpdir, "file.txt")
+        with open(fp, "w") as f:
+            f.write("stats test content")
+        sid = "compact-stats-session"
+        old_home = os.environ.get("HOME")
+        fake_home = tempfile.mkdtemp()
+        os.environ["HOME"] = fake_home
+        try:
+            cache_dir = os.path.join(fake_home, ".claude", "read-once")
+            os.makedirs(cache_dir, exist_ok=True)
+            # Seed cache with a read entry
+            run_hook(make_input("Read", file_path=fp, session_id=sid))
+            # Run compact
+            compact_input = {"session_id": sid, "hook_event_name": "PostCompact"}
+            run_compact(compact_input)
+            # Check stats file
+            stats_file = os.path.join(cache_dir, "stats.jsonl")
+            if os.path.exists(stats_file):
+                content = open(stats_file).read()
+                if '"event":"compact"' in content or '"event": "compact"' in content:
+                    PASS += 1
+                    print(f"  {GREEN}PASS{NC}: compact logs stats")
+                else:
+                    FAIL += 1
+                    print(f"  {RED}FAIL{NC}: compact logs stats (no compact event in stats)")
+            else:
+                FAIL += 1
+                print(f"  {RED}FAIL{NC}: compact logs stats (no stats file)")
+        finally:
+            if old_home is not None:
+                os.environ["HOME"] = old_home
+            else:
+                os.environ.pop("HOME", None)
+            shutil.rmtree(fake_home, ignore_errors=True)
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_compact_empty_session_id():
+    """Compact with empty session_id exits cleanly."""
+    global PASS, FAIL, TOTAL
+    TOTAL += 1
+    stdout, rc = run_compact({"session_id": "", "hook_event_name": "PostCompact"})
+    if rc == 0 and not stdout:
+        PASS += 1
+        print(f"  {GREEN}PASS{NC}: compact empty session_id exits cleanly")
+    else:
+        FAIL += 1
+        print(f"  {RED}FAIL{NC}: compact empty session_id (rc={rc}, out={stdout!r})")
+
+
+def test_compact_missing_session_id():
+    """Compact with missing session_id exits cleanly."""
+    global PASS, FAIL, TOTAL
+    TOTAL += 1
+    stdout, rc = run_compact({"hook_event_name": "PostCompact"})
+    if rc == 0 and not stdout:
+        PASS += 1
+        print(f"  {GREEN}PASS{NC}: compact missing session_id exits cleanly")
+    else:
+        FAIL += 1
+        print(f"  {RED}FAIL{NC}: compact missing session_id (rc={rc}, out={stdout!r})")
+
+
+def test_compact_clears_snapshots():
+    """Compact clears diff-mode snapshots for the session."""
+    global PASS, FAIL, TOTAL
+    TOTAL += 1
+    fake_home = tempfile.mkdtemp()
+    old_home = os.environ.get("HOME")
+    os.environ["HOME"] = fake_home
+    try:
+        sid = "compact-snap-session"
+        cache_dir = os.path.join(fake_home, ".claude", "read-once")
+        snap_dir = os.path.join(cache_dir, "snapshots")
+        os.makedirs(snap_dir, exist_ok=True)
+        # Compute the session hash the same way PS1 does (first 16 hex of SHA256)
+        import hashlib
+        h = hashlib.sha256(sid.encode()).hexdigest()[:16]
+        # Create fake snapshot files
+        snap1 = os.path.join(snap_dir, f"{h}-abc123")
+        snap2 = os.path.join(snap_dir, f"{h}-def456")
+        other = os.path.join(snap_dir, "othersession-xyz")
+        for f in [snap1, snap2, other]:
+            with open(f, "w") as fh:
+                fh.write("snapshot")
+        # Run compact
+        run_compact({"session_id": sid, "hook_event_name": "PostCompact"})
+        # Session snapshots should be gone, other session's should remain
+        if not os.path.exists(snap1) and not os.path.exists(snap2) and os.path.exists(other):
+            PASS += 1
+            print(f"  {GREEN}PASS{NC}: compact clears snapshots for session")
+        else:
+            FAIL += 1
+            s1 = os.path.exists(snap1)
+            s2 = os.path.exists(snap2)
+            ot = os.path.exists(other)
+            print(f"  {RED}FAIL{NC}: compact clears snapshots (s1={s1}, s2={s2}, other={ot})")
+    finally:
+        if old_home is not None:
+            os.environ["HOME"] = old_home
+        else:
+            os.environ.pop("HOME", None)
+        shutil.rmtree(fake_home, ignore_errors=True)
+
+
+# ============================================================
 
 if __name__ == "__main__":
     if not has_pwsh():
@@ -357,6 +525,16 @@ if __name__ == "__main__":
     test_no_session_id_ignored()
     test_different_sessions_independent()
     test_token_savings_in_reason()
+
+    print()
+    print("compact.ps1 (PostCompact hook)")
+    print("-" * 40)
+
+    test_compact_clears_cache()
+    test_compact_logs_stats()
+    test_compact_empty_session_id()
+    test_compact_missing_session_id()
+    test_compact_clears_snapshots()
 
     print("=" * 40)
     print(f"Results: {PASS}/{TOTAL} passed, {FAIL} failed")
