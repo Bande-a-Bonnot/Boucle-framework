@@ -1,19 +1,20 @@
 {
   "version": "0.12.0",
-  "count": 254,
+  "count": 258,
   "categories": {
-    "Hook behavior & events": 108,
+    "Hook behavior & events": 110,
     "Hook bypass & evasion": 85,
-    "Permission system": 53,
+    "Permission system": 54,
     "Subagent & spawned agents": 6,
     "CLAUDE.md & memory": 1,
-    "Hook behavior": 1
+    "Hook behavior": 1,
+    "Configuration behavior": 1
   },
   "severity_counts": {
-    "medium": 91,
-    "low": 84,
+    "critical": 12,
     "high": 67,
-    "critical": 12
+    "low": 85,
+    "medium": 94
   },
   "entries": [
     {
@@ -2638,6 +2639,50 @@
       "version_reported": "2.1.91",
       "platform": "macOS",
       "date_added": "2026-04-03"
+    },
+    {
+      "id": "agents-dir-only-first-alphabetical-loaded",
+      "title": "Only first alphabetical agent file loaded from .claude/agents/",
+      "description": "When multiple custom agent files are placed in .claude/agents/, only the alphabetically first file is loaded. All other agent files are silently ignored. Renaming a file to be alphabetically earlier causes it to replace the previously shown agent. No error or warning is displayed.",
+      "category": "Configuration behavior",
+      "severity": "medium",
+      "source": "https://github.com/anthropics/claude-code/issues/43099",
+      "status": "open",
+      "workaround": "None for multi-agent setups. Use a single agent file or ensure the most important agent is alphabetically first.",
+      "added": "2026-04-03"
+    },
+    {
+      "id": "sandbox-tmpdir-chicken-and-egg",
+      "title": "Sandbox cannot create TMPDIR: /tmp/claude allowlisted but /tmp is not writable",
+      "description": "The sandbox sets TMPDIR=/tmp/claude and allowlists writes to /tmp/claude, but if /tmp/claude does not exist, creating it requires writing to /tmp which the sandbox blocks. This chicken-and-egg problem affects hooks and tools that need temporary files, particularly on WSL after a reboot.",
+      "category": "Permission system",
+      "severity": "medium",
+      "source": "https://github.com/anthropics/claude-code/issues/43096",
+      "status": "open",
+      "workaround": "Manually create /tmp/claude before starting Claude Code: mkdir -p /tmp/claude",
+      "added": "2026-04-03"
+    },
+    {
+      "id": "worktree-deletion-breaks-remote-control",
+      "title": "Remote Control session permanently broken after worktree deleted mid-session",
+      "description": "If a worktree is deleted while a Claude Code remote-control session is running inside it, the session terminates and remote-control becomes permanently broken for that project. No recovery path works: pruning worktrees, deleting .claude/, clearing session state all fail. Only affects --spawn worktree mode.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "source": "https://github.com/anthropics/claude-code/issues/43107",
+      "status": "open",
+      "workaround": "None confirmed. Avoid deleting worktrees while remote-control sessions are active inside them.",
+      "added": "2026-04-03"
+    },
+    {
+      "id": "skills-intermittently-become-unknown",
+      "title": "Project-level skills intermittently become Unknown skill during sessions",
+      "description": "Custom skills defined in .claude/skills/ intermittently become unavailable during a session, returning Unknown skill errors. All project skills disappear simultaneously. Restarting Claude Code resolves the issue. Not related to compaction or context window capacity.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "source": "https://github.com/anthropics/claude-code/issues/43092",
+      "status": "open",
+      "workaround": "Restart Claude Code to restore skill availability.",
+      "added": "2026-04-03"
     }
   ]
 }
