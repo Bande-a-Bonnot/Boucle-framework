@@ -1055,6 +1055,8 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **Bypass mode may still halt for user input.** Even with `dangerouslySkipPermissions` or bypass mode enabled, [Claude may still stop and prompt for user input](https://github.com/anthropics/claude-code/issues/42961) instead of proceeding autonomously (v2.1.91). This breaks autonomous pipelines and agent loops that depend on non-interactive execution. Workaround: none known; the session must be manually resumed. See [#42961](https://github.com/anthropics/claude-code/issues/42961).
 
+**Brace expansion check false-positives on single-quoted JSON arguments.** The built-in brace expansion security check [falsely triggers on Bash commands containing single-quoted JSON](https://github.com/anthropics/claude-code/issues/42400) with multiple comma-separated values. Short JSON payloads pass; longer ones trigger a "Brace expansion" permission prompt even though shell brace expansion cannot occur inside single quotes. This affects automated workflows and CI pipelines that pass JSON via CLI arguments. Workaround: pipe JSON from a file or heredoc instead of inline arguments. See [#42400](https://github.com/anthropics/claude-code/issues/42400).
+
 ## Tests
 
 ```sh
