@@ -1,20 +1,20 @@
 {
   "version": "0.12.0",
-  "count": 265,
+  "count": 268,
   "categories": {
+    "Hook behavior & events": 114,
     "Hook bypass & evasion": 86,
-    "Hook behavior & events": 113,
-    "Permission system": 55,
+    "Permission system": 57,
     "Subagent & spawned agents": 6,
+    "Configuration behavior": 3,
     "CLAUDE.md & memory": 1,
-    "Hook behavior": 1,
-    "Configuration behavior": 3
+    "Hook behavior": 1
   },
   "severity_counts": {
-    "critical": 12,
+    "medium": 99,
     "low": 86,
-    "medium": 97,
-    "high": 70
+    "high": 71,
+    "critical": 12
   },
   "entries": [
     {
@@ -2756,6 +2756,36 @@
         "https://github.com/anthropics/claude-code/issues/43127"
       ],
       "description": "The Bash tool shell snapshot mechanism writes a hardcoded export PATH=... derived from the launch-time process environment, not from the user shell config. User-level PATH additions (including ~/.local/bin where the installer places the binary) are silently dropped. This causes Claude Code to warn at every startup that ~/.local/bin is not in PATH, even though the user is running the binary from there. Hooks that depend on commands in user-added PATH directories may also fail silently. Workaround: none within hooks; the snapshot behavior is internal to Claude Code."
+    },
+    {
+      "id": "skill-approval-not-hash-anchored",
+      "title": "Skill approval not tied to content hash; modified skills execute without re-approval.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43157"
+      ],
+      "description": "When a user approves a skill, the approval is not anchored to the skill file content hash. If the file is modified after approval (even mid-session), the modified version executes without re-prompting. Additionally, approving a skill can bypass tool-level deny rules in settings.json. This is a supply chain risk: anything with write access to ~/.claude/skills/ can escalate capabilities post-approval."
+    },
+    {
+      "id": "stdio-mcp-no-auto-reconnect",
+      "title": "Stdio MCP servers never auto-reconnect after disconnect.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43177"
+      ],
+      "description": "When a stdio-type MCP server process dies or disconnects, Claude Code marks it as failed and never attempts reconnection. HTTP/SSE/WebSocket servers get automatic reconnection with exponential backoff (5 attempts), but stdio servers are explicitly excluded. Users must manually run /mcp to reconnect. This affects any MCP integration that uses stdio transport (the most common local MCP pattern)."
+    },
+    {
+      "id": "plan-mode-bypass-after-first-cycle",
+      "title": "Plan mode write restrictions bypassed after first plan cycle.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43147"
+      ],
+      "description": "After completing one plan-approve-implement cycle, entering plan mode again for a new task does not reliably enforce read-only restrictions. Claude carries over the approved mental state and begins editing files before the user approves the new plan and before ExitPlanMode is called. Hooks that rely on plan mode as a safety boundary cannot trust it across multiple cycles in the same session."
     }
   ]
 }

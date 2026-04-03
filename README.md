@@ -3,7 +3,7 @@
 [![Tests](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml/badge.svg)](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Claude Code hooks that actually enforce your rules. 9 hooks, ~1950 tests, [265 known Claude Code gaps documented](tools/enforce/#known-limitations) with severity ratings and workarounds.
+Claude Code hooks that actually enforce your rules. 9 hooks, ~1950 tests, [268 known Claude Code gaps documented](tools/enforce/#known-limitations) with severity ratings and workarounds.
 
 > **Quick links:** [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
 
@@ -625,6 +625,12 @@ Run `claude --version` to check. Run `safety-check` with `--verify` to confirm h
 **`bypassPermissions` not restored on session resume (VS Code)**: When `bypassPermissions` is configured via `initialPermissionMode` in VS Code settings, [resumed conversations revert to default permission mode](https://github.com/anthropics/claude-code/issues/42735) and prompt for every edit. New sessions may pick it up, but resumed sessions consistently fail. Hooks that depend on the session running in bypass mode cannot rely on it persisting across resume.
 
 **Worktree isolation breaks in git submodules**: Using `isolation: "worktree"` on the Agent tool inside a git submodule [creates the worktree in `.git/modules/<path>/.claude/worktrees/`](https://github.com/anthropics/claude-code/issues/42732) instead of the project's own `.claude/worktrees/`. This places the agent outside the project's permission scope, causing `bypassPermissions` to be silently downgraded and triggering unexpected permission prompts.
+
+**Skill approval not tied to content hash**: When a user approves a skill, the approval is [not anchored to the file's content hash](https://github.com/anthropics/claude-code/issues/43157). If the skill file is modified after approval (even mid-session), the modified version executes without re-prompting. Additionally, approving a skill can bypass tool-level deny rules in `settings.json`. This is a supply chain risk: anything with write access to `~/.claude/skills/` can escalate capabilities post-approval.
+
+**Stdio MCP servers never auto-reconnect**: When a stdio-type MCP server process dies or disconnects, Claude Code [marks it as failed and never retries](https://github.com/anthropics/claude-code/issues/43177). HTTP/SSE/WebSocket servers get automatic reconnection with exponential backoff (5 attempts), but stdio servers are explicitly excluded. Users must manually run `/mcp` to reconnect. This affects any MCP integration using stdio transport (the most common local pattern).
+
+**Plan mode bypass after first cycle**: After completing one plan-approve-implement cycle, entering plan mode again [does not reliably enforce read-only restrictions](https://github.com/anthropics/claude-code/issues/43147). Claude carries over the "approved" mental state and begins editing files before the user approves the new plan. Hooks that rely on plan mode as a safety boundary cannot trust it across multiple cycles in the same session.
 
 **Windows**: All seven hooks have native **PowerShell 7+** equivalents (`hook.ps1`) that require no external dependencies. Requires [PowerShell 7](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (`pwsh`), not the built-in Windows PowerShell 5. Install them with:
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Known Limitations - Claude Code Hooks | Boucle</title>
-    <meta name="description" content="265 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
+    <meta name="description" content="268 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
     <style>
         :root {
             --bg: #0d1117;
@@ -2898,6 +2898,39 @@
             <h3>Shell snapshot drops user PATH additions, causing spurious startup warnings.</h3>
             <p>The Bash tool <a href="https://github.com/anthropics/claude-code/issues/43127" target="_blank">shell snapshot mechanism</a> writes a hardcoded <code>export PATH=...</code> derived from the launch-time process environment, not from the user shell config. User-level PATH additions (including <code>~/.local/bin</code> where the installer places the binary) are silently dropped. This causes spurious startup warnings and can make hooks fail silently if they depend on commands in user-added PATH directories. Workaround: none within hooks; the snapshot behavior is internal to Claude Code.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43127" target="_blank">#43127</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="43157" id="skill-approval-not-hash-anchored" data-severity="high">
+            <div class="kl-header">
+                <span class="kl-num">#266</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ef4444;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Skill approval not tied to content hash; modified skills execute without re-approval.</h3>
+            <p>When a user approves a skill, the approval is not anchored to the skill file&rsquo;s content hash. If the file is <a href="https://github.com/anthropics/claude-code/issues/43157" target="_blank">modified after approval</a> (even mid-session), the modified version executes without re-prompting. Additionally, approving a skill can bypass tool-level deny rules in <code>settings.json</code>. This is a supply chain risk: anything with write access to <code>~/.claude/skills/</code> can escalate capabilities post-approval.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43157" target="_blank">#43157</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="43177" id="stdio-mcp-no-auto-reconnect" data-severity="medium">
+            <div class="kl-header">
+                <span class="kl-num">#267</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f59e0b;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Stdio MCP servers never auto-reconnect after disconnect.</h3>
+            <p>When a stdio-type MCP server process dies or disconnects, Claude Code <a href="https://github.com/anthropics/claude-code/issues/43177" target="_blank">marks it as failed</a> and never attempts reconnection. HTTP/SSE/WebSocket servers get automatic reconnection with exponential backoff (5 attempts), but stdio servers are explicitly excluded. Users must manually run <code>/mcp</code> to reconnect. This affects any MCP integration that uses stdio transport (the most common local MCP pattern).</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43177" target="_blank">#43177</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="43147" id="plan-mode-bypass-after-first-cycle" data-severity="medium">
+            <div class="kl-header">
+                <span class="kl-num">#268</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f59e0b;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Plan mode write restrictions bypassed after first plan cycle.</h3>
+            <p>After completing one plan-approve-implement cycle, entering plan mode again for a new task <a href="https://github.com/anthropics/claude-code/issues/43147" target="_blank">does not reliably enforce read-only restrictions</a>. Claude carries over the &ldquo;approved&rdquo; mental state and begins editing files before the user approves the new plan. Hooks that rely on plan mode as a safety boundary cannot trust it across multiple cycles in the same session.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43147" target="_blank">#43147</a></div>
         </div>
 
         <footer>
