@@ -555,13 +555,13 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-243 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+250 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
-| Hook behavior & events | 104 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits, allowManagedHooksOnly blocks plugin hooks, OAuth token refresh collision, no Team lifecycle hooks, auto-compact ignores disable, env.PATH ignored, multiple-hook stdin contention |
+| Hook behavior & events | 106 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits, allowManagedHooksOnly blocks plugin hooks, OAuth token refresh collision, no Team lifecycle hooks, auto-compact ignores disable, env.PATH ignored, multiple-hook stdin contention, Stop hook PowerShell encoding error, --continue + -p session lookup broken |
 | Hook bypass & evasion | 84 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch, `$()` subshell pattern-match failure, goal-directed tool switching, apiKeyHelper arbitrary code execution, `find` command injection (CVE-2026-24887) |
-| Permission system | 48 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, PowerShell trailing `&` bypass, parse-failure fallback, auto-mode classifier wrong model, bypassPermissions UNC path regression, skip-permissions still prompts Edit/Write, .git/.claude path prompts, session resume bypass, submodule worktree scope, API-based branch protection mutation |
+| Permission system | 51 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, PowerShell trailing `&` bypass, parse-failure fallback, auto-mode classifier wrong model, bypassPermissions UNC path regression, skip-permissions still prompts Edit/Write, .git/.claude path prompts, session resume bypass, submodule worktree scope, API-based branch protection mutation, --dangerously-skip-permissions plan mode regression |
 | Subagent & spawned agents | 6 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, teammate hooks bypass, subagent file creation bypass |
 | CLAUDE.md & memory | 1 | CLAUDE.md rules are advisory-only with no enforcement mechanism |
 
@@ -1056,6 +1056,12 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 **Bypass mode may still halt for user input.** Even with `dangerouslySkipPermissions` or bypass mode enabled, [Claude may still stop and prompt for user input](https://github.com/anthropics/claude-code/issues/42961) instead of proceeding autonomously (v2.1.91). This breaks autonomous pipelines and agent loops that depend on non-interactive execution. Workaround: none known; the session must be manually resumed. See [#42961](https://github.com/anthropics/claude-code/issues/42961).
 
 **Brace expansion check false-positives on single-quoted JSON arguments.** The built-in brace expansion security check [falsely triggers on Bash commands containing single-quoted JSON](https://github.com/anthropics/claude-code/issues/42400) with multiple comma-separated values. Short JSON payloads pass; longer ones trigger a "Brace expansion" permission prompt even though shell brace expansion cannot occur inside single quotes. This affects automated workflows and CI pipelines that pass JSON via CLI arguments. Workaround: pipe JSON from a file or heredoc instead of inline arguments. See [#42400](https://github.com/anthropics/claude-code/issues/42400).
+
+**Stop hook execution fails with PowerShell encoding error on Windows.** On Windows with non-ASCII session content (e.g., Korean text), Stop hooks [fail with garbled UTF-8 output](https://github.com/anthropics/claude-code/issues/43024). The PowerShell encoding pipeline corrupts multi-byte characters, producing mojibake in hook stderr. The hook still runs but reports a non-blocking error. Affects any Stop hook on Windows when the session contains non-Latin characters. See [#43024](https://github.com/anthropics/claude-code/issues/43024).
+
+**--dangerously-skip-permissions: plan mode only works on first invocation.** When running with `--dangerously-skip-permissions`, toggling plan mode via `/plan` [only activates correctly on the first use](https://github.com/anthropics/claude-code/issues/43015) within a session. From the second invocation onward, plan mode is ignored and Claude executes actions directly without planning. Labeled as regression. Affects autonomous workflows that alternate between plan and execute phases. See [#43015](https://github.com/anthropics/claude-code/issues/43015).
+
+**--continue and -p flags broken together in v2.1.90.** Combining `--continue` with `-p` [silently creates a new session](https://github.com/anthropics/claude-code/issues/43013) instead of continuing the most recent one. No error or warning is emitted. Root cause: a 2.1.90 change excluded sessions created by `claude -p` or SDK from the `--resume` picker, which also broke `--continue` session lookup. Labeled as regression. Affects any automation or scripting that chains prompts across sessions using `--continue -p`. See [#43013](https://github.com/anthropics/claude-code/issues/43013).
 
 ## Tests
 

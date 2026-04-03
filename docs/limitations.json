@@ -1,19 +1,19 @@
 {
   "version": "0.12.0",
-  "count": 247,
+  "count": 250,
   "categories": {
+    "Hook behavior & events": 106,
     "Hook bypass & evasion": 84,
-    "Hook behavior & events": 104,
-    "Permission system": 50,
+    "Permission system": 52,
     "Subagent & spawned agents": 6,
     "CLAUDE.md & memory": 1,
     "Hook behavior": 1
   },
   "severity_counts": {
-    "critical": 11,
-    "low": 82,
-    "medium": 89,
-    "high": 64
+    "medium": 91,
+    "low": 83,
+    "high": 65,
+    "critical": 11
   },
   "entries": [
     {
@@ -2563,7 +2563,37 @@
       "issues": [
         "https://github.com/anthropics/claude-code/issues/43001"
       ],
-      "description": "When Claude Code prompts for permission to edit a file it classifies as \"sensitive\" (e.g., paths under ~/.claude/), selecting \"Yes, and always allow access to [path] from this project\" does not persist the exception. The same prompt reappears in every new session for the same file paths. Distinct from the directory-access persistence bug (#40606/#35787) and the hardcoded sensitive-file prompt (#41615): here the \"always allow\" option exists but its state is not saved. Not hookable — the prompt fires before any tool hook. Workaround: none known; users must re-approve every session."
+      "description": "When Claude Code prompts for permission to edit a file it classifies as \"sensitive\" (e.g., paths under ~/.claude/), selecting \"Yes, and always allow access to [path] from this project\" does not persist the exception. The same prompt reappears in every new session for the same file paths. Distinct from the directory-access persistence bug (#40606/#35787) and the hardcoded sensitive-file prompt (#41615): here the \"always allow\" option exists but its state is not saved. Not hookable \u2014 the prompt fires before any tool hook. Workaround: none known; users must re-approve every session."
+    },
+    {
+      "id": "stop-hook-powershell-encoding-error-windows",
+      "title": "Stop hook execution fails with PowerShell encoding error on Windows.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43024"
+      ],
+      "description": "On Windows with non-ASCII session content (e.g., Korean text), Stop hooks fail with garbled UTF-8 output. The PowerShell encoding pipeline corrupts multi-byte characters, producing mojibake in hook stderr. The hook still runs but reports a non-blocking error. Affects any Stop hook on Windows when the session contains non-Latin characters."
+    },
+    {
+      "id": "dangerously-skip-permissions-plan-mode-regression",
+      "title": "--dangerously-skip-permissions: plan mode only works on first invocation.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43015"
+      ],
+      "description": "When running with --dangerously-skip-permissions, toggling plan mode via /plan only activates correctly on the first use within a session. From the second invocation onward, plan mode is ignored and Claude executes actions directly without planning. Labeled as regression. Affects autonomous workflows that alternate between plan and execute phases."
+    },
+    {
+      "id": "continue-flag-silently-ignored-with-p-flag",
+      "title": "--continue and -p flags broken together in v2.1.90.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43013"
+      ],
+      "description": "In v2.1.90, combining --continue with -p silently creates a new session instead of continuing the most recent one. No error or warning is emitted. Root cause: a 2.1.90 change excluded sessions created by `claude -p` or SDK from the --resume picker, which also broke --continue session lookup. Labeled as regression. Affects any automation or scripting that chains prompts across sessions using --continue -p."
     }
   ]
 }
