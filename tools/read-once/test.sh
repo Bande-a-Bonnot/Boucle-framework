@@ -545,6 +545,90 @@ else
   echo "  ✗ Verify: should detect missing installation"
 fi
 
+# --- PostCompact hook tests ---
+echo ""
+echo "--- PostCompact hook (compact.sh) ---"
+COMPACT_HOOK="${SCRIPT_DIR}/compact.sh"
+
+if [ -f "$COMPACT_HOOK" ]; then
+
+# Test: compact clears session cache
+echo "test-content-line-1" > "$TEST_FILE"
+RESULT=$(echo '{"tool_name":"Read","tool_input":{"file_path":"'"$TEST_FILE"'"},"session_id":"'"$SESSION"'"}' | "$HOOK")
+assert_empty "compact: pre-seed first read" "$RESULT"
+
+# Second read should hit cache
+sleep 1
+RESULT=$(echo '{"tool_name":"Read","tool_input":{"file_path":"'"$TEST_FILE"'"},"session_id":"'"$SESSION"'"}' | "$HOOK")
+assert_contains "compact: pre-seed cache hit" "already in context" "$RESULT"
+
+# Run PostCompact hook
+COMPACT_RESULT=$(echo '{"session_id":"'"$SESSION"'","hook_event_name":"PostCompact","trigger":"auto","compact_summary":"test summary"}' | "$COMPACT_HOOK")
+assert_empty "compact: hook exits cleanly" "$COMPACT_RESULT"
+
+# After compaction, re-read should be allowed (cache cleared)
+RESULT=$(echo '{"tool_name":"Read","tool_input":{"file_path":"'"$TEST_FILE"'"},"session_id":"'"$SESSION"'"}' | "$HOOK")
+assert_empty "compact: re-read allowed after compaction" "$RESULT"
+
+# Test: compact logs event to stats
+STATS_FILE="${TEST_DIR}/.claude/read-once/stats.jsonl"
+TOTAL=$((TOTAL + 1))
+if [ -f "$STATS_FILE" ] && grep -q '"event":"compact"' "$STATS_FILE"; then
+  PASS=$((PASS + 1))
+  echo "  ✓ compact: logs compaction event to stats"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ compact: should log compaction event to stats"
+fi
+
+# Test: compact with empty session_id does nothing
+RESULT=$(echo '{"session_id":"","hook_event_name":"PostCompact"}' | "$COMPACT_HOOK")
+assert_empty "compact: empty session_id exits cleanly" "$RESULT"
+
+# Test: compact with missing session_id does nothing
+RESULT=$(echo '{"hook_event_name":"PostCompact"}' | "$COMPACT_HOOK")
+assert_empty "compact: missing session_id exits cleanly" "$RESULT"
+
+# Test: compact clears snapshots (diff mode)
+SNAP_DIR="${TEST_DIR}/.claude/read-once/snapshots"
+mkdir -p "$SNAP_DIR"
+# Create a fake snapshot matching session hash
+if command -v sha256sum >/dev/null 2>&1; then
+  S_HASH=$(echo -n "snap-session-test" | sha256sum | cut -c1-16)
+else
+  S_HASH=$(echo -n "snap-session-test" | shasum -a 256 | cut -c1-16)
+fi
+echo "snapshot-data" > "${SNAP_DIR}/${S_HASH}-abcdef1234567890"
+
+echo '{"session_id":"snap-session-test","hook_event_name":"PostCompact"}' | "$COMPACT_HOOK"
+
+TOTAL=$((TOTAL + 1))
+if [ ! -f "${SNAP_DIR}/${S_HASH}-abcdef1234567890" ]; then
+  PASS=$((PASS + 1))
+  echo "  ✓ compact: clears snapshots for session"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ compact: should clear snapshots for session"
+fi
+
+# Test: compact doesn't affect other sessions
+OTHER_SESSION="other-session-$$"
+echo "other-content" > "${TEST_DIR}/other-file.txt"
+RESULT=$(echo '{"tool_name":"Read","tool_input":{"file_path":"'"${TEST_DIR}/other-file.txt"'"},"session_id":"'"$OTHER_SESSION"'"}' | "$HOOK")
+assert_empty "compact: seed other session" "$RESULT"
+
+# Compact the original session
+echo '{"session_id":"'"$SESSION"'","hook_event_name":"PostCompact"}' | "$COMPACT_HOOK"
+
+# Other session cache should still work
+sleep 1
+RESULT=$(echo '{"tool_name":"Read","tool_input":{"file_path":"'"${TEST_DIR}/other-file.txt"'"},"session_id":"'"$OTHER_SESSION"'"}' | "$HOOK")
+assert_contains "compact: other session cache unaffected" "already in context" "$RESULT"
+
+else
+  echo "  (skipped: compact.sh not found)"
+fi
+
 # --- Summary ---
 echo ""
 echo "===================="

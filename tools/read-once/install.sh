@@ -30,24 +30,28 @@ if ! command -v curl >/dev/null 2>&1; then
   fi
 fi
 
-# Download hook and CLI
+# Download hook, compact hook, and CLI
 if ! $DL "${REPO}/hook.sh" > "${INSTALL_DIR}/hook.sh" 2>/dev/null; then
     echo "Error: download of hook.sh failed. Check your internet connection." >&2
+    exit 1
+fi
+if ! $DL "${REPO}/compact.sh" > "${INSTALL_DIR}/compact.sh" 2>/dev/null; then
+    echo "Error: download of compact.sh failed. Check your internet connection." >&2
     exit 1
 fi
 if ! $DL "${REPO}/read-once" > "${INSTALL_DIR}/read-once" 2>/dev/null; then
     echo "Error: download of read-once CLI failed. Check your internet connection." >&2
     exit 1
 fi
-chmod +x "${INSTALL_DIR}/hook.sh" "${INSTALL_DIR}/read-once"
+chmod +x "${INSTALL_DIR}/hook.sh" "${INSTALL_DIR}/compact.sh" "${INSTALL_DIR}/read-once"
 
 # Verify downloads are not empty
-if [ ! -s "${INSTALL_DIR}/hook.sh" ] || [ ! -s "${INSTALL_DIR}/read-once" ]; then
+if [ ! -s "${INSTALL_DIR}/hook.sh" ] || [ ! -s "${INSTALL_DIR}/compact.sh" ] || [ ! -s "${INSTALL_DIR}/read-once" ]; then
     echo "Error: downloaded file(s) are empty. The URL may have changed." >&2
     exit 1
 fi
 
-echo "read-once: downloaded hook.sh and read-once CLI"
+echo "read-once: downloaded hook.sh, compact.sh, and read-once CLI"
 
 # Add hook to settings.json
 if [ ! -f "$SETTINGS" ]; then
@@ -66,11 +70,22 @@ if [ ! -f "$SETTINGS" ]; then
           }
         ]
       }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/read-once/compact.sh"
+          }
+        ]
+      }
     ]
   }
 }
 SETTINGS_EOF
-  echo "read-once: created settings with hook configured"
+  echo "read-once: created settings with hooks configured (PreToolUse + PostCompact)"
 else
   # Handle JSONC comments in settings.json (prevents silent failures)
   if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$SETTINGS" 2>/dev/null; then
@@ -108,10 +123,28 @@ JSONC_FIX
 
   # Check if hook already configured
   if grep -q "read-once" "$SETTINGS" 2>/dev/null; then
-    echo "read-once: hook already in settings.json"
+    echo "read-once: hooks already in settings.json"
+    # Upgrade: add PostCompact if missing (existing installs only have PreToolUse)
+    if ! grep -q "compact.sh" "$SETTINGS" 2>/dev/null && command -v jq &>/dev/null; then
+      UPDATED=$(jq --arg hook "~/.claude/read-once/compact.sh" '
+        .hooks //= {} |
+        .hooks.PostCompact //= [] |
+        if (.hooks.PostCompact | map(select(.hooks[]?.command == $hook)) | length) == 0 then
+          .hooks.PostCompact += [{
+            "matcher": "",
+            "hooks": [{
+              "type": "command",
+              "command": $hook
+            }]
+          }]
+        else . end
+      ' "$SETTINGS")
+      echo "$UPDATED" > "$SETTINGS"
+      echo "read-once: added PostCompact hook (upgrade from previous install)"
+    fi
   elif command -v jq &>/dev/null; then
     # Auto-merge into existing settings using jq
-    UPDATED=$(jq --arg hook "~/.claude/read-once/hook.sh" '
+    UPDATED=$(jq --arg hook "~/.claude/read-once/hook.sh" --arg compact "~/.claude/read-once/compact.sh" '
       .hooks //= {} |
       .hooks.PreToolUse //= [] |
       .hooks.PreToolUse += [{
@@ -120,10 +153,18 @@ JSONC_FIX
           "type": "command",
           "command": $hook
         }]
+      }] |
+      .hooks.PostCompact //= [] |
+      .hooks.PostCompact += [{
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "command": $compact
+        }]
       }]
     ' "$SETTINGS")
     echo "$UPDATED" > "$SETTINGS"
-    echo "read-once: hook added to existing settings.json"
+    echo "read-once: hooks added to existing settings.json (PreToolUse + PostCompact)"
   else
     echo "read-once: settings.json exists but jq not found for auto-merge."
     echo "  Install jq (brew install jq) and re-run, or add manually:"

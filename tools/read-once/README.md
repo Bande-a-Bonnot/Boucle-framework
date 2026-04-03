@@ -16,7 +16,7 @@ One command:
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/read-once/install.sh | bash
 ```
 
-This downloads `hook.sh` and `read-once` to `~/.claude/read-once/` and adds the hook to your settings.
+This downloads `hook.sh`, `compact.sh`, and `read-once` to `~/.claude/read-once/` and adds both hooks to your settings.
 
 Or clone and install manually:
 
@@ -56,6 +56,17 @@ Add to `.claude/settings.json` by hand:
           {
             "type": "command",
             "command": "/path/to/read-once/hook.sh"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/read-once/compact.sh"
           }
         ]
       }
@@ -116,9 +127,15 @@ Claude then proceeds without the redundant read. No loss of information — the 
 
 ### Compaction safety
 
-Claude Code compacts the context window during long sessions, dropping older content. A file read 30 minutes ago might no longer be in the working context. read-once handles this with a TTL (time-to-live): cache entries expire after `READ_ONCE_TTL` seconds (default: 1200 = 20 minutes). After expiry, re-reads are allowed.
+Claude Code compacts the context window during long sessions, dropping older content. A file read 30 minutes ago might no longer be in the working context.
 
-There's no way to detect compaction events from a hook, so a time-based heuristic is the best available approach. If you know compaction just happened, you can manually reset the cache:
+read-once handles this two ways:
+
+1. **PostCompact hook** (recommended): `compact.sh` registers as a PostCompact hook and clears the session cache immediately when compaction occurs. The installer configures this automatically.
+
+2. **TTL fallback**: Cache entries also expire after `READ_ONCE_TTL` seconds (default: 1200 = 20 minutes). This catches cases where PostCompact is not configured.
+
+You can also manually reset the cache:
 
 ```sh
 ./read-once clear
@@ -249,7 +266,7 @@ Each blocked re-read saves the full file token cost (including the ~70% overhead
 This happens in deny mode (`READ_ONCE_MODE=deny`). Claude Code's Edit tool requires a successful Read before it will edit a file. When read-once blocks the Read, Edit thinks the file was never read. The fix: use the default warn mode (`READ_ONCE_MODE=warn`), which allows reads with an advisory instead of blocking them.
 
 **Won't this break after context compaction?**
-Cache entries expire after 20 minutes (configurable via `READ_ONCE_TTL`). After expiry, re-reads are allowed. You can also run `read-once clear` to reset the cache manually after compaction.
+The installer configures a PostCompact hook (`compact.sh`) that clears the cache immediately when compaction happens. As a fallback, cache entries also expire after 20 minutes (configurable via `READ_ONCE_TTL`). You can also run `read-once clear` to reset manually.
 
 **Claude Code reads small chunks, not whole files — does this help?**
 Partial reads with `offset` or `limit` are never cached. They always pass through. read-once only deduplicates full-file reads where the entire file is requested again.
