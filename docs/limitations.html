@@ -246,7 +246,9 @@
             </div>
             <h3>@-autocomplete bypasses hooks.</h3>
             <p>When a user types <code>@.env</code> in the prompt, Claude Code injects the file content directly into the conversation. No tool call happens, so PreToolUse hooks never fire. A file-guard rule for <code>.env</code> blocks <code>Read .env</code> and <code>Edit .env</code> but cannot block <code>@.env</code>. This is a <a href="https://github.com/anthropics/claude-code/issues/32928" target="_blank">known gap</a> in the hook system. Workaround: use managed-settings.json <code>denyRead</code> patterns alongside hooks for defense in depth.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/32928" target="_blank">#32928</a></div>
+                        <!-- workaround:autocomplete-bypasses-hooks -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Use file-guard to protect sensitive files at the Bash/Read tool level. Add .env and other secrets to file-guard's block list. Since @-autocomplete injects file content without a tool call, the only defense is preventing the file from being readable in the first place: move secrets outside the project directory or use OS-level file permissions.</p>
+<div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/32928" target="_blank">#32928</a></div>
         </div>
         <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="32930" id="windows-hooks-run-via-usr-bin-bash-regardless-of-shell-setti" data-severity="low">
             <div class="kl-header">
@@ -266,7 +268,9 @@
             </div>
             <h3>Hook deny is not enforced for MCP tool calls.</h3>
             <p>PreToolUse hooks fire correctly for MCP server tools, but <a href="https://github.com/anthropics/claude-code/issues/33106" target="_blank">`permissionDecision: &quot;deny&quot;` is silently ignored</a> -- the MCP tool call proceeds anyway. This means hooks cannot block MCP tools. This is a platform bug, not an enforce-hooks limitation. Workaround: block the MCP server name in managed-settings.json <code>disallowedTools</code> instead.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/33106" target="_blank">#33106</a></div>
+                        <!-- workaround:hook-deny-is-not-enforced-for-mcp-tool-calls -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on PreToolUse hooks to block MCP tool calls. Use MCP server-level access controls instead, or remove untrusted MCP servers from your configuration. For sensitive operations, configure the MCP server itself to reject unauthorized requests.</p>
+<div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/33106" target="_blank">#33106</a></div>
         </div>
         <div class="kl-entry" data-category="Hook behavior & events" data-issues="33125" id="only-command-type-hooks-block-tool-calls" data-severity="low">
             <div class="kl-header">
@@ -296,7 +300,9 @@
             </div>
             <h3>Hooks don&#x27;t fire in pipe mode (`-p`) or bare mode (`--bare`).</h3>
             <p>When running Claude Code with <code>-p</code> (pipe/print mode), <a href="https://github.com/anthropics/claude-code/issues/37559" target="_blank">no hooks execute at all</a>: PreToolUse, PostToolUse, and PermissionRequest are all silently skipped (<a href="https://github.com/anthropics/claude-code/issues/40506" target="_blank">#40506</a>). The <code>--bare</code> flag goes further, also skipping LSP, plugin sync, and skill directory walks for faster scripted startup. This affects autonomous agent loops, CI pipelines, and any workflow using <code>claude -p</code> or <code>claude --bare -p</code> for headless execution. The model executes tools with no hook enforcement regardless of what is configured in <code>settings.json</code>. **CAUTION:** Some community workarounds for permission bugs (e.g., <a href="https://github.com/anthropics/claude-code/issues/40502" target="_blank">#40502</a> recommends &quot;use hooks for safety with bypassPermissions&quot;) are invalid in <code>-p</code> mode because the hooks they depend on never fire. If you run an autonomous loop via <code>claude -p</code>, hooks provide zero protection. Use OS-level controls (file permissions, network policy, containerization) as the enforcement layer instead.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/40506" target="_blank">#40506</a>, <a href="https://github.com/anthropics/claude-code/issues/40502" target="_blank">#40502</a>, <a href="https://github.com/anthropics/claude-code/issues/37559" target="_blank">#37559</a></div>
+                        <!-- workaround:hooks-don-t-fire-in-pipe-mode-p-or-bare-mode-bare -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Never use -p or --bare with untrusted inputs. These modes are designed for scripted use and intentionally skip all hooks. If you need hook enforcement, use interactive mode or headless mode (which does fire hooks). For CI/CD pipelines using -p, add validation outside Claude Code (e.g., review the output before applying changes).</p>
+<div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/40506" target="_blank">#40506</a>, <a href="https://github.com/anthropics/claude-code/issues/40502" target="_blank">#40502</a>, <a href="https://github.com/anthropics/claude-code/issues/37559" target="_blank">#37559</a></div>
         </div>
         <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="37745" id="pretooluse-hooks-can-reset-permission-bypass-mode" data-severity="low">
             <div class="kl-header">
@@ -676,7 +682,9 @@
             </div>
             <h3>Stop hooks do not fire in the VSCode extension.</h3>
             <p>Stop hooks configured in <code>.claude/settings.json</code> <a href="https://github.com/anthropics/claude-code/issues/40029" target="_blank">do not execute</a> when Claude Code runs inside the VSCode extension. The same hooks fire correctly in CLI sessions. Other hook types (<code>PreToolUse</code>, <code>PostToolUse</code>, <code>SessionStart</code>) all work in VSCode. This is a platform gap, not a configuration error. If you rely on Stop hooks for session-end enforcement or cleanup, those protections are silently absent in VSCode. No workaround. Similar to the earlier <a href="https://github.com/anthropics/claude-code/issues/11156" target="_blank">Notification hooks VSCode gap</a>.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/40029" target="_blank">#40029</a>, <a href="https://github.com/anthropics/claude-code/issues/11156" target="_blank">#11156</a></div>
+                        <!-- workaround:stop-hooks-do-not-fire-in-the-vscode-extension -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Use PostToolUse hooks or session-log for session auditing instead of Stop hooks when running in VS Code. Alternatively, run Claude Code in the terminal (CLI) for workflows where Stop hooks are essential (e.g., cleanup or reporting at session end).</p>
+<div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/40029" target="_blank">#40029</a>, <a href="https://github.com/anthropics/claude-code/issues/11156" target="_blank">#11156</a></div>
         </div>
         <div class="kl-entry" data-category="Permission system" data-issues="40036" id="marketplace-plugin-install-silently-adds-hooks-with-no-conse" data-severity="low">
             <div class="kl-header">
@@ -1066,7 +1074,9 @@
             </div>
             <h3>Session-level permission caching bypasses allow list in sandbox mode.</h3>
             <p>When sandbox mode is enabled, approving one instance of a command (e.g., <code>git commit</code>) <a href="https://github.com/anthropics/claude-code/issues/40384" target="_blank">auto-approves ALL subsequent calls</a> to that command pattern for the rest of the session. The allow list is only consulted on the first invocation. This means a carefully scoped allow list that permits <code>git commit -m &quot;...&quot;</code> also permits <code>git commit --allow-empty</code> after the first approval. Not hookable at the permission-caching layer, but PreToolUse hooks fire on every invocation regardless of session cache state. Use hooks to enforce per-invocation validation for sensitive commands. See <a href="https://github.com/anthropics/claude-code/issues/40384" target="_blank">#40384</a>.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/40384" target="_blank">#40384</a></div>
+                        <!-- workaround:session-level-permission-caching-bypasses-allow-list-in-sand -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> In sandbox mode, avoid approving broad command patterns. Each approval auto-approves all subsequent calls to that command for the entire session. Use explicit allow lists in settings.json rather than relying on runtime approval. Consider using bash-guard to add a secondary enforcement layer that is not affected by session caching.</p>
+<div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/40384" target="_blank">#40384</a></div>
         </div>
         <div class="kl-entry" data-category="Permission system" data-issues="40382" id="shell-redirect-targets-saved-as-standalone-permission-entrie" data-severity="medium">
             <div class="kl-header">
@@ -1386,7 +1396,9 @@
             </div>
             <h3>Internal git operations bypass all hooks.</h3>
             <p>Claude Code runs background git operations (<code>git fetch origin</code> + <code>git reset --hard origin/main</code>) <a href="https://github.com/anthropics/claude-code/issues/40710" target="_blank">programmatically every ~10 minutes</a> without spawning an external <code>git</code> binary or making a tool call. Since hooks only fire on tool calls, git-safe and all other hooks are blind to these operations. This silently destroys all uncommitted changes to tracked files. The operations use libgit2 (or similar) within the Claude Code process itself, confirmed by <code>.git/</code> lock file creation with no corresponding process. Worktrees are immune (zero reset entries in worktree reflog). Workaround: commit frequently, or work in git worktrees. Not hookable — the operations occur entirely within the runtime. See <a href="https://github.com/anthropics/claude-code/issues/40710" target="_blank">#40710</a>. Related to <a href="https://github.com/anthropics/claude-code/issues/8072" target="_blank">#8072</a> and <a href="https://github.com/anthropics/claude-code/issues/7232" target="_blank">#7232</a>.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/40710" target="_blank">#40710</a>, <a href="https://github.com/anthropics/claude-code/issues/8072" target="_blank">#8072</a>, <a href="https://github.com/anthropics/claude-code/issues/7232" target="_blank">#7232</a></div>
+                        <!-- workaround:internal-git-operations-bypass-all-hooks -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Use git-safe or branch-guard hooks to protect critical branches at the Bash tool level. Internal git operations (fetch + reset) run programmatically without tool calls, so hook-based protection cannot intercept them. Protect important work by committing frequently and using separate branches. Consider Git server-side hooks (pre-receive) for critical branch protection.</p>
+<div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/40710" target="_blank">#40710</a>, <a href="https://github.com/anthropics/claude-code/issues/8072" target="_blank">#8072</a>, <a href="https://github.com/anthropics/claude-code/issues/7232" target="_blank">#7232</a></div>
         </div>
         <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="38841" id="model-can-manipulate-hook-state-files-to-bypass-enforcement" data-severity="low">
             <div class="kl-header">
@@ -2016,7 +2028,9 @@
             </div>
             <h3>PermissionRequest hooks do not fire for subagent permission requests.</h3>
             <p>When subagents spawned via Agent Teams need permission, the request is <a href="https://github.com/anthropics/claude-code/issues/23983" target="_blank">delegated to the parent session&#x27;s terminal prompt</a> without triggering PermissionRequest hooks. Main-session requests fire correctly. Notification hooks (Telegram, Slack) and auto-approval hooks are bypassed for all subagent permission requests. Compounds with <a href="https://github.com/anthropics/claude-code/issues/37730" target="_blank">#37730</a> (subagents don&#x27;t inherit permission settings) and <a href="https://github.com/anthropics/claude-code/issues/40241" target="_blank">#40241</a> (bypass doesn&#x27;t propagate). See <a href="https://github.com/anthropics/claude-code/issues/23983" target="_blank">#23983</a>.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/37730" target="_blank">#37730</a>, <a href="https://github.com/anthropics/claude-code/issues/40241" target="_blank">#40241</a>, <a href="https://github.com/anthropics/claude-code/issues/23983" target="_blank">#23983</a></div>
+                        <!-- workaround:permissionrequest-hooks-do-not-fire-for-subagent-permission- -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Set explicit permission rules in settings.json allow/deny lists at the project level rather than relying on PermissionRequest hook interception. Rules in settings.json apply to both main sessions and subagents. For strict control, use bypassPermissions: false and define all allowed operations explicitly.</p>
+<div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/37730" target="_blank">#37730</a>, <a href="https://github.com/anthropics/claude-code/issues/40241" target="_blank">#40241</a>, <a href="https://github.com/anthropics/claude-code/issues/23983" target="_blank">#23983</a></div>
         </div>
         <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="40029 13339" id="vs-code-ignores-hook-permissiondecision-ask" data-severity="high">
             <div class="kl-header">
@@ -2259,7 +2273,9 @@
             </div>
             <h3>PreToolUse hooks do not fire for teammates spawned via Agent tool.</h3>
             <p>Hooks defined in project and user settings.json fire for the main session but are silently skipped for teammates spawned via Agent tool with team_name. Hooks in agent frontmatter also do not fire. Teams relying on PreToolUse for role-based restrictions have no enforcement on teammates.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42385" target="_blank">#42385</a></div>
+                        <!-- workaround:teammate-hooks-bypass -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Define permission rules in settings.json allow/deny lists, which apply regardless of whether the operation runs in the main session or a teammate. Do not rely on PreToolUse hooks alone for security-critical enforcement when teammates are in use.</p>
+<div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42385" target="_blank">#42385</a></div>
         </div>
 
         <div class="kl-entry" data-category="Hook behavior & events" data-issues="42513" id="desktop-app-env-path-ignored" data-severity="high">
@@ -2314,7 +2330,9 @@
             </div>
             <h3><code>find</code> command injection bypasses user approval prompt (CVE-2026-24887).</h3>
             <p>Command parsing error allowed untrusted context content to trigger arbitrary command execution through <code>find</code> without the approval prompt firing. CVSS 7.7 HIGH. Fixed in v2.0.72. bash-guard catches dangerous find patterns regardless of version.</p>
-            <div class="kl-issues">Issues: <a href="https://nvd.nist.gov/vuln/detail/cve-2026-24887" target="_blank">CVE-2026-24887</a>, <a href="https://github.com/anthropics/claude-code/security/advisories/GHSA-qgqw-h4xq-7w8w" target="_blank">GHSA-qgqw-h4xq-7w8w</a></div>
+                        <!-- workaround:find-command-injection-cve -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Update to Claude Code v2.0.72 or later, where this CVE is fixed. bash-guard also catches dangerous find patterns as a defense-in-depth measure.</p>
+<div class="kl-issues">Issues: <a href="https://nvd.nist.gov/vuln/detail/cve-2026-24887" target="_blank">CVE-2026-24887</a>, <a href="https://github.com/anthropics/claude-code/security/advisories/GHSA-qgqw-h4xq-7w8w" target="_blank">GHSA-qgqw-h4xq-7w8w</a></div>
         </div>
 
         <div class="kl-entry" data-category="Permission system" data-issues="adversa-50-subcommand" id="deny-50-subcommand-bypass" data-severity="low">
@@ -2369,7 +2387,9 @@
             </div>
             <h3>Stop hooks defined in Skills never fire.</h3>
             <p>When a skill defines Stop hooks in its SKILL.md file, they are never invoked when the skill session ends. Start hooks and tool hooks work, but the Stop lifecycle event is silently skipped. Workaround: have skill instructions tell Claude to run the stop script manually before exiting.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/19225" target="_blank">#19225</a></div>
+                        <!-- workaround:stop-hooks-in-skills-never-fire -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Use PostToolUse hooks or session-log hooks as alternatives for auditing or cleanup that would normally run at session end. Define Stop hooks at the project or user level instead of in SKILL.md files.</p>
+<div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/19225" target="_blank">#19225</a></div>
         </div>
 
         <div class="kl-entry" data-category="Hook behavior & events" data-issues="33293" id="no-way-to-suppress-async-hook-completion-messages" data-severity="high">
@@ -2600,7 +2620,9 @@
             </div>
             <h3><code>apiKeyHelper</code> in project-level settings enables arbitrary code execution on open.</h3>
             <p>The <code>apiKeyHelper</code> field in <code>.claude/settings.json</code> is executed as a shell command via <code>execa</code> with <code>shell: true</code>. Since this file can be committed to a repository, cloning and opening Claude Code anywhere in the project runs the command without user consent. In CI/CD pipelines using <code>claude -p</code>, the trust dialog is bypassed entirely, making this a supply-chain attack vector. Proposed fix: restrict <code>apiKeyHelper</code> to user-level config only, or require explicit confirmation before execution.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42593" target="_blank">#42593</a></div>
+                        <!-- workaround:apikeyhelper-arbitrary-code-execution -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Never trust apiKeyHelper in cloned repositories. Audit .claude/settings.json in any new repo before opening it with Claude Code. Define apiKeyHelper only in user-level settings (~/.claude/settings.json), never in project-level settings. Consider using environment variables for API keys instead.</p>
+<div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42593" target="_blank">#42593</a></div>
         </div>
 
         <div class="kl-entry" data-category="Hook behavior & events" data-issues="42581" id="allowmanagedhooksonly-blocks-plugin-hooks" data-severity="medium">
@@ -2798,7 +2820,9 @@
             </div>
             <h3>--resume loads 0% context on v2.1.91: three regressions in session loading pipeline.</h3>
             <p>In v2.1.91, <code>--resume</code> and <code>/resume</code> <a href="https://github.com/anthropics/claude-code/issues/43044" target="_blank">silently load 0% of conversation history</a>. Three regressions compound: (1) new synchronous reader skips fork pruning for files &gt;5 MB, (2) new timestamp fallback bridges across fork boundaries connecting messages from different forks, (3) <code>getLastSessionLog</code> uses <code>findLatestMessage</code> without <code>leafUuids</code> check, picking synthetic messages from resume attempts. Each failed resume further corrupts the session JSONL by forking the parentUuid DAG. Labeled data-loss. Reporter documented $364 in extra API costs in a single day.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43044" target="_blank">#43044</a></div>
+                        <!-- workaround:resume-loads-zero-context-v2191 -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On v2.1.91, start a new session instead of resuming. If you must resume, check the context percentage shown in the status bar. If it shows 0%, start fresh. Update to a newer version where this regression is fixed.</p>
+<div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43044" target="_blank">#43044</a></div>
         </div>
 
         <div class="kl-entry" data-category="Permission system" data-issues="43043" id="deny-allow-path-precedence-bypass" data-severity="high">
@@ -2996,7 +3020,9 @@
             </div>
             <h3>Managed settings file deny rules silently ignored on macOS.</h3>
             <p>Deny rules in the managed settings file (<code>/Library/Application Support/ClaudeCode/managed-settings.json</code>) are <a href="https://github.com/anthropics/claude-code/issues/43181" target="_blank">silently ignored</a>. The same rules work correctly in <code>~/.claude/settings.json</code>. This breaks the enterprise/MDM enforcement path: organization-level security policies deployed via managed settings have no effect.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43181" target="_blank">#43181</a></div>
+                        <!-- workaround:managed-settings-deny-ignored -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On macOS, define deny rules in ~/.claude/settings.json instead of the managed settings file. Verify that deny rules are actually enforced by testing with a blocked operation before relying on them for security. Use hook-based enforcement (bash-guard, file-guard) as a backup layer.</p>
+<div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43181" target="_blank">#43181</a></div>
         </div>
 
         <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="43189" id="model-ignores-hook-feedback-loop" data-severity="high">
@@ -3271,7 +3297,9 @@
             </div>
             <h3>PreToolUse hooks returning exit 2 + deny JSON do not block tool execution.</h3>
             <p>A PreToolUse hook that returns exit code 2 with <code>permissionDecision: "deny"</code> is <a href="https://github.com/anthropics/claude-code/issues/43407" target="_blank">supposed to block the tool call but doesn't</a>. The platform ignores the deny decision and proceeds with execution. The hook script runs (side effects occur), but the enforcement action is silently dropped. This undermines the core enforcement mechanism for hooks. Confirmed with repro.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43407" target="_blank">#43407</a></div>
+                        <!-- workaround:pretooluse-exit2-deny-ignored -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely solely on exit code 2 with deny JSON for blocking tool execution. Use bash-guard or file-guard as a secondary enforcement layer. Test that your hooks actually block operations before depending on them in production.</p>
+<div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43407" target="_blank">#43407</a></div>
         </div>
 
         <div class="kl-entry" data-category="Permission system" data-issues="43417" id="websearch-ask-permission-no-prompt" data-severity="high">
@@ -3370,7 +3398,9 @@
             </div>
             <h3>Remote triggers can execute destructive git operations (force-push) causing data loss.</h3>
             <p>Remote triggers (scheduled Claude Code agents) can execute <a href="https://github.com/anthropics/claude-code/issues/43461" target="_blank">force-push operations that delete tracked files</a>. One user reported 17 tracked files deleted. The 90% MCP tool failure rate in triggers compounds this: when MCP tools fail, the agent may fall back to destructive git operations. Hooks do not run in remote trigger sessions, so PreToolUse guards cannot prevent this.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43461" target="_blank">#43461</a></div>
+                        <!-- workaround:remote-trigger-destructive-force-push-data-loss -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Use git-safe or branch-guard hooks in any project where remote triggers run. These hooks block force-push operations at the Bash tool level. Additionally, protect critical branches with GitHub branch protection rules (server-side) as a defense-in-depth measure.</p>
+<div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43461" target="_blank">#43461</a></div>
         </div>
 
         <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="43472" id="cowork-sandbox-blocks-mcp-subprocess-google-apis" data-severity="medium">
@@ -3392,7 +3422,9 @@
             </div>
             <h3>Claude Code runs destructive Docker commands (system prune -af) destroying all images, volumes, and cache unrelated to the project.</h3>
             <p>During debugging sessions, Claude Code can run <a href="https://github.com/anthropics/claude-code/issues/41357" target="_blank">'docker system prune -af --volumes'</a> which destroys ALL Docker images, volumes, and build cache on the host, not just those related to the current project. The Bash tool permission system does not distinguish between project-scoped and system-wide Docker commands. Has confirmed repro on macOS.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/41357" target="_blank">#41357</a></div>
+                        <!-- workaround:docker-prune-destroys-unrelated-images -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Add docker system prune and docker volume prune to bash-guard's block list. Or use a PreToolUse hook that blocks any docker command containing 'prune' or '-af'. Review Docker commands carefully before approving them.</p>
+<div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/41357" target="_blank">#41357</a></div>
         </div>
 
         <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="41461" id="background-agents-unstoppable-token-waste" data-severity="high">
@@ -3436,7 +3468,9 @@
             </div>
             <h3>Claude deletes user's creative assets (92 images) via rm -rf during bulk cleanup without individual confirmation.</h3>
             <p>During a project cleanup, Claude deleted ALL files including <a href="https://github.com/anthropics/claude-code/issues/43513" target="_blank">92 user-created AI-generated artwork images</a> with a single rm -rf command. No distinction between code/config and irreplaceable creative files. Data loss is permanent.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43513" target="_blank">#43513</a></div>
+                        <!-- workaround:bulk-rm-rf-deletes-creative-assets-no-confirmation -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Use file-guard to protect directories containing valuable files (artwork, media, data). Add critical directories to file-guard's protected paths list. Also consider using bash-guard to block broad rm -rf patterns, and always keep backups of irreplaceable files outside the project directory.</p>
+<div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43513" target="_blank">#43513</a></div>
         </div>
 
         <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="43517" id="model-reports-rejected-tool-as-completed" data-severity="high">
@@ -3591,6 +3625,119 @@
             <h3>Silent full transcript replay on cache expiry destroys rate budget on resume.</h3>
             <p>When a Claude Code session goes idle long enough for the server-side cache to expire, the next message <a href="https://github.com/anthropics/claude-code/issues/43602" target="_blank">replays the entire session transcript</a> as uncached tokens. This silently consumes the full rate budget in a single turn. No warning is given before the replay. All hooks fire again during replay, potentially causing side effects.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43602" target="_blank">#43602</a></div>
+        </div>
+
+
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="" id="hook-lifecycle-gap-no-tool-started-event" data-severity="high">
+            <div class="kl-meta">
+                <span class="kl-num">#321</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#c9190b;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>No event fires between PreToolUse approval and PostToolUse completion (stuck tool undetectable).</h3>
+            <p>There is a complete observability blackout between PreToolUse (tool approved) and PostToolUse (tool completed). No ToolStarted or heartbeat event exists. Users building monitoring, timeout, or stuck-tool detection hooks cannot distinguish between a tool running normally and one that is hung. Especially severe in subagent contexts where parent collapses activity.</p>
+            <!-- workaround:hook-lifecycle-gap-no-tool-started-event -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Monitor PreToolUse timestamps and compare against PostToolUse arrival to estimate execution duration. No real-time detection is possible.</p>
+            <div class="kl-issues">Issues: None</div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="" id="permission-subshell-syntax-malformed-pattern" data-severity="high">
+            <div class="kl-meta">
+                <span class="kl-num">#322</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#c9190b;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Permission rules with subshell syntax $() generate malformed :* patterns.</h3>
+            <p>When a user approves a Bash command containing subshell syntax like kill $(lsof -ti:8080), Claude Code auto-saves a permission rule with :* placed inside the subshell instead of at the end. Results in malformed rules like Bash(kill $(lsof:*) with unbalanced parentheses that never match future commands.</p>
+            <!-- workaround:permission-subshell-syntax-malformed-pattern -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Manually edit .claude/settings.local.json to fix or remove the malformed permission rule. Do not rely on auto-saved rules for commands with subshell syntax.</p>
+            <div class="kl-issues">Issues: None</div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="" id="git-restore-without-confirmation-data-loss" data-severity="critical">
+            <div class="kl-meta">
+                <span class="kl-num">#323</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#8b0000;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Claude runs destructive git commands (git restore) without user confirmation, causing irreversible data loss.</h3>
+            <p>Claude Code ran git restore lib/ without user confirmation, permanently deleting all uncommitted working tree changes across 40+ files. Work built across multiple previous sessions was lost with no recovery path. The destructive git command was not flagged for approval despite being irreversible.</p>
+            <!-- workaround:git-restore-without-confirmation-data-loss -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Use bash-guard or a PreToolUse hook to intercept destructive git commands (git restore, git checkout --, git clean). Always commit or stash before letting Claude modify code.</p>
+            <div class="kl-issues">Issues: None</div>
+        </div>
+
+        <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="" id="subagent-file-writes-lost-not-persisted" data-severity="high">
+            <div class="kl-meta">
+                <span class="kl-num">#324</span>
+                <span class="kl-cat">Subagent &amp; spawned agents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#c9190b;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Sub-agent file writes appear to succeed but changes are not persisted to the working directory.</h3>
+            <p>When the main agent delegates work to sub-agents using the Agent tool without worktree isolation, sub-agents' Write and Edit tool calls appear to succeed (agents report builds/tests pass), but the files are not actually written to the working directory. Observed on Windows/VS Code.</p>
+            <!-- workaround:subagent-file-writes-lost-not-persisted -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Use worktree isolation for sub-agents, or have the main agent verify file changes after sub-agent completion. Check file modification times after delegation.</p>
+            <div class="kl-issues">Issues: None</div>
+        </div>
+
+        <div class="kl-entry" data-category="Platform &amp; compatibility" data-issues="" id="desktop-env-path-settings-ignored" data-severity="medium">
+            <div class="kl-meta">
+                <span class="kl-num">#325</span>
+                <span class="kl-cat">Platform &amp; compatibility</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d29922;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Desktop app Claude Code tab ignores env.PATH in settings.json (regression).</h3>
+            <p>The Claude Code tab in the Claude Desktop app ignores the env.PATH setting in ~/.claude/settings.json. Bash tool always runs with PATH=/usr/bin:/bin:/usr/sbin:/sbin regardless of configuration. This previously worked. Affects users who need custom PATH for hooks, tools, or language runtimes.</p>
+            <!-- workaround:desktop-env-path-settings-ignored -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Set PATH explicitly in hook scripts or use absolute paths for executables. The CLI version respects env.PATH correctly.</p>
+            <div class="kl-issues">Issues: None</div>
+        </div>
+
+        <div class="kl-entry" data-category="Platform &amp; compatibility" data-issues="" id="renderer-strips-context-xml-tags" data-severity="medium">
+            <div class="kl-meta">
+                <span class="kl-num">#326</span>
+                <span class="kl-cat">Platform &amp; compatibility</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d29922;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Terminal renderer strips <context> XML tags and their content from output, including inside code blocks.</h3>
+            <p>The terminal renderer strips <context> XML tags and all content between them from displayed output, even inside fenced code blocks. The tag name is likely treated as internal system markup. Other XML tags render correctly. Affects users working with XML that uses context as a tag name.</p>
+            <!-- workaround:renderer-strips-context-xml-tags -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Use a different XML tag name, or escape the angle brackets when outputting XML containing <context> tags.</p>
+            <div class="kl-issues">Issues: None</div>
+        </div>
+
+
+        <div class="kl-entry" data-category="Permission system" data-issues="43625" id="permission-relay-all-channels" data-severity="high">
+            <div class="kl-meta">
+                <span class="kl-num">#330</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#c9190b;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Permission prompts relay to all channels, not just the originating channel.</h3>
+            <p>When running Claude Code with a channel plugin (e.g. --channels plugin:telegram), permission prompts are relayed to all connected channels regardless of which channel the message originated from. Reply routing correctly targets the originating channel, but permission dialogs broadcast to every channel. This can expose sensitive tool approval prompts to unintended channels.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43625" target="_blank">#43625</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="43623" id="plan-mode-allows-code-modification" data-severity="high">
+            <div class="kl-meta">
+                <span class="kl-num">#331</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#c9190b;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Agent modifies code while in plan mode (plan mode not enforced as read-only).</h3>
+            <p>Plan mode is expected to be read-only (no file writes or tool executions), but the agent can still modify code while in plan mode. Reported on v2.1.92. This undermines the safety guarantee that plan mode lets you review before any changes are made. Needs independent reproduction.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43623" target="_blank">#43623</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="43627" id="plugin-channel-notifications-not-injected" data-severity="medium">
+            <div class="kl-meta">
+                <span class="kl-num">#332</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d29922;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Channel plugin receives messages but notifications are never injected into the conversation.</h3>
+            <p>The official Telegram channels plugin (telegram@claude-plugins-official v0.0.4) connects and polls successfully, but MCP notifications/claude/channel messages are never injected into the conversation as channel source tags. The plugin logs show messages received, but Claude never sees them. Affects Windows with bun 1.3.11 on v2.1.92.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43627" target="_blank">#43627</a></div>
         </div>
 
         <footer>

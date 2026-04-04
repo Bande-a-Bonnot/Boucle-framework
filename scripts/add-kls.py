@@ -17,36 +17,28 @@ for e in entries:
 
 new_entries = [
     {
-        "id": "mcp-server-instructions-silently-truncated-multiple-servers",
-        "title": "MCP server instructions silently truncated when multiple servers are configured.",
-        "category": "Hook system design constraints",
-        "severity": "medium",
-        "issues": ["https://github.com/anthropics/claude-code/issues/43474"],
-        "description": "When multiple MCP servers are configured (e.g. context7 + deepwiki + serena), the MCP server instructions block in the system prompt is silently truncated. The last server's instructions get cut off mid-sentence with no warning or error. Users have no way to know their MCP configuration is partially ignored. Affects hook authors who rely on MCP server instructions for context. See #43474."
-    },
-    {
-        "id": "cowork-chrome-operates-unintended-device-parsec",
-        "title": "Cowork Chrome extension operates unintended device's browser in multi-device Parsec sessions.",
-        "category": "Security & trust boundaries",
+        "id": "permission-relay-all-channels",
+        "title": "Permission prompts relay to all channels, not just the originating channel.",
+        "category": "Permission system",
         "severity": "high",
-        "issues": ["https://github.com/anthropics/claude-code/issues/43480"],
-        "description": "In multi-device environments using Parsec remote desktop, Claude's Cowork Chrome extension can operate the Chrome instance on the wrong device. The extension targets a Chrome browser that the user did not intend, potentially executing actions on a different machine. This is a trust boundary violation: the agent acts on resources the user did not authorize. See #43480."
+        "issues": ["https://github.com/anthropics/claude-code/issues/43625"],
+        "description": "When running Claude Code with a channel plugin (e.g. --channels plugin:telegram), permission prompts are relayed to all connected channels regardless of which channel the message originated from. Reply routing correctly targets the originating channel, but permission dialogs broadcast to every channel. This can expose sensitive tool approval prompts to unintended channels."
     },
     {
-        "id": "remote-trigger-destructive-force-push-data-loss",
-        "title": "Remote triggers can execute destructive git operations (force-push) causing data loss.",
-        "category": "Security & trust boundaries",
-        "severity": "critical",
-        "issues": ["https://github.com/anthropics/claude-code/issues/43461"],
-        "description": "Remote triggers (scheduled Claude Code agents) can execute force-push operations that delete tracked files. One user reported 17 tracked files deleted by a trigger-initiated force-push. The 90% MCP tool failure rate in triggers compounds this: when MCP tools fail, the agent may fall back to destructive git operations as a workaround. Hooks do not run in remote trigger sessions, so PreToolUse guards cannot prevent this. See #43461."
+        "id": "plan-mode-allows-code-modification",
+        "title": "Agent modifies code while in plan mode (plan mode not enforced as read-only).",
+        "category": "Permission system",
+        "severity": "high",
+        "issues": ["https://github.com/anthropics/claude-code/issues/43623"],
+        "description": "Plan mode is expected to be read-only (no file writes or tool executions), but the agent can still modify code while in plan mode. Reported on v2.1.92. This undermines the safety guarantee that plan mode lets you review before any changes are made. Needs independent reproduction."
     },
     {
-        "id": "cowork-sandbox-blocks-mcp-subprocess-google-apis",
-        "title": "Cowork sandbox network allowlist blocks MCP subprocess connections to Google APIs.",
-        "category": "Hook behavior & events",
+        "id": "plugin-channel-notifications-not-injected",
+        "title": "Channel plugin receives messages but notifications are never injected into the conversation.",
+        "category": "MCP & plugin issues",
         "severity": "medium",
-        "issues": ["https://github.com/anthropics/claude-code/issues/43472"],
-        "description": "MCP servers running inside Cowork's sandbox cannot connect to Google APIs due to network allowlist restrictions. Any MCP server requiring Google OAuth (e.g. mcp-gsheets) fails silently. The sandbox's network policy does not expose which domains are allowed, so debugging requires trial and error. Affects any Cowork user with Google-dependent MCP servers. See #43472."
+        "issues": ["https://github.com/anthropics/claude-code/issues/43627"],
+        "description": "The official Telegram channels plugin (telegram@claude-plugins-official v0.0.4) connects and polls successfully, but MCP notifications/claude/channel messages are never injected into the conversation as channel source tags. The plugin logs show messages received, but Claude never sees them. Affects Windows with bun 1.3.11 on v2.1.92."
     }
 ]
 
