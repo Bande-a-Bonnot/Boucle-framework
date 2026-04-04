@@ -17,20 +17,36 @@ for e in entries:
 
 new_entries = [
     {
-        "id": "mcp-http-server-crashes-session",
-        "title": "MCP HTTP-type server can crash entire Claude Code session.",
-        "category": "Hook behavior & events",
-        "severity": "high",
-        "issues": ["https://github.com/anthropics/claude-code/issues/43371"],
-        "description": "An HTTP-type MCP server (e.g. vibe-annotations on 127.0.0.1) causes Claude Code sessions to close/crash when the agent reads from it. Happens consistently with multiple concurrent sessions open. No graceful error handling; the session just dies."
+        "id": "mcp-server-instructions-silently-truncated-multiple-servers",
+        "title": "MCP server instructions silently truncated when multiple servers are configured.",
+        "category": "Hook system design constraints",
+        "severity": "medium",
+        "issues": ["https://github.com/anthropics/claude-code/issues/43474"],
+        "description": "When multiple MCP servers are configured (e.g. context7 + deepwiki + serena), the MCP server instructions block in the system prompt is silently truncated. The last server's instructions get cut off mid-sentence with no warning or error. Users have no way to know their MCP configuration is partially ignored. Affects hook authors who rely on MCP server instructions for context. See #43474."
     },
     {
-        "id": "remote-trigger-mcp-connectors-not-injected",
-        "title": "Remote Trigger (CCR) sessions do not receive configured MCP connectors.",
-        "category": "Hook behavior & events",
+        "id": "cowork-chrome-operates-unintended-device-parsec",
+        "title": "Cowork Chrome extension operates unintended device's browser in multi-device Parsec sessions.",
+        "category": "Security & trust boundaries",
         "severity": "high",
-        "issues": ["https://github.com/anthropics/claude-code/issues/43374"],
-        "description": "MCP connectors (Notion, Supabase, etc.) configured on Remote Triggers are not injected into the CCR session runtime. Connectors show as connected in trigger config and claude.ai settings, but ToolSearch finds nothing. Agent falls back to degraded mode. Sub-agents in scheduled tasks DO get MCP access (#43320), making this inconsistent."
+        "issues": ["https://github.com/anthropics/claude-code/issues/43480"],
+        "description": "In multi-device environments using Parsec remote desktop, Claude's Cowork Chrome extension can operate the Chrome instance on the wrong device. The extension targets a Chrome browser that the user did not intend, potentially executing actions on a different machine. This is a trust boundary violation: the agent acts on resources the user did not authorize. See #43480."
+    },
+    {
+        "id": "remote-trigger-destructive-force-push-data-loss",
+        "title": "Remote triggers can execute destructive git operations (force-push) causing data loss.",
+        "category": "Security & trust boundaries",
+        "severity": "critical",
+        "issues": ["https://github.com/anthropics/claude-code/issues/43461"],
+        "description": "Remote triggers (scheduled Claude Code agents) can execute force-push operations that delete tracked files. One user reported 17 tracked files deleted by a trigger-initiated force-push. The 90% MCP tool failure rate in triggers compounds this: when MCP tools fail, the agent may fall back to destructive git operations as a workaround. Hooks do not run in remote trigger sessions, so PreToolUse guards cannot prevent this. See #43461."
+    },
+    {
+        "id": "cowork-sandbox-blocks-mcp-subprocess-google-apis",
+        "title": "Cowork sandbox network allowlist blocks MCP subprocess connections to Google APIs.",
+        "category": "Hook behavior & events",
+        "severity": "medium",
+        "issues": ["https://github.com/anthropics/claude-code/issues/43472"],
+        "description": "MCP servers running inside Cowork's sandbox cannot connect to Google APIs due to network allowlist restrictions. Any MCP server requiring Google OAuth (e.g. mcp-gsheets) fails silently. The sandbox's network policy does not expose which domains are allowed, so debugging requires trial and error. Affects any Cowork user with Google-dependent MCP servers. See #43472."
     }
 ]
 

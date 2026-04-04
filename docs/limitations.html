@@ -214,7 +214,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">300</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>.</p>
+        <p class="subtitle"><span id="total-count">304</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>.</p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -3338,6 +3338,50 @@
             <h3>CLAUDE_ENV_FILE broken; no reliable mechanism to pass environment variables to hooks and child processes.</h3>
             <p>The <code>CLAUDE_ENV_FILE</code> mechanism relies on shell evaluation semantics (file sourcing) and is <a href="https://github.com/anthropics/claude-code/issues/43430" target="_blank">currently broken</a>. Environment variables set in one child process do not persist to the next. There is no declarative, shell-independent way to overlay environment variables on spawned processes. Hooks needing consistent env vars must set them internally per invocation.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43430" target="_blank">#43430</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook system design constraints" data-issues="43474" id="mcp-server-instructions-silently-truncated-multiple-servers" data-severity="medium">
+            <div class="kl-meta">
+                <span class="kl-num">#301</span>
+                <span class="kl-cat">Hook system design constraints</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d29922;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>MCP server instructions silently truncated when multiple servers are configured.</h3>
+            <p>When multiple MCP servers are configured, the MCP server instructions block in the system prompt is <a href="https://github.com/anthropics/claude-code/issues/43474" target="_blank">silently truncated</a>. The last server's instructions get cut off mid-sentence with no warning. Users have no way to know their MCP configuration is partially ignored. Affects hook authors who rely on MCP server instructions for context.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43474" target="_blank">#43474</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="43480" id="cowork-chrome-operates-unintended-device-parsec" data-severity="high">
+            <div class="kl-meta">
+                <span class="kl-num">#302</span>
+                <span class="kl-cat">Security &amp; trust boundaries</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#cf222e;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Cowork Chrome extension operates unintended device's browser in multi-device Parsec sessions.</h3>
+            <p>In multi-device environments using Parsec remote desktop, Claude's Cowork Chrome extension can <a href="https://github.com/anthropics/claude-code/issues/43480" target="_blank">operate the Chrome instance on the wrong device</a>. The extension targets a browser the user did not intend, potentially executing actions on a different machine. This is a trust boundary violation: the agent acts on resources the user did not authorize.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43480" target="_blank">#43480</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="43461" id="remote-trigger-destructive-force-push-data-loss" data-severity="critical">
+            <div class="kl-meta">
+                <span class="kl-num">#303</span>
+                <span class="kl-cat">Security &amp; trust boundaries</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#8b0000;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Remote triggers can execute destructive git operations (force-push) causing data loss.</h3>
+            <p>Remote triggers (scheduled Claude Code agents) can execute <a href="https://github.com/anthropics/claude-code/issues/43461" target="_blank">force-push operations that delete tracked files</a>. One user reported 17 tracked files deleted. The 90% MCP tool failure rate in triggers compounds this: when MCP tools fail, the agent may fall back to destructive git operations. Hooks do not run in remote trigger sessions, so PreToolUse guards cannot prevent this.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43461" target="_blank">#43461</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="43472" id="cowork-sandbox-blocks-mcp-subprocess-google-apis" data-severity="medium">
+            <div class="kl-meta">
+                <span class="kl-num">#304</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d29922;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Cowork sandbox network allowlist blocks MCP subprocess connections to Google APIs.</h3>
+            <p>MCP servers running inside Cowork's sandbox <a href="https://github.com/anthropics/claude-code/issues/43472" target="_blank">cannot connect to Google APIs</a> due to network allowlist restrictions. Any MCP server requiring Google OAuth (e.g. mcp-gsheets) fails silently. The sandbox's network policy does not expose which domains are allowed, so debugging requires trial and error.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43472" target="_blank">#43472</a></div>
         </div>
 
         <footer>
