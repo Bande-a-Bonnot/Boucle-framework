@@ -1,19 +1,20 @@
 {
   "version": "0.12.0",
-  "count": 288,
+  "count": 291,
   "categories": {
     "Hook bypass & evasion": 87,
-    "Hook behavior & events": 119,
-    "Permission system": 63,
+    "Hook behavior & events": 120,
+    "Permission system": 64,
     "Subagent & spawned agents": 10,
     "CLAUDE.md & memory": 1,
-    "Configuration behavior": 8
+    "Configuration behavior": 8,
+    "Platform & compatibility": 1
   },
   "severity_counts": {
     "critical": 13,
     "low": 87,
-    "medium": 111,
-    "high": 77
+    "medium": 112,
+    "high": 79
   },
   "entries": [
     {
@@ -2985,6 +2986,36 @@
         "https://github.com/anthropics/claude-code/issues/43327"
       ],
       "description": "When using the Claude in Chrome MCP extension, only the first domain navigation triggers a permission prompt. All subsequent navigations to new domains are silently blocked with \"Navigation to this domain is not allowed\" without showing a prompt. Creating new tabs or retrying does not help. Multi-site workflows are impossible in a single session. Workaround: start a new session for each domain."
+    },
+    {
+      "id": "plugin-hooks-claude-plugin-root-not-injected",
+      "title": "Plugin hooks fail because CLAUDE_PLUGIN_ROOT is not injected at execution time.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43380"
+      ],
+      "description": "Plugin-defined hooks reference ${CLAUDE_PLUGIN_ROOT} to locate their scripts, but the variable resolves to an empty string at hook execution time. All three hook event types (SessionStart, UserPromptSubmit, PostToolUse) silently fail because the script path is wrong. Plugin hooks are effectively non-functional until this is fixed."
+    },
+    {
+      "id": "empty-permission-suggestions-acceptedits-claude-dir",
+      "title": "Empty permission_suggestions array for .claude/ directory writes in acceptEdits mode.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43384"
+      ],
+      "description": "When already in acceptEdits mode, writes to the .claude/ directory produce a PermissionRequest with an empty permission_suggestions array. The addRules suggestions that previously existed are stripped. Users cannot grant scoped permissions for this directory through the normal prompt flow."
+    },
+    {
+      "id": "apply-seccomp-loses-execute-bit-auto-update-linux",
+      "title": "Linux: apply-seccomp binary loses execute bit after auto-update, breaking all Bash commands.",
+      "category": "Platform & compatibility",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43367"
+      ],
+      "description": "On Linux, the apply-seccomp sandbox filter binary loses its execute permission after auto-update. All Bash tool calls fail with exit code 126 until manually fixed with chmod +x. The sandbox becomes non-functional, effectively disabling all command execution. This is a regression."
     }
   ]
 }
