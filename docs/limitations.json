@@ -1,24 +1,24 @@
 {
   "version": "0.12.0",
-  "count": 308,
+  "count": 316,
   "categories": {
-    "Hook behavior & events": 124,
+    "Hook behavior & events": 126,
     "Hook bypass & evasion": 88,
-    "Permission system": 67,
+    "Permission system": 71,
     "Subagent & spawned agents": 11,
     "Configuration behavior": 8,
-    "MCP & plugin issues": 2,
+    "MCP & plugin issues": 3,
+    "Platform & compatibility": 2,
     "Scheduling & remote triggers": 2,
     "Hook system design constraints": 2,
     "Security & trust boundaries": 2,
-    "CLAUDE.md & memory": 1,
-    "Platform & compatibility": 1
+    "CLAUDE.md & memory": 1
   },
   "severity_counts": {
-    "medium": 118,
+    "medium": 121,
+    "high": 91,
     "low": 87,
-    "high": 87,
-    "critical": 16
+    "critical": 17
   },
   "entries": [
     {
@@ -3179,6 +3179,86 @@
         "https://github.com/anthropics/claude-code/issues/43438"
       ],
       "description": "The RemoteTrigger API is broken on all read endpoints: list, get, and run all return HTTP 500. The create endpoint returns 200 but the trigger does not appear in the UI and cannot be retrieved via the API. This makes scheduled triggers completely unusable via the API. Has confirmed repro on macOS. See #43438."
+    },
+    {
+      "id": "bulk-rm-rf-deletes-creative-assets-no-confirmation",
+      "title": "Claude deletes user's creative assets (92 images) via rm -rf during bulk cleanup without individual confirmation.",
+      "category": "Permission system",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43513"
+      ],
+      "description": "During a project cleanup session, Claude deleted ALL files including 92 user-created AI-generated artwork images with a single rm -rf command. The user intended to keep creative assets but Claude made no distinction between code/config and irreplaceable creative files. The Bash permission system approved the rm -rf as a single operation with no per-directory or per-filetype confirmation. Data loss is permanent. See #43513."
+    },
+    {
+      "id": "model-reports-rejected-tool-as-completed",
+      "title": "Model incorrectly reports rejected tool action as completed (e.g., user rejects pkill, model says processes were killed).",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43517"
+      ],
+      "description": "When a user rejects a Bash tool call (e.g., pkill), the model's next message incorrectly describes the action as having been executed. The model confuses 'tool was attempted' with 'tool succeeded.' Has confirmed repro. This breaks trust: users cannot rely on the model's summary of what actually happened. Not hookable at the model response layer. See #43517."
+    },
+    {
+      "id": "plan-mode-auto-enters-silently-exits",
+      "title": "Plan mode auto-enters on follow-up requests and silently exits without ExitPlanMode, allowing edits.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43494"
+      ],
+      "description": "Plan mode unexpectedly activated on a simple follow-up request and then silently exited during a Read tool call without ExitPlanMode being called. This allowed edits to proceed when the user expected plan mode enforcement. Different from plan-mode-bypass-after-first-cycle: here plan mode auto-activates uninvited and then deactivates itself. See #43494."
+    },
+    {
+      "id": "cowork-always-allow-not-persisted",
+      "title": "Always Allow for Bash permissions does not persist across Cowork mode code tasks.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43505"
+      ],
+      "description": "In Cowork/Dispatch mode, each new code task spawned via start_code_task asks for Bash permission again despite clicking Always Allow in previous tasks. The permission grant is scoped to the individual code task rather than the Cowork session. This creates friction for multi-step workflows and means Cowork users must approve every task individually. See #43505."
+    },
+    {
+      "id": "windows-permissions-allow-path-patterns-broken",
+      "title": "Windows: permissions.allow path patterns do not work for scoping Edit/Write to specific directories.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43495"
+      ],
+      "description": "On Windows, setting permissions.allow with path patterns (e.g., Edit with file_path matching a directory glob) does not scope permissions to the specified directories. The pattern matching fails silently, effectively either blocking all edits or allowing all edits regardless of path. Users cannot restrict Claude to editing only within specific project directories on Windows. See #43495."
+    },
+    {
+      "id": "plugin-marketplace-path-breaks-spaces-accents-windows",
+      "title": "Windows: Plugin marketplace path breaks when username contains spaces or accents.",
+      "category": "Platform & compatibility",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43518"
+      ],
+      "description": "The VS Code plugin marketplace path construction fails when the Windows username contains spaces or accented characters. The path to the plugin directory is not properly quoted or escaped, causing plugin discovery to fail silently. Affects any Windows user whose username is not pure ASCII without spaces. See #43518."
+    },
+    {
+      "id": "mcp-json-not-loaded-windows-drive-root",
+      "title": "Windows: .mcp.json not loaded when project is at drive root (e.g., B:\\).",
+      "category": "MCP & plugin issues",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43499"
+      ],
+      "description": "When a project directory is located at a Windows drive root (e.g., B:\\), the .mcp.json configuration file is not loaded. MCP servers defined in the config are silently ignored. Projects in subdirectories work fine. Has confirmed repro in VS Code on Windows. See #43499."
+    },
+    {
+      "id": "parallel-bash-calls-cwd-not-preserved",
+      "title": "Parallel Bash tool calls do not preserve working directory from sequential context.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43498"
+      ],
+      "description": "When Claude fires two Bash tool calls in parallel (in a single message), execution order is not guaranteed. If one command relies on a working directory set by a previous sequential command, the parallel call may execute in the wrong directory. This is by design (parallel calls are independent) but the model does not account for it, leading to silent failures. Has confirmed repro. See #43498."
     }
   ]
 }
