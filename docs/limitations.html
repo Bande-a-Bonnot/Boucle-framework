@@ -214,7 +214,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">345</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-04.</span></p>
+        <p class="subtitle"><span id="total-count">348</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-04.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -3895,6 +3895,42 @@
             <p>Claude Code crashes with TypeError when a local model (via ANTHROPIC_BASE_URL) emits a tool call with undefined input. The isSearchOrReadCommand function does not guard against undefined, causing q.command to throw. Fix is trivial: use optional chaining.</p>
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Set CLAUDE_CODE_USE_POWERSHELL_TOOL=0 or ensure local model always provides tool input.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43663" target="_blank">#43663</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Environment &amp; shell" data-issues="42803 43684" id="bash-tool-spawned-as-non-login-shell-missing-path" data-severity="medium">
+            <div class="kl-meta">
+                <span class="kl-num">#346</span>
+                <span class="kl-cat">Environment &amp; shell</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f59e0b;color:black;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Bash tool spawns non-login shell; PATH from .zprofile/.bash_profile missing.</h3>
+            <p>Claude Code spawns bash in non-login mode, so <code>~/.zprofile</code> (zsh) and <code>~/.bash_profile</code> (bash) are never sourced. Commands installed via Homebrew or other tools that write to .zprofile are not found &mdash; PATH is only <code>/usr/bin:/bin:/usr/sbin:/sbin</code>. Confusingly, the shell reports itself as a login shell but does not actually source login files. Not hookable &mdash; shell initialization happens before any hook runs. Workaround: add shell env initialization to <code>~/.zshrc</code> (sourced for interactive non-login shells), or set <code>env.PATH</code> in settings.json (though that override is also unreliable &mdash; see separate KL).</p>
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Add Homebrew/tool env initialization to <code>~/.zshrc</code> instead of <code>~/.zprofile</code>, or set explicit paths in <code>env.PATH</code> (settings.json).</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42803" target="_blank">#42803</a> <a href="https://github.com/anthropics/claude-code/issues/43684" target="_blank">#43684</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Context management" data-issues="43685" id="compact-with-instructions-silently-no-ops" data-severity="medium">
+            <div class="kl-meta">
+                <span class="kl-num">#347</span>
+                <span class="kl-cat">Context management</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f59e0b;color:black;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>/compact [instructions] silently ignores arguments and performs no compaction.</h3>
+            <p><code>/compact</code> with any arguments (e.g. <code>/compact preserve key decisions</code>) returns instantly without compacting &mdash; context usage is unchanged. Bare <code>/compact</code> (no arguments) works correctly. Guided compaction is silently broken. Relevant to PostCompact hooks: if users invoke <code>/compact</code> with instructions, the PostCompact event is never fired and hook-based cache clears (e.g. read-once) will not trigger.</p>
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Run bare <code>/compact</code> (no arguments), then issue follow-up instructions in the conversation to guide what was retained.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43685" target="_blank">#43685</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="MCP &amp; plugins" data-issues="43690 28669 37284" id="builtin-mcp-servers-inject-tools-cannot-be-suppressed" data-severity="low">
+            <div class="kl-meta">
+                <span class="kl-num">#348</span>
+                <span class="kl-cat">MCP &amp; plugins</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
+            </div>
+            <h3>Built-in MCP servers (Canva, Gmail, Calendar, computer-use) inject tools into every session and cannot be suppressed.</h3>
+            <p>Claude Code hardcodes several MCP servers (<code>claude_ai_Canva</code>, <code>claude_ai_Gmail</code>, <code>claude_ai_Google_Calendar</code>, <code>computer-use</code>) into the app bundle. These inject their tool definitions into every session&#x27;s deferred tools list, consuming context tokens unconditionally. <code>deniedMcpServers</code> prevents the tools from being called but does not remove them from the deferred tools list &mdash; token overhead persists. <code>disabledMcpServers</code> does not apply to built-ins. No configuration option to fully suppress these injections. Not hookable &mdash; deferred tools list is assembled at session startup before hooks run.</p>
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#2a1a1a;border-left:3px solid #ef4444;border-radius:4px;font-size:0.85rem;"><strong style="color:#ef4444;">No workaround:</strong> Use <code>deniedMcpServers</code> to prevent accidental calls; token injection from built-ins cannot be avoided.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43690" target="_blank">#43690</a> <a href="https://github.com/anthropics/claude-code/issues/28669" target="_blank">#28669</a> <a href="https://github.com/anthropics/claude-code/issues/37284" target="_blank">#37284</a></div>
         </div>
 
         <footer>

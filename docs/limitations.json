@@ -1,29 +1,32 @@
 {
   "version": "0.12.0",
-  "count": 345,
+  "count": 348,
   "categories": {
-    "Hook behavior & events": 133,
     "Hook bypass & evasion": 88,
+    "Hook behavior & events": 133,
     "Permission system": 78,
     "Subagent & spawned agents": 12,
+    "CLAUDE.md & memory": 1,
     "Configuration behavior": 9,
-    "MCP & plugin issues": 7,
     "Platform & compatibility": 4,
-    "Security & trust boundaries": 3,
+    "MCP & plugin issues": 7,
     "Scheduling & remote triggers": 2,
     "Hook system design constraints": 2,
+    "Security & trust boundaries": 3,
     "Subagents & isolation": 2,
-    "CLAUDE.md & memory": 1,
     "Permissions & security": 1,
     "Performance & cost": 1,
     "Desktop & IDE integration": 1,
-    "Authentication & configuration": 1
+    "Authentication & configuration": 1,
+    "Environment & shell": 1,
+    "Context management": 1,
+    "MCP & plugins": 1
   },
   "severity_counts": {
     "critical": 19,
-    "high": 107,
-    "medium": 132,
-    "low": 87
+    "low": 88,
+    "medium": 134,
+    "high": 107
   },
   "entries": [
     {
@@ -3597,6 +3600,63 @@
       ],
       "description": "Claude Code crashes with TypeError when a local model (via ANTHROPIC_BASE_URL) emits a tool call with undefined input. The isSearchOrReadCommand function does not guard against undefined, causing q.command to throw. Fix is trivial: q?.command.",
       "workaround": "Set CLAUDE_CODE_USE_POWERSHELL_TOOL=0 or ensure local model always provides tool input."
+    },
+    {
+      "id": "bash-tool-spawned-as-non-login-shell-missing-path",
+      "title": "Bash tool spawns non-login shell; PATH from .zprofile/.bash_profile missing.",
+      "description": "Claude Code spawns bash in non-login mode, so ~/.zprofile (zsh) and ~/.bash_profile (bash) are never sourced. Commands installed via Homebrew or other tools that write to .zprofile are not found \u2014 PATH is only /usr/bin:/bin:/usr/sbin:/sbin. Confusingly, the shell reports itself as a login shell but does not actually source login files. Not hookable \u2014 shell initialization happens before any hook runs. Workaround: add eval $(brew shellenv) to ~/.bashrc or ~/.zshrc (sourced for interactive non-login shells), or set env.PATH in settings.json (though that override is also buggy \u2014 see separate KL).",
+      "severity": "medium",
+      "category": "Environment & shell",
+      "workaround": true,
+      "source_issues": [
+        "#42803",
+        "#43684"
+      ],
+      "tags": [
+        "bash",
+        "shell",
+        "path",
+        "homebrew",
+        "environment"
+      ]
+    },
+    {
+      "id": "compact-with-instructions-silently-no-ops",
+      "title": "/compact [instructions] silently ignores arguments and performs no compaction.",
+      "description": "/compact with any arguments (e.g. /compact preserve key decisions) returns instantly without compacting \u2014 context usage is unchanged. Bare /compact (no arguments) works correctly. This means guided compaction ('summarize this session focusing on X') is silently broken. Relevant to PostCompact hooks: if users invoke /compact with instructions, the PostCompact event is never fired and hook-based cache clears (e.g. read-once) will not trigger. Workaround: run bare /compact, then issue follow-up instructions in the conversation to guide what was retained.",
+      "severity": "medium",
+      "category": "Context management",
+      "workaround": true,
+      "source_issues": [
+        "#43685"
+      ],
+      "tags": [
+        "compact",
+        "context",
+        "compaction",
+        "post-compact"
+      ]
+    },
+    {
+      "id": "builtin-mcp-servers-inject-tools-cannot-be-suppressed",
+      "title": "Built-in MCP servers (Canva, Gmail, Calendar, computer-use) inject tools into every session and cannot be suppressed.",
+      "description": "Claude Code hardcodes several MCP servers (claude_ai_Canva, claude_ai_Gmail, claude_ai_Google_Calendar, computer-use) into the app bundle. These inject their tool definitions into every session's deferred tools list, consuming context tokens unconditionally. deniedMcpServers prevents the tools from being called but does not remove them from the deferred tools list \u2014 token overhead persists. disabledMcpServers does not apply to built-ins. No configuration option exists to fully suppress these injections. Not hookable \u2014 the deferred tools list is assembled at session startup before hooks run. Workaround: none for complete suppression; use deniedMcpServers to at least prevent accidental calls.",
+      "severity": "low",
+      "category": "MCP & plugins",
+      "workaround": false,
+      "source_issues": [
+        "#43690",
+        "#28669",
+        "#37284"
+      ],
+      "tags": [
+        "mcp",
+        "tokens",
+        "context",
+        "builtin",
+        "canva",
+        "gmail"
+      ]
     }
   ]
 }
