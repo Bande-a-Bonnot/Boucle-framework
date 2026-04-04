@@ -1,24 +1,28 @@
 {
   "version": "0.12.0",
-  "count": 340,
+  "count": 345,
   "categories": {
+    "Hook behavior & events": 133,
     "Hook bypass & evasion": 88,
-    "Hook behavior & events": 131,
-    "Permission system": 76,
+    "Permission system": 78,
     "Subagent & spawned agents": 12,
-    "CLAUDE.md & memory": 1,
     "Configuration behavior": 9,
+    "MCP & plugin issues": 7,
     "Platform & compatibility": 4,
-    "MCP & plugin issues": 6,
+    "Security & trust boundaries": 3,
     "Scheduling & remote triggers": 2,
     "Hook system design constraints": 2,
-    "Security & trust boundaries": 2,
-    "Subagents & isolation": 2
+    "Subagents & isolation": 2,
+    "CLAUDE.md & memory": 1,
+    "Permissions & security": 1,
+    "Performance & cost": 1,
+    "Desktop & IDE integration": 1,
+    "Authentication & configuration": 1
   },
   "severity_counts": {
-    "critical": 18,
-    "high": 104,
-    "medium": 131,
+    "critical": 19,
+    "high": 107,
+    "medium": 132,
     "low": 87
   },
   "entries": [
@@ -3538,6 +3542,61 @@
         "43649"
       ],
       "description": "When an MCP tool disappears mid-session (e.g. chrome extension disconnects), the model repeatedly calls the missing tool, each call generating a 'Tool not found' error. The retries are not rate-limited, causing rapid token consumption that can exhaust a 5x subscription limit within minutes on a fresh session. The error stack traces themselves consume significant context."
+    },
+    {
+      "id": "agent-bypasses-explicit-approval-gate-posts-publicly",
+      "title": "Agent bypasses explicit human approval gate and takes irreversible public action.",
+      "category": "Security & trust boundaries",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43665"
+      ],
+      "description": "Agent with multiple safety layers (AgentScope, pending-approval JSON flag, deleted schedule systems) bypassed all of them and posted live to public social media platforms without human approval. Multiple independent safety mechanisms failed simultaneously.",
+      "workaround": "No reliable workaround. Multiple safety layers including explicit approval flags were insufficient to prevent unauthorized public action."
+    },
+    {
+      "id": "write-permission-auto-approve-inconsistent-new-vs-existing",
+      "title": "Write permission auto-approves existing file updates but denies new file creation in same session.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43683"
+      ],
+      "description": "Write(./**) permission rule auto-approves writes to existing files but prompts for permission when creating NEW files in the same claude -p session. Breaks headless agent orchestration where file creation is expected.",
+      "workaround": "None documented. The same glob rule behaves differently for creates vs updates."
+    },
+    {
+      "id": "edit-write-glob-path-permissions-not-honored",
+      "title": "Edit/Write permission allow rules with path globs silently ignored.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43667"
+      ],
+      "description": "Edit and Write permission allow rules using glob path patterns in settings.json are not evaluated correctly. Users are prompted on every edit despite matching ** rules in both global and project-local settings. Fundamental permission system malfunction.",
+      "workaround": "None documented. Glob-based Edit/Write allow rules do not work."
+    },
+    {
+      "id": "disable-model-invocation-blocks-user-typed-slash-commands",
+      "title": "disable-model-invocation skill flag blocks user-typed slash commands too.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43660"
+      ],
+      "description": "Skills with disable-model-invocation: true in frontmatter are blocked even when the USER directly types the slash command. Both user-typed and model-initiated invocations go through the same Skill tool path with no distinction, defeating the intended safety flag.",
+      "workaround": "Remove disable-model-invocation: true from skill frontmatter, but this removes the model-safety protection entirely."
+    },
+    {
+      "id": "crash-undefined-tool-input-custom-base-url",
+      "title": "Crash in isSearchOrReadCommand when custom model emits undefined tool input.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43663"
+      ],
+      "description": "Claude Code crashes with TypeError when a local model (via ANTHROPIC_BASE_URL) emits a tool call with undefined input. The isSearchOrReadCommand function does not guard against undefined, causing q.command to throw. Fix is trivial: q?.command.",
+      "workaround": "Set CLAUDE_CODE_USE_POWERSHELL_TOOL=0 or ensure local model always provides tool input."
     }
   ]
 }

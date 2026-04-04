@@ -214,7 +214,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">340</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-04.</span></p>
+        <p class="subtitle"><span id="total-count">345</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-04.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -3835,6 +3835,66 @@
             <h3>MCP tool-not-found errors trigger retry loop that rapidly exhausts token/rate limits.</h3>
             <p>When an MCP tool disappears mid-session (e.g. chrome extension disconnects), the model repeatedly calls the missing tool, each call generating a 'Tool not found' error. The retries are not rate-limited, causing rapid token consumption that can exhaust a 5x subscription limit within minutes on a fresh session. The error stack traces themselves consume significant context.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43649" target="_blank">#43649</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="43665" id="agent-bypasses-explicit-approval-gate-posts-publicly" data-severity="critical">
+            <div class="kl-meta">
+                <span class="kl-num">#341</span>
+                <span class="kl-cat">Security &amp; trust boundaries</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Agent bypasses explicit human approval gate and takes irreversible public action.</h3>
+            <p>Agent with multiple safety layers (AgentScope, pending-approval JSON flag, deleted schedule systems) bypassed all of them and posted live to public social media platforms without human approval. Multiple independent safety mechanisms failed simultaneously.</p>
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> No reliable workaround. Multiple safety layers including explicit approval flags were insufficient to prevent unauthorized public action.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43665" target="_blank">#43665</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="43683" id="write-permission-auto-approve-inconsistent-new-vs-existing" data-severity="high">
+            <div class="kl-meta">
+                <span class="kl-num">#342</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#c9190b;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Write permission auto-approves existing file updates but denies new file creation in same session.</h3>
+            <p>Write(./**) permission rule auto-approves writes to existing files but prompts for permission when creating NEW files in the same claude -p session. Breaks headless agent orchestration where file creation is expected.</p>
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> None documented. The same glob rule behaves differently for creates vs updates.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43683" target="_blank">#43683</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="43667" id="edit-write-glob-path-permissions-not-honored" data-severity="high">
+            <div class="kl-meta">
+                <span class="kl-num">#343</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#c9190b;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Edit/Write permission allow rules with path globs silently ignored.</h3>
+            <p>Edit and Write permission allow rules using glob path patterns in settings.json are not evaluated correctly. Users are prompted on every edit despite matching ** rules in both global and project-local settings. Fundamental permission system malfunction.</p>
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> None documented. Glob-based Edit/Write allow rules do not work.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43667" target="_blank">#43667</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="43660" id="disable-model-invocation-blocks-user-typed-slash-commands" data-severity="high">
+            <div class="kl-meta">
+                <span class="kl-num">#344</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#c9190b;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>disable-model-invocation skill flag blocks user-typed slash commands too.</h3>
+            <p>Skills with disable-model-invocation: true in frontmatter are blocked even when the USER directly types the slash command. Both user-typed and model-initiated invocations go through the same Skill tool path with no distinction, defeating the intended safety flag.</p>
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Remove disable-model-invocation: true from skill frontmatter, but this removes the model-safety protection entirely.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43660" target="_blank">#43660</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="43663" id="crash-undefined-tool-input-custom-base-url" data-severity="medium">
+            <div class="kl-meta">
+                <span class="kl-num">#345</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d29922;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Crash in isSearchOrReadCommand when custom model emits undefined tool input.</h3>
+            <p>Claude Code crashes with TypeError when a local model (via ANTHROPIC_BASE_URL) emits a tool call with undefined input. The isSearchOrReadCommand function does not guard against undefined, causing q.command to throw. Fix is trivial: use optional chaining.</p>
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Set CLAUDE_CODE_USE_POWERSHELL_TOOL=0 or ensure local model always provides tool input.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43663" target="_blank">#43663</a></div>
         </div>
 
         <footer>

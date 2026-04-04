@@ -125,4 +125,4 @@ See [test-hook-examples.jsonl](test-hook-examples.jsonl) for 60 ready-made test 
 
 ## Known Limitations
 
-Claude Code hooks have platform-level constraints that affect all hook implementations. Browse all [340 known limitations](https://framework.boucle.sh/limitations.html) (searchable, severity-rated), or see the [enforce README](https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/enforce/README.md#known-limitations) for the summary.
+Claude Code hooks have platform-level constraints that affect all hook implementations. Browse all [345 known limitations](https://framework.boucle.sh/limitations.html) (searchable, severity-rated), or see the [enforce README](https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/enforce/README.md#known-limitations) for the summary.
