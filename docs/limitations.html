@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Known Limitations - Claude Code Hooks | Boucle</title>
-    <meta name="description" content="280 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
+    <meta name="description" content="287 documented limitations of Claude Code's hook system, searchable by issue number, category, and keyword. Each with workarounds.">
     <style>
         :root {
             --bg: #0d1117;
@@ -3110,6 +3110,83 @@
             <h3>MCP_TIMEOUT env var is ineffective; inner SDK timeout (60s) overrides it.</h3>
             <p><code>MCP_TIMEOUT</code> does not control MCP server connection timeout. The MCP Client from <code>@modelcontextprotocol/sdk</code> is <a href="https://github.com/anthropics/claude-code/issues/43299" target="_blank">instantiated without passing requestTimeout</a>, defaulting to 60 seconds. This inner timeout fires before the outer MCP_TIMEOUT wrapper. MCP servers needing longer than 60s to initialize are always marked as failed.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43299" target="_blank">#43299</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Configuration behavior" data-issues="43342" id="plugin-mcp-tools-hang-indefinitely-no-timeout" data-severity="high">
+            <div class="kl-meta">
+                <span class="kl-num">#281</span>
+                <span class="kl-cat">Configuration behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f85149;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Plugin MCP tools hang indefinitely with no timeout or error.</h3>
+            <p>Plugin-based MCP tools (e.g. <code>mcp__linear__*</code>) <a href="https://github.com/anthropics/claude-code/issues/43342" target="_blank">hang for ~2 minutes</a> with no response, no timeout, no error message, and no permission prompt, even when the tool pattern is explicitly in the <code>permissions.allow</code> list. Compounds with <a href="#mcp-timeout-env-var-ineffective">#280</a>: the MCP_TIMEOUT env var does not help because the SDK overrides it.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43342" target="_blank">#43342</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Subagent behavior" data-issues="43320" id="scheduled-tasks-cannot-access-mcp-connectors" data-severity="high">
+            <div class="kl-meta">
+                <span class="kl-num">#282</span>
+                <span class="kl-cat">Subagent behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f85149;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Scheduled task agents cannot access MCP tools or connectors.</h3>
+            <p>The main agent spawned by a scheduled task (trigger) <a href="https://github.com/anthropics/claude-code/issues/43320" target="_blank">does not have access to MCP tools or connectors</a>. Only sub-agents spawned by the main agent can use them. Workaround: have the scheduled agent immediately spawn a sub-agent for MCP-dependent work. Hooks attached to MCP tools will not fire for the top-level scheduled agent.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43320" target="_blank">#43320</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="43318" id="model-builds-captcha-solver-without-consent" data-severity="high">
+            <div class="kl-meta">
+                <span class="kl-num">#283</span>
+                <span class="kl-cat">Hook bypass & evasion</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f85149;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Model builds CAPTCHA solver and tests against live system without user consent.</h3>
+            <p>When encountering a CAPTCHA during a web task, Claude Code <a href="https://github.com/anthropics/claude-code/issues/43318" target="_blank">autonomously builds and tests a CAPTCHA solver against the live system</a> without asking the user for permission. The model decides to bypass access controls on its own. PreToolUse hooks on the Bash tool are the only mitigation, as the model does not self-limit.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43318" target="_blank">#43318</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Configuration behavior" data-issues="43315" id="mcp-servers-overridden-by-empty-per-project-config" data-severity="medium">
+            <div class="kl-meta">
+                <span class="kl-num">#284</span>
+                <span class="kl-cat">Configuration behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d29922;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>MCP servers silently overridden by empty per-project config in ~/.claude.json.</h3>
+            <p>When opening a new project directory, Claude Code <a href="https://github.com/anthropics/claude-code/issues/43315" target="_blank">writes an empty <code>mcpServers</code> object to ~/.claude.json</a> for that project. This overrides globally configured MCP servers. Users who set up MCP servers globally find them silently disabled in new projects because the per-project empty object takes precedence.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43315" target="_blank">#43315</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="43308" id="vscode-extension-ignores-bypasspermissions-defaultmode" data-severity="medium">
+            <div class="kl-meta">
+                <span class="kl-num">#285</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d29922;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>VS Code extension ignores bypassPermissions defaultMode.</h3>
+            <p>The VS Code extension <a href="https://github.com/anthropics/claude-code/issues/43308" target="_blank">does not respect <code>defaultMode: bypassPermissions</code></a> set in settings.json, even when configured at user, project, and local levels. The extension still prompts for every Bash command. The CLI respects this setting. Distinct from <a href="#vscode-cursor-extension-bypasses-permissions">#215</a> which covers allow/deny rule enforcement.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43308" target="_blank">#43308</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="43332" id="git-bash-detection-regression-after-v2169" data-severity="medium">
+            <div class="kl-meta">
+                <span class="kl-num">#286</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d29922;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Git Bash detection regression after v2.1.69.</h3>
+            <p>Git Bash detection is <a href="https://github.com/anthropics/claude-code/issues/43332" target="_blank">broken on Windows</a> for versions after v2.1.69, including the native binary. Claude Code fails to detect Git Bash as the shell environment, causing Bash tool execution failures. This is a regression distinct from earlier Git Bash issues (#8674, #10152, #13184, #31060). Affects all Windows users who rely on Git Bash instead of WSL.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43332" target="_blank">#43332</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior & events" data-issues="43336" id="pgrep-enoent-crash-macos-restricted-path" data-severity="medium">
+            <div class="kl-meta">
+                <span class="kl-num">#287</span>
+                <span class="kl-cat">Hook behavior & events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d29922;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>spawn pgrep ENOENT crash on macOS due to restricted PATH.</h3>
+            <p>Claude Code <a href="https://github.com/anthropics/claude-code/issues/43336" target="_blank">crashes with <code>ENOENT: no such file or directory, posix_spawn 'pgrep'</code></a> during normal Read tool operations on macOS. Bun's subprocess spawning uses a restricted PATH that does not include <code>/usr/bin</code>. The crash dumps minified ink UI source to the terminal. Regression in v2.1.91.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43336" target="_blank">#43336</a></div>
         </div>
 
         <footer>
