@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 297,
+  "count": 300,
   "categories": {
     "Hook bypass & evasion": 88,
     "Hook behavior & events": 122,
@@ -9,13 +9,15 @@
     "CLAUDE.md & memory": 1,
     "Configuration behavior": 8,
     "Platform & compatibility": 1,
-    "MCP & plugin issues": 1
+    "MCP & plugin issues": 2,
+    "Scheduling & remote triggers": 1,
+    "Hook system design constraints": 1
   },
   "severity_counts": {
     "critical": 14,
-    "low": 87,
-    "medium": 113,
-    "high": 83
+    "high": 83,
+    "medium": 116,
+    "low": 87
   },
   "entries": [
     {
@@ -3066,6 +3068,36 @@
         "https://github.com/anthropics/claude-code/issues/43413"
       ],
       "description": "When a plugin from a local symlink-based marketplace is registered in settings.json under enabledPlugins with value true, Claude Code suppresses the confirmation dialog but silently fails to start the MCP server. The plugin appears enabled but provides no tools at runtime. Does not affect GitHub-sourced marketplaces."
+    },
+    {
+      "id": "scheduled-trigger-ghost-quota-consumed",
+      "title": "Scheduled trigger quota consumed by orphaned triggers invisible in UI.",
+      "category": "Scheduling & remote triggers",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43423"
+      ],
+      "description": "Scheduled triggers can become orphaned: the quota slot is consumed (trigger_limit_reached) but the Scheduled page shows no triggers and no option to delete or recreate. The old trigger ID exists server-side but is invisible in the UI. Users cannot reclaim the quota without support intervention. Affects anyone relying on scheduled triggers for automated workflows. Not hookable. See #43423."
+    },
+    {
+      "id": "plugin-notification-delivery-stops-after-first-session",
+      "title": "Plugin notification delivery stops after initial session.",
+      "category": "MCP & plugin issues",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43427"
+      ],
+      "description": "Plugin notification channels (e.g., notifications/claude/channel in the Discord plugin) deliver events correctly in the first session after installation but silently stop in all subsequent sessions (new or resumed). MCP tools (fetch, reply, react) continue to work. The notification subscription appears to not survive session boundaries. Affects any plugin-based workflow that depends on real-time event delivery rather than polling. Not hookable. See #43427."
+    },
+    {
+      "id": "claude-env-file-broken-no-persistent-child-env",
+      "title": "CLAUDE_ENV_FILE broken; no reliable mechanism to pass environment variables to hooks and child processes.",
+      "category": "Hook system design constraints",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43430"
+      ],
+      "description": "The CLAUDE_ENV_FILE mechanism (#15840, #27987) intended to let users set environment variables for all child processes (Bash tool, MCP servers, hooks) relies on shell evaluation semantics (file sourcing) and is currently broken. Environment variables set in one child process do not persist to the next. There is no declarative, shell-independent way to overlay environment variables on spawned processes. Hooks that need consistent env vars (API keys, JDK paths, tool configs) must set them internally per invocation. See #43430."
     }
   ]
 }
