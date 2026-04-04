@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 335,
+  "count": 340,
   "categories": {
     "Hook bypass & evasion": 88,
     "Hook behavior & events": 131,
@@ -17,9 +17,9 @@
   },
   "severity_counts": {
     "critical": 18,
-    "low": 87,
-    "medium": 130,
-    "high": 100
+    "high": 104,
+    "medium": 131,
+    "low": 87
   },
   "entries": [
     {
@@ -3484,6 +3484,60 @@
       "severity": "medium",
       "issues": [],
       "description": "On session start, plugin MCP servers that duplicate a claude.ai connector which is unauthenticated get stuck in a permanent 'connecting' state. The plugin never initializes and its tools are unavailable for the entire session. Fixed in v2.1.92."
+    },
+    {
+      "id": "cloud-ide-ignores-permissions-allow-rules",
+      "title": "Cloud IDE sessions ignore permissions.allow rules from .claude/settings.json.",
+      "category": "Permissions & security",
+      "severity": "high",
+      "issues": [
+        "43644"
+      ],
+      "description": "Permission allow rules defined in project-level .claude/settings.json are not respected in Claude Code Web sessions (claude.ai/code). Commands that should be auto-approved based on the allowlist still prompt for manual approval. Only affects the cloud/web IDE; local CLI sessions respect the rules.",
+      "workaround": "Use the local CLI instead of the cloud IDE for workflows that rely on permission auto-approval. There is no way to pre-approve commands in claude.ai/code sessions currently."
+    },
+    {
+      "id": "resume-cache-invalidation-skill-listing-migration",
+      "title": "Prompt cache invalidated on every --resume turn due to skill listing block migration and newline append.",
+      "category": "Performance & cost",
+      "severity": "high",
+      "issues": [
+        "43657"
+      ],
+      "description": "When using --resume to continue a session, the prompt cache is broken on every turn. Two causes: (1) The skill listing system-reminder block migrates from messages[0] (initial turn) to the new user message on resume, changing the prefix structure. (2) An extra newline is appended to text blocks during re-normalization on each resume, independently invalidating the cache. Together these cause ~2850 tokens of unnecessary re-creation per turn instead of ~43. Regression from v2.1.71.",
+      "workaround": "Avoid frequent --resume for cost-sensitive CI workflows until fixed. If using --resume -p, monitor cache hit rates via proxy logging. The cache invalidation is per-turn, so longer turns with more output partially amortize the overhead."
+    },
+    {
+      "id": "desktop-scheduled-task-creates-junk-sessions",
+      "title": "Claude Desktop agent mode creates hundreds of junk sessions via scheduled task heartbeat.",
+      "category": "Desktop & IDE integration",
+      "severity": "medium",
+      "issues": [
+        "43645"
+      ],
+      "description": "Claude Desktop's Local Agent Mode spawns a Claude Code CLI process that creates new sessions every ~15 minutes with periodic heartbeat messages. Over time this produces hundreds of junk sessions (83% of all sessions in one report) that pollute the session list and waste disk space (~2.9 MB for 443 sessions). The schedule skill is the source.",
+      "workaround": "Kill the agent mode CC process and delete junk sessions: find ~/.claude/projects/ -name '*.jsonl' -exec sh -c 'head -3 \"$1\" | grep -q \"Current Time\" && rm \"$1\"' _ {} \\;"
+    },
+    {
+      "id": "subscription-type-cached-indefinitely-plan-upgrade",
+      "title": "CLI caches subscriptionType and rateLimitTier indefinitely after login, plan upgrades not reflected.",
+      "category": "Authentication & configuration",
+      "severity": "high",
+      "issues": [
+        "43639"
+      ],
+      "description": "When a user upgrades their Anthropic plan (e.g. Pro to Max 5x/20x), the CLI does not refresh the cached subscriptionType or rateLimitTier in .claude/.credentials.json. The CLI continues to enforce rate limits of the old plan. The status bar displays the old plan. claude logout is blocked when 'out of usage' under the stale limits.",
+      "workaround": "Manually clear accessToken, refreshToken, expiresAt, subscriptionType, and rateLimitTier from .claude/.credentials.json, then run /login from within the CLI to force a fresh OAuth flow."
+    },
+    {
+      "id": "mcp-tool-not-found-retry-loop-burns-tokens",
+      "title": "MCP tool-not-found errors trigger retry loop that rapidly exhausts token/rate limits.",
+      "category": "MCP & plugin issues",
+      "severity": "high",
+      "issues": [
+        "43649"
+      ],
+      "description": "When an MCP tool disappears mid-session (e.g. chrome extension disconnects), the model repeatedly calls the missing tool, each call generating a 'Tool not found' error. The retries are not rate-limited, causing rapid token consumption that can exhaust a 5x subscription limit within minutes on a fresh session. The error stack traces themselves consume significant context."
     }
   ]
 }
