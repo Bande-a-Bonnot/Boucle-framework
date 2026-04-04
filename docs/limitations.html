@@ -214,7 +214,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">293</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>.</p>
+        <p class="subtitle"><span id="total-count">297</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>.</p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -3239,6 +3239,72 @@
             <h3>Linux: apply-seccomp binary loses execute bit after auto-update, breaking all Bash commands.</h3>
             <p>On Linux, the <code>apply-seccomp</code> sandbox filter binary <a href="https://github.com/anthropics/claude-code/issues/43367" target="_blank">loses its execute permission after auto-update</a>. All Bash tool calls fail with exit code 126 until manually fixed with <code>chmod +x</code>. The sandbox becomes non-functional, effectively disabling all command execution. This is a regression.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43367" target="_blank">#43367</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior & events" data-issues="43371" id="mcp-http-server-crashes-session" data-severity="high">
+            <div class="kl-meta">
+                <span class="kl-num">#292</span>
+                <span class="kl-cat">Hook behavior & events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#e3342f;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>MCP HTTP-type server can crash entire Claude Code session.</h3>
+            <p>An HTTP-type MCP server (e.g. vibe-annotations on 127.0.0.1) causes Claude Code sessions to <a href="https://github.com/anthropics/claude-code/issues/43371" target="_blank">close/crash when the agent reads from it</a>. Happens consistently with multiple concurrent sessions open. No graceful error handling; the session just dies.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43371" target="_blank">#43371</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook behavior & events" data-issues="43374" id="remote-trigger-mcp-connectors-not-injected" data-severity="high">
+            <div class="kl-meta">
+                <span class="kl-num">#293</span>
+                <span class="kl-cat">Hook behavior & events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#e3342f;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Remote Trigger (CCR) sessions do not receive configured MCP connectors.</h3>
+            <p>MCP connectors (Notion, Supabase, etc.) configured on Remote Triggers are <a href="https://github.com/anthropics/claude-code/issues/43374" target="_blank">not injected into the CCR session runtime</a>. Connectors show as connected in trigger config and claude.ai settings, but ToolSearch finds nothing. Agent falls back to degraded mode.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43374" target="_blank">#43374</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="43407" id="pretooluse-exit2-deny-ignored" data-severity="critical">
+            <div class="kl-meta">
+                <span class="kl-num">#294</span>
+                <span class="kl-cat">Hook bypass & evasion</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>PreToolUse hooks returning exit 2 + deny JSON do not block tool execution.</h3>
+            <p>A PreToolUse hook that returns exit code 2 with <code>permissionDecision: "deny"</code> is <a href="https://github.com/anthropics/claude-code/issues/43407" target="_blank">supposed to block the tool call but doesn't</a>. The platform ignores the deny decision and proceeds with execution. The hook script runs (side effects occur), but the enforcement action is silently dropped. This undermines the core enforcement mechanism for hooks. Confirmed with repro.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43407" target="_blank">#43407</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="43417" id="websearch-ask-permission-no-prompt" data-severity="high">
+            <div class="kl-meta">
+                <span class="kl-num">#295</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#e3342f;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>WebSearch permission set to ask mode does not prompt the user.</h3>
+            <p>When WebSearch is configured in the <code>ask</code> permission list in <a href="https://github.com/anthropics/claude-code/issues/43417" target="_blank">settings.local.json, web searches execute without prompting</a> the user for approval. The ask mode is silently ignored for this tool, effectively making it always-allow.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43417" target="_blank">#43417</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="Permission system" data-issues="43406" id="edit-ignores-bypass-permissions" data-severity="high">
+            <div class="kl-meta">
+                <span class="kl-num">#296</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#e3342f;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Edit tool prompts for approval despite all bypass mechanisms being active.</h3>
+            <p>The Edit tool <a href="https://github.com/anthropics/claude-code/issues/43406" target="_blank">always shows a diff-and-approve prompt</a> even when three bypass mechanisms are active simultaneously: <code>--dangerously-skip-permissions</code> CLI flag, <code>defaultMode: bypassPermissions</code> in both global and project settings, and selecting allow-all-edits at the prompt. Each Edit call still prompts. Confirmed on WSL with repro.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43406" target="_blank">#43406</a></div>
+        </div>
+
+        <div class="kl-entry" data-category="MCP & plugin issues" data-issues="43413" id="symlink-marketplace-mcp-silent-fail" data-severity="medium">
+            <div class="kl-meta">
+                <span class="kl-num">#297</span>
+                <span class="kl-cat">MCP & plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d29922;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Local symlink marketplace plugins: enabledPlugins true silently fails to start MCP server.</h3>
+            <p>When a plugin from a local symlink-based marketplace is registered in settings.json under <code>enabledPlugins</code> with value <code>true</code>, Claude Code <a href="https://github.com/anthropics/claude-code/issues/43413" target="_blank">suppresses the confirmation dialog but silently fails to start the MCP server</a>. The plugin appears enabled but provides no tools at runtime. Does not affect GitHub-sourced marketplaces.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43413" target="_blank">#43413</a></div>
         </div>
 
         <footer>
