@@ -1,24 +1,25 @@
 {
   "version": "0.12.0",
-  "count": 320,
+  "count": 326,
   "categories": {
-    "Hook behavior & events": 127,
     "Hook bypass & evasion": 88,
-    "Permission system": 72,
-    "Subagent & spawned agents": 11,
+    "Hook behavior & events": 128,
+    "Permission system": 74,
+    "Subagent & spawned agents": 12,
+    "CLAUDE.md & memory": 1,
     "Configuration behavior": 8,
+    "Platform & compatibility": 4,
     "MCP & plugin issues": 4,
-    "Platform & compatibility": 2,
     "Scheduling & remote triggers": 2,
     "Hook system design constraints": 2,
     "Security & trust boundaries": 2,
-    "CLAUDE.md & memory": 1
+    "Subagents & isolation": 1
   },
   "severity_counts": {
-    "critical": 17,
+    "critical": 18,
     "low": 87,
-    "medium": 122,
-    "high": 94
+    "medium": 124,
+    "high": 97
   },
   "entries": [
     {
@@ -3301,6 +3302,84 @@
       "versions_affected": "2.1.69+",
       "description": "When using the Agent tool with isolation: \"worktree\" on a branch other than main (especially orphan branches), the worktree is created from origin/main instead of the current session HEAD. The agent runs against wrong file contents. No hook can detect or prevent this. Combined with existing worktree isolation failures (silent fallback, CWD drift), this adds another failure mode to agent worktree isolation.",
       "workaround": "Verify worktree contents match expected branch after agent completion. Use git worktree list to check the base commit.",
+      "date_added": "2026-04-04"
+    },
+    {
+      "id": "hook-lifecycle-gap-no-tool-started-event",
+      "title": "No event fires between PreToolUse approval and PostToolUse completion (stuck tool undetectable).",
+      "severity": "high",
+      "category": "Hook behavior & events",
+      "issue_refs": [
+        "#43584"
+      ],
+      "versions_affected": "v2.1.91 and earlier",
+      "description": "There is a complete observability blackout between PreToolUse (tool approved) and PostToolUse (tool completed). No ToolStarted or heartbeat event exists. Users building monitoring, timeout, or stuck-tool detection hooks cannot distinguish between a tool running normally and one that is hung. Especially severe in subagent contexts where parent collapses activity.",
+      "workaround": "Monitor PreToolUse timestamps and compare against PostToolUse arrival to estimate execution duration. No real-time detection is possible.",
+      "date_added": "2026-04-04"
+    },
+    {
+      "id": "permission-subshell-syntax-malformed-pattern",
+      "title": "Permission rules with subshell syntax $() generate malformed :* patterns.",
+      "severity": "high",
+      "category": "Permission system",
+      "issue_refs": [
+        "#43582"
+      ],
+      "versions_affected": "v2.1.91 and earlier",
+      "description": "When a user approves a Bash command containing subshell syntax like kill $(lsof -ti:8080), Claude Code auto-saves a permission rule with :* placed inside the subshell instead of at the end. Results in malformed rules like Bash(kill $(lsof:*) with unbalanced parentheses that never match future commands.",
+      "workaround": "Manually edit .claude/settings.local.json to fix or remove the malformed permission rule. Do not rely on auto-saved rules for commands with subshell syntax.",
+      "date_added": "2026-04-04"
+    },
+    {
+      "id": "git-restore-without-confirmation-data-loss",
+      "title": "Claude runs destructive git commands (git restore) without user confirmation, causing irreversible data loss.",
+      "severity": "critical",
+      "category": "Permission system",
+      "issue_refs": [
+        "#43591"
+      ],
+      "versions_affected": "v2.1.91 and earlier",
+      "description": "Claude Code ran git restore lib/ without user confirmation, permanently deleting all uncommitted working tree changes across 40+ files. Work built across multiple previous sessions was lost with no recovery path. The destructive git command was not flagged for approval despite being irreversible.",
+      "workaround": "Use bash-guard or a PreToolUse hook to intercept destructive git commands (git restore, git checkout --, git clean). Always commit or stash before letting Claude modify code.",
+      "date_added": "2026-04-04"
+    },
+    {
+      "id": "subagent-file-writes-lost-not-persisted",
+      "title": "Sub-agent file writes appear to succeed but changes are not persisted to the working directory.",
+      "severity": "high",
+      "category": "Subagent & spawned agents",
+      "issue_refs": [
+        "#43588"
+      ],
+      "versions_affected": "v2.1.91 and earlier",
+      "description": "When the main agent delegates work to sub-agents using the Agent tool without worktree isolation, sub-agents' Write and Edit tool calls appear to succeed (agents report builds/tests pass), but the files are not actually written to the working directory. Observed on Windows/VS Code.",
+      "workaround": "Use worktree isolation for sub-agents, or have the main agent verify file changes after sub-agent completion. Check file modification times after delegation.",
+      "date_added": "2026-04-04"
+    },
+    {
+      "id": "desktop-env-path-settings-ignored",
+      "title": "Desktop app Claude Code tab ignores env.PATH in settings.json (regression).",
+      "severity": "medium",
+      "category": "Platform & compatibility",
+      "issue_refs": [
+        "#43579"
+      ],
+      "versions_affected": "v1.569.0 (Desktop), regression",
+      "description": "The Claude Code tab in the Claude Desktop app ignores the env.PATH setting in ~/.claude/settings.json. Bash tool always runs with PATH=/usr/bin:/bin:/usr/sbin:/sbin regardless of configuration. This previously worked. Affects users who need custom PATH for hooks, tools, or language runtimes.",
+      "workaround": "Set PATH explicitly in hook scripts or use absolute paths for executables. The CLI version respects env.PATH correctly.",
+      "date_added": "2026-04-04"
+    },
+    {
+      "id": "renderer-strips-context-xml-tags",
+      "title": "Terminal renderer strips <context> XML tags and their content from output, including inside code blocks.",
+      "severity": "medium",
+      "category": "Platform & compatibility",
+      "issue_refs": [
+        "#43581"
+      ],
+      "versions_affected": "v2.1.91 and earlier",
+      "description": "The terminal renderer strips <context> XML tags and all content between them from displayed output, even inside fenced code blocks. The tag name is likely treated as internal system markup. Other XML tags render correctly. Affects users working with XML that uses context as a tag name.",
+      "workaround": "Use a different XML tag name, or escape the angle brackets when outputting XML containing <context> tags.",
       "date_added": "2026-04-04"
     }
   ]
