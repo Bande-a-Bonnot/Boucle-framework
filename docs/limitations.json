@@ -1,24 +1,24 @@
 {
   "version": "0.12.0",
-  "count": 304,
+  "count": 308,
   "categories": {
+    "Hook behavior & events": 124,
     "Hook bypass & evasion": 88,
-    "Hook behavior & events": 123,
-    "Permission system": 66,
-    "Subagent & spawned agents": 10,
-    "CLAUDE.md & memory": 1,
+    "Permission system": 67,
+    "Subagent & spawned agents": 11,
     "Configuration behavior": 8,
-    "Platform & compatibility": 1,
     "MCP & plugin issues": 2,
-    "Scheduling & remote triggers": 1,
+    "Scheduling & remote triggers": 2,
     "Hook system design constraints": 2,
-    "Security & trust boundaries": 2
+    "Security & trust boundaries": 2,
+    "CLAUDE.md & memory": 1,
+    "Platform & compatibility": 1
   },
   "severity_counts": {
-    "critical": 15,
-    "low": 87,
     "medium": 118,
-    "high": 84
+    "low": 87,
+    "high": 87,
+    "critical": 16
   },
   "entries": [
     {
@@ -3139,6 +3139,46 @@
         "https://github.com/anthropics/claude-code/issues/43472"
       ],
       "description": "MCP servers running inside Cowork's sandbox cannot connect to Google APIs due to network allowlist restrictions. Any MCP server requiring Google OAuth (e.g. mcp-gsheets) fails silently. The sandbox's network policy does not expose which domains are allowed, so debugging requires trial and error. Affects any Cowork user with Google-dependent MCP servers. See #43472."
+    },
+    {
+      "id": "docker-prune-destroys-unrelated-images",
+      "title": "Claude Code runs destructive Docker commands (system prune -af) destroying all images, volumes, and cache unrelated to the project.",
+      "category": "Hook behavior & events",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41357"
+      ],
+      "description": "During debugging sessions, Claude Code can run 'docker system prune -af --volumes' which destroys ALL Docker images, volumes, and build cache on the host, not just those related to the current project. This is a data-loss issue affecting any user with Docker installed. The Bash tool permission system does not distinguish between project-scoped and system-wide Docker commands. Has confirmed repro on macOS. See #41357."
+    },
+    {
+      "id": "background-agents-unstoppable-token-waste",
+      "title": "Background agents cannot be stopped once launched; 1.4M tokens wasted with no kill mechanism.",
+      "category": "Subagent & spawned agents",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/41461"
+      ],
+      "description": "Background agents launched via the Agent tool have no reliable stop mechanism. When a user requests stopping, Claude claims to stop them but they continue running. In one documented case, ~1.4M tokens (~$55-106 USD) were consumed by agents the user could not terminate. The TaskStop tool exists but does not reliably halt running agents. Affects VS Code and CLI. See #41461."
+    },
+    {
+      "id": "bypass-permissions-desktop-still-prompts",
+      "title": "Desktop app bypassPermissions mode still prompts for confirmation on every action.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/42975"
+      ],
+      "description": "Setting permissions.defaultMode to bypassPermissions in both global and project settings.json does not suppress permission prompts in the Desktop app (Windows). Every tool call still triggers a confirmation dialog. The same configuration works correctly in the CLI. Marked as duplicate upstream. Affects Windows and WSL Desktop users. See #42975."
+    },
+    {
+      "id": "scheduled-triggers-api-500-all-endpoints",
+      "title": "Scheduled triggers API returns HTTP 500 on list/get/run; create returns 200 but trigger not persisted.",
+      "category": "Scheduling & remote triggers",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43438"
+      ],
+      "description": "The RemoteTrigger API is broken on all read endpoints: list, get, and run all return HTTP 500. The create endpoint returns 200 but the trigger does not appear in the UI and cannot be retrieved via the API. This makes scheduled triggers completely unusable via the API. Has confirmed repro on macOS. See #43438."
     }
   ]
 }
