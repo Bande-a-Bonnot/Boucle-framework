@@ -555,7 +555,7 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-326 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+329 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
@@ -998,7 +998,7 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 **Stop hooks defined in Skills never fire.** When a skill defines Stop hooks in its SKILL.md file, they are [never invoked](https://github.com/anthropics/claude-code/issues/19225) when the skill session ends. The skill's start hooks and tool hooks work, but the Stop lifecycle event is silently skipped. Workaround: have skill instructions tell Claude to run the stop script manually before exiting. See [#19225](https://github.com/anthropics/claude-code/issues/19225).
 
-**No way to suppress async hook completion messages.** Async hook events (especially SubagentStart/SubagentStop) generate ["Async hook completed" messages](https://github.com/anthropics/claude-code/issues/33263) in the conversation transcript on every invocation. There is no setting to suppress or filter these messages. Heavy hook usage (multiple hooks across multiple events) floods the conversation with noise, degrading both the user experience and the model's effective context. Originally filed as [#9603](https://github.com/anthropics/claude-code/issues/9603), auto-closed and re-filed. See [#33263](https://github.com/anthropics/claude-code/issues/33263).
+**No way to suppress async hook completion messages.** Async hook events (especially SubagentStart/SubagentStop) generate ["Async hook completed" messages](https://github.com/anthropics/claude-code/issues/33293) in the conversation transcript on every invocation. There is no setting to suppress or filter these messages. Heavy hook usage (multiple hooks across multiple events) floods the conversation with noise, degrading both the user experience and the model's effective context. Originally filed as [#9603](https://github.com/anthropics/claude-code/issues/9603), auto-closed and re-filed. See [#33293](https://github.com/anthropics/claude-code/issues/33293).
 
 **Bash permissions in settings.json not enforced without custom hooks.** `permissions.allow` and `permissions.deny` rules for Bash commands in settings.json are [not reliably enforced](https://github.com/anthropics/claude-code/issues/18846). Denied commands may still execute, and allowed commands may still prompt for approval. Users must write custom PreToolUse hooks as a workaround to get reliable Bash command enforcement. This is exactly the gap bash-guard fills. See [#18846](https://github.com/anthropics/claude-code/issues/18846).
 

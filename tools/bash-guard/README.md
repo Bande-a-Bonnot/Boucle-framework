@@ -24,7 +24,7 @@ Note: `settings.json` path deny rules [do not apply to the Bash tool](https://gi
 | Docker destruction | `docker compose down -v`, `docker system prune`, `docker volume rm` | Destroys volumes/data |
 | Docker escape | `docker run -v /:/host`, `docker exec` | Escapes directory restrictions ([#37621](https://github.com/anthropics/claude-code/issues/37621)) |
 | Database destruction | `prisma db push`, `dropdb`, `DROP TABLE`, `migrate:fresh`, `redis-cli FLUSHALL`, `mongosh dropDatabase` | Destroys production data ([#33183](https://github.com/anthropics/claude-code/issues/33183), [#37439](https://github.com/anthropics/claude-code/issues/37439)) |
-| Credential exposure | `env`, `printenv`, `export -p`, `cat .env` | Dumps secrets to output ([#32616](https://github.com/anthropics/claude-code/issues/32616)) |
+| Credential exposure | `env`, `printenv`, `export -p`, `cat .env` | Dumps secrets to output ([#32916](https://github.com/anthropics/claude-code/issues/32916)) |
 | Debug trace | `bash -x`, `set -x` | Leaks expanded variables in trace |
 | Cloud infra destruction | `terraform destroy`, `pulumi destroy`, `aws s3 rm --recursive`, `aws ec2 terminate-instances`, `aws rds/dynamodb/lambda delete-*`, `aws cloudformation delete-stack`, `kubectl delete namespace`, `kubectl drain`, `kubectl scale --replicas=0`, `helm uninstall`, `gcloud delete`, `az group/vm/webapp delete`, `doctl delete`, `flyctl destroy`, `heroku apps:destroy`, `vercel rm`, `netlify sites:delete` | Takes down production infrastructure |
 | Mass file deletion | `find -delete`, `find -exec rm`, `xargs rm`, `git clean -f` | Bulk file removal without confirmation ([#37331](https://github.com/anthropics/claude-code/issues/37331)) |
