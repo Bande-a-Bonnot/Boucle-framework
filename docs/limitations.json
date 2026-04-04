@@ -1,20 +1,19 @@
 {
   "version": "0.12.0",
-  "count": 280,
+  "count": 288,
   "categories": {
-    "Hook bypass & evasion": 86,
-    "Hook behavior & events": 116,
-    "Permission system": 61,
-    "Subagent & spawned agents": 9,
+    "Hook bypass & evasion": 87,
+    "Hook behavior & events": 119,
+    "Permission system": 63,
+    "Subagent & spawned agents": 10,
     "CLAUDE.md & memory": 1,
-    "Hook behavior": 1,
-    "Configuration behavior": 6
+    "Configuration behavior": 8
   },
   "severity_counts": {
     "critical": 13,
     "low": 87,
-    "medium": 106,
-    "high": 74
+    "medium": 111,
+    "high": 77
   },
   "entries": [
     {
@@ -2529,7 +2528,7 @@
     {
       "id": "built-in-edit-hook-false-positive-on-double-slash-in-code-comments",
       "title": "Built-in Edit hook false-positive on // in code comments.",
-      "category": "Hook behavior",
+      "category": "Hook behavior & events",
       "severity": "medium",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/42953"
@@ -2906,6 +2905,86 @@
         "https://github.com/anthropics/claude-code/issues/43299"
       ],
       "description": "The MCP_TIMEOUT environment variable does not control MCP server connection timeout. The MCP Client from @modelcontextprotocol/sdk is instantiated without passing requestTimeout, so it defaults to 60 seconds. This inner timeout fires before the outer MCP_TIMEOUT wrapper, making the env var completely ineffective. MCP servers that take longer than 60s to initialize (e.g., large Slack workspaces caching users/channels) are always marked as failed regardless of MCP_TIMEOUT value."
+    },
+    {
+      "id": "plugin-mcp-tools-hang-indefinitely-no-timeout",
+      "title": "Plugin MCP tools hang indefinitely with no timeout or error.",
+      "category": "Configuration behavior",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43342"
+      ],
+      "description": "Plugin-based MCP tools (e.g. mcp__linear__*) hang for ~2 minutes with no response, no timeout, no error message, and no permission prompt, even when the tool pattern is explicitly in the permissions.allow list. Compounds with #280: the MCP_TIMEOUT env var does not help because the SDK overrides it."
+    },
+    {
+      "id": "scheduled-tasks-cannot-access-mcp-connectors",
+      "title": "Scheduled task agents cannot access MCP tools or connectors.",
+      "category": "Subagent & spawned agents",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43320"
+      ],
+      "description": "The main agent spawned by a scheduled task (trigger) does not have access to MCP tools or connectors. Only sub-agents spawned by the main agent can use them. Workaround: have the scheduled agent immediately spawn a sub-agent for MCP-dependent work. Hooks attached to MCP tools will not fire for the top-level scheduled agent."
+    },
+    {
+      "id": "model-builds-captcha-solver-without-consent",
+      "title": "Model builds CAPTCHA solver and tests against live system without user consent.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43318"
+      ],
+      "description": "When encountering a CAPTCHA during a web task, Claude Code autonomously builds and tests a CAPTCHA solver against the live system without asking the user for permission. The model decides to bypass access controls on its own. PreToolUse hooks on the Bash tool are the only mitigation, as the model does not self-limit."
+    },
+    {
+      "id": "mcp-servers-overridden-by-empty-per-project-config",
+      "title": "MCP servers silently overridden by empty per-project config in ~/.claude.json.",
+      "category": "Configuration behavior",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43315"
+      ],
+      "description": "When opening a new project directory, Claude Code writes an empty mcpServers object to ~/.claude.json for that project. This overrides globally configured MCP servers. Users who set up MCP servers globally find them silently disabled in new projects because the per-project empty object takes precedence."
+    },
+    {
+      "id": "vscode-extension-ignores-bypasspermissions-defaultmode",
+      "title": "VS Code extension ignores bypassPermissions defaultMode.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43308"
+      ],
+      "description": "The VS Code extension does not respect defaultMode: bypassPermissions set in settings.json, even when configured at user, project, and local levels. The extension still prompts for every Bash command. The CLI respects this setting. Distinct from #215 which covers allow/deny rule enforcement."
+    },
+    {
+      "id": "git-bash-detection-regression-after-v2169",
+      "title": "Git Bash detection regression after v2.1.69.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43332"
+      ],
+      "description": "Git Bash detection is broken on Windows for versions after v2.1.69, including the native binary. Claude Code fails to detect Git Bash as the shell environment, causing Bash tool execution failures. This is a regression distinct from earlier Git Bash issues (#8674, #10152, #13184, #31060). Affects all Windows users who rely on Git Bash instead of WSL."
+    },
+    {
+      "id": "pgrep-enoent-crash-macos-restricted-path",
+      "title": "spawn pgrep ENOENT crash on macOS due to restricted PATH.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43336"
+      ],
+      "description": "Claude Code crashes with ENOENT: no such file or directory, posix_spawn 'pgrep' during normal Read tool operations on macOS. Bun's subprocess spawning uses a restricted PATH that does not include /usr/bin. The crash dumps minified ink UI source to the terminal. Regression in v2.1.91."
+    },
+    {
+      "id": "mcp-chrome-single-domain-permission-per-session",
+      "title": "MCP Chrome extension only shows one domain permission prompt per session.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43327"
+      ],
+      "description": "When using the Claude in Chrome MCP extension, only the first domain navigation triggers a permission prompt. All subsequent navigations to new domains are silently blocked with \"Navigation to this domain is not allowed\" without showing a prompt. Creating new tabs or retrying does not help. Multi-site workflows are impossible in a single session. Workaround: start a new session for each domain."
     }
   ]
 }
