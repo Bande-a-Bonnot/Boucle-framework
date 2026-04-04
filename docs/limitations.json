@@ -1,13 +1,13 @@
 {
   "version": "0.12.0",
-  "count": 316,
+  "count": 319,
   "categories": {
-    "Hook behavior & events": 126,
+    "Hook behavior & events": 127,
     "Hook bypass & evasion": 88,
-    "Permission system": 71,
+    "Permission system": 72,
     "Subagent & spawned agents": 11,
     "Configuration behavior": 8,
-    "MCP & plugin issues": 3,
+    "MCP & plugin issues": 4,
     "Platform & compatibility": 2,
     "Scheduling & remote triggers": 2,
     "Hook system design constraints": 2,
@@ -15,8 +15,8 @@
     "CLAUDE.md & memory": 1
   },
   "severity_counts": {
-    "medium": 121,
-    "high": 91,
+    "medium": 122,
+    "high": 93,
     "low": 87,
     "critical": 17
   },
@@ -3259,6 +3259,36 @@
         "https://github.com/anthropics/claude-code/issues/43498"
       ],
       "description": "When Claude fires two Bash tool calls in parallel (in a single message), execution order is not guaranteed. If one command relies on a working directory set by a previous sequential command, the parallel call may execute in the wrong directory. This is by design (parallel calls are independent) but the model does not account for it, leading to silent failures. Has confirmed repro. See #43498."
+    },
+    {
+      "id": "allow-patterns-fail-compound-bash-commands",
+      "title": "Allow patterns in permissions fail to match compound Bash commands.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43531"
+      ],
+      "description": "Bash allow patterns in settings.json (e.g., Bash(echo *)) fail to match commands containing compound operators (&&), command substitution ($(...)), redirects, or complex quoting. The permission prompt still fires even when the first token matches an allowed pattern. Long commands (e.g., SSH with embedded shell) are also affected. Confirmed on Windows with has-repro. See #43531."
+    },
+    {
+      "id": "notification-hook-fires-8s-after-permission-prompt",
+      "title": "Notification hook fires ~8 seconds after permission prompt appears.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43530"
+      ],
+      "description": "The Notification hook event for permission_prompt fires approximately 8 seconds after the permission prompt is displayed in the terminal. The hook script itself executes in ~100ms, confirming the delay is in Claude Code's event dispatch, not the hook. Makes real-time desktop notification workflows impractical. Confirmed on Linux with profiling evidence. See #43530."
+    },
+    {
+      "id": "plugin-mcp-server-killed-immediately-after-startup",
+      "title": "Plugin MCP server process killed immediately after startup.",
+      "category": "MCP & plugin issues",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43527"
+      ],
+      "description": "Marketplace plugin MCP servers (e.g., Telegram) start but are not maintained by Claude Code. The server process is killed almost immediately after initialization, before it can handle any requests. Manual testing confirms the plugin works correctly when run standalone. Appears to be a lifecycle management issue in Claude Code's plugin hosting. Confirmed on macOS with v2.1.92. See #43527."
     }
   ]
 }
