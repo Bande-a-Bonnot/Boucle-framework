@@ -1,34 +1,35 @@
 {
   "version": "0.12.0",
-  "count": 416,
+  "count": 418,
   "categories": {
-    "Hook bypass & evasion": 91,
     "Hook behavior & events": 142,
+    "Hook bypass & evasion": 91,
     "Permission system": 90,
     "Subagent & spawned agents": 18,
-    "Context & memory": 8,
+    "MCP & plugin issues": 16,
     "Configuration behavior": 11,
+    "Context & memory": 8,
     "Platform & compatibility": 8,
-    "MCP & plugin issues": 15,
-    "Scheduling & remote triggers": 4,
-    "Security & trust boundaries": 5,
-    "Performance & cost": 2,
     "Desktop & IDE integration": 8,
+    "Security & trust boundaries": 5,
+    "Scheduling & remote triggers": 4,
     "File system & paths": 4,
+    "Tool behavior": 3,
+    "Performance & cost": 2,
     "Multi-agent & subprocesses": 1,
     "MCP & plugins": 1,
     "hooks": 1,
     "Hook event lifecycle": 1,
-    "Tool behavior": 2,
     "Permissions & security": 1,
     "UX & display": 1,
-    "Networking": 0
+    "Networking": 1,
+    "CLAUDE.md enforcement": 1
   },
   "severity_counts": {
     "critical": 24,
     "low": 89,
     "medium": 162,
-    "high": 141
+    "high": 143
   },
   "entries": [
     {
@@ -4822,6 +4823,26 @@
       ],
       "status": "open",
       "description": "Claude Code interactive sessions hang for ~290 seconds between API calls when behind an HTTP CONNECT proxy with L7 inspection on Ubuntu 24.04. Same account and prompt work fine on macOS without proxy."
+    },
+    {
+      "id": "compaction-continuation-overrides-claudemd-resume-directives",
+      "title": "Compaction continuation prompt overrides user-defined CLAUDE.md interrupt/resume directives.",
+      "category": "CLAUDE.md enforcement",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43975"
+      ],
+      "description": "When a conversation hits the context limit and compaction occurs, the system-injected continuation prompt instructs the model to 'Continue the conversation from where it left off without asking the user any further questions. Resume directly.' This blanket instruction overrides user-defined CLAUDE.md directives that explicitly require the model to stop and confirm before resuming work (e.g. after destructive operations or at defined checkpoints). There is no PreCompact or PostCompact hook mechanism that can intercept or modify this system prompt injection to enforce user-defined pause-before-resume rules. See #43975."
+    },
+    {
+      "id": "mcp-server-connection-failure-p-mode-no-diagnostic",
+      "title": "MCP server connection failure in -p (headless) mode produces no diagnostic output; orchestrators cannot detect or recover.",
+      "category": "MCP & plugin issues",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43968"
+      ],
+      "description": "When an MCP server fails to connect during a -p (headless) session, Claude Code silently proceeds without those tools. There is zero signal in stderr or the stream-json output. The system/init event simply omits the failed server's tools from the tool list. Orchestrators have no way to detect the failure except by counting tools and comparing against an expected baseline. In production pipelines, this causes silent degraded operation: the agent runs to completion but produces wrong results because key tools were unavailable, with no error surfaced. There is no --require-mcp flag or equivalent. See #43968."
     }
   ],
   "status_summary": {
