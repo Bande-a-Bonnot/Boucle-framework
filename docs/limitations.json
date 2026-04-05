@@ -1,15 +1,15 @@
 {
   "version": "0.12.0",
-  "count": 385,
+  "count": 390,
   "categories": {
     "Hook behavior & events": 137,
     "Hook bypass & evasion": 91,
-    "Permission system": 83,
+    "Permission system": 85,
     "Subagent & spawned agents": 16,
     "MCP & plugin issues": 12,
-    "Configuration behavior": 10,
+    "Configuration behavior": 11,
+    "Platform & compatibility": 8,
     "Desktop & IDE integration": 8,
-    "Platform & compatibility": 6,
     "Security & trust boundaries": 5,
     "Context & memory": 4,
     "Scheduling & remote triggers": 4,
@@ -20,10 +20,10 @@
     "hooks": 1
   },
   "severity_counts": {
-    "medium": 150,
-    "high": 123,
+    "critical": 22,
     "low": 89,
-    "critical": 22
+    "medium": 151,
+    "high": 128
   },
   "entries": [
     {
@@ -4448,6 +4448,56 @@
       ],
       "description": "When CLAUDE.md explicitly bans a Bash command by name (e.g. `sed -i` on Windows Git Bash) and describes the destructive consequence, the model can still choose that command under task pressure. In the reported case, the model used `sed -i` for a bulk text replacement despite a named prohibition with an explicit warning. The model self-caught the violation after execution, confirming the rule was in active context at the time -- this is a reasoning failure, not a context-load failure. On Windows Git Bash, `sed -i` silently empties files rather than editing in-place, wiping 842 lines with no recovery path (no git repo). The broader pattern: CLAUDE.md rules are advisory text injected into context; the model weighs them against task efficiency under pressure and can choose to violate them. Text-based prohibitions are not execution gates.",
       "workaround": "Use a PreToolUse hook that blocks `sed -i` in Bash commands on Windows (e.g. pattern-match on `sed -i` and `exit 2`). Always maintain a git repository even for simple projects -- `git init` provides a recovery path even without a remote. Text-rule prohibitions in CLAUDE.md are not reliable for high-stakes command prevention; `permissions.deny` and hooks with `exit 2` are the only enforcement mechanisms."
+    },
+    {
+      "id": "sandbox-blocks-winget-tools-when-cwd-is-home",
+      "title": "Sandbox path resolver blocks WinGet-installed tools when cwd is the home directory on Windows.",
+      "category": "Platform & compatibility",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43840"
+      ],
+      "description": "On Windows, the sandbox command resolver filters executables whose resolved path starts with `cwd + path.sep`. When launched from `C:\\Users\\<user>`, all WinGet-installed tools (which live under `AppData\\Local\\Microsoft\\WinGet\\Packages\\`) are falsely classified as unsafe and blocked with exit 127. This breaks agent spawning (`teammateMode: 'auto'`) entirely when the home directory is the working directory. Confirmed with has-repro on Windows. See #43840."
+    },
+    {
+      "id": "windows-bash-spawns-visible-conhost-windows",
+      "title": "On Windows, Bash tool calls and MCP server spawns create visible conhost.exe windows due to missing CREATE_NO_WINDOW flag.",
+      "category": "Platform & compatibility",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43844"
+      ],
+      "description": "On Windows, `claude.exe` is a console-subsystem binary. When spawning child processes (Bash tool calls, MCP servers) without the `CREATE_NO_WINDOW` flag, Windows allocates a new `conhost.exe` for each. In headless/programmatic (`-p`) mode with `windowsHide: true` on the outer process, every Bash call flashes a visible window and every MCP server creates 1-2 persistent windows that never close. Five MCP servers across three sessions produce 30+ orphaned cmd windows. Makes `claude -p` unusable for Windows automation. Confirmed with has-repro. See #43844."
+    },
+    {
+      "id": "bypass-permissions-ui-toggle-does-not-write-settings",
+      "title": "Bypass permissions UI toggle does not write defaultMode to settings.json; prompts persist despite toggle appearing active.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43845"
+      ],
+      "description": "Enabling 'Bypass permissions' / 'Accept all permissions' via the Shift+Tab UI toggle does not write `\"defaultMode\": \"bypassPermissions\"` to `settings.json`. The toggle appears active in the UI but `settings.json` retains `\"default\"` mode. Every novel Bash command triggers a fresh permission prompt. Over time 'Allow once' clicks accumulate 90+ single-command entries in `settings.local.json`, but any new command still prompts. The UI state is decoupled from actual config state. Confirmed with has-repro on Windows. See #43845."
+    },
+    {
+      "id": "effortlevel-max-silently-ignored-in-settings",
+      "title": "`effortLevel: \"max\"` in settings.json is silently ignored; the /effort command and settings.json schema are out of sync.",
+      "category": "Configuration behavior",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43853"
+      ],
+      "description": "The `effortLevel` field in `settings.json` only accepts `\"low\"`, `\"medium\"`, `\"high\"` per the JSON schema enum. The `/effort` command offers a `max` option in-session and it works interactively. However setting `\"effortLevel\": \"max\"` in `~/.claude/settings.json` is silently rejected on startup and falls back to `auto (currently medium)` with no warning or error. The in-session vocabulary and the persistent config vocabulary are out of sync, and the mismatch is invisible to the user. Confirmed with has-repro. See #43853."
+    },
+    {
+      "id": "model-silent-on-denied-read-does-not-surface-to-user",
+      "title": "When Read is denied by a permissions.deny rule, the model silently continues instead of asking the user to provide the file contents.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43854"
+      ],
+      "description": "When a `permissions.deny` rule blocks `Read` on a file, the model acknowledges the denial internally but does not ask the user to provide the file contents via another channel. Instead it proceeds with code-level hypothesis testing on incomplete information. In the reported case this caused 8 unnecessary production deployments over ~2 hours before the user self-diagnosed a one-line config difference. The deny rule correctly blocked the read, but the model's fallback behavior (silent continuation) is the limitation: it should surface the blocked access as a user-actionable request. Confirmed. See #43854."
     }
   ],
   "status_summary": {
