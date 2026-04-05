@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 376,
+  "count": 378,
   "categories": {
     "Hook bypass & evasion": 90,
     "Hook behavior & events": 137,
@@ -19,9 +19,9 @@
     "MCP & plugins": 1
   },
   "severity_counts": {
-    "critical": 21,
+    "critical": 22,
     "low": 89,
-    "medium": 144,
+    "medium": 145,
     "high": 122
   },
   "entries": [
@@ -4348,6 +4348,26 @@
         "https://github.com/anthropics/claude-code/issues/43800"
       ],
       "description": "When launched as a macOS GUI app, Claude Code Desktop generates a shell snapshot that writes `export PATH=<JavaScript process.env.PATH>` rather than the PATH resolved by sourcing the user's shell dotfiles (`.zshenv`, `.zshrc`, etc.). The GUI process PATH is minimal (`/usr/bin:/bin:/usr/sbin:/sbin`) and omits Homebrew (`/opt/homebrew/bin`), `/usr/local/bin`, and any user-configured PATH entries. As a result, tools installed via Homebrew (e.g. `node`, `npm`, `gh`, `python3`) return 'command not found' when invoked via the Bash tool, while they work correctly in a terminal session. Workaround: launch Claude Code from the terminal instead of the GUI, or set `ANTHROPIC_SHELL_SNAPSHOT_PATH` to a pre-built snapshot generated from a terminal session. Root cause identified in snapshot generation code (`gW7`/`G31` functions). Confirmed on macOS Apple Silicon, CC Desktop v2.1.87. See #43800."
+    },
+    {
+      "id": "oauth-token-revocation-via-claude-ai-does-not-invalidate-tokens",
+      "title": "OAuth token revocation via claude.ai ('Log out all sessions' / 'Revoke all Claude Code instances') does not actually invalidate tokens, leaving stolen tokens usable for days.",
+      "category": "Security & trust boundaries",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43801"
+      ],
+      "description": "Revoking all Claude Code sessions through the claude.ai web UI (Account > Security > 'Log out all sessions' and 'Revoke all Claude Code instances') has no effect on active OAuth tokens. Tokens remain valid 3-4 days after revocation, even after a VM cold boot. This means if a token is leaked or stolen, the user has no working mechanism to invalidate it. The only incident response path (server-side revocation) is completely broken. Confirmed on CC v2.1.92, tested with multiple revocation attempts. See #43801."
+    },
+    {
+      "id": "remote-trigger-tool-returns-401-in-desktop-app-while-ui-triggers-work",
+      "title": "RemoteTrigger tool returns HTTP 401 Unauthorized when invoked by the model inside the Desktop app, while the Desktop app's built-in trigger UI and CLI RemoteTrigger both work correctly.",
+      "category": "Desktop & IDE integration",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43802"
+      ],
+      "description": "When the model attempts to use the RemoteTrigger tool inside the Desktop app, it fails with a 401 Unauthorized error. The same trigger works when invoked via the Desktop app's built-in trigger UI or from the CLI. The auth plumbing between the Desktop app and the RemoteTrigger tool endpoint appears to use different credential paths. This is distinct from the existing RemoteTrigger API 500 error (#43438) and triggers returning 200 but never executing (#43741). See #43802."
     }
   ],
   "status_summary": {
