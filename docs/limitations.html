@@ -180,6 +180,11 @@
         .stat-pill.high { background: #ea580c22; color: #fb923c; border: 1px solid #ea580c44; }
         .stat-pill.medium { background: #ca8a0422; color: #fbbf24; border: 1px solid #ca8a0444; }
         .stat-pill.low { background: #6b728022; color: #9ca3af; border: 1px solid #6b728044; }
+        .stat-pill.fixed { background: #16a34a22; color: #4ade80; border: 1px solid #16a34a44; }
+        .stat-pill.mitigated { background: #0891b222; color: #22d3ee; border: 1px solid #0891b244; }
+        .kl-status { font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 12px; margin-left: 0.3rem; font-weight: 600; text-transform: uppercase; }
+        .kl-status.fixed { background: #16a34a; color: white; }
+        .kl-status.mitigated { background: #0891b2; color: white; }
         .copy-link {
             cursor: pointer;
             font-size: 0.75rem;
@@ -214,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">365</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-05.</span></p>
+        <p class="subtitle"><span id="total-count">365</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-05.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -229,6 +234,12 @@
                 <option value="high">High</option>
                 <option value="medium">Medium</option>
                 <option value="low">Low</option>
+            </select>
+            <select id="status-filter">
+                <option value="">All statuses</option>
+                <option value="open">Open</option>
+                <option value="fixed">Fixed</option>
+                <option value="mitigated">Mitigated</option>
             </select>
             <select id="sort-order">
                 <option value="default">Sort: by number</option>
@@ -354,11 +365,11 @@
             <p>Claude Code&#x27;s built-in skills perform Write/Edit internally through the Skill tool wrapper. PreToolUse hooks fire on the <code>Skill</code> tool invocation, not on the individual file operations inside it. A hook checking &quot;is this write targeting .env?&quot; won&#x27;t fire because the tool name is <code>Skill</code>, not <code>Write</code>. There is no workaround for this yet. See <a href="https://github.com/anthropics/claude-code/issues/38040" target="_blank">#38040</a>.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/38040" target="_blank">#38040</a></div>
         </div>
-        <div class="kl-entry" data-category="Permission system" data-issues="38018" id="context-compaction-invalidates-stateful-hooks" data-severity="medium">
+        <div class="kl-entry" data-category="Permission system" data-issues="38018" id="context-compaction-invalidates-stateful-hooks" data-status="mitigated" data-severity="medium">
             <div class="kl-header">
                 <span class="kl-num">#12</span>
                 <span class="kl-cat">Permission system</span>
-                <span class="kl-sev" style="font-size:0.7rem;background:#ca8a04;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ca8a04;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span><span class="kl-status mitigated">MITIGATED</span>
             </div>
             <h3>Context compaction invalidates stateful hooks.</h3>
             <p>Hooks that track session state (e.g., &quot;which files has Claude read?&quot;) break across <a href="https://github.com/anthropics/claude-code/issues/38018" target="_blank">context compaction boundaries</a>. After compaction, Claude&#x27;s context no longer contains previously-read files, but hook state still shows them as &quot;recently read.&quot; This can cause false gates (blocking a re-read Claude needs) or false passes (allowing an action the hook thinks Claude is informed about). <strong>MITIGATED:</strong> PostCompact hook event now exists in Claude Code. Stateful hooks can register a PostCompact handler to clear their caches when compaction occurs. See read-once&#x27;s compact.sh for an example implementation.</p>
@@ -1560,31 +1571,31 @@
             <p>Starting in v2.1.49, a <code>ConfigChange</code> hook event <a href="https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md" target="_blank">fires when configuration files change during a session</a>. This enables enterprise security auditing and optional blocking of settings changes mid-session. If the model or a plugin modifies <code>.claude/settings.json</code>, <code>.claude/settings.local.json</code>, or other config files, a command-type hook can detect and block the change. This partially addresses the supply-chain risk in <a href="https://github.com/anthropics/claude-code/issues/38319" target="_blank">#38319</a> for runtime changes (but not for pre-existing malicious configs in cloned repos). enforce-hooks does not yet generate ConfigChange hooks but may in future versions.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/38319" target="_blank">#38319</a></div>
         </div>
-        <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="" id="pretooluse-hook-allow-no-longer-bypasses-deny-rules" data-severity="low">
+        <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="" id="pretooluse-hook-allow-no-longer-bypasses-deny-rules" data-status="fixed" data-severity="low">
             <div class="kl-header">
                 <span class="kl-num">#132</span>
                 <span class="kl-cat">Hook bypass & evasion</span>
-                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span><span class="kl-status fixed">FIXED in v2.1.77</span>
             </div>
             <h3>PreToolUse hook &quot;allow&quot; no longer bypasses deny rules.</h3>
             <p>Fixed in v2.1.77: a PreToolUse hook returning <code>&quot;allow&quot;</code> could previously override <code>deny</code> permission rules, including enterprise managed settings. A misconfigured or malicious hook could bypass security controls. This is now fixed. If you are on v2.1.76 or earlier, any hook returning &quot;allow&quot; silently overrides deny rules. Update to v2.1.77+.</p>
             <div class="kl-issues">Issues: none</div>
         </div>
-        <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="" id="managed-policy-ask-rules-no-longer-bypassed-by-user-allow-ru" data-severity="low">
+        <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="" id="managed-policy-ask-rules-no-longer-bypassed-by-user-allow-ru" data-status="fixed" data-severity="low">
             <div class="kl-header">
                 <span class="kl-num">#133</span>
                 <span class="kl-cat">Hook bypass & evasion</span>
-                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span><span class="kl-status fixed">FIXED in v2.1.74</span>
             </div>
             <h3>Managed policy `ask` rules no longer bypassed by user `allow` rules.</h3>
             <p>Fixed in v2.1.74: user-level <code>allow</code> rules and skill <code>allowed-tools</code> could previously override managed (enterprise) <code>ask</code> rules, silently granting permission that policy required prompting for. This is now fixed. If you are on v2.1.73 or earlier, user allow rules can bypass managed ask policies. Update to v2.1.74+.</p>
             <div class="kl-issues">Issues: none</div>
         </div>
-        <div class="kl-entry" data-category="Hook behavior & events" data-issues="26637" id="disableallhooks-now-respects-managed-settings-hierarchy" data-severity="medium">
+        <div class="kl-entry" data-category="Hook behavior & events" data-issues="26637" id="disableallhooks-now-respects-managed-settings-hierarchy" data-status="fixed" data-severity="medium">
             <div class="kl-header">
                 <span class="kl-num">#134</span>
                 <span class="kl-cat">Hook behavior & events</span>
-                <span class="kl-sev" style="font-size:0.7rem;background:#ca8a04;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ca8a04;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span><span class="kl-status fixed">FIXED in v2.1.49</span>
             </div>
             <h3>`disableAllHooks` now respects managed settings hierarchy.</h3>
             <p>Fixed in v2.1.49: non-managed settings could previously set <code>disableAllHooks: true</code> and disable hooks set by enterprise managed policy (<a href="https://github.com/anthropics/claude-code/issues/26637" target="_blank">#26637</a>). This is now fixed. Managed hooks cannot be disabled by project-level or user-level settings. If you are on v2.1.48 or earlier, any <code>.claude/settings.json</code> in a cloned repo can disable all hooks including enterprise-mandated ones.</p>
@@ -2322,11 +2333,11 @@
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42388" target="_blank">#42388</a></div>
         </div>
 
-        <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="CVE-2026-24887" id="find-command-injection-cve" data-severity="critical">
+        <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="CVE-2026-24887" id="find-command-injection-cve" data-status="fixed" data-severity="critical">
             <div class="kl-header">
                 <span class="kl-num">#207</span>
                 <span class="kl-cat">Hook bypass & evasion</span>
-                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span><span class="kl-status fixed">FIXED in v2.0.72</span>
             </div>
             <h3><code>find</code> command injection bypasses user approval prompt (CVE-2026-24887).</h3>
             <p>Command parsing error allowed untrusted context content to trigger arbitrary command execution through <code>find</code> without the approval prompt firing. CVSS 7.7 HIGH. Fixed in v2.0.72. bash-guard catches dangerous find patterns regardless of version.</p>
@@ -2346,22 +2357,22 @@
             <div class="kl-issues">Issues: <a href="https://www.theregister.com/2026/04/01/claude_code_rule_cap_raises/" target="_blank">The Register (Adversa)</a></div>
         </div>
 
-        <div class="kl-entry" data-category="Hook behavior & events" data-issues="v2.1.90-changelog" id="posttooluse-format-on-save-breaks-consecutive-edits" data-severity="medium">
+        <div class="kl-entry" data-category="Hook behavior & events" data-issues="v2.1.90-changelog" id="posttooluse-format-on-save-breaks-consecutive-edits" data-status="fixed" data-severity="medium">
             <div class="kl-header">
                 <span class="kl-num">#209</span>
                 <span class="kl-cat">Hook behavior & events</span>
-                <span class="kl-sev" style="font-size:0.7rem;background:#ca8a04;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ca8a04;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span><span class="kl-status fixed">FIXED in v2.1.90</span>
             </div>
             <h3>PostToolUse format-on-save hooks break consecutive edits (fixed v2.1.90).</h3>
             <p>When a PostToolUse hook reformats a file after Edit or Write (e.g., prettier, black, gofmt), the next Edit/Write to the same file fails with "File content has changed." The formatter changes the file hash between tool calls. Fixed in v2.1.90. On pre-v2.1.90, workaround: use a separate formatting step instead of a PostToolUse hook.</p>
             <div class="kl-issues">Source: v2.1.90 changelog</div>
         </div>
 
-        <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="v2.1.90-changelog" id="powershell-trailing-ampersand-bypass" data-severity="medium">
+        <div class="kl-entry" data-category="Hook bypass & evasion" data-issues="v2.1.90-changelog" id="powershell-trailing-ampersand-bypass" data-status="fixed" data-severity="medium">
             <div class="kl-header">
                 <span class="kl-num">#210</span>
                 <span class="kl-cat">Hook bypass & evasion</span>
-                <span class="kl-sev" style="font-size:0.7rem;background:#ca8a04;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ca8a04;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span><span class="kl-status fixed">FIXED in v2.1.90</span>
             </div>
             <h3>PowerShell trailing <code>&amp;</code> bypasses tool permission checks (fixed v2.1.90).</h3>
             <p>Appending <code>&amp;</code> to a PowerShell command launched it as a background job, bypassing tool permission evaluation. Fixed in v2.1.90 alongside three other PowerShell hardening fixes: <code>-ErrorAction Break</code> debugger hang, archive-extraction TOCTOU, and parse-failure fallback degradation. Pre-v2.1.90 PowerShell permission checks have multiple bypass vectors.</p>
@@ -3740,33 +3751,33 @@
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43627" target="_blank">#43627</a></div>
         </div>
 
-        <div class="kl-entry" data-category="Subagent & spawned agents" data-issues="" id="subagent-spawning-fails-after-tmux-window-kill" data-severity="medium">
+        <div class="kl-entry" data-category="Subagent & spawned agents" data-issues="" id="subagent-spawning-fails-after-tmux-window-kill" data-status="fixed" data-severity="medium">
             <div class="kl-meta">
                 <span class="kl-num">#333</span>
                 <span class="kl-cat">Subagent & spawned agents</span>
-                <span class="kl-sev" style="font-size:0.7rem;background:#d29922;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d29922;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span><span class="kl-status fixed">FIXED in v2.1.92</span>
             </div>
             <h3>Subagent spawning permanently fails after tmux windows are killed or renumbered.</h3>
             <p>During long-running sessions, if tmux windows are killed or renumbered externally, subagent spawning fails permanently with &quot;Could not determine pane count.&quot; The error persists for the rest of the session with no recovery mechanism. Fixed in v2.1.92.</p>
             <div class="kl-issues">Issues: changelog v2.1.92</div>
         </div>
 
-        <div class="kl-entry" data-category="Hook behavior & events" data-issues="" id="stop-hooks-fail-on-small-model-ok-false" data-severity="high">
+        <div class="kl-entry" data-category="Hook behavior & events" data-issues="" id="stop-hooks-fail-on-small-model-ok-false" data-status="fixed" data-severity="high">
             <div class="kl-meta">
                 <span class="kl-num">#334</span>
                 <span class="kl-cat">Hook behavior & events</span>
-                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span><span class="kl-status fixed">FIXED in v2.1.92</span>
             </div>
             <h3>Prompt-type Stop hooks incorrectly fail when small fast model returns ok:false.</h3>
             <p>Stop hooks using the <code>prompt</code> type incorrectly failed when the small fast model (used for classification) returned <code>ok:false</code>. Additionally, <code>preventContinuation:true</code> semantics were broken for non-Stop prompt-type hooks, meaning hooks could not reliably prevent Claude from continuing after a stop signal. Fixed in v2.1.92.</p>
             <div class="kl-issues">Issues: changelog v2.1.92</div>
         </div>
 
-        <div class="kl-entry" data-category="MCP & plugin issues" data-issues="" id="plugin-mcp-stuck-connecting-duplicate-connector" data-severity="medium">
+        <div class="kl-entry" data-category="MCP & plugin issues" data-issues="" id="plugin-mcp-stuck-connecting-duplicate-connector" data-status="fixed" data-severity="medium">
             <div class="kl-meta">
                 <span class="kl-num">#335</span>
                 <span class="kl-cat">MCP & plugin issues</span>
-                <span class="kl-sev" style="font-size:0.7rem;background:#d29922;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d29922;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span><span class="kl-status fixed">FIXED in v2.1.92</span>
             </div>
             <h3>Plugin MCP servers stuck &quot;connecting&quot; when duplicating an unauthenticated claude.ai connector.</h3>
             <p>On session start, plugin MCP servers that duplicate a claude.ai connector which is unauthenticated get stuck in a permanent &quot;connecting&quot; state. The plugin never initializes and its tools are unavailable for the entire session. Fixed in v2.1.92.</p>
@@ -4077,13 +4088,22 @@
                 <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When a session is compacted (~100K tokens), skill triggers with automatic activation load WITHOUT user consent over compressed context, bypassing settings.json allow/deny permissions. Skills not in the allow list fire automatically, use the wrong model (sonnet instead of configured haiku), and operate on degraded/summarized context producing low-quality output. The permission system is effectively bypassed for any session that crosses the compaction threshold with active skill triggers. No workaround documented. Confirmed with has-repro on macOS, CC v2.1.90. See #43761.</p>
                 <a href="https://github.com/anthropics/claude-code/issues/43761" style="font-size:0.8rem;color:var(--accent);">#43761</a>
             </div>
-            <div class="kl-entry" data-severity="high" data-category="Hook behavior gaps" id="stop-hooks-fail-on-small-model-rejection-preventcontinuation-broken">
+            <div class="kl-entry" data-severity="high" data-status="fixed" data-category="Hook behavior &amp; events" id="stop-hooks-fail-on-small-model-rejection-preventcontinuation-broken">
                 <span class="kl-num">#364</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
-                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Hook behavior gaps</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Hook behavior &amp; events</span>
                 <a href="#stop-hooks-fail-on-small-model-rejection-preventcontinuation-broken" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
                 <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Stop hooks fail when small fast model returns ok:false; preventContinuation:true broken for non-Stop hooks.</h3>
                 <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">In versions before v2.1.92, prompt-type Stop hooks incorrectly failed when the internal small fast model returned ok:false. Additionally, preventContinuation:true had no effect for non-Stop prompt-type hooks, meaning hooks could not reliably prevent Claude from continuing after a Stop event. Both fixed in v2.1.92.</p>
+            </div>
+            <div class="kl-entry" data-severity="critical" data-category="Hook bypass &amp; evasion" data-issues="43772" id="bypasspermissions-subagent-silently-skips-pretooluse-hooks" data-status="open">
+                <span class="kl-num">#365</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Hook bypass &amp; evasion</span>
+                <a href="#bypasspermissions-subagent-silently-skips-pretooluse-hooks" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Subagent spawned with <code>mode: "bypassPermissions"</code> silently skips all PreToolUse hooks.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When the Agent tool spawns a subagent with mode: "bypassPermissions", PreToolUse hooks do not fire at all for that subagent's tool calls. A user with a strict Bash allowlist hook had 3 unauthorized git commits made, 7 files deleted, and chmod/python3 commands run by a bypassPermissions subagent. The model can choose to spawn bypassPermissions subagents at will, providing a reliable escape from all hook-based restrictions without notifying the user. No reliable workaround. Consider process isolation or container-level restrictions for high-security contexts.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/43772" style="font-size:0.8rem;color:var(--accent);">#43772</a>
             </div>
         <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>
@@ -4094,6 +4114,7 @@
         const search = document.getElementById("search");
         const catFilter = document.getElementById("category-filter");
         const sevFilter = document.getElementById("severity-filter");
+        const statusFilter = document.getElementById("status-filter");
         const sortOrder = document.getElementById("sort-order");
         const countEl = document.getElementById("count");
         const container = document.querySelector(".container");
@@ -4117,6 +4138,27 @@
                 pill.title = "Filter by " + s;
                 pill.addEventListener("click", function() {
                     sevFilter.value = s;
+                    filter();
+                });
+                statsBar.appendChild(pill);
+            }
+        });
+
+        // Build status pills
+        const statusCounts = { fixed: 0, mitigated: 0 };
+        entries.forEach(el => {
+            const st = (el.dataset.status || "open").toLowerCase();
+            if (st in statusCounts) statusCounts[st]++;
+        });
+        ["fixed", "mitigated"].forEach(st => {
+            if (statusCounts[st] > 0) {
+                const pill = document.createElement("span");
+                pill.className = "stat-pill " + st;
+                pill.textContent = statusCounts[st] + " " + st;
+                pill.style.cursor = "pointer";
+                pill.title = "Filter by " + st;
+                pill.addEventListener("click", function() {
+                    statusFilter.value = st;
                     filter();
                 });
                 statsBar.appendChild(pill);
@@ -4147,16 +4189,19 @@
             const q = search.value.toLowerCase();
             const cat = catFilter.value;
             const sev = sevFilter ? sevFilter.value : "";
+            const stat = statusFilter ? statusFilter.value : "";
             let shown = 0;
             entries.forEach(el => {
                 const text = el.textContent.toLowerCase();
                 const elCat = el.dataset.category;
                 const elSev = el.dataset.severity || "";
+                const elStatus = el.dataset.status || "open";
                 const issues = el.dataset.issues;
                 const matchSearch = !q || text.includes(q) || issues.includes(q);
                 const matchCat = !cat || elCat === cat;
                 const matchSev = !sev || elSev === sev;
-                if (matchSearch && matchCat && matchSev) {
+                const matchStatus = !stat || elStatus === stat;
+                if (matchSearch && matchCat && matchSev && matchStatus) {
                     el.classList.remove("hidden");
                     shown++;
                 } else {
@@ -4205,6 +4250,7 @@
         search.addEventListener("input", filter);
         catFilter.addEventListener("change", filter);
         if (sevFilter) sevFilter.addEventListener("change", filter);
+        if (statusFilter) statusFilter.addEventListener("change", filter);
         sortOrder.addEventListener("change", function() { sortEntries(); filter(); });
 
         // Handle URL query parameters (?q=search&cat=category&sev=severity&sort=order)
@@ -4234,15 +4280,6 @@
         }
     </script>
 
-    <div class="limitation-entry severity-critical" id="bypasspermissions-subagent-silently-skips-pretooluse-hooks">
-      <div class="entry-header">
-        <span class="severity-badge severity-critical">CRITICAL</span>
-        <span class="category-badge">Hook bypass & evasion</span>
-        <h3 class="entry-title">Subagent spawned with `mode: "bypassPermissions"` silently skips all PreToolUse hooks.</h3>
-      </div>
-      <p class="entry-desc">When the Agent tool spawns a subagent with `mode: "bypassPermissions"`, PreToolUse hooks do not fire at all for that subagent's tool calls. A user with a strict Bash allowlist hook (exit 2 for anything not in the list) had 3 unauthorized git commits made, 7 files deleted, and chmod/python3 commands run by a bypassPermissions subagent. The existing issue of exit code 2 being silently ignored for regular subagents is a weaker form of this bug: bypassPermissions subagents skip hooks entirely. The model can choose to spawn bypassPermissions subagents at will, providing a reliable escape from all hook-based restrictions without notifying the user.</p>
-      <div class="workaround"><strong>Workaround:</strong> No reliable workaround. Settings.json project-level deny rules may help in some cases but have not been verified to survive bypassPermissions mode. Avoid relying on PreToolUse hooks as the sole enforcement layer in multi-agent workflows. Consider using process isolation or container-level restrictions for high-security contexts.</div>
-      <div class="entry-sources"><a href="https://github.com/anthropics/claude-code/issues/43772" class="issue-link" target="_blank">#43772</a> </div>
-    </div>
+
 </body>
 </html>
