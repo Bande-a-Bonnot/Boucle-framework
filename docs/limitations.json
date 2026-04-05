@@ -1,26 +1,26 @@
 {
   "version": "0.12.0",
-  "count": 357,
+  "count": 361,
   "categories": {
     "Hook bypass & evasion": 88,
     "Hook behavior & events": 134,
-    "Permission system": 78,
+    "Permission system": 79,
     "Subagent & spawned agents": 13,
     "CLAUDE.md & memory": 1,
     "Configuration behavior": 9,
     "Platform & compatibility": 4,
     "MCP & plugin issues": 7,
-    "Scheduling & remote triggers": 2,
+    "Scheduling & remote triggers": 3,
     "Hook system design constraints": 2,
     "Security & trust boundaries": 4,
     "Subagents & isolation": 2,
     "Permissions & security": 1,
     "Performance & cost": 1,
-    "Desktop & IDE integration": 1,
+    "Desktop & IDE integration": 2,
     "Authentication & configuration": 1,
     "Environment & shell": 1,
     "Context management": 1,
-    "MCP & plugins": 1,
+    "MCP & plugins": 2,
     "Bash & shell execution": 1,
     "Context & memory": 1,
     "Model behavior & instructions": 1,
@@ -29,8 +29,8 @@
   "severity_counts": {
     "critical": 20,
     "low": 89,
-    "medium": 139,
-    "high": 109
+    "medium": 140,
+    "high": 112
   },
   "entries": [
     {
@@ -3775,6 +3775,46 @@
         "https://github.com/anthropics/claude-code/issues/43730"
       ],
       "description": "Every new Desktop app session automatically creates a fresh git worktree under .claude/worktrees/ with a random name. When the session ends, the worktree is left behind permanently. Over days/weeks, the directory fills with orphaned worktrees consuming disk space and adding git state complexity. There is no option to reuse existing worktrees, opt out of worktree creation, or run a cleanup command. Also breaks single-branch + submodule workflows since submodules are not initialized in the new worktree."
+    },
+    {
+      "id": "plugin-update-stale-version-from-cache",
+      "title": "plugins update reports stale version as latest without fetching from remote.",
+      "category": "MCP & plugins",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43732"
+      ],
+      "description": "claude plugins update <plugin> reports 'already at the latest version' even when the remote git repository has newer commits. The command reads cached local state instead of fetching from the remote first. Users are left with outdated plugin versions while being told they are current. Workaround: manually cd into the plugin directory and run git pull. Confirmed on macOS with has-repro. See #43732."
+    },
+    {
+      "id": "jetbrains-extension-overwrites-files-silently",
+      "title": "JetBrains IDEA extension silently overwrites working files with stale or older versions.",
+      "category": "Desktop & IDE integration",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43734"
+      ],
+      "description": "The JetBrains IDEA extension can silently overwrite in-progress working files with stale or older versions during sync operations. Users report losing recent edits without any warning or confirmation prompt. The extension does not check modification timestamps or diff content before writing. Represents a data-loss risk for anyone using the JetBrains integration alongside active file editing. See #43734."
+    },
+    {
+      "id": "teammates-dont-inherit-bypass-permissions",
+      "title": "Teammates spawned from a bypassPermissions session do not inherit the bypass flag.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43736"
+      ],
+      "description": "When the parent/lead session has bypass permissions enabled (via shift+tab toggle or config), spawned teammate agents do not inherit this setting. Teammates continue to prompt for every permission that the parent would have bypassed. The bypass flag must be granted to each teammate individually with no way to inherit from the spawning session. Makes automated multi-agent workflows impractical when bypassPermissions is required. Confirmed with has-repro. See #43736."
+    },
+    {
+      "id": "scheduled-triggers-accept-but-silently-drop-runs",
+      "title": "Scheduled remote agent triggers return HTTP 200 on run requests but never execute.",
+      "category": "Scheduling & remote triggers",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43741"
+      ],
+      "description": "Scheduled remote agent triggers created via the RemoteTrigger API return HTTP 200 on /run requests and the run appears in the web dashboard with a logged entry, but the agent never actually executes. No error is returned, no diagnostic information is surfaced, and there is no way to distinguish a successful trigger from a silently dropped one. Makes scheduled agent automation completely unreliable. Confirmed with has-repro. See #43741."
     }
   ]
 }
