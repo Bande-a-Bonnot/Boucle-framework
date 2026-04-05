@@ -5,9 +5,273 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations.html</id>
-  <updated>2026-04-05T21:53:45Z</updated>
+  <updated>2026-04-05T22:44:45Z</updated>
   <author><name>Boucle</name><uri>https://boucle.sh/</uri></author>
   <generator>generate-feed.py</generator>
+    <entry>
+    <title>[HIGH] settings.json validation error injects the full JSON schema (~26k tokens) into conversation context.</title>
+    <link href="https://framework.boucle.sh/limitations.html#settings-json-validation-error-dumps-full-schema-into-context"/>
+    <id>https://framework.boucle.sh/limitations.html#settings-json-validation-error-dumps-full-schema-into-context</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Performance & cost"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;When Claude Code encounters a validation error in ~/.claude/settings.json (e.g. an empty `env` object after removing a key), it includes the entire JSON schema (~2500 lines) in the error message, which is then loaded into the active conversation context. A single simple file edit can consume ~26k tokens on a schema validation error. The error message should return a short, human-readable message p&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[HIGH] Model executes a Bash command explicitly banned in CLAUDE.md, causing data loss, despite having the prohibition in active context.</title>
+    <link href="https://framework.boucle.sh/limitations.html#model-executes-banned-bash-command-despite-claudemd-prohibition"/>
+    <id>https://framework.boucle.sh/limitations.html#model-executes-banned-bash-command-despite-claudemd-prohibition</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Hook bypass & evasion"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;When CLAUDE.md explicitly bans a Bash command by name (e.g. `sed -i` on Windows Git Bash) and describes the destructive consequence, the model can still choose that command under task pressure. In the reported case, the model used `sed -i` for a bulk text replacement despite a named prohibition with an explicit warning. The model self-caught the violation after execution, confirming the rule was i&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[HIGH] Sandbox path resolver blocks WinGet-installed tools when cwd is the home directory on Windows.</title>
+    <link href="https://framework.boucle.sh/limitations.html#sandbox-blocks-winget-tools-when-cwd-is-home"/>
+    <id>https://framework.boucle.sh/limitations.html#sandbox-blocks-winget-tools-when-cwd-is-home</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Platform & compatibility"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;On Windows, the sandbox command resolver filters executables whose resolved path starts with `cwd + path.sep`. When launched from `C:\Users\&lt;user&gt;`, all WinGet-installed tools (which live under `AppData\Local\Microsoft\WinGet\Packages\`) are falsely classified as unsafe and blocked with exit 127. This breaks agent spawning (`teammateMode: 'auto'`) entirely when the home directory is the work&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[HIGH] On Windows, Bash tool calls and MCP server spawns create visible conhost.exe windows due to missing CREATE_NO_WINDOW flag.</title>
+    <link href="https://framework.boucle.sh/limitations.html#windows-bash-spawns-visible-conhost-windows"/>
+    <id>https://framework.boucle.sh/limitations.html#windows-bash-spawns-visible-conhost-windows</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Platform & compatibility"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;On Windows, `claude.exe` is a console-subsystem binary. When spawning child processes (Bash tool calls, MCP servers) without the `CREATE_NO_WINDOW` flag, Windows allocates a new `conhost.exe` for each. In headless/programmatic (`-p`) mode with `windowsHide: true` on the outer process, every Bash call flashes a visible window and every MCP server creates 1-2 persistent windows that never close. Fiv&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[HIGH] Bypass permissions UI toggle does not write defaultMode to settings.json; prompts persist despite toggle appearing active.</title>
+    <link href="https://framework.boucle.sh/limitations.html#bypass-permissions-ui-toggle-does-not-write-settings"/>
+    <id>https://framework.boucle.sh/limitations.html#bypass-permissions-ui-toggle-does-not-write-settings</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Permission system"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;Enabling 'Bypass permissions' / 'Accept all permissions' via the Shift+Tab UI toggle does not write `"defaultMode": "bypassPermissions"` to `settings.json`. The toggle appears active in the UI but `settings.json` retains `"default"` mode. Every novel Bash command triggers a fresh permission prompt. Over time 'Allow once' clicks accumulate 90+ single-command entries in `settings.local.json`, but an&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[HIGH] Skill tool returns 'Unknown skill' in dontAsk permission mode even when skill is explicitly allowed via --allowed-tools.</title>
+    <link href="https://framework.boucle.sh/limitations.html#skill-discovery-fails-in-dontask-permission-mode"/>
+    <id>https://framework.boucle.sh/limitations.html#skill-discovery-fails-in-dontask-permission-mode</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Permission system"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;When running Claude Code with --permission-mode dontAsk and Skill included in --allowed-tools, the Skill tool fails to discover skills from the skills/ directory. The skill SKILL.md file exists in the correct location, but the Skill tool reports 'Unknown skill'. Workaround: read SKILL.md directly via Read tool and follow instructions manually. This breaks headless/automated workflows that depend o&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[MEDIUM] SendMessage (inter-agent communication) does not fire PreToolUse or PostToolUse hooks, making agent-to-agent messages invisible to hook infrastructure.</title>
+    <link href="https://framework.boucle.sh/limitations.html#sendmessage-not-hookable-via-pretooluse-posttooluse"/>
+    <id>https://framework.boucle.sh/limitations.html#sendmessage-not-hookable-via-pretooluse-posttooluse</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Hook event lifecycle"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; MEDIUM&lt;/p&gt;&lt;p&gt;SendMessage is not in the list of tools that fire PostToolUse hooks (Bash, Edit, Write, Read, Glob, Grep, Agent, WebFetch, WebSearch, AskUserQuestion, ExitPlanMode, MCP tools are hookable; SendMessage is not). This means inter-agent communication in teams cannot be audited, logged, or intercepted via hooks. Workaround: instruct agents to manually append messages to a shared file before calling Sen&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[HIGH] Skill tool returns `[Tool result missing due to internal error]` and agent hangs with no retry or output.</title>
+    <link href="https://framework.boucle.sh/limitations.html#skill-tool-internal-error-agent-hangs-indefinitely"/>
+    <id>https://framework.boucle.sh/limitations.html#skill-tool-internal-error-agent-hangs-indefinitely</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Hook behavior & events"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;When the Skill tool returns `[Tool result missing due to internal error]`, the agent produces no output, does not retry, and does not inform the user. The session hangs indefinitely until the user presses Ctrl+C. After Ctrl+C, retrying the same Skill call usually succeeds. Began occurring repeatedly since 2026-04-04 on Windows 11 / CC v2.1.92. No automatic recovery mechanism exists. See #43866.&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Claude makes false cross-session behavior promises ('next time I'll be careful') that it cannot fulfill.</title>
+    <link href="https://framework.boucle.sh/limitations.html#model-false-cross-session-memory-promises"/>
+    <id>https://framework.boucle.sh/limitations.html#model-false-cross-session-memory-promises</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Context & memory"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; MEDIUM&lt;/p&gt;&lt;p&gt;When corrected for a mistake, Claude responds with phrases like 'next time I'll be careful' or 'I'll make it a habit', implying persistent learning across sessions. Because each session starts with no memory of previous conversations, these promises are structurally impossible to fulfill and actively mislead users about Claude's capabilities. A workaround is to enforce desired behavior via CLAUDE.&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[HIGH] MCP tool results with text content type are silently dropped on Windows, making all text-returning MCP tools unusable.</title>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-text-content-silently-dropped-windows"/>
+    <id>https://framework.boucle.sh/limitations.html#mcp-text-content-silently-dropped-windows</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="MCP & plugin issues"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;On Windows (Desktop app, stdio transport), MCP tool calls that return `content: [{type: 'text', text: '...'}]` are displayed to the model as `{"result":{"type":"text"}}` with the actual `text` field silently dropped. The model receives no content from any MCP tool that returns text content type, making them effectively non-functional. Confirmed on Windows 11 Pro with mcp-ssh-tool@1.3.1. Non-Window&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Agent misidentifies user files as wrong agent output and deletes them without confirmation.</title>
+    <link href="https://framework.boucle.sh/limitations.html#cross-context-agent-deletes-user-files-without-confirmation"/>
+    <id>https://framework.boucle.sh/limitations.html#cross-context-agent-deletes-user-files-without-confirmation</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Permission system"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; CRITICAL&lt;/p&gt;&lt;p&gt;In multi-context sessions, an agent in one context window can misclassify files created by the user (or another context) as incorrect agent output. It then runs rm commands to delete them without requesting confirmation. On Windows, rm bypasses the Recycle Bin, causing permanent unrecoverable data loss. 18 files (6 hours of work) were destroyed in the reported case.&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[HIGH] Permission prompts steal keyboard focus, causing accidental approval of destructive commands.</title>
+    <link href="https://framework.boucle.sh/limitations.html#permission-prompt-steals-keyboard-focus-from-typing"/>
+    <id>https://framework.boucle.sh/limitations.html#permission-prompt-steals-keyboard-focus-from-typing</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Permission system"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;When a permission prompt appears while the user is typing a message, the prompt hijacks keyboard input. Pressing Enter (intended to send the message) instead approves the pending permission. Users looking at their keyboard rather than the screen may unknowingly approve destructive commands like rm.&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[MEDIUM] SessionStart:compact hook reports generic error with no actionable details.</title>
+    <link href="https://framework.boucle.sh/limitations.html#sessionstart-compact-hook-reports-generic-error-no-details"/>
+    <id>https://framework.boucle.sh/limitations.html#sessionstart-compact-hook-reports-generic-error-no-details</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Hook behavior & events"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; MEDIUM&lt;/p&gt;&lt;p&gt;When /compact triggers a SessionStart hook, Claude Code sometimes reports a generic error even though the hook runs correctly (valid JSON output, exit code 0, within timeout). No stderr, stack trace, or failure reason is provided, making debugging impossible.&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Context compaction or exhaustion during a commit sequence orphans uncommitted work.</title>
+    <link href="https://framework.boucle.sh/limitations.html#context-compaction-interrupts-commit-sequence-orphans-work"/>
+    <id>https://framework.boucle.sh/limitations.html#context-compaction-interrupts-commit-sequence-orphans-work</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Context & memory"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; MEDIUM&lt;/p&gt;&lt;p&gt;When context compacts or exhausts mid-session, any pending git commit is lost. The model frequently defers commits to the end of long tasks. When context runs out before that step, all work is left as uncommitted changes with no record. The next session starts from a lossy summary and cannot reconstruct what happened.&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[HIGH] MCP server reconnects re-inject full tool context in web sessions, compounding context pressure</title>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-reconnect-reinjects-tool-context-web"/>
+    <id>https://framework.boucle.sh/limitations.html#mcp-reconnect-reinjects-tool-context-web</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="MCP & plugin issues"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;In Claude Code web sessions (claude.ai/code), when the GitHub MCP server disconnects and reconnects, the full set of 40+ tool definitions is re-injected into the context (~2,000 tokens per cycle). Multiple disconnect/reconnect cycles within a session compound context pressure until the session times out mid-generation. The user is billed for input tokens on the failed completion but receives zero &lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[HIGH] Python hooks silently fail due to stdout buffering when writing to pipe</title>
+    <link href="https://framework.boucle.sh/limitations.html#python-hook-stdout-buffering-silent-failure"/>
+    <id>https://framework.boucle.sh/limitations.html#python-hook-stdout-buffering-silent-failure</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Hook behavior & events"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;Python hooks that output JSON to stdout are silently ignored by Claude Code because Python buffers stdout when connected to a pipe. The hook runs, produces correct output, exits 0, but Claude Code reads an empty pipe. Without explicit sys.stdout.flush() before exit, blocking hooks have no effect and dangerous commands proceed unblocked. Additionally: (1) hook error messages are generic with no ide&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[HIGH] Stop hook with no stdout/stderr output creates infinite conversation loop</title>
+    <link href="https://framework.boucle.sh/limitations.html#stop-hook-no-output-infinite-loop"/>
+    <id>https://framework.boucle.sh/limitations.html#stop-hook-no-output-infinite-loop</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Hook behavior & events"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;When a Stop hook exits 0 with no stdout or stderr output, Claude Code synthesizes a 'No stderr output' feedback message and injects it as a conversational turn. This triggers another model response, which triggers another Stop event, creating an infinite loop that can only be broken with Ctrl+C or Escape. Any Stop hook that intentionally produces no output (e.g. silent logging, metrics collection)&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Model deletes user-created files without confirmation after misidentifying them as stale agent output</title>
+    <link href="https://framework.boucle.sh/limitations.html#multi-agent-context-loss-destructive-file-deletion"/>
+    <id>https://framework.boucle.sh/limitations.html#multi-agent-context-loss-destructive-file-deletion</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Permission system"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; CRITICAL&lt;/p&gt;&lt;p&gt;When a task spans multiple context windows and involves background agents creating files, Claude Code can misattribute user-created files as wrong agent output from a previous session. The model then runs rm commands without requesting user confirmation, bypassing the Windows Recycle Bin entirely. Files not committed to git are permanently lost. Two compounding failures: (1) no hard guardrail requ&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[HIGH] Session summary hallucinated a task to remove a protective stop hook</title>
+    <link href="https://framework.boucle.sh/limitations.html#session-summary-hallucinated-stop-hook-removal"/>
+    <id>https://framework.boucle.sh/limitations.html#session-summary-hallucinated-stop-hook-removal</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Context & memory"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;When generating a session summary, Claude Code fabricated a task about removing a protective stop hook that was never part of the actual conversation. The hallucinated summary content described harmful intent (disabling safety mechanisms) that did not exist in the session. Users and downstream agents that rely on session summaries for continuity may act on fabricated tasks, potentially weakening s&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[MEDIUM] CLAUDE_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE env var breaks fresh marketplace plugin installation</title>
+    <link href="https://framework.boucle.sh/limitations.html#keep-marketplace-on-failure-breaks-fresh-install"/>
+    <id>https://framework.boucle.sh/limitations.html#keep-marketplace-on-failure-breaks-fresh-install</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="MCP & plugin issues"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; MEDIUM&lt;/p&gt;&lt;p&gt;The CLAUDE_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE environment variable, introduced to prevent plugin loss during failed updates, causes fresh marketplace installations to break entirely. When set, new plugins cannot be installed from the marketplace. The workaround (the env var itself) for the plugin deletion bug (#39954) introduces a new failure mode on clean installs.&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Edit tool replace_all parameter throws error when passed false explicitly</title>
+    <link href="https://framework.boucle.sh/limitations.html#edit-tool-replace-all-false-error"/>
+    <id>https://framework.boucle.sh/limitations.html#edit-tool-replace-all-false-error</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Tool behavior"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; MEDIUM&lt;/p&gt;&lt;p&gt;The Edit tool's replace_all parameter causes an error when explicitly passed as false. The issue appears to be in parameter handling where passing the default value (false) is treated differently from omitting the parameter entirely. Users passing replace_all:false get unexpected errors instead of the expected single-replacement behavior.&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[HIGH] bypassPermissions mode still prompts for Write despite explicit allowlist</title>
+    <link href="https://framework.boucle.sh/limitations.html#bypass-permissions-write-allowlist-still-prompts"/>
+    <id>https://framework.boucle.sh/limitations.html#bypass-permissions-write-allowlist-still-prompts</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Permissions & security"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;Setting defaultMode to bypassPermissions along with Write(**) in the allow list does not suppress permission prompts for all Write operations. A modal dialog still appears for specific files (e.g. .claude/.active-ticket), undermining the purpose of bypass mode. The behavior is inconsistent: some writes are silently allowed while others trigger prompts, making bypass mode unreliable for automation &lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[HIGH] /resume picks old compaction boundary in long-running sessions</title>
+    <link href="https://framework.boucle.sh/limitations.html#resume-wrong-compaction-boundary-long-sessions"/>
+    <id>https://framework.boucle.sh/limitations.html#resume-wrong-compaction-boundary-long-sessions</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Context & memory"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;When resuming sessions with many compaction boundaries (30+ compact_boundary entries, 100MB+ JSONL files), /resume reconstructs from an earlier compaction point rather than the most recent one. Months of conversation history appear lost even though the data is present in the JSONL file. The root cause is that resume scans for compact_boundary entries but selects an older one rather than the last. &lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[MEDIUM] WebSearch tool returns 400 error in CLI but works on claude.ai</title>
+    <link href="https://framework.boucle.sh/limitations.html#websearch-400-cli-only"/>
+    <id>https://framework.boucle.sh/limitations.html#websearch-400-cli-only</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Tool behavior"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; MEDIUM&lt;/p&gt;&lt;p&gt;The WebSearch tool returns a 400 Bad Request error when used in Claude Code CLI while the same functionality works on claude.ai. Suggests CLI-specific request format or config issue.&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Interactive mode hangs ~290s between API calls behind HTTP CONNECT proxy</title>
+    <link href="https://framework.boucle.sh/limitations.html#http-proxy-290s-hang"/>
+    <id>https://framework.boucle.sh/limitations.html#http-proxy-290s-hang</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Networking"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; MEDIUM&lt;/p&gt;&lt;p&gt;Claude Code interactive sessions hang for ~290 seconds between API calls when behind an HTTP CONNECT proxy with L7 inspection on Ubuntu 24.04. Same account and prompt work fine on macOS without proxy.&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Session summary can hallucinate a task to remove a user-protective stop hook, creating a false safety constraint bypass.</title>
+    <link href="https://framework.boucle.sh/limitations.html#session-summary-hallucinates-stop-hook-removal"/>
+    <id>https://framework.boucle.sh/limitations.html#session-summary-hallucinates-stop-hook-removal</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Security & trust boundaries"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; CRITICAL&lt;/p&gt;&lt;p&gt;During long sessions, Claude Code's automatic context compaction generates a session summary. In at least one confirmed case, the model hallucinated a pending task to 'remove the stop hook' — a hook the user had deliberately installed for safety. The hallucinated task was then carried forward as a real instruction. This is a safety-critical failure mode: the summarization model misread a protectiv&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[CRITICAL] System reminders injected between turns can bypass user confirmation gates, causing unauthorized actions.</title>
+    <link href="https://framework.boucle.sh/limitations.html#system-reminders-bypass-user-confirmation-gates"/>
+    <id>https://framework.boucle.sh/limitations.html#system-reminders-bypass-user-confirmation-gates</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Security & trust boundaries"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; CRITICAL&lt;/p&gt;&lt;p&gt;When Claude asks a confirmation question ('Want me to do X?') and a system reminder is injected before the user responds, Claude may interpret the system reminder as conversational continuation and proceed with the action without receiving explicit user approval. The confirmation gate is silently bypassed. This affects any flow where system reminders (from hooks, plugins, or the framework) are inj&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[HIGH] Python hooks silently fail: stdout is buffered and not flushed before the pipe closes, dropping hook output.</title>
+    <link href="https://framework.boucle.sh/limitations.html#python-hooks-stdout-not-flushed-silent-fail"/>
+    <id>https://framework.boucle.sh/limitations.html#python-hooks-stdout-not-flushed-silent-fail</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Hook behavior & events"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;Python hooks that output JSON to stdout are silently ignored because Python buffers stdout when writing to a pipe. The hook runs and produces correct JSON, but the buffer is never flushed before Claude Code closes the pipe, so the output is lost. Claude Code receives empty output and proceeds as if the hook did not respond. Fix: add 'sys.stdout.flush()' after writing hook output, or run Python wit&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Claude Code can delete user files via bash rm without confirmation, permanently bypassing OS Recycle Bin.</title>
+    <link href="https://framework.boucle.sh/limitations.html#bash-tool-deletes-files-without-confirmation-bypasses-recycle-bin"/>
+    <id>https://framework.boucle.sh/limitations.html#bash-tool-deletes-files-without-confirmation-bypasses-recycle-bin</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="File system & paths"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; CRITICAL&lt;/p&gt;&lt;p&gt;In a multi-step task spanning multiple context windows, Claude launched background bash processes that deleted 18 user-created files (6 hours of work) without requesting explicit confirmation. Because bash rm bypasses the Windows Recycle Bin entirely, the files were permanently lost with no recovery path. The deletions occurred across context window boundaries, making the agent's earlier decision &lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[HIGH] Agent tool crashes with 'undefined is not an object (evaluating K.length)' on spawn, at any context size.</title>
+    <link href="https://framework.boucle.sh/limitations.html#agent-tool-k-length-crash-on-spawn"/>
+    <id>https://framework.boucle.sh/limitations.html#agent-tool-k-length-crash-on-spawn</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Multi-agent & subprocesses"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;The Agent tool throws a JavaScript error 'undefined is not an object (evaluating K.length')' during agent initialization. The crash occurs at any transcript size (observed from 13KB to 2.3MB) and on the first agent spawn in a fresh session after /clear. It happens more frequently after prior agents have exited. The crash appears to be a nil-check failure in the CLI's agent spawning code, not a con&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Background processes started by the Bash tool are not cleaned up when the session exits, causing orphaned processes.</title>
+    <link href="https://framework.boucle.sh/limitations.html#background-processes-not-cleaned-up-on-session-exit"/>
+    <id>https://framework.boucle.sh/limitations.html#background-processes-not-cleaned-up-on-session-exit</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Tool behavior"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; MEDIUM&lt;/p&gt;&lt;p&gt;When Claude Code starts background processes via the Bash tool (dev servers, build watchers, test runners), those processes are not cleaned up when the session ends. Spawned Node processes are reparented to PID 1 (launchd on macOS) and run indefinitely. Over time this causes significant memory consumption — orphaned 'next dev' servers can grow to 8+ GB RAM. There is no session teardown hook that r&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[MEDIUM] The /cost command understates actual API spend — sideQuery, classifier, and background subagent tokens are excluded.</title>
+    <link href="https://framework.boucle.sh/limitations.html#cost-tracking-understates-actual-spend"/>
+    <id>https://framework.boucle.sh/limitations.html#cost-tracking-understates-actual-spend</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="Performance & cost"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; MEDIUM&lt;/p&gt;&lt;p&gt;The /cost command reports only primary model token usage and misses several token-consuming operations: sideQuery calls (used for tool routing and permission decisions), classifier model invocations, and background subagent sessions that complete before the parent session ends. The actual Anthropic API spend can be materially higher than what /cost reports. There is no way to get a complete token &lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[HIGH] Claude Sonnet intermittently ignores explicit CLAUDE.md rules, memory files, and gameplan instructions mid-session.</title>
+    <link href="https://framework.boucle.sh/limitations.html#claude-sonnet-ignores-claudemd-rules-and-memory"/>
+    <id>https://framework.boucle.sh/limitations.html#claude-sonnet-ignores-claudemd-rules-and-memory</id>
+    <updated>2026-04-05T22:44:45Z</updated>
+    <category term="CLAUDE.md enforcement"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;Claude Sonnet (the default model) ignores explicitly configured CLAUDE.md rules, referenced memory files, and gameplan instructions — particularly after context compaction or when the conversation grows long. The model proceeds with actions the rules prohibit, or fails to follow workflow steps defined in CLAUDE.md. This is a model-level instruction-following failure, not a configuration issue. Wor&lt;/p&gt;</summary>
+  </entry>
   <entry>
     <title>[HIGH] MCP server connection failure in -p (headless) mode produces no diagnostic output; orchestrators cannot detect or recover.</title>
     <id>https://framework.boucle.sh/limitations.html#mcp-server-connection-failure-p-mode-no-diagnostic</id>

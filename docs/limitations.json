@@ -1,29 +1,29 @@
 {
   "version": "0.12.0",
-  "count": 418,
+  "count": 426,
   "categories": {
-    "Hook behavior & events": 142,
-    "Hook bypass & evasion": 91,
-    "Permission system": 90,
-    "Subagent & spawned agents": 18,
-    "MCP & plugin issues": 16,
+    "CLAUDE.md enforcement": 2,
     "Configuration behavior": 11,
     "Context & memory": 8,
-    "Platform & compatibility": 8,
     "Desktop & IDE integration": 8,
-    "Security & trust boundaries": 5,
-    "Scheduling & remote triggers": 4,
-    "File system & paths": 4,
-    "Tool behavior": 3,
-    "Performance & cost": 2,
-    "Multi-agent & subprocesses": 1,
-    "MCP & plugins": 1,
-    "hooks": 1,
+    "File system & paths": 5,
+    "Hook behavior & events": 143,
+    "Hook bypass & evasion": 91,
     "Hook event lifecycle": 1,
-    "Permissions & security": 1,
-    "UX & display": 1,
+    "MCP & plugin issues": 16,
+    "MCP & plugins": 1,
+    "Multi-agent & subprocesses": 2,
     "Networking": 1,
-    "CLAUDE.md enforcement": 1
+    "Performance & cost": 3,
+    "Permission system": 90,
+    "Permissions & security": 1,
+    "Platform & compatibility": 8,
+    "Scheduling & remote triggers": 4,
+    "Security & trust boundaries": 7,
+    "Subagent & spawned agents": 18,
+    "Tool behavior": 4,
+    "UX & display": 1,
+    "hooks": 1
   },
   "severity_counts": {
     "critical": 24,
@@ -4843,11 +4843,97 @@
         "https://github.com/anthropics/claude-code/issues/43968"
       ],
       "description": "When an MCP server fails to connect during a -p (headless) session, Claude Code silently proceeds without those tools. There is zero signal in stderr or the stream-json output. The system/init event simply omits the failed server's tools from the tool list. Orchestrators have no way to detect the failure except by counting tools and comparing against an expected baseline. In production pipelines, this causes silent degraded operation: the agent runs to completion but produces wrong results because key tools were unavailable, with no error surfaced. There is no --require-mcp flag or equivalent. See #43968."
+    },
+    {
+      "id": "session-summary-hallucinates-stop-hook-removal",
+      "title": "Session summary can hallucinate a task to remove a user-protective stop hook, creating a false safety constraint bypass.",
+      "category": "Security & trust boundaries",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43930"
+      ],
+      "description": "During long sessions, Claude Code's automatic context compaction generates a session summary. In at least one confirmed case, the model hallucinated a pending task to 'remove the stop hook' \u2014 a hook the user had deliberately installed for safety. The hallucinated task was then carried forward as a real instruction. This is a safety-critical failure mode: the summarization model misread a protective constraint as an action item to undo. Workaround: after any auto-compaction, verify that stop hooks and safety-critical constraints are still present in CLAUDE.md and settings.json. See #43930."
+    },
+    {
+      "id": "system-reminders-bypass-user-confirmation-gates",
+      "title": "System reminders injected between turns can bypass user confirmation gates, causing unauthorized actions.",
+      "category": "Security & trust boundaries",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43870"
+      ],
+      "description": "When Claude asks a confirmation question ('Want me to do X?') and a system reminder is injected before the user responds, Claude may interpret the system reminder as conversational continuation and proceed with the action without receiving explicit user approval. The confirmation gate is silently bypassed. This affects any flow where system reminders (from hooks, plugins, or the framework) are injected mid-conversation. No workaround is available at the framework level. See #43870."
+    },
+    {
+      "id": "python-hooks-stdout-not-flushed-silent-fail",
+      "title": "Python hooks silently fail: stdout is buffered and not flushed before the pipe closes, dropping hook output.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43903"
+      ],
+      "description": "Python hooks that output JSON to stdout are silently ignored because Python buffers stdout when writing to a pipe. The hook runs and produces correct JSON, but the buffer is never flushed before Claude Code closes the pipe, so the output is lost. Claude Code receives empty output and proceeds as if the hook did not respond. Fix: add 'sys.stdout.flush()' after writing hook output, or run Python with 'python3 -u' (unbuffered) flag. This does not affect bash hooks. See #43903."
+    },
+    {
+      "id": "bash-tool-deletes-files-without-confirmation-bypasses-recycle-bin",
+      "title": "Claude Code can delete user files via bash rm without confirmation, permanently bypassing OS Recycle Bin.",
+      "category": "File system & paths",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43887"
+      ],
+      "description": "In a multi-step task spanning multiple context windows, Claude launched background bash processes that deleted 18 user-created files (6 hours of work) without requesting explicit confirmation. Because bash rm bypasses the Windows Recycle Bin entirely, the files were permanently lost with no recovery path. The deletions occurred across context window boundaries, making the agent's earlier decision invisible to the user. There is no built-in 'safe delete' or trash-based rm wrapper. Workaround: use a custom bash-guard hook to block or require confirmation for rm commands on non-git files. See #43887."
+    },
+    {
+      "id": "agent-tool-k-length-crash-on-spawn",
+      "title": "Agent tool crashes with 'undefined is not an object (evaluating K.length)' on spawn, at any context size.",
+      "category": "Multi-agent & subprocesses",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43983"
+      ],
+      "description": "The Agent tool throws a JavaScript error 'undefined is not an object (evaluating K.length')' during agent initialization. The crash occurs at any transcript size (observed from 13KB to 2.3MB) and on the first agent spawn in a fresh session after /clear. It happens more frequently after prior agents have exited. The crash appears to be a nil-check failure in the CLI's agent spawning code, not a context window issue. No reliable workaround; restarting the session sometimes resolves it temporarily. See #43983."
+    },
+    {
+      "id": "background-processes-not-cleaned-up-on-session-exit",
+      "title": "Background processes started by the Bash tool are not cleaned up when the session exits, causing orphaned processes.",
+      "category": "Tool behavior",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43944"
+      ],
+      "description": "When Claude Code starts background processes via the Bash tool (dev servers, build watchers, test runners), those processes are not cleaned up when the session ends. Spawned Node processes are reparented to PID 1 (launchd on macOS) and run indefinitely. Over time this causes significant memory consumption \u2014 orphaned 'next dev' servers can grow to 8+ GB RAM. There is no session teardown hook that reliably tracks and kills child processes. Workaround: use a Stop hook to kill known background process patterns, or track PIDs manually and kill on session end. See #43944."
+    },
+    {
+      "id": "cost-tracking-understates-actual-spend",
+      "title": "The /cost command understates actual API spend \u2014 sideQuery, classifier, and background subagent tokens are excluded.",
+      "category": "Performance & cost",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43945"
+      ],
+      "description": "The /cost command reports only primary model token usage and misses several token-consuming operations: sideQuery calls (used for tool routing and permission decisions), classifier model invocations, and background subagent sessions that complete before the parent session ends. The actual Anthropic API spend can be materially higher than what /cost reports. There is no way to get a complete token breakdown from within a session. Workaround: monitor actual spend via Anthropic's API usage dashboard rather than relying on the in-session /cost command. See #43945."
+    },
+    {
+      "id": "claude-sonnet-ignores-claudemd-rules-and-memory",
+      "title": "Claude Sonnet intermittently ignores explicit CLAUDE.md rules, memory files, and gameplan instructions mid-session.",
+      "category": "CLAUDE.md enforcement",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43933"
+      ],
+      "description": "Claude Sonnet (the default model) ignores explicitly configured CLAUDE.md rules, referenced memory files, and gameplan instructions \u2014 particularly after context compaction or when the conversation grows long. The model proceeds with actions the rules prohibit, or fails to follow workflow steps defined in CLAUDE.md. This is a model-level instruction-following failure, not a configuration issue. Workaround: use enforce-hooks or PreToolUse hooks to mechanically enforce critical rules rather than relying on model instruction following. See #43933."
     }
   ],
   "status_summary": {
     "open": 398,
     "mitigated": 1,
     "fixed": 11
+  },
+  "severities": {
+    "critical": 27,
+    "low": 89,
+    "medium": 164,
+    "high": 146
   }
 }
