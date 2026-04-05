@@ -1,10 +1,10 @@
 {
   "version": "0.12.0",
-  "count": 362,
+  "count": 363,
   "categories": {
     "Hook bypass & evasion": 88,
     "Hook behavior & events": 136,
-    "Permission system": 80,
+    "Permission system": 81,
     "Subagent & spawned agents": 15,
     "Context & memory": 4,
     "Configuration behavior": 10,
@@ -19,7 +19,7 @@
     "critical": 20,
     "low": 89,
     "medium": 141,
-    "high": 112
+    "high": 113
   },
   "entries": [
     {
@@ -3815,6 +3815,16 @@
       ],
       "description": "Custom marketplace plugins have two related bugs: (1) The Discover tab shows incorrect install state, reporting plugins as 'not installed' even when they are installed via a custom marketplace. (2) Plugin updates do not propagate after pushing new commits to the marketplace repo \u2014 the cached version in ~/.claude/plugins/marketplaces/<name>/ is read instead of re-fetched. Related to KL #358 (plugin-update-stale-version-from-cache). See #43745.",
       "workaround": "For the install state display bug, no workaround is known. For stale updates, manually delete ~/.claude/plugins/marketplaces/<name>/ to force a re-fetch on next install or update. Cross-reference: KL #358."
+    },
+    {
+      "id": "skill-triggers-bypass-permissions-post-compaction",
+      "title": "Skill triggers activate post-compaction without consent, ignoring settings.json permissions.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43761"
+      ],
+      "description": "When a session is compacted (~100K tokens), skill triggers with automatic activation load WITHOUT user consent over compressed context, bypassing settings.json allow/deny permissions. Skills not in the allow list fire automatically, use the wrong model (sonnet instead of configured haiku), and operate on degraded/summarized context producing low-quality output. The permission system is effectively bypassed for any session that crosses the compaction threshold with active skill triggers. No workaround documented. Confirmed with has-repro on macOS, CC v2.1.90. See #43761."
     }
   ]
 }
