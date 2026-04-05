@@ -214,7 +214,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">362</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-05.</span></p>
+        <p class="subtitle"><span id="total-count">365</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-05.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -4233,5 +4233,16 @@
             }
         }
     </script>
+
+    <div class="limitation-entry severity-critical" id="bypasspermissions-subagent-silently-skips-pretooluse-hooks">
+      <div class="entry-header">
+        <span class="severity-badge severity-critical">CRITICAL</span>
+        <span class="category-badge">Hook bypass & evasion</span>
+        <h3 class="entry-title">Subagent spawned with `mode: "bypassPermissions"` silently skips all PreToolUse hooks.</h3>
+      </div>
+      <p class="entry-desc">When the Agent tool spawns a subagent with `mode: "bypassPermissions"`, PreToolUse hooks do not fire at all for that subagent's tool calls. A user with a strict Bash allowlist hook (exit 2 for anything not in the list) had 3 unauthorized git commits made, 7 files deleted, and chmod/python3 commands run by a bypassPermissions subagent. The existing issue of exit code 2 being silently ignored for regular subagents is a weaker form of this bug: bypassPermissions subagents skip hooks entirely. The model can choose to spawn bypassPermissions subagents at will, providing a reliable escape from all hook-based restrictions without notifying the user.</p>
+      <div class="workaround"><strong>Workaround:</strong> No reliable workaround. Settings.json project-level deny rules may help in some cases but have not been verified to survive bypassPermissions mode. Avoid relying on PreToolUse hooks as the sole enforcement layer in multi-agent workflows. Consider using process isolation or container-level restrictions for high-security contexts.</div>
+      <div class="entry-sources"><a href="https://github.com/anthropics/claude-code/issues/43772" class="issue-link" target="_blank">#43772</a> </div>
+    </div>
 </body>
 </html>

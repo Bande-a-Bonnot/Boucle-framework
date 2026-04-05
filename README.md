@@ -3,7 +3,7 @@
 [![Tests](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml/badge.svg)](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Claude Code hooks that actually enforce your rules. 9 hooks, ~1950 tests, [364 known Claude Code gaps documented](tools/enforce/#known-limitations) with severity ratings and workarounds.
+Claude Code hooks that actually enforce your rules. 9 hooks, ~1950 tests, [365 known Claude Code gaps documented](tools/enforce/#known-limitations) with severity ratings and workarounds.
 
 > **Quick links:** [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
 
@@ -663,7 +663,7 @@ bash tools/worktree-guard/test.sh
 
 **v0.12.0** — 195 Rust tests + ~1758 hook tests (bash + PowerShell). Zero clippy warnings. CI on Ubuntu + macOS + Windows. Docker support.
 
-New in v0.12.0: Searchable Known Limitations page (364 entries). test-hook.sh dry-run tester. file-guard v2.1.89 absolute path fix. safety-check 3 silent failure fixes. Installer UX improvements. README navigation banner + platform matrix. See [CHANGELOG](CHANGELOG.md) for details.
+New in v0.12.0: Searchable Known Limitations page (365 entries). test-hook.sh dry-run tester. file-guard v2.1.89 absolute path fix. safety-check 3 silent failure fixes. Installer UX improvements. README navigation banner + platform matrix. See [CHANGELOG](CHANGELOG.md) for details.
 
 32 stars, 4 external contributors, 2 forks.
 
