@@ -17,20 +17,21 @@ for e in entries:
 
 new_entries = [
     {
-        "id": "cowork-dispatch-tasks-hang-desktop-windows",
-        "title": "Dispatch tasks reach Desktop app but hang indefinitely on 'thinking' and never respond (Windows).",
-        "category": "Desktop & Cowork",
+        "id": "teamcreate-drops-1m-context-window-variant",
+        "title": "TeamCreate spawns teammates with base model name, dropping context window variant suffix.",
+        "category": "Multi-agent & subprocesses",
         "severity": "high",
-        "issues": ["https://github.com/anthropics/claude-code/issues/43726"],
-        "description": "On Windows, tasks dispatched via the mobile Dispatch feature appear in the Desktop app Code tab but hang indefinitely on 'thinking' and never produce a response. The CLI works fine independently. Re-pairing devices and restarting the Desktop app do not fix it. Confirmed on Windows 11 with Claude Code CLI 2.1.92 and latest Desktop app."
+        "issues": ["https://github.com/anthropics/claude-code/issues/43782"],
+        "description": "When spawning teammates via TeamCreate, the model parameter strips the context window variant suffix (e.g. claude-opus-4-6[1m] becomes claude-opus-4-6). Teammates get the default 200K context window instead of the parent 1M window. This causes premature compaction on large files that would fit in the parent context. Affects Claude Max subscribers using multi-agent workflows. See issue 43782."
     },
     {
-        "id": "worktree-accumulation-no-auto-cleanup",
-        "title": "Desktop app creates a new git worktree per session with no automatic cleanup, causing orphaned worktree accumulation.",
-        "category": "Desktop & Cowork",
+        "id": "mcp-server-allowed-dirs-overwritten-by-code-cwd",
+        "title": "Opening Claude Code overwrites a running MCP server allowed directories from Claude Desktop config.",
+        "category": "MCP & plugins",
         "severity": "medium",
-        "issues": ["https://github.com/anthropics/claude-code/issues/43730"],
-        "description": "Every new Desktop app session automatically creates a fresh git worktree under .claude/worktrees/ with a random name. When the session ends, the worktree is left behind permanently. Over days/weeks, the directory fills with orphaned worktrees consuming disk space and adding git state complexity. There is no option to reuse existing worktrees, opt out of worktree creation, or run a cleanup command. Also breaks single-branch + submodule workflows since submodules are not initialized in the new worktree."
+        "issues": ["https://github.com/anthropics/claude-code/issues/43783"],
+        "description": "When Claude Code opens in directory B while Claude Desktop has an MCP filesystem server configured for directory A, the running server process scope is silently overwritten to directory B. Desktop UI still shows the original config but the server now operates on the wrong directory. Cross-surface trust boundary issue between Code and Desktop sharing MCP server processes. Breaks Cowork scheduled tasks that depend on Desktop MCP config. See issue 43783.",
+        "workaround": "Restart the MCP server from Claude Desktop after opening Claude Code in a different directory. Alternatively, avoid running Code and Desktop simultaneously with different MCP filesystem configurations."
     },
 ]
 
