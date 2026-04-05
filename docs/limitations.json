@@ -1,28 +1,29 @@
 {
   "version": "0.12.0",
-  "count": 381,
+  "count": 384,
   "categories": {
-    "Hook bypass & evasion": 90,
     "Hook behavior & events": 137,
+    "Hook bypass & evasion": 90,
     "Permission system": 83,
     "Subagent & spawned agents": 16,
-    "Context & memory": 4,
-    "Configuration behavior": 10,
-    "Platform & compatibility": 6,
     "MCP & plugin issues": 12,
-    "Scheduling & remote triggers": 3,
-    "Security & trust boundaries": 5,
-    "Performance & cost": 1,
+    "Configuration behavior": 10,
     "Desktop & IDE integration": 8,
-    "File system & paths": 3,
+    "Platform & compatibility": 6,
+    "Security & trust boundaries": 5,
+    "Context & memory": 4,
+    "Scheduling & remote triggers": 4,
+    "File system & paths": 4,
+    "Performance & cost": 2,
     "Multi-agent & subprocesses": 1,
-    "MCP & plugins": 1
+    "MCP & plugins": 1,
+    "hooks": 1
   },
   "severity_counts": {
-    "critical": 22,
+    "medium": 150,
+    "high": 123,
     "low": 89,
-    "medium": 148,
-    "high": 122
+    "critical": 22
   },
   "entries": [
     {
@@ -4400,6 +4401,40 @@
       "status": "open",
       "added_in_loop": 1315,
       "date_added": "2026-04-05"
+    },
+    {
+      "id": "settings-json-validation-error-dumps-full-schema-into-context",
+      "title": "settings.json validation error injects the full JSON schema (~26k tokens) into conversation context.",
+      "category": "Performance & cost",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43821"
+      ],
+      "description": "When Claude Code encounters a validation error in ~/.claude/settings.json (e.g. an empty `env` object after removing a key), it includes the entire JSON schema (~2500 lines) in the error message, which is then loaded into the active conversation context. A single simple file edit can consume ~26k tokens on a schema validation error. The error message should return a short, human-readable message pointing to the specific invalid field rather than dumping the full schema.",
+      "workaround": "Validate settings.json manually with `boucle diagnose` or a JSON schema validator before editing it inside Claude Code. Keep changes minimal and verify JSON syntax before saving."
+    },
+    {
+      "id": "remote-trigger-tool-401-missing-beta-version-headers",
+      "title": "`RemoteTrigger` tool returns 401 because the client omits required `anthropic-beta` and `anthropic-version` headers.",
+      "category": "Scheduling & remote triggers",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43823"
+      ],
+      "description": "When the model invokes the `RemoteTrigger` tool (and related tools like `ultraplan`, `schedule`) from within a Claude Code session, the underlying HTTP request omits the required `anthropic-beta: ccr-triggers-2026-01-30` and `anthropic-version: 2023-06-01` headers. The API returns a 400 with message 'add `ccr-triggers-2026-01-30` to the `anthropic-beta` header to use it', but this is surfaced to the user as a generic 401 Authentication failed, masking the real cause. Direct curl calls with these headers succeed, confirming auth is valid.",
+      "workaround": "No user-side workaround \u2014 the missing headers are sent by the Claude Code client, not configurable by users. Wait for a fix. Affected: Windows + claudeAiOauth credentials; may affect other platforms."
+    },
+    {
+      "id": "sandbox-bash-execution-creates-ghost-dotfiles-in-cwd",
+      "title": "Running `/sandbox` (Bash tool) creates empty read-only dotfiles (.bashrc, .gitconfig, etc.) in the current working directory.",
+      "category": "File system & paths",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43825",
+        "https://github.com/anthropics/claude-code/issues/17087"
+      ],
+      "description": "When Claude Code executes commands via the Bash tool in `/sandbox` mode, it silently creates a set of empty (0 byte), read-only (-r--r--r--) dotfiles in the current working directory: `.bashrc`, `.bash_profile`, `.gitconfig`, `.gitmodules`, `.profile`, `.ripgreprc`, `.zprofile`, `.zshrc`. All files are created at the same millisecond. This reproduces consistently across all directories and persists after uninstall/reinstall. The issue has been present since at least 2025 (issue #17087) with no fix to date.",
+      "workaround": "Run `find . -maxdepth 1 -name '.*' -size 0 -perm 444 -delete` after sandbox sessions to clean up ghost files. Alternatively, run sandbox sessions in a temporary directory."
     }
   ],
   "status_summary": {

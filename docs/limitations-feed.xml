@@ -1,13 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-  <title>Claude Code Hook Limitations (381 entries)</title>
+  <title>Claude Code Hook Limitations (384 entries)</title>
   <subtitle>Documented limitations of Claude Code's hook system, with severity ratings and workarounds.</subtitle>
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations.html</id>
-  <updated>2026-04-05T10:18:52Z</updated>
+  <updated>2026-04-05T11:10:44Z</updated>
   <author><name>Boucle</name><uri>https://boucle.sh/</uri></author>
   <generator>generate-feed.py</generator>
+  <entry>
+    <title>[HIGH] TeamCreate spawns teammates with base model name, dropping context window variant suffix.</title>
+    <id>https://framework.boucle.sh/limitations.html#teamcreate-drops-1m-context-window-variant</id>
+    <link href="https://framework.boucle.sh/limitations.html#teamcreate-drops-1m-context-window-variant" rel="alternate"/>
+    <updated>2026-04-05T11:10:44Z</updated>
+    <summary>When spawning teammates via TeamCreate, the model parameter strips the context window variant suffix (e.g. claude-opus-4-6[1m] becomes claude-opus-4-6). Teammates get the default 200K context window instead of the parent 1M window. This causes premature compaction on large files that would fit in the parent context. Affects Claude Max subscribers using multi-agent workflows. See issue 43782.</summary>
+    <category term="Multi-agent &amp; subprocesses"/>
+    <category term="high"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Opening Claude Code overwrites a running MCP server allowed directories from Claude Desktop config.</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-server-allowed-dirs-overwritten-by-code-cwd</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-server-allowed-dirs-overwritten-by-code-cwd" rel="alternate"/>
+    <updated>2026-04-05T11:10:44Z</updated>
+    <summary>When Claude Code opens in directory B while Claude Desktop has an MCP filesystem server configured for directory A, the running server process scope is silently overwritten to directory B. Desktop UI still shows the original config but the server now operates on the wrong directory. Cross-surface trust boundary issue between Code and Desktop sharing MCP server processes. Breaks Cowork scheduled tasks that depend on Desktop MCP config. See issue 43783.</summary>
+    <category term="MCP &amp; plugins"/>
+    <category term="medium"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Subagent spawned with mode: bypassPermissions silently skips all PreToolUse hooks.</title>
+    <id>https://framework.boucle.sh/limitations.html#bypasspermissions-subagent-silently-skips-pretooluse-hooks</id>
+    <link href="https://framework.boucle.sh/limitations.html#bypasspermissions-subagent-silently-skips-pretooluse-hooks" rel="alternate"/>
+    <updated>2026-04-05T11:10:41Z</updated>
+    <summary>When the Agent tool spawns a subagent with mode: bypassPermissions, PreToolUse hooks do not fire at all. A user had 3 unauthorized git commits made and 7 files deleted by a bypassPermissions subagent despite having a strict allowlist hook. The model can choose bypassPermissions at will, bypassing all hook-based restrictions.</summary>
+    <category term="Hook bypass &amp; evasion"/>
+    <category term="critical"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Running `/sandbox` (Bash tool) creates empty read-only dotfiles (.bashrc, .gitconfig, etc.) in the current working directory.</title>
+    <id>https://framework.boucle.sh/limitations.html#sandbox-bash-execution-creates-ghost-dotfiles-in-cwd</id>
+    <link href="https://framework.boucle.sh/limitations.html#sandbox-bash-execution-creates-ghost-dotfiles-in-cwd" rel="alternate"/>
+    <updated>2026-04-05T11:10:29Z</updated>
+    <summary>When Claude Code executes commands via the Bash tool in `/sandbox` mode, it silently creates a set of empty (0 byte), read-only (-r--r--r--) dotfiles in the current working directory: `.bashrc`, `.bash_profile`, `.gitconfig`, `.gitmodules`, `.profile`, `.ripgreprc`, `.zprofile`, `.zshrc`. All files </summary>
+    <category term="File system & paths"/>
+    <category term="medium"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] `RemoteTrigger` tool returns 401 because the client omits required `anthropic-beta` and `anthropic-version` headers.</title>
+    <id>https://framework.boucle.sh/limitations.html#remote-trigger-tool-401-missing-beta-version-headers</id>
+    <link href="https://framework.boucle.sh/limitations.html#remote-trigger-tool-401-missing-beta-version-headers" rel="alternate"/>
+    <updated>2026-04-05T11:10:29Z</updated>
+    <summary>When the model invokes the `RemoteTrigger` tool (and related tools like `ultraplan`, `schedule`) from within a Claude Code session, the underlying HTTP request omits the required `anthropic-beta: ccr-triggers-2026-01-30` and `anthropic-version: 2023-06-01` headers. The API returns a 400 with message</summary>
+    <category term="Scheduling & remote triggers"/>
+    <category term="medium"/>
+  </entry>
   <entry>
     <title>[MEDIUM] MCP channel notifications silently dropped while hooks are executing</title>
     <id>https://framework.boucle.sh/limitations.html#mcp-channel-notifications-dropped-during-hook-execution</id>
