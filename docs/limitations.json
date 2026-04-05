@@ -1,10 +1,10 @@
 {
   "version": "0.12.0",
-  "count": 373,
+  "count": 376,
   "categories": {
     "Hook bypass & evasion": 90,
     "Hook behavior & events": 137,
-    "Permission system": 82,
+    "Permission system": 83,
     "Subagent & spawned agents": 15,
     "Context & memory": 4,
     "Configuration behavior": 10,
@@ -13,8 +13,8 @@
     "Scheduling & remote triggers": 3,
     "Security & trust boundaries": 4,
     "Performance & cost": 1,
-    "Desktop & IDE integration": 6,
-    "File system & paths": 2,
+    "Desktop & IDE integration": 7,
+    "File system & paths": 3,
     "Multi-agent & subprocesses": 1,
     "MCP & plugins": 1
   },
@@ -22,7 +22,7 @@
     "critical": 21,
     "low": 89,
     "medium": 144,
-    "high": 119
+    "high": 122
   },
   "entries": [
     {
@@ -4298,26 +4298,56 @@
     },
     {
       "id": "read-tool-infers-media-type-from-extension-not-magic-bytes",
-      "title": "Read tool infers image `media_type` from file extension, not magic bytes — misidentified files cause unrecoverable API error.",
+      "title": "Read tool infers image `media_type` from file extension, not magic bytes \u2014 misidentified files cause unrecoverable API error.",
       "category": "File system & paths",
       "severity": "high",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/43795"
       ],
-      "description": "When the Read tool encounters an image file, it sets the media_type based on the file extension rather than inspecting the file's magic bytes. If a file has a .png extension but actually contains ICO (or other non-PNG) data, the API rejects the request with a 400 error for media type mismatch. Worse, the corrupted image block becomes part of conversation history, causing every subsequent message to replay the bad block and fail — the conversation is permanently broken with no recovery path. Affects all API providers (Anthropic, Bedrock, Vertex). Two distinct bugs: (1) extension-based format detection instead of content-based, and (2) no conversation recovery when an image block causes an API error.",
+      "description": "When the Read tool encounters an image file, it sets the media_type based on the file extension rather than inspecting the file's magic bytes. If a file has a .png extension but actually contains ICO (or other non-PNG) data, the API rejects the request with a 400 error for media type mismatch. Worse, the corrupted image block becomes part of conversation history, causing every subsequent message to replay the bad block and fail \u2014 the conversation is permanently broken with no recovery path. Affects all API providers (Anthropic, Bedrock, Vertex). Two distinct bugs: (1) extension-based format detection instead of content-based, and (2) no conversation recovery when an image block causes an API error.",
       "workaround": "Ensure image files have correct extensions matching their actual format. If a conversation becomes stuck, start a new conversation. There is no way to recover an existing conversation with a corrupted image block in history.",
       "status": "open"
     },
     {
       "id": "desktop-code-tab-unresponsive-macos-tahoe-shellpathworker-crash",
-      "title": "Desktop Code tab unresponsive on macOS Tahoe 26.3 — `shellPathWorker` crashes on `electron.app.isPackaged`.",
+      "title": "Desktop Code tab unresponsive on macOS Tahoe 26.3 \u2014 `shellPathWorker` crashes on `electron.app.isPackaged`.",
       "category": "Desktop & IDE integration",
       "severity": "medium",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/43796"
       ],
-      "description": "On macOS Tahoe 26.3, the Claude Desktop Code tab renders the UI but silently drops all sent messages. The root cause is a crash in shellPathWorker.js which runs as a worker thread and attempts to access electron.app.isPackaged — undefined in that context, causing a TypeError. The Cowork tab, VS Code extension, and CLI all work correctly on the same machine. Extensive troubleshooting (clearing caches, reinstalling, clean environment launch) does not resolve it. Affects Claude Desktop v1.569.0 on macOS 26.3.1 with Apple Silicon.",
+      "description": "On macOS Tahoe 26.3, the Claude Desktop Code tab renders the UI but silently drops all sent messages. The root cause is a crash in shellPathWorker.js which runs as a worker thread and attempts to access electron.app.isPackaged \u2014 undefined in that context, causing a TypeError. The Cowork tab, VS Code extension, and CLI all work correctly on the same machine. Extensive troubleshooting (clearing caches, reinstalling, clean environment launch) does not resolve it. Affects Claude Desktop v1.569.0 on macOS 26.3.1 with Apple Silicon.",
       "status": "open"
+    },
+    {
+      "id": "autoallowbashifsandboxed-bypassed-for-shell-variable-command-substitution",
+      "title": "`autoAllowBashIfSandboxed: true` does not auto-approve commands containing shell variable or command substitution.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43713"
+      ],
+      "description": "With `autoAllowBashIfSandboxed: true` and sandboxing enabled, commands containing `$VAR` (simple_expansion), `$(cmd)` (command_substitution), `$'...'` (ansi_c_string), or bare `\"$HOME\"` strings trigger permission prompts with reasons like 'Contains simple_expansion' or 'Unhandled node type: string'. Commands containing literal text with embedded expansions (e.g. `echo \"user is $USER\"`) may auto-approve depending on parse context. This contradicts the setting's documented purpose of suppressing all prompts in sandboxed mode and requires manual approval for many routine commands. Confirmed with detailed repro matrix on macOS, CC v2.1.92. See #43713."
+    },
+    {
+      "id": "cjk-output-corrupted-sse-textdecoder-missing-stream-flag",
+      "title": "CJK (Japanese/Chinese/Korean) characters silently corrupted to U+FFFD when written via Write/Edit tools due to SSE TextDecoder missing `{ stream: true }`.",
+      "category": "File system & paths",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43746"
+      ],
+      "description": "When Claude generates CJK (multi-byte UTF-8) output via the Write or Edit tools, characters are silently replaced with U+FFFD (replacement character) when an SSE stream chunk boundary falls mid-codepoint. Root cause: the Anthropic SDK SSE decoder instantiates TextDecoder without the `{ stream: true }` option, causing chunk-boundary multi-byte sequences to be decoded as standalone invalid sequences. Example: `\u9280\u884c\u9001\u91d1` can become `U+FFFD U+FFFD U+FFFD \u884c\u9001\u91d1`. The corruption is completely silent (no API error, no warning, no terminal hint) and is recorded in the JSONL session transcript. Reproducible with `LC_ALL=C.UTF-8` by checking files for `\\xef\\xbf\\xbd` after writing substantial Japanese/Chinese text. Confirmed intermittent, dependent on chunk boundaries. See #43746."
+    },
+    {
+      "id": "desktop-app-shell-snapshot-uses-gui-process-path-not-resolved-shell-path",
+      "title": "Desktop app shell snapshot captures minimal GUI `process.env.PATH` instead of the user's resolved dotfile PATH \u2014 Homebrew and `/usr/local/bin` tools unavailable.",
+      "category": "Desktop & IDE integration",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43800"
+      ],
+      "description": "When launched as a macOS GUI app, Claude Code Desktop generates a shell snapshot that writes `export PATH=<JavaScript process.env.PATH>` rather than the PATH resolved by sourcing the user's shell dotfiles (`.zshenv`, `.zshrc`, etc.). The GUI process PATH is minimal (`/usr/bin:/bin:/usr/sbin:/sbin`) and omits Homebrew (`/opt/homebrew/bin`), `/usr/local/bin`, and any user-configured PATH entries. As a result, tools installed via Homebrew (e.g. `node`, `npm`, `gh`, `python3`) return 'command not found' when invoked via the Bash tool, while they work correctly in a terminal session. Workaround: launch Claude Code from the terminal instead of the GUI, or set `ANTHROPIC_SHELL_SNAPSHOT_PATH` to a pre-built snapshot generated from a terminal session. Root cause identified in snapshot generation code (`gW7`/`G31` functions). Confirmed on macOS Apple Silicon, CC Desktop v2.1.87. See #43800."
     }
   ],
   "status_summary": {
