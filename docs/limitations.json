@@ -1,19 +1,19 @@
 {
   "version": "0.12.0",
-  "count": 348,
+  "count": 350,
   "categories": {
+    "Hook behavior & events": 134,
     "Hook bypass & evasion": 88,
-    "Hook behavior & events": 133,
     "Permission system": 78,
     "Subagent & spawned agents": 12,
-    "CLAUDE.md & memory": 1,
     "Configuration behavior": 9,
-    "Platform & compatibility": 4,
     "MCP & plugin issues": 7,
+    "Platform & compatibility": 4,
+    "Security & trust boundaries": 4,
     "Scheduling & remote triggers": 2,
     "Hook system design constraints": 2,
-    "Security & trust boundaries": 3,
     "Subagents & isolation": 2,
+    "CLAUDE.md & memory": 1,
     "Permissions & security": 1,
     "Performance & cost": 1,
     "Desktop & IDE integration": 1,
@@ -23,10 +23,10 @@
     "MCP & plugins": 1
   },
   "severity_counts": {
-    "critical": 19,
-    "low": 88,
-    "medium": 134,
-    "high": 107
+    "medium": 135,
+    "high": 107,
+    "low": 89,
+    "critical": 19
   },
   "entries": [
     {
@@ -796,7 +796,8 @@
       "severity": "medium",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/40324",
-        "https://github.com/anthropics/claude-code/issues/41517"
+        "https://github.com/anthropics/claude-code/issues/41517",
+        "https://github.com/anthropics/claude-code/issues/43679"
       ],
       "description": "Plan mode's \"MUST NOT make any edits\" constraint is enforced only at the system prompt level. If the model ignores the instruction and issues Edit/Write/Bash tool calls, the user's per-tool approval prompt executes them without any warning that plan mode is active. There is no tool-layer enforcement of plan mode. Confirmed by a user who reported the model writing and pushing code while in plan-mod"
     },
@@ -3656,6 +3657,43 @@
         "builtin",
         "canva",
         "gmail"
+      ]
+    },
+    {
+      "id": "hook-denial-reason-renders-right-shifted-not-below",
+      "title": "Hook denial reason text renders to the right of the error label instead of below it.",
+      "category": "Hook behavior & events",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43682"
+      ],
+      "description": "When a PreToolUse hook returns permissionDecision: deny with permissionDecisionReason, the reason text renders to the RIGHT of the 'hook returned blocking error' label in the TUI instead of BELOW it. The same text already appears left-aligned on the Error line, making the right-shifted copy redundant and harder to read. Root cause: the Ink renderer creates two sibling elements in a Fragment with default flexDirection row instead of column. Purely cosmetic \u2014 the denial is enforced correctly \u2014 but the message is harder to read, especially for multi-line denial reasons.",
+      "tags": [
+        "hooks",
+        "tui",
+        "display",
+        "pretermit",
+        "denial",
+        "ux"
+      ]
+    },
+    {
+      "id": "claude-dir-stores-all-sessions-plaintext-unencrypted",
+      "title": "~/.claude/ stores complete session history, prompts, and secrets in plaintext unencrypted JSONL.",
+      "category": "Security & trust boundaries",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43675"
+      ],
+      "description": "Every Claude Code session is written in plaintext to ~/.claude/projects/ as JSONL, including full conversation history, every prompt typed, sub-agent task descriptions (.meta.json), shell environment snapshots (shell-snapshots/), usage statistics, and any secrets that passed through tool results (API keys, passwords, tokens visible in Bash output). The directory is completely undocumented. A Statsig stable identifier (persistent anonymous tracking ID) is also stored. A plugin blocklist is refreshed remotely during active sessions. Users have no way to know what is stored, that it is unencrypted plaintext, or that secrets from tool results are persisted. Anyone with read access to the home directory can read all historical Claude Code sessions. No encryption at rest, no automatic expiry, no documentation of the format. Hooks cannot intercept or sanitize what is written to the session log.",
+      "tags": [
+        "security",
+        "privacy",
+        "plaintext",
+        "sessions",
+        "history",
+        "secrets",
+        "tracking"
       ]
     }
   ]

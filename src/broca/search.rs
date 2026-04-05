@@ -446,14 +446,19 @@ mod tests {
     fn test_recall_confidence_weighting() {
         let dir = tempfile::tempdir().unwrap();
 
-        // Create two entries with different confidence
-        broca::remember(dir.path(), "fact", "Low confidence", "rust testing", &[]).unwrap();
-
-        // Manually create a high-confidence entry
+        // Create two entries with the same date but different confidence,
+        // so recency is equal and only confidence affects ranking.
         let knowledge_dir = dir.path().join("knowledge");
+        fs::create_dir_all(&knowledge_dir).unwrap();
+        let low_conf = "---\ntype: fact\ntitle: \"Low confidence\"\nconfidence: 0.2\ncreated: 20260228\n---\n\nrust testing";
+        fs::write(
+            knowledge_dir.join("20260228-000001-low-confidence.md"),
+            low_conf,
+        )
+        .unwrap();
         let high_conf = "---\ntype: fact\ntitle: \"High confidence\"\nconfidence: 1.0\ncreated: 20260228\n---\n\nrust testing";
         fs::write(
-            knowledge_dir.join("20260228-999999-high-confidence.md"),
+            knowledge_dir.join("20260228-000002-high-confidence.md"),
             high_conf,
         )
         .unwrap();
