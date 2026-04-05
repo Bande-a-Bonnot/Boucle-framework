@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 371,
+  "count": 373,
   "categories": {
     "Hook bypass & evasion": 90,
     "Hook behavior & events": 137,
@@ -13,16 +13,16 @@
     "Scheduling & remote triggers": 3,
     "Security & trust boundaries": 4,
     "Performance & cost": 1,
-    "Desktop & IDE integration": 5,
-    "File system & paths": 1,
+    "Desktop & IDE integration": 6,
+    "File system & paths": 2,
     "Multi-agent & subprocesses": 1,
     "MCP & plugins": 1
   },
   "severity_counts": {
     "critical": 21,
     "low": 89,
-    "medium": 143,
-    "high": 118
+    "medium": 144,
+    "high": 119
   },
   "entries": [
     {
@@ -4295,10 +4295,33 @@
       "description": "The VS Code extension does not honor `permissions.allow` entries defined in the project-level `.claude/settings.json`. Commands listed in the project allow list still trigger confirmation prompts, as if no grant exists. The same allow rules work correctly in CLI sessions. This is a surface-specific divergence: project-scoped permission grants are silently ineffective in VS Code. Users who manage per-project permissions (e.g. hook scripts in `.claude/hooks/`) must duplicate those allow rules in the global `~/.claude/settings.json` to avoid repeated confirmation prompts.",
       "workaround": "Add the same `permissions.allow` entries to the global `~/.claude/settings.json`. This is less precise than project-scoped permissions but works around the VS Code extension gap.",
       "status": "open"
+    },
+    {
+      "id": "read-tool-infers-media-type-from-extension-not-magic-bytes",
+      "title": "Read tool infers image `media_type` from file extension, not magic bytes — misidentified files cause unrecoverable API error.",
+      "category": "File system & paths",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43795"
+      ],
+      "description": "When the Read tool encounters an image file, it sets the media_type based on the file extension rather than inspecting the file's magic bytes. If a file has a .png extension but actually contains ICO (or other non-PNG) data, the API rejects the request with a 400 error for media type mismatch. Worse, the corrupted image block becomes part of conversation history, causing every subsequent message to replay the bad block and fail — the conversation is permanently broken with no recovery path. Affects all API providers (Anthropic, Bedrock, Vertex). Two distinct bugs: (1) extension-based format detection instead of content-based, and (2) no conversation recovery when an image block causes an API error.",
+      "workaround": "Ensure image files have correct extensions matching their actual format. If a conversation becomes stuck, start a new conversation. There is no way to recover an existing conversation with a corrupted image block in history.",
+      "status": "open"
+    },
+    {
+      "id": "desktop-code-tab-unresponsive-macos-tahoe-shellpathworker-crash",
+      "title": "Desktop Code tab unresponsive on macOS Tahoe 26.3 — `shellPathWorker` crashes on `electron.app.isPackaged`.",
+      "category": "Desktop & IDE integration",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43796"
+      ],
+      "description": "On macOS Tahoe 26.3, the Claude Desktop Code tab renders the UI but silently drops all sent messages. The root cause is a crash in shellPathWorker.js which runs as a worker thread and attempts to access electron.app.isPackaged — undefined in that context, causing a TypeError. The Cowork tab, VS Code extension, and CLI all work correctly on the same machine. Extensive troubleshooting (clearing caches, reinstalling, clean environment launch) does not resolve it. Affects Claude Desktop v1.569.0 on macOS 26.3.1 with Apple Silicon.",
+      "status": "open"
     }
   ],
   "status_summary": {
-    "open": 354,
+    "open": 356,
     "fixed": 10,
     "mitigated": 1
   }
