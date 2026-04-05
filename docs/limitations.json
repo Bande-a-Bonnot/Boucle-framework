@@ -1,15 +1,15 @@
 {
   "version": "0.12.0",
-  "count": 410,
+  "count": 414,
   "categories": {
     "Hook bypass & evasion": 91,
     "Hook behavior & events": 142,
     "Permission system": 90,
     "Subagent & spawned agents": 18,
-    "Context & memory": 6,
+    "Context & memory": 8,
     "Configuration behavior": 11,
     "Platform & compatibility": 8,
-    "MCP & plugin issues": 14,
+    "MCP & plugin issues": 15,
     "Scheduling & remote triggers": 4,
     "Security & trust boundaries": 5,
     "Performance & cost": 2,
@@ -18,13 +18,16 @@
     "Multi-agent & subprocesses": 1,
     "MCP & plugins": 1,
     "hooks": 1,
-    "Hook event lifecycle": 1
+    "Hook event lifecycle": 1,
+    "Tool behavior": 2,
+    "Permissions & security": 1,
+    "UX & display": 1
   },
   "severity_counts": {
     "critical": 24,
-    "high": 139,
-    "medium": 158,
-    "low": 89
+    "low": 89,
+    "medium": 160,
+    "high": 141
   },
   "entries": [
     {
@@ -4739,6 +4742,62 @@
       "mitigated_by": null,
       "version_reported": null,
       "platform": "all",
+      "date_added": "2026-04-05"
+    },
+    {
+      "id": "bypass-permissions-write-allowlist-still-prompts",
+      "title": "bypassPermissions mode still prompts for Write despite explicit allowlist",
+      "description": "Setting defaultMode to bypassPermissions along with Write(**) in the allow list does not suppress permission prompts for all Write operations. A modal dialog still appears for specific files (e.g. .claude/.active-ticket), undermining the purpose of bypass mode. The behavior is inconsistent: some writes are silently allowed while others trigger prompts, making bypass mode unreliable for automation and scripted workflows.",
+      "issue": "#43947",
+      "issue_url": "https://github.com/anthropics/claude-code/issues/43947",
+      "category": "Permissions & security",
+      "severity": "high",
+      "affects_hooks": false,
+      "mitigated_by": null,
+      "version_reported": null,
+      "platform": "all",
+      "date_added": "2026-04-05"
+    },
+    {
+      "id": "resume-wrong-compaction-boundary-long-sessions",
+      "title": "/resume picks old compaction boundary in long-running sessions",
+      "description": "When resuming sessions with many compaction boundaries (30+ compact_boundary entries, 100MB+ JSONL files), /resume reconstructs from an earlier compaction point rather than the most recent one. Months of conversation history appear lost even though the data is present in the JSONL file. The root cause is that resume scans for compact_boundary entries but selects an older one rather than the last. Workaround: strip all JSONL entries before the last compact_boundary.",
+      "issue": "#43941",
+      "issue_url": "https://github.com/anthropics/claude-code/issues/43941",
+      "category": "Context & memory",
+      "severity": "high",
+      "affects_hooks": false,
+      "mitigated_by": null,
+      "version_reported": null,
+      "platform": "all",
+      "date_added": "2026-04-05"
+    },
+    {
+      "id": "cost-tracking-understates-spend",
+      "title": "/cost command understates actual API spend across four scenarios",
+      "description": "The /cost command systematically underreports actual Anthropic API spend: (1) sideQuery/classifier calls used for auto-mode permission checks skip addToTotalSessionCost() entirely; (2) background subagent costs run in isolated processes and never roll up to the parent session; (3) session cost history is silently discarded when lastSessionId mismatches (concurrent sessions or ID changes); (4) custom models via ANTHROPIC_MODEL fall back to default model pricing silently rather than showing the cost as unknown.",
+      "issue": "#43945",
+      "issue_url": "https://github.com/anthropics/claude-code/issues/43945",
+      "category": "UX & display",
+      "severity": "medium",
+      "affects_hooks": false,
+      "mitigated_by": null,
+      "version_reported": null,
+      "platform": "all",
+      "date_added": "2026-04-05"
+    },
+    {
+      "id": "bash-background-processes-not-cleaned-up",
+      "title": "Background processes spawned by Bash tool persist after session exit",
+      "description": "When Claude Code starts background processes via the Bash tool (dev servers, builds, test runners), those processes are not cleaned up when the session ends. They get reparented to PID 1 (launchd on macOS) and run indefinitely. Over time orphaned Next.js servers and build workers accumulate, consuming 8+ GB RAM. Stop hooks cannot reliably fix this: port-based cleanup has false positives, PID-file approaches don't scale, and hooks cannot inject env vars into Bash calls to tag Claude-spawned processes for selective cleanup.",
+      "issue": "#43944",
+      "issue_url": "https://github.com/anthropics/claude-code/issues/43944",
+      "category": "Tool behavior",
+      "severity": "medium",
+      "affects_hooks": true,
+      "mitigated_by": null,
+      "version_reported": null,
+      "platform": "macos",
       "date_added": "2026-04-05"
     }
   ],
