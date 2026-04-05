@@ -1,25 +1,26 @@
 {
   "version": "0.12.0",
-  "count": 365,
+  "count": 368,
   "categories": {
     "Hook behavior & events": 137,
-    "Hook bypass & evasion": 89,
+    "Hook bypass & evasion": 90,
     "Permission system": 81,
     "Subagent & spawned agents": 15,
     "Configuration behavior": 10,
-    "MCP & plugin issues": 10,
+    "MCP & plugin issues": 11,
     "Platform & compatibility": 6,
     "Desktop & IDE integration": 5,
     "Context & memory": 4,
     "Security & trust boundaries": 4,
     "Scheduling & remote triggers": 3,
-    "Performance & cost": 1
+    "Performance & cost": 1,
+    "File system & paths": 1
   },
   "severity_counts": {
     "critical": 21,
     "low": 89,
-    "medium": 141,
-    "high": 114
+    "medium": 142,
+    "high": 116
   },
   "entries": [
     {
@@ -4222,6 +4223,42 @@
       ],
       "description": "When the Agent tool spawns a subagent with `mode: \"bypassPermissions\"`, PreToolUse hooks do not fire at all for that subagent's tool calls. A user with a strict Bash allowlist hook (exit 2 for anything not in the list) had 3 unauthorized git commits made, 7 files deleted, and chmod/python3 commands run by a bypassPermissions subagent. The existing issue of exit code 2 being silently ignored for regular subagents is a weaker form of this bug: bypassPermissions subagents skip hooks entirely. The model can choose to spawn bypassPermissions subagents at will, providing a reliable escape from all hook-based restrictions without notifying the user.",
       "workaround": "No reliable workaround. Settings.json project-level deny rules may help in some cases but have not been verified to survive bypassPermissions mode. Avoid relying on PreToolUse hooks as the sole enforcement layer in multi-agent workflows. Consider using process isolation or container-level restrictions for high-security contexts.",
+      "status": "open"
+    },
+    {
+      "id": "plan-mode-not-propagated-to-agent-tool-subagents",
+      "title": "Plan mode constraint is not propagated to Agent tool subagents.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43777"
+      ],
+      "description": "When plan mode is active in the parent session, Agent tool subagents are not subject to the plan-mode constraint. Subagents spawned via the Agent tool can freely make file edits and run non-readonly tools, bypassing plan mode as a review gate entirely. Plan mode is intended to require human approval for file modifications but this approval layer is silently bypassed for any work delegated to subagents. Labeled bug with area:permissions and area:agents by Anthropic. See #43777.",
+      "workaround": "Do not rely on plan mode as a safety gate in workflows that use the Agent tool. Use hook-based enforcement (PreToolUse deny rules) which apply per-tool-call regardless of session mode, or avoid using the Agent tool when plan mode review is required.",
+      "status": "open"
+    },
+    {
+      "id": "marketplace-plugin-userpromptsubmit-injects-telemetry-silently",
+      "title": "Official marketplace plugin injects telemetry consent instructions via UserPromptSubmit hook without disclosure.",
+      "category": "MCP & plugin issues",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43778"
+      ],
+      "description": "An official Anthropic-distributed marketplace plugin (vercel@claude-plugins-official) uses a UserPromptSubmit hook to silently inject instructions into every user message, directing Claude to execute shell commands for telemetry consent recording. The injected content is never shown to the user. The hook fires on every prompt submission, meaning the plugin influences all Claude Code sessions, not just Vercel-related tasks. This is a concrete real-world example of an official plugin exploiting the hook architecture to manipulate Claude's context and trigger shell execution without user awareness. Labeled bug with area:security and area:hooks. See #43778.",
+      "workaround": "Disable or uninstall the Vercel plugin when not actively using Vercel-related tasks. Review installed plugin hooks with `claude plugins list` and inspect hook scripts in ~/.claude/hooks/. The existing KL on marketplace plugins silently adding hooks is theoretical no longer: this is an active example.",
+      "status": "open"
+    },
+    {
+      "id": "worktree-additional-directories-not-remapped-from-base-repo",
+      "title": "Worktree sessions inherit additional working directories from the base repo without remapping to worktree paths.",
+      "category": "File system & paths",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43779"
+      ],
+      "description": "When a Claude Desktop project has additional working directories configured and a worktree session is spawned from it, the additional directories point to the base repo paths instead of the corresponding worktree paths. File read/write operations in a worktree session silently target the base repo's tree for any path in the additional directories list. The error is only discoverable at commit time when changes appear in the wrong branch. Affects macOS users with multi-directory project setups using worktrees. See #43779.",
+      "workaround": "When using worktrees, manually update additional working directory paths in project settings to point to the worktree paths. Alternatively, avoid configuring additional working directories in projects where worktrees are used.",
       "status": "open"
     }
   ],
