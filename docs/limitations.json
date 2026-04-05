@@ -1,9 +1,9 @@
 {
   "version": "0.12.0",
-  "count": 402,
+  "count": 404,
   "categories": {
     "Hook bypass & evasion": 91,
-    "Hook behavior & events": 139,
+    "Hook behavior & events": 141,
     "Permission system": 89,
     "Subagent & spawned agents": 17,
     "Context & memory": 6,
@@ -24,7 +24,7 @@
     "critical": 23,
     "low": 89,
     "medium": 155,
-    "high": 135
+    "high": 137
   },
   "entries": [
     {
@@ -4627,6 +4627,34 @@
       "mitigated_by": null,
       "version_reported": "web",
       "platform": "Web (claude.ai/code)",
+      "date_added": "2026-04-05"
+    },
+    {
+      "id": "python-hook-stdout-buffering-silent-failure",
+      "title": "Python hooks silently fail due to stdout buffering when writing to pipe",
+      "description": "Python hooks that output JSON to stdout are silently ignored by Claude Code because Python buffers stdout when connected to a pipe. The hook runs, produces correct output, exits 0, but Claude Code reads an empty pipe. Without explicit sys.stdout.flush() before exit, blocking hooks have no effect and dangerous commands proceed unblocked. Additionally: (1) hook error messages are generic with no identification of which hook failed, (2) the 'decision' field values for PreToolUse hooks are undocumented \u2014 docs show 'permissionDecision: deny' but only '{\"decision\": \"block\"}' actually works, (3) hook errors are invisible to the AI model \u2014 Claude sees success even when hooks error.",
+      "issue": 43903,
+      "issue_url": "https://github.com/anthropics/claude-code/issues/43903",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "affects_hooks": true,
+      "mitigated_by": "Add sys.stdout.flush() before exit in Python hooks",
+      "version_reported": "2.1.x",
+      "platform": "Linux",
+      "date_added": "2026-04-05"
+    },
+    {
+      "id": "stop-hook-no-output-infinite-loop",
+      "title": "Stop hook with no stdout/stderr output creates infinite conversation loop",
+      "description": "When a Stop hook exits 0 with no stdout or stderr output, Claude Code synthesizes a 'No stderr output' feedback message and injects it as a conversational turn. This triggers another model response, which triggers another Stop event, creating an infinite loop that can only be broken with Ctrl+C or Escape. Any Stop hook that intentionally produces no output (e.g. silent logging, metrics collection) will trigger this loop. The expected behavior is that a Stop hook exiting cleanly with no output should be treated as a no-op with no feedback injection.",
+      "issue": 43906,
+      "issue_url": "https://github.com/anthropics/claude-code/issues/43906",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "affects_hooks": true,
+      "mitigated_by": "Ensure Stop hooks always produce some stdout output",
+      "version_reported": "2.1.92",
+      "platform": "macOS",
       "date_added": "2026-04-05"
     }
   ],
