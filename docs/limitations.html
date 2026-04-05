@@ -4421,6 +4421,60 @@
                 <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When context compacts or exhausts mid-session, any pending git commit is lost. The model frequently defers commits to the end of long tasks. When context runs out before that step, all work is left as uncommitted changes with no record. The next session starts from a lossy summary and cannot reconstruct what happened.</p>
                 <a href="https://github.com/anthropics/claude-code/issues/43886" style="font-size:0.8rem;color:var(--accent);">#43886</a>
             </div>
+            <div class="kl-entry" data-severity="high" data-category="MCP & plugin issues" id="mcp-reconnect-reinjects-tool-context-web">
+                <span class="kl-num">#402</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">MCP & plugin issues</span>
+                <a href="#mcp-reconnect-reinjects-tool-context-web" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">MCP server reconnects re-inject full tool context in web sessions, compounding context pressure</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">In Claude Code web sessions (claude.ai/code), when the GitHub MCP server disconnects and reconnects, the full set of 40+ tool definitions is re-injected into the context (~2,000 tokens per cycle). Multiple disconnect/reconnect cycles within a session compound context pressure until the session times out mid-generation. The user is billed for input tokens on the failed completion but receives zero output. This pattern repeats across sessions with no user-controllable mitigation — the MCP connection lifecycle is managed server-side. Reproducible consistently over multiple days.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Hook behavior & events" id="python-hook-stdout-buffering-silent-failure">
+                <span class="kl-num">#403</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Hook behavior & events</span>
+                <a href="#python-hook-stdout-buffering-silent-failure" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Python hooks silently fail due to stdout buffering when writing to pipe</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Python hooks that output JSON to stdout are silently ignored by Claude Code because Python buffers stdout when connected to a pipe. The hook runs, produces correct output, exits 0, but Claude Code reads an empty pipe. Without explicit sys.stdout.flush() before exit, blocking hooks have no effect and dangerous commands proceed unblocked. Additionally: (1) hook error messages are generic with no identification of which hook failed, (2) the 'decision' field values for PreToolUse hooks are undocumented — docs show 'permissionDecision: deny' but only '{"decision": "block"}' actually works, (3) hook errors are invisible to the AI model — Claude sees success even when hooks error.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Hook behavior & events" id="stop-hook-no-output-infinite-loop">
+                <span class="kl-num">#404</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Hook behavior & events</span>
+                <a href="#stop-hook-no-output-infinite-loop" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Stop hook with no stdout/stderr output creates infinite conversation loop</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When a Stop hook exits 0 with no stdout or stderr output, Claude Code synthesizes a 'No stderr output' feedback message and injects it as a conversational turn. This triggers another model response, which triggers another Stop event, creating an infinite loop that can only be broken with Ctrl+C or Escape. Any Stop hook that intentionally produces no output (e.g. silent logging, metrics collection) will trigger this loop. The expected behavior is that a Stop hook exiting cleanly with no output should be treated as a no-op with no feedback injection.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="critical" data-category="Permission system" id="multi-agent-context-loss-destructive-file-deletion">
+                <span class="kl-num">#405</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ef4444;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Permission system</span>
+                <a href="#multi-agent-context-loss-destructive-file-deletion" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Model deletes user-created files without confirmation after misidentifying them as stale agent output</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When a task spans multiple context windows and involves background agents creating files, Claude Code can misattribute user-created files as wrong agent output from a previous session. The model then runs rm commands without requesting user confirmation, bypassing the Windows Recycle Bin entirely. Files not committed to git are permanently lost. Two compounding failures: (1) no hard guardrail requiring explicit confirmation before destructive Bash operations on files the model did not create in the current session, and (2) no cross-context attribution mechanism to distinguish user-created files from agent-created artifacts.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Subagent & spawned agents" id="plan-mode-not-propagated-to-subagents">
+                <span class="kl-num">#406</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Subagent & spawned agents</span>
+                <a href="#plan-mode-not-propagated-to-subagents" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Plan mode constraint not propagated to Agent tool subagents, allowing real edits during review sessions</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When plan mode is active (activated via Shift+Tab), spawned Agent tool subagents are not subject to the plan mode constraint. These subagents can freely make file edits and execute non-readonly tools, effectively bypassing plan mode entirely. Plan mode provides no protection when Claude routes work through the Agent tool, making it unreliable as a review gate before implementation begins.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Hook behavior & events" id="sessionstart-hook-false-error-on-compact">
+                <span class="kl-num">#407</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Hook behavior & events</span>
+                <a href="#sessionstart-hook-false-error-on-compact" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">SessionStart hook reports generic error on /compact despite clean exit (exit 0, valid JSON)</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When a SessionStart hook registered for startup|clear|compact events runs during /compact, Claude Code sometimes reports a generic 'SessionStart:compact hook error' even though the hook exits with code 0 and outputs valid JSON. No actionable details are provided in the error: no stderr content, no stack trace, no output validation failure reason. Possible causes: Node.js or runtime deprecation warnings written to stderr that Claude Code interprets as hook failure, an undocumented output size limit on additionalContext, or a timing race between the compaction process and hook execution.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
 <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>
         </footer>

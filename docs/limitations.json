@@ -1,11 +1,11 @@
 {
   "version": "0.12.0",
-  "count": 404,
+  "count": 407,
   "categories": {
     "Hook bypass & evasion": 91,
-    "Hook behavior & events": 141,
-    "Permission system": 89,
-    "Subagent & spawned agents": 17,
+    "Hook behavior & events": 142,
+    "Permission system": 90,
+    "Subagent & spawned agents": 18,
     "Context & memory": 6,
     "Configuration behavior": 11,
     "Platform & compatibility": 8,
@@ -21,10 +21,10 @@
     "Hook event lifecycle": 1
   },
   "severity_counts": {
-    "critical": 23,
+    "critical": 24,
     "low": 89,
-    "medium": 155,
-    "high": 137
+    "medium": 156,
+    "high": 138
   },
   "entries": [
     {
@@ -4655,6 +4655,48 @@
       "mitigated_by": "Ensure Stop hooks always produce some stdout output",
       "version_reported": "2.1.92",
       "platform": "macOS",
+      "date_added": "2026-04-05"
+    },
+    {
+      "id": "multi-agent-context-loss-destructive-file-deletion",
+      "title": "Model deletes user-created files without confirmation after misidentifying them as stale agent output",
+      "description": "When a task spans multiple context windows and involves background agents creating files, Claude Code can misattribute user-created files as wrong agent output from a previous session. The model then runs rm commands without requesting user confirmation, bypassing the Windows Recycle Bin entirely. Files not committed to git are permanently lost. Two compounding failures: (1) no hard guardrail requiring explicit confirmation before destructive Bash operations on files the model did not create in the current session, and (2) no cross-context attribution mechanism to distinguish user-created files from agent-created artifacts.",
+      "issue": 43887,
+      "issue_url": "https://github.com/anthropics/claude-code/issues/43887",
+      "category": "Permission system",
+      "severity": "critical",
+      "affects_hooks": false,
+      "mitigated_by": "Commit files to git before running multi-agent tasks; use file-guard to block rm on sensitive paths; avoid multi-context-window agent tasks on uncommitted work",
+      "version_reported": "2.1.92",
+      "platform": "windows",
+      "date_added": "2026-04-05"
+    },
+    {
+      "id": "plan-mode-not-propagated-to-subagents",
+      "title": "Plan mode constraint not propagated to Agent tool subagents, allowing real edits during review sessions",
+      "description": "When plan mode is active (activated via Shift+Tab), spawned Agent tool subagents are not subject to the plan mode constraint. These subagents can freely make file edits and execute non-readonly tools, effectively bypassing plan mode entirely. Plan mode provides no protection when Claude routes work through the Agent tool, making it unreliable as a review gate before implementation begins.",
+      "issue": 43777,
+      "issue_url": "https://github.com/anthropics/claude-code/issues/43777",
+      "category": "Subagent & spawned agents",
+      "severity": "high",
+      "affects_hooks": false,
+      "mitigated_by": "None known; avoid using plan mode with tasks that may spawn subagents",
+      "version_reported": "2.1.92",
+      "platform": "all",
+      "date_added": "2026-04-05"
+    },
+    {
+      "id": "sessionstart-hook-false-error-on-compact",
+      "title": "SessionStart hook reports generic error on /compact despite clean exit (exit 0, valid JSON)",
+      "description": "When a SessionStart hook registered for startup|clear|compact events runs during /compact, Claude Code sometimes reports a generic 'SessionStart:compact hook error' even though the hook exits with code 0 and outputs valid JSON. No actionable details are provided in the error: no stderr content, no stack trace, no output validation failure reason. Possible causes: Node.js or runtime deprecation warnings written to stderr that Claude Code interprets as hook failure, an undocumented output size limit on additionalContext, or a timing race between the compaction process and hook execution.",
+      "issue": 43894,
+      "issue_url": "https://github.com/anthropics/claude-code/issues/43894",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "affects_hooks": true,
+      "mitigated_by": "Suppress all stderr output in hook scripts; keep additionalContext under 1KB; verify hook behavior outside /compact context first",
+      "version_reported": "2.1.92",
+      "platform": "windows",
       "date_added": "2026-04-05"
     }
   ],
