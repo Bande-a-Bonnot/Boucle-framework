@@ -555,22 +555,22 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-354 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+362 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
 
 | Category | Count | Examples |
 |----------|-------|----------|
-| Hook behavior & events | 128 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits, allowManagedHooksOnly blocks plugin hooks, OAuth token refresh collision, no Team lifecycle hooks, auto-compact ignores disable, env.PATH ignored, multiple-hook stdin contention, Stop hook PowerShell encoding error, --continue + -p session lookup broken, --resume 0% context v2.1.91, statusline receives hook stdout, no ToolStarted event between PreToolUse and PostToolUse |
+| Hook behavior & events | 136 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits, CLAUDE_ENV_FILE broken, no persistent child env, statusline receives hook stdout, no ToolStarted event between PreToolUse and PostToolUse |
 | Hook bypass & evasion | 88 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch, `$()` subshell pattern-match failure, goal-directed tool switching, apiKeyHelper arbitrary code execution, `find` command injection (CVE-2026-24887) |
-| Permission system | 74 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, PowerShell trailing `&` bypass, parse-failure fallback, auto-mode classifier wrong model, bypassPermissions UNC path regression, skip-permissions still prompts Edit/Write, .git/.claude path prompts, session resume bypass, submodule worktree scope, API-based branch protection mutation, --dangerously-skip-permissions plan mode regression, DenyRead/Write overridden by user AllowRead/Write, `$()` subshell auto-saved rules malformed, `git restore` without confirmation |
-| Subagent & spawned agents | 12 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, teammate hooks bypass, subagent file creation bypass, sub-agent file writes not persisted |
-| Configuration behavior | 8 | Managed settings bypass, sandbox disable, MCP priority conflicts |
-| MCP & plugin issues | 4 | Plugin notification stops after first session, symlink marketplace silent fail, plugin MCP killed after startup |
-| Scheduling & remote triggers | 2 | Ghost trigger quota consumed, MCP connectors not injected |
-| Hook system design constraints | 2 | CLAUDE_ENV_FILE broken, no persistent child env |
-| Platform & compatibility | 4 | Git Bash regression, Desktop env.PATH ignored, renderer strips `<context>` tags |
-| Security & trust boundaries | 2 | Managed settings bypass via config injection |
-| CLAUDE.md & memory | 1 | CLAUDE.md rules are advisory-only with no enforcement mechanism |
-| Subagents & isolation | 1 | Worktree isolation creates from wrong commit |
+| Permission system | 80 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, DenyRead/Write overridden by user AllowRead/Write, `git restore` without confirmation |
+| Subagent & spawned agents | 15 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, teammate hooks bypass, subagent file creation bypass, worktree isolation wrong commit |
+| Configuration behavior | 10 | Managed settings bypass, sandbox disable, MCP priority conflicts, authentication config issues |
+| MCP & plugin issues | 10 | Plugin notification stops after first session, symlink marketplace silent fail, plugin MCP killed after startup, stale cache in Discover tab |
+| Platform & compatibility | 6 | Git Bash regression, Desktop env.PATH ignored, renderer strips `<context>` tags, non-login shell PATH missing |
+| Desktop & IDE integration | 5 | JetBrains extension file overwrite, Desktop junk sessions, Cowork cloud FS rejection |
+| Context & memory | 4 | CLAUDE.md rules advisory-only, Opus 1M ignores CLAUDE.md in long sessions, context miscount |
+| Security & trust boundaries | 4 | Managed settings bypass via config injection, trust dialog bypass |
+| Scheduling & remote triggers | 3 | Ghost trigger quota consumed, MCP connectors not injected, triggers silently drop runs |
+| Performance & cost | 1 | Nested subagent token burn |
 
 ---
 
