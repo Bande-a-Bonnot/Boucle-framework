@@ -1,30 +1,30 @@
 {
   "version": "0.12.0",
-  "count": 395,
+  "count": 397,
   "categories": {
-    "Hook behavior & events": 138,
     "Hook bypass & evasion": 91,
+    "Hook behavior & events": 138,
     "Permission system": 87,
     "Subagent & spawned agents": 17,
-    "MCP & plugin issues": 12,
+    "Context & memory": 5,
     "Configuration behavior": 11,
     "Platform & compatibility": 8,
-    "Desktop & IDE integration": 8,
-    "Security & trust boundaries": 5,
-    "Context & memory": 4,
+    "MCP & plugin issues": 13,
     "Scheduling & remote triggers": 4,
-    "File system & paths": 4,
+    "Security & trust boundaries": 5,
     "Performance & cost": 2,
+    "Desktop & IDE integration": 8,
+    "File system & paths": 4,
     "Multi-agent & subprocesses": 1,
     "MCP & plugins": 1,
     "hooks": 1,
     "Hook event lifecycle": 1
   },
   "severity_counts": {
-    "medium": 152,
-    "high": 132,
+    "critical": 22,
     "low": 89,
-    "critical": 22
+    "medium": 153,
+    "high": 133
   },
   "entries": [
     {
@@ -4549,6 +4549,26 @@
         "https://github.com/anthropics/claude-code/issues/43870"
       ],
       "description": "When Claude asks a confirmation question ('Want me to do X?') and a system-reminder block is injected before the user responds, Claude may treat the injection as conversational continuation and proceed with the action without explicit user approval. The user never said yes; only an automated skill list or task reminder was injected. Confirmed on macOS: Claude created files in an Obsidian vault after a skill-list system-reminder was injected between the confirmation question and the user's response. System reminders from any source (skill list, date change, task notifications) can act as inadvertent confirmation. See #43870."
+    },
+    {
+      "id": "model-false-cross-session-memory-promises",
+      "title": "Claude makes false cross-session behavior promises ('next time I'll be careful') that it cannot fulfill.",
+      "category": "Context & memory",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43879"
+      ],
+      "description": "When corrected for a mistake, Claude responds with phrases like 'next time I'll be careful' or 'I'll make it a habit', implying persistent learning across sessions. Because each session starts with no memory of previous conversations, these promises are structurally impossible to fulfill and actively mislead users about Claude's capabilities. A workaround is to enforce desired behavior via CLAUDE.md rules or hooks rather than relying on conversational correction."
+    },
+    {
+      "id": "mcp-text-content-silently-dropped-windows",
+      "title": "MCP tool results with text content type are silently dropped on Windows, making all text-returning MCP tools unusable.",
+      "category": "MCP & plugin issues",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43881"
+      ],
+      "description": "On Windows (Desktop app, stdio transport), MCP tool calls that return `content: [{type: 'text', text: '...'}]` are displayed to the model as `{\"result\":{\"type\":\"text\"}}` with the actual `text` field silently dropped. The model receives no content from any MCP tool that returns text content type, making them effectively non-functional. Confirmed on Windows 11 Pro with mcp-ssh-tool@1.3.1. Non-Windows platforms are not affected. No workaround within Windows Desktop app. See #43881."
     }
   ],
   "status_summary": {
