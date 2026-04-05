@@ -3,28 +3,17 @@
   "count": 362,
   "categories": {
     "Hook bypass & evasion": 88,
-    "Hook behavior & events": 134,
-    "Permission system": 79,
-    "Subagent & spawned agents": 13,
-    "CLAUDE.md & memory": 1,
-    "Configuration behavior": 9,
-    "Platform & compatibility": 4,
-    "MCP & plugin issues": 7,
+    "Hook behavior & events": 136,
+    "Permission system": 80,
+    "Subagent & spawned agents": 15,
+    "Context & memory": 4,
+    "Configuration behavior": 10,
+    "Platform & compatibility": 6,
+    "MCP & plugin issues": 10,
     "Scheduling & remote triggers": 3,
-    "Hook system design constraints": 2,
     "Security & trust boundaries": 4,
-    "Subagents & isolation": 2,
-    "Permissions & security": 1,
     "Performance & cost": 1,
-    "Desktop & IDE integration": 2,
-    "Authentication & configuration": 1,
-    "Environment & shell": 1,
-    "Context management": 1,
-    "MCP & plugins": 3,
-    "Bash & shell execution": 1,
-    "Context & memory": 1,
-    "Model behavior & instructions": 1,
-    "Desktop & Cowork": 3
+    "Desktop & IDE integration": 5
   },
   "severity_counts": {
     "critical": 20,
@@ -2427,7 +2416,7 @@
     {
       "id": "claudemd-rules-no-enforcement-mechanism",
       "title": "CLAUDE.md and <code>.claude/rules/</code> rules have no enforcement mechanism.",
-      "category": "CLAUDE.md & memory",
+      "category": "Context & memory",
       "severity": "low",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/34132"
@@ -3121,7 +3110,7 @@
     {
       "id": "claude-env-file-broken-no-persistent-child-env",
       "title": "CLAUDE_ENV_FILE broken; no reliable mechanism to pass environment variables to hooks and child processes.",
-      "category": "Hook system design constraints",
+      "category": "Hook behavior & events",
       "severity": "medium",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/43430"
@@ -3131,7 +3120,7 @@
     {
       "id": "mcp-server-instructions-silently-truncated-multiple-servers",
       "title": "MCP server instructions silently truncated when multiple servers are configured.",
-      "category": "Hook system design constraints",
+      "category": "Hook behavior & events",
       "severity": "medium",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/43474"
@@ -3326,7 +3315,7 @@
       "id": "worktree-isolation-creates-from-wrong-commit",
       "title": "Worktree isolation creates worktrees from wrong commit when branch is not main.",
       "severity": "high",
-      "category": "Subagents & isolation",
+      "category": "Subagent & spawned agents",
       "issue_refs": [
         "43535"
       ],
@@ -3477,7 +3466,7 @@
     {
       "id": "subagent-spawning-fails-after-tmux-window-kill",
       "title": "Subagent spawning permanently fails after tmux windows are killed or renumbered.",
-      "category": "Subagents & isolation",
+      "category": "Subagent & spawned agents",
       "severity": "medium",
       "issues": [],
       "description": "During long-running sessions, if tmux windows are killed or renumbered externally, subagent spawning fails permanently with 'Could not determine pane count.' The error persists for the rest of the session with no recovery mechanism. Fixed in v2.1.92."
@@ -3501,7 +3490,7 @@
     {
       "id": "cloud-ide-ignores-permissions-allow-rules",
       "title": "Cloud IDE sessions ignore permissions.allow rules from .claude/settings.json.",
-      "category": "Permissions & security",
+      "category": "Permission system",
       "severity": "high",
       "issues": [
         "43644"
@@ -3534,7 +3523,7 @@
     {
       "id": "subscription-type-cached-indefinitely-plan-upgrade",
       "title": "CLI caches subscriptionType and rateLimitTier indefinitely after login, plan upgrades not reflected.",
-      "category": "Authentication & configuration",
+      "category": "Configuration behavior",
       "severity": "high",
       "issues": [
         "43639"
@@ -3612,7 +3601,7 @@
       "title": "Bash tool spawns non-login shell; PATH from .zprofile/.bash_profile missing.",
       "description": "Claude Code spawns bash in non-login mode, so ~/.zprofile (zsh) and ~/.bash_profile (bash) are never sourced. Commands installed via Homebrew or other tools that write to .zprofile are not found \u2014 PATH is only /usr/bin:/bin:/usr/sbin:/sbin. Confusingly, the shell reports itself as a login shell but does not actually source login files. Not hookable \u2014 shell initialization happens before any hook runs. Workaround: add eval $(brew shellenv) to ~/.bashrc or ~/.zshrc (sourced for interactive non-login shells), or set env.PATH in settings.json (though that override is also buggy \u2014 see separate KL).",
       "severity": "medium",
-      "category": "Environment & shell",
+      "category": "Platform & compatibility",
       "workaround": true,
       "source_issues": [
         "#42803",
@@ -3631,7 +3620,7 @@
       "title": "/compact [instructions] silently ignores arguments and performs no compaction.",
       "description": "/compact with any arguments (e.g. /compact preserve key decisions) returns instantly without compacting \u2014 context usage is unchanged. Bare /compact (no arguments) works correctly. This means guided compaction ('summarize this session focusing on X') is silently broken. Relevant to PostCompact hooks: if users invoke /compact with instructions, the PostCompact event is never fired and hook-based cache clears (e.g. read-once) will not trigger. Workaround: run bare /compact, then issue follow-up instructions in the conversation to guide what was retained.",
       "severity": "medium",
-      "category": "Context management",
+      "category": "Context & memory",
       "workaround": true,
       "source_issues": [
         "#43685"
@@ -3648,7 +3637,7 @@
       "title": "Built-in MCP servers (Canva, Gmail, Calendar, computer-use) inject tools into every session and cannot be suppressed.",
       "description": "Claude Code hardcodes several MCP servers (claude_ai_Canva, claude_ai_Gmail, claude_ai_Google_Calendar, computer-use) into the app bundle. These inject their tool definitions into every session's deferred tools list, consuming context tokens unconditionally. deniedMcpServers prevents the tools from being called but does not remove them from the deferred tools list \u2014 token overhead persists. disabledMcpServers does not apply to built-ins. No configuration option exists to fully suppress these injections. Not hookable \u2014 the deferred tools list is assembled at session startup before hooks run. Workaround: none for complete suppression; use deniedMcpServers to at least prevent accidental calls.",
       "severity": "low",
-      "category": "MCP & plugins",
+      "category": "MCP & plugin issues",
       "workaround": false,
       "source_issues": [
         "#43690",
@@ -3704,7 +3693,7 @@
     {
       "id": "autoallowbashifsandboxed-incomplete-shell-expansions",
       "title": "`autoAllowBashIfSandboxed: true` does not auto-approve commands with shell variable expansions.",
-      "category": "Bash & shell execution",
+      "category": "Platform & compatibility",
       "severity": "medium",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/43713"
@@ -3737,7 +3726,7 @@
     {
       "id": "agent-refuses-security-related-filenames-false-positive",
       "title": "Agent triggers 'violative cyber content' refusal on security-related filenames in local directories.",
-      "category": "Model behavior & instructions",
+      "category": "Context & memory",
       "severity": "medium",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/43703"
@@ -3748,7 +3737,7 @@
     {
       "id": "cowork-auto-update-reformats-session-disk",
       "title": "Cowork auto-update reformats session disk instead of mounting existing filesystem, destroying all projects.",
-      "category": "Desktop & Cowork",
+      "category": "Desktop & IDE integration",
       "severity": "critical",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/43719"
@@ -3759,7 +3748,7 @@
     {
       "id": "cowork-dispatch-tasks-hang-desktop-windows",
       "title": "Dispatch tasks reach Desktop app but hang indefinitely on 'thinking' and never respond (Windows).",
-      "category": "Desktop & Cowork",
+      "category": "Desktop & IDE integration",
       "severity": "high",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/43726"
@@ -3769,7 +3758,7 @@
     {
       "id": "worktree-accumulation-no-auto-cleanup",
       "title": "Desktop app creates a new git worktree per session with no automatic cleanup, causing orphaned worktree accumulation.",
-      "category": "Desktop & Cowork",
+      "category": "Desktop & IDE integration",
       "severity": "medium",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/43730"
@@ -3779,7 +3768,7 @@
     {
       "id": "plugin-update-stale-version-from-cache",
       "title": "plugins update reports stale version as latest without fetching from remote.",
-      "category": "MCP & plugins",
+      "category": "MCP & plugin issues",
       "severity": "medium",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/43732"
@@ -3819,7 +3808,7 @@
     {
       "id": "custom-marketplace-plugin-install-state-and-update-propagation",
       "title": "Custom marketplace plugins: install state wrong in Discover tab, updates stale.",
-      "category": "MCP & plugins",
+      "category": "MCP & plugin issues",
       "severity": "medium",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/43745"
