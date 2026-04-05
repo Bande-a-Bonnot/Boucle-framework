@@ -1,11 +1,11 @@
 {
   "version": "0.12.0",
-  "count": 350,
+  "count": 354,
   "categories": {
     "Hook behavior & events": 134,
     "Hook bypass & evasion": 88,
     "Permission system": 78,
-    "Subagent & spawned agents": 12,
+    "Subagent & spawned agents": 13,
     "Configuration behavior": 9,
     "MCP & plugin issues": 7,
     "Platform & compatibility": 4,
@@ -20,11 +20,14 @@
     "Authentication & configuration": 1,
     "Environment & shell": 1,
     "Context management": 1,
-    "MCP & plugins": 1
+    "MCP & plugins": 1,
+    "Bash & shell execution": 1,
+    "Context & memory": 1,
+    "Model behavior & instructions": 1
   },
   "severity_counts": {
-    "medium": 135,
-    "high": 107,
+    "medium": 138,
+    "high": 108,
     "low": 89,
     "critical": 19
   },
@@ -3445,7 +3448,8 @@
       "category": "Permission system",
       "severity": "high",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/43625"
+        "https://github.com/anthropics/claude-code/issues/43625",
+        "https://github.com/anthropics/claude-code/issues/43714"
       ],
       "description": "When running Claude Code with a channel plugin (e.g. --channels plugin:telegram), permission prompts are relayed to all connected channels regardless of which channel the message originated from. Reply routing correctly targets the originating channel, but permission dialogs broadcast to every channel. This can expose sensitive tool approval prompts to unintended channels."
     },
@@ -3695,6 +3699,50 @@
         "secrets",
         "tracking"
       ]
+    },
+    {
+      "id": "autoallowbashifsandboxed-incomplete-shell-expansions",
+      "title": "`autoAllowBashIfSandboxed: true` does not auto-approve commands with shell variable expansions.",
+      "category": "Bash & shell execution",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43713"
+      ],
+      "description": "When `autoAllowBashIfSandboxed: true` is set and sandboxing is enabled, commands containing shell variable expansions (`$VAR`), backtick substitution, or other non-literal constructs still trigger permission prompts with reasons like 'Contains simple_expansion' or 'Unhandled node type: string'. Only syntactically simple commands (literal argv, pipes, `&&`, `;`, `||`, `[[ ]]`, `<<<`, control flow) are auto-approved. Shell expansion coverage is incomplete, defeating the purpose of the setting for scripts that use variables.",
+      "workaround": "Restructure commands to avoid variable expansion where possible, or add explicit allow patterns in settings.json for the affected command forms."
+    },
+    {
+      "id": "background-teammate-sendmessage-to-team-lead-silently-dropped",
+      "title": "Background teammate `SendMessage` to team-lead is silently dropped (one-way only).",
+      "category": "Subagent & spawned agents",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43706"
+      ],
+      "description": "When a teammate is spawned via `Agent()` with `run_in_background: true` and `team_name`, `SendMessage` works in one direction only. Team-lead to teammate messages are delivered correctly. Teammate to team-lead messages (`SendMessage({ to: 'team-lead' })`) return success on the teammate's end but never appear in the team-lead's conversation \u2014 silently dropped with no error. This breaks bidirectional coordination patterns in multi-agent teams.",
+      "workaround": "Use shared files or output files for teammate-to-lead communication. Alternatively, use foreground agents (omit `run_in_background`) to enable proper bidirectional messaging."
+    },
+    {
+      "id": "opus-1m-ignores-claude-md-instructions-long-sessions",
+      "title": "Opus 4.6 (1M context) silently ignores CLAUDE.md rules and user instructions in long sessions.",
+      "category": "Context & memory",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43716"
+      ],
+      "description": "During extended sessions with Claude Opus 4.6 using the 1M context window, the model can repeatedly ignore CLAUDE.md rules and explicit user instructions even after they were loaded at session start. Instructions repeated 5+ times by the user may still be disregarded. The behavior persists across /clear resets, ruling out context length as the sole cause. Affects agentic workflows relying on persistent behavioral constraints.",
+      "workaround": "Keep sessions shorter; inject critical instructions inline with each task prompt rather than relying on CLAUDE.md alone; prefer smaller context window variants for strict rule-following tasks."
+    },
+    {
+      "id": "agent-refuses-security-related-filenames-false-positive",
+      "title": "Agent triggers 'violative cyber content' refusal on security-related filenames in local directories.",
+      "category": "Model behavior & instructions",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43703"
+      ],
+      "description": "Automated Claude Code agents refuse to proceed with tasks when the local repository contains filenames associated with security research (e.g., `malware.py`, `exploit.sh`, CTF challenge files). The refusal cites 'violative cyber content' and is triggered by filename patterns rather than actual file contents. Legitimate security research, penetration testing tooling, and CTF repositories are blocked. The refusal is not hookable.",
+      "workaround": "Rename files to avoid triggering content filter patterns before running agents. Provide explicit context in the prompt that the repository contains legitimate security research files."
     }
   ]
 }
