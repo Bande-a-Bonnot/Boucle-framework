@@ -17,29 +17,21 @@ for e in entries:
 
 new_entries = [
     {
-        "id": "permission-relay-all-channels",
-        "title": "Permission prompts relay to all channels, not just the originating channel.",
-        "category": "Permission system",
+        "id": "cowork-dispatch-tasks-hang-desktop-windows",
+        "title": "Dispatch tasks reach Desktop app but hang indefinitely on 'thinking' and never respond (Windows).",
+        "category": "Desktop & Cowork",
         "severity": "high",
-        "issues": ["https://github.com/anthropics/claude-code/issues/43625"],
-        "description": "When running Claude Code with a channel plugin (e.g. --channels plugin:telegram), permission prompts are relayed to all connected channels regardless of which channel the message originated from. Reply routing correctly targets the originating channel, but permission dialogs broadcast to every channel. This can expose sensitive tool approval prompts to unintended channels."
+        "issues": ["https://github.com/anthropics/claude-code/issues/43726"],
+        "description": "On Windows, tasks dispatched via the mobile Dispatch feature appear in the Desktop app Code tab but hang indefinitely on 'thinking' and never produce a response. The CLI works fine independently. Re-pairing devices and restarting the Desktop app do not fix it. Confirmed on Windows 11 with Claude Code CLI 2.1.92 and latest Desktop app."
     },
     {
-        "id": "plan-mode-allows-code-modification",
-        "title": "Agent modifies code while in plan mode (plan mode not enforced as read-only).",
-        "category": "Permission system",
-        "severity": "high",
-        "issues": ["https://github.com/anthropics/claude-code/issues/43623"],
-        "description": "Plan mode is expected to be read-only (no file writes or tool executions), but the agent can still modify code while in plan mode. Reported on v2.1.92. This undermines the safety guarantee that plan mode lets you review before any changes are made. Needs independent reproduction."
-    },
-    {
-        "id": "plugin-channel-notifications-not-injected",
-        "title": "Channel plugin receives messages but notifications are never injected into the conversation.",
-        "category": "MCP & plugin issues",
+        "id": "worktree-accumulation-no-auto-cleanup",
+        "title": "Desktop app creates a new git worktree per session with no automatic cleanup, causing orphaned worktree accumulation.",
+        "category": "Desktop & Cowork",
         "severity": "medium",
-        "issues": ["https://github.com/anthropics/claude-code/issues/43627"],
-        "description": "The official Telegram channels plugin (telegram@claude-plugins-official v0.0.4) connects and polls successfully, but MCP notifications/claude/channel messages are never injected into the conversation as channel source tags. The plugin logs show messages received, but Claude never sees them. Affects Windows with bun 1.3.11 on v2.1.92."
-    }
+        "issues": ["https://github.com/anthropics/claude-code/issues/43730"],
+        "description": "Every new Desktop app session automatically creates a fresh git worktree under .claude/worktrees/ with a random name. When the session ends, the worktree is left behind permanently. Over days/weeks, the directory fills with orphaned worktrees consuming disk space and adding git state complexity. There is no option to reuse existing worktrees, opt out of worktree creation, or run a cleanup command. Also breaks single-branch + submodule workflows since submodules are not initialized in the new worktree."
+    },
 ]
 
 added = 0

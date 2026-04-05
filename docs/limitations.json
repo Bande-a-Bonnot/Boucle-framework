@@ -1,19 +1,19 @@
 {
   "version": "0.12.0",
-  "count": 355,
+  "count": 357,
   "categories": {
-    "Hook behavior & events": 134,
     "Hook bypass & evasion": 88,
+    "Hook behavior & events": 134,
     "Permission system": 78,
     "Subagent & spawned agents": 13,
+    "CLAUDE.md & memory": 1,
     "Configuration behavior": 9,
-    "MCP & plugin issues": 7,
     "Platform & compatibility": 4,
-    "Security & trust boundaries": 4,
+    "MCP & plugin issues": 7,
     "Scheduling & remote triggers": 2,
     "Hook system design constraints": 2,
+    "Security & trust boundaries": 4,
     "Subagents & isolation": 2,
-    "CLAUDE.md & memory": 1,
     "Permissions & security": 1,
     "Performance & cost": 1,
     "Desktop & IDE integration": 1,
@@ -24,13 +24,13 @@
     "Bash & shell execution": 1,
     "Context & memory": 1,
     "Model behavior & instructions": 1,
-    "Desktop & Cowork": 1
+    "Desktop & Cowork": 3
   },
   "severity_counts": {
-    "medium": 138,
-    "high": 108,
+    "critical": 20,
     "low": 89,
-    "critical": 19
+    "medium": 139,
+    "high": 109
   },
   "entries": [
     {
@@ -3755,6 +3755,26 @@
       ],
       "description": "When the coworkd daemon auto-updates its sdk-daemon component, the restart logic reformats the session disk (ext4) instead of mounting the existing filesystem. This destroys all user projects stored on the session disk. Users go from hundreds of recovered projects to zero with no warning and no user action. The disk reformat happens in a 3-second window during the daemon restart.",
       "workaround": "No reliable workaround. Maintain local backups of Cowork projects outside the session disk. The pre-wipe sessiondata.img may be recoverable from stale duplicate directories if they exist."
+    },
+    {
+      "id": "cowork-dispatch-tasks-hang-desktop-windows",
+      "title": "Dispatch tasks reach Desktop app but hang indefinitely on 'thinking' and never respond (Windows).",
+      "category": "Desktop & Cowork",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43726"
+      ],
+      "description": "On Windows, tasks dispatched via the mobile Dispatch feature appear in the Desktop app Code tab but hang indefinitely on 'thinking' and never produce a response. The CLI works fine independently. Re-pairing devices and restarting the Desktop app do not fix it. Confirmed on Windows 11 with Claude Code CLI 2.1.92 and latest Desktop app."
+    },
+    {
+      "id": "worktree-accumulation-no-auto-cleanup",
+      "title": "Desktop app creates a new git worktree per session with no automatic cleanup, causing orphaned worktree accumulation.",
+      "category": "Desktop & Cowork",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43730"
+      ],
+      "description": "Every new Desktop app session automatically creates a fresh git worktree under .claude/worktrees/ with a random name. When the session ends, the worktree is left behind permanently. Over days/weeks, the directory fills with orphaned worktrees consuming disk space and adding git state complexity. There is no option to reuse existing worktrees, opt out of worktree creation, or run a cleanup command. Also breaks single-branch + submodule workflows since submodules are not initialized in the new worktree."
     }
   ]
 }
