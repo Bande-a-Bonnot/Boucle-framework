@@ -1,19 +1,19 @@
 {
   "version": "0.12.0",
-  "count": 378,
+  "count": 380,
   "categories": {
     "Hook bypass & evasion": 90,
     "Hook behavior & events": 137,
     "Permission system": 83,
-    "Subagent & spawned agents": 15,
+    "Subagent & spawned agents": 16,
     "Context & memory": 4,
     "Configuration behavior": 10,
     "Platform & compatibility": 6,
-    "MCP & plugin issues": 11,
+    "MCP & plugin issues": 12,
     "Scheduling & remote triggers": 3,
-    "Security & trust boundaries": 4,
+    "Security & trust boundaries": 5,
     "Performance & cost": 1,
-    "Desktop & IDE integration": 7,
+    "Desktop & IDE integration": 8,
     "File system & paths": 3,
     "Multi-agent & subprocesses": 1,
     "MCP & plugins": 1
@@ -21,7 +21,7 @@
   "severity_counts": {
     "critical": 22,
     "low": 89,
-    "medium": 145,
+    "medium": 147,
     "high": 122
   },
   "entries": [
@@ -4368,6 +4368,26 @@
         "https://github.com/anthropics/claude-code/issues/43802"
       ],
       "description": "When the model attempts to use the RemoteTrigger tool inside the Desktop app, it fails with a 401 Unauthorized error. The same trigger works when invoked via the Desktop app's built-in trigger UI or from the CLI. The auth plumbing between the Desktop app and the RemoteTrigger tool endpoint appears to use different credential paths. This is distinct from the existing RemoteTrigger API 500 error (#43438) and triggers returning 200 but never executing (#43741). See #43802."
+    },
+    {
+      "id": "subagents-cannot-invoke-disable-model-invocation-skills",
+      "title": "Subagents cannot invoke skills with `disable-model-invocation: true` \u2014 the skill loader throws an error even when the parent agent explicitly references the skill.",
+      "category": "Subagent & spawned agents",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43809"
+      ],
+      "description": "When a skill is configured with `disable-model-invocation: true` in its frontmatter (intended for direct tool-call-only skills), subagents spawned via the Agent tool cannot invoke that skill even when the parent agent explicitly passes it by name. The skill loader returns an error for the subagent context. Parent agents can use the skill normally via `/skill-name` or direct invocation, but delegation to subagents fails. This affects multi-agent workflows that share skills across the agent tree. Workaround: remove `disable-model-invocation: true` from skills that need to be accessible to subagents, or restructure the workflow to keep skill invocations in the parent agent. Confirmed on macOS, CC v2.1.92. See #43809."
+    },
+    {
+      "id": "marketplace-plugin-source-path-not-used-for-skill-discovery",
+      "title": "Marketplace plugin `source.path` offset is ignored during skill discovery \u2014 skills in monorepo subdirectories are not found.",
+      "category": "MCP & plugin issues",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43811"
+      ],
+      "description": "When a marketplace plugin definition uses `source.path` to specify a subdirectory within a monorepo (e.g., `{\"source\": \"github\", \"repo\": \"org/monorepo\", \"path\": \"plugins/my-plugin\"}`), Claude Code clones the full repo into the plugin cache but ignores the `path` offset when scanning for skills. The skill loader only looks at `<cache-root>/skills/`, not `<cache-root>/<path>/skills/`. Skills defined at the expected path are silently not found and not available to the agent. Workaround: publish the plugin in its own dedicated repository rather than a monorepo, or maintain a flat repo layout where skills live at the repo root. See #43811."
     }
   ],
   "status_summary": {
