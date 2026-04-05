@@ -1,10 +1,10 @@
 {
   "version": "0.12.0",
-  "count": 390,
+  "count": 392,
   "categories": {
     "Hook behavior & events": 137,
     "Hook bypass & evasion": 91,
-    "Permission system": 85,
+    "Permission system": 86,
     "Subagent & spawned agents": 16,
     "MCP & plugin issues": 12,
     "Configuration behavior": 11,
@@ -17,13 +17,14 @@
     "Performance & cost": 2,
     "Multi-agent & subprocesses": 1,
     "MCP & plugins": 1,
-    "hooks": 1
+    "hooks": 1,
+    "Hook event lifecycle": 1
   },
   "severity_counts": {
-    "critical": 22,
+    "medium": 152,
+    "high": 129,
     "low": 89,
-    "medium": 151,
-    "high": 128
+    "critical": 22
   },
   "entries": [
     {
@@ -4498,10 +4499,30 @@
         "https://github.com/anthropics/claude-code/issues/43854"
       ],
       "description": "When a `permissions.deny` rule blocks `Read` on a file, the model acknowledges the denial internally but does not ask the user to provide the file contents via another channel. Instead it proceeds with code-level hypothesis testing on incomplete information. In the reported case this caused 8 unnecessary production deployments over ~2 hours before the user self-diagnosed a one-line config difference. The deny rule correctly blocked the read, but the model's fallback behavior (silent continuation) is the limitation: it should surface the blocked access as a user-actionable request. Confirmed. See #43854."
+    },
+    {
+      "id": "skill-discovery-fails-in-dontask-permission-mode",
+      "title": "Skill tool returns 'Unknown skill' in dontAsk permission mode even when skill is explicitly allowed via --allowed-tools.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43855"
+      ],
+      "description": "When running Claude Code with --permission-mode dontAsk and Skill included in --allowed-tools, the Skill tool fails to discover skills from the skills/ directory. The skill SKILL.md file exists in the correct location, but the Skill tool reports 'Unknown skill'. Workaround: read SKILL.md directly via Read tool and follow instructions manually. This breaks headless/automated workflows that depend on skill invocation. Confirmed on Linux (NixOS). See #43855."
+    },
+    {
+      "id": "sendmessage-not-hookable-via-pretooluse-posttooluse",
+      "title": "SendMessage (inter-agent communication) does not fire PreToolUse or PostToolUse hooks, making agent-to-agent messages invisible to hook infrastructure.",
+      "category": "Hook event lifecycle",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43859"
+      ],
+      "description": "SendMessage is not in the list of tools that fire PostToolUse hooks (Bash, Edit, Write, Read, Glob, Grep, Agent, WebFetch, WebSearch, AskUserQuestion, ExitPlanMode, MCP tools are hookable; SendMessage is not). This means inter-agent communication in teams cannot be audited, logged, or intercepted via hooks. Workaround: instruct agents to manually append messages to a shared file before calling SendMessage (fragile, agents sometimes forget). Feature request with clear use case for agent team observability. See #43859."
     }
   ],
   "status_summary": {
-    "open": 356,
+    "open": 381,
     "fixed": 10,
     "mitigated": 1
   }
