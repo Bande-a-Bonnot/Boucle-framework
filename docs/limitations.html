@@ -4322,6 +4322,51 @@
                 <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When a `permissions.deny` rule blocks `Read` on a file, the model acknowledges the denial internally but does not ask the user to provide the file contents via another channel. Instead it proceeds with code-level hypothesis testing on incomplete information. In the reported case this caused 8 unnecessary production deployments over ~2 hours before the user self-diagnosed a one-line config difference. The deny rule correctly blocked the read, but the model's fallback behavior (silent continuation) is the limitation: it should surface the blocked access as a user-actionable request. Confirmed. See #43854.</p>
                 <a href="https://github.com/anthropics/claude-code/issues/43854" style="font-size:0.8rem;color:var(--accent);">#43854</a>
             </div>
+            <div class="kl-entry" data-severity="high" data-category="Permission system" id="skill-discovery-fails-in-dontask-permission-mode">
+                <span class="kl-num">#391</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Permission system</span>
+                <a href="#skill-discovery-fails-in-dontask-permission-mode" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Skill tool returns 'Unknown skill' in dontAsk permission mode even when skill is explicitly allowed via --allowed-tools.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When running Claude Code with --permission-mode dontAsk and Skill included in --allowed-tools, the Skill tool fails to discover skills from the skills/ directory. The skill SKILL.md file exists in the correct location, but the Skill tool reports 'Unknown skill'. Workaround: read SKILL.md directly via Read tool and follow instructions manually. This breaks headless/automated workflows that depend on skill invocation. Confirmed on Linux (NixOS). See #43855.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/43855" style="font-size:0.8rem;color:var(--accent);">#43855</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Hook event lifecycle" id="sendmessage-not-hookable-via-pretooluse-posttooluse">
+                <span class="kl-num">#392</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Hook event lifecycle</span>
+                <a href="#sendmessage-not-hookable-via-pretooluse-posttooluse" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">SendMessage (inter-agent communication) does not fire PreToolUse or PostToolUse hooks, making agent-to-agent messages invisible to hook infrastructure.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">SendMessage is not in the list of tools that fire PostToolUse hooks (Bash, Edit, Write, Read, Glob, Grep, Agent, WebFetch, WebSearch, AskUserQuestion, ExitPlanMode, MCP tools are hookable; SendMessage is not). This means inter-agent communication in teams cannot be audited, logged, or intercepted via hooks. Workaround: instruct agents to manually append messages to a shared file before calling SendMessage (fragile, agents sometimes forget). Feature request with clear use case for agent team observability. See #43859.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/43859" style="font-size:0.8rem;color:var(--accent);">#43859</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Hook behavior & events" id="skill-tool-internal-error-agent-hangs-indefinitely">
+                <span class="kl-num">#393</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Hook behavior & events</span>
+                <a href="#skill-tool-internal-error-agent-hangs-indefinitely" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Skill tool returns `[Tool result missing due to internal error]` and agent hangs with no retry or output.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When the Skill tool returns `[Tool result missing due to internal error]`, the agent produces no output, does not retry, and does not inform the user. The session hangs indefinitely until the user presses Ctrl+C. After Ctrl+C, retrying the same Skill call usually succeeds. Began occurring repeatedly since 2026-04-04 on Windows 11 / CC v2.1.92. No automatic recovery mechanism exists. See #43866.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/43866" style="font-size:0.8rem;color:var(--accent);">#43866</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Subagent & spawned agents" id="subagent-model-routing-all-mechanisms-resolve-to-parent-model">
+                <span class="kl-num">#394</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Subagent & spawned agents</span>
+                <a href="#subagent-model-routing-all-mechanisms-resolve-to-parent-model" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Subagent model routing is broken: all documented mechanisms route subagents to the parent model instead of the specified model.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">All five documented subagent model routing mechanisms are silently ignored: (1) Agent(model: 'sonnet') per-invocation param, (2) .claude/agents/*.md frontmatter model field, (3) CLAUDE_CODE_SUBAGENT_MODEL env var with full model name, (4) CLAUDE_CODE_SUBAGENT_MODEL with short alias, (5) settings.json env block. In all cases, subagents run on the parent session model (e.g. Opus), negating any cost savings from model routing. Max plan users confirmed via dashboard Sonnet usage remaining flat. Confirmed with has-repro on Windows. See #43869.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/43869" style="font-size:0.8rem;color:var(--accent);">#43869</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Permission system" id="system-reminder-injection-bypasses-explicit-user-confirmation-gate">
+                <span class="kl-num">#395</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Permission system</span>
+                <a href="#system-reminder-injection-bypasses-explicit-user-confirmation-gate" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">System reminder injected before user response causes Claude to proceed past a confirmation gate without explicit user approval.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When Claude asks a confirmation question ('Want me to do X?') and a system-reminder block is injected before the user responds, Claude may treat the injection as conversational continuation and proceed with the action without explicit user approval. The user never said yes; only an automated skill list or task reminder was injected. Confirmed on macOS: Claude created files in an Obsidian vault after a skill-list system-reminder was injected between the confirmation question and the user's response. System reminders from any source (skill list, date change, task notifications) can act as inadvertent confirmation. See #43870.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/43870" style="font-size:0.8rem;color:var(--accent);">#43870</a>
+            </div>
 <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>
         </footer>

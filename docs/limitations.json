@@ -1,11 +1,11 @@
 {
   "version": "0.12.0",
-  "count": 392,
+  "count": 395,
   "categories": {
-    "Hook behavior & events": 137,
+    "Hook behavior & events": 138,
     "Hook bypass & evasion": 91,
-    "Permission system": 86,
-    "Subagent & spawned agents": 16,
+    "Permission system": 87,
+    "Subagent & spawned agents": 17,
     "MCP & plugin issues": 12,
     "Configuration behavior": 11,
     "Platform & compatibility": 8,
@@ -22,7 +22,7 @@
   },
   "severity_counts": {
     "medium": 152,
-    "high": 129,
+    "high": 132,
     "low": 89,
     "critical": 22
   },
@@ -4519,6 +4519,36 @@
         "https://github.com/anthropics/claude-code/issues/43859"
       ],
       "description": "SendMessage is not in the list of tools that fire PostToolUse hooks (Bash, Edit, Write, Read, Glob, Grep, Agent, WebFetch, WebSearch, AskUserQuestion, ExitPlanMode, MCP tools are hookable; SendMessage is not). This means inter-agent communication in teams cannot be audited, logged, or intercepted via hooks. Workaround: instruct agents to manually append messages to a shared file before calling SendMessage (fragile, agents sometimes forget). Feature request with clear use case for agent team observability. See #43859."
+    },
+    {
+      "id": "skill-tool-internal-error-agent-hangs-indefinitely",
+      "title": "Skill tool returns `[Tool result missing due to internal error]` and agent hangs with no retry or output.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43866"
+      ],
+      "description": "When the Skill tool returns `[Tool result missing due to internal error]`, the agent produces no output, does not retry, and does not inform the user. The session hangs indefinitely until the user presses Ctrl+C. After Ctrl+C, retrying the same Skill call usually succeeds. Began occurring repeatedly since 2026-04-04 on Windows 11 / CC v2.1.92. No automatic recovery mechanism exists. See #43866."
+    },
+    {
+      "id": "subagent-model-routing-all-mechanisms-resolve-to-parent-model",
+      "title": "Subagent model routing is broken: all documented mechanisms route subagents to the parent model instead of the specified model.",
+      "category": "Subagent & spawned agents",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43869"
+      ],
+      "description": "All five documented subagent model routing mechanisms are silently ignored: (1) Agent(model: 'sonnet') per-invocation param, (2) .claude/agents/*.md frontmatter model field, (3) CLAUDE_CODE_SUBAGENT_MODEL env var with full model name, (4) CLAUDE_CODE_SUBAGENT_MODEL with short alias, (5) settings.json env block. In all cases, subagents run on the parent session model (e.g. Opus), negating any cost savings from model routing. Max plan users confirmed via dashboard Sonnet usage remaining flat. Confirmed with has-repro on Windows. See #43869."
+    },
+    {
+      "id": "system-reminder-injection-bypasses-explicit-user-confirmation-gate",
+      "title": "System reminder injected before user response causes Claude to proceed past a confirmation gate without explicit user approval.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43870"
+      ],
+      "description": "When Claude asks a confirmation question ('Want me to do X?') and a system-reminder block is injected before the user responds, Claude may treat the injection as conversational continuation and proceed with the action without explicit user approval. The user never said yes; only an automated skill list or task reminder was injected. Confirmed on macOS: Claude created files in an Obsidian vault after a skill-list system-reminder was injected between the confirmation question and the user's response. System reminders from any source (skill list, date change, task notifications) can act as inadvertent confirmation. See #43870."
     }
   ],
   "status_summary": {
