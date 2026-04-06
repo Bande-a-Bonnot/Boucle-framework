@@ -4960,6 +4960,24 @@
                 <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">On Windows, global permission rules using forward-slash glob patterns (e.g., 'Write(.claude/**)') do not match Windows paths that use backslashes (e.g., '.claude\state\...'), causing unexpected permission prompts despite the rule being present. The documented path normalization that should convert backslashes to forward slashes before glob matching does not occur. Affects any workflow that writes to subdirectories specified with forward-slash globs in settings.json on Windows. Confirmed on Windows 11.</p>
                 <a href="https://github.com/anthropics/claude-code/issues/44091" style="font-size:0.8rem;color:var(--accent);">#44091</a>
             </div>
+            <div class="kl-entry" data-severity="critical" data-category="Subagent & spawned agents" id="isolation-worktree-deletes-committed-branches-on-cleanup">
+                <span class="kl-num">#462</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ef4444;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Subagent & spawned agents</span>
+                <a href="#isolation-worktree-deletes-committed-branches-on-cleanup" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">`isolation: "worktree"` in Agent tool deletes committed branches when temporary worktree is cleaned up.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When the Agent tool is invoked with `isolation: "worktree"`, Claude Code creates a temporary git worktree for each agent. When the agents complete, the temporary worktrees are cleaned up automatically -- and any branches committed to those worktrees are deleted along with them. All work produced by the agents is permanently lost. There is no warning before cleanup, no prompt to merge or preserve branches, and no recovery path. This affects any workflow that uses agent isolation expecting committed code to persist. Workaround: do not use `isolation: "worktree"` if you need agents to produce persistent commits. Use direct repo access instead, coordinating agents to write to separate directories. See #44111.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44111" style="font-size:0.8rem;color:var(--accent);">#44111</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Permission system" id="auto-added-permissions-generate-double-slash-paths">
+                <span class="kl-num">#463</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Permission system</span>
+                <a href="#auto-added-permissions-generate-double-slash-paths" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Auto-added Read/Edit permissions write double-slash paths (`//Users/...`) to settings.json.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When Claude Code auto-adds a Read or Edit permission to `~/.claude/settings.json` after user approval, the path is saved with a double-slash prefix: `Read(//Users/name/project/**)` instead of `Read(/Users/name/project/**)`. v2.1.89 fixed matching of existing `//` rules against symlink targets, but did not fix the generation of `//` paths during auto-add -- these are separate issues. The `//` prefix can be interpreted as a UNC network path on some systems and causes malformed permission entries to accumulate in settings.json over time. Workaround: manually edit `~/.claude/settings.json` after auto-add to remove the leading extra slash. Reproduces on macOS v2.1.90. See #44106.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44106" style="font-size:0.8rem;color:var(--accent);">#44106</a>
+            </div>
 <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>
         </footer>
