@@ -1,36 +1,39 @@
 {
   "version": "0.12.0",
-  "count": 441,
+  "count": 444,
   "categories": {
+    "Hook behavior & events": 146,
     "Hook bypass & evasion": 92,
-    "Hook behavior & events": 145,
     "Permission system": 91,
-    "Subagent & spawned agents": 18,
-    "Context & memory": 11,
-    "Configuration behavior": 12,
-    "Platform & compatibility": 10,
+    "Subagent & spawned agents": 19,
     "MCP & plugin issues": 17,
-    "Scheduling & remote triggers": 4,
-    "Security & trust boundaries": 7,
-    "Performance & cost": 3,
+    "Configuration behavior": 12,
+    "Context & memory": 11,
+    "Platform & compatibility": 10,
     "Desktop & IDE integration": 8,
+    "Security & trust boundaries": 7,
     "File system & paths": 5,
+    "Scheduling & remote triggers": 4,
+    "Tool behavior": 4,
+    "Performance & cost": 3,
     "Multi-agent & subprocesses": 2,
+    "CLAUDE.md enforcement": 2,
+    "Platform & environment": 2,
     "MCP & plugins": 1,
     "hooks": 1,
     "Hook event lifecycle": 1,
-    "Tool behavior": 4,
     "Permissions & security": 1,
     "UX & display": 1,
     "Networking": 1,
-    "CLAUDE.md enforcement": 2,
-    "agents": 1
+    "agents": 1,
+    "Performance": 1,
+    "Model behavior": 1
   },
   "severity_counts": {
-    "critical": 27,
-    "high": 155,
-    "medium": 170,
-    "low": 89
+    "medium": 171,
+    "high": 156,
+    "low": 90,
+    "critical": 27
   },
   "entries": [
     {
@@ -5080,12 +5083,42 @@
       ],
       "description": "When a user defines a strict sequential workflow, Claude parallelizes the steps or starts downstream agents before upstream steps complete, even when the workflow document and conversation explicitly require sequential execution. Corrections are acknowledged but not retained within the same session.",
       "status": "open"
+    },
+    {
+      "id": "prompt-cache-partial-miss-resume-sdk",
+      "title": "Agent SDK prompt cache partial miss on every --resume turn: skills listing block missing from messages[0]",
+      "category": "Performance",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44045"
+      ],
+      "description": "When using the Agent SDK query() with resume, every resume turn causes a partial cache miss. On fresh sessions messages[0] has 5 content blocks including the skills listing (~3,924 chars); on resume sessions the skills listing block is absent from messages[0] and appears deeper in the conversation at its historical position. This causes ~3,800 extra tokens of cache_create on every resume turn. Measured on @anthropic-ai/claude-agent-sdk 0.2.92 (CLI 2.1.92). The fix for the earlier deferred_tools_delta cache issue (#34629) did not cover this case. No workaround; requires SDK fix. See #44045."
+    },
+    {
+      "id": "memory-instructions-not-reliably-followed-by-model",
+      "title": "Memory instructions loaded as context do not reliably translate into model behavior changes, especially for small automatic actions",
+      "category": "Model behavior",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44043"
+      ],
+      "description": "Instructions placed in auto-memory files (e.g., 'ABSOLUTE RULE: always run X before doing Y') are loaded at session start and acknowledged by the model, but the model still violates them in subsequent turns -- particularly for low-cost automatic actions like running a shell command before answering. The model reads the rule, confirms it, then skips the required action anyway. Affects behavioral enforcement via persistent memory notes. No reliable workaround; hooks (PreToolUse/Stop) are more reliable for enforcement than memory instructions. See #44043."
+    },
+    {
+      "id": "windows-desktop-cmd-windows-flash-mcp-spawn",
+      "title": "Windows Desktop: visible cmd.exe console windows flash on screen when spawning MCP servers and subprocesses",
+      "category": "Platform & environment",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44039"
+      ],
+      "description": "On Windows, the Claude Desktop app spawns background processes (chrome-native-host.exe, uvx chroma-mcp, claude.cmd) via cmd.exe without the CREATE_NO_WINDOW flag (windowsHide: true in Node.js spawn). This causes visible console windows to briefly flash on screen every time these processes start. Workaround for user-configured MCP servers: add 'windowsHide': true to each mcpServers entry in claude_desktop_config.json. Built-in spawns require a fix in the Electron app source. See #44039."
     }
   ],
   "status_summary": {
-    "open": 429,
-    "mitigated": 1,
-    "fixed": 11
+    "open": 432,
+    "fixed": 11,
+    "mitigated": 1
   },
   "severities": {
     "critical": 27,

@@ -4753,6 +4753,60 @@
                 </div>
                 <p>The Claude Code Agent SDK can return a Usage Policy refusal error when analyzing legitimate security research content (e.g., vulnerability reports about AI safety filter bypasses), even though the agent is performing authorized security analysis, not attempting to exploit anything. The refusal occurs on the turn after successful structured output, making it non-deterministic. Workaround: add 'authorized security research context' to the system prompt and implement model fallback on 'usage policy' error strings.</p>
             </div>
+            <div class="kl-entry" data-severity="high" data-category="Hook behavior & events" id="precompact-prompt-hooks-fail-manual-compact">
+                <span class="kl-num">#439</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Hook behavior & events</span>
+                <a href="#precompact-prompt-hooks-fail-manual-compact" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">PreCompact prompt-type hooks fail silently on manual /compact</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Hooks configured with type prompt in PreCompact fire correctly during automatic compaction but fail with Prompt stop hooks are not yet supported outside REPL when triggered by manual /compact. Users with large context windows who rarely hit automatic compaction are effectively unable to use PreCompact prompt hooks.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44029" style="font-size:0.8rem;color:var(--accent);">#44029</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Platform & environment" id="computer-use-mcp-request-access-not-installed">
+                <span class="kl-num">#440</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Platform & environment</span>
+                <a href="#computer-use-mcp-request-access-not-installed" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">computer-use MCP request_access returns not_installed for all apps on macOS</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">The computer-use MCP server request_access tool returns reason not_installed for every application regardless of whether they are installed, running, or discoverable. Affects macOS 26.x Tahoe running in tmux or CLI contexts; no workaround exists.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44034" style="font-size:0.8rem;color:var(--accent);">#44034</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Subagent & spawned agents" id="model-violates-sequential-workflow-gates">
+                <span class="kl-num">#441</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Subagent & spawned agents</span>
+                <a href="#model-violates-sequential-workflow-gates" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Model violates user-defined sequential workflow gates, parallelizes steps ignoring corrections</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When a user defines a strict sequential workflow, Claude parallelizes the steps or starts downstream agents before upstream steps complete, even when the workflow document and conversation explicitly require sequential execution. Corrections are acknowledged but not retained within the same session.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44027" style="font-size:0.8rem;color:var(--accent);">#44027</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Performance" id="prompt-cache-partial-miss-resume-sdk">
+                <span class="kl-num">#442</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Performance</span>
+                <a href="#prompt-cache-partial-miss-resume-sdk" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Agent SDK prompt cache partial miss on every --resume turn: skills listing block missing from messages[0]</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When using the Agent SDK query() with resume, every resume turn causes a partial cache miss. On fresh sessions messages[0] has 5 content blocks including the skills listing (~3,924 chars); on resume sessions the skills listing block is absent from messages[0] and appears deeper in the conversation at its historical position. This causes ~3,800 extra tokens of cache_create on every resume turn. Measured on @anthropic-ai/claude-agent-sdk 0.2.92 (CLI 2.1.92). The fix for the earlier deferred_tools_delta cache issue (#34629) did not cover this case. No workaround; requires SDK fix. See #44045.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44045" style="font-size:0.8rem;color:var(--accent);">#44045</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Model behavior" id="memory-instructions-not-reliably-followed-by-model">
+                <span class="kl-num">#443</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Model behavior</span>
+                <a href="#memory-instructions-not-reliably-followed-by-model" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Memory instructions loaded as context do not reliably translate into model behavior changes, especially for small automatic actions</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Instructions placed in auto-memory files (e.g., 'ABSOLUTE RULE: always run X before doing Y') are loaded at session start and acknowledged by the model, but the model still violates them in subsequent turns -- particularly for low-cost automatic actions like running a shell command before answering. The model reads the rule, confirms it, then skips the required action anyway. Affects behavioral enforcement via persistent memory notes. No reliable workaround; hooks (PreToolUse/Stop) are more reliable for enforcement than memory instructions. See #44043.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44043" style="font-size:0.8rem;color:var(--accent);">#44043</a>
+            </div>
+            <div class="kl-entry" data-severity="low" data-category="Platform & environment" id="windows-desktop-cmd-windows-flash-mcp-spawn">
+                <span class="kl-num">#444</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#22c55e;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Platform & environment</span>
+                <a href="#windows-desktop-cmd-windows-flash-mcp-spawn" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Windows Desktop: visible cmd.exe console windows flash on screen when spawning MCP servers and subprocesses</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">On Windows, the Claude Desktop app spawns background processes (chrome-native-host.exe, uvx chroma-mcp, claude.cmd) via cmd.exe without the CREATE_NO_WINDOW flag (windowsHide: true in Node.js spawn). This causes visible console windows to briefly flash on screen every time these processes start. Workaround for user-configured MCP servers: add 'windowsHide': true to each mcpServers entry in claude_desktop_config.json. Built-in spawns require a fix in the Electron app source. See #44039.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44039" style="font-size:0.8rem;color:var(--accent);">#44039</a>
+            </div>
 <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>
         </footer>
