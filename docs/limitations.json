@@ -1,27 +1,29 @@
 {
   "version": "0.12.0",
-  "count": 510,
+  "count": 518,
   "categories": {
     "Hook behavior & events": 153,
-    "Permission system": 95,
+    "Permission system": 94,
     "Hook bypass & evasion": 92,
-    "Subagent & spawned agents": 25,
-    "MCP & plugin issues": 24,
-    "Platform & compatibility": 16,
-    "Context & memory": 14,
+    "Subagent & spawned agents": 26,
+    "MCP & plugin issues": 25,
+    "Platform & compatibility": 17,
+    "Context & memory": 15,
     "Configuration behavior": 13,
-    "Tool behavior": 9,
     "Security & trust boundaries": 9,
-    "Desktop & IDE integration": 8,
+    "Desktop & IDE integration": 9,
+    "Tool behavior": 9,
     "Performance & cost": 6,
-    "File system & paths": 6,
+    "CLI & terminal": 6,
+    "File system & paths": 5,
     "Scheduling & remote triggers": 4,
     "UX & display": 3,
-    "CLI & terminal": 4,
+    "Auth & accounts": 3,
     "Data integrity": 2,
+    "MCP & plugins": 2,
     "Scheduled tasks": 2,
     "Permissions": 2,
-    "MCP & plugins": 1,
+    "Skills & commands": 2,
     "Permissions & security": 1,
     "Memory & state": 1,
     "Remote & cloud": 1,
@@ -29,13 +31,23 @@
     "Context management": 1,
     "Bash": 1,
     "Compaction & memory": 1,
-    "Skills & commands": 1,
-    "Remote triggers & scheduling": 1
+    "Cost & usage": 1,
+    "Tools & permissions": 1,
+    "Remote triggers & scheduling": 1,
+    "Skills & slash commands": 1,
+    "Worktrees & isolation": 1,
+    "Core & session management": 1,
+    "Cowork & cloud": 1,
+    "Model behavior & output": 1,
+    "TUI & display": 1,
+    "Model behavior & compliance": 1,
+    "Configuration & settings": 1,
+    "API & infrastructure": 1
   },
   "severity_counts": {
-    "critical": 32,
-    "high": 183,
-    "medium": 191,
+    "critical": 34,
+    "high": 196,
+    "medium": 197,
     "low": 91
   },
   "entries": [
@@ -6056,11 +6068,56 @@
       "issues": [
         "https://github.com/anthropics/claude-code/issues/44263"
       ],
-      "description": "The claude-channel-telegram plugin spawns two bun server.ts child processes that accumulate ~101 hours of CPU time over ~2.2 hours wall time with zero incoming messages. Each process holds 35-45% CPU continuously at idle. SIGTERM does not stop them — SIGKILL is required. After killing and allowing Claude Code to respawn, new processes behave normally (<1% CPU). Root cause is likely a busy-loop or tight polling cycle in the long-polling/webhook handler with no backoff when idle. Affects Linux (Ubuntu 6.8.0) running Claude Code as a systemd service.",
+      "description": "The claude-channel-telegram plugin spawns two bun server.ts child processes that accumulate ~101 hours of CPU time over ~2.2 hours wall time with zero incoming messages. Each process holds 35-45% CPU continuously at idle. SIGTERM does not stop them \u2014 SIGKILL is required. After killing and allowing Claude Code to respawn, new processes behave normally (<1% CPU). Root cause is likely a busy-loop or tight polling cycle in the long-polling/webhook handler with no backoff when idle. Affects Linux (Ubuntu 6.8.0) running Claude Code as a systemd service.",
       "workaround": "Monitor CPU usage and SIGKILL the bun server.ts processes if they spike. Claude Code will respawn them and they typically start at normal CPU usage. Consider running the plugin only when needed rather than continuously.",
       "date_added": "2026-04-06",
       "version_reported": "0.0.1",
       "platform": "linux",
+      "status": "open"
+    },
+    {
+      "id": "synthetic-word-triggers-aup-refusal",
+      "title": "The word 'synthetic' in Java stack traces consistently triggers AUP violation refusal.",
+      "category": "Model behavior & compliance",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44285"
+      ],
+      "description": "Pasting a Java stack trace containing R8$$SyntheticClass or ExternalSyntheticLambda0 triggers an AUP (Acceptable Use Policy) violation refusal. The model refuses to process the code. Removing all occurrences of 'synthetic' (case-insensitive) via sed allows the same prompt to succeed. This is an overzealous keyword-based content filter that blocks legitimate Android/Java debugging workflows. Reported on Opus model, Linux platform.",
+      "workaround": "Strip the word 'synthetic' from stack traces before pasting (e.g., %s/[Ss]ynthetic//g in vim). The model will then process the trace normally.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "platform": "linux",
+      "status": "open"
+    },
+    {
+      "id": "project-settings-no-subdirectory-resolution",
+      "title": "Project-scoped settings.json not resolved when Claude Code starts from a subdirectory.",
+      "category": "Configuration & settings",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44278"
+      ],
+      "description": "Project-scoped settings (.claude/settings.json) are only loaded when Claude Code is started from the exact directory containing .claude/. Starting from any subdirectory (e.g., src/, packages/app/) silently loses all project settings including enabledPlugins, hooks, and mcpServers. This makes project scope functionally identical to local scope. CLAUDE.md already traverses parent directories correctly, making this inconsistency confusing. Affects all project-scoped configuration: plugins, hooks, MCP servers, permissions.",
+      "workaround": "Always start Claude Code from the project root directory (where .claude/ lives). Alternatively, duplicate settings into user-scoped ~/.claude/settings.json, though this loses per-project scoping.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "platform": "linux",
+      "status": "open"
+    },
+    {
+      "id": "remote-trigger-manual-run-500",
+      "title": "Remote trigger manual run via POST /v1/code/triggers/{id}/run returns HTTP 500.",
+      "category": "API & infrastructure",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44284"
+      ],
+      "description": "Manually running a remote trigger via the API consistently returns HTTP 500 Internal Server Error. Trigger creation succeeds (HTTP 200) and shows correct configuration, but the run action never spawns a remote agent session. No downstream actions (Slack messages, Asana updates) are delivered. The error response contains a generic 'An internal server error occurred' message with no actionable details. Reported on Windows with MCP connections to Slack and Asana.",
+      "workaround": "No known workaround. The trigger run endpoint appears non-functional. Use alternative methods to invoke Claude Code sessions.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "platform": "windows",
       "status": "open"
     }
   ],
