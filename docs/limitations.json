@@ -1,21 +1,21 @@
 {
   "version": "0.12.0",
-  "count": 463,
+  "count": 467,
   "categories": {
     "Hook bypass & evasion": 92,
-    "Hook behavior & events": 151,
+    "Hook behavior & events": 152,
     "Permission system": 94,
     "Subagent & spawned agents": 24,
     "Context & memory": 13,
     "Configuration behavior": 13,
     "Platform & compatibility": 14,
-    "MCP & plugin issues": 20,
+    "MCP & plugin issues": 21,
     "Scheduling & remote triggers": 4,
     "Security & trust boundaries": 8,
-    "Performance & cost": 4,
+    "Performance & cost": 5,
     "Desktop & IDE integration": 8,
     "File system & paths": 5,
-    "Tool behavior": 7,
+    "Tool behavior": 8,
     "UX & display": 1,
     "CLI & terminal": 3,
     "Data integrity": 2
@@ -23,8 +23,8 @@
   "severity_counts": {
     "critical": 30,
     "low": 91,
-    "medium": 179,
-    "high": 163
+    "medium": 182,
+    "high": 164
   },
   "entries": [
     {
@@ -5330,6 +5330,62 @@
         "https://github.com/anthropics/claude-code/issues/44106"
       ],
       "description": "When Claude Code auto-adds a Read or Edit permission to `~/.claude/settings.json` after user approval, the path is saved with a double-slash prefix: `Read(//Users/name/project/**)` instead of `Read(/Users/name/project/**)`. v2.1.89 fixed matching of existing `//` rules against symlink targets, but did not fix the generation of `//` paths during auto-add -- these are separate issues. The `//` prefix can be interpreted as a UNC network path on some systems and causes malformed permission entries to accumulate in settings.json over time. Workaround: manually edit `~/.claude/settings.json` after auto-add to remove the leading extra slash. Reproduces on macOS v2.1.90. See #44106."
+    },
+    {
+      "id": "cloud-mcp-auto-injected-no-consent",
+      "title": "Cloud MCP servers (Gmail, Google Calendar) auto-injected without user consent",
+      "description": "Claude Code injects cloud-based MCP servers from claude.ai (Gmail, Google Calendar) into the local CLI without user opt-in. Every startup reports these servers need authentication for services the user never installed or agreed to. No opt-out mechanism exists. Related to memory/OOM issues from unwanted MCP server loading.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44112"
+      ],
+      "category": "MCP & plugin issues",
+      "severity": "medium",
+      "affects_hooks": false,
+      "version_reported": "2.1.92",
+      "platform": "macOS",
+      "date_added": "2026-04-06"
+    },
+    {
+      "id": "lsp-register-capability-blocks-csharp",
+      "title": "LSP tool does not respond to client/registerCapability, blocking C# language server",
+      "description": "Claude Code's LSP infrastructure does not respond to client/registerCapability requests sent by csharp-ls during initialization. This causes the language server to block indefinitely, making all subsequent LSP requests (hover, documentSymbol, findReferences) return empty results. The LSP client implementation is missing dynamic capability registration support.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44113"
+      ],
+      "category": "Tool behavior",
+      "severity": "medium",
+      "affects_hooks": false,
+      "version_reported": "2.1.92",
+      "platform": "Windows",
+      "date_added": "2026-04-06"
+    },
+    {
+      "id": "websearch-subagents-fail-1m-context-max",
+      "title": "WebSearch and subagents fail with 'Extra usage required' on Max plan with 1M context",
+      "description": "On the Max plan with Opus 4.6 (1M context), both WebSearch tool and background subagents fail with 'Extra usage is required for 1M context'. The error prompts users to run /extra-usage to enable or /model to switch to standard context. Max plan should fully support 1M context features without additional toggles. Affects automated workflows that depend on web search or subagent spawning.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44117"
+      ],
+      "category": "Performance & cost",
+      "severity": "high",
+      "affects_hooks": false,
+      "version_reported": "2.1.92",
+      "platform": "macOS",
+      "date_added": "2026-04-06"
+    },
+    {
+      "id": "no-flicker-suppresses-statusline-windows",
+      "title": "CLAUDE_CODE_NO_FLICKER=1 suppresses custom statusLine command on Windows CLI",
+      "description": "Setting CLAUDE_CODE_NO_FLICKER=1 in settings.json env causes the custom statusLine command to stop rendering entirely on Windows CLI (Git Bash). The statusline disappears completely with no output shown. The no-flicker mode's rendering changes suppress the statusline hook output, breaking users who depend on custom status displays.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44119"
+      ],
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "affects_hooks": true,
+      "version_reported": "2.1.92",
+      "platform": "Windows",
+      "date_added": "2026-04-06"
     }
   ],
   "status_summary": {
