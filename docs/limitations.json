@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 479,
+  "count": 482,
   "categories": {
     "Hook behavior & events": 152,
     "Permission system": 94,
@@ -26,13 +26,15 @@
     "Remote & cloud": 1,
     "File system": 1,
     "Context management": 1,
-    "Permissions": 1
+    "Permissions": 2,
+    "Bash": 1,
+    "Compaction & memory": 1
   },
   "severity_counts": {
     "critical": 32,
     "low": 91,
-    "medium": 184,
-    "high": 172
+    "medium": 185,
+    "high": 174
   },
   "entries": [
     {
@@ -5557,6 +5559,45 @@
         "#44143"
       ],
       "description": "When Agent or Bash tools prefix commands with \"cd /path && cmd\", the compound command does not match auto-approve permission rules that would match the bare command (e.g., \"git status\"). This forces manual approval for every spawned agent command in multi-repo workflows. No cwd parameter exists on Agent or Bash tools to avoid the cd prefix workaround.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "status": "open"
+    },
+    {
+      "id": "permission-race-condition-orphaned-response",
+      "title": "Intermittent tool denial from permission race condition in createCanUseTool()",
+      "category": "Permissions",
+      "severity": "high",
+      "issues": [
+        "#44157"
+      ],
+      "description": "A race condition in createCanUseTool() causes intermittent tool permission failures. When sendRequest() rejects before the permission response arrives (due to abort signal or stream close), the tool is denied even though the user never rejected it. The orphaned control_response arrives after pendingRequests is already cleared, and the recovery mechanism (unexpectedResponseCallback) cannot un-deny the already-recorded failure. Occurs during long sessions, especially on Windows. No workaround documented; restart is not reliable. Root cause: structuredIO.ts createCanUseTool() uses Promise.race without durable response queuing.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "status": "open"
+    },
+    {
+      "id": "bash-tool-silent-empty-output-mid-session",
+      "title": "Bash tool silently returns empty output mid-session (macOS, zsh)",
+      "category": "Bash",
+      "severity": "high",
+      "issues": [
+        "#44161"
+      ],
+      "description": "During long sessions, the Bash tool intermittently stops executing commands. All commands return 'Tool ran without output or errors' including trivial ones (echo, whoami, ls). No files are created, no side effects occur. Other tools (Read, Write, Edit, Grep, Glob) continue working. Once broken it stays broken for the session. Restarting Claude Code does not reliably fix it. No error messages or exit codes are surfaced. Observed on macOS Darwin 24.6.0, zsh, Claude Opus, clean setup without hooks or custom settings.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "status": "open"
+    },
+    {
+      "id": "claude-md-fidelity-loss-after-compaction",
+      "title": "CLAUDE.md instruction fidelity degraded after compaction",
+      "category": "Compaction & memory",
+      "severity": "medium",
+      "issues": [
+        "#44166"
+      ],
+      "description": "CLAUDE.md files are compressed during compaction alongside conversation messages, causing instruction fidelity to degrade after one or more compaction cycles. Rules files in .claude/rules/ are exempt (re-injected fresh each turn), but CLAUDE.md and auto-memory (~/.claude/projects/*/memory/) are not. Long CLAUDE.md files lose detail progressively. Users observe 'Claude forgot my instructions' after sessions with multiple compactions. Workaround: move critical instructions from CLAUDE.md to .claude/rules/ files, though this splits documentation across two locations with different semantics.",
       "date_added": "2026-04-06",
       "version_reported": "2.1.92",
       "status": "open"
