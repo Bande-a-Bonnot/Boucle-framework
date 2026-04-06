@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">427</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-05.</span></p>
+        <p class="subtitle"><span id="total-count">438</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-06.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -4672,6 +4672,86 @@
                 <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">PreCompact hook exit code is ignored -- hooks cannot defer or block compaction.</h3>
                 <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">PreCompact hooks fire before context compaction but their exit code is silently ignored -- there is no way to defer or block compaction from a hook. Critical sequences (git commits, deployments, multi-file refactors) cannot be protected. If context compacts mid-commit, all work is orphaned as uncommitted changes. A PostCompact + SessionStart workaround partially mitigates data loss but cannot prevent compaction itself. Feature request: allow PreCompact to return a defer signal to delay compaction until the current tool chain completes. See <a href="https://github.com/anthropics/claude-code/issues/43886" target="_blank">#43886</a> and <a href="https://github.com/anthropics/claude-code/issues/44000" target="_blank">#44000</a>.</p>
                 <a href="https://github.com/anthropics/claude-code/issues/44000" style="font-size:0.8rem;color:var(--accent);">#44000</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Permission system" id="statsig-gate-downgrades-permissions-mid-session" data-issues="44003">
+                <span class="kl-num">#431</span>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">bypassPermissions mode can be silently downgraded to acceptEdits mid-session via Statsig feature gate.</h3>
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;flex-wrap:wrap;">
+                    <span class="kl-severity" style="background:#2563eb;color:#fff;padding:1px 6px;border-radius:3px;font-size:0.7rem;font-weight:700;text-transform:uppercase;">medium</span>
+                    <span class="kl-category" style="color:#64748b;font-size:0.75rem;">Permission system</span>
+                    <a href="https://github.com/anthropics/claude-code/issues/44003" target="_blank" style="font-size:0.75rem;color:#6366f1;margin-right:0.5rem;">#44003</a>
+                </div>
+                <p>A Statsig feature gate can silently change the permissions mode during a session, downgrading from bypassPermissions to acceptEdits without notifying the user. Automated workflows relying on bypassPermissions may stall waiting for approval prompts that never existed at session start.</p>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Context &amp; memory" id="claudemd-instructions-drift-consecutive-sessions" data-issues="44004">
+                <span class="kl-num">#432</span>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">CLAUDE.md instructions silently ignored across consecutive sessions in Cowork/Desktop mode.</h3>
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;flex-wrap:wrap;">
+                    <span class="kl-severity" style="background:#2563eb;color:#fff;padding:1px 6px;border-radius:3px;font-size:0.7rem;font-weight:700;text-transform:uppercase;">medium</span>
+                    <span class="kl-category" style="color:#64748b;font-size:0.75rem;">Context &amp; memory</span>
+                    <a href="https://github.com/anthropics/claude-code/issues/44004" target="_blank" style="font-size:0.75rem;color:#6366f1;margin-right:0.5rem;">#44004</a>
+                </div>
+                <p>In Cowork or Desktop mode, CLAUDE.md directives are selectively ignored across consecutive sessions. The model exhibits 'selective execution drift' where it follows some instructions but silently drops others without reporting the omission.</p>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Context &amp; memory" id="context-loss-plan-mode-assumptions" data-issues="44005">
+                <span class="kl-num">#433</span>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Context lost during planning mode; model makes assumptions instead of retrieving earlier answers.</h3>
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;flex-wrap:wrap;">
+                    <span class="kl-severity" style="background:#d97706;color:#fff;padding:1px 6px;border-radius:3px;font-size:0.7rem;font-weight:700;text-transform:uppercase;">high</span>
+                    <span class="kl-category" style="color:#64748b;font-size:0.75rem;">Context &amp; memory</span>
+                    <a href="https://github.com/anthropics/claude-code/issues/44005" target="_blank" style="font-size:0.75rem;color:#6366f1;margin-right:0.5rem;">#44005</a>
+                </div>
+                <p>In plan mode, the model loses context mid-conversation and makes assumptions rather than referring back to earlier questions and answers provided by the user. This results in plans that contradict previously stated requirements.</p>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="MCP &amp; plugin issues" id="mcp-tool-call-hangs-indefinitely-no-cancel" data-issues="44006">
+                <span class="kl-num">#434</span>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">MCP tool calls can hang indefinitely with no timeout or cancel mechanism.</h3>
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;flex-wrap:wrap;">
+                    <span class="kl-severity" style="background:#d97706;color:#fff;padding:1px 6px;border-radius:3px;font-size:0.7rem;font-weight:700;text-transform:uppercase;">high</span>
+                    <span class="kl-category" style="color:#64748b;font-size:0.75rem;">MCP &amp; plugin issues</span>
+                    <a href="https://github.com/anthropics/claude-code/issues/44006" target="_blank" style="font-size:0.75rem;color:#6366f1;margin-right:0.5rem;">#44006</a>
+                </div>
+                <p>MCP tool invocations can hang forever with no built-in timeout or user-facing cancel mechanism. Confirmed on Linux. The session becomes unresponsive and must be killed externally. No hook or configuration controls the MCP call timeout.</p>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Hook behavior &amp; events" id="compaction-continuation-stale-external-state" data-issues="44013">
+                <span class="kl-num">#435</span>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Auto-compaction continuation sessions inherit stale external tool state (e.g. ChromaDB pointers).</h3>
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;flex-wrap:wrap;">
+                    <span class="kl-severity" style="background:#2563eb;color:#fff;padding:1px 6px;border-radius:3px;font-size:0.7rem;font-weight:700;text-transform:uppercase;">medium</span>
+                    <span class="kl-category" style="color:#64748b;font-size:0.75rem;">Hook behavior &amp; events</span>
+                    <a href="https://github.com/anthropics/claude-code/issues/44013" target="_blank" style="font-size:0.75rem;color:#6366f1;margin-right:0.5rem;">#44013</a>
+                </div>
+                <p>When auto-compaction triggers at context limit and spawns a continuation session, external tool state (such as ChromaDB collection pointers) is not reset. The continuation session inherits stale references from the prior session, causing retrieval queries to pull from wrong collections. PostCompact hooks fire but cannot easily reinitialize external library state. Workaround: use PostCompact hooks to explicitly re-initialize any external connections or pointers your toolchain depends on.</p>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Context &amp; memory" id="established-pattern-abandoned-mid-conversation" data-issues="44014">
+                <span class="kl-num">#436</span>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Model abandons established in-context patterns mid-conversation, silently reverting to outdated approaches.</h3>
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;flex-wrap:wrap;">
+                    <span class="kl-severity" style="background:#2563eb;color:#fff;padding:1px 6px;border-radius:3px;font-size:0.7rem;font-weight:700;text-transform:uppercase;">medium</span>
+                    <span class="kl-category" style="color:#64748b;font-size:0.75rem;">Context &amp; memory</span>
+                    <a href="https://github.com/anthropics/claude-code/issues/44014" target="_blank" style="font-size:0.75rem;color:#6366f1;margin-right:0.5rem;">#44014</a>
+                </div>
+                <p>Within a single conversation, the model can silently revert to deprecated approaches even after successfully applying a correct pattern multiple times and with an explicit plan document in context. No warning is given before the reversion. Users must catch the mistake themselves and prompt the model to redo the work, potentially doubling token usage.</p>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Platform &amp; compatibility" id="cloud-sessions-repo-volume-persists-between-containers" data-issues="44018">
+                <span class="kl-num">#437</span>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Cloud web sessions reuse the git repo volume across container recreations, violating documented isolation.</h3>
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;flex-wrap:wrap;">
+                    <span class="kl-severity" style="background:#d97706;color:#fff;padding:1px 6px;border-radius:3px;font-size:0.7rem;font-weight:700;text-transform:uppercase;">high</span>
+                    <span class="kl-category" style="color:#64748b;font-size:0.75rem;">Platform &amp; compatibility</span>
+                    <a href="https://github.com/anthropics/claude-code/issues/44018" target="_blank" style="font-size:0.75rem;color:#6366f1;margin-right:0.5rem;">#44018</a>
+                </div>
+                <p>Anthropic documentation states cloud sessions run in isolated VMs. However, the git repository volume persists across container recreations. A new session started after a force-push or history rewrite will have a stale local branch with no shared ancestry with origin, causing git operations to fail unexpectedly. Confirmed: new container timestamps vs. .git/objects timestamps diverge (container April 5, objects April 2).</p>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Hook bypass &amp; evasion" id="agent-sdk-false-positive-usage-policy-refusal-security" data-issues="44022">
+                <span class="kl-num">#438</span>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Agent SDK returns false-positive Usage Policy refusal when analyzing security vulnerability topics.</h3>
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;flex-wrap:wrap;">
+                    <span class="kl-severity" style="background:#d97706;color:#fff;padding:1px 6px;border-radius:3px;font-size:0.7rem;font-weight:700;text-transform:uppercase;">high</span>
+                    <span class="kl-category" style="color:#64748b;font-size:0.75rem;">Hook bypass &amp; evasion</span>
+                    <a href="https://github.com/anthropics/claude-code/issues/44022" target="_blank" style="font-size:0.75rem;color:#6366f1;margin-right:0.5rem;">#44022</a>
+                </div>
+                <p>The Claude Code Agent SDK can return a Usage Policy refusal error when analyzing legitimate security research content (e.g., vulnerability reports about AI safety filter bypasses), even though the agent is performing authorized security analysis, not attempting to exploit anything. The refusal occurs on the turn after successful structured output, making it non-deterministic. Workaround: add 'authorized security research context' to the system prompt and implement model fallback on 'usage policy' error strings.</p>
             </div>
 <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>

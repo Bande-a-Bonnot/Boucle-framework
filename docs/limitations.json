@@ -1,14 +1,14 @@
 {
   "version": "0.12.0",
-  "count": 434,
+  "count": 438,
   "categories": {
-    "Hook bypass & evasion": 91,
-    "Hook behavior & events": 144,
+    "Hook bypass & evasion": 92,
+    "Hook behavior & events": 145,
     "Permission system": 91,
     "Subagent & spawned agents": 18,
-    "Context & memory": 10,
+    "Context & memory": 11,
     "Configuration behavior": 12,
-    "Platform & compatibility": 9,
+    "Platform & compatibility": 10,
     "MCP & plugin issues": 17,
     "Scheduling & remote triggers": 4,
     "Security & trust boundaries": 7,
@@ -29,8 +29,8 @@
   "severity_counts": {
     "critical": 27,
     "low": 89,
-    "medium": 168,
-    "high": 150
+    "medium": 170,
+    "high": 152
   },
   "entries": [
     {
@@ -5007,17 +5007,57 @@
         "https://github.com/anthropics/claude-code/issues/44006"
       ],
       "description": "MCP tool invocations can hang forever with no built-in timeout or user-facing cancel mechanism. Confirmed on Linux. The session becomes unresponsive and must be killed externally. No hook or configuration controls the MCP call timeout."
+    },
+    {
+      "id": "compaction-continuation-stale-external-state",
+      "title": "Auto-compaction continuation sessions inherit stale external tool state (e.g. ChromaDB pointers).",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44013"
+      ],
+      "description": "When auto-compaction triggers at context limit and spawns a continuation session, external tool state (such as ChromaDB collection pointers) is not reset. The continuation session inherits stale references from the prior session, causing retrieval queries to pull from wrong collections. PostCompact hooks fire but cannot easily reinitialize external library state. Workaround: use PostCompact hooks to explicitly re-initialize any external connections or pointers your toolchain depends on."
+    },
+    {
+      "id": "established-pattern-abandoned-mid-conversation",
+      "title": "Model abandons established in-context patterns mid-conversation, silently reverting to outdated approaches.",
+      "category": "Context & memory",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44014"
+      ],
+      "description": "Within a single conversation, the model can silently revert to deprecated approaches even after successfully applying a correct pattern multiple times and with an explicit plan document in context. No warning is given before the reversion. Users must catch the mistake themselves and prompt the model to redo the work, potentially doubling token usage."
+    },
+    {
+      "id": "cloud-sessions-repo-volume-persists-between-containers",
+      "title": "Cloud web sessions reuse the git repo volume across container recreations, violating documented isolation.",
+      "category": "Platform & compatibility",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44018"
+      ],
+      "description": "Anthropic documentation states cloud sessions run in isolated VMs. However, the git repository volume persists across container recreations. A new session started after a force-push or history rewrite will have a stale local branch with no shared ancestry with origin, causing git operations to fail unexpectedly. Confirmed: new container timestamps vs. .git/objects timestamps diverge (container April 5, objects April 2)."
+    },
+    {
+      "id": "agent-sdk-false-positive-usage-policy-refusal-security",
+      "title": "Agent SDK returns false-positive Usage Policy refusal when analyzing security vulnerability topics.",
+      "category": "Hook bypass & evasion",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44022"
+      ],
+      "description": "The Claude Code Agent SDK can return a Usage Policy refusal error when analyzing legitimate security research content (e.g., vulnerability reports about AI safety filter bypasses), even though the agent is performing authorized security analysis, not attempting to exploit anything. The refusal occurs on the turn after successful structured output, making it non-deterministic. Workaround: add 'authorized security research context' to the system prompt and implement model fallback on 'usage policy' error strings."
     }
   ],
   "status_summary": {
-    "open": 399,
+    "open": 403,
     "mitigated": 1,
     "fixed": 11
   },
   "severities": {
     "critical": 27,
     "low": 89,
-    "medium": 165,
-    "high": 146
+    "medium": 167,
+    "high": 148
   }
 }
