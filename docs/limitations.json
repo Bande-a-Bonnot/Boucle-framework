@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 537,
+  "count": 541,
   "categories": {
     "Hook behavior & events": 154,
     "Permission system": 96,
@@ -50,8 +50,8 @@
     "setup": 1
   },
   "severity_counts": {
-    "critical": 37,
-    "high": 208,
+    "critical": 38,
+    "high": 211,
     "medium": 201,
     "low": 91
   },
@@ -6408,6 +6408,66 @@
       "date_added": "2026-04-06",
       "version_reported": "2.1.68",
       "platform": "windows",
+      "status": "open"
+    },
+    {
+      "id": "mcp-null-required-silently-drops-all-tools",
+      "title": "MCP server with 'required': null in inputSchema silently drops all tools with misleading auth error",
+      "category": "MCP servers",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44364"
+      ],
+      "description": "When an MCP server returns tools/list with any tool having 'required': null in its inputSchema (instead of [] or omitting the field), Claude Code silently rejects ALL tools from the server -- not just the malformed one. The error shown to the user is 'authentication failed' or 'SDK auth failed', which is completely misleading. Resources from the same server continue to work. The fix is either to treat null as equivalent to [] or to reject only the malformed tool.",
+      "workaround": "Fix the MCP server to use 'required': [] or omit the 'required' field entirely.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "platform": "linux",
+      "status": "open"
+    },
+    {
+      "id": "agent-sdk-auto-compact-null-reactive-handler-resumed-sessions",
+      "title": "Agent SDK: auto-compact completely non-functional on resumed sessions -- reactive compaction handler is permanently null",
+      "category": "Context & memory",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44354"
+      ],
+      "description": "Two independent bugs combine to make auto-compact completely broken in the Agent SDK when using resumeSessionId. (1) Proactive auto-compact checks local token count, which is empty for resumed sessions -- the conversation lives server-side, so the local array is always small and auto-compact never triggers. (2) The reactive compaction handler (wj6) is declared as null and never assigned anywhere in the 638k-line source. All reactive compaction code paths use optional chaining (wj6?.) and silently no-op. The result: when the API rejects a request as 'prompt is too long', the error is converted to an assistant message with content 'Prompt is too long' and emitted through subtype=success. The consumer sees a model output, not an error. Verified by decompiling the minified bundle.",
+      "workaround": "Manually track server-reported context size from message_start events and implement compaction logic in the consumer application.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "platform": "all",
+      "status": "open"
+    },
+    {
+      "id": "background-tasks-persist-respawn-after-clear",
+      "title": "Background tasks persist and respawn after /clear -- cannot be stopped programmatically",
+      "category": "Agents",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44357"
+      ],
+      "description": "When Claude Code has background tasks running, they cannot be stopped through programmatic input methods. Running /clear clears conversation context but leaves background tasks active (status bar still shows 'N background tasks'). More critically, killing the underlying OS processes (sleep, curl, python) spawned by background tasks causes Claude Code to respawn new monitoring processes. Ctrl+C, Escape, and Ctrl+X Ctrl+K all fail when sent programmatically via iTerm2's it2 session send-text. The only working stop mechanism is /exit to terminate the entire session.",
+      "workaround": "Use /exit to terminate the entire session. There is no way to stop background tasks without ending the session.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "platform": "macos",
+      "status": "open"
+    },
+    {
+      "id": "cli-event-loop-deadlock-macos-apple-silicon",
+      "title": "CLI event loop deadlocks on macOS Apple Silicon -- hangs 6+ hours mid-execution, only background timer survives",
+      "category": "Stability & crashes",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44362"
+      ],
+      "description": "On macOS with Apple Silicon (tested M4 Max), the CLI hangs completely mid-execution multiple times per day. No keyboard input is accepted. Debug log analysis of 18,271-line session logs confirms the main event loop is blocked: during dead windows of 25-30 minutes, the only output is the 30-minute 'Checking for native installer update' background setInterval. No hooks execute, no MCP traffic, no input is processed. Human interaction (any keypress) revives the session. Reproducible with 5+ MCP servers and 13 hooks.",
+      "workaround": "Manually press a key in the terminal to revive the session. Reduce MCP server count and hook complexity to lower frequency.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "platform": "macos",
       "status": "open"
     }
   ],
