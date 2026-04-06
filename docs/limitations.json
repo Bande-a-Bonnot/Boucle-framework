@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 468,
+  "count": 474,
   "categories": {
     "Hook bypass & evasion": 92,
     "Hook behavior & events": 152,
@@ -19,13 +19,18 @@
     "UX & display": 1,
     "CLI & terminal": 3,
     "Data integrity": 2,
-    "MCP & plugins": 1
+    "MCP & plugins": 1,
+    "Permissions & security": 1,
+    "Scheduled tasks": 2,
+    "Memory & state": 1,
+    "Remote & cloud": 1,
+    "File system": 1
   },
   "severity_counts": {
-    "critical": 30,
+    "critical": 31,
     "low": 91,
     "medium": 182,
-    "high": 165
+    "high": 170
   },
   "entries": [
     {
@@ -5397,6 +5402,90 @@
         "https://github.com/anthropics/claude-code/issues/44120"
       ],
       "description": "When a Claude Code plugin includes a .claude/ directory (e.g. for plugin-scoped settings.json or hooks), the plugin's skills/ root is completely ignored during skill discovery \u2014 skills are not loaded with the pluginName:skillName prefix. The presence of .claude/ causes Claude Code to treat the plugin directory as a project root and skip the skills/ scan entirely. No error is shown; the skills simply do not appear. Workaround: remove .claude/ from the plugin directory. Plugin-scoped settings and hooks cannot coexist with skills in the same plugin. Confirmed with has-repro on macOS, CC v2.1.92. See #44120.",
+      "date_added": "2026-04-06",
+      "platform": "macOS",
+      "version_reported": "2.1.92",
+      "status": "open"
+    },
+    {
+      "id": "vscode-extension-ignores-bash-allow-rules",
+      "title": "VS Code extension ignores Bash permission allow rules from settings.json",
+      "category": "Permissions & security",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44127"
+      ],
+      "description": "The VS Code extension does not honour Bash(...) allow rules defined in ~/.claude/settings.json or ~/.claude/settings.local.json. Every Bash command prompts for permission even when explicitly whitelisted. The CLI respects the same config files perfectly. The discrepancy is specific to the extension host; the permission engine appears to load a different settings scope or skip user-level settings entirely. Workaround: use the CLI (npx claude or the terminal integration) instead of the VS Code extension when working in sessions with many pre-approved commands. Confirmed v2.1.92. See #44127.",
+      "date_added": "2026-04-06",
+      "platform": "all",
+      "version_reported": "2.1.92",
+      "status": "open"
+    },
+    {
+      "id": "scheduled-tasks-require-app-open",
+      "title": "Scheduled tasks only fire on next app launch when desktop app was closed",
+      "category": "Scheduled tasks",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44128"
+      ],
+      "description": "Scheduled (cron-based) tasks created via Claude Code do not run when the desktop app is closed. The scheduler only becomes active while the app is running. If a scheduled time passes while the app is closed, the task fires immediately on the next app launch rather than at the configured time. This makes cron-style scheduling unreliable for unattended automation. No background daemon is installed to keep the scheduler alive. Workaround: use an external cron or launchd job to trigger the task via CLI instead. Confirmed v2.1.92. See #44128.",
+      "date_added": "2026-04-06",
+      "platform": "all",
+      "version_reported": "2.1.92",
+      "status": "open"
+    },
+    {
+      "id": "wakescheduler-flag-unavailable-tasks-never-run",
+      "title": "wakeScheduler feature flag unavailable \u2014 scheduled tasks never execute automatically",
+      "category": "Scheduled tasks",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44129"
+      ],
+      "description": "Scheduled tasks create history entries and appear configured but never execute. The underlying wakeScheduler feature flag is not available to most users, leaving the scheduler inert. Tasks accumulate in history with no execution. There is no in-app indication that the feature flag is missing or that scheduling is non-functional. Workaround: none within Claude Code; implement scheduling externally via cron, launchd, or Task Scheduler and invoke Claude Code CLI directly. See also #44128 for the related 'app must be open' limitation. Confirmed v2.1.92. See #44129.",
+      "date_added": "2026-04-06",
+      "platform": "all",
+      "version_reported": "2.1.92",
+      "status": "open"
+    },
+    {
+      "id": "auto-memory-path-divergence-git-worktrees",
+      "title": "Auto-memory reads and writes resolve different paths in git worktrees, causing silent memory divergence",
+      "category": "Memory & state",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44130"
+      ],
+      "description": "When using git worktrees, Claude Code's auto-memory feature resolves read and write paths differently: reads may use the primary worktree path while writes use the current worktree path (or vice versa). This silently causes memory divergence \u2014 the agent reads stale state from the wrong location and writes updates that are not visible from the main worktree. No error or warning is shown. The bug is reproducible when CLAUDE.md or memory files exist at project root and the session is launched from a linked worktree. Workaround: use absolute paths in memory references and manually verify the write location after each session in a worktree context. See #44130.",
+      "date_added": "2026-04-06",
+      "platform": "all",
+      "version_reported": "2.1.92",
+      "status": "open"
+    },
+    {
+      "id": "remote-trigger-http500-private-repo",
+      "title": "Remote trigger returns HTTP 500 when referencing a private GitHub repository",
+      "category": "Remote & cloud",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44131"
+      ],
+      "description": "Remote triggers configured with sources.git_repository.url pointing to a private GitHub repository consistently return HTTP 500 ('An internal server error occurred') even when the Claude GitHub App has been granted full read/write access to the repository. Public repositories work correctly. The error occurs at trigger execution time, not at configuration time, so the failure is only discovered when the trigger fires. Workaround: none confirmed; consider using a public mirror or waiting for Anthropic to resolve the server-side auth issue. Confirmed v2.1.92. See #44131.",
+      "date_added": "2026-04-06",
+      "platform": "all",
+      "version_reported": "2.1.92",
+      "status": "open"
+    },
+    {
+      "id": "file-permissions-changed-after-edit-macos",
+      "title": "Claude Code changes file Unix permissions after editing on macOS",
+      "category": "File system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44132"
+      ],
+      "description": "On macOS, editing a file with Claude Code alters its Unix permission bits. For example, a file with rw-rw-r-- (group write access) is changed to rw-r--r-- after a Claude Code edit, stripping group and other write permissions. The file is rewritten with permissions inherited from the current user's umask rather than preserving the original permissions. This behaviour is not seen with other AI coding tools (Codex). Workaround: restore permissions manually with chmod after Claude Code edits, or use a post-save hook to reset permissions. Confirmed v2.1.92 on macOS. See #44132.",
       "date_added": "2026-04-06",
       "platform": "macOS",
       "version_reported": "2.1.92",

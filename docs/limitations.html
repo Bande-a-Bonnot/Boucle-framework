@@ -5023,6 +5023,60 @@
                 <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When a Claude Code plugin includes a .claude/ directory (e.g. for plugin-scoped settings.json or hooks), the plugin's skills/ root is completely ignored during skill discovery — skills are not loaded with the pluginName:skillName prefix. The presence of .claude/ causes Claude Code to treat the plugin directory as a project root and skip the skills/ scan entirely. No error is shown; the skills simply do not appear. Workaround: remove .claude/ from the plugin directory. Plugin-scoped settings and hooks cannot coexist with skills in the same plugin. Confirmed with has-repro on macOS, CC v2.1.92. See #44120.</p>
                 <a href="https://github.com/anthropics/claude-code/issues/44120" style="font-size:0.8rem;color:var(--accent);">#44120</a>
             </div>
+            <div class="kl-entry" data-severity="high" data-category="Permissions & security" id="vscode-extension-ignores-bash-allow-rules">
+                <span class="kl-num">#469</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Permissions & security</span>
+                <a href="#vscode-extension-ignores-bash-allow-rules" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">VS Code extension ignores Bash permission allow rules from settings.json</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">The VS Code extension does not honour Bash(...) allow rules defined in ~/.claude/settings.json or ~/.claude/settings.local.json. Every Bash command prompts for permission even when explicitly whitelisted. The CLI respects the same config files perfectly. The discrepancy is specific to the extension host; the permission engine appears to load a different settings scope or skip user-level settings entirely. Workaround: use the CLI (npx claude or the terminal integration) instead of the VS Code extension when working in sessions with many pre-approved commands. Confirmed v2.1.92. See #44127.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44127" style="font-size:0.8rem;color:var(--accent);">#44127</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Scheduled tasks" id="scheduled-tasks-require-app-open">
+                <span class="kl-num">#470</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Scheduled tasks</span>
+                <a href="#scheduled-tasks-require-app-open" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Scheduled tasks only fire on next app launch when desktop app was closed</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Scheduled (cron-based) tasks created via Claude Code do not run when the desktop app is closed. The scheduler only becomes active while the app is running. If a scheduled time passes while the app is closed, the task fires immediately on the next app launch rather than at the configured time. This makes cron-style scheduling unreliable for unattended automation. No background daemon is installed to keep the scheduler alive. Workaround: use an external cron or launchd job to trigger the task via CLI instead. Confirmed v2.1.92. See #44128.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44128" style="font-size:0.8rem;color:var(--accent);">#44128</a>
+            </div>
+            <div class="kl-entry" data-severity="critical" data-category="Scheduled tasks" id="wakescheduler-flag-unavailable-tasks-never-run">
+                <span class="kl-num">#471</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ef4444;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Scheduled tasks</span>
+                <a href="#wakescheduler-flag-unavailable-tasks-never-run" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">wakeScheduler feature flag unavailable — scheduled tasks never execute automatically</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Scheduled tasks create history entries and appear configured but never execute. The underlying wakeScheduler feature flag is not available to most users, leaving the scheduler inert. Tasks accumulate in history with no execution. There is no in-app indication that the feature flag is missing or that scheduling is non-functional. Workaround: none within Claude Code; implement scheduling externally via cron, launchd, or Task Scheduler and invoke Claude Code CLI directly. See also #44128 for the related 'app must be open' limitation. Confirmed v2.1.92. See #44129.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44129" style="font-size:0.8rem;color:var(--accent);">#44129</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Memory & state" id="auto-memory-path-divergence-git-worktrees">
+                <span class="kl-num">#472</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Memory & state</span>
+                <a href="#auto-memory-path-divergence-git-worktrees" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Auto-memory reads and writes resolve different paths in git worktrees, causing silent memory divergence</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When using git worktrees, Claude Code's auto-memory feature resolves read and write paths differently: reads may use the primary worktree path while writes use the current worktree path (or vice versa). This silently causes memory divergence — the agent reads stale state from the wrong location and writes updates that are not visible from the main worktree. No error or warning is shown. The bug is reproducible when CLAUDE.md or memory files exist at project root and the session is launched from a linked worktree. Workaround: use absolute paths in memory references and manually verify the write location after each session in a worktree context. See #44130.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44130" style="font-size:0.8rem;color:var(--accent);">#44130</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Remote & cloud" id="remote-trigger-http500-private-repo">
+                <span class="kl-num">#473</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Remote & cloud</span>
+                <a href="#remote-trigger-http500-private-repo" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Remote trigger returns HTTP 500 when referencing a private GitHub repository</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Remote triggers configured with sources.git_repository.url pointing to a private GitHub repository consistently return HTTP 500 ('An internal server error occurred') even when the Claude GitHub App has been granted full read/write access to the repository. Public repositories work correctly. The error occurs at trigger execution time, not at configuration time, so the failure is only discovered when the trigger fires. Workaround: none confirmed; consider using a public mirror or waiting for Anthropic to resolve the server-side auth issue. Confirmed v2.1.92. See #44131.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44131" style="font-size:0.8rem;color:var(--accent);">#44131</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="File system" id="file-permissions-changed-after-edit-macos">
+                <span class="kl-num">#474</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">File system</span>
+                <a href="#file-permissions-changed-after-edit-macos" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Claude Code changes file Unix permissions after editing on macOS</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">On macOS, editing a file with Claude Code alters its Unix permission bits. For example, a file with rw-rw-r-- (group write access) is changed to rw-r--r-- after a Claude Code edit, stripping group and other write permissions. The file is rewritten with permissions inherited from the current user's umask rather than preserving the original permissions. This behaviour is not seen with other AI coding tools (Codex). Workaround: restore permissions manually with chmod after Claude Code edits, or use a post-save hook to reset permissions. Confirmed v2.1.92 on macOS. See #44132.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44132" style="font-size:0.8rem;color:var(--accent);">#44132</a>
+            </div>
 <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>
         </footer>
