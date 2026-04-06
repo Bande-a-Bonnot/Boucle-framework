@@ -1,15 +1,15 @@
 {
   "version": "0.12.0",
-  "count": 453,
+  "count": 456,
   "categories": {
     "Hook bypass & evasion": 92,
-    "Hook behavior & events": 146,
+    "Hook behavior & events": 147,
     "Permission system": 91,
     "Subagent & spawned agents": 19,
-    "Context & memory": 11,
+    "Context & memory": 12,
     "Configuration behavior": 12,
     "Platform & compatibility": 10,
-    "MCP & plugin issues": 17,
+    "MCP & plugin issues": 18,
     "Scheduling & remote triggers": 4,
     "Security & trust boundaries": 7,
     "Performance & cost": 3,
@@ -20,7 +20,7 @@
     "hooks": 1,
     "Hook event lifecycle": 1,
     "Tool behavior": 4,
-    "Permissions & security": 1,
+    "Permissions & security": 2,
     "UX & display": 1,
     "Networking": 1,
     "CLAUDE.md enforcement": 2,
@@ -29,13 +29,18 @@
     "Performance": 1,
     "Model behavior": 1,
     "CLI & terminal": 2,
-    "Configuration": 1
+    "Configuration": 1,
+    "Data integrity": 1,
+    "Safety & guardrails": 1,
+    "Hooks": 1,
+    "Memory & instructions": 1,
+    "Stability": 1
   },
   "severity_counts": {
-    "critical": 27,
-    "high": 156,
-    "medium": 174,
-    "low": 90
+    "critical": 29,
+    "low": 90,
+    "medium": 177,
+    "high": 160
   },
   "entries": [
     {
@@ -5221,6 +5226,42 @@
         "https://github.com/anthropics/claude-code/issues/43983"
       ],
       "description": "The Agent tool crashes with 'undefined is not an object (evaluating K.length)' during agent initialization. The crash occurs at any context size, including fresh sessions after /clear. Frequency increases after prior PreToolUse hook denials. Analysis of 72 sessions shows the crash is not context-size dependent but correlates with hook denial events.",
+      "status": "open",
+      "added": "2026-04-06"
+    },
+    {
+      "id": "subagentstart-hook-skipped-background-agents",
+      "title": "SubagentStart hooks not fired for background agents spawned with run_in_background: true",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44075"
+      ],
+      "description": "When the Agent tool spawns subagents with run_in_background: true, SubagentStart hooks are silently skipped. SubagentStop and PostToolUse hooks fire normally for the same background agents, creating an asymmetric lifecycle. Verified across 27 foreground agent observations (all captured) vs 2 background agents (0 SubagentStart events). Breaks OpenTelemetry span creation, lifecycle timing, and context injection at agent launch.",
+      "status": "open",
+      "added": "2026-04-06"
+    },
+    {
+      "id": "chromadb-pointer-stale-after-compaction-continuation",
+      "title": "ChromaDB collection pointer not reset when continuation session starts after auto-compaction",
+      "category": "Context & memory",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44013"
+      ],
+      "description": "After auto-compaction triggers at context limit and spawns a continuation session, ChromaDB collection pointers are not reset. The new session inherits a stale pointer from the previous session, causing retrieval queries to pull from the wrong collection. Leads to context drift and hallucinations in long-running sessions using embedding-based retrieval. Workaround: disable auto-compaction and use manual /compact only.",
+      "status": "open",
+      "added": "2026-04-06"
+    },
+    {
+      "id": "marketplace-add-silent-overwrite-same-name",
+      "title": "marketplace add silently overwrites existing marketplace registration when repos share the same marketplace name",
+      "category": "MCP & plugin issues",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44042"
+      ],
+      "description": "When two repos from the same organization both declare the same name in their .claude-plugin/marketplace.json, running 'claude plugin marketplace add' for the second repo silently overwrites the first in known_marketplaces.json with no warning. The first repo's plugins break silently -- they appear in 'claude plugin list' with 'Status: failed to load' but the overwrite itself produces no error output. Organizations publishing multiple plugins under one brand namespace are particularly affected.",
       "status": "open",
       "added": "2026-04-06"
     }
