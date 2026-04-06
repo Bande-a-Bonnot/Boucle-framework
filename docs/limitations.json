@@ -6017,17 +6017,62 @@
       "version_reported": "latest",
       "platform": "windows",
       "status": "open"
+    },
+    {
+      "id": "oauth-token-not-saved-credentials-json-macos",
+      "title": "OAuth token not saved to credentials.json after successful browser login (macOS v2.1.92).",
+      "category": "Auth & accounts",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44265"
+      ],
+      "description": "After completing OAuth login successfully in the browser (confirmation page shown), Claude Code returns a 401 'OAuth token has expired' error. The token is never written to ~/.claude/.credentials.json. Running /login again opens the browser and reports success, but the credential file remains empty. Affects macOS v2.1.92 with Claude Max subscription. /start fails on every attempt. This is a credential persistence bug: the OAuth callback is received but the token write step silently fails.",
+      "workaround": "None confirmed. Repeated login attempts do not help. Downgrading to a previous version may restore functionality if available.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "platform": "macos",
+      "status": "open"
+    },
+    {
+      "id": "oauth-cli-timeout-15s-macos-server-500",
+      "title": "OAuth CLI times out (15s) waiting for callback on macOS despite successful browser authorization.",
+      "category": "Auth & accounts",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44267"
+      ],
+      "description": "After browser authorization completes (success page shown), the CLI reports 'Login failed: timeout of 15000ms exceeded'. Subsequent attempts produce HTTP 500 then HTTP 400 errors from the OAuth server. The browser occasionally shows 'Internal server error' on the authorization page. No workaround via --no-browser (flag not available in v2.1.92), different browsers, incognito mode, firewall disable, or manual URL copy. Distinct from #44257 (Windows-only 15s timeout): this is macOS-specific and involves server-side 500/400 errors alongside the timeout. Suggests OAuth callback relay is unreliable under server load.",
+      "workaround": "None confirmed on v2.1.92. Try again when server-side OAuth errors subside.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "platform": "macos",
+      "status": "open"
+    },
+    {
+      "id": "telegram-plugin-bun-server-80pct-cpu-idle",
+      "title": "Telegram channel plugin bun server.ts processes consume ~80% CPU when idle.",
+      "category": "MCP & plugin issues",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44263"
+      ],
+      "description": "The claude-channel-telegram plugin spawns two bun server.ts child processes that accumulate ~101 hours of CPU time over ~2.2 hours wall time with zero incoming messages. Each process holds 35-45% CPU continuously at idle. SIGTERM does not stop them — SIGKILL is required. After killing and allowing Claude Code to respawn, new processes behave normally (<1% CPU). Root cause is likely a busy-loop or tight polling cycle in the long-polling/webhook handler with no backoff when idle. Affects Linux (Ubuntu 6.8.0) running Claude Code as a systemd service.",
+      "workaround": "Monitor CPU usage and SIGKILL the bun server.ts processes if they spike. Claude Code will respawn them and they typically start at normal CPU usage. Consider running the plugin only when needed rather than continuously.",
+      "date_added": "2026-04-06",
+      "version_reported": "0.0.1",
+      "platform": "linux",
+      "status": "open"
     }
   ],
   "status_summary": {
-    "open": 461,
+    "open": 464,
     "fixed": 11,
     "mitigated": 1
   },
   "severities": {
     "critical": 33,
-    "high": 185,
-    "medium": 191,
+    "high": 188,
+    "medium": 192,
     "low": 91
   }
 }
