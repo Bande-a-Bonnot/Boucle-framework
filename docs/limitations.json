@@ -5890,16 +5890,72 @@
       "version_reported": "latest",
       "platform": "all",
       "status": "open"
+    },
+    {
+      "id": "compact-calls-consume-disproportionate-session-tokens",
+      "title": "Two parallel /compact calls consume 47%+ of session token limit on Max plan",
+      "category": "Context & memory",
+      "severity": "high",
+      "issues": [
+        "#44228"
+      ],
+      "description": "Running two /compact commands in parallel (one ~660k tokens, one ~450k) on a Max x5 plan instantly consumed the remaining ~47% of session token budget, jumping from 53% to 100% usage. Compaction is supposed to reduce token consumption, but the operation itself appears to count against session limits at a rate disproportionate to its utility. Users on metered plans risk exhausting their session budget through routine maintenance operations.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.84",
+      "platform": "macos",
+      "status": "open"
+    },
+    {
+      "id": "add-dir-does-not-load-skills-from-added-directory",
+      "title": "--add-dir CLI flag does not load skills from added directory's .claude/skills/",
+      "category": "Skills & slash commands",
+      "severity": "high",
+      "issues": [
+        "#44224"
+      ],
+      "description": "Skills defined in .claude/skills/ within a directory added via --add-dir (or /add-dir mid-session) are not loaded and do not appear in /skills output. This contradicts documentation stating skills from added directories load automatically. Related issues #30064 and #37553 reported the same for additionalDirectories in settings. Possible regression in v2.1.89 where --add-dir also stopped working for skill loading.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.89",
+      "platform": "macos",
+      "status": "open"
+    },
+    {
+      "id": "worktree-edits-leak-to-main-repo-absolute-paths",
+      "title": "EnterWorktree: agent edits leak to main repo when tools use absolute paths",
+      "category": "Worktrees & isolation",
+      "severity": "high",
+      "issues": [
+        "#44220"
+      ],
+      "description": "When operating inside a git worktree created via EnterWorktree, the Edit and Write tools can accidentally modify files in the main repository checkout instead of the worktree copy. This happens because tools accept absolute paths, the agent discovers paths referencing the main repo root (from grep, glob, LSP, CLAUDE.md, error messages), and nothing validates that a path falls inside the worktree directory. Edits intended for the worktree silently land in the main checkout as dirty uncommitted changes.",
+      "date_added": "2026-04-06",
+      "version_reported": "latest",
+      "platform": "macos",
+      "status": "open"
+    },
+    {
+      "id": "json-stringify-lone-surrogates-400-error",
+      "title": "JSON.stringify produces lone surrogates in API request body causing 400 errors and session loss",
+      "category": "Core & session management",
+      "severity": "high",
+      "issues": [
+        "#44230"
+      ],
+      "description": "Claude Code occasionally sends API requests containing lone Unicode surrogates (U+D800-U+DFFF), causing the Anthropic API to reject with 400 'invalid high surrogate'. Node.js strings are internally UTF-16; when in-memory strings contain lone surrogates (from file reads, terminal output, web content), JSON.stringify() serializes them as invalid JSON per RFC 8259. Common triggers on Windows: emoji in code, box-drawing chars from terminal output, scraped web content. The session becomes stuck with loss of in-progress work context. Fix available: str.toWellFormed() (Node.js 20+).",
+      "date_added": "2026-04-06",
+      "version_reported": "latest",
+      "platform": "windows",
+      "status": "open"
     }
   ],
   "status_summary": {
-    "open": 457,
+    "open": 461,
     "fixed": 11,
     "mitigated": 1
   },
   "severities": {
     "critical": 33,
-    "high": 181,
+    "high": 185,
     "medium": 191,
     "low": 91
   }
