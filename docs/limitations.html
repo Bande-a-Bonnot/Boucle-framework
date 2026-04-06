@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">440</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-06.</span></p>
+        <p class="subtitle"><span id="total-count">495</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-06.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -5094,6 +5094,150 @@
                 <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">cd-prefixed commands bypass auto-approve permission matching</h3>
                 <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When Agent or Bash tools prefix commands with "cd /path && cmd", the compound command does not match auto-approve permission rules that would match the bare command (e.g., "git status"). This forces manual approval for every spawned agent command in multi-repo workflows. No cwd parameter exists on Agent or Bash tools to avoid the cd prefix workaround. See #44143.</p>
                 <a href="https://github.com/anthropics/claude-code/issues/44143" style="font-size:0.8rem;color:var(--accent);">#44143</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Permissions" id="permission-race-condition-orphaned-response">
+                <span class="kl-num">#480</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Permissions</span>
+                <a href="#permission-race-condition-orphaned-response" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Intermittent tool denial from permission race condition in createCanUseTool()</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">A race condition in createCanUseTool() causes intermittent tool permission failures. When sendRequest() rejects before the permission response arrives (due to abort signal or stream close), the tool is denied even though the user never rejected it. The orphaned control_response arrives after pendingRequests is already cleared, and the recovery mechanism (unexpectedResponseCallback) cannot un-deny the already-recorded failure. Occurs during long sessions, especially on Windows. No workaround documented; restart is not reliable. Root cause: structuredIO.ts createCanUseTool() uses Promise.race without durable response queuing.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44157" style="font-size:0.8rem;color:var(--accent);">#44157</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Bash" id="bash-tool-silent-empty-output-mid-session">
+                <span class="kl-num">#481</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Bash</span>
+                <a href="#bash-tool-silent-empty-output-mid-session" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Bash tool silently returns empty output mid-session (macOS, zsh)</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">During long sessions, the Bash tool intermittently stops executing commands. All commands return 'Tool ran without output or errors' including trivial ones (echo, whoami, ls). No files are created, no side effects occur. Other tools (Read, Write, Edit, Grep, Glob) continue working. Once broken it stays broken for the session. Restarting Claude Code does not reliably fix it. No error messages or exit codes are surfaced. Observed on macOS Darwin 24.6.0, zsh, Claude Opus, clean setup without hooks or custom settings.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44161" style="font-size:0.8rem;color:var(--accent);">#44161</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Compaction & memory" id="claude-md-fidelity-loss-after-compaction">
+                <span class="kl-num">#482</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ca8a04;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Compaction & memory</span>
+                <a href="#claude-md-fidelity-loss-after-compaction" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">CLAUDE.md instruction fidelity degraded after compaction</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">CLAUDE.md files are compressed during compaction alongside conversation messages, causing instruction fidelity to degrade after one or more compaction cycles. Rules files in .claude/rules/ are exempt (re-injected fresh each turn), but CLAUDE.md and auto-memory (~/.claude/projects/*/memory/) are not. Long CLAUDE.md files lose detail progressively. Users observe 'Claude forgot my instructions' after sessions with multiple compactions. Workaround: move critical instructions from CLAUDE.md to .claude/rules/ files, though this splits documentation across two locations with different semantics.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44166" style="font-size:0.8rem;color:var(--accent);">#44166</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Performance & cost" id="no-session-usage-buffer-warning">
+                <span class="kl-num">#483</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ca8a04;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Performance & cost</span>
+                <a href="#no-session-usage-buffer-warning" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">No configurable usage buffer or soft-limit warning before session cap</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Sessions hit hard usage caps mid-task with no advance warning. There is no configurable buffer threshold or soft-limit notification to allow agents or users to gracefully wind down work before being cut off. Agents in autonomous loops are hard-stopped with no opportunity to save state.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44176" style="font-size:0.8rem;color:var(--accent);">#44176</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="UX & display" id="ultraplan-state-lost-cli-ui-transition">
+                <span class="kl-num">#484</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">UX & display</span>
+                <a href="#ultraplan-state-lost-cli-ui-transition" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Ultraplan session state and comments lost between CLI/UI transitions</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When transitioning between Claude Code CLI and the Mac desktop app during an Ultraplan session, user comments are ignored, misplaced, or silently dropped. The CLI triggers a spurious re-planning round on return, losing review state. Affects cowork workflows where users switch between interfaces.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44174" style="font-size:0.8rem;color:var(--accent);">#44174</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Tool behavior" id="silent-failure-no-internet-connection">
+                <span class="kl-num">#485</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Tool behavior</span>
+                <a href="#silent-failure-no-internet-connection" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Claude Code silently continues with no internet instead of surfacing error</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When the network is unavailable, Claude Code shows activity indicators (spinning) without surfacing an error. In headless or autonomous workflows, this causes agents to spin indefinitely with no actionable feedback, wasting compute and blocking progress. No timeout or connectivity check is performed before tool execution attempts.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44171" style="font-size:0.8rem;color:var(--accent);">#44171</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Platform & compatibility" id="cowork-exec-format-error-apple-silicon">
+                <span class="kl-num">#486</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Platform & compatibility</span>
+                <a href="#cowork-exec-format-error-apple-silicon" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Cowork fails on Apple Silicon M5 with Exec format error (architecture mismatch)</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Cowork sub-agent invocation fails on Apple Silicon M5 Macs with 'Exec format error', indicating the bundled claude binary has an architecture mismatch. Cowork is completely non-functional on these devices. Affects all cowork-based agent workflows on arm64 Mac.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44170" style="font-size:0.8rem;color:var(--accent);">#44170</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="MCP & plugin issues" id="marketplace-plugin-cdn-404-silent">
+                <span class="kl-num">#487</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ca8a04;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">MCP & plugin issues</span>
+                <a href="#marketplace-plugin-cdn-404-silent" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Official Anthropic marketplace plugin install fails with CDN 404 on every startup</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">The official Anthropic plugin marketplace auto-install fails silently on every startup due to a GCS CDN 404 for v2.1.92 assets. No fallback mechanism succeeds. The error message uses 'reason: unknown' which provides no actionable diagnostic information. Labeled duplicate by maintainers.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44169" style="font-size:0.8rem;color:var(--accent);">#44169</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Hook behavior & events" id="sandbox-tmpdir-opaque-silent-eacces">
+                <span class="kl-num">#488</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Hook behavior & events</span>
+                <a href="#sandbox-tmpdir-opaque-silent-eacces" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Sandbox temp directory undocumented, unconfigurable, fails silently with EACCES</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">The sandbox temp directory at /private/tmp/claude-<uid>/... is undocumented and unconfigurable. When macOS cleans this directory, every subsequent Bash tool call fails with EACCES before execution. The agent retries 4 times with no indication this is an infrastructure failure rather than a command error. The recommended workaround is to disable the sandbox entirely and rely on hooks for enforcement instead.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44168" style="font-size:0.8rem;color:var(--accent);">#44168</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Desktop & IDE integration" id="desktop-sessions-disappear-react-state">
+                <span class="kl-num">#489</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ca8a04;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Desktop & IDE integration</span>
+                <a href="#desktop-sessions-disappear-react-state" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Mac Desktop app sessions silently disappear due to React state bug</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Sessions created in the Claude Desktop app for macOS disappear from the session list without warning. The root cause is a React state management bug where session list state is lost on re-render. Affected users lose access to in-progress or recent sessions. Workaround: restart the Desktop app to restore session visibility, though sessions may not fully recover.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44179" style="font-size:0.8rem;color:var(--accent);">#44179</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Platform & compatibility" id="linux-bwrap-no-allowunixsockets-equivalent">
+                <span class="kl-num">#490</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ca8a04;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Platform & compatibility</span>
+                <a href="#linux-bwrap-no-allowunixsockets-equivalent" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Linux sandbox (bwrap/seccomp BPF) has no allowUnixSockets equivalent for AF_UNIX socket control</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">On macOS, the Claude Code sandbox provides allowAllUnixSockets and allowUnixSockets path arrays to selectively permit AF_UNIX socket operations. On Linux (bwrap + seccomp BPF), no equivalent mechanism exists. Linux users cannot grant fine-grained Unix socket access to sandboxed Bash commands, blocking workflows that use AF_UNIX sockets (e.g. Docker, D-Bus, local service IPC). The only options are to disable the sandbox entirely or use the network namespace without socket path control.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44180" style="font-size:0.8rem;color:var(--accent);">#44180</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Cost & usage" id="continue-command-burns-excessive-usage">
+                <span class="kl-num">#491</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Cost & usage</span>
+                <a href="#continue-command-burns-excessive-usage" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Typing 'continue' after going AFK can burn 56% of 5h Pro plan with minimal output</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">After typing 'continue' in a session with MCP servers (Serena, Context7) and LSP plugins, Claude can consume a disproportionate amount of the 5-hour Pro plan budget on small edits. User reported 56% usage for a few file edits after stepping away. The cost/output ratio resembles Opus high-effort planning, not Sonnet auto-effort file edits. No clear explanation for the spike.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44197" style="font-size:0.8rem;color:var(--accent);">#44197</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="CLI & terminal" id="resume-continue-no-render-previous-messages">
+                <span class="kl-num">#492</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">CLI & terminal</span>
+                <a href="#resume-continue-no-render-previous-messages" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">--resume/--continue no longer renders previous conversation messages in terminal</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When using claude --resume or --continue, the conversation context is restored internally (Claude can reference prior messages), but the terminal starts blank with no visible history. This is a regression; previous versions rendered the full conversation when resuming. Users lose visual context of what was discussed before.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44193" style="font-size:0.8rem;color:var(--accent);">#44193</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="CLI & terminal" id="voice-ptt-hold-delay-warp-keybindings">
+                <span class="kl-num">#493</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ca8a04;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">CLI & terminal</span>
+                <a href="#voice-ptt-hold-delay-warp-keybindings" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Voice push-to-talk hold-detection delay swallows first words; keybindings broken in Warp terminal</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Two voice mode issues: (1) When push-to-talk is bound to space (default), a race condition between typing a space and holding for voice causes the first 1-2 words of speech to be lost. (2) Warp terminal intercepts most key combinations before they reach Claude Code, making voice mode effectively unusable in Warp. Tested combos that all failed: alt+space, ctrl+shift+space, ctrl+alt+v, ctrl+j.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44194" style="font-size:0.8rem;color:var(--accent);">#44194</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Tools & permissions" id="preview-start-docker-port-mismatch">
+                <span class="kl-num">#494</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Tools & permissions</span>
+                <a href="#preview-start-docker-port-mismatch" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">preview_start cannot verify Docker-managed dev servers; auto-assigns wrong port</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When a project uses Docker Compose to run its dev server on a fixed host port, preview_start detects the port is in use and falls back to autoPort, assigning a random high port where nothing is served. Subsequent preview_eval/snapshot/screenshot calls return empty bodies or chrome-error:// pages. The Stop hook insists on calling preview_start after code edits, creating noisy warnings even when the user has verified changes via curl. No way to tell the preview system to use the existing Docker-managed port.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44187" style="font-size:0.8rem;color:var(--accent);">#44187</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Skills & commands" id="custom-skill-name-shadows-native-slash-command">
+                <span class="kl-num">#495</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ca8a04;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Skills & commands</span>
+                <a href="#custom-skill-name-shadows-native-slash-command" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Custom skills with reserved words in their name shadow native slash commands</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Skills deployed to .claude/skills/ whose name contains a reserved command word (e.g., 'mcp-vector-search') can shadow or interfere with native slash commands like /mcp. Namespace precedence is incomplete for substring matches. Workaround: rename skills to avoid reserved words (mcp, help, clear, exit, login, logout). A validation step on skill load that warns about name collisions would prevent this.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44199" style="font-size:0.8rem;color:var(--accent);">#44199</a>
             </div>
 <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>
