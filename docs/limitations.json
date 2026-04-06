@@ -1,34 +1,34 @@
 {
   "version": "0.12.0",
-  "count": 459,
+  "count": 461,
   "categories": {
-    "Hook behavior & events": 147,
     "Hook bypass & evasion": 92,
+    "Hook behavior & events": 147,
     "Permission system": 91,
     "Subagent & spawned agents": 19,
-    "MCP & plugin issues": 18,
     "Context & memory": 12,
     "Configuration behavior": 12,
-    "Platform & compatibility": 10,
-    "Desktop & IDE integration": 8,
-    "Security & trust boundaries": 7,
-    "File system & paths": 5,
+    "Platform & compatibility": 11,
+    "MCP & plugin issues": 19,
     "Scheduling & remote triggers": 4,
-    "Tool behavior": 4,
+    "Security & trust boundaries": 7,
     "Performance & cost": 3,
+    "Desktop & IDE integration": 8,
+    "File system & paths": 5,
     "Multi-agent & subprocesses": 2,
-    "Permissions & security": 2,
-    "CLAUDE.md enforcement": 2,
-    "Platform & environment": 2,
-    "CLI & terminal": 2,
     "MCP & plugins": 1,
     "hooks": 1,
     "Hook event lifecycle": 1,
+    "Tool behavior": 4,
+    "Permissions & security": 2,
     "UX & display": 1,
     "Networking": 1,
+    "CLAUDE.md enforcement": 2,
     "agents": 1,
+    "Platform & environment": 2,
     "Performance": 1,
     "Model behavior": 1,
+    "CLI & terminal": 2,
     "Configuration": 1,
     "Data integrity": 1,
     "Safety & guardrails": 1,
@@ -41,9 +41,9 @@
   },
   "severity_counts": {
     "critical": 29,
-    "low": 90,
-    "medium": 177,
-    "high": 160
+    "low": 91,
+    "medium": 178,
+    "high": 163
   },
   "entries": [
     {
@@ -5303,6 +5303,32 @@
       "description": "The diff panel in Claude Code Web (claude.ai/code) includes gitignored files in its file and line count, showing inflated numbers. This is misleading when reviewing changes in projects with large generated or vendor directories.",
       "status": "open",
       "added": "2026-04-06"
+    },
+    {
+      "id": "mcp-tool-file-path-param-silent-replacement",
+      "title": "MCP tool result silently replaced with raw file content when parameter named 'file_path'",
+      "category": "MCP & plugin issues",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44094"
+      ],
+      "description": "Claude Code intercepts MCP tool calls that include a parameter named 'file_path' in their input schema and replaces the tool's return value with the raw file content, silently discarding the actual tool result. This affects MCP servers that build file transformation tools (compression, summarization, structural extraction) using 'file_path' as a natural parameter name. The MCP tool executes correctly on the server side but the result is thrown away and the raw file bytes are returned instead. Renaming the parameter to 'path', 'filepath', or 'input_file' works around the issue. Confirmed on Windows 11, CC v2.1.92.",
+      "workaround": "Rename the MCP tool input parameter from 'file_path' to 'path', 'filepath', or any name that does not match the reserved 'file_path' pattern.",
+      "date": "2026-04-06",
+      "status": "open"
+    },
+    {
+      "id": "windows-permission-glob-backslash-mismatch",
+      "title": "Permission globs using forward slashes do not match Windows backslash paths",
+      "category": "Platform & compatibility",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44091"
+      ],
+      "description": "On Windows, global permission rules using forward-slash glob patterns (e.g., 'Write(.claude/**)') do not match Windows paths that use backslashes (e.g., '.claude\\state\\...'), causing unexpected permission prompts despite the rule being present. The documented path normalization that should convert backslashes to forward slashes before glob matching does not occur. Affects any workflow that writes to subdirectories specified with forward-slash globs in settings.json on Windows. Confirmed on Windows 11.",
+      "workaround": "Add both forward-slash and backslash variants of the permission glob, or use an explicit path pattern without wildcards.",
+      "date": "2026-04-06",
+      "status": "open"
     }
   ],
   "status_summary": {
