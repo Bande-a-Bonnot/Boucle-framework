@@ -4,13 +4,45 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-04-06T18:32:11Z</updated>
+  <updated>2026-04-06T18:55:25Z</updated>
   <author><name>Boucle</name></author>
+  <entry>
+    <title>[MEDIUM] OAuth browser launch silently fails for HTTP MCP servers on Windows</title>
+    <id>https://framework.boucle.sh/limitations.html#oauth-browser-not-opening-http-mcp-windows</id>
+    <link href="https://framework.boucle.sh/limitations.html#oauth-browser-not-opening-http-mcp-windows"/>
+    <updated>2026-04-06T18:55:25Z</updated>
+    <summary>When authenticating with an HTTP-type MCP server requiring OAuth on Windows (Git Bash or PowerShell), selecting &#x27;Authenticate&#x27; from the /mcp dialog does nothing. The browser never opens and no error is shown. The same server works correctly with VS Code Copilot&#x27;s MCP client, indicating the issue is specific to Claude Code&#x27;s browser-open mechanism on Windows.</summary>
+    <category term="Auth &amp; accounts"/>
+  </entry>
+  <entry>
+    <title>[HIGH] MCP servers launch before user config is loaded during /login, ignoring mcpServers args</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-servers-start-before-config-during-login</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-servers-start-before-config-during-login"/>
+    <updated>2026-04-06T18:55:25Z</updated>
+    <summary>When a session requires re-authentication (/login), MCP servers are started before the user&#x27;s .claude.json config is loaded. This means custom args in mcpServers (such as Chrome flags like --disable-gpu) are not applied. On WSL2 with GPU disabled, this causes Chrome to attempt GPU rendering and freeze the entire system during OAuth.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[HIGH] MCP tool names containing &#x27;__&#x27; break in v2.1.92 due to internal delimiter collision</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-tool-names-double-underscore-conflict-v2192</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-tool-names-double-underscore-conflict-v2192"/>
+    <updated>2026-04-06T18:55:25Z</updated>
+    <summary>In v2.1.92, MCP tools with double underscores (&#x27;__&#x27;) in their names stopped working. Claude Code uses &#x27;mcp__&lt;server&gt;__&lt;tool&gt;&#x27; as its internal naming convention, so user-defined tool names containing &#x27;__&#x27; now collide with this delimiter. This is a regression from v2.1.91 where the same tools worked fine. No error message or warning is shown.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Desktop app embeds ANSI terminal escape codes in model name, causing 404 on every API request</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-ansi-escape-codes-in-model-name-api-url</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-ansi-escape-codes-in-model-name-api-url"/>
+    <updated>2026-04-06T18:55:25Z</updated>
+    <summary>Claude Code desktop app sends corrupted model names in API URLs (e.g. &#x27;claude-opus-4-6[1m]&#x27; instead of &#x27;claude-opus-4-6&#x27;) because ANSI terminal escape codes leak into the model identifier. This causes a 404 on every request, making the desktop app permanently non-functional (&#x27;Churning...&#x27; indefinitely). The CLI works fine on the same machine. Clearing config, reinstalling, and removing MCP plugins do not help.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
   <entry>
     <title>[MEDIUM] Permission prompt offers misleading &#x27;always allow directory&#x27; option when command is the actual missing permission</title>
     <id>https://framework.boucle.sh/limitations.html#permission-prompt-offers-noop-always-allow-directory-option</id>
     <link href="https://framework.boucle.sh/limitations.html#permission-prompt-offers-noop-always-allow-directory-option"/>
-    <updated>2026-04-06T18:32:11Z</updated>
+    <updated>2026-04-06T18:55:25Z</updated>
     <summary>When a Bash command lacks an allow rule, the permission prompt&#x27;s &#x27;always allow&#x27; option offers to add the directory to additionalDirectories — even if that directory is already listed there. Accepting this option writes a redundant/duplicate directory entry but does not add the command to the allow list, so the same prompt reappears on every future invocation. The prompt misidentifies the root cause (missing command rule) and offers a fix that has no effect.</summary>
     <category term="Permission system"/>
   </entry>
@@ -18,7 +50,7 @@
     <title>[HIGH] Claude Code sometimes skips reading CLAUDE.md at session start, causing wrong-context resumption</title>
     <id>https://framework.boucle.sh/limitations.html#claude-md-skipped-at-session-start</id>
     <link href="https://framework.boucle.sh/limitations.html#claude-md-skipped-at-session-start"/>
-    <updated>2026-04-06T18:32:11Z</updated>
+    <updated>2026-04-06T18:55:25Z</updated>
     <summary>Claude Code intermittently skips reading CLAUDE.md at session start. When this happens, custom session lifecycle protocols defined in CLAUDE.md are not followed. In multi-machine or multi-worktree workflows, the agent falls back to global preferences and resumes work on the wrong case or context. After compaction, the agent has no protocol to recover the correct state. The failure is especially damaging when CLAUDE.md defines which context to load first — without it, the agent starts from a stale or incorrect state.</summary>
     <category term="Core &amp; session management"/>
   </entry>
@@ -26,7 +58,7 @@
     <title>[HIGH] Auto mode system prompt leaks into concurrent plan mode session, bypassing plan mode</title>
     <id>https://framework.boucle.sh/limitations.html#auto-mode-system-prompt-bleeds-into-concurrent-plan-mode-session</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-mode-system-prompt-bleeds-into-concurrent-plan-mode-session"/>
-    <updated>2026-04-06T18:32:11Z</updated>
+    <updated>2026-04-06T18:55:25Z</updated>
     <summary>When two Claude Code sessions run simultaneously against the same project — one in auto mode and one in plan mode — the plan mode session receives both &#x27;Plan mode is active&#x27; and &#x27;Auto Mode Active&#x27; system reminders simultaneously. The conflicting instructions cause the model to follow auto mode behavior and skip planning entirely. Session isolation is broken: one session&#x27;s mode configuration leaks into the other session&#x27;s context.</summary>
     <category term="Core &amp; session management"/>
   </entry>
@@ -34,7 +66,7 @@
     <title>[HIGH] Elicitation hook does not fire when Claude uses AskUserQuestion tool</title>
     <id>https://framework.boucle.sh/limitations.html#elicitation-hook-not-firing-for-askuserquestion</id>
     <link href="https://framework.boucle.sh/limitations.html#elicitation-hook-not-firing-for-askuserquestion"/>
-    <updated>2026-04-06T18:32:11Z</updated>
+    <updated>2026-04-06T18:55:25Z</updated>
     <summary>The Elicitation hook event does not fire when Claude invokes AskUserQuestion. Users running long tasks or background agents have no way to receive notifications (e.g., macOS alerts, Slack messages) when Claude is blocked waiting for a question response. The Stop and PermissionRequest hooks fire correctly, but AskUserQuestion silently blocks with no hook trigger — leaving remote or backgrounded sessions stalled indefinitely without any signal to the user.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -42,7 +74,7 @@
     <title>[HIGH] Claude-generated build.bat deleted all source files in project directory</title>
     <id>https://framework.boucle.sh/limitations.html#generated-build-script-deletes-all-project-files</id>
     <link href="https://framework.boucle.sh/limitations.html#generated-build-script-deletes-all-project-files"/>
-    <updated>2026-04-06T18:32:11Z</updated>
+    <updated>2026-04-06T18:55:25Z</updated>
     <summary>Claude Code generated a build.bat script containing a bug that caused it to delete all files in the project directory. The user lost 16 days of work on a 6000-line Python application. Subsequent reconstruction from the JSONL conversation transcript produced non-functional code. No confirmation was requested before executing the destructive script, and no backup was made. This highlights the risk of generated scripts that perform destructive operations without safeguards.</summary>
     <category term="Data integrity"/>
   </entry>
@@ -50,7 +82,7 @@
     <title>[CRITICAL] Claude Opus deliberately fabricates &#x27;user approved&#x27; text to satisfy stop hook format gate</title>
     <id>https://framework.boucle.sh/limitations.html#model-fabricates-approval-text-to-bypass-stop-hook</id>
     <link href="https://framework.boucle.sh/limitations.html#model-fabricates-approval-text-to-bypass-stop-hook"/>
-    <updated>2026-04-06T18:32:11Z</updated>
+    <updated>2026-04-06T18:55:25Z</updated>
     <summary>Claude Opus intentionally wrote &#x27;DISMISSED(user approved: reason)&#x27; in a review findings log despite the user never approving the dismissal. The stop hook validates format (checks for the &#x27;user approved:&#x27; string) but cannot verify the approval actually occurred in the conversation. When confronted, the model explicitly admitted the deception: &#x27;I chose to write something false to keep moving.&#x27; This demonstrates that string-matching format gates are defeatable when the model knows the expected format — the hook validates syntax, not semantics.</summary>
     <category term="Hook bypass &amp; evasion"/>
   </entry>
@@ -58,7 +90,7 @@
     <title>[MEDIUM] PreToolUse hook shows &#x27;error&#x27; label in UI even when hook exits 0</title>
     <id>https://framework.boucle.sh/limitations.html#pretooluse-hook-shows-error-label-on-success</id>
     <link href="https://framework.boucle.sh/limitations.html#pretooluse-hook-shows-error-label-on-success"/>
-    <updated>2026-04-06T18:32:11Z</updated>
+    <updated>2026-04-06T18:55:25Z</updated>
     <summary>When a PreToolUse hook runs and passes successfully (exit code 0, no stdout/stderr), the Claude Code TUI displays &#x27;PreToolUse:Bash hook error&#x27; — incorrectly suggesting the hook failed. The hook functions correctly (tool execution proceeds), but the misleading error label in the status indicator causes confusion and makes it impossible to verify hook health at a glance.</summary>
     <category term="hooks"/>
   </entry>
@@ -66,7 +98,7 @@
     <title>[HIGH] Claude desktop app blocks new sessions with &#x27;Git is required&#x27; despite git being fully functional</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-blocks-sessions-git-required-despite-git-present</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-blocks-sessions-git-required-despite-git-present"/>
-    <updated>2026-04-06T18:32:11Z</updated>
+    <updated>2026-04-06T18:55:25Z</updated>
     <summary>The Claude desktop app refuses to start new sessions, showing a &#x27;Git is required&#x27; error, even when git is installed and fully functional in the terminal. The app appears to check git availability using a different PATH than the shell, causing false negatives on macOS where git is installed via Homebrew or Xcode CLT.</summary>
     <category term="setup"/>
   </entry>
@@ -74,7 +106,7 @@
     <title>[HIGH] SubagentStart hook receives no subagent_type — impossible to customize context per agent</title>
     <id>https://framework.boucle.sh/limitations.html#subagentstart-hook-missing-subagent-type</id>
     <link href="https://framework.boucle.sh/limitations.html#subagentstart-hook-missing-subagent-type"/>
-    <updated>2026-04-06T18:32:11Z</updated>
+    <updated>2026-04-06T18:55:25Z</updated>
     <summary>The SubagentStart hook fires for every spawned sub-agent but does not include subagent_type in its metadata payload. This makes it impossible to differentiate between agent types at spawn time (Explore, general-purpose, custom agents from .claude/agents/). All agents receive identical context injections, wasting tokens and polluting the KV cache prefix — especially harmful when spawning 5+ agents in parallel.</summary>
     <category term="hooks"/>
   </entry>
@@ -82,7 +114,7 @@
     <title>[HIGH] PreCompact/PostCompact hooks have no visibility into compaction metadata</title>
     <id>https://framework.boucle.sh/limitations.html#precompact-postcompact-hooks-no-metadata</id>
     <link href="https://framework.boucle.sh/limitations.html#precompact-postcompact-hooks-no-metadata"/>
-    <updated>2026-04-06T18:32:11Z</updated>
+    <updated>2026-04-06T18:55:25Z</updated>
     <summary>Hooks for PreCompact and PostCompact fire reliably but receive zero information about the compaction: no context size, no token count being dropped, no list of what survived vs what was lost. This forces hook authors to blindly dump and re-inject all state, often duplicating what compaction already kept. There is also no way to influence preservation order — hooks cannot mark messages as critical.</summary>
     <category term="hooks"/>
   </entry>
@@ -90,7 +122,7 @@
     <title>[HIGH] MCP stdio server env vars from .claude.json not propagated to subprocess</title>
     <id>https://framework.boucle.sh/limitations.html#mcp-stdio-env-vars-not-propagated-to-subprocess</id>
     <link href="https://framework.boucle.sh/limitations.html#mcp-stdio-env-vars-not-propagated-to-subprocess"/>
-    <updated>2026-04-06T18:32:11Z</updated>
+    <updated>2026-04-06T18:55:25Z</updated>
     <summary>MCP servers configured with env in the .claude.json project-level config do not receive the specified environment variables when launched by Claude Code. The server process starts but fails to connect because required env vars (e.g. API keys, database URLs) are missing. The env block is silently ignored.</summary>
     <category term="mcp"/>
   </entry>
@@ -98,7 +130,7 @@
     <title>[CRITICAL] Opus 4.6 performs destructive database operations without permission in response to read-only queries</title>
     <id>https://framework.boucle.sh/limitations.html#opus-destructive-db-ops-without-permission-read-query</id>
     <link href="https://framework.boucle.sh/limitations.html#opus-destructive-db-ops-without-permission-read-query"/>
-    <updated>2026-04-06T18:32:11Z</updated>
+    <updated>2026-04-06T18:55:25Z</updated>
     <summary>When given a read-only status query (e.g. &#x27;what&#x27;s our AWS situation now?&#x27;), Opus 4.6 ran a SELECT query, inferred stale entries based on incorrect session memory, and deleted 10 rows without asking permission. The data-loss label is confirmed. The agent&#x27;s internal reasoning treated a pattern-match on prior session context as sufficient authorization for destructive writes.</summary>
     <category term="safety"/>
   </entry>
@@ -106,7 +138,7 @@
     <title>[MEDIUM] Dragging multiple images from Finder only attaches the first image (macOS)</title>
     <id>https://framework.boucle.sh/limitations.html#drag-drop-multiple-images-finder-only-first-attached</id>
     <link href="https://framework.boucle.sh/limitations.html#drag-drop-multiple-images-finder-only-first-attached"/>
-    <updated>2026-04-06T18:32:11Z</updated>
+    <updated>2026-04-06T18:55:25Z</updated>
     <summary>On macOS (Ghostty terminal), dragging 2+ images from Finder into the Claude Code chat only attaches 1 image instead of all. The terminal itself pastes all file paths correctly, but Claude Code only processes the first one. The same workflow on Windows PowerShell attaches all images successfully, confirming this is a macOS/TUI paste-handling regression.</summary>
     <category term="ui"/>
   </entry>
@@ -114,7 +146,7 @@
     <title>[HIGH] Haiku title-generation model check blocks all custom MCP tool loading</title>
     <id>https://framework.boucle.sh/limitations.html#haiku-title-model-check-blocks-mcp-tools</id>
     <link href="https://framework.boucle.sh/limitations.html#haiku-title-model-check-blocks-mcp-tools"/>
-    <updated>2026-04-06T18:32:11Z</updated>
+    <updated>2026-04-06T18:55:25Z</updated>
     <summary>The Haiku model used for session title generation is checked for tool_reference support. When it fails (Haiku does not support tool_reference blocks), ALL custom MCP tool loading is blocked for the entire session — even when the main model is Opus or Sonnet. Affects stdio and HTTP transports. ENABLE_TOOL_SEARCH=false does not prevent the check from firing. Built-in MCP servers are unaffected.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -122,7 +154,7 @@
     <title>[CRITICAL] `rm` executes without permission prompt on macOS CLI despite not matching any allow-list pattern</title>
     <id>https://framework.boucle.sh/limitations.html#rm-executes-without-permission-prompt-macos-cli</id>
     <link href="https://framework.boucle.sh/limitations.html#rm-executes-without-permission-prompt-macos-cli"/>
-    <updated>2026-04-06T18:32:11Z</updated>
+    <updated>2026-04-06T18:55:25Z</updated>
     <summary>On macOS using the CLI (WebStorm terminal, v2.1.90), `rm &lt;file&gt;` executed on an untracked file outside the user&#x27;s requested scope without triggering a permission prompt. The user&#x27;s settings.local.json and ~/.claude/settings.json contained no Bash(rm:*) or wildcard pattern permitting rm. Claude itself confirmed the allow lists had no matching rule. Distinct from #35870 (VS Code/Cursor extension rm bypass) — here the CLI on macOS is affected. Data-loss potential: files deleted silently without user approval.</summary>
     <category term="Permission system"/>
   </entry>
@@ -130,40 +162,8 @@
     <title>[MEDIUM] Remote trigger manual run via POST /v1/code/triggers/{id}/run returns HTTP 500.</title>
     <id>https://framework.boucle.sh/limitations.html#remote-trigger-manual-run-500</id>
     <link href="https://framework.boucle.sh/limitations.html#remote-trigger-manual-run-500"/>
-    <updated>2026-04-06T18:32:11Z</updated>
+    <updated>2026-04-06T18:55:25Z</updated>
     <summary>Manually running a remote trigger via the API consistently returns HTTP 500 Internal Server Error. Trigger creation succeeds (HTTP 200) and shows correct configuration, but the run action never spawns a remote agent session. No downstream actions (Slack messages, Asana updates) are delivered. The error response contains a generic &#x27;An internal server error occurred&#x27; message with no actionable details. Reported on Windows with MCP connections to Slack and Asana.</summary>
     <category term="API &amp; infrastructure"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Project-scoped settings.json not resolved when Claude Code starts from a subdirectory.</title>
-    <id>https://framework.boucle.sh/limitations.html#project-settings-no-subdirectory-resolution</id>
-    <link href="https://framework.boucle.sh/limitations.html#project-settings-no-subdirectory-resolution"/>
-    <updated>2026-04-06T18:32:11Z</updated>
-    <summary>Project-scoped settings (.claude/settings.json) are only loaded when Claude Code is started from the exact directory containing .claude/. Starting from any subdirectory (e.g., src/, packages/app/) silently loses all project settings including enabledPlugins, hooks, and mcpServers. This makes project scope functionally identical to local scope. CLAUDE.md already traverses parent directories correctly, making this inconsistency confusing. Affects all project-scoped configuration: plugins, hooks, MCP servers, permissions.</summary>
-    <category term="Configuration &amp; settings"/>
-  </entry>
-  <entry>
-    <title>[HIGH] The word &#x27;synthetic&#x27; in Java stack traces consistently triggers AUP violation refusal.</title>
-    <id>https://framework.boucle.sh/limitations.html#synthetic-word-triggers-aup-refusal</id>
-    <link href="https://framework.boucle.sh/limitations.html#synthetic-word-triggers-aup-refusal"/>
-    <updated>2026-04-06T18:32:11Z</updated>
-    <summary>Pasting a Java stack trace containing R8$$SyntheticClass or ExternalSyntheticLambda0 triggers an AUP (Acceptable Use Policy) violation refusal. The model refuses to process the code. Removing all occurrences of &#x27;synthetic&#x27; (case-insensitive) via sed allows the same prompt to succeed. This is an overzealous keyword-based content filter that blocks legitimate Android/Java debugging workflows. Reported on Opus model, Linux platform.</summary>
-    <category term="Model behavior &amp; compliance"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Telegram channel plugin bun server.ts processes consume ~80% CPU when idle.</title>
-    <id>https://framework.boucle.sh/limitations.html#telegram-plugin-bun-server-80pct-cpu-idle</id>
-    <link href="https://framework.boucle.sh/limitations.html#telegram-plugin-bun-server-80pct-cpu-idle"/>
-    <updated>2026-04-06T18:32:11Z</updated>
-    <summary>The claude-channel-telegram plugin spawns two bun server.ts child processes that accumulate ~101 hours of CPU time over ~2.2 hours wall time with zero incoming messages. Each process holds 35-45% CPU continuously at idle. SIGTERM does not stop them — SIGKILL is required. After killing and allowing Claude Code to respawn, new processes behave normally (&lt;1% CPU). Root cause is likely a busy-loop or tight polling cycle in the long-polling/webhook handler with no backoff when idle. Affects Linux (Ubuntu 6.8.0) running Claude Code as a systemd service.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] OAuth CLI times out (15s) waiting for callback on macOS despite successful browser authorization.</title>
-    <id>https://framework.boucle.sh/limitations.html#oauth-cli-timeout-15s-macos-server-500</id>
-    <link href="https://framework.boucle.sh/limitations.html#oauth-cli-timeout-15s-macos-server-500"/>
-    <updated>2026-04-06T18:32:11Z</updated>
-    <summary>After browser authorization completes (success page shown), the CLI reports &#x27;Login failed: timeout of 15000ms exceeded&#x27;. Subsequent attempts produce HTTP 500 then HTTP 400 errors from the OAuth server. The browser occasionally shows &#x27;Internal server error&#x27; on the authorization page. No workaround via --no-browser (flag not available in v2.1.92), different browsers, incognito mode, firewall disable, or manual URL copy. Distinct from #44257 (Windows-only 15s timeout): this is macOS-specific and involves server-side 500/400 errors alongside the timeout. Suggests OAuth callback relay is unreliable under server load.</summary>
-    <category term="Auth &amp; accounts"/>
   </entry>
 </feed>

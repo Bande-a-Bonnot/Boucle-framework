@@ -1,25 +1,27 @@
 {
   "version": "0.12.0",
-  "count": 533,
+  "count": 537,
   "categories": {
     "Hook behavior & events": 154,
     "Permission system": 96,
     "Hook bypass & evasion": 93,
+    "MCP & plugin issues": 28,
     "Subagent & spawned agents": 26,
-    "MCP & plugin issues": 25,
     "Platform & compatibility": 17,
     "Context & memory": 15,
     "Configuration behavior": 13,
+    "Desktop & IDE integration": 10,
     "Security & trust boundaries": 9,
-    "Desktop & IDE integration": 9,
     "Tool behavior": 9,
     "Performance & cost": 6,
     "CLI & terminal": 6,
     "File system & paths": 5,
     "Scheduling & remote triggers": 4,
+    "Auth & accounts": 4,
     "UX & display": 3,
-    "Auth & accounts": 3,
     "Data integrity": 3,
+    "Core & session management": 3,
+    "hooks": 3,
     "MCP & plugins": 2,
     "Scheduled tasks": 2,
     "Permissions": 2,
@@ -36,18 +38,21 @@
     "Remote triggers & scheduling": 1,
     "Skills & slash commands": 1,
     "Worktrees & isolation": 1,
-    "Core & session management": 3,
     "Cowork & cloud": 1,
     "Model behavior & output": 1,
     "TUI & display": 1,
     "Model behavior & compliance": 1,
     "Configuration & settings": 1,
-    "API & infrastructure": 1
+    "API & infrastructure": 1,
+    "ui": 1,
+    "safety": 1,
+    "mcp": 1,
+    "setup": 1
   },
   "severity_counts": {
     "critical": 37,
-    "high": 205,
-    "medium": 200,
+    "high": 208,
+    "medium": 201,
     "low": 91
   },
   "entries": [
@@ -6344,6 +6349,66 @@
       "version_reported": "2.1.92",
       "platform": "windows",
       "status": "open"
+    },
+    {
+      "id": "desktop-ansi-escape-codes-in-model-name-api-url",
+      "title": "Desktop app embeds ANSI terminal escape codes in model name, causing 404 on every API request",
+      "category": "Desktop & IDE integration",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44352"
+      ],
+      "description": "Claude Code desktop app sends corrupted model names in API URLs (e.g. 'claude-opus-4-6[1m]' instead of 'claude-opus-4-6') because ANSI terminal escape codes leak into the model identifier. This causes a 404 on every request, making the desktop app permanently non-functional ('Churning...' indefinitely). The CLI works fine on the same machine. Clearing config, reinstalling, and removing MCP plugins do not help.",
+      "workaround": "Use the CLI (terminal) instead of the desktop app until the ANSI stripping is fixed.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.87",
+      "platform": "macos",
+      "status": "open"
+    },
+    {
+      "id": "mcp-tool-names-double-underscore-conflict-v2192",
+      "title": "MCP tool names containing '__' break in v2.1.92 due to internal delimiter collision",
+      "category": "MCP & plugin issues",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44349"
+      ],
+      "description": "In v2.1.92, MCP tools with double underscores ('__') in their names stopped working. Claude Code uses 'mcp__<server>__<tool>' as its internal naming convention, so user-defined tool names containing '__' now collide with this delimiter. This is a regression from v2.1.91 where the same tools worked fine. No error message or warning is shown.",
+      "workaround": "Change tool name separators from '__' to '_' or another character. Downgrade to v2.1.91 as an interim fix.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "platform": "linux",
+      "status": "open"
+    },
+    {
+      "id": "mcp-servers-start-before-config-during-login",
+      "title": "MCP servers launch before user config is loaded during /login, ignoring mcpServers args",
+      "category": "MCP & plugin issues",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44341"
+      ],
+      "description": "When a session requires re-authentication (/login), MCP servers are started before the user's .claude.json config is loaded. This means custom args in mcpServers (such as Chrome flags like --disable-gpu) are not applied. On WSL2 with GPU disabled, this causes Chrome to attempt GPU rendering and freeze the entire system during OAuth.",
+      "workaround": "Complete authentication separately before starting MCP-dependent sessions, or manually launch Chrome with the correct flags before triggering /login.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "platform": "wsl",
+      "status": "open"
+    },
+    {
+      "id": "oauth-browser-not-opening-http-mcp-windows",
+      "title": "OAuth browser launch silently fails for HTTP MCP servers on Windows",
+      "category": "Auth & accounts",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44350"
+      ],
+      "description": "When authenticating with an HTTP-type MCP server requiring OAuth on Windows (Git Bash or PowerShell), selecting 'Authenticate' from the /mcp dialog does nothing. The browser never opens and no error is shown. The same server works correctly with VS Code Copilot's MCP client, indicating the issue is specific to Claude Code's browser-open mechanism on Windows.",
+      "workaround": "Manually run the OAuth flow via a separate script or browser, then provide the resulting token/credentials.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.68",
+      "platform": "windows",
+      "status": "open"
     }
   ],
   "status_summary": {
@@ -6352,9 +6417,9 @@
     "mitigated": 1
   },
   "severities": {
-    "critical": 33,
-    "high": 189,
-    "medium": 193,
+    "critical": 37,
+    "high": 208,
+    "medium": 201,
     "low": 91
   }
 }
