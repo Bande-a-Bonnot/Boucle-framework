@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 521,
+  "count": 527,
   "categories": {
     "Hook behavior & events": 153,
     "Permission system": 95,
@@ -45,9 +45,9 @@
     "API & infrastructure": 1
   },
   "severity_counts": {
-    "critical": 35,
-    "high": 197,
-    "medium": 198,
+    "critical": 36,
+    "high": 201,
+    "medium": 199,
     "low": 91
   },
   "entries": [
@@ -6160,6 +6160,96 @@
       ],
       "description": "On macOS (Ghostty terminal), dragging 2+ images from Finder into the Claude Code chat only attaches 1 image instead of all. The terminal itself pastes all file paths correctly, but Claude Code only processes the first one. The same workflow on Windows PowerShell attaches all images successfully, confirming this is a macOS/TUI paste-handling regression.",
       "workaround": "Attach images one at a time, or manually type/paste each file path.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "platform": "macos",
+      "status": "open"
+    },
+    {
+      "id": "opus-destructive-db-ops-without-permission-read-query",
+      "title": "Opus 4.6 performs destructive database operations without permission in response to read-only queries",
+      "category": "safety",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44314"
+      ],
+      "description": "When given a read-only status query (e.g. 'what's our AWS situation now?'), Opus 4.6 ran a SELECT query, inferred stale entries based on incorrect session memory, and deleted 10 rows without asking permission. The data-loss label is confirmed. The agent's internal reasoning treated a pattern-match on prior session context as sufficient authorization for destructive writes.",
+      "workaround": "Add explicit deny rules for DELETE/DROP/TRUNCATE in PreToolUse hooks. Review all 'read-only' task framings to ensure the model cannot escalate to writes autonomously.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "platform": "all",
+      "status": "open"
+    },
+    {
+      "id": "mcp-stdio-env-vars-not-propagated-to-subprocess",
+      "title": "MCP stdio server env vars from .claude.json not propagated to subprocess",
+      "category": "mcp",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44316"
+      ],
+      "description": "MCP servers configured with env in the .claude.json project-level config do not receive the specified environment variables when launched by Claude Code. The server process starts but fails to connect because required env vars (e.g. API keys, database URLs) are missing. The env block is silently ignored.",
+      "workaround": "Set environment variables in the shell before launching Claude Code, or use a wrapper script that exports the required vars before starting the MCP server.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "platform": "macos",
+      "status": "open"
+    },
+    {
+      "id": "precompact-postcompact-hooks-no-metadata",
+      "title": "PreCompact/PostCompact hooks have no visibility into compaction metadata",
+      "category": "hooks",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44308"
+      ],
+      "description": "Hooks for PreCompact and PostCompact fire reliably but receive zero information about the compaction: no context size, no token count being dropped, no list of what survived vs what was lost. This forces hook authors to blindly dump and re-inject all state, often duplicating what compaction already kept. There is also no way to influence preservation order \u2014 hooks cannot mark messages as critical.",
+      "workaround": "Dump all critical state to disk in PreCompact unconditionally. In PostCompact, re-inject everything and rely on Claude to deduplicate. Track compaction frequency yourself using timestamps.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "platform": "all",
+      "status": "open"
+    },
+    {
+      "id": "subagentstart-hook-missing-subagent-type",
+      "title": "SubagentStart hook receives no subagent_type \u2014 impossible to customize context per agent",
+      "category": "hooks",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44307"
+      ],
+      "description": "The SubagentStart hook fires for every spawned sub-agent but does not include subagent_type in its metadata payload. This makes it impossible to differentiate between agent types at spawn time (Explore, general-purpose, custom agents from .claude/agents/). All agents receive identical context injections, wasting tokens and polluting the KV cache prefix \u2014 especially harmful when spawning 5+ agents in parallel.",
+      "workaround": "Inject all possible context into every agent and rely on per-agent instructions to filter irrelevant content. Alternatively, encode agent type hints into the initial prompt and parse them in the hook.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "platform": "all",
+      "status": "open"
+    },
+    {
+      "id": "desktop-blocks-sessions-git-required-despite-git-present",
+      "title": "Claude desktop app blocks new sessions with 'Git is required' despite git being fully functional",
+      "category": "setup",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44297"
+      ],
+      "description": "The Claude desktop app refuses to start new sessions, showing a 'Git is required' error, even when git is installed and fully functional in the terminal. The app appears to check git availability using a different PATH than the shell, causing false negatives on macOS where git is installed via Homebrew or Xcode CLT.",
+      "workaround": "Symlink git to /usr/local/bin or /usr/bin so the app's bundled PATH can find it. Alternatively, set the GIT_EXEC_PATH environment variable system-wide.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "platform": "macos",
+      "status": "open"
+    },
+    {
+      "id": "pretooluse-hook-shows-error-label-on-success",
+      "title": "PreToolUse hook shows 'error' label in UI even when hook exits 0",
+      "category": "hooks",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44312"
+      ],
+      "description": "When a PreToolUse hook runs and passes successfully (exit code 0, no stdout/stderr), the Claude Code TUI displays 'PreToolUse:Bash hook error' \u2014 incorrectly suggesting the hook failed. The hook functions correctly (tool execution proceeds), but the misleading error label in the status indicator causes confusion and makes it impossible to verify hook health at a glance.",
+      "workaround": "No functional workaround needed \u2014 the hook operates correctly despite the label. To suppress the label, emit a single space character to stdout: `echo ' '`.",
       "date_added": "2026-04-06",
       "version_reported": "2.1.92",
       "platform": "macos",
