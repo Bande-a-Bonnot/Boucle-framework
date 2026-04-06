@@ -1,40 +1,40 @@
 {
   "version": "0.12.0",
-  "count": 482,
+  "count": 488,
   "categories": {
-    "Hook behavior & events": 152,
+    "Hook behavior & events": 153,
     "Permission system": 94,
     "Hook bypass & evasion": 92,
     "Subagent & spawned agents": 24,
-    "MCP & plugin issues": 22,
-    "Platform & compatibility": 15,
+    "MCP & plugin issues": 23,
+    "Platform & compatibility": 16,
     "Context & memory": 13,
     "Configuration behavior": 13,
+    "Tool behavior": 9,
     "Security & trust boundaries": 8,
     "Desktop & IDE integration": 8,
-    "Tool behavior": 8,
-    "Performance & cost": 5,
+    "Performance & cost": 6,
     "File system & paths": 5,
     "Scheduling & remote triggers": 4,
+    "UX & display": 3,
     "CLI & terminal": 3,
-    "UX & display": 2,
     "Data integrity": 2,
     "Scheduled tasks": 2,
+    "Permissions": 2,
     "MCP & plugins": 1,
     "Permissions & security": 1,
     "Memory & state": 1,
     "Remote & cloud": 1,
     "File system": 1,
     "Context management": 1,
-    "Permissions": 2,
     "Bash": 1,
     "Compaction & memory": 1
   },
   "severity_counts": {
     "critical": 32,
     "low": 91,
-    "medium": 185,
-    "high": 174
+    "medium": 187,
+    "high": 178
   },
   "entries": [
     {
@@ -5598,6 +5598,84 @@
         "#44166"
       ],
       "description": "CLAUDE.md files are compressed during compaction alongside conversation messages, causing instruction fidelity to degrade after one or more compaction cycles. Rules files in .claude/rules/ are exempt (re-injected fresh each turn), but CLAUDE.md and auto-memory (~/.claude/projects/*/memory/) are not. Long CLAUDE.md files lose detail progressively. Users observe 'Claude forgot my instructions' after sessions with multiple compactions. Workaround: move critical instructions from CLAUDE.md to .claude/rules/ files, though this splits documentation across two locations with different semantics.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "status": "open"
+    },
+    {
+      "id": "no-session-usage-buffer-warning",
+      "title": "No configurable usage buffer or soft-limit warning before session cap",
+      "category": "Performance & cost",
+      "severity": "medium",
+      "issues": [
+        "#44176"
+      ],
+      "description": "Sessions hit hard usage caps mid-task with no advance warning. There is no configurable buffer threshold or soft-limit notification to allow agents or users to gracefully wind down work before being cut off. Agents in autonomous loops are hard-stopped with no opportunity to save state.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "status": "open"
+    },
+    {
+      "id": "ultraplan-state-lost-cli-ui-transition",
+      "title": "Ultraplan session state and comments lost between CLI/UI transitions",
+      "category": "UX & display",
+      "severity": "high",
+      "issues": [
+        "#44174"
+      ],
+      "description": "When transitioning between Claude Code CLI and the Mac desktop app during an Ultraplan session, user comments are ignored, misplaced, or silently dropped. The CLI triggers a spurious re-planning round on return, losing review state. Affects cowork workflows where users switch between interfaces.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "status": "open"
+    },
+    {
+      "id": "silent-failure-no-internet-connection",
+      "title": "Claude Code silently continues with no internet instead of surfacing error",
+      "category": "Tool behavior",
+      "severity": "high",
+      "issues": [
+        "#44171"
+      ],
+      "description": "When the network is unavailable, Claude Code shows activity indicators (spinning) without surfacing an error. In headless or autonomous workflows, this causes agents to spin indefinitely with no actionable feedback, wasting compute and blocking progress. No timeout or connectivity check is performed before tool execution attempts.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "status": "open"
+    },
+    {
+      "id": "cowork-exec-format-error-apple-silicon",
+      "title": "Cowork fails on Apple Silicon M5 with Exec format error (architecture mismatch)",
+      "category": "Platform & compatibility",
+      "severity": "high",
+      "issues": [
+        "#44170"
+      ],
+      "description": "Cowork sub-agent invocation fails on Apple Silicon M5 Macs with 'Exec format error', indicating the bundled claude binary has an architecture mismatch. Cowork is completely non-functional on these devices. Affects all cowork-based agent workflows on arm64 Mac.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "status": "open"
+    },
+    {
+      "id": "marketplace-plugin-cdn-404-silent",
+      "title": "Official Anthropic marketplace plugin install fails with CDN 404 on every startup",
+      "category": "MCP & plugin issues",
+      "severity": "medium",
+      "issues": [
+        "#44169"
+      ],
+      "description": "The official Anthropic plugin marketplace auto-install fails silently on every startup due to a GCS CDN 404 for v2.1.92 assets. No fallback mechanism succeeds. The error message uses 'reason: unknown' which provides no actionable diagnostic information. Labeled duplicate by maintainers.",
+      "date_added": "2026-04-06",
+      "version_reported": "2.1.92",
+      "status": "open"
+    },
+    {
+      "id": "sandbox-tmpdir-opaque-silent-eacces",
+      "title": "Sandbox temp directory undocumented, unconfigurable, fails silently with EACCES",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "#44168"
+      ],
+      "description": "The sandbox temp directory at /private/tmp/claude-<uid>/... is undocumented and unconfigurable. When macOS cleans this directory, every subsequent Bash tool call fails with EACCES before execution. The agent retries 4 times with no indication this is an infrastructure failure rather than a command error. The recommended workaround is to disable the sandbox entirely and rely on hooks for enforcement instead.",
       "date_added": "2026-04-06",
       "version_reported": "2.1.92",
       "status": "open"
