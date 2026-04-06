@@ -1,59 +1,69 @@
 {
   "version": "0.12.0",
-  "count": 553,
+  "count": 557,
   "categories": {
-    "Hook behavior & events": 154,
-    "Permission system": 96,
     "Hook bypass & evasion": 93,
-    "MCP & plugin issues": 28,
+    "Hook behavior & events": 157,
+    "Permission system": 96,
     "Subagent & spawned agents": 26,
-    "Platform & compatibility": 17,
-    "Context & memory": 15,
+    "Context & memory": 16,
     "Configuration behavior": 13,
-    "Desktop & IDE integration": 10,
-    "Security & trust boundaries": 9,
-    "Tool behavior": 9,
-    "Performance & cost": 6,
-    "CLI & terminal": 6,
-    "File system & paths": 5,
+    "Platform & compatibility": 17,
+    "MCP & plugin issues": 28,
     "Scheduling & remote triggers": 4,
-    "Auth & accounts": 4,
+    "Security & trust boundaries": 9,
+    "Performance & cost": 6,
+    "Desktop & IDE integration": 10,
+    "File system & paths": 5,
+    "Tool behavior": 9,
     "UX & display": 3,
+    "CLI & terminal": 6,
     "Data integrity": 3,
-    "Core & session management": 3,
-    "hooks": 3,
     "MCP & plugins": 2,
-    "Scheduled tasks": 2,
-    "Permissions": 2,
-    "Skills & commands": 2,
     "Permissions & security": 1,
+    "Scheduled tasks": 2,
     "Memory & state": 1,
     "Remote & cloud": 1,
     "File system": 1,
     "Context management": 1,
+    "Permissions": 2,
     "Bash": 1,
     "Compaction & memory": 1,
     "Cost & usage": 1,
     "Tools & permissions": 1,
+    "Skills & commands": 2,
     "Remote triggers & scheduling": 1,
     "Skills & slash commands": 1,
     "Worktrees & isolation": 1,
+    "Core & session management": 3,
     "Cowork & cloud": 1,
     "Model behavior & output": 1,
-    "TUI & display": 1,
+    "TUI & display": 4,
+    "Auth & accounts": 5,
     "Model behavior & compliance": 1,
     "Configuration & settings": 1,
     "API & infrastructure": 1,
     "ui": 1,
     "safety": 1,
     "mcp": 1,
-    "setup": 1
+    "hooks": 3,
+    "setup": 1,
+    "MCP servers": 1,
+    "Agents": 1,
+    "Stability & crashes": 1,
+    "Performance & resources": 1,
+    "Permissions & safety": 3,
+    "Agents & subagents": 1,
+    "Plugins & MCP": 1,
+    "Hooks & automation": 1,
+    "MCP & integrations": 1,
+    "Authentication & credentials": 1
   },
   "severity_counts": {
     "critical": 38,
-    "high": 218,
-    "medium": 205,
-    "low": 92
+    "low": 92,
+    "medium": 206,
+    "high": 221
   },
   "entries": [
     {
@@ -6632,6 +6642,54 @@
       "platform": "windows",
       "version_reported": "v2.1.89",
       "status": "open"
+    },
+    {
+      "id": "rules-files-acknowledged-then-violated",
+      "title": "Model violates AGENTS.md/.claude/rules/ rules it just read and acknowledged in same session.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44431"
+      ],
+      "status": "open",
+      "workaround": "Repeat rules at each relevant step in the conversation; use PreToolUse hooks to enforce critical constraints programmatically.",
+      "description": "User asked Claude to fix 4 Django bugs. Claude had loaded and acknowledged AGENTS.md and .claude/rules/ files earlier in the session. It still violated 3 mandatory rules: bypassed service layer, used sync_to_async unnecessarily in async context (took 3 corrections), and perpetuated anti-patterns it was supposed to fix. Rules loaded via system-reminder tags were also ignored. Variant of #499 but documented with model acknowledgement preceding violation."
+    },
+    {
+      "id": "model-self-reports-skipping-sequential-rules",
+      "title": "Model skips sequential procedure steps, admits 'optimized for speed' \u2014 admits rule violation when asked.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44428"
+      ],
+      "status": "open",
+      "workaround": "Use PreToolUse hooks to enforce step ordering; add explicit checks in procedures requiring confirmation at each step.",
+      "description": "User had startup procedure in 03-startup.md marked 'executable' in memory. Model skipped steps 3b, 3c, 3d and batched 3a/3e/3f in parallel despite 'sequential as the rule requires'. When confronted, model replied: 'Laziness on my part \u2014 I optimized for speed and treated startup as a checklist to compress rather than a procedure to execute.' Self-incriminating admission that optimization pressure overrides explicit sequential constraints."
+    },
+    {
+      "id": "mcp-oauth-pkce-portless-redirect-uri",
+      "title": "MCP OAuth PKCE fails: client metadata declares portless redirect_uris but callback runs on ephemeral port.",
+      "category": "Auth & accounts",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44429"
+      ],
+      "status": "open",
+      "workaround": "Use MCP servers that support dynamic client registration (RFC 7591) so Claude Code can register with the correct ephemeral redirect URI.",
+      "description": "claude.ai/oauth/claude-code-client-metadata declares redirect_uris as 'http://localhost/callback' and 'http://127.0.0.1/callback' (no port). Claude Code starts its OAuth callback server on an ephemeral port (e.g., :55611). MCP servers enforcing redirect_uri matching reject the mismatch. Per RFC 8252 \u00a77.3, loopback redirect URIs should match on any port. Root cause: static client metadata cannot accommodate ephemeral ports. Fix requires either dynamic client registration or RFC-8252-compliant loopback URI handling in MCP servers."
+    },
+    {
+      "id": "skills-slash-prefix-no-otel-telemetry",
+      "title": "User-invoked skills via /skill-name emit no OTEL telemetry; only programmatic Skill tool calls are instrumented.",
+      "category": "Hook behavior & events",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44432"
+      ],
+      "status": "open",
+      "workaround": "Use Claude programmatically via 'use the X skill' prompts so Claude invokes the Skill tool (which emits OTEL events) rather than user-typed / prefix expansion.",
+      "description": "When user types /skill-name, skill content is expanded client-side and injected as a user message, bypassing the tool call system that OTEL instruments. When Claude calls the Skill tool programmatically, tool_result events are emitted with skill name in tool_parameters (when OTEL_LOG_TOOL_DETAILS=1). Organizations using OTEL for observability lose visibility into the majority of skill invocations (user-initiated). The two invocation paths produce different telemetry despite identical behaviour."
     }
   ],
   "status_summary": {
