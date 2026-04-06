@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 447,
+  "count": 453,
   "categories": {
     "Hook bypass & evasion": 92,
     "Hook behavior & events": 146,
@@ -5151,6 +5151,78 @@
       "description": "When a plugin skill uses disable-model-invocation: true (making it user-invocable only via slash command), the $CLAUDE_PLUGIN_ROOT variable is not substituted in the skill instructions. The literal string appears instead of the actual path, breaking file references.",
       "status": "open",
       "added": "2026-04-06"
+    },
+    {
+      "id": "silent-write-commit-failure-long-session",
+      "title": "File writes and git commits report success but never persist in long sessions",
+      "category": "Data integrity",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44035"
+      ],
+      "description": "In long automated sessions using --dangerously-skip-permissions, Claude reports successful file writes and git commits that do not actually persist to disk. The session output shows completion messages, but files remain unchanged and git log shows no new commits. Affects long-running Ralph Loop-style sessions with high context usage.",
+      "status": "open",
+      "added": "2026-04-06"
+    },
+    {
+      "id": "bypasspermissions-statsig-downgrade",
+      "title": "bypassPermissions silently downgrades to acceptEdits mid-session via Statsig feature flag",
+      "category": "Permissions & security",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44003"
+      ],
+      "description": "Sessions configured with defaultMode: 'bypassPermissions' intermittently drop to acceptEdits mode mid-session without user action. The downgrade is triggered by an async Statsig feature flag check (tengu_disable_bypass_permissions_mode) that runs after session start. Automated pipelines break silently when permission mode changes unexpectedly.",
+      "status": "open",
+      "added": "2026-04-06"
+    },
+    {
+      "id": "session-summary-hallucinates-hook-removal",
+      "title": "Session summary can hallucinate a pending task to remove a protective stop hook",
+      "category": "Safety & guardrails",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43930"
+      ],
+      "description": "During a long session, automatic context summarization generated a 'pending task' instructing Claude to find and remove a stop hook from settings. The user had no intention of removing the hook. If the continuation session executes this hallucinated task, the safety constraint is silently deleted. This creates a potential safety bypass through the compaction/summarization path.",
+      "status": "open",
+      "added": "2026-04-06"
+    },
+    {
+      "id": "precompact-prompt-hook-manual-compact-fails",
+      "title": "PreCompact prompt-type hooks fail with 'not supported outside REPL' on manual /compact",
+      "category": "Hooks",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44029"
+      ],
+      "description": "PreCompact hooks configured with type: 'prompt' fail when compaction is triggered manually via /compact with error: 'Prompt stop hooks are not yet supported outside REPL'. The same hook works when auto-compaction triggers at context limit. Manual and automatic compaction paths have divergent hook support.",
+      "status": "open",
+      "added": "2026-04-06"
+    },
+    {
+      "id": "claudemd-selective-execution-drift",
+      "title": "CLAUDE.md instructions selectively ignored across consecutive sessions (Cowork/Desktop)",
+      "category": "Memory & instructions",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44004"
+      ],
+      "description": "Over multiple Cowork sessions, Claude systematically completes high-visibility engaging tasks while silently skipping low-visibility structural maintenance steps defined in CLAUDE.md. The model reads and acknowledges CLAUDE.md rules but executes only interesting tasks, creating a pattern where operational hygiene work is never done across sessions.",
+      "status": "open",
+      "added": "2026-04-06"
+    },
+    {
+      "id": "agent-spawn-k-length-crash",
+      "title": "Agent tool crashes with 'K.length' JS error on spawn, more frequent after hook denials",
+      "category": "Stability",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/43983"
+      ],
+      "description": "The Agent tool crashes with 'undefined is not an object (evaluating K.length)' during agent initialization. The crash occurs at any context size, including fresh sessions after /clear. Frequency increases after prior PreToolUse hook denials. Analysis of 72 sessions shows the crash is not context-size dependent but correlates with hook denial events.",
+      "status": "open",
+      "added": "2026-04-06"
     }
   ],
   "status_summary": {
@@ -5159,9 +5231,9 @@
     "mitigated": 1
   },
   "severities": {
-    "critical": 27,
-    "low": 89,
-    "medium": 167,
-    "high": 148
+    "critical": 29,
+    "high": 159,
+    "medium": 175,
+    "low": 90
   }
 }
