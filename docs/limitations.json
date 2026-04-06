@@ -1,15 +1,15 @@
 {
   "version": "0.12.0",
-  "count": 430,
+  "count": 434,
   "categories": {
     "Hook bypass & evasion": 91,
     "Hook behavior & events": 144,
-    "Permission system": 90,
+    "Permission system": 91,
     "Subagent & spawned agents": 18,
-    "Context & memory": 8,
+    "Context & memory": 10,
     "Configuration behavior": 12,
     "Platform & compatibility": 9,
-    "MCP & plugin issues": 16,
+    "MCP & plugin issues": 17,
     "Scheduling & remote triggers": 4,
     "Security & trust boundaries": 7,
     "Performance & cost": 3,
@@ -29,8 +29,8 @@
   "severity_counts": {
     "critical": 27,
     "low": 89,
-    "medium": 166,
-    "high": 148
+    "medium": 168,
+    "high": 150
   },
   "entries": [
     {
@@ -4967,6 +4967,46 @@
         "https://github.com/anthropics/claude-code/issues/43886"
       ],
       "description": "PreCompact hooks fire before context compaction but their exit code is silently ignored \u2014 there is no way to defer or block compaction from a hook. This means hooks cannot protect against compaction during critical sequences (git commits, deployments, multi-file refactors). If context compacts mid-commit, all work is orphaned as uncommitted changes. A PostCompact + SessionStart workaround (save/restore state to `.claude/session/last-compact.md`) partially mitigates data loss but cannot prevent the compaction itself. Feature request: allow PreCompact hooks to return `{\"defer\": true, \"reason\": \"...\"}` to delay compaction until the current tool chain completes. See #43886 and #44000."
+    },
+    {
+      "id": "statsig-gate-downgrades-permissions-mid-session",
+      "title": "bypassPermissions mode can be silently downgraded to acceptEdits mid-session via Statsig feature gate.",
+      "category": "Permission system",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44003"
+      ],
+      "description": "A Statsig feature gate can silently change the permissions mode during a session, downgrading from bypassPermissions to acceptEdits without notifying the user. Automated workflows relying on bypassPermissions may stall waiting for approval prompts that never existed at session start."
+    },
+    {
+      "id": "claudemd-instructions-drift-consecutive-sessions",
+      "title": "CLAUDE.md instructions silently ignored across consecutive sessions in Cowork/Desktop mode.",
+      "category": "Context & memory",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44004"
+      ],
+      "description": "In Cowork or Desktop mode, CLAUDE.md directives are selectively ignored across consecutive sessions. The model exhibits 'selective execution drift' where it follows some instructions but silently drops others without reporting the omission."
+    },
+    {
+      "id": "context-loss-plan-mode-assumptions",
+      "title": "Context lost during planning mode; model makes assumptions instead of retrieving earlier answers.",
+      "category": "Context & memory",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44005"
+      ],
+      "description": "In plan mode, the model loses context mid-conversation and makes assumptions rather than referring back to earlier questions and answers provided by the user. This results in plans that contradict previously stated requirements."
+    },
+    {
+      "id": "mcp-tool-call-hangs-indefinitely-no-cancel",
+      "title": "MCP tool calls can hang indefinitely with no timeout or cancel mechanism.",
+      "category": "MCP & plugin issues",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44006"
+      ],
+      "description": "MCP tool invocations can hang forever with no built-in timeout or user-facing cancel mechanism. Confirmed on Linux. The session becomes unresponsive and must be killed externally. No hook or configuration controls the MCP call timeout."
     }
   ],
   "status_summary": {
