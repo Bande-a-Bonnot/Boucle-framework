@@ -5621,6 +5621,25 @@
                 <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;"><strong>Workaround:</strong> Manually press a key in the terminal to revive the session. Reduce MCP server count and hook complexity to lower frequency.</p>
                 <a href="https://github.com/anthropics/claude-code/issues/44362" style="font-size:0.8rem;color:var(--accent);">#44362</a>
             </div>
+            <div class="kl-entry" data-severity="high" data-category="Performance &amp; resources" id="plugin-skills-full-load-startup-cold-start">
+                <span class="kl-num">#542</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Performance &amp; resources</span>
+                <a href="#plugin-skills-full-load-startup-cold-start" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Plugin skills load full SKILL.md content at startup, not frontmatter-only, causing 4+ min cold starts with 28 skills</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">CC loads the full content of every SKILL.md file at startup instead of just frontmatter. With 28 skills (~34K tokens total), cold start takes 4+ minutes vs 3-4 seconds without skills. Scaling is non-linear per skill count, suggesting per-skill overhead (file discovery, frontmatter parsing, tool schema generation, system prompt injection) rather than pure content size.</p>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;"><strong>Workaround:</strong> Reduce skills to 15-line stubs (frontmatter + "Read procedure file" instruction) with full procedure bodies in separate files loaded via Read on invoke. Reduces startup context from ~34K to ~3K tokens.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44371" style="font-size:0.8rem;color:var(--accent);">#44371</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Permissions &amp; safety" id="config-object-replaced-empty-flushdb-destructive">
+                <span class="kl-num">#543</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Permissions &amp; safety</span>
+                <a href="#config-object-replaced-empty-flushdb-destructive" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Model replaces entire config object with empty {} and calls FLUSHDB on Redis -- two destructive operations in one session</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Model replaced an entire config object with {} instead of removing a single key, then called FLUSHDB on local Redis assuming a caching issue. Two destructive operations in one session with no user approval for either. Related to pattern of model choosing destructive workarounds (see also #44314 DB row deletion, #44333 source file deletion).</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44368" style="font-size:0.8rem;color:var(--accent);">#44368</a>
+            </div>
 <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>
         </footer>
