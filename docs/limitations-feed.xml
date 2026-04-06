@@ -4,37 +4,53 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-04-06T06:48:37Z</updated>
+  <updated>2026-04-06T07:26:45Z</updated>
   <author><name>Boucle</name></author>
+  <entry>
+    <title>[MEDIUM] Permission globs using forward slashes do not match Windows backslash paths</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-permission-glob-backslash-mismatch</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-permission-glob-backslash-mismatch"/>
+    <updated>2026-04-06T07:26:45Z</updated>
+    <summary>On Windows, global permission rules using forward-slash glob patterns (e.g., &#x27;Write(.claude/**)&#x27;) do not match Windows paths that use backslashes (e.g., &#x27;.claude\state\...&#x27;), causing unexpected permission prompts despite the rule being present. The documented path normalization that should convert backslashes to forward slashes before glob matching does not occur. Affects any workflow that writes to subdirectories specified with forward-slash globs in settings.json on Windows. Confirmed on Windows 11.</summary>
+    <category term="Platform &amp; compatibility"/>
+  </entry>
+  <entry>
+    <title>[HIGH] MCP tool result silently replaced with raw file content when parameter named &#x27;file_path&#x27;</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-tool-file-path-param-silent-replacement</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-tool-file-path-param-silent-replacement"/>
+    <updated>2026-04-06T07:26:45Z</updated>
+    <summary>Claude Code intercepts MCP tool calls that include a parameter named &#x27;file_path&#x27; in their input schema and replaces the tool&#x27;s return value with the raw file content, silently discarding the actual tool result. This affects MCP servers that build file transformation tools (compression, summarization, structural extraction) using &#x27;file_path&#x27; as a natural parameter name. The MCP tool executes correctly on the server side but the result is thrown away and the raw file bytes are returned instead. Renaming the parameter to &#x27;path&#x27;, &#x27;filepath&#x27;, or &#x27;input_file&#x27; works around the issue. Confirmed on Windows 11, CC v2.1.92.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
   <entry>
     <title>[LOW] Diff panel counts gitignored files, shows inflated line count</title>
     <id>https://framework.boucle.sh/limitations.html#diff-panel-counts-gitignored-files</id>
     <link href="https://framework.boucle.sh/limitations.html#diff-panel-counts-gitignored-files"/>
-    <updated>2026-04-06T06:04:20Z</updated>
+    <updated>2026-04-06T07:26:45Z</updated>
     <summary>The diff panel in Claude Code Web (claude.ai/code) includes gitignored files in its file and line count, showing inflated numbers. This is misleading when reviewing changes in projects with large generated or vendor directories.</summary>
-    <category term="CLI &amp; flags"/>
+    <category term="CLI &amp; terminal"/>
   </entry>
   <entry>
     <title>[HIGH] SendMessage tool appears in deferred tools list but cannot be fetched or used</title>
     <id>https://framework.boucle.sh/limitations.html#sendmessage-tool-listed-but-not-fetchable</id>
     <link href="https://framework.boucle.sh/limitations.html#sendmessage-tool-listed-but-not-fetchable"/>
-    <updated>2026-04-06T06:04:20Z</updated>
+    <updated>2026-04-06T07:26:45Z</updated>
     <summary>SendMessage appears in the system-available deferred tools list but is not present in the actual tool set when fetched via ToolSearch. This means agents that rely on SendMessage for inter-agent communication cannot use it despite the tool being advertised as available. Reproducible across multiple sessions.</summary>
-    <category term="Agent &amp; subagent"/>
+    <category term="Subagent &amp; spawned agents"/>
   </entry>
   <entry>
     <title>[HIGH] SessionStart hook output truncated to 2000 characters when exceeding 10,000 limit</title>
     <id>https://framework.boucle.sh/limitations.html#sessionstart-hook-output-truncated-2000</id>
     <link href="https://framework.boucle.sh/limitations.html#sessionstart-hook-output-truncated-2000"/>
-    <updated>2026-04-06T06:04:20Z</updated>
+    <updated>2026-04-06T07:26:45Z</updated>
     <summary>Documentation states hook output is truncated after 10,000 characters, but when the limit is exceeded, output is actually truncated to 2,000 characters instead of 10,000. This means hooks that produce output between 2,000 and 10,000 characters lose data unexpectedly. SessionStart hooks that inject project context or configuration are particularly affected since they often produce multi-KB output.</summary>
-    <category term="Hook behavior"/>
+    <category term="Hook behavior &amp; events"/>
   </entry>
   <entry>
     <title>[MEDIUM] marketplace add silently overwrites existing marketplace registration when repos share the same marketplace name</title>
     <id>https://framework.boucle.sh/limitations.html#marketplace-add-silent-overwrite-same-name</id>
     <link href="https://framework.boucle.sh/limitations.html#marketplace-add-silent-overwrite-same-name"/>
-    <updated>2026-04-06T06:04:20Z</updated>
+    <updated>2026-04-06T07:26:45Z</updated>
     <summary>When two repos from the same organization both declare the same name in their .claude-plugin/marketplace.json, running &#x27;claude plugin marketplace add&#x27; for the second repo silently overwrites the first in known_marketplaces.json with no warning. The first repo&#x27;s plugins break silently -- they appear in &#x27;claude plugin list&#x27; with &#x27;Status: failed to load&#x27; but the overwrite itself produces no error output. Organizations publishing multiple plugins under one brand namespace are particularly affected.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -42,7 +58,7 @@
     <title>[MEDIUM] ChromaDB collection pointer not reset when continuation session starts after auto-compaction</title>
     <id>https://framework.boucle.sh/limitations.html#chromadb-pointer-stale-after-compaction-continuation</id>
     <link href="https://framework.boucle.sh/limitations.html#chromadb-pointer-stale-after-compaction-continuation"/>
-    <updated>2026-04-06T06:04:20Z</updated>
+    <updated>2026-04-06T07:26:45Z</updated>
     <summary>After auto-compaction triggers at context limit and spawns a continuation session, ChromaDB collection pointers are not reset. The new session inherits a stale pointer from the previous session, causing retrieval queries to pull from the wrong collection. Leads to context drift and hallucinations in long-running sessions using embedding-based retrieval. Workaround: disable auto-compaction and use manual /compact only.</summary>
     <category term="Context &amp; memory"/>
   </entry>
@@ -50,7 +66,7 @@
     <title>[HIGH] SubagentStart hooks not fired for background agents spawned with run_in_background: true</title>
     <id>https://framework.boucle.sh/limitations.html#subagentstart-hook-skipped-background-agents</id>
     <link href="https://framework.boucle.sh/limitations.html#subagentstart-hook-skipped-background-agents"/>
-    <updated>2026-04-06T06:04:20Z</updated>
+    <updated>2026-04-06T07:26:45Z</updated>
     <summary>When the Agent tool spawns subagents with run_in_background: true, SubagentStart hooks are silently skipped. SubagentStop and PostToolUse hooks fire normally for the same background agents, creating an asymmetric lifecycle. Verified across 27 foreground agent observations (all captured) vs 2 background agents (0 SubagentStart events). Breaks OpenTelemetry span creation, lifecycle timing, and context injection at agent launch.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -58,47 +74,47 @@
     <title>[HIGH] Agent tool crashes with &#x27;K.length&#x27; JS error on spawn, more frequent after hook denials</title>
     <id>https://framework.boucle.sh/limitations.html#agent-spawn-k-length-crash</id>
     <link href="https://framework.boucle.sh/limitations.html#agent-spawn-k-length-crash"/>
-    <updated>2026-04-06T06:04:20Z</updated>
+    <updated>2026-04-06T07:26:45Z</updated>
     <summary>The Agent tool crashes with &#x27;undefined is not an object (evaluating K.length)&#x27; during agent initialization. The crash occurs at any context size, including fresh sessions after /clear. Frequency increases after prior PreToolUse hook denials. Analysis of 72 sessions shows the crash is not context-size dependent but correlates with hook denial events.</summary>
-    <category term="Stability"/>
+    <category term="Data integrity"/>
   </entry>
   <entry>
     <title>[HIGH] CLAUDE.md instructions selectively ignored across consecutive sessions (Cowork/Desktop)</title>
     <id>https://framework.boucle.sh/limitations.html#claudemd-selective-execution-drift</id>
     <link href="https://framework.boucle.sh/limitations.html#claudemd-selective-execution-drift"/>
-    <updated>2026-04-06T06:04:20Z</updated>
+    <updated>2026-04-06T07:26:45Z</updated>
     <summary>Over multiple Cowork sessions, Claude systematically completes high-visibility engaging tasks while silently skipping low-visibility structural maintenance steps defined in CLAUDE.md. The model reads and acknowledges CLAUDE.md rules but executes only interesting tasks, creating a pattern where operational hygiene work is never done across sessions.</summary>
-    <category term="Memory &amp; instructions"/>
+    <category term="Context &amp; memory"/>
   </entry>
   <entry>
     <title>[MEDIUM] PreCompact prompt-type hooks fail with &#x27;not supported outside REPL&#x27; on manual /compact</title>
     <id>https://framework.boucle.sh/limitations.html#precompact-prompt-hook-manual-compact-fails</id>
     <link href="https://framework.boucle.sh/limitations.html#precompact-prompt-hook-manual-compact-fails"/>
-    <updated>2026-04-06T06:04:20Z</updated>
+    <updated>2026-04-06T07:26:45Z</updated>
     <summary>PreCompact hooks configured with type: &#x27;prompt&#x27; fail when compaction is triggered manually via /compact with error: &#x27;Prompt stop hooks are not yet supported outside REPL&#x27;. The same hook works when auto-compaction triggers at context limit. Manual and automatic compaction paths have divergent hook support.</summary>
-    <category term="Hooks"/>
+    <category term="Hook behavior &amp; events"/>
   </entry>
   <entry>
     <title>[CRITICAL] Session summary can hallucinate a pending task to remove a protective stop hook</title>
     <id>https://framework.boucle.sh/limitations.html#session-summary-hallucinates-hook-removal</id>
     <link href="https://framework.boucle.sh/limitations.html#session-summary-hallucinates-hook-removal"/>
-    <updated>2026-04-06T06:04:20Z</updated>
+    <updated>2026-04-06T07:26:45Z</updated>
     <summary>During a long session, automatic context summarization generated a &#x27;pending task&#x27; instructing Claude to find and remove a stop hook from settings. The user had no intention of removing the hook. If the continuation session executes this hallucinated task, the safety constraint is silently deleted. This creates a potential safety bypass through the compaction/summarization path.</summary>
-    <category term="Safety &amp; guardrails"/>
+    <category term="Security &amp; trust boundaries"/>
   </entry>
   <entry>
     <title>[CRITICAL] bypassPermissions silently downgrades to acceptEdits mid-session via Statsig feature flag</title>
     <id>https://framework.boucle.sh/limitations.html#bypasspermissions-statsig-downgrade</id>
     <link href="https://framework.boucle.sh/limitations.html#bypasspermissions-statsig-downgrade"/>
-    <updated>2026-04-06T06:04:20Z</updated>
+    <updated>2026-04-06T07:26:45Z</updated>
     <summary>Sessions configured with defaultMode: &#x27;bypassPermissions&#x27; intermittently drop to acceptEdits mode mid-session without user action. The downgrade is triggered by an async Statsig feature flag check (tengu_disable_bypass_permissions_mode) that runs after session start. Automated pipelines break silently when permission mode changes unexpectedly.</summary>
-    <category term="Permissions &amp; security"/>
+    <category term="Permission system"/>
   </entry>
   <entry>
     <title>[HIGH] File writes and git commits report success but never persist in long sessions</title>
     <id>https://framework.boucle.sh/limitations.html#silent-write-commit-failure-long-session</id>
     <link href="https://framework.boucle.sh/limitations.html#silent-write-commit-failure-long-session"/>
-    <updated>2026-04-06T06:04:20Z</updated>
+    <updated>2026-04-06T07:26:45Z</updated>
     <summary>In long automated sessions using --dangerously-skip-permissions, Claude reports successful file writes and git commits that do not actually persist to disk. The session output shows completion messages, but files remain unchanged and git log shows no new commits. Affects long-running Ralph Loop-style sessions with high context usage.</summary>
     <category term="Data integrity"/>
   </entry>
@@ -106,7 +122,7 @@
     <title>[MEDIUM] $CLAUDE_PLUGIN_ROOT not substituted in user-invocable slash command skills</title>
     <id>https://framework.boucle.sh/limitations.html#plugin-root-not-substituted-slash-commands</id>
     <link href="https://framework.boucle.sh/limitations.html#plugin-root-not-substituted-slash-commands"/>
-    <updated>2026-04-06T06:04:20Z</updated>
+    <updated>2026-04-06T07:26:45Z</updated>
     <summary>When a plugin skill uses disable-model-invocation: true (making it user-invocable only via slash command), the $CLAUDE_PLUGIN_ROOT variable is not substituted in the skill instructions. The literal string appears instead of the actual path, breaking file references.</summary>
     <category term="CLI &amp; terminal"/>
   </entry>
@@ -114,15 +130,15 @@
     <title>[MEDIUM] Model setting in settings.json not applied on session start</title>
     <id>https://framework.boucle.sh/limitations.html#model-setting-ignored-session-start</id>
     <link href="https://framework.boucle.sh/limitations.html#model-setting-ignored-session-start"/>
-    <updated>2026-04-06T06:04:20Z</updated>
+    <updated>2026-04-06T07:26:45Z</updated>
     <summary>Setting model in ~/.claude/settings.json (e.g. opusplan) is ignored when starting a new session. Claude starts with a different model than configured. The setting only takes effect after manually switching models during a session.</summary>
-    <category term="Configuration"/>
+    <category term="Configuration behavior"/>
   </entry>
   <entry>
     <title>[MEDIUM] CLAUDE_CODE_NO_FLICKER env var disables cursor navigation keyboard shortcuts (Alt/Cmd + arrows/backspace)</title>
     <id>https://framework.boucle.sh/limitations.html#no-flicker-disables-cursor-navigation</id>
     <link href="https://framework.boucle.sh/limitations.html#no-flicker-disables-cursor-navigation"/>
-    <updated>2026-04-06T06:04:20Z</updated>
+    <updated>2026-04-06T07:26:45Z</updated>
     <summary>Enabling CLAUDE_CODE_NO_FLICKER to reduce screen flicker breaks Alt+arrows, Alt+Backspace, Cmd+arrows, and Cmd+Backspace cursor navigation in the TUI input. Users lose word-level cursor movement when the flag is active.</summary>
     <category term="CLI &amp; terminal"/>
   </entry>
@@ -130,40 +146,24 @@
     <title>[LOW] Windows Desktop: visible cmd.exe console windows flash on screen when spawning MCP servers and subprocesses</title>
     <id>https://framework.boucle.sh/limitations.html#windows-desktop-cmd-windows-flash-mcp-spawn</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-desktop-cmd-windows-flash-mcp-spawn"/>
-    <updated>2026-04-06T06:04:20Z</updated>
+    <updated>2026-04-06T07:26:45Z</updated>
     <summary>On Windows, the Claude Desktop app spawns background processes (chrome-native-host.exe, uvx chroma-mcp, claude.cmd) via cmd.exe without the CREATE_NO_WINDOW flag (windowsHide: true in Node.js spawn). This causes visible console windows to briefly flash on screen every time these processes start. Workaround for user-configured MCP servers: add &#x27;windowsHide&#x27;: true to each mcpServers entry in claude_desktop_config.json. Built-in spawns require a fix in the Electron app source. See #44039.</summary>
-    <category term="Platform &amp; environment"/>
+    <category term="Platform &amp; compatibility"/>
   </entry>
   <entry>
     <title>[MEDIUM] Memory instructions loaded as context do not reliably translate into model behavior changes, especially for small automatic actions</title>
     <id>https://framework.boucle.sh/limitations.html#memory-instructions-not-reliably-followed-by-model</id>
     <link href="https://framework.boucle.sh/limitations.html#memory-instructions-not-reliably-followed-by-model"/>
-    <updated>2026-04-06T06:04:20Z</updated>
+    <updated>2026-04-06T07:26:45Z</updated>
     <summary>Instructions placed in auto-memory files (e.g., &#x27;ABSOLUTE RULE: always run X before doing Y&#x27;) are loaded at session start and acknowledged by the model, but the model still violates them in subsequent turns -- particularly for low-cost automatic actions like running a shell command before answering. The model reads the rule, confirms it, then skips the required action anyway. Affects behavioral enforcement via persistent memory notes. No reliable workaround; hooks (PreToolUse/Stop) are more reliable for enforcement than memory instructions. See #44043.</summary>
-    <category term="Model behavior"/>
+    <category term="Tool behavior"/>
   </entry>
   <entry>
     <title>[HIGH] Agent SDK prompt cache partial miss on every --resume turn: skills listing block missing from messages[0]</title>
     <id>https://framework.boucle.sh/limitations.html#prompt-cache-partial-miss-resume-sdk</id>
     <link href="https://framework.boucle.sh/limitations.html#prompt-cache-partial-miss-resume-sdk"/>
-    <updated>2026-04-06T06:04:20Z</updated>
+    <updated>2026-04-06T07:26:45Z</updated>
     <summary>When using the Agent SDK query() with resume, every resume turn causes a partial cache miss. On fresh sessions messages[0] has 5 content blocks including the skills listing (~3,924 chars); on resume sessions the skills listing block is absent from messages[0] and appears deeper in the conversation at its historical position. This causes ~3,800 extra tokens of cache_create on every resume turn. Measured on @anthropic-ai/claude-agent-sdk 0.2.92 (CLI 2.1.92). The fix for the earlier deferred_tools_delta cache issue (#34629) did not cover this case. No workaround; requires SDK fix. See #44045.</summary>
-    <category term="Performance"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Model violates user-defined sequential workflow gates, parallelizes steps ignoring corrections</title>
-    <id>https://framework.boucle.sh/limitations.html#model-violates-sequential-workflow-gates</id>
-    <link href="https://framework.boucle.sh/limitations.html#model-violates-sequential-workflow-gates"/>
-    <updated>2026-04-06T06:04:20Z</updated>
-    <summary>When a user defines a strict sequential workflow, Claude parallelizes the steps or starts downstream agents before upstream steps complete, even when the workflow document and conversation explicitly require sequential execution. Corrections are acknowledged but not retained within the same session.</summary>
-    <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] computer-use MCP request_access returns not_installed for all apps on macOS</title>
-    <id>https://framework.boucle.sh/limitations.html#computer-use-mcp-request-access-not-installed</id>
-    <link href="https://framework.boucle.sh/limitations.html#computer-use-mcp-request-access-not-installed"/>
-    <updated>2026-04-06T06:04:20Z</updated>
-    <summary>The computer-use MCP server request_access tool returns reason not_installed for every application regardless of whether they are installed, running, or discoverable. Affects macOS 26.x Tahoe running in tmux or CLI contexts; no workaround exists.</summary>
-    <category term="Platform &amp; environment"/>
+    <category term="Performance &amp; cost"/>
   </entry>
 </feed>
