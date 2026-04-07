@@ -4,9 +4,89 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-04-07T15:14:03Z</updated>
+  <updated>2026-04-07T16:06:25Z</updated>
   <author><name>Boucle</name></author>
-    <entry>
+      <entry>
+    <title>[HIGH] Subagents in bare-repo worktree setups resolve CWD to bare repo root, not the worktree.</title>
+    <link href="https://framework.boucle.sh/limitations.html#bare-repo-subagent-cwd-resolves-to-git-common-directory"/>
+    <id>https://framework.boucle.sh/limitations.html#bare-repo-subagent-cwd-resolves-to-git-common-directory</id>
+    <updated>2026-04-07T16:06:25Z</updated>
+    <category term="Subagent & spawned agents"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;When using bare repo + worktree layouts (repo.git/ + worktrees/main/), subagents resolve their starting directory from git metadata rather than inheriting the parent session CWD. They start in the bare repo root where no source files exist, causing failed searches, missed CLAUDE.md, and lost project context. Workaround: explicitly include the worktree path in the subagent prompt. See #44709.&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[MEDIUM] File links in VS Code Claude Code panel are visually rendered but not clickable (regression).</title>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-panel-file-links-not-clickable-regression"/>
+    <id>https://framework.boucle.sh/limitations.html#vscode-panel-file-links-not-clickable-regression</id>
+    <updated>2026-04-07T16:06:25Z</updated>
+    <category term="Desktop & IDE integration"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; MEDIUM&lt;/p&gt;&lt;p&gt;File links rendered in the Claude Code chat panel (VS Code extension) appear as hyperlinks but clicking them does nothing -- no file opens, no navigation occurs. This is a regression; the fix shipped in v2.1.4 has been reverted or broken. Original reports: #10846, #16056. Affects v2.1.92 on Windows. See #44713.&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[LOW] CLI welcome message shows 'Welcome back No' due to account name parse bug.</title>
+    <link href="https://framework.boucle.sh/limitations.html#welcome-message-displays-welcome-back-no-name-truncation"/>
+    <id>https://framework.boucle.sh/limitations.html#welcome-message-displays-welcome-back-no-name-truncation</id>
+    <updated>2026-04-07T16:06:25Z</updated>
+    <category term="CLI & terminal"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; LOW&lt;/p&gt;&lt;p&gt;The CLI startup welcome message displays 'Welcome back No' instead of the user's actual name. The name is pulled from the Anthropic account profile. The bug appears to truncate or misparse certain name formats. Has repro on macOS v2.1.92. See #44718.&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Three CLI flags (--brief, --file, --mcp-debug) appear in --help but have no CLI reference docs.</title>
+    <link href="https://framework.boucle.sh/limitations.html#cli-brief-file-mcp-debug-flags-undocumented-in-reference"/>
+    <id>https://framework.boucle.sh/limitations.html#cli-brief-file-mcp-debug-flags-undocumented-in-reference</id>
+    <updated>2026-04-07T16:06:25Z</updated>
+    <category term="CLI & terminal"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; MEDIUM&lt;/p&gt;&lt;p&gt;A diff of 'claude --help' (v2.1.92) against the official CLI reference reveals three undocumented flags: '--brief' (enables SendUserMessage tool for agent-to-user communication), '--file &lt;specs...&gt;' (downloads file resources at startup, format: file_id:relative_path), and '--mcp-debug' (deprecated alias for --debug). The '--brief' flag is notable as it unlocks agent-to-user communication via&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[HIGH] Hook loop silently burns all context tokens — session dies with no indication that a hook caused it.</title>
+    <link href="https://framework.boucle.sh/limitations.html#hook-loop-silent-context-burn-no-attribution"/>
+    <id>https://framework.boucle.sh/limitations.html#hook-loop-silent-context-burn-no-attribution</id>
+    <updated>2026-04-07T16:06:25Z</updated>
+    <category term="Hooks"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;A PreToolUse hook that enters a loop fires on every tool invocation, injecting system-reminder context each time. After hundreds of firings across a long session, the session dies from context exhaustion. The error shown is the standard 'context limit reached' message with no indication that a hook was responsible, no count of hook firings, no context consumed by hooks, and no way to interrupt the&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[HIGH] Late-arriving MCP instruction deltas fork subagent conversations, creating duplicate branches that each execute the full task.</title>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-instruction-delta-forks-subagents-doubles-cost"/>
+    <id>https://framework.boucle.sh/limitations.html#mcp-instruction-delta-forks-subagents-doubles-cost</id>
+    <updated>2026-04-07T16:06:25Z</updated>
+    <category term="MCP"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; HIGH&lt;/p&gt;&lt;p&gt;When a subagent is spawned via the Agent tool (with teams), late-arriving MCP instruction deltas create a conversation fork with a new promptId that replays from the same starting point. Both branches execute independently, effectively doubling work and token cost per subagent. In a real session with 4 dispatched subagents, JSONL logs showed 11 subagent processes: 4 original branches (promptId=9f4&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Auto-mode permits git add -f on gitignored files, silently committing secrets to version control.</title>
+    <link href="https://framework.boucle.sh/limitations.html#auto-mode-git-add-force-bypasses-gitignore-exposes-secrets"/>
+    <id>https://framework.boucle.sh/limitations.html#auto-mode-git-add-force-bypasses-gitignore-exposes-secrets</id>
+    <updated>2026-04-07T16:06:25Z</updated>
+    <category term="Security"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; CRITICAL&lt;/p&gt;&lt;p&gt;Claude Code in auto-mode used 'git add -f' to force-add a file (env/env.test) that was explicitly in .gitignore. The file contained real secrets: DB passwords, S3 keys, and OAuth secrets. Auto-mode permission rules do not block git add -f or flag force-adding gitignored files for manual approval. This is a credential exfiltration risk whenever Claude manages git staging in auto-mode. See #44730.&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Subagent cache miss on first SendMessage resume — cache created by Agent call is not reused.</title>
+    <link href="https://framework.boucle.sh/limitations.html#subagent-cache-miss-first-sendmessage-resume"/>
+    <id>https://framework.boucle.sh/limitations.html#subagent-cache-miss-first-sendmessage-resume</id>
+    <updated>2026-04-07T16:06:25Z</updated>
+    <category term="Performance"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; MEDIUM&lt;/p&gt;&lt;p&gt;When resuming a subagent via SendMessage, the first resume call always results in a full cache miss (cache_read=0), even though the preceding Agent call created a populated cache seconds earlier. Subsequent SendMessage calls to the same agent correctly hit the cache. Pattern: Agent call creates ~7k cache, first SendMessage creates ~14.7k cache with 0 read, second SendMessage reads ~14.7k correctly&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[LOW] /copy command produces garbled accented characters on Windows due to UTF-8 vs CP437 encoding mismatch.</title>
+    <link href="https://framework.boucle.sh/limitations.html#copy-command-garbled-accented-chars-windows-utf8-cp437"/>
+    <id>https://framework.boucle.sh/limitations.html#copy-command-garbled-accented-chars-windows-utf8-cp437</id>
+    <updated>2026-04-07T16:06:25Z</updated>
+    <category term="CLI & terminal"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; LOW&lt;/p&gt;&lt;p&gt;The /copy command on Windows puts garbled text in the clipboard when the response contains accented characters (é, è, ç, ô, etc.). UTF-8 bytes are interpreted as CP437. Reproducible in cmd.exe with chcp 65001. Expected 'éèêë àâ ùû ïî ç ô' becomes mojibake. See #44740.&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Model ignores explicit CLAUDE.md procedural instruction ('check docs before fix') and acts immediately.</title>
+    <link href="https://framework.boucle.sh/limitations.html#model-skips-claude-md-procedural-instruction-before-acting"/>
+    <id>https://framework.boucle.sh/limitations.html#model-skips-claude-md-procedural-instruction-before-acting</id>
+    <updated>2026-04-07T16:06:25Z</updated>
+    <category term="Model behavior"/>
+    <summary type="html">&lt;p&gt;&lt;strong&gt;Severity:&lt;/strong&gt; MEDIUM&lt;/p&gt;&lt;p&gt;A CLAUDE.md contained an explicit instruction 'Sprawdz docs PRZED fixem' (Check docs BEFORE the fix). The model ignored it, immediately calling Telegram Bot API getUpdates directly, consuming the active OpenClaw gateway's update stream and causing data loss. Related to KL #499 (rules files compliance regression) and KL #554 (model violates AGENTS.md in same session). CLAUDE.md procedural constrain&lt;/p&gt;</summary>
+  </entry>
+  <entry>
     <title>[CRITICAL] @-autocomplete bypasses hooks.</title>
     <link href="https://framework.boucle.sh/limitations.html#autocomplete-bypasses-hooks"/>
     <id>https://framework.boucle.sh/limitations.html#autocomplete-bypasses-hooks</id>

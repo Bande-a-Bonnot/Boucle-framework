@@ -7833,27 +7833,99 @@
       "description": "A diff of 'claude --help' (v2.1.92) against the official CLI reference reveals three undocumented flags: '--brief' (enables SendUserMessage tool for agent-to-user communication), '--file <specs...>' (downloads file resources at startup, format: file_id:relative_path), and '--mcp-debug' (deprecated alias for --debug). The '--brief' flag is notable as it unlocks agent-to-user communication via SendUserMessage. See #44711.",
       "workaround": "These flags are functional but undocumented. Use --debug instead of --mcp-debug.",
       "status": "open"
+    },
+    {
+      "id": "hook-loop-silent-context-burn-no-attribution",
+      "title": "Hook loop silently burns all context tokens — session dies with no indication that a hook caused it.",
+      "category": "Hooks",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44732"
+      ],
+      "description": "A PreToolUse hook that enters a loop fires on every tool invocation, injecting system-reminder context each time. After hundreds of firings across a long session, the session dies from context exhaustion. The error shown is the standard 'context limit reached' message with no indication that a hook was responsible, no count of hook firings, no context consumed by hooks, and no way to interrupt the hook before session death. Hours of work lost with no recovery path. See #44732.",
+      "workaround": "Add a rate-limit guard (file-based lock or counter) inside hook scripts. Monitor hook output size manually. No built-in protection exists.",
+      "status": "open"
+    },
+    {
+      "id": "mcp-instruction-delta-forks-subagents-doubles-cost",
+      "title": "Late-arriving MCP instruction deltas fork subagent conversations, creating duplicate branches that each execute the full task.",
+      "category": "MCP",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44731"
+      ],
+      "description": "When a subagent is spawned via the Agent tool (with teams), late-arriving MCP instruction deltas create a conversation fork with a new promptId that replays from the same starting point. Both branches execute independently, effectively doubling work and token cost per subagent. In a real session with 4 dispatched subagents, JSONL logs showed 11 subagent processes: 4 original branches (promptId=9f49a1d2) and 7 forked branches (promptId=368249e6) all with an extra attachment line. See #44731.",
+      "workaround": "Avoid teams with global MCP servers configured. Remove or delay MCP server configs when running multi-agent workflows.",
+      "status": "open"
+    },
+    {
+      "id": "auto-mode-git-add-force-bypasses-gitignore-exposes-secrets",
+      "title": "Auto-mode permits git add -f on gitignored files, silently committing secrets to version control.",
+      "category": "Security",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44730"
+      ],
+      "description": "Claude Code in auto-mode used 'git add -f' to force-add a file (env/env.test) that was explicitly in .gitignore. The file contained real secrets: DB passwords, S3 keys, and OAuth secrets. Auto-mode permission rules do not block git add -f or flag force-adding gitignored files for manual approval. This is a credential exfiltration risk whenever Claude manages git staging in auto-mode. See #44730.",
+      "workaround": "Use bash-guard to block 'git add -f' and 'git add --force'. Review git staging commands manually when running in auto-mode.",
+      "status": "open"
+    },
+    {
+      "id": "subagent-cache-miss-first-sendmessage-resume",
+      "title": "Subagent cache miss on first SendMessage resume — cache created by Agent call is not reused.",
+      "category": "Performance",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44724"
+      ],
+      "description": "When resuming a subagent via SendMessage, the first resume call always results in a full cache miss (cache_read=0), even though the preceding Agent call created a populated cache seconds earlier. Subsequent SendMessage calls to the same agent correctly hit the cache. Pattern: Agent call creates ~7k cache, first SendMessage creates ~14.7k cache with 0 read, second SendMessage reads ~14.7k correctly. The first resume always pays full cache creation cost. See #44724.",
+      "workaround": "Accept the one-time cache miss on first SendMessage resume. Cost is bounded to one extra cache write per subagent lifecycle.",
+      "status": "open"
+    },
+    {
+      "id": "copy-command-garbled-accented-chars-windows-utf8-cp437",
+      "title": "/copy command produces garbled accented characters on Windows due to UTF-8 vs CP437 encoding mismatch.",
+      "category": "CLI & terminal",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44740"
+      ],
+      "description": "The /copy command on Windows puts garbled text in the clipboard when the response contains accented characters (é, è, ç, ô, etc.). UTF-8 bytes are interpreted as CP437. Reproducible in cmd.exe with chcp 65001. Expected 'éèêë àâ ùû ïî ç ô' becomes mojibake. See #44740.",
+      "workaround": "Manually copy from terminal output instead of using /copy. Ensure terminal code page matches Claude Code's output encoding.",
+      "status": "open"
+    },
+    {
+      "id": "model-skips-claude-md-procedural-instruction-before-acting",
+      "title": "Model ignores explicit CLAUDE.md procedural instruction ('check docs before fix') and acts immediately.",
+      "category": "Model behavior",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44745"
+      ],
+      "description": "A CLAUDE.md contained an explicit instruction 'Sprawdz docs PRZED fixem' (Check docs BEFORE the fix). The model ignored it, immediately calling Telegram Bot API getUpdates directly, consuming the active OpenClaw gateway's update stream and causing data loss. Related to KL #499 (rules files compliance regression) and KL #554 (model violates AGENTS.md in same session). CLAUDE.md procedural constraints are systematically non-binding. See #44745.",
+      "workaround": "Use PreToolUse hooks to enforce procedural gates (e.g., block API calls until a required Read is confirmed). Text instructions in CLAUDE.md cannot be relied upon for safety-critical procedures.",
+      "status": "open"
     }
   ],
   "status_summary": {
-    "open": 561,
+    "open": 634,
     "mitigated": 1,
     "fixed": 11
   },
   "severities": {
-    "critical": 37,
-    "high": 219,
-    "medium": 216,
-    "low": 93
+    "critical": 43,
+    "high": 268,
+    "medium": 239,
+    "low": 96
   },
   "lastUpdated": "2026-04-07",
   "stats": {
-    "total": 615,
-    "critical": 38,
-    "high": 253,
-    "medium": 230,
-    "low": 94,
-    "open": 594,
+    "total": 646,
+    "critical": 43,
+    "high": 268,
+    "medium": 239,
+    "low": 96,
+    "open": 634,
     "fixed": 11,
     "mitigated": 1
   },
