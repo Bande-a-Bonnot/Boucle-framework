@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">521</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-06.</span></p>
+        <p class="subtitle"><span id="total-count">563</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-06.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -5882,6 +5882,60 @@
                 <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">User-invoked skills via /skill-name emit no OTEL telemetry; only programmatic Skill tool calls are instrumented.</h3>
                 <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When user types /skill-name, skill content is expanded client-side and injected as a user message, bypassing the tool call system that OTEL instruments. When Claude calls the Skill tool programmatically, tool_result events are emitted with skill name in tool_parameters (when OTEL_LOG_TOOL_DETAILS=1). Organizations using OTEL for observability lose visibility into the majority of skill invocations (user-initiated). The two invocation paths produce different telemetry despite identical behaviour.</p>
                 <a href="https://github.com/anthropics/claude-code/issues/44432" style="font-size:0.8rem;color:var(--accent);">#44432</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Permission system" id="bash-rm-allowlist-silently-ignored">
+                <span class="kl-num">#558</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Permission system</span>
+                <a href="#bash-rm-allowlist-silently-ignored" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Bash(rm:*) allow-list pattern silently ignored; once denied in a session, all subsequent rm calls are blocked.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">rm commands are never auto-approved even when explicitly whitelisted as Bash(rm:*). The permissions engine appears to mishandle rm specifically: once any rm invocation is denied in a session (manually or by default), all subsequent rm calls are blocked regardless of the allow-list. The deny state is sticky within a session and cannot be cleared without restart. Workaround: Restart the session or use a more specific allow pattern. No in-session workaround once rm is denied.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44442" style="font-size:0.8rem;color:var(--accent);">#44442</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Hook behavior &amp; events" id="pretooluse-hook-no-timeout-stream-closed">
+                <span class="kl-num">#559</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Hook behavior &amp; events</span>
+                <a href="#pretooluse-hook-no-timeout-stream-closed" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">PreToolUse hook without explicit timeout silently closes the permission stream, blocking commands in the allow list.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When PreToolUse hooks run without an explicit timeout and parallel tool calls are active, the permission stream can close before the hook completes. This produces an opaque 'stream closed' error even for commands that are in the allow list and should not require hook evaluation. No default timeout is applied to hooks, and the error message provides no actionable information. Reproduces with session resume + parallel tool invocation. Workaround: Add explicit timeouts to all PreToolUse hooks. Monitor for opaque 'stream closed' errors as a sign of this issue.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44435" style="font-size:0.8rem;color:var(--accent);">#44435</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="CLI / TUI rendering" id="input-validation-question-options-exceed-api-limit">
+                <span class="kl-num">#560</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">CLI / TUI rendering</span>
+                <a href="#input-validation-question-options-exceed-api-limit" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">TUI multi-choice prompts with &gt;4 options crash with InputValidationError: exceeds API limit.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When Claude Code generates a multi-choice prompt (AskUserQuestion or similar) with more than 4 options, the API rejects it with InputValidationError citing a hard limit of 4 options. The TUI does not validate or truncate option lists before sending them, causing session-breaking crashes with no workaround. This is a regression — prior versions appear to have handled larger option sets.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44434" style="font-size:0.8rem;color:var(--accent);">#44434</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="CLI / TUI rendering" id="voice-dictation-silently-stops-mid-dictation">
+                <span class="kl-num">#561</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">CLI / TUI rendering</span>
+                <a href="#voice-dictation-silently-stops-mid-dictation" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Voice dictation silently stops mid-dictation ~1 in 5 attempts; recording indicator stays visible.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Voice PTT (push-to-talk) recording stops transcribing approximately 1 in 5-10 attempts. The recording indicator remains visible giving the impression that dictation is active, but no transcription is produced. There is no error message or audio feedback. The failure appears intermittent and non-deterministic. Users must manually notice that the transcription field is empty to detect failure. Workaround: Watch for missing transcription text after stopping recording as a sign of silent failure. Retry the dictation.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44441" style="font-size:0.8rem;color:var(--accent);">#44441</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Multi-agent / subagents" id="agent-teammate-permission-prompts-invisible-desktop-remote">
+                <span class="kl-num">#562</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Multi-agent / subagents</span>
+                <a href="#agent-teammate-permission-prompts-invisible-desktop-remote" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Agent/teammate permission approval requests invisible in Desktop App during remote sessions; agents stall silently.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When using Claude Code Desktop App to connect to a remote session running multi-agent tasks, permission approval requests from agent teammates are not surfaced in the Desktop App UI. They appear only in the underlying tmux terminal. Users watching only the Desktop App see agents silently stall with no indication that approval is needed. This makes remote multi-agent workflows non-functional without terminal access. Workaround: Monitor the tmux terminal alongside the Desktop App during remote sessions. Approval prompts only appear in the terminal.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44438" style="font-size:0.8rem;color:var(--accent);">#44438</a>
+            </div>
+            <div class="kl-entry" data-severity="low" data-category="CLI / TUI rendering" id="temp-agent-session-files-multi-dot-incompatible-dropbox">
+                <span class="kl-num">#563</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">CLI / TUI rendering</span>
+                <a href="#temp-agent-session-files-multi-dot-incompatible-dropbox" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Temporary agent session files use multi-dot names that trigger persistent Dropbox sync errors.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Temporary files created for agent sessions use names with multiple dots (e.g., s.OapGweUlug.agent.cHSH8gx76Y). Dropbox interprets multi-dot filenames as conflicted copies and generates persistent sync error notifications. The files are created in the .claude/ directory, which many users sync via Dropbox for cross-machine continuity. The naming scheme is not configurable. Workaround: Exclude the .claude/ directory from Dropbox sync, or move the project outside the Dropbox-watched tree.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44440" style="font-size:0.8rem;color:var(--accent);">#44440</a>
             </div>
 <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>

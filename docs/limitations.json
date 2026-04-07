@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 557,
+  "count": 563,
   "categories": {
     "Hook bypass & evasion": 93,
     "Hook behavior & events": 157,
@@ -6690,18 +6690,90 @@
       "status": "open",
       "workaround": "Use Claude programmatically via 'use the X skill' prompts so Claude invokes the Skill tool (which emits OTEL events) rather than user-typed / prefix expansion.",
       "description": "When user types /skill-name, skill content is expanded client-side and injected as a user message, bypassing the tool call system that OTEL instruments. When Claude calls the Skill tool programmatically, tool_result events are emitted with skill name in tool_parameters (when OTEL_LOG_TOOL_DETAILS=1). Organizations using OTEL for observability lose visibility into the majority of skill invocations (user-initiated). The two invocation paths produce different telemetry despite identical behaviour."
+    },
+    {
+      "id": "bash-rm-allowlist-silently-ignored",
+      "title": "Bash(rm:*) allow-list pattern silently ignored; once denied in a session, all subsequent rm calls are blocked.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44442"
+      ],
+      "status": "open",
+      "workaround": "Restart the session or use a more specific allow pattern. No in-session workaround once rm is denied.",
+      "description": "rm commands are never auto-approved even when explicitly whitelisted as Bash(rm:*). The permissions engine appears to mishandle rm specifically: once any rm invocation is denied in a session (manually or by default), all subsequent rm calls are blocked regardless of the allow-list. The deny state is sticky within a session and cannot be cleared without restart."
+    },
+    {
+      "id": "pretooluse-hook-no-timeout-stream-closed",
+      "title": "PreToolUse hook without explicit timeout silently closes the permission stream, blocking commands in the allow list.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44435"
+      ],
+      "status": "open",
+      "workaround": "Add explicit timeouts to all PreToolUse hooks. Monitor for opaque 'stream closed' errors as a sign of this issue.",
+      "description": "When PreToolUse hooks run without an explicit timeout and parallel tool calls are active, the permission stream can close before the hook completes. This produces an opaque 'stream closed' error even for commands that are in the allow list and should not require hook evaluation. No default timeout is applied to hooks, and the error message provides no actionable information. Reproduces with session resume + parallel tool invocation."
+    },
+    {
+      "id": "input-validation-question-options-exceed-api-limit",
+      "title": "TUI multi-choice prompts with >4 options crash with InputValidationError: exceeds API limit.",
+      "category": "CLI / TUI rendering",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44434"
+      ],
+      "status": "open",
+      "workaround": "None. Avoid generating multi-choice prompts with more than 4 options in contexts where the TUI renders them as API requests.",
+      "description": "When Claude Code generates a multi-choice prompt (AskUserQuestion or similar) with more than 4 options, the API rejects it with InputValidationError citing a hard limit of 4 options. The TUI does not validate or truncate option lists before sending them, causing session-breaking crashes with no workaround. This is a regression — prior versions appear to have handled larger option sets."
+    },
+    {
+      "id": "voice-dictation-silently-stops-mid-dictation",
+      "title": "Voice dictation silently stops mid-dictation ~1 in 5 attempts; recording indicator stays visible.",
+      "category": "CLI / TUI rendering",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44441"
+      ],
+      "status": "open",
+      "workaround": "Watch for missing transcription text after stopping recording as a sign of silent failure. Retry the dictation.",
+      "description": "Voice PTT (push-to-talk) recording stops transcribing approximately 1 in 5-10 attempts. The recording indicator remains visible giving the impression that dictation is active, but no transcription is produced. There is no error message or audio feedback. The failure appears intermittent and non-deterministic. Users must manually notice that the transcription field is empty to detect failure."
+    },
+    {
+      "id": "agent-teammate-permission-prompts-invisible-desktop-remote",
+      "title": "Agent/teammate permission approval requests invisible in Desktop App during remote sessions; agents stall silently.",
+      "category": "Multi-agent / subagents",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44438"
+      ],
+      "status": "open",
+      "workaround": "Monitor the tmux terminal alongside the Desktop App during remote sessions. Approval prompts only appear in the terminal.",
+      "description": "When using Claude Code Desktop App to connect to a remote session running multi-agent tasks, permission approval requests from agent teammates are not surfaced in the Desktop App UI. They appear only in the underlying tmux terminal. Users watching only the Desktop App see agents silently stall with no indication that approval is needed. This makes remote multi-agent workflows non-functional without terminal access."
+    },
+    {
+      "id": "temp-agent-session-files-multi-dot-incompatible-dropbox",
+      "title": "Temporary agent session files use multi-dot names that trigger persistent Dropbox sync errors.",
+      "category": "CLI / TUI rendering",
+      "severity": "low",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44440"
+      ],
+      "status": "open",
+      "workaround": "Exclude the .claude/ directory from Dropbox sync, or move the project outside the Dropbox-watched tree.",
+      "description": "Temporary files created for agent sessions use names with multiple dots (e.g., s.OapGweUlug.agent.cHSH8gx76Y). Dropbox interprets multi-dot filenames as conflicted copies and generates persistent sync error notifications. The files are created in the .claude/ directory, which many users sync via Dropbox for cross-machine continuity. The naming scheme is not configurable."
     }
   ],
   "status_summary": {
-    "open": 531,
+    "open": 537,
     "mitigated": 1,
     "fixed": 11
   },
   "severities": {
     "critical": 37,
-    "high": 208,
-    "medium": 201,
-    "low": 91
+    "high": 210,
+    "medium": 204,
+    "low": 92
   },
   "lastUpdated": "2026-04-06"
 }
