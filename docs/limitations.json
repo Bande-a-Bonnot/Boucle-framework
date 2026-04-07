@@ -8199,29 +8199,80 @@
       "description": "The /export command has a cluster of four path-handling bugs all confirmed with repro on macOS: (1) tilde (~) in filename is not expanded \u2014 creates a literal ~/... directory (#44813), (2) absolute paths are silently ignored \u2014 export always goes to the working directory (#44814), (3) when a destination argument is provided alongside a filename with extension, the destination is silently ignored (#44814), (4) when no extension is provided and multiple arguments are given, they are concatenated into a single malformed filename (#44817). Additionally, /export mangles filenames when a relative path contains no extension (#44823).",
       "status": "open",
       "added": "2026-04-07"
+    },
+    {
+      "id": "telemetry-competes-api-rate-limit",
+      "title": "Telemetry events compete with API requests for rate limit budget",
+      "severity": "high",
+      "category": "performance",
+      "github_issue": 44850,
+      "description": "Claude Code's first-party telemetry batches (39-80 events per batch) share the same API endpoint rate limit budget as actual model requests. When both fire simultaneously, telemetry 429 rejections also consume rate limit capacity, causing user requests to be rejected in ~19ms at the gateway/load-balancer level before reaching the model. Users see rate limit errors despite low token counts (52K/980K).",
+      "tags": [
+        "rate-limit",
+        "telemetry",
+        "429",
+        "gateway"
+      ],
+      "status": "open",
+      "added": "2026-04-07"
+    },
+    {
+      "id": "remote-control-bridge-race-conditions",
+      "title": "Remote Control Bridge: 15 reliability issues from fire-and-forget async patterns",
+      "severity": "high",
+      "category": "remote",
+      "github_issue": 44847,
+      "description": "Deep analysis reveals 15 reliability issues (6 critical, 3 high, 6 medium) in the remote control bridge. Root cause: fire-and-forget async operations (void promise) combined with insufficient serialization of auth/rebuild lifecycle. Specific issues include concurrent auth refresh + 401 recovery race condition where a boolean guard is insufficient for async coordination, leading to stale epoch 409 conflicts.",
+      "tags": [
+        "remote-control",
+        "race-condition",
+        "async",
+        "bridge"
+      ],
+      "status": "open",
+      "added": "2026-04-07"
+    },
+    {
+      "id": "oauth-devcontainer-ipv6-ipv4-mismatch",
+      "title": "OAuth callback fails in devcontainers: server binds IPv6, VS Code port forward connects IPv4",
+      "severity": "high",
+      "category": "auth",
+      "github_issue": 44844,
+      "description": "In VS Code devcontainers, `claude login` fails because the OAuth callback server binds to IPv6 only (::1). Node.js resolves 'localhost' via /etc/hosts where ::1 wins on Linux. VS Code's port forwarding detects the listening port but connects to 127.0.0.1 (IPv4) inside the container. Since nothing listens on IPv4, TCP connects but zero bytes transfer, causing a silent hang.",
+      "tags": [
+        "oauth",
+        "devcontainer",
+        "ipv6",
+        "vscode",
+        "port-forwarding"
+      ],
+      "status": "open",
+      "added": "2026-04-07"
     }
   ],
   "status_summary": {
     "open": 651,
+    "fixed": 11,
     "mitigated": 1,
-    "fixed": 11
+    "OPEN": 9
   },
   "severities": {
-    "critical": 45,
-    "high": 278,
-    "medium": 244,
+    "critical": 46,
+    "high": 285,
+    "medium": 245,
     "low": 96
   },
   "lastUpdated": "2026-04-07",
   "stats": {
-    "total": 663,
-    "critical": 45,
-    "high": 278,
-    "medium": 244,
+    "total": 672,
+    "critical": 46,
+    "high": 285,
+    "medium": 245,
     "low": 96,
     "open": 651,
     "fixed": 11,
-    "mitigated": 1
+    "mitigated": 1,
+    "OPEN": 9
   },
   "last_updated": "2026-04-07"
 }

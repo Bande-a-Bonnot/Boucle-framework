@@ -6894,6 +6894,33 @@
                 <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">The /export command has a cluster of four path-handling bugs all confirmed with repro on macOS: (1) tilde (~) in filename is not expanded — creates a literal ~/... directory (#44813), (2) absolute paths are silently ignored — export always goes to the working directory (#44814), (3) when a destination argument is provided alongside a filename with extension, the destination is silently ignored (#44814), (4) when no extension is provided and multiple arguments are given, they are concatenated into a single malformed filename (#44817). Additionally, /export mangles filenames when a relative path contains no extension (#44823).</p>
                 <a href="https://github.com/anthropics/claude-code/issues/44813" style="font-size:0.8rem;color:var(--accent);">#44813</a>
             </div>
+            <div class="kl-entry" data-severity="high" data-category="performance" id="telemetry-competes-api-rate-limit">
+                <span class="kl-num">#670</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">performance</span>
+                <a href="#telemetry-competes-api-rate-limit" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Telemetry events compete with API requests for rate limit budget.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Claude Code's first-party telemetry batches (39-80 events per batch) share the same API endpoint rate limit budget as actual model requests. When both fire simultaneously, telemetry 429 rejections also consume rate limit capacity, causing user requests to be rejected in ~19ms at the gateway/load-balancer level before reaching the model. Users see rate limit errors despite low token counts (52K/980K).</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44850" style="font-size:0.8rem;color:var(--accent);">#44850</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="remote" id="remote-control-bridge-race-conditions">
+                <span class="kl-num">#671</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">remote</span>
+                <a href="#remote-control-bridge-race-conditions" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Remote Control Bridge: 15 reliability issues from fire-and-forget async patterns.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Deep analysis reveals 15 reliability issues (6 critical, 3 high, 6 medium) in the remote control bridge. Root cause: fire-and-forget async operations (void promise) combined with insufficient serialization of auth/rebuild lifecycle. Concurrent auth refresh + 401 recovery race condition where a boolean guard is insufficient for async coordination, leading to stale epoch 409 conflicts.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44847" style="font-size:0.8rem;color:var(--accent);">#44847</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="auth" id="oauth-devcontainer-ipv6-ipv4-mismatch">
+                <span class="kl-num">#672</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">auth</span>
+                <a href="#oauth-devcontainer-ipv6-ipv4-mismatch" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">OAuth callback fails in devcontainers: server binds IPv6, VS Code port forward connects IPv4.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">In VS Code devcontainers, claude login fails because the OAuth callback server binds to IPv6 only (::1). Node.js resolves 'localhost' via /etc/hosts where ::1 wins on Linux. VS Code's port forwarding detects the listening port but connects to 127.0.0.1 (IPv4) inside the container. Since nothing listens on IPv4, TCP connects but zero bytes transfer, causing a silent hang.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44844" style="font-size:0.8rem;color:var(--accent);">#44844</a>
+            </div>
 <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>
         </footer>
