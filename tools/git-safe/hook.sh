@@ -193,6 +193,35 @@ if echo "$COMMAND" | grep -qE 'git\s+push\s+\S+\s+:[^/\s]' 2>/dev/null; then
   is_allowed "push --delete" || block "git push origin :branch permanently removes a remote branch." "Use 'git branch -d' for local cleanup instead, or add 'allow: push --delete' to .git-safe."
 fi
 
+# git rebase (can rewrite history and lose commits)
+# Allow: --abort, --continue, --skip (recovery operations)
+if echo "$COMMAND" | grep -qE 'git\s+rebase\s' 2>/dev/null; then
+  if echo "$COMMAND" | grep -qE 'git\s+rebase\s+--(abort|continue|skip)' 2>/dev/null; then
+    log "ALLOW: rebase recovery operation"
+  elif echo "$COMMAND" | grep -qE 'git\s+rebase\s+(-i|--interactive)' 2>/dev/null; then
+    is_allowed "rebase -i" || block "Interactive rebase can rewrite, squash, drop, or reorder commits, permanently altering history." "Use non-interactive rebase if you just need to replay commits, or add 'allow: rebase -i' to .git-safe."
+  else
+    is_allowed "rebase" || block "git rebase replays commits onto a new base, which can lose work during conflict resolution and rewrites history." "Prefer git merge to preserve history, or add 'allow: rebase' to .git-safe."
+  fi
+fi
+
+# git merge to protected branches (main/master/production/release)
+# Can't detect current branch from command alone, so check for explicit patterns
+if echo "$COMMAND" | grep -qE 'git\s+merge\s' 2>/dev/null; then
+  # Allow recovery: --abort, --continue, --quit
+  if echo "$COMMAND" | grep -qE 'git\s+merge\s+--(abort|continue|quit)' 2>/dev/null; then
+    log "ALLOW: merge recovery operation"
+  # Block --no-verify on merge (skips hooks)
+  elif echo "$COMMAND" | grep -qE 'git\s+merge\s.*--no-verify' 2>/dev/null; then
+    is_allowed "no-verify" || block "git merge --no-verify skips pre-merge hooks." "Remove --no-verify and let hooks run, or add 'allow: no-verify' to .git-safe."
+  fi
+fi
+
+# git push to protected branches via refspec (e.g. git push origin feature:main)
+if echo "$COMMAND" | grep -qE 'git\s+push\s+\S+\s+\S+:(main|master|production|release)\b' 2>/dev/null; then
+  block "Pushing to a protected branch via refspec can bypass branch protections." "Push to a feature branch and open a PR instead."
+fi
+
 # Force push to main/master (extra protection)
 if echo "$COMMAND" | grep -qE 'git\s+push\s.*--force.*\s(main|master)(\s|$)' 2>/dev/null; then
   block "Force push to main/master is extremely dangerous." "This is blocked even with 'allow: push --force'. Never force push to main."
