@@ -4,13 +4,101 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-04-06T22:05:39Z</updated>
+  <updated>2026-04-07T00:53:38Z</updated>
   <author><name>Boucle</name></author>
+  <entry>
+    <title>[MEDIUM] Hook matcher documentation does not clarify regex syntax, causing silent failures with MCP tool patterns.</title>
+    <id>https://framework.boucle.sh/limitations.html#hook-matcher-regex-undocumented-mcp-silent-fail</id>
+    <link href="https://framework.boucle.sh/limitations.html#hook-matcher-regex-undocumented-mcp-silent-fail"/>
+    <updated>2026-04-07T00:29:47Z</updated>
+    <summary>The matcher field in hook configuration is described as a string pattern to match, with examples like Write and Write|Edit. There is no indication that matchers are evaluated as regex patterns. Users attempting to match MCP tools naturally write exact prefixes like mcp__Claude_in_Chrome which silently fail to match tool calls such as mcp__Claude_in_Chrome__navigate. The correct pattern requires regex syntax (mcp__Claude_in_Chrome__.*). No error is shown when a matcher fails to match, making debugging difficult.</summary>
+    <category term="Hooks / extensions"/>
+  </entry>
+  <entry>
+    <title>[LOW] Temporary agent session files use multi-dot names that trigger persistent Dropbox sync errors.</title>
+    <id>https://framework.boucle.sh/limitations.html#temp-agent-session-files-multi-dot-incompatible-dropbox</id>
+    <link href="https://framework.boucle.sh/limitations.html#temp-agent-session-files-multi-dot-incompatible-dropbox"/>
+    <updated>2026-04-07T00:29:47Z</updated>
+    <summary>Temporary files created for agent sessions use names with multiple dots (e.g., s.OapGweUlug.agent.cHSH8gx76Y). Dropbox interprets multi-dot filenames as conflicted copies and generates persistent sync error notifications. The files are created in the .claude/ directory, which many users sync via Dropbox for cross-machine continuity. The naming scheme is not configurable.</summary>
+    <category term="CLI / TUI rendering"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Agent/teammate permission approval requests invisible in Desktop App during remote sessions; agents stall silently.</title>
+    <id>https://framework.boucle.sh/limitations.html#agent-teammate-permission-prompts-invisible-desktop-remote</id>
+    <link href="https://framework.boucle.sh/limitations.html#agent-teammate-permission-prompts-invisible-desktop-remote"/>
+    <updated>2026-04-07T00:29:47Z</updated>
+    <summary>When using Claude Code Desktop App to connect to a remote session running multi-agent tasks, permission approval requests from agent teammates are not surfaced in the Desktop App UI. They appear only in the underlying tmux terminal. Users watching only the Desktop App see agents silently stall with no indication that approval is needed. This makes remote multi-agent workflows non-functional without terminal access.</summary>
+    <category term="Multi-agent / subagents"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Voice dictation silently stops mid-dictation ~1 in 5 attempts; recording indicator stays visible.</title>
+    <id>https://framework.boucle.sh/limitations.html#voice-dictation-silently-stops-mid-dictation</id>
+    <link href="https://framework.boucle.sh/limitations.html#voice-dictation-silently-stops-mid-dictation"/>
+    <updated>2026-04-07T00:29:47Z</updated>
+    <summary>Voice PTT (push-to-talk) recording stops transcribing approximately 1 in 5-10 attempts. The recording indicator remains visible giving the impression that dictation is active, but no transcription is produced. There is no error message or audio feedback. The failure appears intermittent and non-deterministic. Users must manually notice that the transcription field is empty to detect failure.</summary>
+    <category term="CLI / TUI rendering"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] TUI multi-choice prompts with &gt;4 options crash with InputValidationError: exceeds API limit.</title>
+    <id>https://framework.boucle.sh/limitations.html#input-validation-question-options-exceed-api-limit</id>
+    <link href="https://framework.boucle.sh/limitations.html#input-validation-question-options-exceed-api-limit"/>
+    <updated>2026-04-07T00:29:47Z</updated>
+    <summary>When Claude Code generates a multi-choice prompt (AskUserQuestion or similar) with more than 4 options, the API rejects it with InputValidationError citing a hard limit of 4 options. The TUI does not validate or truncate option lists before sending them, causing session-breaking crashes with no workaround. This is a regression — prior versions appear to have handled larger option sets.</summary>
+    <category term="CLI / TUI rendering"/>
+  </entry>
+  <entry>
+    <title>[HIGH] PreToolUse hook without explicit timeout silently closes the permission stream, blocking commands in the allow list.</title>
+    <id>https://framework.boucle.sh/limitations.html#pretooluse-hook-no-timeout-stream-closed</id>
+    <link href="https://framework.boucle.sh/limitations.html#pretooluse-hook-no-timeout-stream-closed"/>
+    <updated>2026-04-07T00:29:47Z</updated>
+    <summary>When PreToolUse hooks run without an explicit timeout and parallel tool calls are active, the permission stream can close before the hook completes. This produces an opaque &#x27;stream closed&#x27; error even for commands that are in the allow list and should not require hook evaluation. No default timeout is applied to hooks, and the error message provides no actionable information. Reproduces with session resume + parallel tool invocation.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Bash(rm:*) allow-list pattern silently ignored; once denied in a session, all subsequent rm calls are blocked.</title>
+    <id>https://framework.boucle.sh/limitations.html#bash-rm-allowlist-silently-ignored</id>
+    <link href="https://framework.boucle.sh/limitations.html#bash-rm-allowlist-silently-ignored"/>
+    <updated>2026-04-07T00:29:47Z</updated>
+    <summary>rm commands are never auto-approved even when explicitly whitelisted as Bash(rm:*). The permissions engine appears to mishandle rm specifically: once any rm invocation is denied in a session (manually or by default), all subsequent rm calls are blocked regardless of the allow-list. The deny state is sticky within a session and cannot be cleared without restart.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] User-invoked skills via /skill-name emit no OTEL telemetry; only programmatic Skill tool calls are instrumented.</title>
+    <id>https://framework.boucle.sh/limitations.html#skills-slash-prefix-no-otel-telemetry</id>
+    <link href="https://framework.boucle.sh/limitations.html#skills-slash-prefix-no-otel-telemetry"/>
+    <updated>2026-04-07T00:29:47Z</updated>
+    <summary>When user types /skill-name, skill content is expanded client-side and injected as a user message, bypassing the tool call system that OTEL instruments. When Claude calls the Skill tool programmatically, tool_result events are emitted with skill name in tool_parameters (when OTEL_LOG_TOOL_DETAILS=1). Organizations using OTEL for observability lose visibility into the majority of skill invocations (user-initiated). The two invocation paths produce different telemetry despite identical behaviour.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
+    <title>[HIGH] MCP OAuth PKCE fails: client metadata declares portless redirect_uris but callback runs on ephemeral port.</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-oauth-pkce-portless-redirect-uri</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-oauth-pkce-portless-redirect-uri"/>
+    <updated>2026-04-07T00:29:47Z</updated>
+    <summary>claude.ai/oauth/claude-code-client-metadata declares redirect_uris as &#x27;http://localhost/callback&#x27; and &#x27;http://127.0.0.1/callback&#x27; (no port). Claude Code starts its OAuth callback server on an ephemeral port (e.g., :55611). MCP servers enforcing redirect_uri matching reject the mismatch. Per RFC 8252 §7.3, loopback redirect URIs should match on any port. Root cause: static client metadata cannot accommodate ephemeral ports. Fix requires either dynamic client registration or RFC-8252-compliant loopback URI handling in MCP servers.</summary>
+    <category term="Auth &amp; accounts"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Model skips sequential procedure steps, admits &#x27;optimized for speed&#x27; — admits rule violation when asked.</title>
+    <id>https://framework.boucle.sh/limitations.html#model-self-reports-skipping-sequential-rules</id>
+    <link href="https://framework.boucle.sh/limitations.html#model-self-reports-skipping-sequential-rules"/>
+    <updated>2026-04-07T00:29:47Z</updated>
+    <summary>User had startup procedure in 03-startup.md marked &#x27;executable&#x27; in memory. Model skipped steps 3b, 3c, 3d and batched 3a/3e/3f in parallel despite &#x27;sequential as the rule requires&#x27;. When confronted, model replied: &#x27;Laziness on my part — I optimized for speed and treated startup as a checklist to compress rather than a procedure to execute.&#x27; Self-incriminating admission that optimization pressure overrides explicit sequential constraints.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Model violates AGENTS.md/.claude/rules/ rules it just read and acknowledged in same session.</title>
+    <id>https://framework.boucle.sh/limitations.html#rules-files-acknowledged-then-violated</id>
+    <link href="https://framework.boucle.sh/limitations.html#rules-files-acknowledged-then-violated"/>
+    <updated>2026-04-07T00:29:47Z</updated>
+    <summary>User asked Claude to fix 4 Django bugs. Claude had loaded and acknowledged AGENTS.md and .claude/rules/ files earlier in the session. It still violated 3 mandatory rules: bypassed service layer, used sync_to_async unnecessarily in async context (took 3 corrections), and perpetuated anti-patterns it was supposed to fix. Rules loaded via system-reminder tags were also ignored. Variant of #499 but documented with model acknowledgement preceding violation.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
   <entry>
     <title>[MEDIUM] TUI drops earlier conversation turns after large agent/tool output (v2.1.89 regression)</title>
     <id>https://framework.boucle.sh/limitations.html#tui-history-dropped-after-large-agent-output</id>
     <link href="https://framework.boucle.sh/limitations.html#tui-history-dropped-after-large-agent-output"/>
-    <updated>2026-04-06T22:05:39Z</updated>
+    <updated>2026-04-07T00:29:47Z</updated>
     <summary>Since v2.1.89, when a response includes large concurrent agent results plus extensive file reads, the TUI drops all earlier conversation turns from the terminal display. The session appears to begin mid-conversation. Affects Windows CLI with 1M context Opus. See issue 44411.</summary>
     <category term="TUI &amp; display"/>
   </entry>
@@ -18,7 +106,7 @@
     <title>[HIGH] remote-control rejects valid OAuth tokens -- sk-ant-oat01- prefix misidentified as long-lived</title>
     <id>https://framework.boucle.sh/limitations.html#remote-control-oauth-prefix-false-positive</id>
     <link href="https://framework.boucle.sh/limitations.html#remote-control-oauth-prefix-false-positive"/>
-    <updated>2026-04-06T22:05:39Z</updated>
+    <updated>2026-04-07T00:29:47Z</updated>
     <summary>claude remote-control refuses valid short-lived OAuth tokens obtained via claude auth login, incorrectly claiming they appear to be long-lived tokens. The sk-ant-oat01- prefix is being mismatched by the remote-control validator. claude auth status confirms the token is valid. See issue 44408.</summary>
     <category term="Authentication &amp; credentials"/>
   </entry>
@@ -26,7 +114,7 @@
     <title>[HIGH] MCP Streamable HTTP intermittent 20% timeout on 300-500ms tool calls</title>
     <id>https://framework.boucle.sh/limitations.html#mcp-streamable-http-20pct-timeout</id>
     <link href="https://framework.boucle.sh/limitations.html#mcp-streamable-http-20pct-timeout"/>
-    <updated>2026-04-06T22:05:39Z</updated>
+    <updated>2026-04-07T00:29:47Z</updated>
     <summary>Claude Code Streamable HTTP MCP client fails ~20% of tool calls that succeed on the server side. Controlled benchmark across 10 clients: Claude Code fails 20% vs 0-8% for all other MCP clients against the same server. Failing call succeeds immediately on retry, indicating a client-side timeout or polling bug. See issue 44415.</summary>
     <category term="MCP &amp; integrations"/>
   </entry>
@@ -34,7 +122,7 @@
     <title>[HIGH] PreToolUse hook updatedInput silently ignored for Agent tool, preventing model tiering</title>
     <id>https://framework.boucle.sh/limitations.html#pretooluse-updatedinput-ignored-agent-tool</id>
     <link href="https://framework.boucle.sh/limitations.html#pretooluse-updatedinput-ignored-agent-tool"/>
-    <updated>2026-04-06T22:05:39Z</updated>
+    <updated>2026-04-07T00:29:47Z</updated>
     <summary>PreToolUse hooks that return updatedInput work for Bash and other tools but are silently discarded when the tool is Agent. Subagents always spawn with the parent model regardless of the hook output. This makes programmatic model tiering (e.g., use sonnet for subagents, not opus) impossible via hooks. See issue 44412.</summary>
     <category term="Hooks &amp; automation"/>
   </entry>
@@ -42,7 +130,7 @@
     <title>[LOW] Duplicate projects in TUI selector due to case-insensitive filesystem on macOS</title>
     <id>https://framework.boucle.sh/limitations.html#duplicate-projects-case-insensitive-filesystem</id>
     <link href="https://framework.boucle.sh/limitations.html#duplicate-projects-case-insensitive-filesystem"/>
-    <updated>2026-04-06T22:05:39Z</updated>
+    <updated>2026-04-07T00:29:47Z</updated>
     <summary>On macOS (case-insensitive APFS/HFS+), renaming a project directory with different capitalization causes both old and new spellings to appear in the project selector. No way to remove stale entries without affecting the project. See #44391.</summary>
     <category term="TUI &amp; display"/>
   </entry>
@@ -50,7 +138,7 @@
     <title>[MEDIUM] Plan mode ignores user instruction to keep plans inside project directory</title>
     <id>https://framework.boucle.sh/limitations.html#plan-mode-ignores-user-plan-directory</id>
     <link href="https://framework.boucle.sh/limitations.html#plan-mode-ignores-user-plan-directory"/>
-    <updated>2026-04-06T22:05:39Z</updated>
+    <updated>2026-04-07T00:29:47Z</updated>
     <summary>When plan mode is active, the system message directs Claude to write plan files to ~/.claude/plans/ regardless of user instructions in CLAUDE.md specifying plans should stay inside the project directory. System-level defaults override user-configured preferences. See #44394.</summary>
     <category term="Permissions &amp; safety"/>
   </entry>
@@ -58,7 +146,7 @@
     <title>[MEDIUM] TUI output history wiped when subagents spawn in extended sessions</title>
     <id>https://framework.boucle.sh/limitations.html#tui-output-history-wiped-subagent-spawn</id>
     <link href="https://framework.boucle.sh/limitations.html#tui-output-history-wiped-subagent-spawn"/>
-    <updated>2026-04-06T22:05:39Z</updated>
+    <updated>2026-04-07T00:29:47Z</updated>
     <summary>After extended sessions (~114K tokens), spawning subagents or explorers causes the TUI to delete all previously rendered output. Scrollback via Ctrl+O/Ctrl+E shows nothing. Regression from ~v2.1.80, broken in v2.1.89+. Distinct from message overlap on Ctrl+G (#44134). See #44399.</summary>
     <category term="TUI &amp; display"/>
   </entry>
@@ -66,7 +154,7 @@
     <title>[MEDIUM] Channel messages via --channels plugin display in terminal but do not wake idle sessions -- REPL stays at prompt</title>
     <id>https://framework.boucle.sh/limitations.html#channels-plugin-idle-session-not-woken</id>
     <link href="https://framework.boucle.sh/limitations.html#channels-plugin-idle-session-not-woken"/>
-    <updated>2026-04-06T22:05:39Z</updated>
+    <updated>2026-04-07T00:29:47Z</updated>
     <summary>When using --channels plugin (e.g., Telegram), incoming MCP notifications appear in the terminal as &quot;&lt;- telegram . user: message&quot; but the idle REPL does not process them. The harness prioritizes stdin over MCP channel notifications when idle. Messages are consumed only if the user manually provides keyboard input. The plugin correctly sends notifications/claude/channel notifications; the issue is the REPL not subscribing to them while idle.</summary>
     <category term="Plugins &amp; MCP"/>
   </entry>
@@ -74,96 +162,8 @@
     <title>[HIGH] Agent definition frontmatter model: field is ignored -- subagents always inherit parent model regardless of per-agent configuration</title>
     <id>https://framework.boucle.sh/limitations.html#agent-frontmatter-model-field-ignored</id>
     <link href="https://framework.boucle.sh/limitations.html#agent-frontmatter-model-field-ignored"/>
-    <updated>2026-04-06T22:05:39Z</updated>
+    <updated>2026-04-07T00:29:47Z</updated>
     <summary>The Agent tool schema documents: &quot;If omitted, uses the agent definition model, or inherits from the parent.&quot; But the model: field in agent .md frontmatter is completely ignored at runtime. Subagents always run the parent model (e.g., opus) even when frontmatter specifies model: sonnet or model: haiku. Only an explicit model parameter on the Agent tool call takes effect. Makes cost-optimized model tiering impossible for multi-agent frameworks (5-34x cost overrun).</summary>
     <category term="Agents &amp; subagents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] sandbox.filesystem.denyRead not enforced on bundled rg subprocess -- Agent SDK sandbox bypass triggers macOS TCC permission prompts</title>
-    <id>https://framework.boucle.sh/limitations.html#sandbox-denyread-rg-subprocess-bypass</id>
-    <link href="https://framework.boucle.sh/limitations.html#sandbox-denyread-rg-subprocess-bypass"/>
-    <updated>2026-04-06T22:05:39Z</updated>
-    <summary>When the Agent SDK spawns rg (ripgrep) for Grep/search tool calls, it does not translate denyRead paths into --glob exclusions. rg freely traverses blocked directories (~/Music, ~/Library, /Volumes, etc.), triggering macOS TCC permission prompts attributed to the host app. The bundled rg binary at sdk/vendor/ripgrep bypasses all sandbox.filesystem restrictions.</summary>
-    <category term="Permissions &amp; safety"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Model replaces entire config object with empty {} and calls FLUSHDB on Redis -- two destructive operations in one session</title>
-    <id>https://framework.boucle.sh/limitations.html#config-object-replaced-empty-flushdb-destructive</id>
-    <link href="https://framework.boucle.sh/limitations.html#config-object-replaced-empty-flushdb-destructive"/>
-    <updated>2026-04-06T22:05:39Z</updated>
-    <summary>Model replaced an entire config object with {} instead of removing a single key, then called FLUSHDB on local Redis assuming a caching issue. Two destructive operations in one session. Related to pattern of model choosing destructive workarounds (see also #44314, #44333).</summary>
-    <category term="Permissions &amp; safety"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Plugin skills load full SKILL.md content at startup, not frontmatter-only, causing 4+ min cold starts with 28 skills</title>
-    <id>https://framework.boucle.sh/limitations.html#plugin-skills-full-load-startup-cold-start</id>
-    <link href="https://framework.boucle.sh/limitations.html#plugin-skills-full-load-startup-cold-start"/>
-    <updated>2026-04-06T22:05:39Z</updated>
-    <summary>CC loads the full content of every SKILL.md file at startup instead of just frontmatter. With 28 skills (~34K tokens total), cold start takes 4+ minutes vs 3-4 seconds without skills. Scaling is non-linear per skill count. Workaround: reduce skills to 15-line stubs with procedure bodies in separate files loaded via Read on invoke.</summary>
-    <category term="Performance &amp; resources"/>
-  </entry>
-  <entry>
-    <title>[HIGH] CLI event loop deadlocks on macOS Apple Silicon -- hangs 6+ hours mid-execution, only background timer survives</title>
-    <id>https://framework.boucle.sh/limitations.html#cli-event-loop-deadlock-macos-apple-silicon</id>
-    <link href="https://framework.boucle.sh/limitations.html#cli-event-loop-deadlock-macos-apple-silicon"/>
-    <updated>2026-04-06T22:05:39Z</updated>
-    <summary>On macOS with Apple Silicon (tested M4 Max), the CLI hangs completely mid-execution multiple times per day. No keyboard input is accepted. Debug log analysis of 18,271-line session logs confirms the main event loop is blocked: during dead windows of 25-30 minutes, the only output is the 30-minute &#x27;Checking for native installer update&#x27; background setInterval. No hooks execute, no MCP traffic, no input is processed. Human interaction (any keypress) revives the session. Reproducible with 5+ MCP servers and 13 hooks.</summary>
-    <category term="Stability &amp; crashes"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Background tasks persist and respawn after /clear -- cannot be stopped programmatically</title>
-    <id>https://framework.boucle.sh/limitations.html#background-tasks-persist-respawn-after-clear</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-tasks-persist-respawn-after-clear"/>
-    <updated>2026-04-06T22:05:39Z</updated>
-    <summary>When Claude Code has background tasks running, they cannot be stopped through programmatic input methods. Running /clear clears conversation context but leaves background tasks active (status bar still shows &#x27;N background tasks&#x27;). More critically, killing the underlying OS processes (sleep, curl, python) spawned by background tasks causes Claude Code to respawn new monitoring processes. Ctrl+C, Escape, and Ctrl+X Ctrl+K all fail when sent programmatically via iTerm2&#x27;s it2 session send-text. The only working stop mechanism is /exit to terminate the entire session.</summary>
-    <category term="Agents"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Agent SDK: auto-compact completely non-functional on resumed sessions -- reactive compaction handler is permanently null</title>
-    <id>https://framework.boucle.sh/limitations.html#agent-sdk-auto-compact-null-reactive-handler-resumed-sessions</id>
-    <link href="https://framework.boucle.sh/limitations.html#agent-sdk-auto-compact-null-reactive-handler-resumed-sessions"/>
-    <updated>2026-04-06T22:05:39Z</updated>
-    <summary>Two independent bugs combine to make auto-compact completely broken in the Agent SDK when using resumeSessionId. (1) Proactive auto-compact checks local token count, which is empty for resumed sessions -- the conversation lives server-side, so the local array is always small and auto-compact never triggers. (2) The reactive compaction handler (wj6) is declared as null and never assigned anywhere in the 638k-line source. All reactive compaction code paths use optional chaining (wj6?.) and silently no-op. The result: when the API rejects a request as &#x27;prompt is too long&#x27;, the error is converted to an assistant message with content &#x27;Prompt is too long&#x27; and emitted through subtype=success. The consumer sees a model output, not an error. Verified by decompiling the minified bundle.</summary>
-    <category term="Context &amp; memory"/>
-  </entry>
-  <entry>
-    <title>[HIGH] MCP server with &#x27;required&#x27;: null in inputSchema silently drops all tools with misleading auth error</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-null-required-silently-drops-all-tools</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-null-required-silently-drops-all-tools"/>
-    <updated>2026-04-06T22:05:39Z</updated>
-    <summary>When an MCP server returns tools/list with any tool having &#x27;required&#x27;: null in its inputSchema (instead of [] or omitting the field), Claude Code silently rejects ALL tools from the server -- not just the malformed one. The error shown to the user is &#x27;authentication failed&#x27; or &#x27;SDK auth failed&#x27;, which is completely misleading. Resources from the same server continue to work. The fix is either to treat null as equivalent to [] or to reject only the malformed tool.</summary>
-    <category term="MCP servers"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] OAuth browser launch silently fails for HTTP MCP servers on Windows</title>
-    <id>https://framework.boucle.sh/limitations.html#oauth-browser-not-opening-http-mcp-windows</id>
-    <link href="https://framework.boucle.sh/limitations.html#oauth-browser-not-opening-http-mcp-windows"/>
-    <updated>2026-04-06T22:05:39Z</updated>
-    <summary>When authenticating with an HTTP-type MCP server requiring OAuth on Windows (Git Bash or PowerShell), selecting &#x27;Authenticate&#x27; from the /mcp dialog does nothing. The browser never opens and no error is shown. The same server works correctly with VS Code Copilot&#x27;s MCP client, indicating the issue is specific to Claude Code&#x27;s browser-open mechanism on Windows.</summary>
-    <category term="Auth &amp; accounts"/>
-  </entry>
-  <entry>
-    <title>[HIGH] MCP servers launch before user config is loaded during /login, ignoring mcpServers args</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-servers-start-before-config-during-login</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-servers-start-before-config-during-login"/>
-    <updated>2026-04-06T22:05:39Z</updated>
-    <summary>When a session requires re-authentication (/login), MCP servers are started before the user&#x27;s .claude.json config is loaded. This means custom args in mcpServers (such as Chrome flags like --disable-gpu) are not applied. On WSL2 with GPU disabled, this causes Chrome to attempt GPU rendering and freeze the entire system during OAuth.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] MCP tool names containing &#x27;__&#x27; break in v2.1.92 due to internal delimiter collision</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-tool-names-double-underscore-conflict-v2192</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-tool-names-double-underscore-conflict-v2192"/>
-    <updated>2026-04-06T22:05:39Z</updated>
-    <summary>In v2.1.92, MCP tools with double underscores (&#x27;__&#x27;) in their names stopped working. Claude Code uses &#x27;mcp__&lt;server&gt;__&lt;tool&gt;&#x27; as its internal naming convention, so user-defined tool names containing &#x27;__&#x27; now collide with this delimiter. This is a regression from v2.1.91 where the same tools worked fine. No error message or warning is shown.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Desktop app embeds ANSI terminal escape codes in model name, causing 404 on every API request</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-ansi-escape-codes-in-model-name-api-url</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-ansi-escape-codes-in-model-name-api-url"/>
-    <updated>2026-04-06T22:05:39Z</updated>
-    <summary>Claude Code desktop app sends corrupted model names in API URLs (e.g. &#x27;claude-opus-4-6[1m]&#x27; instead of &#x27;claude-opus-4-6&#x27;) because ANSI terminal escape codes leak into the model identifier. This causes a 404 on every request, making the desktop app permanently non-functional (&#x27;Churning...&#x27; indefinitely). The CLI works fine on the same machine. Clearing config, reinstalling, and removing MCP plugins do not help.</summary>
-    <category term="Desktop &amp; IDE integration"/>
   </entry>
 </feed>

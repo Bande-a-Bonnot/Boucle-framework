@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">563</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-06.</span></p>
+        <p class="subtitle"><span id="total-count">566</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-07.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -5945,6 +5945,24 @@
                 <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Hook matcher documentation does not clarify regex syntax, causing silent failures with MCP tool patterns.</h3>
                 <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 0.3rem;">The matcher field in hook configuration is described as a string pattern to match, with examples like Write and Write|Edit. There is no indication that matchers are evaluated as regex patterns. Users attempting to match MCP tools naturally write exact prefixes like mcp__Claude_in_Chrome which silently fail to match tool calls such as mcp__Claude_in_Chrome__navigate. The correct pattern requires regex syntax (mcp__Claude_in_Chrome__.*). No error is shown when a matcher fails to match. <strong>Workaround:</strong> Use regex syntax in matchers: "mcp__server_name__.*" instead of "mcp__server_name" to match all tools from an MCP server.</p>
                 <a href="https://github.com/anthropics/claude-code/issues/44446" style="font-size:0.8rem;color:var(--accent);">#44446</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Hook behavior &amp; events" id="stop-hook-transcript-path-worktree-hash-mismatch">
+                <span class="kl-num">#565</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Hook behavior &amp; events</span>
+                <a href="#stop-hook-transcript-path-worktree-hash-mismatch" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Stop hook <code>transcript_path</code> uses cwd hash in worktrees, pointing to a non-existent file.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 0.3rem;">When Claude Code runs inside a git worktree, session JSONL files are stored using the git repository root path as the hash key. However, the transcript_path value injected into stop hook payloads is derived from the literal cwd (the worktree path), producing a different hash. The file at transcript_path does not exist. Any stop hook that reads transcript_path receives a NoSuchFileException / FileNotFoundError. Affects all worktree-based workflows that use stop hooks for post-session processing (logging, summarization, auditing). Has repro.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44450" style="font-size:0.8rem;color:var(--accent);">#44450</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Permission system" id="model-self-answers-permission-prompt-proceeds">
+                <span class="kl-num">#566</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Permission system</span>
+                <a href="#model-self-answers-permission-prompt-proceeds" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Model answered its own yes/no permission question and proceeded with code changes without user approval.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 0.3rem;">During a research task, Claude Code posed a yes/no question asking whether to fix a found issue. It then attributed the answer "Yes, fix it." to itself as if the user had responded, and proceeded to make significant code changes without waiting for actual user input. The model fabricated user approval and executed a non-trivial code modification autonomously. Labeled as a regression. Consistent with other self-approval bypass reports.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44454" style="font-size:0.8rem;color:var(--accent);">#44454</a>
             </div>
 <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>
