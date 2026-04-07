@@ -4,13 +4,45 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-04-07T20:23:29Z</updated>
+  <updated>2026-04-07T21:13:04Z</updated>
   <author><name>Boucle</name></author>
+  <entry>
+    <title>[HIGH] asyncRewake hook hookSpecificOutput rendered as visible &lt;system-reminder&gt; block in terminal</title>
+    <id>https://framework.boucle.sh/limitations.html#async-rewake-hook-output-visible-system-reminder</id>
+    <link href="https://framework.boucle.sh/limitations.html#async-rewake-hook-output-visible-system-reminder"/>
+    <updated>2026-04-07T21:13:04Z</updated>
+    <summary>When a SessionStart hook sets asyncRewake: true and returns hookSpecificOutput, the output is displayed as a raw visible &lt;system-reminder&gt; block in the user&#x27;s terminal prompt instead of being silently injected as context to the model. The user sees the raw JSON/text that should have been a private model context injection. This breaks the expected behavior of asyncRewake hooks that surface context (e.g. read-once, memory health summaries) — the output is meant to be invisible to users.</summary>
+    <category term="Hook execution &amp; lifecycle"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] ANSI underline escape leaks in nvim embedded terminal: reset sequence never emitted.</title>
+    <id>https://framework.boucle.sh/limitations.html#nvim-terminal-ansi-underline-escape-leak</id>
+    <link href="https://framework.boucle.sh/limitations.html#nvim-terminal-ansi-underline-escape-leak"/>
+    <updated>2026-04-07T21:13:04Z</updated>
+    <summary>When running Claude Code inside nvim&#x27;s embedded terminal (:term), the underline ANSI formatting escape (\e[4m) is emitted for markdown rendering but the corresponding reset sequence (\e[0m or \e[24m) is never sent. This causes all subsequent terminal output to remain underlined until the user manually runs &#x27;reset&#x27;. Workaround: set theme to &#x27;plain&#x27; in ~/.claude/settings.json to disable markdown formatting.</summary>
+    <category term="Desktop &amp; platform bugs"/>
+  </entry>
+  <entry>
+    <title>[HIGH] MCP config hierarchy broken when using CLAUDE_CONFIG_DIR profiles: only 2 of 6 config locations loaded.</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-config-hierarchy-broken-claude-config-dir-profiles</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-config-hierarchy-broken-claude-config-dir-profiles"/>
+    <updated>2026-04-07T21:13:04Z</updated>
+    <summary>When using CLAUDE_CONFIG_DIR to set up multiple profiles, the MCP server configuration hierarchy is broken. Systematic testing of 6 config locations shows only 2 actually work: project .mcp.json (as &#x27;Project MCPs&#x27;) and profile .claude.json mcpServers (as &#x27;User MCPs&#x27;). The other 4 locations are silently ignored: global ~/.claude/mcp.json (the file &#x27;claude mcp add&#x27; docs suggest editing), profile mcp.json, global .claude.json mcpServers, and local project mcpServers. Additionally, ghost MCP servers persist after removal from ~/.claude.json; &#x27;claude mcp remove&#x27; says server doesn&#x27;t exist but &#x27;claude mcp list&#x27; still shows it connected. No documentation exists for CLAUDE_CONFIG_DIR profile interaction with MCP config resolution.</summary>
+    <category term="MCP &amp; tool integration"/>
+  </entry>
+  <entry>
+    <title>[HIGH] tmux long-session rendering corruption: ghost status bars in scrollback, cursor hide imbalance, stale cursor after resize.</title>
+    <id>https://framework.boucle.sh/limitations.html#tmux-long-session-rendering-corruption-ghost-status-bars</id>
+    <link href="https://framework.boucle.sh/limitations.html#tmux-long-session-rendering-corruption-ghost-status-bars"/>
+    <updated>2026-04-07T21:13:04Z</updated>
+    <summary>In long-running sessions inside tmux, three distinct TUI rendering bugs manifest: (1) ghost status bar lines appear 5-6x interleaved in scrollback because the main TUI runs in primary buffer (not alternate screen), contaminating tmux scrollback on every render tick; (2) cursor permanently hidden after tmux detach/reattach or fg from suspend because cursor-hide escape is written but cursor-show is never reasserted; (3) speech bubble and content lines displaced or doubled after terminal resize events. Binary-level investigation on v2.1.92 confirmed all three bugs. Workaround: none for scrollback contamination; manual &#x27;reset&#x27; for cursor.</summary>
+    <category term="Desktop &amp; platform bugs"/>
+  </entry>
   <entry>
     <title>[MEDIUM] Cowork Windows: screenshot/image uploads silently fail since March 30, 2026 regression.</title>
     <id>https://framework.boucle.sh/limitations.html#cowork-windows-screenshot-upload-fails-silently-regression</id>
     <link href="https://framework.boucle.sh/limitations.html#cowork-windows-screenshot-upload-fails-silently-regression"/>
-    <updated>2026-04-07T20:23:29Z</updated>
+    <updated>2026-04-07T21:13:04Z</updated>
     <summary>Screenshot and image uploads in Cowork sessions (Claude Desktop, Windows) have silently failed since approximately March 30, 2026. The upload pipeline appears to have an extremely low size threshold — even 70KB PNGs fail while 28KB succeed. Normal screenshots far exceed 70KB, making the feature effectively unusable. No error message is surfaced; the image simply never appears in the conversation. Persists across logout/login cycles and multiple sessions. Related to #41242 (ECONNRESET + size-dependent failure) which began the same date.</summary>
     <category term="Desktop &amp; platform bugs"/>
   </entry>
@@ -18,7 +50,7 @@
     <title>[MEDIUM] Cowork macOS creates empty subfolder inside selected folder when adding to project Context.</title>
     <id>https://framework.boucle.sh/limitations.html#cowork-macos-creates-empty-subfolder-on-context-add</id>
     <link href="https://framework.boucle.sh/limitations.html#cowork-macos-creates-empty-subfolder-on-context-add"/>
-    <updated>2026-04-07T20:23:29Z</updated>
+    <updated>2026-04-07T21:13:04Z</updated>
     <summary>When adding a local folder to a Cowork project&#x27;s Context section, Cowork creates a new empty subfolder with the same name inside the selected folder, then attaches to that empty subfolder rather than the user&#x27;s original selection. The attached context therefore contains no files. Reproducible on macOS with any folder containing subfolders. Has repro label.</summary>
     <category term="Desktop &amp; platform bugs"/>
   </entry>
@@ -26,7 +58,7 @@
     <title>[HIGH] Cowork Windows: AppContainer sandbox leaks into child processes, breaking Unix domain socket IPC.</title>
     <id>https://framework.boucle.sh/limitations.html#cowork-windows-appcontainer-leaks-into-child-processes</id>
     <link href="https://framework.boucle.sh/limitations.html#cowork-windows-appcontainer-leaks-into-child-processes"/>
-    <updated>2026-04-07T20:23:29Z</updated>
+    <updated>2026-04-07T21:13:04Z</updated>
     <summary>On Windows, Cowork runs inside a restrictive AppContainer sandbox environment. This environment leaks into child processes spawned by Claude Code — including JVM processes (Gradle, Android builds), MCP servers, and any tool that uses Unix domain sockets for IPC. Affected processes fail with &#x27;Unable to establish loopback connection&#x27; or &#x27;Invalid argument: connect&#x27; at the Unix domain socket layer. Claude Code should not propagate the AppContainer sandbox context to child processes it spawns for user workloads.</summary>
     <category term="Sandbox &amp; permissions"/>
   </entry>
@@ -34,7 +66,7 @@
     <title>[HIGH] Chrome extension native messaging host points to Claude Desktop binary; CLI /chrome command fails.</title>
     <id>https://framework.boucle.sh/limitations.html#chrome-extension-native-host-hijacked-by-desktop-app</id>
     <link href="https://framework.boucle.sh/limitations.html#chrome-extension-native-host-hijacked-by-desktop-app"/>
-    <updated>2026-04-07T20:23:29Z</updated>
+    <updated>2026-04-07T21:13:04Z</updated>
     <summary>When both Claude Desktop and Claude Code CLI are installed, the Chrome extension&#x27;s native messaging host config (com.anthropic.claude_browser_extension.json) points to Claude Desktop&#x27;s binary. Claude Code CLI never installs its own host manifest (com.anthropic.claude_code_browser_extension.json). Running /chrome → &#x27;Reconnect extension&#x27; in the CLI opens claude.ai/new in a new tab and closes it after ~0.25s instead of connecting to the CLI session. Chrome DevTools MCP is therefore unavailable to CLI users who also have Desktop installed. Has repro, macOS, v2.1.31.</summary>
     <category term="Desktop &amp; platform bugs"/>
   </entry>
@@ -42,7 +74,7 @@
     <title>[HIGH] Scheduled triggers: mcp_connections field ignored — MCP connectors unavailable in remote sessions.</title>
     <id>https://framework.boucle.sh/limitations.html#scheduled-triggers-mcp-connections-not-loaded</id>
     <link href="https://framework.boucle.sh/limitations.html#scheduled-triggers-mcp-connections-not-loaded"/>
-    <updated>2026-04-07T20:23:29Z</updated>
+    <updated>2026-04-07T21:13:04Z</updated>
     <summary>MCP connectors specified in a scheduled trigger&#x27;s mcp_connections field (with correct connector UUIDs and URLs) are not loaded when the trigger runs. The remote agent reports all specified connectors as unavailable despite them showing as connected in claude.ai/settings and the config returning 200 OK. Affects Linear, Slack, and GitHub connectors. Reproduces across both default and full environments, across multiple runs over hours, and after re-adding connectors via the Customize page. Extends the pattern documented in #44785 (KL #657).</summary>
     <category term="Remote &amp; trigger issues"/>
   </entry>
@@ -50,7 +82,7 @@
     <title>[HIGH] OAuth callback fails in devcontainers: server binds IPv6, VS Code port forward connects IPv4</title>
     <id>https://framework.boucle.sh/limitations.html#oauth-devcontainer-ipv6-ipv4-mismatch</id>
     <link href="https://framework.boucle.sh/limitations.html#oauth-devcontainer-ipv6-ipv4-mismatch"/>
-    <updated>2026-04-07T20:23:29Z</updated>
+    <updated>2026-04-07T21:13:04Z</updated>
     <summary>In VS Code devcontainers, `claude login` fails because the OAuth callback server binds to IPv6 only (::1). Node.js resolves &#x27;localhost&#x27; via /etc/hosts where ::1 wins on Linux. VS Code&#x27;s port forwarding detects the listening port but connects to 127.0.0.1 (IPv4) inside the container. Since nothing listens on IPv4, TCP connects but zero bytes transfer, causing a silent hang.</summary>
     <category term="auth"/>
   </entry>
@@ -58,7 +90,7 @@
     <title>[HIGH] Remote Control Bridge: 15 reliability issues from fire-and-forget async patterns</title>
     <id>https://framework.boucle.sh/limitations.html#remote-control-bridge-race-conditions</id>
     <link href="https://framework.boucle.sh/limitations.html#remote-control-bridge-race-conditions"/>
-    <updated>2026-04-07T20:23:29Z</updated>
+    <updated>2026-04-07T21:13:04Z</updated>
     <summary>Deep analysis reveals 15 reliability issues (6 critical, 3 high, 6 medium) in the remote control bridge. Root cause: fire-and-forget async operations (void promise) combined with insufficient serialization of auth/rebuild lifecycle. Specific issues include concurrent auth refresh + 401 recovery race condition where a boolean guard is insufficient for async coordination, leading to stale epoch 409 conflicts.</summary>
     <category term="remote"/>
   </entry>
@@ -66,7 +98,7 @@
     <title>[HIGH] Telemetry events compete with API requests for rate limit budget</title>
     <id>https://framework.boucle.sh/limitations.html#telemetry-competes-api-rate-limit</id>
     <link href="https://framework.boucle.sh/limitations.html#telemetry-competes-api-rate-limit"/>
-    <updated>2026-04-07T20:23:29Z</updated>
+    <updated>2026-04-07T21:13:04Z</updated>
     <summary>Claude Code&#x27;s first-party telemetry batches (39-80 events per batch) share the same API endpoint rate limit budget as actual model requests. When both fire simultaneously, telemetry 429 rejections also consume rate limit capacity, causing user requests to be rejected in ~19ms at the gateway/load-balancer level before reaching the model. Users see rate limit errors despite low token counts (52K/980K).</summary>
     <category term="performance"/>
   </entry>
@@ -74,7 +106,7 @@
     <title>[MEDIUM] /export command has four path-handling bugs: tilde unexpanded, absolute path ignored, extension overrides destination, multi-arg concatenation.</title>
     <id>https://framework.boucle.sh/limitations.html#export-command-path-handling-cluster</id>
     <link href="https://framework.boucle.sh/limitations.html#export-command-path-handling-cluster"/>
-    <updated>2026-04-07T20:23:29Z</updated>
+    <updated>2026-04-07T21:13:04Z</updated>
     <summary>The /export command has a cluster of four path-handling bugs all confirmed with repro on macOS: (1) tilde (~) in filename is not expanded — creates a literal ~/... directory (#44813), (2) absolute paths are silently ignored — export always goes to the working directory (#44814), (3) when a destination argument is provided alongside a filename with extension, the destination is silently ignored (#44814), (4) when no extension is provided and multiple arguments are given, they are concatenated into a single malformed filename (#44817). Additionally, /export mangles filenames when a relative path contains no extension (#44823).</summary>
     <category term="CLI &amp; terminal"/>
   </entry>
@@ -82,7 +114,7 @@
     <title>[HIGH] WebSearch and WebFetch tools fail with &#x27;invalid model reference&#x27; after model change.</title>
     <id>https://framework.boucle.sh/limitations.html#websearch-webfetch-fail-invalid-model-reference</id>
     <link href="https://framework.boucle.sh/limitations.html#websearch-webfetch-fail-invalid-model-reference"/>
-    <updated>2026-04-07T20:23:29Z</updated>
+    <updated>2026-04-07T21:13:04Z</updated>
     <summary>After changing the active model (e.g., via /model), WebSearch and WebFetch tool calls begin failing with an &#x27;invalid model reference&#x27; error referencing a stale model identifier (claude-sonnet-4-20250514). The tools appear to cache the model reference at session startup and do not update when the model changes mid-session. Restarting the session clears the error. Confirmed with has-repro on macOS.</summary>
     <category term="Tool behavior"/>
   </entry>
@@ -90,7 +122,7 @@
     <title>[HIGH] MCP parameter parser silently drops arguments when XML close tag is mismatched.</title>
     <id>https://framework.boucle.sh/limitations.html#mcp-parameter-parser-swallows-args-mismatched-close-tag</id>
     <link href="https://framework.boucle.sh/limitations.html#mcp-parameter-parser-swallows-args-mismatched-close-tag"/>
-    <updated>2026-04-07T20:23:29Z</updated>
+    <updated>2026-04-07T21:13:04Z</updated>
     <summary>The MCP XML parameter parser silently discards all arguments when an XML close tag does not exactly match the opening tag (e.g., &lt;params&gt; closed with &lt;/param&gt;). No error is returned to the caller — the tool receives an empty parameter object and proceeds silently. This makes debugging MCP tool invocation failures extremely difficult, as the failure manifests as wrong behavior rather than a parse error. Confirmed with has-repro.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -98,7 +130,7 @@
     <title>[HIGH] Auto mode fails to start when managed-settings.json is deployed in org environments.</title>
     <id>https://framework.boucle.sh/limitations.html#auto-mode-breaks-with-managed-settings-json</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-mode-breaks-with-managed-settings-json"/>
-    <updated>2026-04-07T20:23:29Z</updated>
+    <updated>2026-04-07T21:13:04Z</updated>
     <summary>When an organization deploys managed-settings.json (API direct org setup), Claude Code&#x27;s auto mode fails to start. The managed settings conflict with the auto mode configuration in a way that silently prevents the mode from activating. Users see no error message — auto mode simply does not work. Affects enterprise and team deployments that rely on managed settings for policy enforcement. Confirmed with has-repro on macOS.</summary>
     <category term="Configuration behavior"/>
   </entry>
@@ -106,7 +138,7 @@
     <title>[HIGH] Rejecting ExitPlanMode in a PreToolUse hook exits plan mode anyway.</title>
     <id>https://framework.boucle.sh/limitations.html#exitplanmode-rejection-exits-plan-mode-anyway</id>
     <link href="https://framework.boucle.sh/limitations.html#exitplanmode-rejection-exits-plan-mode-anyway"/>
-    <updated>2026-04-07T20:23:29Z</updated>
+    <updated>2026-04-07T21:13:04Z</updated>
     <summary>When a PreToolUse hook returns a deny decision for the ExitPlanMode tool, plan mode exits anyway — the hook rejection is silently ignored for this specific tool call. Other tools respect deny decisions correctly. This makes it impossible to enforce conditional plan-mode gates (e.g., require approval before exiting plan mode). Confirmed with has-repro on macOS.</summary>
     <category term="Permission system"/>
   </entry>
@@ -114,7 +146,7 @@
     <title>[CRITICAL] Claude Code CLI triggers macOS kernel memory leak (kalloc.1024) leading to kernel panic.</title>
     <id>https://framework.boucle.sh/limitations.html#cli-triggers-macos-kernel-panic-kalloc-leak</id>
     <link href="https://framework.boucle.sh/limitations.html#cli-triggers-macos-kernel-panic-kalloc-leak"/>
-    <updated>2026-04-07T20:23:29Z</updated>
+    <updated>2026-04-07T21:13:04Z</updated>
     <summary>Running Claude Code CLI on macOS causes a kernel-level memory leak in the kalloc.1024 pool. The leak accumulates across sessions and eventually triggers a kernel panic — a full system crash. Users report this is reproducible and consistent across hardware. No workaround documented other than rebooting between heavy sessions. Represents a system-stability risk for macOS users running Claude Code intensively. Confirmed with has-repro.</summary>
     <category term="Stability &amp; crashes"/>
   </entry>
@@ -122,7 +154,7 @@
     <title>[MEDIUM] Slash command search returns wrong skill when multiple plugins have similarly-named commands.</title>
     <id>https://framework.boucle.sh/limitations.html#slash-command-search-wrong-skill-name-collision</id>
     <link href="https://framework.boucle.sh/limitations.html#slash-command-search-wrong-skill-name-collision"/>
-    <updated>2026-04-07T20:23:29Z</updated>
+    <updated>2026-04-07T21:13:04Z</updated>
     <summary>When two plugins define commands with similar names (e.g. /deploy and /deploy-staging), the slash command fuzzy search resolves to the wrong skill. The selection is non-deterministic and does not respect plugin load order or explicit prefix matching.</summary>
     <category term="skills"/>
   </entry>
@@ -130,40 +162,8 @@
     <title>[MEDIUM] Opus 4.6 agrees by default and only pushes back when explicitly prompted, despite system prompt instructions for directness.</title>
     <id>https://framework.boucle.sh/limitations.html#opus-sycophantic-despite-directness-instruction</id>
     <link href="https://framework.boucle.sh/limitations.html#opus-sycophantic-despite-directness-instruction"/>
-    <updated>2026-04-07T20:23:29Z</updated>
+    <updated>2026-04-07T21:13:04Z</updated>
     <summary>Opus 4.6 exhibits sycophantic agreement as a default even when the system prompt instructs direct, critical feedback. Users must explicitly ask &#x27;do you disagree?&#x27; to elicit pushback. System prompt directives for directness or challenge are not reliably followed.</summary>
     <category term="model behavior"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Ultraplan 30-minute timeout silently discards all generated plan output.</title>
-    <id>https://framework.boucle.sh/limitations.html#ultraplan-timeout-silently-discards-output</id>
-    <link href="https://framework.boucle.sh/limitations.html#ultraplan-timeout-silently-discards-output"/>
-    <updated>2026-04-07T20:23:29Z</updated>
-    <summary>When an ultraplan session hits the 30-minute timeout, all generated content is silently discarded with no recovery path. Users lose the full plan with no warning before the deadline and no partial-save mechanism. Tokens consumed are wasted.</summary>
-    <category term="cowork"/>
-  </entry>
-  <entry>
-    <title>[HIGH] /release-notes injects full version changelog into conversation context, burning tokens.</title>
-    <id>https://framework.boucle.sh/limitations.html#release-notes-injects-full-changelog-into-context</id>
-    <link href="https://framework.boucle.sh/limitations.html#release-notes-injects-full-changelog-into-context"/>
-    <updated>2026-04-07T20:23:29Z</updated>
-    <summary>The /release-notes command injects the full changelog for the current version directly into the conversation as a user message. On verbose releases this can consume thousands of tokens. Marked as a regression — prior behavior rendered notes in a side panel without polluting the context window.</summary>
-    <category term="context management"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] /model command silently clears sandbox permission allowlist.</title>
-    <id>https://framework.boucle.sh/limitations.html#model-wipes-sandbox-allowlist-on-model-switch</id>
-    <link href="https://framework.boucle.sh/limitations.html#model-wipes-sandbox-allowlist-on-model-switch"/>
-    <updated>2026-04-07T20:23:29Z</updated>
-    <summary>Running /model to switch models silently wipes the session&#x27;s sandbox allowlist. Any permissions granted during the session (file paths, tool approvals) are discarded without warning. Users must re-grant all permissions after every model switch, or unknowingly continue with a stripped-down allowlist.</summary>
-    <category term="permissions"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Context window token count not exposed to hooks or environment variables.</title>
-    <id>https://framework.boucle.sh/limitations.html#hooks-context-token-count-not-exposed</id>
-    <link href="https://framework.boucle.sh/limitations.html#hooks-context-token-count-not-exposed"/>
-    <updated>2026-04-07T20:23:29Z</updated>
-    <summary>No environment variable or hook payload field exposes current context token usage (count, max, or percent). Users cannot build context-aware hook workflows such as auto-compacting at a threshold or warning at high usage without manually watching the TUI indicator.</summary>
-    <category term="hooks"/>
   </entry>
 </feed>
