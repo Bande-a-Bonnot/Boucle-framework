@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 677,
+  "count": 680,
   "categories": {
     "Hook bypass & evasion": 94,
     "Hook behavior & events": 160,
@@ -8308,6 +8308,42 @@
       "description": "Screenshot and image uploads in Cowork sessions (Claude Desktop, Windows) have silently failed since approximately March 30, 2026. The upload pipeline appears to have an extremely low size threshold \u2014 even 70KB PNGs fail while 28KB succeed. Normal screenshots far exceed 70KB, making the feature effectively unusable. No error message is surfaced; the image simply never appears in the conversation. Persists across logout/login cycles and multiple sessions. Related to #41242 (ECONNRESET + size-dependent failure) which began the same date.",
       "status": "open",
       "added": "2026-04-07"
+    },
+    {
+      "id": "tmux-long-session-rendering-corruption-ghost-status-bars",
+      "title": "tmux long-session rendering corruption: ghost status bars in scrollback, cursor hide imbalance, stale cursor after resize.",
+      "category": "Desktop & platform bugs",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44864"
+      ],
+      "description": "In long-running sessions inside tmux, three distinct TUI rendering bugs manifest: (1) ghost status bar lines appear 5-6x interleaved in scrollback because the main TUI runs in primary buffer (not alternate screen), contaminating tmux scrollback on every render tick; (2) cursor permanently hidden after tmux detach/reattach or fg from suspend because cursor-hide escape is written but cursor-show is never reasserted; (3) speech bubble and content lines displaced or doubled after terminal resize events. Binary-level investigation on v2.1.92 confirmed all three bugs. Workaround: none for scrollback contamination; manual 'reset' for cursor.",
+      "status": "open",
+      "added": "2026-04-07"
+    },
+    {
+      "id": "mcp-config-hierarchy-broken-claude-config-dir-profiles",
+      "title": "MCP config hierarchy broken when using CLAUDE_CONFIG_DIR profiles: only 2 of 6 config locations loaded.",
+      "category": "MCP & tool integration",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44866"
+      ],
+      "description": "When using CLAUDE_CONFIG_DIR to set up multiple profiles, the MCP server configuration hierarchy is broken. Systematic testing of 6 config locations shows only 2 actually work: project .mcp.json (as 'Project MCPs') and profile .claude.json mcpServers (as 'User MCPs'). The other 4 locations are silently ignored: global ~/.claude/mcp.json (the file 'claude mcp add' docs suggest editing), profile mcp.json, global .claude.json mcpServers, and local project mcpServers. Additionally, ghost MCP servers persist after removal from ~/.claude.json; 'claude mcp remove' says server doesn't exist but 'claude mcp list' still shows it connected. No documentation exists for CLAUDE_CONFIG_DIR profile interaction with MCP config resolution.",
+      "status": "open",
+      "added": "2026-04-07"
+    },
+    {
+      "id": "nvim-terminal-ansi-underline-escape-leak",
+      "title": "ANSI underline escape leaks in nvim embedded terminal: reset sequence never emitted.",
+      "category": "Desktop & platform bugs",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44870"
+      ],
+      "description": "When running Claude Code inside nvim's embedded terminal (:term), the underline ANSI formatting escape (\\e[4m) is emitted for markdown rendering but the corresponding reset sequence (\\e[0m or \\e[24m) is never sent. This causes all subsequent terminal output to remain underlined until the user manually runs 'reset'. Workaround: set theme to 'plain' in ~/.claude/settings.json to disable markdown formatting.",
+      "status": "open",
+      "added": "2026-04-07"
     }
   ],
   "status_summary": {
@@ -8318,16 +8354,16 @@
   },
   "severities": {
     "critical": 46,
-    "high": 285,
-    "medium": 245,
+    "high": 287,
+    "medium": 246,
     "low": 96
   },
   "lastUpdated": "2026-04-07",
   "stats": {
-    "total": 672,
+    "total": 680,
     "critical": 46,
-    "high": 285,
-    "medium": 245,
+    "high": 287,
+    "medium": 246,
     "low": 96,
     "open": 651,
     "fixed": 11,
