@@ -6225,6 +6225,36 @@
                 <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When useTerminal=true is configured in VS Code settings, local Claude Code sessions still open in the native desktop app instead of the terminal. The setting is partially respected for some paths but not for local session launch from the sidebar.</p>
                 <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem;"><strong>Workaround:</strong> Launch Claude Code sessions directly from the terminal instead of VS Code sidebar</p><a href="https://github.com/anthropics/claude-code/issues/44546" style="font-size:0.8rem;color:var(--accent);">#44546</a>
             </div>
+            <div class="kl-entry" data-severity="high" data-category="agents" id="worktree-subagent-cwd-escape-main-repo">
+                <span class="kl-num">#596</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">agents</span>
+                <a href="#worktree-subagent-cwd-escape-main-repo" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Subagents spawned inside a worktree escape worktree CWD and resolve paths against main repo root</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 0.3rem;">When Claude Code is invoked with a git worktree as the working directory, spawned Agent subagents ignore the worktree CWD and resolve file paths against the main repository root. The worktree contains full copies of all files, but agents navigate to the parent repo. Read/Glob/Grep tools return paths from the wrong tree and may fail with 'File does not exist' for the correct worktree path. Reproducible on v2.1.92 macOS.</p>
+                <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem;"><strong>Workaround:</strong> Avoid spawning Agent subagents when working in worktrees; use main session tools directly</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44557" style="font-size:0.8rem;color:var(--accent);">#44557</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="desktop" id="desktop-blank-white-windows-silent-no-recovery">
+                <span class="kl-num">#597</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">desktop</span>
+                <a href="#desktop-blank-white-windows-silent-no-recovery" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Desktop app silently goes blank/white mid-session on Windows with no crash log and no recovery</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 0.3rem;">The Claude Code desktop app (Windows MSIX, Electron) intermittently renders a completely blank/white window during active sessions. The entire UI disappears with no crash report, no render-process-gone events, and no OOM errors. App never auto-recovers; requires full restart. GPU initialization silently fails with all devices showing active:false and skiaBackendType:'None' despite high-end hardware. Possibly triggered by display surface loss (Windows driver failure). Happens multiple times per day on Windows 11 Pro.</p>
+                <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem;"><strong>Workaround:</strong> Restart the app when it goes blank; no in-session recovery possible</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44558" style="font-size:0.8rem;color:var(--accent);">#44558</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="plugins" id="skill-creator-windows-unicode-pipe-uv-crashes">
+                <span class="kl-num">#598</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">plugins</span>
+                <a href="#skill-creator-windows-unicode-pipe-uv-crashes" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">skill-creator scripts crash on Windows: UnicodeEncodeError, WinError 10038, and uv Python path failures</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 0.3rem;">Three compounding skill-creator failures on Windows: (1) run_loop.py crashes with UnicodeEncodeError when writing HTML reports because write_text() omits encoding='utf-8' and Windows defaults to cp1252 which can't encode symbols like ✗; (2) run_eval.py crashes with WinError 10038 'select() on non-socket' when reading subprocess pipes (Windows asyncio limitation); (3) all scripts fail to locate Python when managed by uv since uv shims are not on the PATH used by the skill runner. Each independently blocks skill evaluation on Windows. v2.1.92.</p>
+                <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem;"><strong>Workaround:</strong> Use macOS/Linux for skill-creator workflows; no Windows workaround available</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44563" style="font-size:0.8rem;color:var(--accent);">#44563</a>
+            </div>
 <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>
         </footer>
