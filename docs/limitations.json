@@ -1,16 +1,16 @@
 {
   "version": "0.12.0",
-  "count": 575,
+  "count": 578,
   "categories": {
-    "Hook behavior & events": 159,
+    "Hook behavior & events": 160,
     "Permission system": 98,
     "Hook bypass & evasion": 93,
-    "MCP & plugin issues": 28,
+    "MCP & plugin issues": 29,
     "Subagent & spawned agents": 26,
     "Platform & compatibility": 17,
     "Context & memory": 16,
     "Configuration behavior": 13,
-    "Desktop & IDE integration": 10,
+    "Desktop & IDE integration": 11,
     "Tool behavior": 11,
     "Security & trust boundaries": 9,
     "Performance & cost": 6,
@@ -6924,17 +6924,62 @@
       "status": "open",
       "date": "2026-04-07",
       "description": "The Claude Code extension reports the IDE as vscode (CLAUDE_CODE_ENTRYPOINT=claude-vscode) even when running inside Cursor. Cursor sets CURSOR_SPAWNED_BY_EXTENSION_ID, CURSOR_EXTENSION_HOST_ROLE, and CURSOR_LAYOUT env vars that could be used for differentiation. All VSCODE_* paths also point to Cursor directories. Impact is low (no functional breakage) but IDE-specific context injected into prompts is misattributed, and any analytics based on this field miscount Cursor usage as VS Code."
+    },
+    {
+      "id": "pretooluse-windows-echo-corrupts-json-and-preapproved-bypass",
+      "title": "PreToolUse hooks on Windows: echo corrupts JSON stdin, pre-approved permissions bypass hook execution",
+      "severity": "high",
+      "category": "Hook behavior & events",
+      "issueNumbers": [
+        44482
+      ],
+      "issueUrls": [
+        "https://github.com/anthropics/claude-code/issues/44482"
+      ],
+      "status": "open",
+      "date": "2026-04-07",
+      "description": "Two distinct PreToolUse hook bugs on Windows. Bug 1: When hooks receive JSON via stdin and re-pipe it using echo, Windows echo interprets backslashes in file paths (producing invalid escapes like \\U, \\h, \\p), json.load fails silently, and the hook falls through to exit 0 (allow). Workaround: use printf '%s' or heredocs instead of echo. Bug 2: When both a PreToolUse hook and pre-approved Edit permissions are configured (e.g. Edit(~/.claude/skills/**)), the hook never fires for files matching the pre-approved pattern. The permission check short-circuits hook execution entirely. Users cannot have both pre-approved edits and hook enforcement simultaneously."
+    },
+    {
+      "id": "remote-trigger-mcp-connections-tools-unavailable",
+      "title": "Remote Trigger: MCP tools configured via mcp_connections (connector_uuid) not available in remote session",
+      "severity": "medium",
+      "category": "MCP & plugin issues",
+      "issueNumbers": [
+        44484
+      ],
+      "issueUrls": [
+        "https://github.com/anthropics/claude-code/issues/44484"
+      ],
+      "status": "open",
+      "date": "2026-04-07",
+      "description": "When running a Remote Trigger (CCR), MCP tools configured via mcp_connections using connector_uuid from claude.ai OAuth connectors are not available in the remote session. The agent reports all mcp__claude_ai_* tools as not found. These connectors work in interactive claude.ai sessions but fail when invoked through remote triggers, suggesting the OAuth connector context is not propagated to CCR sessions."
+    },
+    {
+      "id": "web-messages-disappear-on-tab-switch-during-streaming",
+      "title": "Messages disappear when switching tabs while response is streaming in Claude Code Web",
+      "severity": "medium",
+      "category": "Desktop & IDE integration",
+      "issueNumbers": [
+        44480
+      ],
+      "issueUrls": [
+        "https://github.com/anthropics/claude-code/issues/44480"
+      ],
+      "status": "open",
+      "date": "2026-04-07",
+      "description": "When Claude Code Web is streaming a response (orange loading indicator visible), switching to another browser tab causes both the sent message and the in-progress response to completely disappear upon returning. The conversation rolls back to the state before the message was sent. The work may continue in the background but the UI loses the messages. Affects Claude Code Web on macOS."
     }
   ],
   "status_summary": {
-    "open": 549,
+    "open": 552,
     "mitigated": 1,
     "fixed": 11
   },
   "severities": {
     "critical": 37,
-    "high": 214,
-    "medium": 209,
+    "high": 215,
+    "medium": 211,
     "low": 93
   },
   "lastUpdated": "2026-04-07"
