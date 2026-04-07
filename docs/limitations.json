@@ -7836,7 +7836,7 @@
     },
     {
       "id": "hook-loop-silent-context-burn-no-attribution",
-      "title": "Hook loop silently burns all context tokens — session dies with no indication that a hook caused it.",
+      "title": "Hook loop silently burns all context tokens \u2014 session dies with no indication that a hook caused it.",
       "category": "Hooks",
       "severity": "high",
       "issues": [
@@ -7872,7 +7872,7 @@
     },
     {
       "id": "subagent-cache-miss-first-sendmessage-resume",
-      "title": "Subagent cache miss on first SendMessage resume — cache created by Agent call is not reused.",
+      "title": "Subagent cache miss on first SendMessage resume \u2014 cache created by Agent call is not reused.",
       "category": "Performance",
       "severity": "medium",
       "issues": [
@@ -7890,7 +7890,7 @@
       "issues": [
         "https://github.com/anthropics/claude-code/issues/44740"
       ],
-      "description": "The /copy command on Windows puts garbled text in the clipboard when the response contains accented characters (é, è, ç, ô, etc.). UTF-8 bytes are interpreted as CP437. Reproducible in cmd.exe with chcp 65001. Expected 'éèêë àâ ùû ïî ç ô' becomes mojibake. See #44740.",
+      "description": "The /copy command on Windows puts garbled text in the clipboard when the response contains accented characters (\u00e9, \u00e8, \u00e7, \u00f4, etc.). UTF-8 bytes are interpreted as CP437. Reproducible in cmd.exe with chcp 65001. Expected '\u00e9\u00e8\u00ea\u00eb \u00e0\u00e2 \u00f9\u00fb \u00ef\u00ee \u00e7 \u00f4' becomes mojibake. See #44740.",
       "workaround": "Manually copy from terminal output instead of using /copy. Ensure terminal code page matches Claude Code's output encoding.",
       "status": "open"
     },
@@ -7904,6 +7904,78 @@
       ],
       "description": "A CLAUDE.md contained an explicit instruction 'Sprawdz docs PRZED fixem' (Check docs BEFORE the fix). The model ignored it, immediately calling Telegram Bot API getUpdates directly, consuming the active OpenClaw gateway's update stream and causing data loss. Related to KL #499 (rules files compliance regression) and KL #554 (model violates AGENTS.md in same session). CLAUDE.md procedural constraints are systematically non-binding. See #44745.",
       "workaround": "Use PreToolUse hooks to enforce procedural gates (e.g., block API calls until a required Read is confirmed). Text instructions in CLAUDE.md cannot be relied upon for safety-critical procedures.",
+      "status": "open"
+    },
+    {
+      "id": "lsp-bridge-definition-references-symbols-always-empty",
+      "title": "LSP bridge goToDefinition, findReferences, and workspaceSymbol always return empty results.",
+      "category": "IDE integration",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44767"
+      ],
+      "description": "On macOS, the three core LSP navigation tools (goToDefinition, findReferences, workspaceSymbol) return empty arrays on every invocation. The bridge initialises without error but core navigation requests silently fail, rendering code intelligence unusable. Has repro. See #44767.",
+      "workaround": "Use external LSP clients or IDE native navigation. No hook-level workaround exists; the failure is inside the bridge layer.",
+      "status": "open"
+    },
+    {
+      "id": "ultraplan-implement-here-cannot-push-code",
+      "title": "Ultraplan remote session offers \"implement here\" but cannot push resulting code.",
+      "category": "Cowork / remote sessions",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44766"
+      ],
+      "description": "An Ultraplan remote session presents an \"implement here\" action after plan generation, but the session lacks push permissions. The implementation executes locally inside the remote session and the code is never delivered to the user's repository. Produces a complete plan and a completed implementation that cannot be retrieved. Has repro. See #44766.",
+      "workaround": "Complete implementation in a local session after copying the Ultraplan output. Do not rely on the \"implement here\" path in remote Ultraplan sessions.",
+      "status": "open"
+    },
+    {
+      "id": "ultraplan-checks-out-main-instead-of-working-branch",
+      "title": "Ultraplan checks out main branch instead of the user's active working branch.",
+      "category": "Cowork / remote sessions",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44758"
+      ],
+      "description": "When Ultraplan initiates a session, it resets git to main/master regardless of the branch the user was working on. Any in-progress feature work is bypassed and the plan executes against the wrong base. Has repro on macOS. See #44758.",
+      "workaround": "Explicitly pass the target branch to Ultraplan if supported, or manually re-checkout the correct branch inside the remote session before proceeding.",
+      "status": "open"
+    },
+    {
+      "id": "skills-silently-fail-in-print-mode-no-error",
+      "title": "Skills silently fail in --print mode with no error message or warning.",
+      "category": "Skills / slash commands",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44756"
+      ],
+      "description": "When Claude Code is invoked with --print (-p) for non-interactive use, skills invoked via the Skill tool silently produce no output and no error. The session completes with exit 0, masking the failure entirely. Scripts and CI pipelines relying on skill output receive silent empty results. Has repro on macOS. See #44756.",
+      "workaround": "Avoid using skills in --print mode automation. Expand skill logic inline or use direct tool calls. Add explicit output validation (check for empty response) in any script that calls claude -p with a skill.",
+      "status": "open"
+    },
+    {
+      "id": "parallel-agent-spawn-resets-cli-session",
+      "title": "CLI session unexpectedly resets when spawning 3 or more parallel Agent subagents.",
+      "category": "Multi-agent",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44753"
+      ],
+      "description": "Dispatching 3 Agent subagents concurrently in a single session causes the parent CLI session to reset unexpectedly. The session state, tool history, and in-flight work are lost. Reliably reproduced at exactly 3 parallel agents on macOS; fewer agents do not trigger the reset. Has repro. See #44753.",
+      "workaround": "Limit parallel Agent dispatch to 2 subagents maximum per session. Sequence additional agents rather than dispatching all at once.",
+      "status": "open"
+    },
+    {
+      "id": "windows-session-meta-ebusy-crash",
+      "title": "Windows session crashes with EBUSY when session-meta file is locked by another process.",
+      "category": "Platform-specific",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44749"
+      ],
+      "description": "On Windows, the path C:/Program Files/Git/insights causes a session crash with EBUSY when the session-meta file is held by a concurrent process (e.g., another Claude Code window or a file indexer). No retry logic exists; the session dies immediately. Has repro on Windows. See #44749.",
+      "workaround": "Close other Claude Code sessions before starting a new one on Windows. Exclude the Claude Code session-meta directory from real-time file indexers (Defender, search indexers).",
       "status": "open"
     }
   ],
