@@ -6966,6 +6966,72 @@
                 <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Screenshot and image uploads in Cowork sessions (Claude Desktop, Windows) have silently failed since approximately March 30, 2026. The upload pipeline has an extremely low size threshold — even 70KB PNGs fail while 28KB succeed. Normal screenshots far exceed 70KB, making image uploads effectively unusable. No error message is surfaced; the image never appears in the conversation. Persists across logout/login cycles. Related to #41242 (ECONNRESET + size-dependent failure, same date).</p>
                 <a href="https://github.com/anthropics/claude-code/issues/44856" style="font-size:0.8rem;color:var(--accent);">#44856</a>
             </div>
+            <div class="kl-entry" data-severity="high" data-category="Desktop & platform bugs" id="tmux-long-session-rendering-corruption-ghost-status-bars">
+                <span class="kl-num">#678</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Desktop & platform bugs</span>
+                <a href="#tmux-long-session-rendering-corruption-ghost-status-bars" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">tmux long-session rendering corruption: ghost status bars in scrollback, cursor hide imbalance, stale cursor after resize.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">In long-running sessions inside tmux, three distinct TUI rendering bugs manifest: (1) ghost status bar lines appear 5-6x interleaved in scrollback because the main TUI runs in primary buffer (not alternate screen), contaminating tmux scrollback on every render tick; (2) cursor permanently hidden after tmux detach/reattach or fg from suspend because cursor-hide escape is written but cursor-show is never reasserted; (3) speech bubble and content lines displaced or doubled after terminal resize events. Binary-level investigation on v2.1.92 confirmed all three bugs. Workaround: none for scrollback contamination; manual 'reset' for cursor.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44864" style="font-size:0.8rem;color:var(--accent);">#44864</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="MCP & tool integration" id="mcp-config-hierarchy-broken-claude-config-dir-profiles">
+                <span class="kl-num">#679</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">MCP & tool integration</span>
+                <a href="#mcp-config-hierarchy-broken-claude-config-dir-profiles" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">MCP config hierarchy broken when using CLAUDE_CONFIG_DIR profiles: only 2 of 6 config locations loaded.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When using CLAUDE_CONFIG_DIR to set up multiple profiles, the MCP server configuration hierarchy is broken. Systematic testing of 6 config locations shows only 2 actually work: project .mcp.json (as 'Project MCPs') and profile .claude.json mcpServers (as 'User MCPs'). The other 4 locations are silently ignored: global ~/.claude/mcp.json (the file 'claude mcp add' docs suggest editing), profile mcp.json, global .claude.json mcpServers, and local project mcpServers. Additionally, ghost MCP servers persist after removal from ~/.claude.json; 'claude mcp remove' says server doesn't exist but 'claude mcp list' still shows it connected. No documentation exists for CLAUDE_CONFIG_DIR profile interaction with MCP config resolution.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44866" style="font-size:0.8rem;color:var(--accent);">#44866</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Desktop & platform bugs" id="nvim-terminal-ansi-underline-escape-leak">
+                <span class="kl-num">#680</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Desktop & platform bugs</span>
+                <a href="#nvim-terminal-ansi-underline-escape-leak" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">ANSI underline escape leaks in nvim embedded terminal: reset sequence never emitted.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When running Claude Code inside nvim's embedded terminal (:term), the underline ANSI formatting escape (\e[4m) is emitted for markdown rendering but the corresponding reset sequence (\e[0m or \e[24m) is never sent. This causes all subsequent terminal output to remain underlined until the user manually runs 'reset'. Workaround: set theme to 'plain' in ~/.claude/settings.json to disable markdown formatting.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44870" style="font-size:0.8rem;color:var(--accent);">#44870</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Hook execution & lifecycle" id="async-rewake-hook-output-visible-system-reminder">
+                <span class="kl-num">#681</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Hook execution & lifecycle</span>
+                <a href="#async-rewake-hook-output-visible-system-reminder" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">asyncRewake hook hookSpecificOutput rendered as visible &lt;system-reminder&gt; block in terminal</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When a SessionStart hook sets asyncRewake: true and returns hookSpecificOutput, the output is displayed as a raw visible &lt;system-reminder&gt; block in the user's terminal prompt instead of being silently injected as context to the model. The user sees the raw JSON/text that should have been a private model context injection. This breaks the expected behavior of asyncRewake hooks that surface context (e.g. read-once, memory health summaries) &mdash; the output is meant to be invisible to users.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44872" style="font-size:0.8rem;color:var(--accent);">#44872</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="plugins" id="plugin-auto-update-hangs-session-missing-https-git-credentials">
+                <span class="kl-num">#682</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">plugins</span>
+                <a href="#plugin-auto-update-hangs-session-missing-https-git-credentials" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;"><a href="https://github.com/anthropics/claude-code/issues/44878" style="color:var(--text);text-decoration:none;">Plugin auto-update hangs entire session when HTTPS git credentials are missing</a></h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Plugin auto-update hangs entire session when HTTPS git credentials are missing.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44878" style="font-size:0.8rem;color:var(--accent);">#44878</a>
+                <span style="font-size:0.75rem;color:var(--text-muted);margin-left:0.5rem;">macOS · 2026-04-07</span>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="model-behavior" id="model-asks-clarifying-questions-in-single-turn-context">
+                <span class="kl-num">#683</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">model-behavior</span>
+                <a href="#model-asks-clarifying-questions-in-single-turn-context" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;"><a href="https://github.com/anthropics/claude-code/issues/44876" style="color:var(--text);text-decoration:none;">Model asks clarifying questions in /btw single-turn context where user cannot respond</a></h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Model asks clarifying questions in /btw single-turn context where user cannot respond.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44876" style="font-size:0.8rem;color:var(--accent);">#44876</a>
+                <span style="font-size:0.75rem;color:var(--text-muted);margin-left:0.5rem;">Windows · 2026-04-07</span>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="model-behavior" id="model-outputs-no-response-requested-instead-of-analyzing-data">
+                <span class="kl-num">#684</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">model-behavior</span>
+                <a href="#model-outputs-no-response-requested-instead-of-analyzing-data" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;"><a href="https://github.com/anthropics/claude-code/issues/44875" style="color:var(--text);text-decoration:none;">Model outputs 'No response requested' across consecutive turns instead of analyzing loaded data</a></h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Model outputs 'No response requested' across consecutive turns instead of analyzing loaded data.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44875" style="font-size:0.8rem;color:var(--accent);">#44875</a>
+                <span style="font-size:0.75rem;color:var(--text-muted);margin-left:0.5rem;">Windows · 2026-04-07</span>
+            </div>
 <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>
         </footer>
