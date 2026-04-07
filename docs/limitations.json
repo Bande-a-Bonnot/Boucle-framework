@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 640,
+  "count": 657,
   "categories": {
     "Hook behavior & events": 160,
     "Permission system": 98,
@@ -96,10 +96,10 @@
     "UI & display": 1
   },
   "severity_counts": {
-    "critical": 42,
-    "high": 266,
-    "medium": 237,
-    "low": 95
+    "critical": 44,
+    "high": 276,
+    "medium": 241,
+    "low": 96
   },
   "entries": [
     {
@@ -7977,6 +7977,66 @@
       "description": "On Windows, the path C:/Program Files/Git/insights causes a session crash with EBUSY when the session-meta file is held by a concurrent process (e.g., another Claude Code window or a file indexer). No retry logic exists; the session dies immediately. Has repro on Windows. See #44749.",
       "workaround": "Close other Claude Code sessions before starting a new one on Windows. Exclude the Claude Code session-meta directory from real-time file indexers (Defender, search indexers).",
       "status": "open"
+    },
+    {
+      "id": "system-events-user-role-fabricated-consent",
+      "title": "System events delivered as user-role messages cause model to fabricate user consent and act on it.",
+      "category": "Autonomy / model behavior",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44778"
+      ],
+      "description": "System-generated messages (task notifications, teammate idle, system reminders) arrive as role:user. When model is waiting for user response, it fabricates plausible approval and acts without real consent. Consolidation of 4 issues (25936, 27102, 29160, 10628). Reproduced across v2.1.42-v2.1.81+, with/without autocompact, single and multi-agent, macOS and Windows.",
+      "status": "open",
+      "added": "2026-04-07"
+    },
+    {
+      "id": "subagent-hang-deadlocks-parent-no-timeout",
+      "title": "Parent session deadlocks when subagent tool execution hangs with no timeout or recovery.",
+      "category": "Multi-agent",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44783"
+      ],
+      "description": "When a subagent Bash tool call hangs indefinitely, the parent session becomes completely unresponsive. No timeout fires, no circuit breaker. Session stuck 7+ hours until manually killed. Completed sibling subagent results never delivered. Escape key does not interrupt.",
+      "status": "open",
+      "added": "2026-04-07"
+    },
+    {
+      "id": "headershelper-silently-ignored-since-v2185",
+      "title": "headersHelper silently ignored since v2.1.85; Claude Code skips to OAuth discovery instead.",
+      "category": "MCP integration",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44774"
+      ],
+      "description": "Since v2.1.85, headersHelper configured on HTTP MCP servers is never executed. Claude Code skips it entirely and attempts native OAuth/RFC 9728 discovery instead. Regression introduced by MCP OAuth Standards change in v2.1.85 changelog. Worked correctly on v2.1.81.",
+      "status": "open",
+      "added": "2026-04-07"
+    },
+    {
+      "id": "rewind-picker-drops-precompact-large-sessions",
+      "title": "Rewind picker shows no pre-compact messages for sessions over 5 MB.",
+      "category": "Context / compaction",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44772"
+      ],
+      "description": "loadTranscriptFile has a SKIP_PRECOMPACT_THRESHOLD at 5 MB that unconditionally strips pre-compact bytes before the keepAllLeaves option is checked. Rewind picker and rewind execution both receive truncated data. Pre-compact conversation history is silently lost from the UI.",
+      "status": "open",
+      "added": "2026-04-07"
+    },
+    {
+      "id": "ccr-triggers-mcp-connectors-unavailable",
+      "title": "Scheduled remote triggers (CCR) cannot access claude.ai MCP connectors configured via mcp_connections.",
+      "category": "MCP integration",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44785"
+      ],
+      "description": "MCP tools configured via mcp_connections (OAuth connectors for Gmail, Slack etc.) are not available when a scheduled trigger runs automatically. Agent reports tools need to be configured in settings.json despite being set up via connector UUIDs. Related to MCP connectors not loaded in CCR sessions.",
+      "status": "open",
+      "added": "2026-04-07"
     }
   ],
   "status_summary": {
