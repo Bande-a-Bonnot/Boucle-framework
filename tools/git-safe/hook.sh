@@ -205,11 +205,13 @@ if echo "$COMMAND" | grep -qE 'git\s+push\s+\S+\s+:[^/\s]' 2>/dev/null; then
 fi
 
 # git rebase (can rewrite history and lose commits)
-# Allow: --abort, --continue, --skip (recovery operations)
-if echo "$COMMAND" | grep -qE 'git\s+rebase\s' 2>/dev/null; then
-  if echo "$COMMAND" | grep -qE 'git\s+rebase\s+.*--(abort|continue|skip|quit)' 2>/dev/null; then
+# Allow: --abort, --continue, --skip, --quit (recovery operations)
+# Uses ([[:space:]]|$) to catch bare "git rebase" with no args
+# Checks -i/--interactive anywhere in command to catch "git rebase --autosquash -i"
+if echo "$COMMAND" | grep -qE 'git[[:space:]]+rebase([[:space:]]|$)' 2>/dev/null; then
+  if echo "$COMMAND" | grep -qE 'git[[:space:]]+rebase[[:space:]]+.*--(abort|continue|skip|quit)([[:space:]]|$)' 2>/dev/null; then
     log "ALLOW: rebase recovery operation"
-  elif echo "$COMMAND" | grep -qE 'git\s+rebase\s+.*\b(-i|--interactive)\b' 2>/dev/null; then
+  elif echo "$COMMAND" | grep -qE '(^|[[:space:]])(-i|--interactive)([[:space:]]|$)' 2>/dev/null; then
     is_allowed "rebase -i" || block "Interactive rebase can rewrite, squash, drop, or reorder commits, permanently altering history." "Use non-interactive rebase if you just need to replay commits, or add 'allow: rebase -i' to .git-safe."
   else
     is_allowed "rebase" || block "git rebase replays commits onto a new base, which can lose work during conflict resolution and rewrites history." "Prefer git merge to preserve history, or add 'allow: rebase' to .git-safe."
@@ -229,8 +231,22 @@ if echo "$COMMAND" | grep -qE 'git\s+merge\s' 2>/dev/null; then
 fi
 
 # git push to protected branches via refspec (e.g. git push origin feature:main)
-if echo "$COMMAND" | grep -qE 'git\s+push\s+.*\b\S+:(main|master|production|release)\b' 2>/dev/null; then
-  block "Pushing to a protected branch via refspec can bypass branch protections." "Push to a feature branch and open a PR instead."
+# Extracts the destination from any src:dst refspec token, handles flags in any position,
+# normalizes refs/heads/X to X, and avoids false positives on hyphenated names like release-candidate
+if echo "$COMMAND" | grep -qE 'git[[:space:]]+push[[:space:]]' 2>/dev/null; then
+  _gs_dst=""
+  for _gs_tok in $COMMAND; do
+    case "$_gs_tok" in
+      *:*) _gs_dst="${_gs_tok#*:}" ; break ;;
+    esac
+  done
+  # Normalize refs/heads/X -> X
+  _gs_dst="${_gs_dst#refs/heads/}"
+  case "$_gs_dst" in
+    main|master|production|release)
+      block "Pushing to a protected branch ($_gs_dst) via refspec can bypass branch protections." "Push to a feature branch and open a PR instead."
+      ;;
+  esac
 fi
 
 # git filter-branch / git filter-repo (rewrites entire repository history)
