@@ -296,6 +296,7 @@ pub fn merge(memory_dir: &Path, filenames: &[String]) -> Result<PathBuf, BrocaEr
         &format!("{} (consolidated)", newest.title),
         &merged_content,
         &tags,
+        None,
     )?;
 
     let new_fname = new_path
@@ -379,6 +380,7 @@ mod tests {
             "Rust is fast",
             "Rust is a systems programming language known for speed.",
             &["rust".to_string()],
+            None,
         )
         .unwrap();
         broca::remember(
@@ -387,6 +389,7 @@ mod tests {
             "Python web frameworks",
             "Django and Flask are popular Python web frameworks.",
             &["python".to_string()],
+            None,
         )
         .unwrap();
 
@@ -404,6 +407,7 @@ mod tests {
             "Rust is fast",
             "Rust is a systems programming language known for speed and safety.",
             &["rust".to_string()],
+            None,
         )
         .unwrap();
         // Same content but different type — should NOT be flagged.
@@ -413,6 +417,7 @@ mod tests {
             "Rust is fast",
             "Rust is a systems programming language known for speed and safety.",
             &["rust".to_string()],
+            None,
         )
         .unwrap();
 
@@ -430,6 +435,7 @@ mod tests {
             "Old version",
             "Rust is a systems programming language known for speed.",
             &["rust".to_string()],
+            None,
         )
         .unwrap();
         broca::remember(
@@ -438,6 +444,7 @@ mod tests {
             "New version",
             "Rust is a systems programming language known for speed.",
             &["rust".to_string()],
+            None,
         )
         .unwrap();
 
@@ -458,6 +465,7 @@ mod tests {
             "Rust memory system",
             "The Broca memory system uses files for storage.",
             &["rust".to_string(), "memory".to_string()],
+            None,
         )
         .unwrap();
         broca::remember(
@@ -466,6 +474,7 @@ mod tests {
             "Rust memory design",
             "The Broca memory system stores entries as markdown files.",
             &["rust".to_string(), "memory".to_string()],
+            None,
         )
         .unwrap();
 
@@ -485,7 +494,7 @@ mod tests {
     #[test]
     fn test_find_candidates_single_entry() {
         let dir = tempfile::tempdir().unwrap();
-        broca::remember(dir.path(), "fact", "Only one", "Single entry.", &[]).unwrap();
+        broca::remember(dir.path(), "fact", "Only one", "Single entry.", &[], None).unwrap();
 
         let config = ConsolidateConfig::default();
         let candidates = find_candidates(dir.path(), &config).unwrap();
@@ -576,6 +585,7 @@ mod tests {
             "Rust speed",
             "Rust is known for speed.",
             &["rust".to_string()],
+            None,
         )
         .unwrap();
         // Small delay to ensure different timestamps.
@@ -586,6 +596,7 @@ mod tests {
             "Rust performance",
             "Rust compiles to native code for high performance.",
             &["performance".to_string()],
+            None,
         )
         .unwrap();
 
@@ -650,7 +661,7 @@ mod tests {
     #[test]
     fn test_merge_needs_at_least_two() {
         let dir = tempfile::tempdir().unwrap();
-        let p = broca::remember(dir.path(), "fact", "Only one", "Content.", &[]).unwrap();
+        let p = broca::remember(dir.path(), "fact", "Only one", "Content.", &[], None).unwrap();
         let f = p.file_name().unwrap().to_str().unwrap().to_string();
 
         let result = merge(dir.path(), &[f]);
@@ -687,6 +698,7 @@ mod tests {
                 "memory".to_string(),
                 "broca".to_string(),
             ],
+            None,
         )
         .unwrap();
         std::thread::sleep(std::time::Duration::from_millis(10));
@@ -696,6 +708,7 @@ mod tests {
             "Rust memory design",
             "The Broca memory system stores entries as markdown files persistently.",
             &["rust".to_string(), "memory".to_string()],
+            None,
         )
         .unwrap();
         std::thread::sleep(std::time::Duration::from_millis(10));
@@ -705,6 +718,7 @@ mod tests {
             "Memory storage approach",
             "Broca uses the filesystem with markdown files for memory storage.",
             &["memory".to_string(), "broca".to_string()],
+            None,
         )
         .unwrap();
 

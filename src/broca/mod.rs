@@ -49,6 +49,7 @@ pub fn remember(
     title: &str,
     content: &str,
     tags: &[String],
+    ttl_days: Option<u32>,
 ) -> Result<PathBuf, BrocaError> {
     let entry_type: EntryType = entry_type.parse().map_err(BrocaError::Parse)?;
 
@@ -66,6 +67,11 @@ pub fn remember(
         format!("tags: [{}]\n", tags.join(", "))
     };
 
+    let ttl_str = match ttl_days {
+        Some(days) => format!("ttl: {days}\n"),
+        None => String::new(),
+    };
+
     let frontmatter = format!(
         "---\n\
          type: {entry_type}\n\
@@ -73,6 +79,7 @@ pub fn remember(
          created: {timestamp}\n\
          confidence: 0.8\n\
          {tags_str}\
+         {ttl_str}\
          ---\n\n\
          {content}\n"
     );
@@ -430,6 +437,7 @@ mod tests {
             "Test Entry",
             "This is test content.",
             &["test".to_string(), "unit".to_string()],
+            None,
         )
         .unwrap();
 
@@ -447,7 +455,7 @@ mod tests {
     #[test]
     fn test_remember_invalid_type() {
         let dir = tempfile::tempdir().unwrap();
-        let result = remember(dir.path(), "invalid", "Test", "Content", &[]);
+        let result = remember(dir.path(), "invalid", "Test", "Content", &[], None);
         assert!(result.is_err());
     }
 
@@ -482,9 +490,9 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let memory_dir = dir.path();
 
-        remember(memory_dir, "fact", "Fact One", "Content", &[]).unwrap();
-        remember(memory_dir, "fact", "Fact Two", "Content", &[]).unwrap();
-        remember(memory_dir, "decision", "A Decision", "Content", &[]).unwrap();
+        remember(memory_dir, "fact", "Fact One", "Content", &[], None).unwrap();
+        remember(memory_dir, "fact", "Fact Two", "Content", &[], None).unwrap();
+        remember(memory_dir, "decision", "A Decision", "Content", &[], None).unwrap();
 
         let result = stats(memory_dir).unwrap();
         assert!(result.contains("Total entries: 3"));
@@ -503,9 +511,10 @@ mod tests {
             "Alpha",
             "Content A",
             &["tag1".to_string()],
+            None,
         )
         .unwrap();
-        remember(memory_dir, "observation", "Beta", "Content B", &[]).unwrap();
+        remember(memory_dir, "observation", "Beta", "Content B", &[], None).unwrap();
 
         let count = build_index(memory_dir).unwrap();
         assert_eq!(count, 2);
@@ -527,9 +536,10 @@ mod tests {
             "Tagged",
             "Content",
             &["important".to_string()],
+            None,
         )
         .unwrap();
-        remember(memory_dir, "fact", "Not Tagged", "Content", &[]).unwrap();
+        remember(memory_dir, "fact", "Not Tagged", "Content", &[], None).unwrap();
 
         let results = search_tag(memory_dir, "important").unwrap();
         assert_eq!(results.len(), 1);
@@ -541,7 +551,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let memory_dir = dir.path();
 
-        let path = remember(memory_dir, "fact", "Confidence Test", "Content", &[]).unwrap();
+        let path = remember(memory_dir, "fact", "Confidence Test", "Content", &[], None).unwrap();
 
         // Original confidence is 0.8
         let content = fs::read_to_string(&path).unwrap();
@@ -559,8 +569,8 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let memory_dir = dir.path();
 
-        remember(memory_dir, "fact", "Old Fact", "Old content", &[]).unwrap();
-        remember(memory_dir, "fact", "New Fact", "New content", &[]).unwrap();
+        remember(memory_dir, "fact", "Old Fact", "Old content", &[], None).unwrap();
+        remember(memory_dir, "fact", "New Fact", "New content", &[], None).unwrap();
 
         supersede(memory_dir, "old-fact", "new-fact").unwrap();
 
@@ -576,8 +586,8 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let memory_dir = dir.path();
 
-        remember(memory_dir, "fact", "Entry A", "Content A", &[]).unwrap();
-        remember(memory_dir, "fact", "Entry B", "Content B", &[]).unwrap();
+        remember(memory_dir, "fact", "Entry A", "Content A", &[], None).unwrap();
+        remember(memory_dir, "fact", "Entry B", "Content B", &[], None).unwrap();
 
         relate(memory_dir, "entry-a", "entry-b", "supports").unwrap();
 

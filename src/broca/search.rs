@@ -51,6 +51,10 @@ pub struct ScoredEntry {
     pub content: String,
     pub relevance_score: f64,
     pub superseded_by: Option<String>,
+    /// TTL in days, if set.
+    pub ttl_days: Option<u32>,
+    /// True if the entry has a TTL that has expired.
+    pub is_stale: bool,
 }
 
 impl From<&Entry> for ScoredEntry {
@@ -64,6 +68,8 @@ impl From<&Entry> for ScoredEntry {
             content: entry.content.clone(),
             relevance_score: 0.0,
             superseded_by: entry.superseded_by.clone(),
+            ttl_days: entry.ttl_days,
+            is_stale: entry.is_stale(),
         }
     }
 }
@@ -320,6 +326,7 @@ mod tests {
             "Rust is fast",
             "Rust is a systems programming language known for speed and safety.",
             &["rust".to_string(), "performance".to_string()],
+            None,
         )
         .unwrap();
 
@@ -329,6 +336,7 @@ mod tests {
             "Python is easy",
             "Python is a high-level language known for readability.",
             &["python".to_string()],
+            None,
         )
         .unwrap();
 
@@ -338,6 +346,7 @@ mod tests {
             "Use Rust for the rewrite",
             "We decided to rewrite the framework in Rust for reliability.",
             &["rust".to_string(), "architecture".to_string()],
+            None,
         )
         .unwrap();
     }
@@ -473,7 +482,7 @@ mod tests {
     fn test_recall_superseded_penalty() {
         let dir = tempfile::tempdir().unwrap();
 
-        broca::remember(dir.path(), "fact", "Current fact", "rust memory", &[]).unwrap();
+        broca::remember(dir.path(), "fact", "Current fact", "rust memory", &[], None).unwrap();
 
         // Create a superseded entry
         let knowledge_dir = dir.path().join("knowledge");
@@ -501,6 +510,7 @@ mod tests {
             "Speed matters",
             "Latency impacts user experience significantly.",
             &["performance".to_string()],
+            None,
         )
         .unwrap();
 
@@ -511,6 +521,7 @@ mod tests {
             "Other topic",
             "The performance of the system was tested.",
             &[],
+            None,
         )
         .unwrap();
 
@@ -530,6 +541,7 @@ mod tests {
             "Memory architecture",
             "Description of system design.",
             &[],
+            None,
         )
         .unwrap();
 
@@ -540,6 +552,7 @@ mod tests {
             "System design",
             "The memory architecture is important for performance.",
             &[],
+            None,
         )
         .unwrap();
 
@@ -838,7 +851,7 @@ mod tests {
     #[test]
     fn test_cross_ref_no_relations_file() {
         let dir = tempfile::tempdir().unwrap();
-        broca::remember(dir.path(), "fact", "Test entry", "rust programming", &[]).unwrap();
+        broca::remember(dir.path(), "fact", "Test entry", "rust programming", &[], None).unwrap();
 
         // No RELATIONS.md — should work fine without boost
         let results = recall(dir.path(), "rust", 5).unwrap();

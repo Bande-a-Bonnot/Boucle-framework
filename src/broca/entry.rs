@@ -1,5 +1,6 @@
 //! Memory entry types and parsing.
 
+use chrono::{NaiveDateTime, Utc};
 use serde::Serialize;
 use std::path::Path;
 use std::str::FromStr;
@@ -55,6 +56,26 @@ pub struct Entry {
     pub content: String,
     pub created: String,
     pub superseded_by: Option<String>,
+    /// Optional time-to-live in days. If set, the entry is considered stale
+    /// after `created + ttl_days` has passed.
+    pub ttl_days: Option<u32>,
+}
+
+impl Entry {
+    /// Returns true if this entry has a TTL and it has expired.
+    pub fn is_stale(&self) -> bool {
+        let Some(ttl) = self.ttl_days else {
+            return false;
+        };
+        // Parse created timestamp: "%Y%m%d-%H%M%S"
+        if let Ok(created_dt) =
+            NaiveDateTime::parse_from_str(&self.created, "%Y%m%d-%H%M%S")
+        {
+            let age_days = (Utc::now().naive_utc() - created_dt).num_days();
+            return age_days > ttl as i64;
+        }
+        false
+    }
 }
 
 impl Entry {
@@ -99,6 +120,8 @@ impl Entry {
         let tags = extract_tags(frontmatter);
         let created = extract_field(frontmatter, "created").unwrap_or_default();
         let superseded_by = extract_field(frontmatter, "superseded_by");
+        let ttl_days = extract_field(frontmatter, "ttl")
+            .and_then(|v| v.parse::<u32>().ok());
 
         Ok(Entry {
             filename: filename.to_string(),
@@ -109,6 +132,7 @@ impl Entry {
             content,
             created,
             superseded_by,
+            ttl_days,
         })
     }
 }
@@ -244,5 +268,34 @@ mod tests {
         assert_eq!(entry.title, "test.md"); // Falls back to filename
         assert_eq!(entry.confidence, 0.8); // Default
         assert!(entry.tags.is_empty());
+        assert_eq!(entry.ttl_days, None);
+    }
+
+    #[test]
+    fn test_parse_entry_with_ttl() {
+        let raw = "---\ntype: fact\ntitle: \"Versioned Fact\"\nttl: 30\ncreated: 20260101-120000\nconfidence: 0.9\n---\n\nContent.";
+        let entry = Entry::parse("test.md", raw).unwrap();
+        assert_eq!(entry.ttl_days, Some(30));
+        // Created 2026-01-01, TTL 30 days → expired by April 2026
+        assert!(entry.is_stale());
+    }
+
+    #[test]
+    fn test_parse_entry_no_ttl_never_stale() {
+        let raw = "---\ntype: fact\ntitle: \"Permanent\"\ncreated: 20200101-000000\nconfidence: 0.9\n---\n\nContent.";
+        let entry = Entry::parse("test.md", raw).unwrap();
+        assert_eq!(entry.ttl_days, None);
+        // No TTL → never stale regardless of age
+        assert!(!entry.is_stale());
+    }
+
+    #[test]
+    fn test_parse_entry_ttl_not_yet_expired() {
+        // Use a very far future created date to simulate "fresh" entry
+        let raw = "---\ntype: fact\ntitle: \"Fresh\"\nttl: 3650\ncreated: 20260401-120000\nconfidence: 0.9\n---\n\nContent.";
+        let entry = Entry::parse("test.md", raw).unwrap();
+        assert_eq!(entry.ttl_days, Some(3650));
+        // 10 year TTL from April 2026 → not stale yet
+        assert!(!entry.is_stale());
     }
 }

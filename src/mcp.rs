@@ -459,9 +459,13 @@ async fn handle_broca_remember(
                 .collect::<Vec<_>>()
         })
         .unwrap_or_default();
+    let ttl_days = arguments
+        .get("ttl_days")
+        .and_then(|v| v.as_u64())
+        .map(|v| v as u32);
 
     let memory_dir = root.join(&config.memory.dir);
-    let entry_path = broca::remember(&memory_dir, "fact", title, content, &tags)?;
+    let entry_path = broca::remember(&memory_dir, "fact", title, content, &tags, ttl_days)?;
 
     Ok(format!(
         "Stored memory with ID: {}",

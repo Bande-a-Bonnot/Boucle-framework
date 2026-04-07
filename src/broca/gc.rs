@@ -264,6 +264,7 @@ mod tests {
             content: "content".to_string(),
             created: Utc::now().format("%Y%m%d-%H%M%S").to_string(),
             superseded_by: Some("new-fact.md".to_string()),
+            ttl_days: None,
         };
         let config = GcConfig::default();
         let reason = check_entry(&entry, 100, &config);
@@ -281,6 +282,7 @@ mod tests {
             content: "content".to_string(),
             created: Utc::now().format("%Y%m%d-%H%M%S").to_string(),
             superseded_by: Some("new.md".to_string()),
+            ttl_days: None,
         };
         let config = GcConfig::default();
         assert!(check_entry(&entry, 0, &config).is_none());
@@ -297,6 +299,7 @@ mod tests {
             content: "content".to_string(),
             created: Utc::now().format("%Y%m%d-%H%M%S").to_string(),
             superseded_by: None,
+            ttl_days: None,
         };
         let config = GcConfig::default();
         let reason = check_entry(&entry, 5, &config);
@@ -314,6 +317,7 @@ mod tests {
             content: "content".to_string(),
             created: "20240101-120000".to_string(), // >1 year ago
             superseded_by: None,
+            ttl_days: None,
         };
         let config = GcConfig::default();
         let reason = check_entry(&entry, 0, &config);
@@ -331,6 +335,7 @@ mod tests {
             content: "content".to_string(),
             created: "20240101-120000".to_string(),
             superseded_by: None,
+            ttl_days: None,
         };
         let config = GcConfig::default();
         // Has accesses → not flagged
@@ -348,6 +353,7 @@ mod tests {
             content: "content".to_string(),
             created: "20240101-120000".to_string(),
             superseded_by: None,
+            ttl_days: None,
         };
         let config = GcConfig::default();
         // High confidence → not flagged
@@ -365,6 +371,7 @@ mod tests {
             content: "content".to_string(),
             created: Utc::now().format("%Y%m%d-%H%M%S").to_string(),
             superseded_by: None,
+            ttl_days: None,
         };
         let config = GcConfig::default();
         // Recent + conf > 0.2 → not flagged
@@ -384,7 +391,7 @@ mod tests {
     fn test_candidates_finds_superseded() {
         let dir = tempfile::tempdir().unwrap();
 
-        broca::remember(dir.path(), "fact", "New Fact", "content", &[]).unwrap();
+        broca::remember(dir.path(), "fact", "New Fact", "content", &[], None).unwrap();
         broca::supersede(dir.path(), "new-fact", "something").unwrap();
 
         // supersede() sets confidence to 0.3, which matches rule 1
@@ -413,7 +420,7 @@ mod tests {
     fn test_candidates_skips_healthy_entries() {
         let dir = tempfile::tempdir().unwrap();
 
-        broca::remember(dir.path(), "fact", "Good Fact", "accurate content", &[]).unwrap();
+        broca::remember(dir.path(), "fact", "Good Fact", "accurate content", &[], None).unwrap();
 
         let result = candidates(dir.path(), &GcConfig::default()).unwrap();
         assert!(result.is_empty());
@@ -473,7 +480,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
 
         // Create one healthy, one stale
-        broca::remember(dir.path(), "fact", "Healthy", "good content", &[]).unwrap();
+        broca::remember(dir.path(), "fact", "Healthy", "good content", &[], None).unwrap();
         create_entry(
             dir.path(),
             "stale.md",
