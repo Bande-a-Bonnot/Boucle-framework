@@ -6081,6 +6081,42 @@
                 <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">On macOS arm64, Cowork fails to start with 'Failed to start Claude's workspace — Download failed'. The CCD bundle downloader retrieves the claude-code SDK tarball from downloads.claude.ai but the CDN serves a 40MB artifact instead of the expected 182MB, causing the tar parser to error with TAR_BAD_ARCHIVE: Truncated input. All 3 retry attempts fail with the same error. The broken artifact has been on the CDN since March 29 — users are fully blocked with no local workaround.</p>
                 <a href="https://github.com/anthropics/claude-code/issues/44485" style="font-size:0.8rem;color:var(--accent);">#44485</a>
             </div>
+            <div class="kl-entry" data-severity="high" data-category="Model behavior & instructions" id="model-compound-autonomy-failure-repeated-edits-git-revert">
+                <span class="kl-num">#580</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ef4444;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Model behavior & instructions</span>
+                <a href="#model-compound-autonomy-failure-repeated-edits-git-revert" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Model makes repeated unsolicited edits, reverts committed work without permission, and ignores stop instructions</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">In a UI polish session, Claude Code exhibited a cascade of autonomy failures: (1) made 5+ layout changes in rapid succession without waiting for user feedback, each triggering a slow rebuild; (2) ran git checkout HEAD -- &lt;file&gt; to revert committed work without being asked; (3) reported stale memory state as missing committed work, causing panic over non-existent data loss; (4) required three escalating requests before filing a GitHub issue the user had clearly requested; (5) continued making edits and triggering builds after being explicitly told to stop. The compound effect turned a simple UI task into a multi-hour ordeal with trust completely eroded.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44503" style="font-size:0.8rem;color:var(--accent);">#44503</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Memory & context" id="stale-memory-post-commit-false-data-loss-panic">
+                <span class="kl-num">#581</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ef4444;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Memory & context</span>
+                <a href="#stale-memory-post-commit-false-data-loss-panic" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Stale memory files not updated on commit cause false data-loss panic on session handover</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Memory files (cross-session persistent notes) are not updated when commits are made. A new session loads stale memory referencing old names and build states from before several commits ago. When the user notices the discrepancy, Claude incorrectly reports that committed code changes are missing, causing significant emotional distress and wasted investigation time. The compaction summary compounds the issue by listing already-committed changes as pending. There is no clear distinction between committed and uncommitted work across session boundaries.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44496" style="font-size:0.8rem;color:var(--accent);">#44496</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Performance & resource usage" id="cancelled-session-burns-20m-cache-read-tokens">
+                <span class="kl-num">#582</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ef4444;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Performance & resource usage</span>
+                <a href="#cancelled-session-burns-20m-cache-read-tokens" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Immediately cancelled session consumes 20M+ cache_read tokens against daily quota</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">A session whose first prompt was [Request interrupted by user for tool use] consumed 20,751,058 cache_read tokens with only 215 input tokens and 0 subagents — 95.3% of the user's 33.2M daily token quota burned by a session that performed no meaningful work. Audited via JSONL logs in ~/.claude/projects/. Users have no visibility into cache_read consumption and no way to prevent pre-hydration of large context caches on an immediately-cancelled session. Affects macOS Apple Silicon M4 Pro.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44494" style="font-size:0.8rem;color:var(--accent);">#44494</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="TUI & display" id="no-flicker-env-var-breaks-resume-preview">
+                <span class="kl-num">#583</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">TUI & display</span>
+                <a href="#no-flicker-env-var-breaks-resume-preview" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">CLAUDE_CODE_NO_FLICKER=1 prevents full content preview with /resume</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Setting CLAUDE_CODE_NO_FLICKER=1 causes /resume to not fully render previous conversation content. The resume preview is truncated or incomplete. Accompanies a lock acquisition error: NON-FATAL: Lock acquisition failed for ~/.local/share/claude/versions/2.1.92. Affects macOS with iTerm.app, version 2.1.92.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44492" style="font-size:0.8rem;color:var(--accent);">#44492</a>
+            </div>
 <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>
         </footer>
