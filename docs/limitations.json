@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 607,
+  "count": 615,
   "categories": {
     "Hook bypass & evasion": 94,
     "Hook behavior & events": 160,
@@ -72,9 +72,9 @@
   },
   "severity_counts": {
     "CRITICAL": 38,
-    "HIGH": 244,
-    "MEDIUM": 226,
-    "LOW": 94
+    "LOW": 94,
+    "MEDIUM": 230,
+    "HIGH": 253
   },
   "entries": [
     {
@@ -7484,6 +7484,45 @@
       "seq": 5,
       "date_added": "2026-04-07",
       "status": "open"
+    },
+    {
+      "id": "hooks-config-silently-stripped-by-active-sessions",
+      "title": "Active sessions silently strip newly-added hooks from settings.json; in-memory config overwrites the file on any save, dropping external changes.",
+      "category": "Hooks",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44631"
+      ],
+      "description": "When a `hooks` key is added to `~/.claude/settings.json` while a Claude Code session is running, the change is silently removed within seconds. Active sessions maintain an in-memory copy of settings and overwrite the file on any save event, dropping keys not present in their cached copy. Workaround: use `settings.local.json` instead, which is not subject to in-memory overwrites. Affects all hook authors who configure hooks while a session is open. Confirmed with has-repro. See #44631.",
+      "seq": 3,
+      "date_added": "2026-04-07",
+      "status": "open"
+    },
+    {
+      "id": "spinner-tips-exclude-default-false-hides-defaults",
+      "title": "spinnerTipsOverride with excludeDefault:false (or omitted) silently hides all default tips; only custom tips appear.",
+      "category": "Configuration",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44483"
+      ],
+      "description": "Setting `spinnerTipsOverride` in settings.json with `excludeDefault: false` (or omitting the field entirely) is documented to add custom tips alongside the default rotation. In practice, all default tips are silently filtered out and only the custom tip(s) are shown. Root cause identified via decompiled v2.1.92 source: the merge logic incorrectly gates on the presence of `excludeDefault` rather than its value. Affects users who want to supplement, not replace, the default spinner tips. See #44483.",
+      "seq": 5,
+      "date_added": "2026-04-07",
+      "status": "open"
+    },
+    {
+      "id": "channel-sent-by-claude-attribution-cannot-be-disabled",
+      "title": "'Sent by Claude' channel attribution appended by harness overrides plugin signature setting; no way to disable.",
+      "category": "Plugins",
+      "severity": "medium",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/44477"
+      ],
+      "description": "The iMessage plugin exposes an `IMESSAGE_APPEND_SIGNATURE` env var to suppress the 'Sent by Claude' footer. Setting it to `false` disables the plugin-level signature. However, the Claude Code channel/harness layer independently appends its own 'Sent by Claude' attribution to every message sent through the `reply` MCP tool, and there is no corresponding setting to disable this harness-level attribution. Users cannot fully suppress the signature regardless of plugin configuration. Confirmed with has-repro on macOS. See #44477.",
+      "seq": 1,
+      "date_added": "2026-04-07",
+      "status": "open"
     }
   ],
   "status_summary": {
@@ -7499,12 +7538,12 @@
   },
   "lastUpdated": "2026-04-07",
   "stats": {
-    "total": 612,
+    "total": 615,
     "critical": 38,
-    "high": 252,
-    "medium": 228,
+    "high": 253,
+    "medium": 230,
     "low": 94,
-    "open": 591,
+    "open": 594,
     "fixed": 11,
     "mitigated": 1
   },

@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">590</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-07.</span></p>
+        <p class="subtitle"><span id="total-count">615</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-07.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -6380,6 +6380,33 @@
                 <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">anthropic-skills:docx hangs silently on Windows 11; internal agent cannot write to its skills directory, times out with no error.</h3>
                 <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Invoking the anthropic-skills:docx skill on Windows 11 causes a silent hang lasting ~3 minutes before timing out with no output or error message. Root cause: the skill's internal background agent attempts to write a Python script to the skills plugin folder, but the Write tool is rejected due to permission restrictions on the skills directory. The agent reports 'The Write tool was rejected, so the script cannot be written to the skills directory' — but this message is never surfaced to the user. Affects all anthropic-skills that require write access to their own directory on Windows. Confirmed with has-repro on Windows 11, latest CC. See #44610.</p>
                 <a href="https://github.com/anthropics/claude-code/issues/44610" style="font-size:0.8rem;color:var(--accent);">#44610</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Hooks" id="hooks-config-silently-stripped-by-active-sessions">
+                <span class="kl-num">#613</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Hooks</span>
+                <a href="#hooks-config-silently-stripped-by-active-sessions" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Active sessions silently strip newly-added hooks from settings.json; in-memory config overwrites the file on any save, dropping external changes.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When a `hooks` key is added to `~/.claude/settings.json` while a Claude Code session is running, the change is silently removed within seconds. Active sessions maintain an in-memory copy of settings and overwrite the file on any save event, dropping keys not present in their cached copy. Workaround: use `settings.local.json` instead, which is not subject to in-memory overwrites. Affects all hook authors who configure hooks while a session is open. Confirmed with has-repro. See #44631.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44631" style="font-size:0.8rem;color:var(--accent);">#44631</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Configuration" id="spinner-tips-exclude-default-false-hides-defaults">
+                <span class="kl-num">#614</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Configuration</span>
+                <a href="#spinner-tips-exclude-default-false-hides-defaults" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">spinnerTipsOverride with excludeDefault:false (or omitted) silently hides all default tips; only custom tips appear.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Setting `spinnerTipsOverride` in settings.json with `excludeDefault: false` (or omitting the field entirely) is documented to add custom tips alongside the default rotation. In practice, all default tips are silently filtered out and only the custom tip(s) are shown. Root cause identified via decompiled v2.1.92 source: the merge logic incorrectly gates on the presence of `excludeDefault` rather than its value. Affects users who want to supplement, not replace, the default spinner tips. See #44483.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44483" style="font-size:0.8rem;color:var(--accent);">#44483</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Plugins" id="channel-sent-by-claude-attribution-cannot-be-disabled">
+                <span class="kl-num">#615</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Plugins</span>
+                <a href="#channel-sent-by-claude-attribution-cannot-be-disabled" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">'Sent by Claude' channel attribution appended by harness overrides plugin signature setting; no way to disable.</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">The iMessage plugin exposes an `IMESSAGE_APPEND_SIGNATURE` env var to suppress the 'Sent by Claude' footer. Setting it to `false` disables the plugin-level signature. However, the Claude Code channel/harness layer independently appends its own 'Sent by Claude' attribution to every message sent through the `reply` MCP tool, and there is no corresponding setting to disable this harness-level attribution. Users cannot fully suppress the signature regardless of plugin configuration. Confirmed with has-repro on macOS. See #44477.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/44477" style="font-size:0.8rem;color:var(--accent);">#44477</a>
             </div>
 <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>
