@@ -7188,6 +7188,87 @@
                 <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When running multiple Claude Code sessions sharing the same MCP integration (e.g. Notion), each session independently initiates OAuth re-authentication, opening far more browser windows than sessions (2 sessions -> 8 auth windows). Concurrent lock acquisition failure indicates no inter-process OAuth state sharing. Re-authenticating does not resolve the loop; disabling the MCP is the only effective workaround.</p>
                 <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
             </div>
+            <div class="kl-entry" data-severity="high" data-category="auth" id="oauth-token-expiry-no-browser-flow-recovery">
+                <span class="kl-num">#692</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">auth</span>
+                <a href="#oauth-token-expiry-no-browser-flow-recovery" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">OAuth token expired: claude login fails with 401, no browser flow initiated, no recovery path for 34+ hours</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When OAuth token expires, claude login returns 401 immediately without opening a browser for re-authentication. Issue persists 34+ hours despite deleting credentials.json, Keychain entries, and entire ~/.claude directory. No fallback to browser-based OAuth flow. User completely locked out with no recovery path. Affects macOS CLI.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="hooks" id="clear-drops-session-name-from-statusline-json">
+                <span class="kl-num">#693</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">hooks</span>
+                <a href="#clear-drops-session-name-from-statusline-json" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">/clear drops session_name from statusline JSON input despite name being preserved internally</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">After running /clear, the session_name field is missing from the JSON input piped to the statusline command, even though the session was named via /rename and the name is still preserved in session state. Re-running /rename restores it. No hook-based workaround exists. Affects any tooling consuming statusline JSON that relies on session identity.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="critical" data-category="memory/performance" id="cursor-extension-host-memory-leak-37gb-oom">
+                <span class="kl-num">#694</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ef4444;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">memory/performance</span>
+                <a href="#cursor-extension-host-memory-leak-37gb-oom" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Cursor extension host memory leak to 37GB RAM, triggers kernel OOM (v2.1.94)</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Claude Code extension host in Cursor (remote SSH, Ubuntu) leaked to ~37GB RSS over ~2h47m, triggering kernel OOM killer. Correlates with launching claude --dangerously-skip-permissions from integrated terminal. Repeated "Closing all diff tabs... Closed 0 diff tabs" log pattern precedes silence then OOM kill.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="auth/oauth" id="oauth-token-auto-refresh-broken-channels-daemon">
+                <span class="kl-num">#695</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">auth/oauth</span>
+                <a href="#oauth-token-auto-refresh-broken-channels-daemon" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">OAuth token auto-refresh broken in long-running --channels daemon sessions</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">OAuth access tokens expire after ~8 hours in claude --channels daemon sessions. Refresh token exists in credentials.json but is never used. All connected MCP servers (Notion, Linear, Figma, Gmail) disconnect with no auto-recovery. Manual /login is the only workaround. Possible regression from v2.1.90/91.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="auth/bedrock" id="bedrock-bearer-token-auth-authorization-header-missing">
+                <span class="kl-num">#696</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">auth/bedrock</span>
+                <a href="#bedrock-bearer-token-auth-authorization-header-missing" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Bedrock Bearer Token auth fails with 'Authorization header is missing' (v2.1.94)</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">AWS Bedrock Bearer Token authentication fails with "Authorization header is missing" in v2.1.94 on macOS. MCP Playwright tools (browser_resize, browser_navigate, browser_take_screenshot) also not found in same session. Related to KL #689 (Bedrock auth regression).</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="hooks" id="userpromptsubmit-hook-intermittent-error-despite-exit-0">
+                <span class="kl-num">#697</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">hooks</span>
+                <a href="#userpromptsubmit-hook-intermittent-error-despite-exit-0" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">UserPromptSubmit hook intermittently reports 'error' despite exit 0 and valid JSON output</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">UserPromptSubmit hook shows "hook error" to user non-deterministically even when script exits 0 and outputs valid JSON. Hook output is actually applied correctly in some cases. Timeout, bad exit codes, invalid JSON, and stderr leakage ruled out as causes. Same prompt sometimes succeeds, sometimes fails.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="platform/vscode" id="auto-mode-missing-vscode-windows-v2-1-94-regression">
+                <span class="kl-num">#698</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">platform/vscode</span>
+                <a href="#auto-mode-missing-vscode-windows-v2-1-94-regression" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Auto mode missing in VS Code extension on Windows v2.1.94 (regression from 2.1.81)</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Auto mode option is absent in the VS Code extension on Windows v2.1.94, even with bypass permissions enabled. Works correctly on macOS with same extension version. Downgrading to v2.1.81 restores Auto mode. Regression introduced between v2.1.81 and v2.1.94.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="remote-triggers" id="remote-triggers-fail-silently-private-personal-github-repo">
+                <span class="kl-num">#699</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">remote-triggers</span>
+                <a href="#remote-triggers-fail-silently-private-personal-github-repo" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Remote triggers fail silently when git_repository source is a private personal GitHub repo</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Scheduled agents with git_repository source pointing to a private personal GitHub repo fail silently -- no session created, no useful error. Cron triggers advance next_run_at metadata but produce no output. Manual run API calls return HTTP 500. GitHub App is confirmed installed with repo access. Removing git_repository source makes same trigger work.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="tui" id="cjk-ime-multi-character-commit-flickering-alacritty">
+                <span class="kl-num">#700</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">tui</span>
+                <a href="#cjk-ime-multi-character-commit-flickering-alacritty" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">CJK IME multi-character commit causes text flickering in Alacritty (bracketed paste handling)</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Committing multi-character CJK words via IME in Alacritty causes visible text flickering/jumping in the input area. Alacritty wraps IME commits in bracketed paste escape sequences, and Claude Code's TUI re-renders for each character rather than treating the sequence atomically. Single-character input unaffected.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
 <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>
         </footer>
