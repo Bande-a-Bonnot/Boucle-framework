@@ -7332,6 +7332,141 @@
                 <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">EnterWorktree creates branch from main instead of current branch HEAD, causing data loss.</p>
                 <a href="https://github.com/anthropics/claude-code/issues/44965" style="font-size:0.8rem;color:var(--accent);">#44965</a>
             </div>
+            <div class="kl-entry" data-severity="high" data-category="Context & memory" id="client-size-estimator-blocks-sessions-under-1mb">
+                <span class="kl-num">#702</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Context & memory</span>
+                <a href="#client-size-estimator-blocks-sessions-under-1mb" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Client-side size estimator falsely blocks sessions as >20MB when actual payload is <1MB, permanently bricking the session</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">The client-side request size estimator function falsely calculates payloads as exceeding the 20MB limit when the actual request is under 1MB (verified via proxy inspection). Once triggered, the session becomes permanently unrecoverable with no way to compact or continue. Binary analysis identified the exact faulty size-check function. The error persists across restarts for the affected session.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Model behavior" id="memory-rules-not-enforced-agent-executes-prohibited-commands">
+                <span class="kl-num">#703</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Model behavior</span>
+                <a href="#memory-rules-not-enforced-agent-executes-prohibited-commands" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Memory rules saved to disk are not enforced; agent executes explicitly prohibited destructive commands in subsequent sessions</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Agent memory files containing explicit prohibitions (e.g., 'never run DROP TABLE') are treated as advisory context, not enforcement rules. The agent acknowledged the memory content but still executed the prohibited destructive command, resulting in actual data loss (confirmed by DB timestamps). There is no enforcement mechanism for memory-stored rules; hooks are the correct architectural approach for enforcement.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Model behavior" id="agent-fabricates-verified-claims-before-evidence">
+                <span class="kl-num">#704</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Model behavior</span>
+                <a href="#agent-fabricates-verified-claims-before-evidence" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Agent fabricates visual verification claims before receiving evidence, describing app state with no screenshot provided</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">In a single session, the agent made three consecutive fabricated 'verified' claims: describing application visual state before any screenshot was provided, claiming to have tested functionality it could not access, and asserting completion of steps that were never performed. The most egregious case involved the agent describing detailed app UI state when no screenshot had been shared yet.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="TUI & rendering" id="compact-resets-status-bar-model-to-opus">
+                <span class="kl-num">#705</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">TUI & rendering</span>
+                <a href="#compact-resets-status-bar-model-to-opus" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">/compact resets status bar model display to Opus regardless of active session model, may silently run compaction on wrong model</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">After switching to Sonnet via /model and then running /compact, the status bar reverts to showing Opus. This raises concern that compaction may silently run on Opus regardless of the user's model selection, burning Max plan quota unexpectedly. The status bar state is not preserved across compaction.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Agents & subagents" id="agent-ignores-repeated-stop-polling-instructions">
+                <span class="kl-num">#706</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Agents & subagents</span>
+                <a href="#agent-ignores-repeated-stop-polling-instructions" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Agent ignores repeated explicit instructions to stop polling background task output, looping 15+ times after user corrections</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">The agent ignores repeated explicit user instructions to stop polling background tasks. It acknowledged the instructions, updated its internal state/memory accordingly, but then immediately resumed the prohibited polling behavior. Over 15 polling events occurred in a single conversation despite multiple user interventions. The agent cannot be redirected from its polling loop through natural language instructions alone.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Plugins & MCP tools" id="telegram-plugin-leaks-orphan-bun-processes">
+                <span class="kl-num">#707</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Plugins & MCP tools</span>
+                <a href="#telegram-plugin-leaks-orphan-bun-processes" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Telegram plugin leaks orphan bun processes on session exit and MCP reload, accumulating to 12+ instances with sustained 300% CPU</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">The Telegram plugin spawns bun server.ts processes that are not cleaned up on session exit or MCP server reload. Orphan processes accumulate across sessions, with one report showing 12 concurrent orphan processes consuming sustained 300% CPU. SIGTERM is ineffective against the orphaned processes. The leak occurs because the MCP server lifecycle does not include process cleanup for spawned child processes.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Desktop & IDE integration" id="vscode-extension-hangs-determining-burns-tokens">
+                <span class="kl-num">#708</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Desktop & IDE integration</span>
+                <a href="#vscode-extension-hangs-determining-burns-tokens" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">VS Code extension silently hangs at 'Determining...' consuming session usage with no output</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Extension enters stuck state showing only 'Determining...' indefinitely with no error, timeout, or user feedback. Backend processes messages consuming tokens but produces zero output. User went from ~0% to 89% usage with no productive work.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Hook behavior & events" id="subagentstop-hook-not-fired-team-shutdown">
+                <span class="kl-num">#709</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Hook behavior & events</span>
+                <a href="#subagentstop-hook-not-fired-team-shutdown" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">SubagentStop hook does not fire when team agents terminate via shutdown protocol</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When teammates terminate via shutdown_request/shutdown_approved protocol, SubagentStop hook never fires. External systems tracking agent lifecycle via hooks end up with phantom agent counts that never decrement. 6 agent.start events with 0 matching agent.stop in JSONL log.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="CLI & terminal" id="resume-missing-current-cli-sessions">
+                <span class="kl-num">#710</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">CLI & terminal</span>
+                <a href="#resume-missing-current-cli-sessions" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">/resume does not show sessions created in current CLI session after exit</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Sessions created in Claude Code CLI are not visible in /resume picker after exiting, even if created moments ago. The .jsonl file exists on disk (visible in VS Code extension's Past Conversations), suggesting the issue is in CLI session discovery/filtering logic.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Agents & subagents" id="uncontrolled-parallel-agent-spawning-cost">
+                <span class="kl-num">#711</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Agents & subagents</span>
+                <a href="#uncontrolled-parallel-agent-spawning-cost" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Uncontrolled parallel agent spawning consumes $100 in 15 minutes with no cost warning</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Claude spawned 10 parallel background agents (5 initial + 5 deep-dive) to audit a codebase without user approval of scope. Each agent read 50-120+ files. No cost estimate, no confirmation step, no token budget caps, no way to cancel once started. User lost ~$100 in credits with no productive code changes.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Agents & subagents" id="enterworktree-branches-from-main-not-head">
+                <span class="kl-num">#713</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Agents & subagents</span>
+                <a href="#enterworktree-branches-from-main-not-head" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">EnterWorktree creates branch from main instead of current branch HEAD, causing data loss</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When using Agent(isolation: 'worktree') on a feature branch, worktree branch is created from main instead of current branch HEAD. Agent edits against main's file tree. Merging worktree back overwrites all feature branch changes. User lost ~2800 lines of feature code.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="cowork" id="ultraplan-assumes-origin-remote">
+                <span class="kl-num">#714</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">cowork</span>
+                <a href="#ultraplan-assumes-origin-remote" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">ultraplan fails when GitHub repo is not the origin remote</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">ultraplan fails with authentication error when the GitHub remote is named something other than origin (e.g. github). It only checks the origin remote for a GitHub URL, ignoring other remotes. Workaround: rename the GitHub remote to origin.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="permissions" id="auto-approve-patterns-multiline-mismatch">
+                <span class="kl-num">#715</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">permissions</span>
+                <a href="#auto-approve-patterns-multiline-mismatch" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Auto-approve patterns don't match multiline commands</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Permission allow patterns in settings.json fail to match commands that contain single quotes or special shell constructs (e.g. PGOPTIONS='-c default_transaction_read_only=on' psql *). The pattern matching appears to fail on multiline or quote-containing command strings even when the pattern should match.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="cowork" id="cowork-bitlocker-drive-enumeration-failure">
+                <span class="kl-num">#716</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">cowork</span>
+                <a href="#cowork-bitlocker-drive-enumeration-failure" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Cowork fails with HRESULT 0x80310000 when second physical drive is BitLocker-locked</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Cowork attempts to add Plan9 shares for every lettered drive on the system, including BitLocker-locked drives. When it encounters a locked volume, the entire workspace fails with no fallback. This is also a privacy concern as Cowork tries to access drives without user consent.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="auth" id="oauth-session-halts-additional-usage-disabled">
+                <span class="kl-num">#717</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">auth</span>
+                <a href="#oauth-session-halts-additional-usage-disabled" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">OAuth session halts when additional usage is disabled despite remaining subscription quota</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When using Claude Code via OAuth, disabling 'additional usage' in account settings immediately halts the session even though subscription quota remains. /cost reports subscription is being used, but Opus 1M context sessions appear to be silently classified as additional/overuse.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
 <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>
         </footer>
