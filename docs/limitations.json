@@ -1,14 +1,14 @@
 {
   "version": "0.12.0",
-  "count": 811,
+  "count": 815,
   "categories": {
     "Hook bypass & evasion": 95,
     "Hook behavior & events": 162,
-    "Permission system": 103,
+    "Permission system": 104,
     "Subagent & spawned agents": 36,
     "Context & memory": 18,
     "Configuration behavior": 15,
-    "Platform & compatibility": 22,
+    "Platform & compatibility": 23,
     "MCP & plugin issues": 37,
     "Scheduling & remote triggers": 6,
     "Security & trust boundaries": 11,
@@ -38,7 +38,7 @@
     "Core & session management": 3,
     "Cowork & cloud": 1,
     "Model behavior & output": 3,
-    "TUI & display": 6,
+    "TUI & display": 7,
     "Auth & accounts": 5,
     "Model behavior & compliance": 2,
     "Configuration & settings": 2,
@@ -153,13 +153,15 @@
     "worktree-isolation": 1,
     "platform-windows": 1,
     "platform-macos": 1,
-    "tui-rendering": 1
+    "tui-rendering": 1,
+    "Permissions & sandbox": 1,
+    "IDE integrations": 1
   },
   "severity_counts": {
-    "CRITICAL": 57,
+    "CRITICAL": 58,
     "LOW": 97,
-    "MEDIUM": 290,
-    "HIGH": 367
+    "MEDIUM": 292,
+    "HIGH": 368
   },
   "entries": [
     {
@@ -9860,6 +9862,50 @@
       "issue": "#45421",
       "status": "open",
       "added": "2026-04-08"
+    },
+    {
+      "id": "skip-auto-permission-prompt-bypasses-deny-list",
+      "title": "skipAutoPermissionPrompt: true bypasses project-level deny list; denied tools execute silently",
+      "description": "When skipAutoPermissionPrompt: true is set in user-level ~/.claude/settings.json, tools listed in a project-level deny list (.claude/settings.json -> permissions.deny) are not blocked -- they execute successfully. The deny list is implemented as \"would prompt but skip prompting\", not as a hard gate. Also reproduces in non-interactive mode (claude -p), where denied tools silently auto-approve. The deny list should block unconditionally regardless of skipAutoPermissionPrompt, interactive mode, or settings scope. Has repro.",
+      "severity": "CRITICAL",
+      "category": "Permission system",
+      "cc_issue": 45426,
+      "cc_version": null,
+      "status": "open",
+      "date_added": "2026-04-08"
+    },
+    {
+      "id": "memory-command-lockup-after-editor-launch",
+      "title": "/memory command locks up Claude Code process after editor opens file; no keyboard input accepted",
+      "description": "Using /memory and selecting an item (e.g. \"User memory\") launches the file in the configured editor (e.g. VS Code). When the editor takes focus and the user returns to the Claude Code terminal, the process is completely locked -- no keyboard input is accepted. Esc, Ctrl+C, and other keys have no effect. The session must be force-closed. Expected: TUI remains responsive after editor launch. Has repro on macOS.",
+      "severity": "HIGH",
+      "category": "TUI & display",
+      "cc_issue": 45434,
+      "cc_version": null,
+      "status": "open",
+      "date_added": "2026-04-08"
+    },
+    {
+      "id": "desktop-transfer-tcc-protected-dir-silent-failure",
+      "title": "/desktop session transfer to TCC-protected directory fails silently on macOS; no error shown",
+      "description": "On macOS, using /desktop to transfer a terminal session to Claude Desktop when the working directory is in a TCC-protected location (e.g. ~/Documents without Full Disk Access granted to Claude Desktop) causes all subsequent prompts to produce zero output -- no error, no thinking indicator, no feedback. The session appears active but is silently broken. Fix: grant Full Disk Access in System Settings. Missing user-facing error: \"Cannot access working directory. Grant Full Disk Access to Claude in System Settings.\"",
+      "severity": "MEDIUM",
+      "category": "Platform & compatibility",
+      "cc_issue": 45431,
+      "cc_version": null,
+      "status": "open",
+      "date_added": "2026-04-08"
+    },
+    {
+      "id": "vscode-session-history-cache-drops-sessions-on-tab-close",
+      "title": "VS Code session history uses SQLite cache not disk scan; closing tab removes session from UI despite intact .jsonl file",
+      "description": "The VS Code extension indexes session history via agentSessions.model.cache in state.vscdb (SQLite), not by scanning .jsonl files on disk. When a session tab is closed, the entry is removed from or never written to the cache. The extension does not reconcile the cache against disk on startup. Result: closing a tab permanently hides the session from history UI even though the .jsonl file and all data remain intact. Sessions can still be resumed via claude --resume <id>. One user reports 105 sessions on disk, only 60 visible in UI (45 invisible). Has repro on Windows.",
+      "severity": "MEDIUM",
+      "category": "IDE integrations",
+      "cc_issue": 45424,
+      "cc_version": null,
+      "status": "open",
+      "date_added": "2026-04-08"
     }
   ],
   "status_summary": {
@@ -9885,5 +9931,5 @@
     "mitigated": 1
   },
   "last_updated": "2026-04-08",
-  "total": 811
+  "total": 815
 }

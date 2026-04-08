@@ -8417,5 +8417,49 @@
     </script>
 
 
+
+      <div class="limitation-entry" id="kl-812" data-severity="critical" data-category="Permission system" style="border-left: 4px solid #dc2626; padding: 12px 16px; margin-bottom: 12px; background: #1e1e1e; border-radius: 4px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <span style="background:#dc2626; color:white; font-size:11px; padding:2px 8px; border-radius:3px; font-weight:600;">CRITICAL</span>
+          <span style="color:#9ca3af; font-size:12px;">#812 &middot; Permission system</span>
+          <a href="#kl-812" style="color:#6b7280; font-size:11px; margin-left:auto;">permalink</a>
+        </div>
+        <div style="color:#e5e7eb; font-size:14px; font-weight:600; margin-bottom:6px;">skipAutoPermissionPrompt: true bypasses project-level deny list; denied tools execute silently.</div>
+        <div style="color:#9ca3af; font-size:13px; line-height:1.5;">When skipAutoPermissionPrompt: true is set in user-level ~/.claude/settings.json, tools listed in a project-level deny list (.claude/settings.json → permissions.deny) are not blocked -- they execute successfully. The deny list is implemented as "would prompt but skip prompting", not as a hard gate. Also reproduces in non-interactive mode (claude -p), where denied tools silently auto-approve. The deny list should block unconditionally regardless of skipAutoPermissionPrompt, interactive mode, or settings scope. Has repro.</div>
+        <div style="margin-top:8px; font-size:12px; color:#6b7280;">Issue: <a href="https://github.com/anthropics/claude-code/issues/45426" target="_blank" style="color:#3b82f6;">#45426</a></div>
+      </div>
+
+      <div class="limitation-entry" id="kl-813" data-severity="high" data-category="TUI & display" style="border-left: 4px solid #ea580c; padding: 12px 16px; margin-bottom: 12px; background: #1e1e1e; border-radius: 4px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <span style="background:#ea580c; color:white; font-size:11px; padding:2px 8px; border-radius:3px; font-weight:600;">HIGH</span>
+          <span style="color:#9ca3af; font-size:12px;">#813 &middot; TUI & display</span>
+          <a href="#kl-813" style="color:#6b7280; font-size:11px; margin-left:auto;">permalink</a>
+        </div>
+        <div style="color:#e5e7eb; font-size:14px; font-weight:600; margin-bottom:6px;">/memory command locks up Claude Code process after editor opens file; no keyboard input accepted.</div>
+        <div style="color:#9ca3af; font-size:13px; line-height:1.5;">Using /memory and selecting an item (e.g. "User memory") launches the file in the configured editor (e.g. VS Code). When the editor takes focus and the user returns to the Claude Code terminal, the process is completely locked -- no keyboard input is accepted. Esc, Ctrl+C, and other keys have no effect. The session must be force-closed. Expected: TUI remains responsive after editor launch. Has repro on macOS.</div>
+        <div style="margin-top:8px; font-size:12px; color:#6b7280;">Issue: <a href="https://github.com/anthropics/claude-code/issues/45434" target="_blank" style="color:#3b82f6;">#45434</a></div>
+      </div>
+
+      <div class="limitation-entry" id="kl-814" data-severity="medium" data-category="Platform & compatibility" style="border-left: 4px solid #d97706; padding: 12px 16px; margin-bottom: 12px; background: #1e1e1e; border-radius: 4px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <span style="background:#d97706; color:white; font-size:11px; padding:2px 8px; border-radius:3px; font-weight:600;">MEDIUM</span>
+          <span style="color:#9ca3af; font-size:12px;">#814 &middot; Platform & compatibility</span>
+          <a href="#kl-814" style="color:#6b7280; font-size:11px; margin-left:auto;">permalink</a>
+        </div>
+        <div style="color:#e5e7eb; font-size:14px; font-weight:600; margin-bottom:6px;">/desktop session transfer to TCC-protected directory fails silently on macOS; no error shown.</div>
+        <div style="color:#9ca3af; font-size:13px; line-height:1.5;">On macOS, using /desktop to transfer a terminal session to Claude Desktop when the working directory is in a TCC-protected location (e.g. ~/Documents without Full Disk Access granted to Claude Desktop) causes all subsequent prompts to produce zero output -- no error, no thinking indicator, no feedback. The session appears active but is silently broken. Fix: grant Full Disk Access in System Settings. Missing user-facing error: "Cannot access working directory. Grant Full Disk Access to Claude in System Settings."</div>
+        <div style="margin-top:8px; font-size:12px; color:#6b7280;">Issue: <a href="https://github.com/anthropics/claude-code/issues/45431" target="_blank" style="color:#3b82f6;">#45431</a></div>
+      </div>
+
+      <div class="limitation-entry" id="kl-815" data-severity="medium" data-category="IDE integrations" style="border-left: 4px solid #d97706; padding: 12px 16px; margin-bottom: 12px; background: #1e1e1e; border-radius: 4px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <span style="background:#d97706; color:white; font-size:11px; padding:2px 8px; border-radius:3px; font-weight:600;">MEDIUM</span>
+          <span style="color:#9ca3af; font-size:12px;">#815 &middot; IDE integrations</span>
+          <a href="#kl-815" style="color:#6b7280; font-size:11px; margin-left:auto;">permalink</a>
+        </div>
+        <div style="color:#e5e7eb; font-size:14px; font-weight:600; margin-bottom:6px;">VS Code session history uses SQLite cache not disk scan; closing tab removes session from UI despite intact .jsonl file.</div>
+        <div style="color:#9ca3af; font-size:13px; line-height:1.5;">The VS Code extension indexes session history via agentSessions.model.cache in state.vscdb (SQLite), not by scanning .jsonl files on disk. When a session tab is closed, the entry is removed from or never written to the cache. The extension does not reconcile the cache against disk on startup. Result: closing a tab permanently hides the session from history UI even though the .jsonl file and all data remain intact. Sessions can still be resumed via claude --resume <id>. One user reports 105 sessions on disk, only 60 visible in UI (45 invisible). Has repro on Windows.</div>
+        <div style="margin-top:8px; font-size:12px; color:#6b7280;">Issue: <a href="https://github.com/anthropics/claude-code/issues/45424" target="_blank" style="color:#3b82f6;">#45424</a></div>
+      </div>
 </body>
 </html>
