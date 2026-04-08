@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 815,
+  "count": 821,
   "categories": {
     "Hook bypass & evasion": 95,
     "Hook behavior & events": 162,
@@ -158,10 +158,10 @@
     "IDE integrations": 1
   },
   "severity_counts": {
-    "CRITICAL": 58,
-    "LOW": 97,
-    "MEDIUM": 292,
-    "HIGH": 368
+    "CRITICAL": 59,
+    "HIGH": 371,
+    "MEDIUM": 294,
+    "LOW": 97
   },
   "entries": [
     {
@@ -9906,6 +9906,72 @@
       "cc_version": null,
       "status": "open",
       "date_added": "2026-04-08"
+    },
+    {
+      "id": "write-tool-silent-fail-max-tokens-truncation",
+      "title": "Write tool silently fails with 'missing content' when tool_use block hits max_tokens output ceiling",
+      "description": "When a model response hits the 8000 output token ceiling mid-tool_use block, the Write tool's content parameter is never emitted. The harness receives only file_path and reports InputValidationError: missing required parameter 'content' with no indication that truncation occurred. The model enters a retry loop that worsens the situation: growing context, unchanged token budget. Particularly severe for non-English content (Cyrillic, CJK) where token density is 3x English -- files that appear normally-sized in characters can silently blow the budget. Reproducer includes session jsonl evidence with 11 consecutive failures on 18k-char Ukrainian text.",
+      "severity": "CRITICAL",
+      "category": "Tools",
+      "cc_issue": 45436,
+      "cc_version": null,
+      "status": "open",
+      "date_added": "2026-04-08"
+    },
+    {
+      "id": "fileindex-re-indexes-non-git-repo-every-turn",
+      "title": "FileIndex runs full ripgrep scan (7-20s) on every turn for large non-git repos",
+      "description": "When a project lacks a git repo, FileIndex falls back to ripgrep for file listing and repeats this on every turn with no caching. For 200k+ file projects this causes 7-13s hitches every turn (20+ seconds on slower hardware). With a git repo the index is built once at session start and reused. No filesystem-level cache exists for non-git repos. Workaround: create a local git repo and commit all files. Has repro on Windows + Bedrock with debug logs showing FileIndex cache refresh at 13049ms per turn.",
+      "severity": "HIGH",
+      "category": "Performance",
+      "cc_issue": 45437,
+      "cc_version": null,
+      "status": "open",
+      "date_added": "2026-04-08"
+    },
+    {
+      "id": "sandbox-bwrap-crash-symlink-auto-deny",
+      "title": "bwrap sandbox fails entirely when auto-detected secret files exist through workspace symlinks; all commands fail",
+      "description": "The auto-deny heuristic scans for files with 'secret' or 'credential' in the name and adds them to the deny list. When found through a workspace symlink (e.g., Bazel's bazel-* convenience symlinks), the symlink-relative path is added rather than the resolved real path. bwrap then tries to mkdir -p parent directories to set up bind mounts and fails when a path component is a symlink. Since sandbox setup fails, ALL sandboxed commands fail -- not just those targeting denied paths. Even 'echo hello' fails with 'bwrap: Can't mkdir parents'. Reproduces on Linux with any Bazel monorepo containing files with 'secret' or 'credentials' in the name.",
+      "severity": "HIGH",
+      "category": "Sandbox",
+      "cc_issue": 45451,
+      "cc_version": null,
+      "status": "open",
+      "date_added": "2026-04-08"
+    },
+    {
+      "id": "max-plan-opus-1m-access-denied",
+      "title": "Max plan subscribers rejected from opus[1m] with 'not available for your account' despite documented entitlement",
+      "description": "Max plan users ($200/month) receive 'Opus 4.6 with 1M context is not available for your account' when selecting opus[1m] via /model. Anthropic documentation states that on Max, Team, and Enterprise plans, Opus is automatically upgraded to 1M context with no additional configuration. This is distinct from issue 23432 (display bug showing 200k) -- the error message confirms account-level entitlement is not recognized, not a display issue. Has repro on macOS.",
+      "severity": "HIGH",
+      "category": "Auth and login",
+      "cc_issue": 45449,
+      "cc_version": null,
+      "status": "open",
+      "date_added": "2026-04-08"
+    },
+    {
+      "id": "vscode-usage-stats-shared-across-accounts",
+      "title": "VS Code extension shows identical usage stats across different accounts in separate windows",
+      "description": "When two VS Code windows are authenticated with different Claude accounts, both display identical usage percentages (session %, weekly %, weekly Sonnet). Auth info (email, plan, org) is correctly shown per-window and per-account, but usage numbers are shared globally rather than per-account. Has repro on Windows.",
+      "severity": "MEDIUM",
+      "category": "IDE integrations",
+      "cc_issue": 45457,
+      "cc_version": null,
+      "status": "open",
+      "date_added": "2026-04-08"
+    },
+    {
+      "id": "remote-run-stuck-no-cancel-no-timeout",
+      "title": "Remote run sessions can hang 70+ minutes with no cancel button and no visible timeout in web UI",
+      "description": "Claude Code Remote (CCR) sessions can run indefinitely with no cancel option in the web UI and no visible timeout. One user reported a session running 1h10m on a simple URL check task. The model itself acknowledged the runaway state but told the user nothing could be done from the UI. Users have no way to stop stuck runs or determine if they are being charged for stuck time.",
+      "severity": "MEDIUM",
+      "category": "Remote and agents",
+      "cc_issue": 45440,
+      "cc_version": null,
+      "status": "open",
+      "date_added": "2026-04-08"
     }
   ],
   "status_summary": {
@@ -9931,5 +9997,5 @@
     "mitigated": 1
   },
   "last_updated": "2026-04-08",
-  "total": 815
+  "total": 821
 }

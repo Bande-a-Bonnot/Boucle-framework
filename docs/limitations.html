@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">811</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-08.</span></p>
+        <p class="subtitle"><span id="total-count">821</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-08.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -8460,6 +8460,72 @@
         <div style="color:#e5e7eb; font-size:14px; font-weight:600; margin-bottom:6px;">VS Code session history uses SQLite cache not disk scan; closing tab removes session from UI despite intact .jsonl file.</div>
         <div style="color:#9ca3af; font-size:13px; line-height:1.5;">The VS Code extension indexes session history via agentSessions.model.cache in state.vscdb (SQLite), not by scanning .jsonl files on disk. When a session tab is closed, the entry is removed from or never written to the cache. The extension does not reconcile the cache against disk on startup. Result: closing a tab permanently hides the session from history UI even though the .jsonl file and all data remain intact. Sessions can still be resumed via claude --resume <id>. One user reports 105 sessions on disk, only 60 visible in UI (45 invisible). Has repro on Windows.</div>
         <div style="margin-top:8px; font-size:12px; color:#6b7280;">Issue: <a href="https://github.com/anthropics/claude-code/issues/45424" target="_blank" style="color:#3b82f6;">#45424</a></div>
+      </div>
+
+      <div class="limitation-entry" id="kl-816" data-severity="critical" data-category="Tools" style="border-left: 4px solid #dc2626; padding: 12px 16px; margin-bottom: 12px; background: #1e1e1e; border-radius: 4px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <span style="background:#dc2626; color:white; font-size:11px; padding:2px 8px; border-radius:3px; font-weight:600;">CRITICAL</span>
+          <span style="color:#9ca3af; font-size:12px;">#816 &middot; Tools</span>
+          <a href="#kl-816" style="color:#6b7280; font-size:11px; margin-left:auto;">permalink</a>
+        </div>
+        <div style="color:#e5e7eb; font-size:14px; font-weight:600; margin-bottom:6px;">Write tool silently fails with 'missing content' when tool_use block hits max_tokens output ceiling.</div>
+        <div style="color:#9ca3af; font-size:13px; line-height:1.5;">When a model response hits the 8000 output token ceiling mid-tool_use block, the Write tool's content parameter is never emitted. The harness receives only file_path and reports InputValidationError: missing required parameter 'content' with no indication that truncation occurred. The model enters a retry loop that worsens the situation: growing context, unchanged token budget. Particularly severe for non-English content (Cyrillic, CJK) where token density is 3x English -- files that appear normally-sized in characters can silently blow the budget. Reproducer includes session jsonl evidence with 11 consecutive failures on 18k-char Ukrainian text.</div>
+        <div style="margin-top:8px; font-size:12px; color:#6b7280;">Issue: <a href="https://github.com/anthropics/claude-code/issues/45436" target="_blank" style="color:#3b82f6;">#45436</a></div>
+      </div>
+
+      <div class="limitation-entry" id="kl-817" data-severity="high" data-category="Performance" style="border-left: 4px solid #ea580c; padding: 12px 16px; margin-bottom: 12px; background: #1e1e1e; border-radius: 4px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <span style="background:#ea580c; color:white; font-size:11px; padding:2px 8px; border-radius:3px; font-weight:600;">HIGH</span>
+          <span style="color:#9ca3af; font-size:12px;">#817 &middot; Performance</span>
+          <a href="#kl-817" style="color:#6b7280; font-size:11px; margin-left:auto;">permalink</a>
+        </div>
+        <div style="color:#e5e7eb; font-size:14px; font-weight:600; margin-bottom:6px;">FileIndex runs full ripgrep scan (7-20s) on every turn for large non-git repos.</div>
+        <div style="color:#9ca3af; font-size:13px; line-height:1.5;">When a project lacks a git repo, FileIndex falls back to ripgrep for file listing and repeats this on every turn with no caching. For 200k+ file projects this causes 7-13s hitches every turn (20+ seconds on slower hardware). With a git repo the index is built once at session start and reused. No filesystem-level cache exists for non-git repos. Workaround: create a local git repo and commit all files. Has repro on Windows and Bedrock with debug logs confirming 13049ms per-turn rescan.</div>
+        <div style="margin-top:8px; font-size:12px; color:#6b7280;">Issue: <a href="https://github.com/anthropics/claude-code/issues/45437" target="_blank" style="color:#3b82f6;">#45437</a></div>
+      </div>
+
+      <div class="limitation-entry" id="kl-818" data-severity="high" data-category="Sandbox" style="border-left: 4px solid #ea580c; padding: 12px 16px; margin-bottom: 12px; background: #1e1e1e; border-radius: 4px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <span style="background:#ea580c; color:white; font-size:11px; padding:2px 8px; border-radius:3px; font-weight:600;">HIGH</span>
+          <span style="color:#9ca3af; font-size:12px;">#818 &middot; Sandbox</span>
+          <a href="#kl-818" style="color:#6b7280; font-size:11px; margin-left:auto;">permalink</a>
+        </div>
+        <div style="color:#e5e7eb; font-size:14px; font-weight:600; margin-bottom:6px;">bwrap sandbox fails entirely when auto-detected secret files exist through workspace symlinks; all commands fail.</div>
+        <div style="color:#9ca3af; font-size:13px; line-height:1.5;">The auto-deny heuristic scans for files with 'secret' or 'credential' in the name and adds them to the deny list. When found through a workspace symlink (e.g., Bazel's bazel-* convenience symlinks), the symlink-relative path is added rather than the resolved real path. bwrap then tries to mkdir -p parent directories to set up bind mounts and fails when a path component is a symlink. Since sandbox setup fails, ALL sandboxed commands fail -- not just those targeting denied paths. Even 'echo hello' fails with 'bwrap: Can't mkdir parents'. Reproduces on Linux with any Bazel monorepo containing files with 'secret' or 'credentials' in the name.</div>
+        <div style="margin-top:8px; font-size:12px; color:#6b7280;">Issue: <a href="https://github.com/anthropics/claude-code/issues/45451" target="_blank" style="color:#3b82f6;">#45451</a></div>
+      </div>
+
+      <div class="limitation-entry" id="kl-819" data-severity="high" data-category="Auth and login" style="border-left: 4px solid #ea580c; padding: 12px 16px; margin-bottom: 12px; background: #1e1e1e; border-radius: 4px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <span style="background:#ea580c; color:white; font-size:11px; padding:2px 8px; border-radius:3px; font-weight:600;">HIGH</span>
+          <span style="color:#9ca3af; font-size:12px;">#819 &middot; Auth and login</span>
+          <a href="#kl-819" style="color:#6b7280; font-size:11px; margin-left:auto;">permalink</a>
+        </div>
+        <div style="color:#e5e7eb; font-size:14px; font-weight:600; margin-bottom:6px;">Max plan subscribers rejected from opus[1m] with 'not available for your account' despite documented entitlement.</div>
+        <div style="color:#9ca3af; font-size:13px; line-height:1.5;">Max plan users ($200/month) receive 'Opus 4.6 with 1M context is not available for your account' when selecting opus[1m] via /model. Anthropic documentation states that on Max, Team, and Enterprise plans, Opus is automatically upgraded to 1M context with no additional configuration. This is distinct from issue #23432 (display bug showing 200k) -- the error message confirms account-level entitlement is not recognized, not a display issue. Has repro on macOS.</div>
+        <div style="margin-top:8px; font-size:12px; color:#6b7280;">Issue: <a href="https://github.com/anthropics/claude-code/issues/45449" target="_blank" style="color:#3b82f6;">#45449</a></div>
+      </div>
+
+      <div class="limitation-entry" id="kl-820" data-severity="medium" data-category="IDE integrations" style="border-left: 4px solid #d97706; padding: 12px 16px; margin-bottom: 12px; background: #1e1e1e; border-radius: 4px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <span style="background:#d97706; color:white; font-size:11px; padding:2px 8px; border-radius:3px; font-weight:600;">MEDIUM</span>
+          <span style="color:#9ca3af; font-size:12px;">#820 &middot; IDE integrations</span>
+          <a href="#kl-820" style="color:#6b7280; font-size:11px; margin-left:auto;">permalink</a>
+        </div>
+        <div style="color:#e5e7eb; font-size:14px; font-weight:600; margin-bottom:6px;">VS Code extension shows identical usage stats across different accounts in separate windows.</div>
+        <div style="color:#9ca3af; font-size:13px; line-height:1.5;">When two VS Code windows are authenticated with different Claude accounts, both display identical usage percentages (session %, weekly %, weekly Sonnet). Auth info (email, plan, org) is correctly shown per-window and per-account, but usage numbers are shared globally rather than per-account. Has repro on Windows.</div>
+        <div style="margin-top:8px; font-size:12px; color:#6b7280;">Issue: <a href="https://github.com/anthropics/claude-code/issues/45457" target="_blank" style="color:#3b82f6;">#45457</a></div>
+      </div>
+
+      <div class="limitation-entry" id="kl-821" data-severity="medium" data-category="Remote and agents" style="border-left: 4px solid #d97706; padding: 12px 16px; margin-bottom: 12px; background: #1e1e1e; border-radius: 4px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <span style="background:#d97706; color:white; font-size:11px; padding:2px 8px; border-radius:3px; font-weight:600;">MEDIUM</span>
+          <span style="color:#9ca3af; font-size:12px;">#821 &middot; Remote and agents</span>
+          <a href="#kl-821" style="color:#6b7280; font-size:11px; margin-left:auto;">permalink</a>
+        </div>
+        <div style="color:#e5e7eb; font-size:14px; font-weight:600; margin-bottom:6px;">Remote run sessions can hang 70+ minutes with no cancel button and no visible timeout in web UI.</div>
+        <div style="color:#9ca3af; font-size:13px; line-height:1.5;">Claude Code Remote (CCR) sessions can run indefinitely with no cancel option in the web UI and no visible timeout. One user reported a session running 1h10m on a simple URL check task. The model itself acknowledged the runaway state but told the user nothing could be done from the UI. Users have no way to stop stuck runs or determine if they are being charged for stuck time.</div>
+        <div style="margin-top:8px; font-size:12px; color:#6b7280;">Issue: <a href="https://github.com/anthropics/claude-code/issues/45440" target="_blank" style="color:#3b82f6;">#45440</a></div>
       </div>
 </body>
 </html>
