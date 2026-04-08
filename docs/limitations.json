@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 766,
+  "count": 772,
   "categories": {
     "Hook bypass & evasion": 95,
     "Hook behavior & events": 161,
@@ -144,9 +144,9 @@
     "MCP & tool infrastructure": 1
   },
   "severity_counts": {
-    "CRITICAL": 54,
-    "HIGH": 339,
-    "MEDIUM": 276,
+    "CRITICAL": 55,
+    "HIGH": 342,
+    "MEDIUM": 278,
     "LOW": 97
   },
   "entries": [
@@ -9299,8 +9299,8 @@
     },
     {
       "id": "subagent-model-1m-suffix-stripped-200k-context",
-      "title": "Subagent model resolution strips [1m] 1M context suffix — subagents always get 200k context",
-      "description": "Setting `\"model\": \"claude-opus-4-6[1m]\"` in settings.json gives the parent session 1M context, but spawned subagents (Agent tool or agent teams) receive `--model claude-opus-4-6` without the [1m] suffix. All three configuration paths — parent inheritance, agent frontmatter, and Agent tool parameter — reproduce the same stripping behavior. Confirmed on v2.1.96.",
+      "title": "Subagent model resolution strips [1m] 1M context suffix \u2014 subagents always get 200k context",
+      "description": "Setting `\"model\": \"claude-opus-4-6[1m]\"` in settings.json gives the parent session 1M context, but spawned subagents (Agent tool or agent teams) receive `--model claude-opus-4-6` without the [1m] suffix. All three configuration paths \u2014 parent inheritance, agent frontmatter, and Agent tool parameter \u2014 reproduce the same stripping behavior. Confirmed on v2.1.96.",
       "severity": "HIGH",
       "category": "Agent & multi-agent",
       "cc_issue": 45169,
@@ -9311,7 +9311,7 @@
     {
       "id": "mcp-config-invalid-livelock",
       "title": "MCP config-invalid errors on missing env vars cause livelock / infinite iteration loop",
-      "description": "When an MCP server has a missing environment variable (e.g., GITHUB_PERSONAL_ACCESS_TOKEN), `mcp-config-invalid` errors fire repeatedly with no backoff — the same error appears 4+ times within 8 seconds. Claude loops excessively without making progress. The MCP error handler retries or re-attempts on every tool call rather than failing fast or surfacing a clear user-facing error.",
+      "description": "When an MCP server has a missing environment variable (e.g., GITHUB_PERSONAL_ACCESS_TOKEN), `mcp-config-invalid` errors fire repeatedly with no backoff \u2014 the same error appears 4+ times within 8 seconds. Claude loops excessively without making progress. The MCP error handler retries or re-attempts on every tool call rather than failing fast or surfacing a clear user-facing error.",
       "severity": "MEDIUM",
       "category": "MCP",
       "cc_issue": 45185,
@@ -9322,7 +9322,7 @@
     {
       "id": "auto-compaction-infinite-loop-drains-tokens",
       "title": "Auto-compaction runs indefinitely (~15 min), draining entire session token budget",
-      "description": "Auto-compaction triggered on Opus on Linux ran for ~15 minutes without completing. After user-forced interrupt, session showed 100% context used despite being at ~66% before compaction began. No error output — it spins silently until the token budget is exhausted. Confirmed on v2.1.96.",
+      "description": "Auto-compaction triggered on Opus on Linux ran for ~15 minutes without completing. After user-forced interrupt, session showed 100% context used despite being at ~66% before compaction began. No error output \u2014 it spins silently until the token budget is exhausted. Confirmed on v2.1.96.",
       "severity": "MEDIUM",
       "category": "Memory & context",
       "cc_issue": 45170,
@@ -9337,6 +9337,72 @@
       "severity": "LOW",
       "category": "Permissions",
       "cc_issue": 45184,
+      "cc_version": "v2.1.96",
+      "status": "open",
+      "date_added": "2026-04-08"
+    },
+    {
+      "id": "scheduled-task-unsolicited-queue-injection",
+      "title": "Unsolicited queue-operation/enqueue injected into unattended scheduled task session",
+      "description": "In an automated scheduled task session (no user present), a second queue-operation/enqueue message was injected 8 seconds after startup from an unidentified internal source. Claude treated it as a legitimate user instruction and created files and explored directories. The injected command was indistinguishable from a real user message. Source ruled out: user's own scripts, email triage, IDE integrations. Possible candidates: Cowork agent relay, preview server listener, or internal diagnostics. Critical because unattended sessions have no human to catch unauthorized actions.",
+      "severity": "CRITICAL",
+      "category": "Security",
+      "cc_issue": 45215,
+      "cc_version": "v2.1.87",
+      "status": "open",
+      "date_added": "2026-04-08"
+    },
+    {
+      "id": "github-mcp-oauth-routes-to-google-drive",
+      "title": "GitHub MCP authenticate tool redirects OAuth to Google Drive consent screen instead of GitHub",
+      "description": "When the GitHub MCP server disconnects and mcp__github__authenticate is called, all generated OAuth URLs (tested with 4 separate fresh client_ids) route to the Google Drive MCP installer instead of GitHub. The Anthropic authorize endpoint for the GitHub MCP session ID redirects to api.anthropic.com/mcp/gdrive/google/install, then to Google OAuth with drive.readonly and drive.file scopes. Result: GitHub tools fail for the entire session, and authorizing Google Drive does not restore GitHub. Regression from a previously working version.",
+      "severity": "HIGH",
+      "category": "MCP",
+      "cc_issue": 45208,
+      "cc_version": "v2.1.96",
+      "status": "open",
+      "date_added": "2026-04-08"
+    },
+    {
+      "id": "read-deny-rules-block-bash-contrary-to-docs",
+      "title": "Read(...) deny rules block Bash tool calls despite documentation saying they do not",
+      "description": "In v2.1.92 with sandbox disabled, a Read(~/private-dir/**) deny rule also blocks Bash commands whose arguments match paths under ~/private-dir/ -- even when Bash(ls *) is in the allow list. The official permissions docs explicitly state: 'Read and Edit deny rules apply to Claude's built-in file tools, not to Bash subprocesses.' Denial happens in ~7ms. Confirmed via controlled experiment. Either the docs are wrong or the permission engine cross-applies file tool deny rules to Bash.",
+      "severity": "HIGH",
+      "category": "Permissions",
+      "cc_issue": 45200,
+      "cc_version": "v2.1.92",
+      "status": "open",
+      "date_added": "2026-04-08"
+    },
+    {
+      "id": "worktree-isolation-breaks-bare-repo-layouts",
+      "title": "Worktree isolation sets extensions.worktreeConfig in shared git config, breaking existing bare-repo worktrees",
+      "description": "Claude Code's isolation: worktree (used by plan mode and agent dispatch) modifies the shared git config by setting extensions.worktreeConfig = true without updating existing worktrees. In bare-repo layouts, once extensions.worktreeConfig is set, core.bare becomes per-worktree. Existing worktrees without a config.worktree file inherit core.bare = true and break. Additionally, core.longpaths = true (Windows-only) is written to all worktrees regardless of platform. Any pre-existing worktrees in a bare-repo layout become non-functional after one Claude Code agent session.",
+      "severity": "HIGH",
+      "category": "Agents",
+      "cc_issue": 45201,
+      "cc_version": "v2.1.96",
+      "status": "open",
+      "date_added": "2026-04-08"
+    },
+    {
+      "id": "vscode-windows-mcp-drive-letter-case-mismatch",
+      "title": "VSCode extension ignores project MCP servers on Windows due to drive letter case mismatch in .claude.json",
+      "description": "On Windows, the VSCode extension passes lowercase drive letters (c:\\...) as the CWD to the CLI subprocess, while the CLI writes project keys to ~/.claude.json with uppercase drive letters (C:/...). The project key lookup is case-sensitive, so the VSCode subprocess finds no matching entry and loads no MCP servers. /mcp shows 'No MCP servers configured' in VSCode while CLI works correctly. Fix: normalize drive letter case when writing and looking up project keys on Windows.",
+      "severity": "MEDIUM",
+      "category": "MCP",
+      "cc_issue": 45195,
+      "cc_version": "v2.1.96",
+      "status": "open",
+      "date_added": "2026-04-08"
+    },
+    {
+      "id": "desktop-vscode-button-stale-after-worktree-creation",
+      "title": "Desktop 'Open in VS Code' button opens original directory after mid-session worktree creation",
+      "description": "When a worktree is created mid-session in the Claude Code desktop app, the 'Open in VS Code' button continues to open VS Code at the original session directory, not the worktree path. The session itself correctly operates in the worktree, but the desktop UI is not updated. If a new session is started directly in a worktree, the button works correctly -- the bug only triggers when the CWD changes mid-session.",
+      "severity": "MEDIUM",
+      "category": "Desktop",
+      "cc_issue": 45202,
       "cc_version": "v2.1.96",
       "status": "open",
       "date_added": "2026-04-08"
@@ -9365,5 +9431,5 @@
     "mitigated": 1
   },
   "last_updated": "2026-04-08",
-  "total": 766
+  "total": 772
 }

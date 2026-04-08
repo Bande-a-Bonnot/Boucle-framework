@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">743</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-08.</span></p>
+        <p class="subtitle"><span id="total-count">772</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-08.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -7879,6 +7879,60 @@
                 <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">git push to main blocked despite explicit permission setting</h3>
                 <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">User reports Claude refuses to push to main branch despite configuring the permission in settings. The permission gate appears to override user settings in some configurations. Issue triaged as permissions-related by the Claude Code team.</p>
                 <a href="https://github.com/anthropics/claude-code/issues/45184" style="font-size:0.8rem;color:var(--accent);">#45184</a>
+            </div>
+            <div class="kl-entry" data-severity="critical" data-category="Security" id="scheduled-task-unsolicited-queue-injection">
+                <span class="kl-num">#766</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Security</span>
+                <a href="#scheduled-task-unsolicited-queue-injection" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Unsolicited queue-operation/enqueue injected into unattended scheduled task session</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">In an automated scheduled task session (no user present), a second queue-operation/enqueue message was injected 8 seconds after startup from an unidentified internal source. Claude treated it as a legitimate user instruction, created files, and explored project directories. The injected command was indistinguishable from a real user message. Source ruled out: user scripts, email triage, IDE integrations. Critical because unattended sessions have no human to catch unauthorized actions.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/45215" style="font-size:0.8rem;color:var(--accent);">#45215</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="MCP" id="github-mcp-oauth-routes-to-google-drive">
+                <span class="kl-num">#767</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">MCP</span>
+                <a href="#github-mcp-oauth-routes-to-google-drive" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">GitHub MCP authenticate tool redirects OAuth to Google Drive consent screen instead of GitHub</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When the GitHub MCP server disconnects and mcp__github__authenticate is called, all generated OAuth URLs (tested with 4 separate fresh client_ids) route to the Google Drive MCP installer. The Anthropic authorize endpoint for the GitHub MCP session ID redirects to the Google Drive installer, then to Google OAuth with drive.readonly/drive.file scopes. Result: GitHub tools fail for the entire session and authorizing Google Drive does not restore them. Regression from a previously working version.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/45208" style="font-size:0.8rem;color:var(--accent);">#45208</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Permissions" id="read-deny-rules-block-bash-contrary-to-docs">
+                <span class="kl-num">#768</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Permissions</span>
+                <a href="#read-deny-rules-block-bash-contrary-to-docs" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Read(...) deny rules block Bash tool calls despite documentation saying they do not</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">In v2.1.92 with sandbox disabled, a Read(~/private-dir/**) deny rule also blocks Bash commands whose arguments match paths under that directory -- even when Bash(ls *) is in the allow list. The official docs explicitly state: "Read and Edit deny rules apply to Claude's built-in file tools, not to Bash subprocesses." Denial happens in ~7ms. Confirmed via controlled experiment. Either the docs are wrong or the permission engine cross-applies file tool deny rules to Bash.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/45200" style="font-size:0.8rem;color:var(--accent);">#45200</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Agents" id="worktree-isolation-breaks-bare-repo-layouts">
+                <span class="kl-num">#769</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Agents</span>
+                <a href="#worktree-isolation-breaks-bare-repo-layouts" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Worktree isolation sets extensions.worktreeConfig in shared git config, breaking existing bare-repo worktrees</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Claude Code's isolation: worktree (plan mode, agent dispatch) modifies the shared git config by setting extensions.worktreeConfig = true without updating existing worktrees. In bare-repo layouts, this makes core.bare a per-worktree setting; existing worktrees without config.worktree inherit core.bare = true and break. Additionally, core.longpaths = true (Windows-only) is written on all platforms. Any pre-existing worktrees in a bare-repo layout become non-functional after one Claude Code agent session.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/45201" style="font-size:0.8rem;color:var(--accent);">#45201</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="MCP" id="vscode-windows-mcp-drive-letter-case-mismatch">
+                <span class="kl-num">#770</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ca8a04;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">MCP</span>
+                <a href="#vscode-windows-mcp-drive-letter-case-mismatch" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">VSCode extension ignores project MCP servers on Windows due to drive letter case mismatch in .claude.json</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">The VSCode extension passes lowercase drive letters (c:\...) as the CWD to the CLI subprocess, while the CLI writes project keys to ~/.claude.json with uppercase drive letters (C:/...). The project key lookup is case-sensitive, so the VSCode subprocess finds no matching entry and loads no MCP servers. /mcp shows "No MCP servers configured" in VSCode while the CLI works correctly. Fix: normalize drive letter case when writing/looking up project keys on Windows.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/45195" style="font-size:0.8rem;color:var(--accent);">#45195</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Desktop" id="desktop-vscode-button-stale-after-worktree-creation">
+                <span class="kl-num">#771</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ca8a04;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Desktop</span>
+                <a href="#desktop-vscode-button-stale-after-worktree-creation" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Desktop 'Open in VS Code' button opens original directory after mid-session worktree creation</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When a worktree is created mid-session in the Claude Code desktop app, the "Open in VS Code" button continues to open VS Code at the original session directory, not the worktree path. The session itself correctly operates in the worktree, but the desktop UI is not updated. Starting a new session directly in a worktree works correctly -- the bug only triggers when the CWD changes mid-session.</p>
+                <a href="https://github.com/anthropics/claude-code/issues/45202" style="font-size:0.8rem;color:var(--accent);">#45202</a>
             </div>
 <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>
