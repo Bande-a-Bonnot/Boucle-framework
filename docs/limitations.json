@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 743,
+  "count": 746,
   "categories": {
     "Hook bypass & evasion": 95,
     "Hook behavior & events": 161,
@@ -104,7 +104,7 @@
     "Autonomy / model behavior": 1,
     "MCP integration": 2,
     "Context / compaction": 1,
-    "permissions": 3,
+    "permissions": 4,
     "context management": 1,
     "cowork": 3,
     "model behavior": 1,
@@ -129,15 +129,20 @@
     "TUI & rendering": 1,
     "Plugins & MCP tools": 1,
     "agent-behavior": 1,
+    "configuration": 1,
+    "safety-and-permissions": 1,
+    "plugins-and-skills": 1,
+    "instruction-following": 1,
+    "hooks-and-automation": 1,
     "authentication": 1,
     "data-loss": 1,
     "sandbox": 1
   },
   "severity_counts": {
-    "CRITICAL": 51,
-    "LOW": 96,
+    "CRITICAL": 52,
+    "HIGH": 329,
     "MEDIUM": 269,
-    "HIGH": 327
+    "LOW": 96
   },
   "entries": [
     {
@@ -9088,6 +9093,26 @@
       "category": "permissions",
       "issue_url": "https://github.com/anthropics/claude-code/issues/45089",
       "description": "Two bugs: (1) When a custom skill invokes Bash, permissionMode is undefined in the skill execution context, causing all user-defined allow rules (e.g. Bash(mkdir *) in settings.json) to be bypassed \u2014 all 16 skill-invoked cases across 814 sessions triggered prompts. (2) Regression since v2.1.80: Bash(mkdir *) was auto-allowed in default permissionMode in v2.1.39\u2013v2.1.49 but now prompts for every call in default mode; the mode-specific check overrides user allow rules. Both bugs result in user-approved commands requiring re-approval.",
+      "status": "open",
+      "date_added": "2026-04-08"
+    },
+    {
+      "id": "subagent-git-add-all-deletes-unrelated-files",
+      "title": "Subagents use broad git staging (git add -A), silently deleting unrelated production files on commit",
+      "severity": "CRITICAL",
+      "category": "Subagent & spawned agents",
+      "issue_url": "https://github.com/anthropics/claude-code/issues/45108",
+      "description": "When a subagent (spawned via Agent tool) commits its work, it uses broad git staging (git add -A or git add .) rather than staging only files it created or modified. This causes the commit to include deletions of 20-30+ unrelated files the agent never touched. Confirmed 3 times in 2 days: deleted a 406-line production module, an 883-line test suite, utilities, and reverted shared files (ROADMAP.md, REQUIREMENTS.md, STATE.md) to older snapshots. System prompt explicitly says to prefer named-file staging. No workaround beyond manual git revert after each incident. Data-loss label applied. Severity: production source code lost.",
+      "status": "open",
+      "date_added": "2026-04-08"
+    },
+    {
+      "id": "desktop-windows-freeze-on-permission-prompt",
+      "title": "Desktop app UI freezes completely on permission prompt, Windows requires force close",
+      "severity": "HIGH",
+      "category": "Desktop & IDE integration",
+      "issue_url": "https://github.com/anthropics/claude-code/issues/45099",
+      "description": "On Windows 11, Claude Desktop (Code tab) freezes entirely when a tool permission prompt appears. The UI renders but accepts no keyboard or mouse input; only recovery is killing the process. Affects 2 confirmed users. CLI handles identical permission prompts fine on the same machines. More consistent at smaller window sizes but also occurs maximised. Ruled out: ELECTRON_DISABLE_GPU, disabling Windows notifications, display scaling changes. Identified as Electron rendering layer bug, not permission logic. Same freeze pattern seen in Cursor and Slack (fixed by notification disable there); Claude dialog triggers it through a different path so that workaround does not apply.",
       "status": "open",
       "date_added": "2026-04-08"
     }
