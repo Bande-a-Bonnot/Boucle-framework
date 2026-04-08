@@ -1,17 +1,17 @@
 {
   "version": "0.12.0",
-  "count": 785,
+  "count": 791,
   "categories": {
     "Hook bypass & evasion": 95,
-    "Hook behavior & events": 161,
-    "Permission system": 102,
-    "Subagent & spawned agents": 35,
+    "Hook behavior & events": 162,
+    "Permission system": 103,
+    "Subagent & spawned agents": 36,
     "Context & memory": 18,
     "Configuration behavior": 15,
     "Platform & compatibility": 21,
     "MCP & plugin issues": 36,
-    "Scheduling & remote triggers": 5,
-    "Security & trust boundaries": 9,
+    "Scheduling & remote triggers": 6,
+    "Security & trust boundaries": 11,
     "Performance & cost": 8,
     "Desktop & IDE integration": 17,
     "File system & paths": 5,
@@ -147,8 +147,8 @@
     "agents": 2
   },
   "severity_counts": {
-    "critical": 55,
-    "high": 351,
+    "critical": 57,
+    "high": 355,
     "medium": 282,
     "low": 97
   },
@@ -9539,6 +9539,66 @@
       "status": "open",
       "source": "https://github.com/anthropics/claude-code/issues/45324",
       "dateAdded": "2026-04-08"
+    },
+    {
+      "id": "buddy-companion-ghost-message-user-impersonation",
+      "title": "Buddy/Companion feature injects ghost messages as role:user, impersonating the human.",
+      "category": "Security & trust boundaries",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/45279"
+      ],
+      "description": "The April seasonal Buddy/Companion feature writes messages into the conversation input stream using role:user (Human role). The model cannot distinguish these injected messages from genuine user input, causing it to act on instructions the user never gave. Creates a vector for unintended actions in any session where Buddy/Companion is active. Confirmed on macOS. See #45279."
+    },
+    {
+      "id": "ultraplan-syncs-files-bypassing-pretooluse",
+      "title": "Ultraplan syncs repository files to cloud without user consent, bypassing PreToolUse hooks.",
+      "category": "Security & trust boundaries",
+      "severity": "critical",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/45327"
+      ],
+      "description": "During ultraplan/cowork mode, Claude Code silently syncs local repository files to a cloud instance without explicit user consent and without firing PreToolUse hooks for the transfer. Users report PII and sensitive source code being exfiltrated with no warning or permission prompt. The cowork sync path is not instrumented with the standard hook lifecycle, making it impossible to audit or block with hooks. See #45327."
+    },
+    {
+      "id": "plugin-framework-deletes-external-hooks-json",
+      "title": "Plugin framework deletes external hooks/hooks.json and its parent directory from the working tree.",
+      "category": "Hook behavior & events",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/45296"
+      ],
+      "description": "When a plugin references an external hooks/hooks.json file, Claude Code deletes the file and its parent directory from the working tree after loading it. Confirmed data-loss bug with repro on macOS. Any plugin configuration using an external hooks file will silently destroy that file on next load. No warning is displayed. See #45296."
+    },
+    {
+      "id": "scheduled-task-mcp-connectors-unavailable",
+      "title": "Scheduled task execution environment has no access to MCP connector tools (Slack, Notion, Gmail, Calendar).",
+      "category": "Scheduling & remote triggers",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/45306"
+      ],
+      "description": "MCP connector tools including Slack, Notion, Gmail, and Google Calendar are all unavailable when a scheduled task runs, even when they work in interactive sessions. The scheduled execution environment does not load MCP connectors, making automation of workflows that depend on these integrations impossible. Confirmed on web platform. See #45306."
+    },
+    {
+      "id": "bypass-permissions-lost-after-exit-plan-mode",
+      "title": "bypassPermissions state is permanently lost after ExitPlanMode due to hardcoded reset to default.",
+      "category": "Permission system",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/45284"
+      ],
+      "description": "Launching with --dangerously-skip-permissions, entering plan mode, then exiting via ExitPlanMode permanently loses the bypass state. The ExitPlanMode handler hardcodes a reset to 'default' with no mechanism to restore the pre-planmode permission state. Users must re-enable skip-permissions manually after every plan mode exit. Confirmed with repro on macOS. See #45284."
+    },
+    {
+      "id": "agent-team-permission-rules-not-inherited-by-teammates",
+      "title": "Agent team teammates are prompted for protected directory writes despite lead's allow rules.",
+      "category": "Subagent & spawned agents",
+      "severity": "high",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/45291"
+      ],
+      "description": "Teammate agents in a multi-agent team receive permission prompts for writes to ~/.claude/teams/, ~/.claude/tasks/, and ~/.claude/eval/ even when the lead session has explicit permissions.allow rules covering those paths. The permission allow list is not propagated from lead to teammates, requiring each teammate to independently request and receive permission for paths the lead has already approved. Confirmed with repro. See #45291."
     }
   ],
   "status_summary": {
