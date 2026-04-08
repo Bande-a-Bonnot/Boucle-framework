@@ -7484,6 +7484,51 @@
                 <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">In a multi-hour session, the agent did not read existing project documentation describing local SDXL model paths before running image generation. This caused a 13GB HuggingFace re-download of models already cached locally, launched multiple inference processes that consumed all 24GB unified memory without cleanup, then unilaterally killed the slow generation instead of reporting. User corrected open-in-Preview behavior multiple times with no persistence. Total waste: 2+ hours, 13GB disk. Related to model-ignores-instructions patterns.</p>
                 <a href="https://github.com/anthropics/claude-code/issues/45001" style="font-size:0.8rem;color:var(--accent);">#45001</a>
             </div>
+            <div class="kl-entry" data-severity="critical" data-category="Subagent & spawned agents" id="task-output-file-infinite-append-loop-disk-fill">
+                <span class="kl-num">#720</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ef4444;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Subagent & spawned agents</span>
+                <a href="#task-output-file-infinite-append-loop-disk-fill" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Task output aggregator file enters infinite self-referential append loop, filling disk with 68GB+ files</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">In headless sessions spawning 3-4 parallel subagents, the task output aggregator file in /tmp/claude-{uid}/{project}/tasks/ can enter an infinite append loop where the file references itself as a subagent output source. Two confirmed cases: one 68GB file (27 million lines) and one 44GB file. The file includes its own path in the aggregated output, which is then re-read and appended again, repeating until disk exhaustion. Occurs with Opus model in --print --output-format stream-json mode.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="Performance & cost" id="model-fabricates-cost-estimate-runs-up-charges">
+                <span class="kl-num">#721</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Performance & cost</span>
+                <a href="#model-fabricates-cost-estimate-runs-up-charges" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Model fabricates cost estimate without verifying pricing, launches concurrent GPU jobs incurring real charges</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">When asked to train LoRA adapters on Modal, the model gave a fabricated $10 cost estimate without checking actual GPU pricing, then launched 3+ concurrent A10G training runs simultaneously without confirming budget. Jobs ran for hours while new ones were launched in parallel, burning $38.73 against a $30 free-credit plan ($8.73 in real charges). No cost checkpoint mechanism exists: the model does not pause when wall-clock time or spend exceeds the original estimate by any factor.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="high" data-category="auth" id="api-billing-migration-message-surfaces-as-400-error">
+                <span class="kl-num">#722</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#f97316;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">auth</span>
+                <a href="#api-billing-migration-message-surfaces-as-400-error" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Anthropic API billing migration notice surfaces as 400 invalid_request_error, blocking all sessions including first-party VS Code extension</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Following Anthropic's April 4 2026 billing change (third-party apps now draw from extra usage), a promotional/informational message is being returned as a 400 invalid_request_error that blocks all prompts. The error body contains the message text rather than an actual error. The official Claude Code VS Code extension (first-party, not third-party) is also affected, rejected with the same 400 even though it should draw from plan limits. Workaround: claim the $100 credit at claude.ai/settings/usage.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="Permission system" id="sandbox-false-positive-python-inline-comment">
+                <span class="kl-num">#723</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">Permission system</span>
+                <a href="#sandbox-false-positive-python-inline-comment" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">Sandbox auto-allow triggers false-positive Ask prompt for python3 -c commands with inline Python # comments</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">In sandbox auto-allow mode, python3 -c commands containing Python # comments inside quoted string arguments trigger an Ask prompt warning 'Newline followed by # inside a quoted argument can hide arguments from path validation'. The # is a standard Python comment inside a quoted string, not a shell argument-hiding technique. The sandbox already provides OS-level isolation making the additional prompt redundant. Commands without inline comments execute without prompting.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
+            <div class="kl-entry" data-severity="medium" data-category="UX & display" id="cjk-characters-garbled-at-token-boundaries-streaming">
+                <span class="kl-num">#724</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#eab308;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+                <span class="kl-cat" style="font-size:0.7rem;color:var(--text-muted);margin-left:0.3rem;">UX & display</span>
+                <a href="#cjk-characters-garbled-at-token-boundaries-streaming" class="kl-permalink" title="Permalink" style="margin-left:0.3rem;color:var(--text-muted);text-decoration:none;font-size:0.8rem;opacity:0.5;">&#128279;</a>
+                <h3 style="margin:0.3rem 0 0.2rem;font-size:0.95rem;font-weight:600;">CJK (Japanese/Chinese/Korean) multi-byte characters corrupted at token boundaries during streaming output</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Japanese and other CJK multi-byte UTF-8 characters are intermittently garbled or missing when split at token boundaries during streaming output. Characters appear as replacement glyphs (e.g., '50チケッ�なら' instead of '50チケットなら'). Reproducible with locale set to ja_JP.UTF-8 during multi-paragraph Japanese responses. The streaming renderer does not reassemble partial multi-byte sequences across chunk boundaries.</p>
+                <a href="https://github.com/anthropics/claude-code/issues" style="font-size:0.8rem;color:var(--accent);">#issues</a>
+            </div>
 <footer>
             <p><a href="https://github.com/Bande-a-Bonnot/Boucle-framework">Boucle Framework</a> &middot; <a href="/">Home</a> &middot; <a href="https://blog.boucle.sh">Blog</a></p>
         </footer>
