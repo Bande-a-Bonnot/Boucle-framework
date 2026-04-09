@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">826</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-08.</span></p>
+        <p class="subtitle"><span id="total-count">830</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-08.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -8660,6 +8660,46 @@
             <h3>Claude Code ignores claude.md safety instructions and executes destructive command (migrate:fresh) without asking</h3>
             <p>Claude Code executed &#x27;php artisan migrate:fresh&#x27; (a destructive database wipe and rebuild) despite the user&#x27;s claude.md file explicitly instructing to not run that command without asking the user first. The model ignored the safety instruction and ran the destructive command without approval. This is a direct violation of claude.md compliance for safety-critical directives.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/45462" target="_blank">#45462</a></div>
+        </div>
+        <div class="kl-entry" data-category="TUI &amp; display" data-issues="45931" id="tui-freezes-input-high-message-count-linux" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#827</span>
+                <span class="kl-cat">TUI &amp; display</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>TUI freezes completely at high message counts on Linux; input stops while renderer spins in TIOCSWINSZ loop</h3>
+            <p>During long Linux sessions with 250+ messages, the Claude Code TUI can freeze completely when a permission prompt arrives while background bash output is still streaming. The process stays alive but keyboard input stops working (Enter, Escape, Ctrl+C, number keys). Diagnostics show the process stuck in ioctl(TIOCSWINSZ) while the renderer repeatedly rewrites the terminal and starves the event loop. Recovery requires killing the process from another terminal.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/45931" target="_blank">#45931</a></div>
+        </div>
+        <div class="kl-entry" data-category="Auth and login" data-issues="45922" id="auth-max-subscriptiontype-null-login-blocked" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#828</span>
+                <span class="kl-cat">Auth and login</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Active Max subscription can authenticate with subscriptionType:null, then Claude Code blocks login as unsubscribed</h3>
+            <p>Claude Code can complete browser authentication for a paid Claude Max account but persist auth status with subscriptionType set to null. The CLI recognizes the email, org, and managed key source, yet still shows &#x27;Claude Max or Pro is required&#x27; and blocks access. This is distinct from stale plan-cache issues after an upgrade: the account is already on Max, fresh login and keychain credential deletion do not help, and the subscription entitlement is dropped during auth resolution.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/45922" target="_blank">#45922</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP and plugins" data-issues="45918" id="disable-nonessential-traffic-disables-channels" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#829</span>
+                <span class="kl-cat">MCP and plugins</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC disables channel features by forcing GrowthBook feature gate false</h3>
+            <p>Setting CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 or opting out of usage-pattern sharing disables GrowthBook feature-flag evaluation, which makes channel-based plugins report &#x27;Channels are not currently available&#x27; even for paying users with otherwise working plugin tools. Outbound MCP tools still work, but inbound notifications/claude/channel handling never registers because the tengu_harbor feature gate defaults false. A privacy toggle silently disables product functionality.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/45918" target="_blank">#45918</a></div>
+        </div>
+        <div class="kl-entry" data-category="Sandbox" data-issues="45917" id="sandbox-blocks-removable-volumes-path-binaries-macos" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#830</span>
+                <span class="kl-cat">Sandbox</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Sandbox blocks PATH-resolved binaries from reading removable macOS volumes while /usr/bin equivalents still work</h3>
+            <p>On macOS, Claude Code&#x27;s sandbox can deny file reads on removable USB volumes for commands launched via PATH-resolved binaries such as git installed under ~/.nvm, even though the same paths work with system binaries like /usr/bin/git or /bin/cat. Kernel logs show file-read-data denials on /Volumes/... despite Full Disk Access and direct shell access working outside the sandbox. This creates inconsistent behavior where identical commands succeed or fail depending only on binary resolution path.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/45917" target="_blank">#45917</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

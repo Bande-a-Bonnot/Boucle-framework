@@ -7,6 +7,38 @@
   <updated>2026-04-08T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Sandbox blocks PATH-resolved binaries from reading removable macOS volumes while /usr/bin equivalents still work</title>
+    <id>https://framework.boucle.sh/limitations.html#sandbox-blocks-removable-volumes-path-binaries-macos</id>
+    <link href="https://framework.boucle.sh/limitations.html#sandbox-blocks-removable-volumes-path-binaries-macos"/>
+    <updated>2026-04-08T00:00:00Z</updated>
+    <summary>On macOS, Claude Code&#x27;s sandbox can deny file reads on removable USB volumes for commands launched via PATH-resolved binaries such as git installed under ~/.nvm, even though the same paths work with system binaries like /usr/bin/git or /bin/cat. Kernel logs show file-read-data denials on /Volumes/... despite Full Disk Access and direct shell access working outside the sandbox. This creates inconsistent behavior where identical commands succeed or fail depending only on binary resolution path.</summary>
+    <category term="Sandbox"/>
+  </entry>
+  <entry>
+    <title>[HIGH] CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC disables channel features by forcing GrowthBook feature gate false</title>
+    <id>https://framework.boucle.sh/limitations.html#disable-nonessential-traffic-disables-channels</id>
+    <link href="https://framework.boucle.sh/limitations.html#disable-nonessential-traffic-disables-channels"/>
+    <updated>2026-04-08T00:00:00Z</updated>
+    <summary>Setting CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 or opting out of usage-pattern sharing disables GrowthBook feature-flag evaluation, which makes channel-based plugins report &#x27;Channels are not currently available&#x27; even for paying users with otherwise working plugin tools. Outbound MCP tools still work, but inbound notifications/claude/channel handling never registers because the tengu_harbor feature gate defaults false. A privacy toggle silently disables product functionality.</summary>
+    <category term="MCP and plugins"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Active Max subscription can authenticate with subscriptionType:null, then Claude Code blocks login as unsubscribed</title>
+    <id>https://framework.boucle.sh/limitations.html#auth-max-subscriptiontype-null-login-blocked</id>
+    <link href="https://framework.boucle.sh/limitations.html#auth-max-subscriptiontype-null-login-blocked"/>
+    <updated>2026-04-08T00:00:00Z</updated>
+    <summary>Claude Code can complete browser authentication for a paid Claude Max account but persist auth status with subscriptionType set to null. The CLI recognizes the email, org, and managed key source, yet still shows &#x27;Claude Max or Pro is required&#x27; and blocks access. This is distinct from stale plan-cache issues after an upgrade: the account is already on Max, fresh login and keychain credential deletion do not help, and the subscription entitlement is dropped during auth resolution.</summary>
+    <category term="Auth and login"/>
+  </entry>
+  <entry>
+    <title>[HIGH] TUI freezes completely at high message counts on Linux; input stops while renderer spins in TIOCSWINSZ loop</title>
+    <id>https://framework.boucle.sh/limitations.html#tui-freezes-input-high-message-count-linux</id>
+    <link href="https://framework.boucle.sh/limitations.html#tui-freezes-input-high-message-count-linux"/>
+    <updated>2026-04-08T00:00:00Z</updated>
+    <summary>During long Linux sessions with 250+ messages, the Claude Code TUI can freeze completely when a permission prompt arrives while background bash output is still streaming. The process stays alive but keyboard input stops working (Enter, Escape, Ctrl+C, number keys). Diagnostics show the process stuck in ioctl(TIOCSWINSZ) while the renderer repeatedly rewrites the terminal and starves the event loop. Recovery requires killing the process from another terminal.</summary>
+    <category term="TUI &amp; display"/>
+  </entry>
+  <entry>
     <title>[CRITICAL] Claude Code ignores claude.md safety instructions and executes destructive command (migrate:fresh) without asking</title>
     <id>https://framework.boucle.sh/limitations.html#claude-md-safety-instructions-ignored-destructive-cmd</id>
     <link href="https://framework.boucle.sh/limitations.html#claude-md-safety-instructions-ignored-destructive-cmd"/>
@@ -133,37 +165,5 @@
     <updated>2026-04-08T00:00:00Z</updated>
     <summary>When sandbox auto-approve mode is active, a Bash command containing a newline followed by # inside a quoted argument triggers a warning from the AST parser layer. This warning fires before the permissions module where auto-approve takes effect, short-circuiting auto-approve and prompting the user for confirmation. The check is useful when commands are manually reviewed but is noise when auto-approve is on. Affects v2.1.96 on Linux. See #45421.</summary>
     <category term="Permissions &amp; sandbox"/>
-  </entry>
-  <entry>
-    <title>[HIGH] AskUserQuestion dialog steals keyboard focus while user is typing in VS Code extension, submitting unintended answers silently</title>
-    <id>https://framework.boucle.sh/limitations.html#askuserquestion-steals-keyboard-focus-submits-unintended-answers-vscode</id>
-    <link href="https://framework.boucle.sh/limitations.html#askuserquestion-steals-keyboard-focus-submits-unintended-answers-vscode"/>
-    <updated>2026-04-08T00:00:00Z</updated>
-    <summary>In the VS Code extension, the AskUserQuestion dialog appears while the user is actively composing a message or answering a previous question. The dialog immediately steals keyboard focus, causing keystrokes to be interpreted as option selections. Unintended answers are submitted without user awareness. Affects macOS/VS Code. See #45374.</summary>
-    <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Plugin registry retains stale installPath and version after local plugin version bump; CLAUDE_PLUGIN_ROOT resolves to old cache dir</title>
-    <id>https://framework.boucle.sh/limitations.html#plugin-registry-stale-installpath-after-local-version-bump</id>
-    <link href="https://framework.boucle.sh/limitations.html#plugin-registry-stale-installpath-after-local-version-bump"/>
-    <updated>2026-04-08T00:00:00Z</updated>
-    <summary>When a locally-installed plugin version is bumped (e.g. by a pre-commit hook that auto-increments plugin.json), installed_plugins.json retains the old installPath and version entries. CLAUDE_PLUGIN_ROOT resolves to the stale cache directory in subsequent sessions, causing skills, commands, and engines to reference old plugin files. Plugin must be fully uninstalled and reinstalled to force a registry update. Affects Linux. See #45379.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Custom slash command autocomplete lost after recovering from API 500 error; commands still execute manually</title>
-    <id>https://framework.boucle.sh/limitations.html#slash-command-autocomplete-lost-after-500-error-recovery</id>
-    <link href="https://framework.boucle.sh/limitations.html#slash-command-autocomplete-lost-after-500-error-recovery"/>
-    <updated>2026-04-08T00:00:00Z</updated>
-    <summary>After an API 500 error and recovery, custom slash commands from .claude/commands/ stop appearing in the autocomplete list. The commands still work when typed manually, but the autocomplete index is not rebuilt after error recovery. Requires session restart to restore. See #45391.</summary>
-    <category term="tui-rendering"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Cowork VM virtual network never initializes; threads stuck in &#x27;Starting up&#x27; / &#x27;Pondering&#x27; indefinitely</title>
-    <id>https://framework.boucle.sh/limitations.html#cowork-vm-virtual-network-never-initializes-threads-stuck</id>
-    <link href="https://framework.boucle.sh/limitations.html#cowork-vm-virtual-network-never-initializes-threads-stuck"/>
-    <updated>2026-04-08T00:00:00Z</updated>
-    <summary>Cowork threads get permanently stuck in &#x27;Starting up&#x27; or &#x27;Pondering&#x27; state because the VM&#x27;s virtual network never initializes. The vzgvisor AcceptBess call hangs, the packet processor never starts, and the NIC never comes up. No timeout or recovery mechanism exists. Requires force-killing the VM process. See #45396.</summary>
-    <category term="platform-macos"/>
   </entry>
 </feed>
