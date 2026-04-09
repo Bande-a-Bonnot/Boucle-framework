@@ -117,7 +117,7 @@ impl Default for McpConfig {
 
 // Default value functions
 fn default_model() -> String {
-    "claude-sonnet-4-20250514".to_string()
+    "gpt-5.4".to_string()
 }
 fn default_system_prompt() -> String {
     "system-prompt.md".to_string()
@@ -309,7 +309,7 @@ mod tests {
         let config_content = r#"
 [agent]
 name = "test-agent"
-model = "claude-sonnet-4-20250514"
+model = "gpt-5.4"
 
 [memory]
 dir = "memory"

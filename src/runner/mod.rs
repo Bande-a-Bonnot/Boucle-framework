@@ -108,7 +108,7 @@ pub fn init(root: &Path, name: &str) -> Result<(), RunnerError> {
     let config_content = format!(
         r#"[agent]
 name = "{name}"
-model = "claude-sonnet-4-20250514"
+model = "gpt-5.4"
 system_prompt = "system-prompt.md"
 
 [memory]
@@ -387,8 +387,8 @@ pub fn run(root: &Path, dry_run: bool) -> Result<(), RunnerError> {
         String::new()
     };
 
-    // Check that claude CLI is available
-    if process::Command::new("claude")
+    // Check that codex CLI is available
+    if process::Command::new("codex")
         .arg("--version")
         .stdout(process::Stdio::null())
         .stderr(process::Stdio::null())
@@ -396,76 +396,80 @@ pub fn run(root: &Path, dry_run: bool) -> Result<(), RunnerError> {
         .is_err()
     {
         return Err(RunnerError::Llm(
-            "claude CLI not found. Install it from https://docs.anthropic.com/en/docs/claude-code \
-             or use 'boucle run --dry-run' to preview the context without an LLM."
+            "codex CLI not found. Install it (https://github.com/openai/codex) and run \
+             'codex login', or use 'boucle run --dry-run' to preview the context without an LLM."
                 .to_string(),
         ));
     }
 
-    // Build claude command
-    let mut cmd = process::Command::new("claude");
-    cmd.current_dir(root);
-    cmd.arg("-p"); // Non-interactive
-    cmd.arg("--model");
+    // Build codex command.
+    //
+    // Migration note (2026-04-09): the runner was originally built around
+    // `claude -p`. It now invokes `codex exec` instead. Some claude-specific
+    // features have no codex equivalent and are intentionally dropped:
+    //   - `--system-prompt`: codex loads instructions from AGENTS.md in the
+    //     working directory. Put your system prompt there.
+    //   - `--allowed-tools` / `allowed-tools.txt`: codex sandbox is
+    //     path-scoped, not command-scoped. Use `-s <mode>` if you need
+    //     something tighter than danger-full-access.
+    //   - `--mcp-config`: MCP servers are configured via
+    //     `$CODEX_HOME/config.toml`. A project-local `.codex-home/` is used
+    //     here so each agent has its own isolated config without touching the
+    //     user's global `~/.codex`.
+    let mut cmd = process::Command::new("codex");
+    cmd.arg("exec");
+    cmd.arg("-m");
     cmd.arg(&cfg.agent.model);
+    cmd.arg("--dangerously-bypass-approvals-and-sandbox");
+    cmd.arg("--skip-git-repo-check");
+    cmd.arg("--ephemeral");
+    cmd.arg("-C");
+    cmd.arg(root);
+
+    // Use a project-local codex home if present. This lets the agent pin its
+    // model, reasoning effort, and MCP servers without interfering with the
+    // user's interactive `~/.codex` setup.
+    let project_codex_home = root.join(".codex-home");
+    if project_codex_home.exists() {
+        cmd.env("CODEX_HOME", &project_codex_home);
+        log(
+            &log_file,
+            &format!("CODEX_HOME set to {}", project_codex_home.display()),
+        )?;
+    }
 
     if !system_prompt.is_empty() {
-        cmd.arg("--system-prompt");
-        cmd.arg(&system_prompt);
+        // Legacy: codex has no --system-prompt flag. If agent.system_prompt
+        // points at a file that exists, we only log a warning — the user is
+        // expected to migrate its contents into AGENTS.md at the project root.
+        log(
+            &log_file,
+            "Warning: agent.system_prompt is set but codex has no --system-prompt flag. \
+             Move its contents into AGENTS.md at the project root.",
+        )?;
     }
 
-    // Load allowed tools (file takes precedence, then config)
-    let tools_file = root.join("allowed-tools.txt");
-    if tools_file.exists() {
-        let tools = fs::read_to_string(&tools_file)?;
-        let tool_list: Vec<&str> = tools
-            .lines()
-            .filter(|l| !l.trim().is_empty() && !l.starts_with('#'))
-            .collect();
-        if !tool_list.is_empty() {
-            cmd.arg("--allowed-tools");
-            cmd.arg(tool_list.join(","));
-        }
-    } else if let Some(ref tools) = cfg.agent.allowed_tools {
-        if !tools.is_empty() {
-            cmd.arg("--allowed-tools");
-            cmd.arg(tools);
-        }
+    if cfg.agent.allowed_tools.is_some() || root.join("allowed-tools.txt").exists() {
+        log(
+            &log_file,
+            "Warning: agent.allowed_tools / allowed-tools.txt is ignored under codex. \
+             Use codex sandbox modes if you need tighter restrictions.",
+        )?;
     }
 
-    // Add MCP configuration if enabled
     if cfg.mcp.enable {
-        let mcp_config_path = root.join("mcp-config.json");
-        if mcp_config_path.exists() {
-            cmd.arg("--mcp-config");
-            cmd.arg(&mcp_config_path);
-            log(
-                &log_file,
-                &format!("MCP enabled: {}", mcp_config_path.display()),
-            )?;
-        } else {
-            log(
-                &log_file,
-                "MCP enabled but mcp-config.json not found, creating default...",
-            )?;
-            // Create default MCP config
-            let mcp_config = serde_json::json!({
-                "mcpServers": {
-                    "boucle": {
-                        "command": "./Boucle-framework/target/release/boucle",
-                        "args": ["mcp", "--stdio"],
-                        "env": {}
-                    }
-                }
-            });
-            fs::write(&mcp_config_path, serde_json::to_string_pretty(&mcp_config)?)?;
-            cmd.arg("--mcp-config");
-            cmd.arg(&mcp_config_path);
-        }
+        log(
+            &log_file,
+            "Note: mcp.enable is true but codex reads MCP servers from \
+             $CODEX_HOME/config.toml, not --mcp-config. Configure them there.",
+        )?;
     }
 
-    // Pass the assembled context via stdin (avoids OS arg length limits
-    // and ensures Claude CLI reads it correctly when not on a tty)
+    // Positional `-` tells codex to read the prompt from stdin. This avoids
+    // OS argv length limits for large assembled contexts.
+    cmd.arg("-");
+
+    cmd.current_dir(root);
     cmd.stdin(process::Stdio::piped());
     cmd.stdout(process::Stdio::piped());
     cmd.stderr(process::Stdio::piped());
@@ -551,7 +555,7 @@ pub fn run(root: &Path, dry_run: bool) -> Result<(), RunnerError> {
         }
         state.last_failure = Some(now);
         state.last_error = Some(format!(
-            "Claude exited with code {exit_code}: {}",
+            "codex exited with code {exit_code}: {}",
             stdout.chars().take(200).collect::<String>()
         ));
 
@@ -572,7 +576,7 @@ pub fn run(root: &Path, dry_run: bool) -> Result<(), RunnerError> {
         save_failure_state(&failure_state_path, &state);
 
         return Err(RunnerError::Llm(format!(
-            "Claude exited with code {exit_code} (failure #{} of {FAILURE_THRESHOLD})",
+            "codex exited with code {exit_code} (failure #{} of {FAILURE_THRESHOLD})",
             state.consecutive_failures
         )));
     }
@@ -1011,16 +1015,16 @@ pub fn doctor(root: &Path) -> Result<(), RunnerError> {
         failed += 1;
     }
 
-    // 6. Check claude CLI
-    match process::Command::new("claude").arg("--version").output() {
+    // 6. Check codex CLI
+    match process::Command::new("codex").arg("--version").output() {
         Ok(output) if output.status.success() => {
             let version = String::from_utf8_lossy(&output.stdout);
-            println!("[ok]  claude CLI — {}", version.trim());
+            println!("[ok]  codex CLI — {}", version.trim());
             passed += 1;
         }
         _ => {
-            println!("[FAIL] claude CLI — not found on PATH");
-            println!("       Install: https://docs.anthropic.com/en/docs/claude-code");
+            println!("[FAIL] codex CLI — not found on PATH");
+            println!("       Install: https://github.com/openai/codex");
             failed += 1;
         }
     }
