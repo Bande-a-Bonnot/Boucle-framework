@@ -231,22 +231,49 @@ if echo "$COMMAND" | grep -qE 'git\s+merge\s' 2>/dev/null; then
 fi
 
 # git push to protected branches via refspec (e.g. git push origin feature:main)
-# Extracts the destination from any src:dst refspec token, handles flags in any position,
-# normalizes refs/heads/X to X, and avoids false positives on hyphenated names like release-candidate
+# Parses the command token-by-token, skipping flags and the repository argument,
+# then scans EVERY remaining refspec for a protected destination. Handles:
+#   - Flag placement anywhere: git push -u origin feature:main
+#   - SSH remote URLs (contain ':'): git push git@github.com:org/repo.git feature:main
+#   - Multiple refspecs: git push origin feature:dev hotfix:main
+#   - Full ref format: git push origin feature:refs/heads/main
+#   - Avoids false positives on hyphenated names: release-candidate is allowed
 if echo "$COMMAND" | grep -qE 'git[[:space:]]+push[[:space:]]' 2>/dev/null; then
-  _gs_dst=""
+  _gs_seen_git=0
+  _gs_seen_push=0
+  _gs_seen_repo=0
   for _gs_tok in $COMMAND; do
+    # Skip until we see 'git' then 'push'
+    if [ "$_gs_seen_git" = "0" ]; then
+      [ "$_gs_tok" = "git" ] && _gs_seen_git=1
+      continue
+    fi
+    if [ "$_gs_seen_push" = "0" ]; then
+      [ "$_gs_tok" = "push" ] && _gs_seen_push=1
+      continue
+    fi
+    # Skip flags (anything starting with -)
     case "$_gs_tok" in
-      *:*) _gs_dst="${_gs_tok#*:}" ; break ;;
+      -*) continue ;;
+    esac
+    # First non-flag argument is the repository — skip it (may be URL with ':')
+    if [ "$_gs_seen_repo" = "0" ]; then
+      _gs_seen_repo=1
+      continue
+    fi
+    # All remaining non-flag tokens are refspecs — check each for protected dst
+    case "$_gs_tok" in
+      *:*)
+        _gs_dst="${_gs_tok#*:}"
+        _gs_dst="${_gs_dst#refs/heads/}"
+        case "$_gs_dst" in
+          main|master|production|release)
+            block "Pushing to a protected branch ($_gs_dst) via refspec can bypass branch protections." "Push to a feature branch and open a PR instead."
+            ;;
+        esac
+        ;;
     esac
   done
-  # Normalize refs/heads/X -> X
-  _gs_dst="${_gs_dst#refs/heads/}"
-  case "$_gs_dst" in
-    main|master|production|release)
-      block "Pushing to a protected branch ($_gs_dst) via refspec can bypass branch protections." "Push to a feature branch and open a PR instead."
-      ;;
-  esac
 fi
 
 # git filter-branch / git filter-repo (rewrites entire repository history)
