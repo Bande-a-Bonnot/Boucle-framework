@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">830</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-08.</span></p>
+        <p class="subtitle"><span id="total-count">833</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-09.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -8700,6 +8700,42 @@
             <h3>Sandbox blocks PATH-resolved binaries from reading removable macOS volumes while /usr/bin equivalents still work</h3>
             <p>On macOS, Claude Code&#x27;s sandbox can deny file reads on removable USB volumes for commands launched via PATH-resolved binaries such as git installed under ~/.nvm, even though the same paths work with system binaries like /usr/bin/git or /bin/cat. Kernel logs show file-read-data denials on /Volumes/... despite Full Disk Access and direct shell access working outside the sandbox. This creates inconsistent behavior where identical commands succeed or fail depending only on binary resolution path.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/45917" target="_blank">#45917</a></div>
+        </div>
+        <div class="kl-entry" data-category="TUI &amp; display" data-issues="45941" id="diff-view-hardcoded-truecolor-unreadable-dark-terminals" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#831</span>
+                <span class="kl-cat">TUI &amp; display</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Diff view uses hardcoded truecolor backgrounds that become unreadable on dark terminals and ignores NO_COLOR</h3>
+            <p>Claude Code&#x27;s diff renderer uses fixed 24-bit pastel red/green background colors instead of terminal-controlled palette colors. On dark Linux terminal themes this can make added and deleted lines nearly unreadable, and standard color controls such as NO_COLOR=1, FORCE_COLOR=1, COLORTERM=&#x27;&#x27;, and TERM=xterm have no effect. The output is still present, but contrast is poor enough to make reviewing diffs difficult.</p>
+                        <!-- workaround:diff-view-hardcoded-truecolor-unreadable-dark-terminals -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> None confirmed. Users can capture diff output outside the built-in renderer or use a lighter terminal theme until Claude Code exposes theme-aware diff colors.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/45941" target="_blank">#45941</a></div>
+        </div>
+        <div class="kl-entry" data-category="TUI &amp; display" data-issues="45940" id="windows-tui-drops-backslash-before-dot" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#832</span>
+                <span class="kl-cat">TUI &amp; display</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Windows TUI output drops a backslash when rendering \. sequences in paths</h3>
+            <p>When Claude Code renders terminal output containing a Windows path segment like \.claude, the backslash before the dot is removed in the displayed output. This corrupts file:// paths and any other literal \. sequence shown in the CLI, making copied paths incorrect even though the original underlying path contains the backslash.</p>
+                        <!-- workaround:windows-tui-drops-backslash-before-dot -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> None confirmed. Reconstruct the missing backslash manually when copying affected Windows paths from the TUI.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/45940" target="_blank">#45940</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="45937" id="dispatch-main-thread-offline-while-cowork-tasks-work" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#833</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Dispatch main conversation can stay permanently offline while individual Cowork tasks still run</h3>
+            <p>Claude Desktop&#x27;s main Dispatch conversation can enter a permanently offline state where both desktop and mobile clients report that the desktop is unreachable, yet individual Cowork tasks continue to execute normally. Re-authenticating both devices, deleting bridge-state.json, restarting the app, and rebooting the machine do not recover the main Dispatch thread, suggesting the task relay and the main conversation thread can diverge into inconsistent server-side state.</p>
+                        <!-- workaround:dispatch-main-thread-offline-while-cowork-tasks-work -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> No confirmed workaround beyond trying a full re-pair or reinstall. Existing reports indicate the main Dispatch thread can remain offline even after bridge-state reset while Cowork tasks continue to work.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/45937" target="_blank">#45937</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
