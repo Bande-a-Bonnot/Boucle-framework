@@ -7,6 +7,22 @@
   <updated>2026-04-09T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] /compact leaves stale context usage in statusline until the next model turn</title>
+    <id>https://framework.boucle.sh/limitations.html#compact-leaves-stale-context-percentage-in-statusline</id>
+    <link href="https://framework.boucle.sh/limitations.html#compact-leaves-stale-context-percentage-in-statusline"/>
+    <updated>2026-04-09T00:00:00Z</updated>
+    <summary>After `/compact` completes, the statusline JSON keeps reporting the pre-compaction `context_window.remaining_percentage` value until the next conversation turn. This makes custom statusline scripts show stale context usage immediately after compaction, even though the actual context window has already been reduced.</summary>
+    <category term="TUI &amp; display"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Agent Teams parallel dispatch can stall for 90+ minutes, then reset subagent context after burning cache_read tokens</title>
+    <id>https://framework.boucle.sh/limitations.html#agent-teams-parallel-dispatch-stalls-queue-burns-cache-read</id>
+    <link href="https://framework.boucle.sh/limitations.html#agent-teams-parallel-dispatch-stalls-queue-burns-cache-read"/>
+    <updated>2026-04-09T00:00:00Z</updated>
+    <summary>With `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, a parallel Agent dispatch can stall the notification queue for over 90 minutes after one subagent hits the Bash tool&#x27;s auto-background timeout. During the stall the parent session appears busy but performs no inference work, while subagents keep burning large cache_read token volume. When the queue finally drains, affected subagents can be silently reset back to their original dispatch prompt with prior work dropped from context and no explicit reset or compaction event recorded.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
     <title>[HIGH] Remote Control in spawn-worktree mode can accept web/mobile messages without ever dispatching them to the CLI</title>
     <id>https://framework.boucle.sh/limitations.html#remote-control-spawn-worktree-drops-web-mobile-messages</id>
     <link href="https://framework.boucle.sh/limitations.html#remote-control-spawn-worktree-drops-web-mobile-messages"/>
@@ -149,21 +165,5 @@
     <updated>2026-04-09T00:00:00Z</updated>
     <summary>The auto-deny heuristic scans for files with &#x27;secret&#x27; or &#x27;credential&#x27; in the name and adds them to the deny list. When found through a workspace symlink (e.g., Bazel&#x27;s bazel-* convenience symlinks), the symlink-relative path is added rather than the resolved real path. bwrap then tries to mkdir -p parent directories to set up bind mounts and fails when a path component is a symlink. Since sandbox setup fails, ALL sandboxed commands fail -- not just those targeting denied paths. Even &#x27;echo hello&#x27; fails with &#x27;bwrap: Can&#x27;t mkdir parents&#x27;. Reproduces on Linux with any Bazel monorepo containing files with &#x27;secret&#x27; or &#x27;credentials&#x27; in the name.</summary>
     <category term="Sandbox"/>
-  </entry>
-  <entry>
-    <title>[HIGH] FileIndex runs full ripgrep scan (7-20s) on every turn for large non-git repos</title>
-    <id>https://framework.boucle.sh/limitations.html#fileindex-re-indexes-non-git-repo-every-turn</id>
-    <link href="https://framework.boucle.sh/limitations.html#fileindex-re-indexes-non-git-repo-every-turn"/>
-    <updated>2026-04-09T00:00:00Z</updated>
-    <summary>When a project lacks a git repo, FileIndex falls back to ripgrep for file listing and repeats this on every turn with no caching. For 200k+ file projects this causes 7-13s hitches every turn (20+ seconds on slower hardware). With a git repo the index is built once at session start and reused. No filesystem-level cache exists for non-git repos. Workaround: create a local git repo and commit all files. Has repro on Windows + Bedrock with debug logs showing FileIndex cache refresh at 13049ms per turn.</summary>
-    <category term="Performance"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Write tool silently fails with &#x27;missing content&#x27; when tool_use block hits max_tokens output ceiling</title>
-    <id>https://framework.boucle.sh/limitations.html#write-tool-silent-fail-max-tokens-truncation</id>
-    <link href="https://framework.boucle.sh/limitations.html#write-tool-silent-fail-max-tokens-truncation"/>
-    <updated>2026-04-09T00:00:00Z</updated>
-    <summary>When a model response hits the 8000 output token ceiling mid-tool_use block, the Write tool&#x27;s content parameter is never emitted. The harness receives only file_path and reports InputValidationError: missing required parameter &#x27;content&#x27; with no indication that truncation occurred. The model enters a retry loop that worsens the situation: growing context, unchanged token budget. Particularly severe for non-English content (Cyrillic, CJK) where token density is 3x English -- files that appear normally-sized in characters can silently blow the budget. Reproducer includes session jsonl evidence with 11 consecutive failures on 18k-char Ukrainian text.</summary>
-    <category term="Tools"/>
   </entry>
 </feed>

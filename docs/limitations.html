@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">835</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-09.</span></p>
+        <p class="subtitle"><span id="total-count">837</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-09.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -8760,6 +8760,30 @@
                         <!-- workaround:remote-control-spawn-worktree-drops-web-mobile-messages -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> No confirmed workaround. Restarting remote-control reconnects temporarily but reports indicate the dispatch path still stays dead in spawn-worktree mode.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/45946" target="_blank">#45946</a></div>
+        </div>
+        <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="45958" id="agent-teams-parallel-dispatch-stalls-queue-burns-cache-read" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#836</span>
+                <span class="kl-cat">Subagent &amp; spawned agents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Agent Teams parallel dispatch can stall for 90+ minutes, then reset subagent context after burning cache_read tokens</h3>
+            <p>With `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, a parallel Agent dispatch can stall the notification queue for over 90 minutes after one subagent hits the Bash tool&#x27;s auto-background timeout. During the stall the parent session appears busy but performs no inference work, while subagents keep burning large cache_read token volume. When the queue finally drains, affected subagents can be silently reset back to their original dispatch prompt with prior work dropped from context and no explicit reset or compaction event recorded.</p>
+                        <!-- workaround:agent-teams-parallel-dispatch-stalls-queue-burns-cache-read -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> No confirmed workaround. Avoid parallel Agent Teams dispatch when long-running Bash work may hit background timeouts, or sequence agents manually until the queueing and reset path is fixed.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/45958" target="_blank">#45958</a></div>
+        </div>
+        <div class="kl-entry" data-category="TUI &amp; display" data-issues="45950" id="compact-leaves-stale-context-percentage-in-statusline" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#837</span>
+                <span class="kl-cat">TUI &amp; display</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>/compact leaves stale context usage in statusline until the next model turn</h3>
+            <p>After `/compact` completes, the statusline JSON keeps reporting the pre-compaction `context_window.remaining_percentage` value until the next conversation turn. This makes custom statusline scripts show stale context usage immediately after compaction, even though the actual context window has already been reduced.</p>
+                        <!-- workaround:compact-leaves-stale-context-percentage-in-statusline -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> No confirmed workaround inside the statusline hook. The displayed context percentage only refreshes after the next prompt triggers a new model turn.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/45950" target="_blank">#45950</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
