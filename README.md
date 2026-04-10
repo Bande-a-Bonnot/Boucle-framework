@@ -3,7 +3,7 @@
 [![Tests](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml/badge.svg)](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Claude Code hooks that actually enforce your rules. 9 hooks, ~1950 tests, [416 known Claude Code gaps documented](tools/enforce/#known-limitations) with severity ratings and workarounds.
+Claude Code hooks that actually enforce your rules. 9 hooks, ~1950 tests, [882 known Claude Code gaps documented](tools/enforce/#known-limitations) with severity ratings and workarounds.
 
 > **Quick links:** [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
 
@@ -46,6 +46,13 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 ```
 
 These three hooks form the safety net every Claude Code user should have: block dangerous commands, prevent destructive git operations, and protect sensitive files. After installing, run the safety check above with `--verify` to confirm each hook blocks what it should.
+
+**If the install succeeds but hooks do not block anything:**
+
+- Run `install.sh verify` first. A clean install is not proof the hooks are firing.
+- Run `install.sh doctor` next. It catches missing files, bad permissions, JSONC in `settings.json`, and other silent fail-open states.
+- On Windows, use PowerShell 7 (`pwsh`), not Windows PowerShell 5.
+- If you write custom deny hooks, prefer `stderr` + `exit 2` for hard blocks. JSON `permissionDecision: "deny"` is still inconsistent across Claude Code surfaces.
 
 **Install all hooks at once:**
 
