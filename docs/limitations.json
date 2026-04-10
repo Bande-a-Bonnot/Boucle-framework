@@ -1,8 +1,8 @@
 {
   "version": "0.12.0",
-  "count": 857,
+  "count": 858,
   "categories": {
-    "Hook behavior & events": 164,
+    "Hook behavior & events": 165,
     "Permission system": 105,
     "Hook bypass & evasion": 96,
     "MCP & plugin issues": 38,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 397,
+    "HIGH": 398,
     "LOW": 97,
     "MEDIUM": 301
   },
@@ -10481,30 +10481,42 @@
       "cc_version": "2.1.100",
       "date_added": "2026-04-10",
       "workaround": "Keep edit operations chunked and avoid asking Claude Code to emit massive one-shot diffs in the terminal. If a large rewrite is unavoidable, prefer external patch files, smaller staged edits, or an IDE/editor workflow instead of relying on the TUI to render the full `Edit` output in one frame."
+    },
+    {
+      "id": "permissionrequest-http-hook-connection-failure-denies-tool-use",
+      "title": "Unreachable `PermissionRequest` HTTP hooks can silently deny tool use instead of falling through",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "When Claude Code is configured with a `PermissionRequest` HTTP hook whose endpoint is unreachable, connection failures such as `ECONNREFUSED` can be treated as if the user explicitly rejected the tool call. Instead of surfacing the normal permission prompt or continuing with the documented non-blocking fallback behavior, Claude immediately returns a rejection message saying the user does not want to proceed. This is distinct from the older PermissionRequest race and ignore bugs: the failure is in the HTTP transport error path itself, where the docs promise connection failures and timeouts should be non-blocking but the runtime can fail closed and silently deny the action.",
+      "cc_issue": 46193,
+      "cc_version": "2.1.100",
+      "date_added": "2026-04-10",
+      "workaround": "Do not assume an offline or restarting HTTP approval service will safely fall back to Claude Code's built-in permission flow. Keep `PermissionRequest` hook endpoints local and supervised, add health checks before starting Claude Code, or prefer command hooks and static permission rules when an unreachable hook service would create a false denial."
     }
   ],
   "status_summary": {
-    "open": 843,
+    "open": 844,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 397,
+    "high": 398,
     "low": 97,
     "medium": 301
   },
   "lastUpdated": "2026-04-10",
   "stats": {
-    "total": 857,
+    "total": 858,
     "critical": 62,
-    "high": 397,
+    "high": 398,
     "medium": 301,
     "low": 97,
-    "open": 843,
+    "open": 844,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-10",
-  "total": 857
+  "total": 858
 }

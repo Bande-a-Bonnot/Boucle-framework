@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">857</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-10.</span></p>
+        <p class="subtitle"><span id="total-count">858</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-10.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9024,6 +9024,18 @@
                         <!-- workaround:repl-crashes-on-large-edit-render-frame -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Keep edit operations chunked and avoid asking Claude Code to emit massive one-shot diffs in the terminal. If a large rewrite is unavoidable, prefer external patch files, smaller staged edits, or an IDE/editor workflow instead of relying on the TUI to render the full `Edit` output in one frame.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46190" target="_blank">#46190</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="46193" id="permissionrequest-http-hook-connection-failure-denies-tool-use" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#858</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Unreachable `PermissionRequest` HTTP hooks can silently deny tool use instead of falling through</h3>
+            <p>When Claude Code is configured with a `PermissionRequest` HTTP hook whose endpoint is unreachable, connection failures such as `ECONNREFUSED` can be treated as if the user explicitly rejected the tool call. Instead of surfacing the normal permission prompt or continuing with the documented non-blocking fallback behavior, Claude immediately returns a rejection message saying the user does not want to proceed. This is distinct from the older PermissionRequest race and ignore bugs: the failure is in the HTTP transport error path itself, where the docs promise connection failures and timeouts should be non-blocking but the runtime can fail closed and silently deny the action.</p>
+                        <!-- workaround:permissionrequest-http-hook-connection-failure-denies-tool-use -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume an offline or restarting HTTP approval service will safely fall back to Claude Code&#x27;s built-in permission flow. Keep `PermissionRequest` hook endpoints local and supervised, add health checks before starting Claude Code, or prefer command hooks and static permission rules when an unreachable hook service would create a false denial.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46193" target="_blank">#46193</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
