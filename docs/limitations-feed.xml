@@ -7,6 +7,14 @@
   <updated>2026-04-10T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Agent SDK `query()` can leave slash commands unexpanded and pass them through as literal prompt text</title>
+    <id>https://framework.boucle.sh/limitations.html#agent-sdk-query-leaves-slash-commands-unexpanded</id>
+    <link href="https://framework.boucle.sh/limitations.html#agent-sdk-query-leaves-slash-commands-unexpanded"/>
+    <updated>2026-04-10T00:00:00Z</updated>
+    <summary>When the Claude Agent SDK starts a session with `query({ prompt: &quot;/skill ...&quot; })`, the spawned Claude Code process can discover the relevant skill and list it in the init event while still passing the raw `/skill ...` string through to the model instead of expanding the slash command first. This creates a contract gap between the interactive CLI and the SDK path: workflows that reliably preload skill content in the TUI become model-choice-dependent in SDK mode because the model must decide to call the Skill tool itself. This is distinct from older skill discovery, autocomplete, or custom-agent preload bugs because the failure happens after slash command discovery, at the prompt-expansion layer specific to `query()` input handling.</summary>
+    <category term="Skills / slash commands"/>
+  </entry>
+  <entry>
     <title>[HIGH] `claude mcp add` on Windows can rewrite `cmd /c` into `cmd C:/`, corrupting the saved MCP command</title>
     <id>https://framework.boucle.sh/limitations.html#windows-mcp-add-rewrites-cmd-slash-c-to-c-drive-path</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-mcp-add-rewrites-cmd-slash-c-to-c-drive-path"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-10T00:00:00Z</updated>
     <summary>On Linux native installs, Claude Code v2.1.98+ can be packaged without the `apply-seccomp` helper that the bwrap sandbox expects during initialization. In affected installs, even a trivial Bash call such as `echo` fails immediately with `Sandbox failed to initialize`, while the same machine works again when the user rolls back to v2.1.97. This is distinct from the older execute-bit regression: the helper is not merely non-executable, it is missing from the installed version directory entirely, which turns the sandbox startup path into a hard fail for every Bash command on otherwise compatible Linux systems.</summary>
     <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] VS Code startup can create empty `.env`, package-manager, and `node_modules/.bin/` artifacts in the workspace before any user action</title>
-    <id>https://framework.boucle.sh/limitations.html#vscode-startup-creates-empty-js-tooling-files-in-workspace</id>
-    <link href="https://framework.boucle.sh/limitations.html#vscode-startup-creates-empty-js-tooling-files-in-workspace"/>
-    <updated>2026-04-10T00:00:00Z</updated>
-    <summary>In the VS Code/VSCodium extension path, Claude Code can create 17 or more empty 0-byte files in the configured working directory on every startup before the user asks it to do anything. Reported artifacts include multiple `.env*` variants, `.npmrc`, `.yarnrc*`, `.gitmodules`, `bunfig.toml`, `package.json`, lockfiles, and an empty `node_modules/.bin/` directory, all created within the same second by the bundled native `claude` process. This is not the older sandbox-only ghost-dotfile bug: the writes happen during IDE startup, can also hit the user&#x27;s home directory, and pollute repositories with alarming untracked JavaScript ecosystem files even on systems that do not use Node tooling at all.</summary>
-    <category term="File system &amp; paths"/>
   </entry>
 </feed>

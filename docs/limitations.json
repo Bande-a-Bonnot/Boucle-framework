@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 872,
+  "count": 873,
   "categories": {
     "Hook behavior & events": 165,
     "Permission system": 106,
@@ -72,6 +72,7 @@
     "security": 2,
     "session-management": 2,
     "Skills & commands": 2,
+    "Skills / slash commands": 2,
     "Stability & crashes": 2,
     "Worktree": 2,
     "Agent": 1,
@@ -150,7 +151,6 @@
     "skills": 1,
     "Skills & plugins": 1,
     "Skills & slash commands": 1,
-    "Skills / slash commands": 1,
     "Tools": 1,
     "Tools & permissions": 1,
     "Tools and execution": 1,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 409,
+    "HIGH": 410,
     "LOW": 97,
     "MEDIUM": 304
   },
@@ -10659,30 +10659,42 @@
       "cc_version": "2.1.100",
       "date_added": "2026-04-10",
       "workaround": "Do not rely on `claude mcp add` for `cmd /c`-based MCP launchers on Windows right now. Manually edit the generated MCP config and, where possible, bypass `cmd.exe` entirely by invoking the real runtime directly (for example `node path/to/cli.js`) instead of going through a batch-wrapper command."
+    },
+    {
+      "id": "agent-sdk-query-leaves-slash-commands-unexpanded",
+      "title": "Agent SDK `query()` can leave slash commands unexpanded and pass them through as literal prompt text",
+      "category": "Skills / slash commands",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "When the Claude Agent SDK starts a session with `query({ prompt: \"/skill ...\" })`, the spawned Claude Code process can discover the relevant skill and list it in the init event while still passing the raw `/skill ...` string through to the model instead of expanding the slash command first. This creates a contract gap between the interactive CLI and the SDK path: workflows that reliably preload skill content in the TUI become model-choice-dependent in SDK mode because the model must decide to call the Skill tool itself. This is distinct from older skill discovery, autocomplete, or custom-agent preload bugs because the failure happens after slash command discovery, at the prompt-expansion layer specific to `query()` input handling.",
+      "cc_issue": 46377,
+      "cc_version": "2.1.100",
+      "date_added": "2026-04-10",
+      "workaround": "Do not rely on `/skill ...` prefixes being expanded automatically when using the Agent SDK `query()` API right now. Inline the critical skill instructions yourself, or invoke the Skill tool explicitly in your SDK workflow instead of assuming the non-interactive prompt path matches the interactive CLI behavior."
     }
   ],
   "status_summary": {
-    "open": 858,
+    "open": 859,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 409,
+    "high": 410,
     "low": 97,
     "medium": 304
   },
   "lastUpdated": "2026-04-10",
   "stats": {
-    "total": 872,
+    "total": 873,
     "critical": 62,
-    "high": 409,
+    "high": 410,
     "medium": 304,
     "low": 97,
-    "open": 858,
+    "open": 859,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-10",
-  "total": 872
+  "total": 873
 }
