@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 876,
+  "count": 877,
   "categories": {
     "Hook behavior & events": 165,
     "Permission system": 107,
@@ -69,6 +69,7 @@
     "Performance & resources": 2,
     "Permissions and safety": 2,
     "platform": 2,
+    "Plugin & channel system": 2,
     "security": 2,
     "session-management": 2,
     "Skills & commands": 2,
@@ -129,7 +130,6 @@
     "platform/macos": 1,
     "platform/vscode": 1,
     "Plugin": 1,
-    "Plugin & channel system": 1,
     "Plugins": 1,
     "plugins": 1,
     "Plugins & MCP": 1,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 411,
+    "HIGH": 412,
     "LOW": 97,
     "MEDIUM": 306
   },
@@ -10707,30 +10707,42 @@
       "cc_version": "latest",
       "date_added": "2026-04-10",
       "workaround": "Do not trust a raw Ctrl+C copy from the Claude chat panel in VS Code right now if another editor tab is focused. Paste into a scratch buffer and verify the result before reusing it, or use an alternate copy path such as selecting from the terminal/desktop client until Anthropic fixes the chat-panel clipboard focus handling."
+    },
+    {
+      "id": "channels-plugin-session-missing-plugin-mcp-tools",
+      "title": "`--channels plugin:...` sessions can attach the channel but omit the plugin's MCP tools entirely",
+      "category": "Plugin & channel system",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "When Claude Code is launched with `--channels plugin:<name>@claude-plugins-official`, the channel subsystem can attach successfully and show the normal \"Listening for channel messages\" banner while silently failing to inject the plugin's own MCP tools into the session tool list. In the reported regression, the iMessage plugin still appeared connected in `claude mcp list`, the plugin process started cleanly, and the session JSONL recorded the normal deferred tool delta, but the plugin's `chat_messages` and `reply` tools never appeared. This is distinct from older channel-plugin failures where notifications are not injected, idle sessions are not woken, or attribution is wrong: here the plugin transport is present but the callable MCP tool surface is missing from the session entirely, so inbound messages may arrive but the session cannot reply through the plugin.",
+      "cc_issue": 46406,
+      "cc_version": "2.1.101",
+      "date_added": "2026-04-10",
+      "workaround": "Do not assume a successful `--channels plugin:...` attach banner means the plugin tools are actually available. Check the session tool list or JSONL deferred tool delta before relying on channel replies, and if the plugin tools are missing, fall back to a version known to expose them or use a non-channel invocation path until Anthropic fixes the injection regression."
     }
   ],
   "status_summary": {
-    "open": 862,
+    "open": 863,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 411,
+    "high": 412,
     "low": 97,
     "medium": 306
   },
   "lastUpdated": "2026-04-10",
   "stats": {
-    "total": 876,
+    "total": 877,
     "critical": 62,
-    "high": 411,
+    "high": 412,
     "medium": 306,
     "low": 97,
-    "open": 862,
+    "open": 863,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-10",
-  "total": 876
+  "total": 877
 }

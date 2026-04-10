@@ -7,6 +7,14 @@
   <updated>2026-04-10T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] `--channels plugin:...` sessions can attach the channel but omit the plugin&#x27;s MCP tools entirely</title>
+    <id>https://framework.boucle.sh/limitations.html#channels-plugin-session-missing-plugin-mcp-tools</id>
+    <link href="https://framework.boucle.sh/limitations.html#channels-plugin-session-missing-plugin-mcp-tools"/>
+    <updated>2026-04-10T00:00:00Z</updated>
+    <summary>When Claude Code is launched with `--channels plugin:&lt;name&gt;@claude-plugins-official`, the channel subsystem can attach successfully and show the normal &quot;Listening for channel messages&quot; banner while silently failing to inject the plugin&#x27;s own MCP tools into the session tool list. In the reported regression, the iMessage plugin still appeared connected in `claude mcp list`, the plugin process started cleanly, and the session JSONL recorded the normal deferred tool delta, but the plugin&#x27;s `chat_messages` and `reply` tools never appeared. This is distinct from older channel-plugin failures where notifications are not injected, idle sessions are not woken, or attribution is wrong: here the plugin transport is present but the callable MCP tool surface is missing from the session entirely, so inbound messages may arrive but the session cannot reply through the plugin.</summary>
+    <category term="Plugin &amp; channel system"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Copying text from the VS Code chat panel can paste active editor content instead</title>
     <id>https://framework.boucle.sh/limitations.html#vscode-chat-copy-pastes-active-editor-content-instead</id>
     <link href="https://framework.boucle.sh/limitations.html#vscode-chat-copy-pastes-active-editor-content-instead"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-10T00:00:00Z</updated>
     <summary>When Claude Code is configured with a `PermissionRequest` HTTP hook whose endpoint is unreachable, connection failures such as `ECONNREFUSED` can be treated as if the user explicitly rejected the tool call. Instead of surfacing the normal permission prompt or continuing with the documented non-blocking fallback behavior, Claude immediately returns a rejection message saying the user does not want to proceed. This is distinct from the older PermissionRequest race and ignore bugs: the failure is in the HTTP transport error path itself, where the docs promise connection failures and timeouts should be non-blocking but the runtime can fail closed and silently deny the action.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] REPL can crash outright when one large `Edit` render frame overflows the terminal buffer</title>
-    <id>https://framework.boucle.sh/limitations.html#repl-crashes-on-large-edit-render-frame</id>
-    <link href="https://framework.boucle.sh/limitations.html#repl-crashes-on-large-edit-render-frame"/>
-    <updated>2026-04-10T00:00:00Z</updated>
-    <summary>Claude Code&#x27;s REPL can unmount and terminate immediately when the model emits a very large `Edit` tool output in a single render cycle. In the reported repro, the terminal renderer jumps from a normal 228-line frame to a 12,960-line frame while trying to write roughly 860,000 characters, then logs `[REPL:unmount] REPL unmounting` and exits. This is not just a long-session slowdown or cosmetic corruption: one oversized edit diff can crash the active session outright and discard the current interactive state.</summary>
-    <category term="TUI &amp; display"/>
   </entry>
 </feed>
