@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">848</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-10.</span></p>
+        <p class="subtitle"><span id="total-count">849</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-10.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -8916,6 +8916,18 @@
                         <!-- workaround:hook-if-filter-ignored-for-edit-write-tools -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on the declarative `if` field to filter `Edit` or `Write` hooks. Register the hook without `if`, then inspect `tool_input.file_path` inside the hook script and exit early for non-matching paths.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46103" target="_blank">#46103</a></div>
+        </div>
+        <div class="kl-entry" data-category="Sandbox &amp; permissions" data-issues="46111" id="settings-flag-sandbox-paths-resolve-relative-to-settings-file" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#849</span>
+                <span class="kl-cat">Sandbox &amp; permissions</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>`--settings` sandbox filesystem paths resolve relative to the settings file, not the project root</h3>
+            <p>When sandbox filesystem rules are loaded from an external JSON file via the CLI `--settings` flag, relative paths such as `./bar` are resolved from the settings file&#x27;s directory instead of the project root. This diverges from the documented behavior used by project-scoped `.claude/settings.json`, where `./` resolves against the project root. As a result, denyWrite or similar filesystem rules can silently miss the directory the user intended to protect, while nearby `../...` paths may still block as if file-relative resolution were the real contract. Users who move sandbox policy into a dedicated sidecar file can believe writes are denied when Claude is still free to modify the target project directory.</p>
+                        <!-- workaround:settings-flag-sandbox-paths-resolve-relative-to-settings-file -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on project-root-relative `./` paths inside files loaded with `--settings`. Either inline the sandbox config into `.claude/settings.json`, or rewrite all relative sandbox filesystem paths in the external settings file as explicit paths that account for file-relative resolution.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46111" target="_blank">#46111</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

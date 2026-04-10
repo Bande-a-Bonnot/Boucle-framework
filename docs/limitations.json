@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 848,
+  "count": 849,
   "categories": {
     "Hook behavior & events": 163,
     "Permission system": 105,
@@ -67,6 +67,7 @@
     "Permissions and safety": 2,
     "platform": 2,
     "Remote": 2,
+    "Sandbox & permissions": 2,
     "security": 2,
     "session-management": 2,
     "Skills & commands": 2,
@@ -141,7 +142,6 @@
     "rules-compliance": 1,
     "safety": 1,
     "safety-and-permissions": 1,
-    "Sandbox & permissions": 1,
     "Sandbox & security": 1,
     "Sessions & conversation management": 1,
     "settings": 1,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 61,
-    "HIGH": 391,
+    "HIGH": 392,
     "LOW": 97,
     "MEDIUM": 299
   },
@@ -10377,30 +10377,42 @@
       "cc_version": "2.1.100",
       "date_added": "2026-04-10",
       "workaround": "Do not rely on the declarative `if` field to filter `Edit` or `Write` hooks. Register the hook without `if`, then inspect `tool_input.file_path` inside the hook script and exit early for non-matching paths."
+    },
+    {
+      "id": "settings-flag-sandbox-paths-resolve-relative-to-settings-file",
+      "title": "`--settings` sandbox filesystem paths resolve relative to the settings file, not the project root",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "When sandbox filesystem rules are loaded from an external JSON file via the CLI `--settings` flag, relative paths such as `./bar` are resolved from the settings file's directory instead of the project root. This diverges from the documented behavior used by project-scoped `.claude/settings.json`, where `./` resolves against the project root. As a result, denyWrite or similar filesystem rules can silently miss the directory the user intended to protect, while nearby `../...` paths may still block as if file-relative resolution were the real contract. Users who move sandbox policy into a dedicated sidecar file can believe writes are denied when Claude is still free to modify the target project directory.",
+      "cc_issue": 46111,
+      "cc_version": "2.1.100",
+      "date_added": "2026-04-10",
+      "workaround": "Do not rely on project-root-relative `./` paths inside files loaded with `--settings`. Either inline the sandbox config into `.claude/settings.json`, or rewrite all relative sandbox filesystem paths in the external settings file as explicit paths that account for file-relative resolution."
     }
   ],
   "status_summary": {
-    "open": 834,
+    "open": 835,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 61,
-    "high": 391,
+    "high": 392,
     "low": 97,
     "medium": 299
   },
   "lastUpdated": "2026-04-10",
   "stats": {
-    "total": 848,
+    "total": 849,
     "critical": 61,
-    "high": 391,
+    "high": 392,
     "medium": 299,
     "low": 97,
-    "open": 834,
+    "open": 835,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-10",
-  "total": 848
+  "total": 849
 }

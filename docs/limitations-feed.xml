@@ -7,6 +7,14 @@
   <updated>2026-04-10T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] `--settings` sandbox filesystem paths resolve relative to the settings file, not the project root</title>
+    <id>https://framework.boucle.sh/limitations.html#settings-flag-sandbox-paths-resolve-relative-to-settings-file</id>
+    <link href="https://framework.boucle.sh/limitations.html#settings-flag-sandbox-paths-resolve-relative-to-settings-file"/>
+    <updated>2026-04-10T00:00:00Z</updated>
+    <summary>When sandbox filesystem rules are loaded from an external JSON file via the CLI `--settings` flag, relative paths such as `./bar` are resolved from the settings file&#x27;s directory instead of the project root. This diverges from the documented behavior used by project-scoped `.claude/settings.json`, where `./` resolves against the project root. As a result, denyWrite or similar filesystem rules can silently miss the directory the user intended to protect, while nearby `../...` paths may still block as if file-relative resolution were the real contract. Users who move sandbox policy into a dedicated sidecar file can believe writes are denied when Claude is still free to modify the target project directory.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
     <title>[HIGH] Hook `if` filters are silently ignored for Edit and Write tools</title>
     <id>https://framework.boucle.sh/limitations.html#hook-if-filter-ignored-for-edit-write-tools</id>
     <link href="https://framework.boucle.sh/limitations.html#hook-if-filter-ignored-for-edit-write-tools"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-10T00:00:00Z</updated>
     <summary>On macOS, Claude Code&#x27;s sandbox can deny file reads on removable USB volumes for commands launched via PATH-resolved binaries such as git installed under ~/.nvm, even though the same paths work with system binaries like /usr/bin/git or /bin/cat. Kernel logs show file-read-data denials on /Volumes/... despite Full Disk Access and direct shell access working outside the sandbox. This creates inconsistent behavior where identical commands succeed or fail depending only on binary resolution path.</summary>
     <category term="Sandbox"/>
-  </entry>
-  <entry>
-    <title>[HIGH] CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC disables channel features by forcing GrowthBook feature gate false</title>
-    <id>https://framework.boucle.sh/limitations.html#disable-nonessential-traffic-disables-channels</id>
-    <link href="https://framework.boucle.sh/limitations.html#disable-nonessential-traffic-disables-channels"/>
-    <updated>2026-04-10T00:00:00Z</updated>
-    <summary>Setting CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 or opting out of usage-pattern sharing disables GrowthBook feature-flag evaluation, which makes channel-based plugins report &#x27;Channels are not currently available&#x27; even for paying users with otherwise working plugin tools. Outbound MCP tools still work, but inbound notifications/claude/channel handling never registers because the tengu_harbor feature gate defaults false. A privacy toggle silently disables product functionality.</summary>
-    <category term="MCP and plugins"/>
   </entry>
 </feed>
