@@ -7,6 +7,14 @@
   <updated>2026-04-10T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Aborted MCP elicitation requests can leak zombie queue entries and block later approval prompts</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-elicitation-abort-leaks-zombie-queue-entry</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-elicitation-abort-leaks-zombie-queue-entry"/>
+    <updated>2026-04-10T00:00:00Z</updated>
+    <summary>When an MCP elicitation request is queued and then aborted before the dialog cleanup path runs, Claude Code can leave that aborted entry at the head of the internal elicitation queue. Later elicitation requests from the same session stack up behind the zombie entry and never surface to the user, so tool calls appear to hang until the upstream MCP server times out. This is distinct from older AskUserQuestion or notification-hook gaps: the failure is in the MCP elicitation queue cleanup layer itself, and it can break otherwise-valid approval dialogs after one cancelled or transport-aborted request.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[HIGH] MCP OAuth tokens can expire permanently on the `claude.ai` proxy path without any refresh or reauth flow</title>
     <id>https://framework.boucle.sh/limitations.html#claude-ai-proxy-mcp-oauth-tokens-never-refresh</id>
     <link href="https://framework.boucle.sh/limitations.html#claude-ai-proxy-mcp-oauth-tokens-never-refresh"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-10T00:00:00Z</updated>
     <summary>For self-hosted remote MCP servers using OAuth, claude.ai can complete the full authorization flow, including dynamic client registration, authorization redirect, and PKCE token exchange, yet never send the follow-up MCP request carrying the issued Bearer token. Server logs show `POST /register`, `GET /authorize`, and `POST /token` all succeeding, followed by complete silence while claude.ai reports `Authorization with the MCP server failed`. Because the server works when the same token is used manually against the same tunnel, the breakage is not a generic OAuth misconfiguration but a fail-after-token protocol bug in claude.ai&#x27;s MCP connector path that can leave every self-hosted OAuth-based remote MCP integration unusable.</summary>
     <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Cursor integrated terminal can bypass sandbox startup even when `failIfUnavailable: true` is set</title>
-    <id>https://framework.boucle.sh/limitations.html#cursor-terminal-sandbox-fails-open-despite-failifunavailable</id>
-    <link href="https://framework.boucle.sh/limitations.html#cursor-terminal-sandbox-fails-open-despite-failifunavailable"/>
-    <updated>2026-04-10T00:00:00Z</updated>
-    <summary>When Claude Code is launched from Cursor&#x27;s integrated terminal, sandbox startup can silently fail even though `sandbox.enabled: true` and `sandbox.failIfUnavailable: true` are both configured. In affected runs, writes to denied paths still succeed, Claude exits with status 0, and no warning indicates that the promised sandbox boundary never came up. The same settings block writes correctly from an external terminal, which makes this a fail-open IDE integration bug rather than a bad policy file. Users relying on `failIfUnavailable` for managed or security-sensitive workflows can believe the session is protected while Claude is actually running unsandboxed.</summary>
-    <category term="Sandbox &amp; permissions"/>
   </entry>
 </feed>

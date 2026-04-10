@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">869</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-10.</span></p>
+        <p class="subtitle"><span id="total-count">870</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-10.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9168,6 +9168,18 @@
                         <!-- workaround:claude-ai-proxy-mcp-oauth-tokens-never-refresh -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat a successful reconnect to `mcp-proxy.anthropic.com` as proof that proxied MCP OAuth credentials are healthy. If proxied tools start failing after token expiry, force a fresh connector authentication through the `claude.ai` side instead of waiting for the CLI to refresh the token automatically.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46328" target="_blank">#46328</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="46340" id="mcp-elicitation-abort-leaks-zombie-queue-entry" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#870</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Aborted MCP elicitation requests can leak zombie queue entries and block later approval prompts</h3>
+            <p>When an MCP elicitation request is queued and then aborted before the dialog cleanup path runs, Claude Code can leave that aborted entry at the head of the internal elicitation queue. Later elicitation requests from the same session stack up behind the zombie entry and never surface to the user, so tool calls appear to hang until the upstream MCP server times out. This is distinct from older AskUserQuestion or notification-hook gaps: the failure is in the MCP elicitation queue cleanup layer itself, and it can break otherwise-valid approval dialogs after one cancelled or transport-aborted request.</p>
+                        <!-- workaround:mcp-elicitation-abort-leaks-zombie-queue-entry -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If MCP approval prompts stop appearing after an aborted or timed-out elicitation, reconnect the MCP session instead of waiting for later prompts to recover on their own. Avoid batching many approval-requiring MCP operations into one long request while this queue-cleanup bug is still open.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46340" target="_blank">#46340</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

@@ -1,11 +1,11 @@
 {
   "version": "0.12.0",
-  "count": 869,
+  "count": 870,
   "categories": {
     "Hook behavior & events": 165,
     "Permission system": 106,
     "Hook bypass & evasion": 96,
-    "MCP & plugin issues": 39,
+    "MCP & plugin issues": 40,
     "Subagent & spawned agents": 38,
     "Platform & compatibility": 23,
     "Desktop & IDE integration": 22,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 406,
+    "HIGH": 407,
     "LOW": 97,
     "MEDIUM": 304
   },
@@ -10623,30 +10623,42 @@
       "cc_version": "2.1.100",
       "date_added": "2026-04-10",
       "workaround": "Do not treat a successful reconnect to `mcp-proxy.anthropic.com` as proof that proxied MCP OAuth credentials are healthy. If proxied tools start failing after token expiry, force a fresh connector authentication through the `claude.ai` side instead of waiting for the CLI to refresh the token automatically."
+    },
+    {
+      "id": "mcp-elicitation-abort-leaks-zombie-queue-entry",
+      "title": "Aborted MCP elicitation requests can leak zombie queue entries and block later approval prompts",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "When an MCP elicitation request is queued and then aborted before the dialog cleanup path runs, Claude Code can leave that aborted entry at the head of the internal elicitation queue. Later elicitation requests from the same session stack up behind the zombie entry and never surface to the user, so tool calls appear to hang until the upstream MCP server times out. This is distinct from older AskUserQuestion or notification-hook gaps: the failure is in the MCP elicitation queue cleanup layer itself, and it can break otherwise-valid approval dialogs after one cancelled or transport-aborted request.",
+      "cc_issue": 46340,
+      "cc_version": "2.1.100",
+      "date_added": "2026-04-10",
+      "workaround": "If MCP approval prompts stop appearing after an aborted or timed-out elicitation, reconnect the MCP session instead of waiting for later prompts to recover on their own. Avoid batching many approval-requiring MCP operations into one long request while this queue-cleanup bug is still open."
     }
   ],
   "status_summary": {
-    "open": 855,
+    "open": 856,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 406,
+    "high": 407,
     "low": 97,
     "medium": 304
   },
   "lastUpdated": "2026-04-10",
   "stats": {
-    "total": 869,
+    "total": 870,
     "critical": 62,
-    "high": 406,
+    "high": 407,
     "medium": 304,
     "low": 97,
-    "open": 855,
+    "open": 856,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-10",
-  "total": 869
+  "total": 870
 }
