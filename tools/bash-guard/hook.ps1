@@ -51,7 +51,7 @@
 # Install:
 #   1. Copy hook.ps1 to your project
 #   2. Add to .claude/settings.json:
-#      "hooks": { "PreToolUse": [{ "type": "command", "command": "pwsh -File /path/to/hook.ps1" }] }
+#      "hooks": { "PreToolUse": [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "pwsh -File /path/to/hook.ps1" }] }] }
 #
 # Config (.bash-guard):
 #   allow: sudo           # whitelist specific operations
@@ -77,12 +77,11 @@ function Write-Log {
     }
 }
 
-# Helper: output a block decision as JSON
+# Helper: block via stderr + exit 2, the only path Claude Code reliably enforces.
 function Block-Tool {
     param([string]$Reason)
-    $result = @{ hookSpecificOutput = @{ permissionDecision = 'deny'; permissionDecisionReason = $Reason } } | ConvertTo-Json -Compress -Depth 3
-    Write-Output $result
-    exit 0
+    [Console]::Error.WriteLine($Reason)
+    exit 2
 }
 
 # Read hook input from stdin

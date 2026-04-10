@@ -7,35 +7,47 @@ HOOK="$SCRIPT_DIR/hook.sh"
 PASS=0
 FAIL=0
 
+run_hook() {
+  local command="$1"
+  local stdout_file stderr_file rc
+  stdout_file=$(mktemp)
+  stderr_file=$(mktemp)
+  local input
+  input=$(jq -cn --arg cmd "$command" '{"tool_name":"Bash","tool_input":{"command":$cmd}}')
+  if echo "$input" | "${@:2}" bash "$HOOK" >"$stdout_file" 2>"$stderr_file"; then
+    rc=0
+  else
+    rc=$?
+  fi
+  HOOK_STDOUT=$(cat "$stdout_file")
+  HOOK_STDERR=$(cat "$stderr_file")
+  HOOK_RC=$rc
+  rm -f "$stdout_file" "$stderr_file"
+}
+
 assert_blocked() {
   local desc="$1"
   local command="$2"
-  local input
-  input=$(jq -cn --arg cmd "$command" '{"tool_name":"Bash","tool_input":{"command":$cmd}}')
-  local result
-  result=$(echo "$input" | bash "$HOOK" 2>/dev/null) || true
-  if echo "$result" | grep -q '"permissionDecision":"deny"'; then
+  run_hook "$command" "${@:3}"
+  if [ "$HOOK_RC" -eq 2 ] && [ -z "$HOOK_STDOUT" ] && echo "$HOOK_STDERR" | grep -q 'bash-guard:'; then
     PASS=$((PASS + 1))
     echo "  PASS: $desc"
   else
     FAIL=$((FAIL + 1))
-    echo "  FAIL: $desc (expected block, got: $result)"
+    echo "  FAIL: $desc (expected rc=2 with stderr reason, got rc=$HOOK_RC stdout='$HOOK_STDOUT' stderr='$HOOK_STDERR')"
   fi
 }
 
 assert_allowed() {
   local desc="$1"
   local command="$2"
-  local input
-  input=$(jq -cn --arg cmd "$command" '{"tool_name":"Bash","tool_input":{"command":$cmd}}')
-  local result
-  result=$(echo "$input" | bash "$HOOK" 2>/dev/null) || true
-  if [ -z "$result" ] || ! echo "$result" | grep -q '"permissionDecision":"deny"'; then
+  run_hook "$command" "${@:3}"
+  if [ "$HOOK_RC" -eq 0 ] && [ -z "$HOOK_STDOUT" ] && [ -z "$HOOK_STDERR" ]; then
     PASS=$((PASS + 1))
     echo "  PASS: $desc"
   else
     FAIL=$((FAIL + 1))
-    echo "  FAIL: $desc (expected allow, got: $result)"
+    echo "  FAIL: $desc (expected clean allow, got rc=$HOOK_RC stdout='$HOOK_STDOUT' stderr='$HOOK_STDERR')"
   fi
 }
 
@@ -205,13 +217,13 @@ rm -rf "$TMPDIR_TEST"
 
 echo ""
 echo "--- Disabled via env ---"
-RESULT=$(echo '{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}' | BASH_GUARD_DISABLED=1 bash "$HOOK" 2>/dev/null) || true
-if [ -z "$RESULT" ]; then
+run_hook "rm -rf /" env BASH_GUARD_DISABLED=1
+if [ "$HOOK_RC" -eq 0 ] && [ -z "$HOOK_STDOUT" ] && [ -z "$HOOK_STDERR" ]; then
   PASS=$((PASS + 1))
   echo "  PASS: Disabled via BASH_GUARD_DISABLED=1"
 else
   FAIL=$((FAIL + 1))
-  echo "  FAIL: Should be disabled"
+  echo "  FAIL: Should be disabled (rc=$HOOK_RC stdout='$HOOK_STDOUT' stderr='$HOOK_STDERR')"
 fi
 
 # --- Custom deny rules ---
@@ -225,73 +237,73 @@ echo "deny: unlink" >> "$DENY_CONFIG"
 echo "deny: find.*-delete" >> "$DENY_CONFIG"
 
 # Test deny: rm blocks all rm commands
-RESULT=$(echo '{"tool_name":"Bash","tool_input":{"command":"rm file.wav"}}' | BASH_GUARD_CONFIG="$DENY_CONFIG" bash "$HOOK" 2>/dev/null) || true
-if echo "$RESULT" | grep -q '"permissionDecision":"deny"'; then
+run_hook "rm file.wav" env BASH_GUARD_CONFIG="$DENY_CONFIG"
+if [ "$HOOK_RC" -eq 2 ] && echo "$HOOK_STDERR" | grep -q 'bash-guard:'; then
   PASS=$((PASS + 1))
   echo "  PASS: deny:rm blocks 'rm file.wav'"
 else
   FAIL=$((FAIL + 1))
-  echo "  FAIL: deny:rm should block 'rm file.wav' (got: $RESULT)"
+  echo "  FAIL: deny:rm should block 'rm file.wav' (rc=$HOOK_RC stdout='$HOOK_STDOUT' stderr='$HOOK_STDERR')"
 fi
 
 # Test deny: rm blocks rm with flags
-RESULT=$(echo '{"tool_name":"Bash","tool_input":{"command":"rm -f *.wav"}}' | BASH_GUARD_CONFIG="$DENY_CONFIG" bash "$HOOK" 2>/dev/null) || true
-if echo "$RESULT" | grep -q '"permissionDecision":"deny"'; then
+run_hook "rm -f *.wav" env BASH_GUARD_CONFIG="$DENY_CONFIG"
+if [ "$HOOK_RC" -eq 2 ] && echo "$HOOK_STDERR" | grep -q 'bash-guard:'; then
   PASS=$((PASS + 1))
   echo "  PASS: deny:rm blocks 'rm -f *.wav'"
 else
   FAIL=$((FAIL + 1))
-  echo "  FAIL: deny:rm should block 'rm -f *.wav' (got: $RESULT)"
+  echo "  FAIL: deny:rm should block 'rm -f *.wav' (rc=$HOOK_RC stdout='$HOOK_STDOUT' stderr='$HOOK_STDERR')"
 fi
 
 # Test deny: unlink blocks unlink command
-RESULT=$(echo '{"tool_name":"Bash","tool_input":{"command":"unlink myfile.txt"}}' | BASH_GUARD_CONFIG="$DENY_CONFIG" bash "$HOOK" 2>/dev/null) || true
-if echo "$RESULT" | grep -q '"permissionDecision":"deny"'; then
+run_hook "unlink myfile.txt" env BASH_GUARD_CONFIG="$DENY_CONFIG"
+if [ "$HOOK_RC" -eq 2 ] && echo "$HOOK_STDERR" | grep -q 'bash-guard:'; then
   PASS=$((PASS + 1))
   echo "  PASS: deny:unlink blocks 'unlink myfile.txt'"
 else
   FAIL=$((FAIL + 1))
-  echo "  FAIL: deny:unlink should block 'unlink myfile.txt' (got: $RESULT)"
+  echo "  FAIL: deny:unlink should block 'unlink myfile.txt' (rc=$HOOK_RC stdout='$HOOK_STDOUT' stderr='$HOOK_STDERR')"
 fi
 
 # Test deny: find.*-delete blocks find with -delete
-RESULT=$(echo '{"tool_name":"Bash","tool_input":{"command":"find . -name *.tmp -delete"}}' | BASH_GUARD_CONFIG="$DENY_CONFIG" bash "$HOOK" 2>/dev/null) || true
-if echo "$RESULT" | grep -q '"permissionDecision":"deny"'; then
+run_hook "find . -name *.tmp -delete" env BASH_GUARD_CONFIG="$DENY_CONFIG"
+if [ "$HOOK_RC" -eq 2 ] && echo "$HOOK_STDERR" | grep -q 'bash-guard:'; then
   PASS=$((PASS + 1))
   echo "  PASS: deny:find.*-delete blocks 'find . -name *.tmp -delete'"
 else
   FAIL=$((FAIL + 1))
-  echo "  FAIL: deny:find.*-delete should block find -delete (got: $RESULT)"
+  echo "  FAIL: deny:find.*-delete should block find -delete (rc=$HOOK_RC stdout='$HOOK_STDOUT' stderr='$HOOK_STDERR')"
 fi
 
 # Test deny: rm blocks rm in chained commands
-RESULT=$(echo '{"tool_name":"Bash","tool_input":{"command":"ls && rm old.txt"}}' | BASH_GUARD_CONFIG="$DENY_CONFIG" bash "$HOOK" 2>/dev/null) || true
-if echo "$RESULT" | grep -q '"permissionDecision":"deny"'; then
+run_hook "ls && rm old.txt" env BASH_GUARD_CONFIG="$DENY_CONFIG"
+if [ "$HOOK_RC" -eq 2 ] && echo "$HOOK_STDERR" | grep -q 'bash-guard:'; then
   PASS=$((PASS + 1))
   echo "  PASS: deny:rm blocks 'ls && rm old.txt'"
 else
   FAIL=$((FAIL + 1))
-  echo "  FAIL: deny:rm should block chained rm (got: $RESULT)"
+  echo "  FAIL: deny:rm should block chained rm (rc=$HOOK_RC stdout='$HOOK_STDOUT' stderr='$HOOK_STDERR')"
 fi
 
 # Test that non-denied commands still pass
-RESULT=$(echo '{"tool_name":"Bash","tool_input":{"command":"ls -la"}}' | BASH_GUARD_CONFIG="$DENY_CONFIG" bash "$HOOK" 2>/dev/null) || true
-if [ -z "$RESULT" ] || ! echo "$RESULT" | grep -q '"permissionDecision":"deny"'; then
+run_hook "ls -la" env BASH_GUARD_CONFIG="$DENY_CONFIG"
+if [ "$HOOK_RC" -eq 0 ] && [ -z "$HOOK_STDOUT" ] && [ -z "$HOOK_STDERR" ]; then
   PASS=$((PASS + 1))
   echo "  PASS: deny rules don't block 'ls -la'"
 else
   FAIL=$((FAIL + 1))
-  echo "  FAIL: 'ls -la' should not be blocked (got: $RESULT)"
+  echo "  FAIL: 'ls -la' should not be blocked (rc=$HOOK_RC stdout='$HOOK_STDOUT' stderr='$HOOK_STDERR')"
 fi
 
 # Test that cp/mv still pass (only rm/unlink/find-delete denied)
-RESULT=$(echo '{"tool_name":"Bash","tool_input":{"command":"cp file1.txt file2.txt"}}' | BASH_GUARD_CONFIG="$DENY_CONFIG" bash "$HOOK" 2>/dev/null) || true
-if [ -z "$RESULT" ] || ! echo "$RESULT" | grep -q '"permissionDecision":"deny"'; then
+run_hook "cp file1.txt file2.txt" env BASH_GUARD_CONFIG="$DENY_CONFIG"
+if [ "$HOOK_RC" -eq 0 ] && [ -z "$HOOK_STDOUT" ] && [ -z "$HOOK_STDERR" ]; then
   PASS=$((PASS + 1))
   echo "  PASS: deny rules don't block 'cp file1.txt file2.txt'"
 else
   FAIL=$((FAIL + 1))
-  echo "  FAIL: 'cp' should not be blocked by deny:rm (got: $RESULT)"
+  echo "  FAIL: 'cp' should not be blocked by deny:rm (rc=$HOOK_RC stdout='$HOOK_STDOUT' stderr='$HOOK_STDERR')"
 fi
 
 rm -f "$DENY_CONFIG"

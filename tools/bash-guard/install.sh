@@ -104,6 +104,12 @@ with open('$SETTINGS') as f:
 hooks = settings.get('hooks', {})
 pre = hooks.get('PreToolUse', [])
 
+def make_entry():
+    return {
+        'matcher': 'Bash',
+        'hooks': [{'type': 'command', 'command': '$HOOK_PATH'}],
+    }
+
 def get_cmd(entry):
     cmd = entry.get('command', '')
     if not cmd:
@@ -120,9 +126,9 @@ for h in pre:
     if '$HOOK_NAME' in cmd:
         if '$HOOK_PATH' in cmd:
             found = True
-            # Migrate flat to nested if needed
-            if 'hooks' not in h:
-                cleaned.append({'hooks': [{'type': 'command', 'command': '$HOOK_PATH'}]})
+            # Migrate flat/nested entries to the explicit Bash matcher form.
+            if h.get('matcher') != 'Bash' or 'hooks' not in h:
+                cleaned.append(make_entry())
             else:
                 cleaned.append(h)
         # else: skip legacy entry (different path)
@@ -130,7 +136,7 @@ for h in pre:
         cleaned.append(h)
 
 if not found:
-    cleaned.append({'hooks': [{'type': 'command', 'command': '$HOOK_PATH'}]})
+    cleaned.append(make_entry())
     print('  Hook registered')
 else:
     print('  Already installed')
@@ -145,7 +151,7 @@ with open('$SETTINGS', 'w') as f:
   else
     echo "  Warning: Could not update settings.json automatically."
     echo "  Add this to your ~/.claude/settings.json manually:"
-    echo "    {\"hooks\": {\"PreToolUse\": [{\"type\": \"command\", \"command\": \"$HOOK_PATH\"}]}}"
+    echo "    {\"hooks\": {\"PreToolUse\": [{\"matcher\": \"Bash\", \"hooks\": [{\"type\": \"command\", \"command\": \"$HOOK_PATH\"}]}]}}"
   fi
 else
   # Create settings.json
@@ -155,6 +161,7 @@ else
   "hooks": {
     "PreToolUse": [
       {
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
