@@ -345,25 +345,19 @@ fi
 # Handle list subcommand — show all hooks with install status
 if [ $# -gt 0 ] && [ "$1" = "list" ]; then
   found=0
-  total=0
   for hook in $ALL_HOOKS; do
-    total=$((total + 1))
     dir="${HOME}/.claude/${hook}"
     desc=$(hook_desc "$hook")
     if [ -d "$dir" ] && [ -f "$dir/hook.sh" ]; then
       echo -e "  ${GREEN}✓${RESET}  ${CYAN}${hook}${RESET}  ${desc}"
       found=$((found + 1))
-    else
-      echo -e "  ${DIM}·  ${hook}  ${desc}${RESET}"
     fi
   done
   echo ""
   if [ "$found" -eq 0 ]; then
     echo "  No hooks installed. Get started: install.sh recommended"
-  elif [ "$found" -lt "$total" ]; then
-    echo "  $found of $total installed. Add more: install.sh <hook-name>"
   else
-    echo "  All $total hooks installed."
+    echo "  $found hooks installed. Add more: install.sh <hook-name>"
   fi
   exit 0
 fi
