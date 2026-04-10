@@ -7,6 +7,14 @@
   <updated>2026-04-10T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] `/model opus` and `&quot;model&quot;: &quot;opus&quot;` can silently select 200k context instead of Max&#x27;s default 1M Opus</title>
+    <id>https://framework.boucle.sh/limitations.html#model-opus-alias-falls-back-to-200k-instead-of-max-1m-default</id>
+    <link href="https://framework.boucle.sh/limitations.html#model-opus-alias-falls-back-to-200k-instead-of-max-1m-default"/>
+    <updated>2026-04-10T00:00:00Z</updated>
+    <summary>On Claude Max, selecting Opus through the interactive `/model` picker can correctly attach the default 1M-context variant, while using the plain `opus` alias through `/model opus` or `&quot;model&quot;: &quot;opus&quot;` in `settings.json` resolves to the 200k variant instead. Both paths appear to target the same Opus 4.6 model family, so users can believe they have configured the normal Max default while every new session actually starts on the smaller window. This is distinct from entitlement failures that reject `opus[1m]` outright or subagent bugs that strip the `[1m]` suffix later: the alias/config resolution itself chooses the lower-capacity model at session start.</summary>
+    <category term="Configuration &amp; settings"/>
+  </entry>
+  <entry>
     <title>[HIGH] Spawned subagents can lose the `Agent` tool entirely, blocking agent-of-agents orchestration</title>
     <id>https://framework.boucle.sh/limitations.html#spawned-subagents-missing-agent-tool-block-orchestrator-patterns</id>
     <link href="https://framework.boucle.sh/limitations.html#spawned-subagents-missing-agent-tool-block-orchestrator-patterns"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-10T00:00:00Z</updated>
     <summary>On Linux and WSL, adding a broad `Read(**/...)` deny rule such as `Read(**/.venv/**)` can cause Claude Code to expand the glob into an explicit per-file sandbox deny list and inject that list into the session prompt. In the reported repro, a Python virtual environment with roughly 40,000 files drove `/context` usage above 230% before any real work began, while the anchored equivalent `Read(.venv/**)` stayed near 3%. This is not the older class of permission-matching bugs where globs fail to match or are bypassed. The failure surface is prompt-budget blow-up: one deny rule intended to reduce access can instead flood the model with thousands of literal file paths and make the session unusable.</summary>
     <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] claude.ai&#x27;s Gmail connector can override a distinct local Gmail MCP account in Claude Code</title>
-    <id>https://framework.boucle.sh/limitations.html#claudeai-gmail-connector-overrides-local-gmail-mcp-account</id>
-    <link href="https://framework.boucle.sh/limitations.html#claudeai-gmail-connector-overrides-local-gmail-mcp-account"/>
-    <updated>2026-04-10T00:00:00Z</updated>
-    <summary>If the user connects a Gmail account through claude.ai&#x27;s built-in Gmail integration, Claude Code can silently route Gmail MCP calls to that web-connected account even when the local CLI is configured to use a different Gmail MCP server and different OAuth credentials. The local server definition and credential files remain unchanged, but tool calls such as `gmail_get_profile` resolve against the wrong mailbox. This is not merely a failed auth flow: the trust boundary between a project-scoped local MCP server and a separate claude.ai connector collapses, so automation meant for one account can act on another.</summary>
-    <category term="MCP &amp; integrations"/>
   </entry>
 </feed>
