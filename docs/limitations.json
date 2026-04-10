@@ -1,9 +1,9 @@
 {
   "version": "0.12.0",
-  "count": 860,
+  "count": 861,
   "categories": {
     "Hook behavior & events": 165,
-    "Permission system": 105,
+    "Permission system": 106,
     "Hook bypass & evasion": 96,
     "MCP & plugin issues": 38,
     "Subagent & spawned agents": 37,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 399,
+    "HIGH": 400,
     "LOW": 97,
     "MEDIUM": 302
   },
@@ -10515,30 +10515,42 @@
       "cc_issue": 46219,
       "date_added": "2026-04-10",
       "workaround": "Do not assume a local Gmail MCP server will stay account-isolated after connecting Gmail in claude.ai. Verify the active mailbox with a read-only profile call before any write or send action, and keep separate Claude profiles or avoid enabling the built-in Gmail connector when a project depends on a different local Gmail account."
+    },
+    {
+      "id": "read-glob-prefix-expands-deny-list-into-prompt-bloat",
+      "title": "`Read(**/...)` deny rules can expand into thousands of sandbox paths and consume the whole context window",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "On Linux and WSL, adding a broad `Read(**/...)` deny rule such as `Read(**/.venv/**)` can cause Claude Code to expand the glob into an explicit per-file sandbox deny list and inject that list into the session prompt. In the reported repro, a Python virtual environment with roughly 40,000 files drove `/context` usage above 230% before any real work began, while the anchored equivalent `Read(.venv/**)` stayed near 3%. This is not the older class of permission-matching bugs where globs fail to match or are bypassed. The failure surface is prompt-budget blow-up: one deny rule intended to reduce access can instead flood the model with thousands of literal file paths and make the session unusable.",
+      "cc_issue": 46255,
+      "cc_version": "2.1.100",
+      "date_added": "2026-04-10",
+      "workaround": "Avoid leading `**/` prefixes in broad `Read(...)` deny patterns when large dependency trees such as `.venv`, `node_modules`, or generated caches are present. Prefer anchored project-relative rules like `Read(.venv/**)` or narrower explicit paths, and check `/context` after changing deny rules before trusting the session budget."
     }
   ],
   "status_summary": {
-    "open": 846,
+    "open": 847,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 399,
+    "high": 400,
     "low": 97,
     "medium": 302
   },
   "lastUpdated": "2026-04-10",
   "stats": {
-    "total": 860,
+    "total": 861,
     "critical": 62,
-    "high": 399,
+    "high": 400,
     "medium": 302,
     "low": 97,
-    "open": 846,
+    "open": 847,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-10",
-  "total": 860
+  "total": 861
 }

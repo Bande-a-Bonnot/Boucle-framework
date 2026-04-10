@@ -7,6 +7,14 @@
   <updated>2026-04-10T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] `Read(**/...)` deny rules can expand into thousands of sandbox paths and consume the whole context window</title>
+    <id>https://framework.boucle.sh/limitations.html#read-glob-prefix-expands-deny-list-into-prompt-bloat</id>
+    <link href="https://framework.boucle.sh/limitations.html#read-glob-prefix-expands-deny-list-into-prompt-bloat"/>
+    <updated>2026-04-10T00:00:00Z</updated>
+    <summary>On Linux and WSL, adding a broad `Read(**/...)` deny rule such as `Read(**/.venv/**)` can cause Claude Code to expand the glob into an explicit per-file sandbox deny list and inject that list into the session prompt. In the reported repro, a Python virtual environment with roughly 40,000 files drove `/context` usage above 230% before any real work began, while the anchored equivalent `Read(.venv/**)` stayed near 3%. This is not the older class of permission-matching bugs where globs fail to match or are bypassed. The failure surface is prompt-budget blow-up: one deny rule intended to reduce access can instead flood the model with thousands of literal file paths and make the session unusable.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
     <title>[HIGH] claude.ai&#x27;s Gmail connector can override a distinct local Gmail MCP account in Claude Code</title>
     <id>https://framework.boucle.sh/limitations.html#claudeai-gmail-connector-overrides-local-gmail-mcp-account</id>
     <link href="https://framework.boucle.sh/limitations.html#claudeai-gmail-connector-overrides-local-gmail-mcp-account"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-10T00:00:00Z</updated>
     <summary>When a user closes Claude Code and later resumes the same long-running conversation, previously consumed context can be counted again as if it were fresh token usage. Reports describe a session ending around 750k/1M context, then immediately reappearing as another 750k of new usage on resume the next day. This turns one large session into repeated billed consumption simply by reopening it.</summary>
     <category term="Performance &amp; cost"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Plugin installs leak across CLAUDE_CONFIG_DIR profiles instead of staying isolated per config dir</title>
-    <id>https://framework.boucle.sh/limitations.html#plugins-installed-globally-across-claude-config-dir-profiles</id>
-    <link href="https://framework.boucle.sh/limitations.html#plugins-installed-globally-across-claude-config-dir-profiles"/>
-    <updated>2026-04-10T00:00:00Z</updated>
-    <summary>When Claude Code is launched with different `CLAUDE_CONFIG_DIR` values to emulate separate local profiles, plugin installs and uninstalls are still applied globally. Installing a marketplace plugin in one profile makes it appear in another profile that should have an independent plugin set. This breaks profile isolation and can silently expose hooks, tools, or skills from one environment inside another.</summary>
-    <category term="MCP &amp; plugin integration"/>
   </entry>
 </feed>
