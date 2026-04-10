@@ -15,7 +15,7 @@ Claude Code's CLAUDE.md rules are [read but not enforced](https://github.com/ant
 
 ```
 Claude tries:  rm -rf ~/projects
-bash-guard:    {"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"rm -rf targets home directory"}}
+bash-guard:    bash-guard: rm -rf targeting a critical system path. This would cause irreversible data loss.
 Claude sees:   ⚠ Hook blocked this action. Suggesting safer alternative...
 ```
 
@@ -553,7 +553,7 @@ boucle --version                 # Show version
 
 | Version | Issue |
 |---|---|
-| v2.1.90 | Current recommended. Fixes: exit 2 + JSON blocking, PostToolUse format-on-save, 4 PowerShell permission bypasses |
+| v2.1.90 | Current recommended. Improves exit-2 + JSON blocking behavior, fixes PostToolUse format-on-save, and fixes 4 PowerShell permission bypasses |
 | v2.1.89 | [Pulled from npm](https://github.com/anthropics/claude-code/issues/41497) — custom commands broken, systemMessage display broken, source map leak |
 | v2.1.81-84 | [Permission bypass resets mid-session](https://github.com/anthropics/claude-code/issues/37745) when PreToolUse hooks are installed |
 | < v2.1.50 | No `hookSpecificOutput` format support (deprecated `decision: "block"` still works but should be migrated) |
@@ -574,7 +574,7 @@ Run `claude --version` to check. Run `safety-check` with `--verify` to confirm h
 
 **`--bare` flag skips all hooks**: The `--bare` CLI flag disables hooks, LSP, plugin sync, and skill directory walks for scripted `-p` calls. If your autonomous pipeline uses `claude --bare -p`, no hooks fire. Use OS-level controls (file permissions, containerization) for enforcement in bare mode.
 
-**Hook permission decisions may be ignored (fixed)**: Prior to ~v2.1.84, `permissionDecision` returned by PreToolUse hooks [could be silently ignored](https://github.com/anthropics/claude-code/issues/37597). This is now fixed upstream. Our hooks use the current `hookSpecificOutput.permissionDecision` format. If you have custom hooks still using the deprecated `decision: "block"` format, they will continue to work but should be migrated to `hookSpecificOutput: {permissionDecision: "deny"}`.
+**Hook deny handling is still inconsistent across tools and versions**: `hookSpecificOutput.permissionDecision: "deny"` has improved, but it is not a universal guarantee across Claude Code surfaces. Several upstream issues still document cases where deny handling is ignored or changes by tool/event type. That is why framework hooks that must hard-block dangerous actions use the most conservative path Claude Code currently respects most reliably: a human-readable reason on `stderr` plus `exit 2`, then we tell users to run `safety-check --verify` after install and after Claude Code updates. If you write custom hooks, do not assume a JSON deny response alone is enough just because it works in one local test.
 
 **Subagents may skip hook settings**: Agents spawned via the Agent tool [don't consistently inherit permission settings](https://github.com/anthropics/claude-code/issues/37730). Hooks in `.claude/settings.json` should still fire (shared config), but verify hook behavior when using subagent workflows.
 

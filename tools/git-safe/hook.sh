@@ -93,8 +93,8 @@ block() {
   if [ -n "$suggestion" ]; then
     msg="$msg Suggestion: $suggestion"
   fi
-  jq -cn --arg r "$msg" '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$r}}'
-  exit 0
+  printf '%s\n' "$msg" >&2
+  exit 2
 }
 
 # --- Destructive operation checks ---

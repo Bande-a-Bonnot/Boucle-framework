@@ -24,7 +24,7 @@ def run_hook(hook_cmd, tool_name, tool_input, env_extra=None):
 def parse_decision(code, stdout):
     """Parse hook output into a decision string."""
     if not stdout:
-        return "allow" if code == 0 else "error"
+        return "allow" if code == 0 else "deny" if code == 2 else "error"
     try:
         data = json.loads(stdout)
         hso = data.get("hookSpecificOutput", {})
@@ -56,6 +56,11 @@ tests = [
     ("bash tools/git-safe/hook.sh", "Bash", {"command": "git reset --hard HEAD~5"}, "deny", "git-safe: reset --hard"),
 ]
 
+stderr_block_hooks = {
+    "bash tools/bash-guard/hook.sh",
+    "bash tools/git-safe/hook.sh",
+}
+
 passed = 0
 failed = 0
 verbose = "--verbose" in sys.argv
@@ -77,6 +82,19 @@ for hook_cmd, tool, inp, expected, label in tests:
             print(f"       stdout: {stdout[:200]}")
         if stderr:
             print(f"       stderr: {stderr[:200]}")
+
+    if expected == "deny" and hook_cmd in stderr_block_hooks:
+        deny_path_ok = code == 2 and not stdout and bool(stderr)
+        if deny_path_ok:
+            passed += 1
+            print(f"[\033[32mPASS\033[0m] {label}: deny path uses stderr + exit 2")
+        else:
+            failed += 1
+            print(f"[\033[31mFAIL\033[0m] {label}: expected stderr + exit 2 deny path")
+            if stdout:
+                print(f"       stdout: {stdout[:200]}")
+            if stderr:
+                print(f"       stderr: {stderr[:200]}")
 
 # Cleanup
 os.unlink(fg_config.name)

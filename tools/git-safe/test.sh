@@ -16,30 +16,52 @@ NC='\033[0m'
 assert_blocked() {
   local desc="$1"
   local input="$2"
+  local stdout_file stderr_file rc result stderr
   TOTAL=$((TOTAL + 1))
 
-  result=$(echo "$input" | bash "$HOOK" 2>/dev/null || true)
-  if echo "$result" | grep -q '"permissionDecision":"deny"'; then
+  stdout_file=$(mktemp)
+  stderr_file=$(mktemp)
+  if echo "$input" | bash "$HOOK" >"$stdout_file" 2>"$stderr_file"; then
+    rc=0
+  else
+    rc=$?
+  fi
+  result=$(cat "$stdout_file")
+  stderr=$(cat "$stderr_file")
+  rm -f "$stdout_file" "$stderr_file"
+
+  if [ "$rc" -eq 2 ] && [ -z "$result" ] && echo "$stderr" | grep -q 'git-safe:'; then
     PASS=$((PASS + 1))
     echo -e "  ${GREEN}PASS${NC}: $desc"
   else
     FAIL=$((FAIL + 1))
-    echo -e "  ${RED}FAIL${NC}: $desc (expected block, got: $result)"
+    echo -e "  ${RED}FAIL${NC}: $desc (expected rc=2 with stderr reason, got rc=$rc stdout='$result' stderr='$stderr')"
   fi
 }
 
 assert_allowed() {
   local desc="$1"
   local input="$2"
+  local stdout_file stderr_file rc result stderr
   TOTAL=$((TOTAL + 1))
 
-  result=$(echo "$input" | bash "$HOOK" 2>/dev/null || true)
-  if echo "$result" | grep -q '"permissionDecision":"deny"'; then
-    FAIL=$((FAIL + 1))
-    echo -e "  ${RED}FAIL${NC}: $desc (expected allow, got: $result)"
+  stdout_file=$(mktemp)
+  stderr_file=$(mktemp)
+  if echo "$input" | bash "$HOOK" >"$stdout_file" 2>"$stderr_file"; then
+    rc=0
   else
+    rc=$?
+  fi
+  result=$(cat "$stdout_file")
+  stderr=$(cat "$stderr_file")
+  rm -f "$stdout_file" "$stderr_file"
+
+  if [ "$rc" -eq 0 ] && [ -z "$result" ] && [ -z "$stderr" ]; then
     PASS=$((PASS + 1))
     echo -e "  ${GREEN}PASS${NC}: $desc"
+  else
+    FAIL=$((FAIL + 1))
+    echo -e "  ${RED}FAIL${NC}: $desc (expected clean allow, got rc=$rc stdout='$result' stderr='$stderr')"
   fi
 }
 
@@ -243,13 +265,22 @@ GIT_SAFE_CONFIG="$TMPDIR/.git-safe" assert_blocked "force push to main still blo
 echo ""
 echo "Disable via env var:"
 TOTAL=$((TOTAL + 1))
-result=$(echo '{"tool_name":"Bash","tool_input":{"command":"git push --force origin feature"}}' | GIT_SAFE_DISABLED=1 bash "$HOOK" 2>/dev/null || true)
-if echo "$result" | grep -q '"permissionDecision":"deny"'; then
-  FAIL=$((FAIL + 1))
-  echo -e "  ${RED}FAIL${NC}: disabled hook should allow everything"
+stdout_file=$(mktemp)
+stderr_file=$(mktemp)
+if echo '{"tool_name":"Bash","tool_input":{"command":"git push --force origin feature"}}' | GIT_SAFE_DISABLED=1 bash "$HOOK" >"$stdout_file" 2>"$stderr_file"; then
+  rc=0
 else
+  rc=$?
+fi
+result=$(cat "$stdout_file")
+stderr=$(cat "$stderr_file")
+rm -f "$stdout_file" "$stderr_file"
+if [ "$rc" -eq 0 ] && [ -z "$result" ] && [ -z "$stderr" ]; then
   PASS=$((PASS + 1))
   echo -e "  ${GREEN}PASS${NC}: disabled hook allows everything"
+else
+  FAIL=$((FAIL + 1))
+  echo -e "  ${RED}FAIL${NC}: disabled hook should allow everything (rc=$rc stdout='$result' stderr='$stderr')"
 fi
 
 # --- Edge cases ---
