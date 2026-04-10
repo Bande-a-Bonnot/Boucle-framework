@@ -7,6 +7,14 @@
   <updated>2026-04-10T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] `claude mcp add` on Windows can rewrite `cmd /c` into `cmd C:/`, corrupting the saved MCP command</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-mcp-add-rewrites-cmd-slash-c-to-c-drive-path</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-mcp-add-rewrites-cmd-slash-c-to-c-drive-path"/>
+    <updated>2026-04-10T00:00:00Z</updated>
+    <summary>On Windows, `claude mcp add ... -- cmd /c ...` can serialize the `/c` argument incorrectly when writing the MCP server configuration, replacing it with `C:/` in `~/.claude.json`. This corrupts the saved launcher command before the MCP server is ever started, so stdio servers that legitimately need `cmd /c` end up broken on first use. This is distinct from older Windows MCP loading or drive-letter issues because the failure happens at command-write time: Claude Code mutates a valid shell flag into a drive path while persisting the config.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[HIGH] Cowork on Windows can corrupt non-ASCII file contents while syncing sandbox output back to the host</title>
     <id>https://framework.boucle.sh/limitations.html#cowork-windows-sync-corrupts-non-ascii-files</id>
     <link href="https://framework.boucle.sh/limitations.html#cowork-windows-sync-corrupts-non-ascii-files"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-10T00:00:00Z</updated>
     <summary>In the VS Code/VSCodium extension path, Claude Code can create 17 or more empty 0-byte files in the configured working directory on every startup before the user asks it to do anything. Reported artifacts include multiple `.env*` variants, `.npmrc`, `.yarnrc*`, `.gitmodules`, `bunfig.toml`, `package.json`, lockfiles, and an empty `node_modules/.bin/` directory, all created within the same second by the bundled native `claude` process. This is not the older sandbox-only ghost-dotfile bug: the writes happen during IDE startup, can also hit the user&#x27;s home directory, and pollute repositories with alarming untracked JavaScript ecosystem files even on systems that do not use Node tooling at all.</summary>
     <category term="File system &amp; paths"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] `/advisor` rejects Haiku 4.5 as the main model even though Anthropic&#x27;s compatibility table lists it as supported</title>
-    <id>https://framework.boucle.sh/limitations.html#advisor-cli-rejects-haiku-4-5-despite-documented-support</id>
-    <link href="https://framework.boucle.sh/limitations.html#advisor-cli-rejects-haiku-4-5-despite-documented-support"/>
-    <updated>2026-04-10T00:00:00Z</updated>
-    <summary>Claude Code&#x27;s `/advisor` command can refuse to run when the current main model is Claude Haiku 4.5, showing `The current main model (Haiku 4.5) does not support the advisor`, even though Anthropic&#x27;s advisor-tool compatibility table lists Haiku 4.5 with Opus 4.6 as a valid executor/advisor pair. The failure happens in CLI-side validation before the feature can be used, so users are blocked from a documented model combination without any fallback or explanation that the CLI and API capability matrices have diverged. Workflows that intentionally use Haiku as the cheaper executor model lose advisor entirely unless the session is switched to a different main model first.</summary>
-    <category term="CLI &amp; terminal"/>
   </entry>
 </feed>

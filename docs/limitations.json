@@ -1,11 +1,11 @@
 {
   "version": "0.12.0",
-  "count": 871,
+  "count": 872,
   "categories": {
     "Hook behavior & events": 165,
     "Permission system": 106,
     "Hook bypass & evasion": 96,
-    "MCP & plugin issues": 40,
+    "MCP & plugin issues": 41,
     "Subagent & spawned agents": 38,
     "Platform & compatibility": 23,
     "Desktop & IDE integration": 22,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 408,
+    "HIGH": 409,
     "LOW": 97,
     "MEDIUM": 304
   },
@@ -10647,30 +10647,42 @@
       "cc_version": "2.1.100",
       "date_added": "2026-04-10",
       "workaround": "Do not trust host-side Cowork output files on Windows if they may contain non-ASCII text. Verify the file contents from the Windows filesystem before using them in downstream tooling, and prefer ASCII-only output or an alternate transfer path until Anthropic fixes the sync encoding layer."
+    },
+    {
+      "id": "windows-mcp-add-rewrites-cmd-slash-c-to-c-drive-path",
+      "title": "`claude mcp add` on Windows can rewrite `cmd /c` into `cmd C:/`, corrupting the saved MCP command",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "On Windows, `claude mcp add ... -- cmd /c ...` can serialize the `/c` argument incorrectly when writing the MCP server configuration, replacing it with `C:/` in `~/.claude.json`. This corrupts the saved launcher command before the MCP server is ever started, so stdio servers that legitimately need `cmd /c` end up broken on first use. This is distinct from older Windows MCP loading or drive-letter issues because the failure happens at command-write time: Claude Code mutates a valid shell flag into a drive path while persisting the config.",
+      "cc_issue": 46360,
+      "cc_version": "2.1.100",
+      "date_added": "2026-04-10",
+      "workaround": "Do not rely on `claude mcp add` for `cmd /c`-based MCP launchers on Windows right now. Manually edit the generated MCP config and, where possible, bypass `cmd.exe` entirely by invoking the real runtime directly (for example `node path/to/cli.js`) instead of going through a batch-wrapper command."
     }
   ],
   "status_summary": {
-    "open": 857,
+    "open": 858,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 408,
+    "high": 409,
     "low": 97,
     "medium": 304
   },
   "lastUpdated": "2026-04-10",
   "stats": {
-    "total": 871,
+    "total": 872,
     "critical": 62,
-    "high": 408,
+    "high": 409,
     "medium": 304,
     "low": 97,
-    "open": 857,
+    "open": 858,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-10",
-  "total": 871
+  "total": 872
 }

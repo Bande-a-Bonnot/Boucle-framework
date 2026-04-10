@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">871</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-10.</span></p>
+        <p class="subtitle"><span id="total-count">872</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-10.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9192,6 +9192,18 @@
                         <!-- workaround:cowork-windows-sync-corrupts-non-ascii-files -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not trust host-side Cowork output files on Windows if they may contain non-ASCII text. Verify the file contents from the Windows filesystem before using them in downstream tooling, and prefer ASCII-only output or an alternate transfer path until Anthropic fixes the sync encoding layer.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46354" target="_blank">#46354</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="46360" id="windows-mcp-add-rewrites-cmd-slash-c-to-c-drive-path" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#872</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>`claude mcp add` on Windows can rewrite `cmd /c` into `cmd C:/`, corrupting the saved MCP command</h3>
+            <p>On Windows, `claude mcp add ... -- cmd /c ...` can serialize the `/c` argument incorrectly when writing the MCP server configuration, replacing it with `C:/` in `~/.claude.json`. This corrupts the saved launcher command before the MCP server is ever started, so stdio servers that legitimately need `cmd /c` end up broken on first use. This is distinct from older Windows MCP loading or drive-letter issues because the failure happens at command-write time: Claude Code mutates a valid shell flag into a drive path while persisting the config.</p>
+                        <!-- workaround:windows-mcp-add-rewrites-cmd-slash-c-to-c-drive-path -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on `claude mcp add` for `cmd /c`-based MCP launchers on Windows right now. Manually edit the generated MCP config and, where possible, bypass `cmd.exe` entirely by invoking the real runtime directly (for example `node path/to/cli.js`) instead of going through a batch-wrapper command.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46360" target="_blank">#46360</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
