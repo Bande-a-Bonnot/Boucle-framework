@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">843</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-10.</span></p>
+        <p class="subtitle"><span id="total-count">844</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-10.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -8856,6 +8856,18 @@
                         <!-- workaround:ssh-code-probe-breaks-on-csh-tcsh-default-shells -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> No confirmed workaround inside Claude Desktop. Existing pre-update sessions may continue to work, but new SSH Code sessions can fail against hosts whose default shell is `csh`/`tcsh` until the probe command runs under a POSIX shell or detects shell compatibility first.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46055" target="_blank">#46055</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="46056" id="pretooluse-if-prefix-match-skips-chained-command-hooks" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#844</span>
+                <span class="kl-cat">Hook bypass &amp; evasion</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>PreToolUse `if` patterns only match the start of a chained Bash command, skipping hooks on later segments</h3>
+            <p>PreToolUse hook `if` patterns are matched against the full raw Bash command string from the beginning rather than against each chained subcommand. A hook such as `Bash(git commit*)` fires for `git commit -m ...` but is silently skipped for `git checkout -b branch &amp;&amp; git add . &amp;&amp; git commit -m ...` or similar `;` chains because the string starts with another command. This lets routine chained commands bypass guard hooks that users rely on for linting, test gates, or branch protections before commits.</p>
+                        <!-- workaround:pretooluse-if-prefix-match-skips-chained-command-hooks -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on narrow prefix patterns like `Bash(git commit*)` for enforcement. Match more broadly on the full chained command shape, or parse `$CLAUDE_TOOL_INPUT` inside the hook and inspect each subcommand yourself until Claude Code evaluates `if` patterns against chained Bash segments.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46056" target="_blank">#46056</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
