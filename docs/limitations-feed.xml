@@ -7,6 +7,14 @@
   <updated>2026-04-10T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Desktop Code tab can inherit Electron sandbox env vars that break the bundled CLI network path</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-code-tab-inherits-electron-sandbox-env-and-loses-network</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-code-tab-inherits-electron-sandbox-env-and-loses-network"/>
+    <updated>2026-04-10T00:00:00Z</updated>
+    <summary>On macOS Desktop, the Code tab can spawn its bundled Claude Code CLI with Electron-only environment variables such as `OPERON_SANDBOXED_NETWORK=1` still present. In the reported repro, the standalone CLI worked fine from Terminal, but the same bundled binary crashed immediately when launched from the Desktop Code tab because the inherited sandbox variable blocked Bun&#x27;s network access. This is distinct from the existing macOS Tahoe `shellPathWorker` crash: the UI can load normally and the bundled CLI path itself is what fails, specifically because Desktop leaks Electron sandbox state into the child process environment.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
+  <entry>
     <title>[HIGH] `/model opus` and `&quot;model&quot;: &quot;opus&quot;` can silently select 200k context instead of Max&#x27;s default 1M Opus</title>
     <id>https://framework.boucle.sh/limitations.html#model-opus-alias-falls-back-to-200k-instead-of-max-1m-default</id>
     <link href="https://framework.boucle.sh/limitations.html#model-opus-alias-falls-back-to-200k-instead-of-max-1m-default"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-10T00:00:00Z</updated>
     <summary>After sessions that launch many Agents in parallel, `--continue` can resume from the moment those Agents were spawned instead of from the true end of the conversation. In the reported repro, the JSONL tail was flooded with `file-history-snapshot` records timestamped at the Agent launch window, while later user and assistant turns existed earlier in the file. On resume, Claude Code appears to trust the tail snapshot ordering and an orphaned final snapshot ID more than the actual last conversational turn, producing a rollback loop that repeatedly reopens the session at the stale pre-work state and hides all subsequent progress.</summary>
     <category term="Context &amp; memory"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `Read(**/...)` deny rules can expand into thousands of sandbox paths and consume the whole context window</title>
-    <id>https://framework.boucle.sh/limitations.html#read-glob-prefix-expands-deny-list-into-prompt-bloat</id>
-    <link href="https://framework.boucle.sh/limitations.html#read-glob-prefix-expands-deny-list-into-prompt-bloat"/>
-    <updated>2026-04-10T00:00:00Z</updated>
-    <summary>On Linux and WSL, adding a broad `Read(**/...)` deny rule such as `Read(**/.venv/**)` can cause Claude Code to expand the glob into an explicit per-file sandbox deny list and inject that list into the session prompt. In the reported repro, a Python virtual environment with roughly 40,000 files drove `/context` usage above 230% before any real work began, while the anchored equivalent `Read(.venv/**)` stayed near 3%. This is not the older class of permission-matching bugs where globs fail to match or are bypassed. The failure surface is prompt-budget blow-up: one deny rule intended to reduce access can instead flood the model with thousands of literal file paths and make the session unusable.</summary>
-    <category term="Permission system"/>
   </entry>
 </feed>

@@ -1,14 +1,14 @@
 {
   "version": "0.12.0",
-  "count": 880,
+  "count": 881,
   "categories": {
     "Hook behavior & events": 165,
     "Permission system": 107,
     "Hook bypass & evasion": 96,
     "MCP & plugin issues": 42,
     "Subagent & spawned agents": 38,
+    "Desktop & IDE integration": 23,
     "Platform & compatibility": 23,
-    "Desktop & IDE integration": 22,
     "Context & memory": 20,
     "CLI & terminal": 18,
     "Configuration behavior": 15,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 415,
+    "HIGH": 416,
     "LOW": 97,
     "MEDIUM": 306
   },
@@ -10755,30 +10755,42 @@
       "cc_version": "2.1.101",
       "date_added": "2026-04-10",
       "workaround": "Do not assume the short `opus` alias maps to Max's 1M default right now. Verify with `/context` after model selection, prefer the interactive `/model` picker if it shows `Opus 4.6 (1M context)`, and avoid `\"model\": \"opus\"` in persistent settings until alias resolution is fixed."
+    },
+    {
+      "id": "desktop-code-tab-inherits-electron-sandbox-env-and-loses-network",
+      "title": "Desktop Code tab can inherit Electron sandbox env vars that break the bundled CLI network path",
+      "category": "Desktop & IDE integration",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "On macOS Desktop, the Code tab can spawn its bundled Claude Code CLI with Electron-only environment variables such as `OPERON_SANDBOXED_NETWORK=1` still present. In the reported repro, the standalone CLI worked fine from Terminal, but the same bundled binary crashed immediately when launched from the Desktop Code tab because the inherited sandbox variable blocked Bun's network access. This is distinct from the existing macOS Tahoe `shellPathWorker` crash: the UI can load normally and the bundled CLI path itself is what fails, specifically because Desktop leaks Electron sandbox state into the child process environment.",
+      "cc_issue": 46440,
+      "cc_version": "2.1.92",
+      "date_added": "2026-04-10",
+      "workaround": "Do not assume a healthy standalone CLI means the Desktop Code tab is launching with a clean environment. If Code-tab messages silently do nothing while Chat/Cowork and Terminal CLI still work, suspect inherited Electron env vars; until Anthropic strips them before spawn, the only reliable workaround is to use the standalone CLI or a carefully maintained wrapper that unsets the Electron-specific variables before exec."
     }
   ],
   "status_summary": {
-    "open": 866,
+    "open": 867,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 415,
+    "high": 416,
     "low": 97,
     "medium": 306
   },
   "lastUpdated": "2026-04-10",
   "stats": {
-    "total": 880,
+    "total": 881,
     "critical": 62,
-    "high": 415,
+    "high": 416,
     "medium": 306,
     "low": 97,
-    "open": 866,
+    "open": 867,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-10",
-  "total": 880
+  "total": 881
 }
