@@ -1,8 +1,8 @@
 {
   "version": "0.12.0",
-  "count": 854,
+  "count": 855,
   "categories": {
-    "Hook behavior & events": 163,
+    "Hook behavior & events": 164,
     "Permission system": 105,
     "Hook bypass & evasion": 96,
     "MCP & plugin issues": 38,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 395,
+    "HIGH": 396,
     "LOW": 97,
     "MEDIUM": 300
   },
@@ -10445,30 +10445,42 @@
       "cc_version": "2.1.98+",
       "date_added": "2026-04-10",
       "workaround": "If all Bash commands start failing with `Sandbox failed to initialize` right after upgrading a Linux native install, inspect the active `~/.local/share/claude/versions/<version>/` directory for the `apply-seccomp` helper. Until the package is fixed, pin Claude Code to a known-good version such as v2.1.97 instead of assuming the host sandbox dependencies are at fault."
+    },
+    {
+      "id": "windows-stdin-hooks-hang-waiting-for-eof",
+      "title": "Windows hooks that read stdin can hang forever waiting for EOF, freezing the whole session",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "On Windows, hook commands that actually consume stdin payloads can hang indefinitely because Claude Code never cleanly closes the hook process stdin stream. A common repro is a Node-based PreToolUse, UserPromptSubmit, or Stop hook that waits for `process.stdin` to end before parsing the JSON payload. The hook process never exits, Claude waits forever for the hook result, and the session stalls on statuses such as `Stewing...` or `Wibbling...` without spending tokens or surfacing a timeout. This is distinct from the older Windows hook JSON-corruption bug: the payload is not merely malformed, the hook can deadlock the entire session by waiting forever for EOF.",
+      "cc_issue": 46177,
+      "cc_version": "2.1.92",
+      "date_added": "2026-04-10",
+      "workaround": "Do not rely on stdin-consuming hooks on Windows until Claude Code proves it closes hook stdin correctly and enforces a timeout. Prefer hooks that receive their inputs through arguments or temporary files, or run hook-heavy workflows on macOS, Linux, or WSL instead of native Windows."
     }
   ],
   "status_summary": {
-    "open": 840,
+    "open": 841,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 395,
+    "high": 396,
     "low": 97,
     "medium": 300
   },
   "lastUpdated": "2026-04-10",
   "stats": {
-    "total": 854,
+    "total": 855,
     "critical": 62,
-    "high": 395,
+    "high": 396,
     "medium": 300,
     "low": 97,
-    "open": 840,
+    "open": 841,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-10",
-  "total": 854
+  "total": 855
 }

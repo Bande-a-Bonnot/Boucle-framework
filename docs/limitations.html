@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">854</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-10.</span></p>
+        <p class="subtitle"><span id="total-count">855</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-10.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -8988,6 +8988,18 @@
                         <!-- workaround:linux-native-install-missing-apply-seccomp-helper -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If all Bash commands start failing with `Sandbox failed to initialize` right after upgrading a Linux native install, inspect the active `~/.local/share/claude/versions/&lt;version&gt;/` directory for the `apply-seccomp` helper. Until the package is fixed, pin Claude Code to a known-good version such as v2.1.97 instead of assuming the host sandbox dependencies are at fault.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46168" target="_blank">#46168</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="46177" id="windows-stdin-hooks-hang-waiting-for-eof" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#855</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Windows hooks that read stdin can hang forever waiting for EOF, freezing the whole session</h3>
+            <p>On Windows, hook commands that actually consume stdin payloads can hang indefinitely because Claude Code never cleanly closes the hook process stdin stream. A common repro is a Node-based PreToolUse, UserPromptSubmit, or Stop hook that waits for `process.stdin` to end before parsing the JSON payload. The hook process never exits, Claude waits forever for the hook result, and the session stalls on statuses such as `Stewing...` or `Wibbling...` without spending tokens or surfacing a timeout. This is distinct from the older Windows hook JSON-corruption bug: the payload is not merely malformed, the hook can deadlock the entire session by waiting forever for EOF.</p>
+                        <!-- workaround:windows-stdin-hooks-hang-waiting-for-eof -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on stdin-consuming hooks on Windows until Claude Code proves it closes hook stdin correctly and enforces a timeout. Prefer hooks that receive their inputs through arguments or temporary files, or run hook-heavy workflows on macOS, Linux, or WSL instead of native Windows.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46177" target="_blank">#46177</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

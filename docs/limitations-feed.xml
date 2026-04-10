@@ -7,6 +7,14 @@
   <updated>2026-04-10T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Windows hooks that read stdin can hang forever waiting for EOF, freezing the whole session</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-stdin-hooks-hang-waiting-for-eof</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-stdin-hooks-hang-waiting-for-eof"/>
+    <updated>2026-04-10T00:00:00Z</updated>
+    <summary>On Windows, hook commands that actually consume stdin payloads can hang indefinitely because Claude Code never cleanly closes the hook process stdin stream. A common repro is a Node-based PreToolUse, UserPromptSubmit, or Stop hook that waits for `process.stdin` to end before parsing the JSON payload. The hook process never exits, Claude waits forever for the hook result, and the session stalls on statuses such as `Stewing...` or `Wibbling...` without spending tokens or surfacing a timeout. This is distinct from the older Windows hook JSON-corruption bug: the payload is not merely malformed, the hook can deadlock the entire session by waiting forever for EOF.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Linux native installs in v2.1.98+ can ship without `apply-seccomp`, causing all sandboxed Bash commands to fail at startup</title>
     <id>https://framework.boucle.sh/limitations.html#linux-native-install-missing-apply-seccomp-helper</id>
     <link href="https://framework.boucle.sh/limitations.html#linux-native-install-missing-apply-seccomp-helper"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-10T00:00:00Z</updated>
     <summary>With `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, a parallel Agent dispatch can stall the notification queue for over 90 minutes after one subagent hits the Bash tool&#x27;s auto-background timeout. During the stall the parent session appears busy but performs no inference work, while subagents keep burning large cache_read token volume. When the queue finally drains, affected subagents can be silently reset back to their original dispatch prompt with prior work dropped from context and no explicit reset or compaction event recorded.</summary>
     <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Remote Control in spawn-worktree mode can accept web/mobile messages without ever dispatching them to the CLI</title>
-    <id>https://framework.boucle.sh/limitations.html#remote-control-spawn-worktree-drops-web-mobile-messages</id>
-    <link href="https://framework.boucle.sh/limitations.html#remote-control-spawn-worktree-drops-web-mobile-messages"/>
-    <updated>2026-04-10T00:00:00Z</updated>
-    <summary>In `claude remote-control --spawn=worktree` mode, the CLI can show as connected while messages sent from claude.ai/code or the iOS app never reach the local process at all. Verbose logs stay silent, no worktree session is spawned, and the connection eventually falls back to retrying. This is a full dispatch failure in the main remote-control path for spawn-worktree sessions, affecting both web and mobile clients.</summary>
-    <category term="Remote &amp; cloud"/>
   </entry>
 </feed>
