@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 878,
+  "count": 879,
   "categories": {
     "Hook behavior & events": 165,
     "Permission system": 107,
@@ -18,10 +18,10 @@
     "hooks": 9,
     "Performance & cost": 9,
     "auth": 8,
+    "Agents & subagents": 7,
     "File system & paths": 7,
     "MCP": 7,
     "Permissions": 7,
-    "Agents & subagents": 6,
     "Scheduling & remote triggers": 6,
     "Auth & accounts": 5,
     "Desktop & platform bugs": 5,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 413,
+    "HIGH": 414,
     "LOW": 97,
     "MEDIUM": 306
   },
@@ -10731,30 +10731,42 @@
       "cc_version": "2.1.101",
       "date_added": "2026-04-10",
       "workaround": "Do not assume a Perforce-synced project `.mcp.json` will be honored automatically on Windows right now, especially if Perforce leaves it read-only. After sync, verify the project servers appear in `/mcp`; if they do not, temporarily make the file writable or re-register the same servers with `claude mcp add --scope project` until Anthropic fixes the startup loader."
+    },
+    {
+      "id": "spawned-subagents-missing-agent-tool-block-orchestrator-patterns",
+      "title": "Spawned subagents can lose the `Agent` tool entirely, blocking agent-of-agents orchestration",
+      "category": "Agents & subagents",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "A subagent spawned via the `Agent` tool can start without the `Agent` tool in its own toolset even when its agent type is configured for all tools. In the reported repro, foreground teammates, foreground inline subagents, and background subagents all lacked the ability to spawn further agents; teammate-mode runs surfaced an explicit \"Teammates cannot spawn other teammates\" failure, while inline subagents simply had no callable `Agent()` capability at all. This is distinct from older subagent permission, skill preload, or custom-agent frontmatter bugs: the subagent launches successfully and receives a broad tool surface, but the delegation layer itself is stripped, so orchestrator or manager agents cannot recursively fan out work as documented.",
+      "cc_issue": 46424,
+      "cc_version": "2.1.89",
+      "date_added": "2026-04-10",
+      "workaround": "Do not assume a spawned subagent with \"all tools\" can recursively delegate right now. Keep orchestration at the top-level REPL, or have subagents return coordination plans/results upward for the parent session to dispatch instead of relying on nested `Agent()` calls."
     }
   ],
   "status_summary": {
-    "open": 864,
+    "open": 865,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 413,
+    "high": 414,
     "low": 97,
     "medium": 306
   },
   "lastUpdated": "2026-04-10",
   "stats": {
-    "total": 878,
+    "total": 879,
     "critical": 62,
-    "high": 413,
+    "high": 414,
     "medium": 306,
     "low": 97,
-    "open": 864,
+    "open": 865,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-10",
-  "total": 878
+  "total": 879
 }
