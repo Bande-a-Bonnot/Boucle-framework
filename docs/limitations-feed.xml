@@ -7,6 +7,14 @@
   <updated>2026-04-10T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] `Context limit reached` state can survive `/clear` and block even basic CLI operations</title>
+    <id>https://framework.boucle.sh/limitations.html#context-limit-state-can-survive-clear-and-block-basic-cli-operations</id>
+    <link href="https://framework.boucle.sh/limitations.html#context-limit-state-can-survive-clear-and-block-basic-cli-operations"/>
+    <updated>2026-04-10T00:00:00Z</updated>
+    <summary>After Claude Code reaches a context limit, the session can enter a broken state where `/clear` appears to do nothing and even basic commands such as `--version`, `/help`, or startup skill entrypoints immediately fail again with `Context limit reached`. In the report, startup skill loading still read its markdown file before the hard stop fired, and the failure persisted across terminal restarts and a full machine reboot. This is distinct from older compaction-limit issues because the problem is not only that compaction fails at the boundary; the limit state itself appears to stick and block fresh CLI operations that should be able to start outside the old conversation context.</summary>
+    <category term="Context &amp; memory"/>
+  </entry>
+  <entry>
     <title>[HIGH] Custom agent `skills:` frontmatter can fail to inject SKILL.md content into the spawned subagent context</title>
     <id>https://framework.boucle.sh/limitations.html#custom-agent-skills-frontmatter-does-not-inject-skill-content</id>
     <link href="https://framework.boucle.sh/limitations.html#custom-agent-skills-frontmatter-does-not-inject-skill-content"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-10T00:00:00Z</updated>
     <summary>When sandbox filesystem rules are loaded from an external JSON file via the CLI `--settings` flag, relative paths such as `./bar` are resolved from the settings file&#x27;s directory instead of the project root. This diverges from the documented behavior used by project-scoped `.claude/settings.json`, where `./` resolves against the project root. As a result, denyWrite or similar filesystem rules can silently miss the directory the user intended to protect, while nearby `../...` paths may still block as if file-relative resolution were the real contract. Users who move sandbox policy into a dedicated sidecar file can believe writes are denied when Claude is still free to modify the target project directory.</summary>
     <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Hook `if` filters are silently ignored for Edit and Write tools</title>
-    <id>https://framework.boucle.sh/limitations.html#hook-if-filter-ignored-for-edit-write-tools</id>
-    <link href="https://framework.boucle.sh/limitations.html#hook-if-filter-ignored-for-edit-write-tools"/>
-    <updated>2026-04-10T00:00:00Z</updated>
-    <summary>Hook entries that rely on the `if` field to scope `Edit` or `Write` activity can be skipped entirely instead of being conditionally evaluated. In affected builds, the same `if` syntax works for `Bash(...)` patterns, but any `PostToolUse` or similar hook targeting `Edit`/`Write` stops firing as soon as an `if` filter is present, even for broad patterns such as `Edit(**)|Write(**)`. This breaks file-type-specific formatting, auditing, or enforcement workflows and fails closed only in appearance: users may think their scoped hook is active when Claude is actually editing files with no hook execution at all.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>
