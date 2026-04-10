@@ -265,7 +265,11 @@ for hook in all_hooks:
             issues.append("read-once CLI not found (run: install.sh upgrade)")
 
     # Check settings.json registration
-    expected_matchers = {"read-once": "Read", "worktree-guard": "ExitWorktree"}
+    expected_matchers = {
+        "read-once": "Read",
+        "bash-guard": "Bash",
+        "worktree-guard": "ExitWorktree",
+    }
     if settings is not None:
         event = "PostToolUse" if hook == "session-log" else "PreToolUse"
         found = False
@@ -546,7 +550,7 @@ if [ $# -gt 0 ] && [ "$1" = "upgrade" ]; then
     fi
   done
 
-  # Fix missing matchers in settings.json (read-once should only fire on Read)
+  # Fix missing matchers in settings.json for hooks that target one tool/event.
   matcher_fixes=0
   if [ -f "$SETTINGS" ] && command -v python3 >/dev/null 2>&1; then
     matcher_fixes=$(python3 - "$SETTINGS" << 'PYEOF'
@@ -566,7 +570,7 @@ try:
 except:
     print("0"); sys.exit(0)
 fixes = 0
-matchers = {"read-once": "Read", "worktree-guard": "ExitWorktree"}
+matchers = {"read-once": "Read", "bash-guard": "Bash", "worktree-guard": "ExitWorktree"}
 for event in settings.get("hooks", {}):
     for entry in settings["hooks"][event]:
         if not isinstance(entry, dict):
@@ -1195,6 +1199,8 @@ for hook in hooks_to_add:
     # matchers limit which tool calls trigger the hook, improving performance
     if hook == "worktree-guard":
         entry["matcher"] = "ExitWorktree"
+    elif hook == "bash-guard":
+        entry["matcher"] = "Bash"
     elif hook == "read-once":
         entry["matcher"] = "Read"
 

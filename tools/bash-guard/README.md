@@ -134,7 +134,11 @@ Safe variants remain allowed: `find -exec grep`, `echo superman`, `truncate -s 1
 
 ## How it works
 
-bash-guard is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code/hooks) that runs before every tool call. It checks if the tool is `Bash`, parses the command, and blocks known-dangerous patterns. If a command is blocked, Claude Code sees the reason and suggestion, so it can try a safer alternative.
+bash-guard is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code/hooks) that runs before every tool call. The installer registers it with `matcher: "Bash"` so Claude only routes Bash tool calls to it, not every other tool event.
+
+When bash-guard blocks a command, it uses the most conservative deny path Claude Code currently respects most reliably across versions and surfaces: it prints a human-readable reason to `stderr` and exits with code `2`. It does not rely on a JSON `permissionDecision: "deny"` response for hard blocking. That JSON path has improved upstream, but it is still not a universal guarantee across tools and runtimes.
+
+For allowed commands, bash-guard stays silent and exits `0`.
 
 ## Test
 

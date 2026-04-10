@@ -171,6 +171,26 @@ else
   fail "bash-guard hook.sh missing"
 fi
 
+# Test 7c: bash-guard installs with explicit Bash matcher and nested hook entry
+if python3 -c "
+import json, sys
+with open(sys.argv[1]) as f:
+    s = json.load(f)
+pre = s.get('hooks', {}).get('PreToolUse', [])
+matches = [
+    h for h in pre
+    if h.get('matcher') == 'Bash'
+    and any('bash-guard' in hk.get('command', '') for hk in h.get('hooks', []))
+]
+assert len(matches) == 1, matches
+assert 'command' not in matches[0], matches[0]
+print('OK')
+" "$TEST_HOME/.claude/settings.json" 2>/dev/null | grep -q OK; then
+  pass "bash-guard uses explicit Bash matcher entry"
+else
+  fail "bash-guard matcher entry missing or legacy flat format returned"
+fi
+
 # Test 8: Existing settings preserved
 echo "--- Preserves existing settings ---"
 rm -rf "$TEST_HOME/.claude"
