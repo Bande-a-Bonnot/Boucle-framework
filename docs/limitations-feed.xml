@@ -7,6 +7,14 @@
   <updated>2026-04-10T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] MCP OAuth tokens can expire permanently on the `claude.ai` proxy path without any refresh or reauth flow</title>
+    <id>https://framework.boucle.sh/limitations.html#claude-ai-proxy-mcp-oauth-tokens-never-refresh</id>
+    <link href="https://framework.boucle.sh/limitations.html#claude-ai-proxy-mcp-oauth-tokens-never-refresh"/>
+    <updated>2026-04-10T00:00:00Z</updated>
+    <summary>MCP servers connected through the `claude.ai` marketplace proxy (`mcp-proxy.anthropic.com`) can reconnect their SSE transport successfully after token expiry but still never perform an OAuth refresh or reauthorization flow. In the reported repro, server logs showed no follow-up `/token` or `/authorize` traffic after expiry, client debug logs reported only a successful proxy transport reconnection, and the next tool call then failed upstream with the stale token. This is distinct from the older direct HTTP MCP refresh bug that Anthropic fixed earlier: the break is specific to the `claude.ai` proxy transport, where the client appears to recover the connection layer while leaving expired credentials untouched.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[HIGH] `Context limit reached` state can survive `/clear` and block even basic CLI operations</title>
     <id>https://framework.boucle.sh/limitations.html#context-limit-state-can-survive-clear-and-block-basic-cli-operations</id>
     <link href="https://framework.boucle.sh/limitations.html#context-limit-state-can-survive-clear-and-block-basic-cli-operations"/>
@@ -156,14 +164,6 @@
     <link href="https://framework.boucle.sh/limitations.html#cursor-terminal-sandbox-fails-open-despite-failifunavailable"/>
     <updated>2026-04-10T00:00:00Z</updated>
     <summary>When Claude Code is launched from Cursor&#x27;s integrated terminal, sandbox startup can silently fail even though `sandbox.enabled: true` and `sandbox.failIfUnavailable: true` are both configured. In affected runs, writes to denied paths still succeed, Claude exits with status 0, and no warning indicates that the promised sandbox boundary never came up. The same settings block writes correctly from an external terminal, which makes this a fail-open IDE integration bug rather than a bad policy file. Users relying on `failIfUnavailable` for managed or security-sensitive workflows can believe the session is protected while Claude is actually running unsandboxed.</summary>
-    <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `--settings` sandbox filesystem paths resolve relative to the settings file, not the project root</title>
-    <id>https://framework.boucle.sh/limitations.html#settings-flag-sandbox-paths-resolve-relative-to-settings-file</id>
-    <link href="https://framework.boucle.sh/limitations.html#settings-flag-sandbox-paths-resolve-relative-to-settings-file"/>
-    <updated>2026-04-10T00:00:00Z</updated>
-    <summary>When sandbox filesystem rules are loaded from an external JSON file via the CLI `--settings` flag, relative paths such as `./bar` are resolved from the settings file&#x27;s directory instead of the project root. This diverges from the documented behavior used by project-scoped `.claude/settings.json`, where `./` resolves against the project root. As a result, denyWrite or similar filesystem rules can silently miss the directory the user intended to protect, while nearby `../...` paths may still block as if file-relative resolution were the real contract. Users who move sandbox policy into a dedicated sidecar file can believe writes are denied when Claude is still free to modify the target project directory.</summary>
     <category term="Sandbox &amp; permissions"/>
   </entry>
 </feed>

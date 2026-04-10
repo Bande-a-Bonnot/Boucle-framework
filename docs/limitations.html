@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">868</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-10.</span></p>
+        <p class="subtitle"><span id="total-count">869</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-10.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9156,6 +9156,18 @@
                         <!-- workaround:context-limit-state-can-survive-clear-and-block-basic-cli-operations -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> No confirmed recovery path yet. Treat `/clear` as insufficient once this state appears, avoid relying on large startup skills in sessions already near the limit, and be prepared to switch to a clean profile or alternate client until Anthropic fixes the stuck context-state handling.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46318" target="_blank">#46318</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="46328" id="claude-ai-proxy-mcp-oauth-tokens-never-refresh" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#869</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>MCP OAuth tokens can expire permanently on the `claude.ai` proxy path without any refresh or reauth flow</h3>
+            <p>MCP servers connected through the `claude.ai` marketplace proxy (`mcp-proxy.anthropic.com`) can reconnect their SSE transport successfully after token expiry but still never perform an OAuth refresh or reauthorization flow. In the reported repro, server logs showed no follow-up `/token` or `/authorize` traffic after expiry, client debug logs reported only a successful proxy transport reconnection, and the next tool call then failed upstream with the stale token. This is distinct from the older direct HTTP MCP refresh bug that Anthropic fixed earlier: the break is specific to the `claude.ai` proxy transport, where the client appears to recover the connection layer while leaving expired credentials untouched.</p>
+                        <!-- workaround:claude-ai-proxy-mcp-oauth-tokens-never-refresh -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat a successful reconnect to `mcp-proxy.anthropic.com` as proof that proxied MCP OAuth credentials are healthy. If proxied tools start failing after token expiry, force a fresh connector authentication through the `claude.ai` side instead of waiting for the CLI to refresh the token automatically.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46328" target="_blank">#46328</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

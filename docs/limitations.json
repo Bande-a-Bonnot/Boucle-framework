@@ -1,11 +1,11 @@
 {
   "version": "0.12.0",
-  "count": 868,
+  "count": 869,
   "categories": {
     "Hook behavior & events": 165,
     "Permission system": 106,
     "Hook bypass & evasion": 96,
-    "MCP & plugin issues": 38,
+    "MCP & plugin issues": 39,
     "Subagent & spawned agents": 38,
     "Platform & compatibility": 23,
     "Desktop & IDE integration": 22,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 405,
+    "HIGH": 406,
     "LOW": 97,
     "MEDIUM": 304
   },
@@ -10611,30 +10611,42 @@
       "cc_version": "2.x.x",
       "date_added": "2026-04-10",
       "workaround": "No confirmed recovery path yet. Treat `/clear` as insufficient once this state appears, avoid relying on large startup skills in sessions already near the limit, and be prepared to switch to a clean profile or alternate client until Anthropic fixes the stuck context-state handling."
+    },
+    {
+      "id": "claude-ai-proxy-mcp-oauth-tokens-never-refresh",
+      "title": "MCP OAuth tokens can expire permanently on the `claude.ai` proxy path without any refresh or reauth flow",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "MCP servers connected through the `claude.ai` marketplace proxy (`mcp-proxy.anthropic.com`) can reconnect their SSE transport successfully after token expiry but still never perform an OAuth refresh or reauthorization flow. In the reported repro, server logs showed no follow-up `/token` or `/authorize` traffic after expiry, client debug logs reported only a successful proxy transport reconnection, and the next tool call then failed upstream with the stale token. This is distinct from the older direct HTTP MCP refresh bug that Anthropic fixed earlier: the break is specific to the `claude.ai` proxy transport, where the client appears to recover the connection layer while leaving expired credentials untouched.",
+      "cc_issue": 46328,
+      "cc_version": "2.1.100",
+      "date_added": "2026-04-10",
+      "workaround": "Do not treat a successful reconnect to `mcp-proxy.anthropic.com` as proof that proxied MCP OAuth credentials are healthy. If proxied tools start failing after token expiry, force a fresh connector authentication through the `claude.ai` side instead of waiting for the CLI to refresh the token automatically."
     }
   ],
   "status_summary": {
-    "open": 854,
+    "open": 855,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 405,
+    "high": 406,
     "low": 97,
     "medium": 304
   },
   "lastUpdated": "2026-04-10",
   "stats": {
-    "total": 868,
+    "total": 869,
     "critical": 62,
-    "high": 405,
+    "high": 406,
     "medium": 304,
     "low": 97,
-    "open": 854,
+    "open": 855,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-10",
-  "total": 868
+  "total": 869
 }
