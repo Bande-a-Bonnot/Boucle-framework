@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 853,
+  "count": 854,
   "categories": {
     "Hook behavior & events": 163,
     "Permission system": 105,
@@ -29,6 +29,7 @@
     "UX & display": 5,
     "permissions": 4,
     "sandbox": 4,
+    "Sandbox & permissions": 4,
     "Scheduled tasks": 4,
     "tui": 4,
     "CLI / TUI rendering": 3,
@@ -45,7 +46,6 @@
     "model-behavior": 3,
     "Permissions & safety": 3,
     "Sandbox": 3,
-    "Sandbox & permissions": 3,
     "Security": 3,
     "Agents": 2,
     "agents": 2,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 394,
+    "HIGH": 395,
     "LOW": 97,
     "MEDIUM": 300
   },
@@ -10433,30 +10433,42 @@
       "cc_issue": 46165,
       "date_added": "2026-04-10",
       "workaround": "Do not trust the VS Code extension to leave arbitrary working directories untouched on startup. Point Claude Code at a disposable project directory until this is fixed, and clean unexpected `.env*`, package-manager, and `node_modules` artifacts before committing or relying on workspace cleanliness."
+    },
+    {
+      "id": "linux-native-install-missing-apply-seccomp-helper",
+      "title": "Linux native installs in v2.1.98+ can ship without `apply-seccomp`, causing all sandboxed Bash commands to fail at startup",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "On Linux native installs, Claude Code v2.1.98+ can be packaged without the `apply-seccomp` helper that the bwrap sandbox expects during initialization. In affected installs, even a trivial Bash call such as `echo` fails immediately with `Sandbox failed to initialize`, while the same machine works again when the user rolls back to v2.1.97. This is distinct from the older execute-bit regression: the helper is not merely non-executable, it is missing from the installed version directory entirely, which turns the sandbox startup path into a hard fail for every Bash command on otherwise compatible Linux systems.",
+      "cc_issue": 46168,
+      "cc_version": "2.1.98+",
+      "date_added": "2026-04-10",
+      "workaround": "If all Bash commands start failing with `Sandbox failed to initialize` right after upgrading a Linux native install, inspect the active `~/.local/share/claude/versions/<version>/` directory for the `apply-seccomp` helper. Until the package is fixed, pin Claude Code to a known-good version such as v2.1.97 instead of assuming the host sandbox dependencies are at fault."
     }
   ],
   "status_summary": {
-    "open": 839,
+    "open": 840,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 394,
+    "high": 395,
     "low": 97,
     "medium": 300
   },
   "lastUpdated": "2026-04-10",
   "stats": {
-    "total": 853,
+    "total": 854,
     "critical": 62,
-    "high": 394,
+    "high": 395,
     "medium": 300,
     "low": 97,
-    "open": 839,
+    "open": 840,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-10",
-  "total": 853
+  "total": 854
 }
