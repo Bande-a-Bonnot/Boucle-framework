@@ -1,11 +1,11 @@
 {
   "version": "0.12.0",
-  "count": 881,
+  "count": 882,
   "categories": {
     "Hook behavior & events": 165,
     "Permission system": 107,
     "Hook bypass & evasion": 96,
-    "MCP & plugin issues": 42,
+    "MCP & plugin issues": 43,
     "Subagent & spawned agents": 38,
     "Desktop & IDE integration": 23,
     "Platform & compatibility": 23,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 416,
+    "HIGH": 417,
     "LOW": 97,
     "MEDIUM": 306
   },
@@ -10767,30 +10767,42 @@
       "cc_version": "2.1.92",
       "date_added": "2026-04-10",
       "workaround": "Do not assume a healthy standalone CLI means the Desktop Code tab is launching with a clean environment. If Code-tab messages silently do nothing while Chat/Cowork and Terminal CLI still work, suspect inherited Electron env vars; until Anthropic strips them before spawn, the only reliable workaround is to use the standalone CLI or a carefully maintained wrapper that unsets the Electron-specific variables before exec."
+    },
+    {
+      "id": "remember-marketplace-plugin-autosave-path-resolution-broken",
+      "title": "`remember` marketplace plugin can silently fail every autosave because `save-session.sh` resolves the wrong root",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "The official `remember@claude-plugins-official` plugin can appear installed and active while never actually persisting any session memory when it is installed through the marketplace. In the reported repro, the PostToolUse hook fired and the background autosave log files were created, but `save-session.sh` still computed its project root by walking up three directories from its own script path. That logic only works for self-hosted installs under `project/.claude/remember/`; under the marketplace cache layout it resolves to the plugin cache parent instead, so every autosave dies on a bad `cd` into a non-existent `.claude/remember` path. This is distinct from broader `CLAUDE_PLUGIN_ROOT` injection failures or stale plugin registry paths: here the hook process launches, logging works, and the plugin root is known, but the plugin's own save script still assumes the old on-disk layout and silently drops all autosaves.",
+      "cc_issue": 46448,
+      "cc_version": null,
+      "date_added": "2026-04-10",
+      "workaround": "Do not trust the `remember` plugin's marketplace autosave path without checking its log output. If sessions are not being saved, inspect `.remember/logs/autonomous/` for `cd` failures and prefer a self-hosted install or a patched plugin version that derives its root from `CLAUDE_PLUGIN_ROOT` and the project path from `CLAUDE_PROJECT_DIR` instead of walking upward from the cached script location."
     }
   ],
   "status_summary": {
-    "open": 867,
+    "open": 868,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 416,
+    "high": 417,
     "low": 97,
     "medium": 306
   },
   "lastUpdated": "2026-04-10",
   "stats": {
-    "total": 881,
+    "total": 882,
     "critical": 62,
-    "high": 416,
+    "high": 417,
     "medium": 306,
     "low": 97,
-    "open": 867,
+    "open": 868,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-10",
-  "total": 881
+  "total": 882
 }

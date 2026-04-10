@@ -7,6 +7,14 @@
   <updated>2026-04-10T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] `remember` marketplace plugin can silently fail every autosave because `save-session.sh` resolves the wrong root</title>
+    <id>https://framework.boucle.sh/limitations.html#remember-marketplace-plugin-autosave-path-resolution-broken</id>
+    <link href="https://framework.boucle.sh/limitations.html#remember-marketplace-plugin-autosave-path-resolution-broken"/>
+    <updated>2026-04-10T00:00:00Z</updated>
+    <summary>The official `remember@claude-plugins-official` plugin can appear installed and active while never actually persisting any session memory when it is installed through the marketplace. In the reported repro, the PostToolUse hook fired and the background autosave log files were created, but `save-session.sh` still computed its project root by walking up three directories from its own script path. That logic only works for self-hosted installs under `project/.claude/remember/`; under the marketplace cache layout it resolves to the plugin cache parent instead, so every autosave dies on a bad `cd` into a non-existent `.claude/remember` path. This is distinct from broader `CLAUDE_PLUGIN_ROOT` injection failures or stale plugin registry paths: here the hook process launches, logging works, and the plugin root is known, but the plugin&#x27;s own save script still assumes the old on-disk layout and silently drops all autosaves.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[HIGH] Desktop Code tab can inherit Electron sandbox env vars that break the bundled CLI network path</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-code-tab-inherits-electron-sandbox-env-and-loses-network</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-code-tab-inherits-electron-sandbox-env-and-loses-network"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-10T00:00:00Z</updated>
     <summary>On Windows, if PowerShell or the user profile remaps `$HOME` to a different location such as a OneDrive-synced directory, `claude update` can try to create its versions directory under that alternate home path instead of under the actual installed-user profile. In the reported repro, the original install succeeded and the binary was on the correct path, but the updater later failed with `EEXIST: file already exists, mkdir &#x27;C:\Users\...\OneDrive - ...\.local\share\claude\versions&#x27;` and also surfaced PATH complaints. This is not the older multiple-installation updater conflict: the failure comes from mixing two Windows home-directory authorities, `%USERPROFILE%` and `$HOME`, inside the update path logic itself.</summary>
     <category term="File system &amp; paths"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `--continue` can roll a session back to the last parallel Agent launch point</title>
-    <id>https://framework.boucle.sh/limitations.html#continue-rolls-back-to-parallel-agent-launch-point</id>
-    <link href="https://framework.boucle.sh/limitations.html#continue-rolls-back-to-parallel-agent-launch-point"/>
-    <updated>2026-04-10T00:00:00Z</updated>
-    <summary>After sessions that launch many Agents in parallel, `--continue` can resume from the moment those Agents were spawned instead of from the true end of the conversation. In the reported repro, the JSONL tail was flooded with `file-history-snapshot` records timestamped at the Agent launch window, while later user and assistant turns existed earlier in the file. On resume, Claude Code appears to trust the tail snapshot ordering and an orphaned final snapshot ID more than the actual last conversational turn, producing a rollback loop that repeatedly reopens the session at the stale pre-work state and hides all subsequent progress.</summary>
-    <category term="Context &amp; memory"/>
   </entry>
 </feed>

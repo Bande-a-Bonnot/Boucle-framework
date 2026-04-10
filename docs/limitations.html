@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">881</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-10.</span></p>
+        <p class="subtitle"><span id="total-count">882</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-10.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9312,6 +9312,18 @@
                         <!-- workaround:desktop-code-tab-inherits-electron-sandbox-env-and-loses-network -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume a healthy standalone CLI means the Desktop Code tab is launching with a clean environment. If Code-tab messages silently do nothing while Chat/Cowork and Terminal CLI still work, suspect inherited Electron env vars; until Anthropic strips them before spawn, the only reliable workaround is to use the standalone CLI or a carefully maintained wrapper that unsets the Electron-specific variables before exec.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46440" target="_blank">#46440</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="46448" id="remember-marketplace-plugin-autosave-path-resolution-broken" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#882</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>`remember` marketplace plugin can silently fail every autosave because `save-session.sh` resolves the wrong root</h3>
+            <p>The official `remember@claude-plugins-official` plugin can appear installed and active while never actually persisting any session memory when it is installed through the marketplace. In the reported repro, the PostToolUse hook fired and the background autosave log files were created, but `save-session.sh` still computed its project root by walking up three directories from its own script path. That logic only works for self-hosted installs under `project/.claude/remember/`; under the marketplace cache layout it resolves to the plugin cache parent instead, so every autosave dies on a bad `cd` into a non-existent `.claude/remember` path. This is distinct from broader `CLAUDE_PLUGIN_ROOT` injection failures or stale plugin registry paths: here the hook process launches, logging works, and the plugin root is known, but the plugin&#x27;s own save script still assumes the old on-disk layout and silently drops all autosaves.</p>
+                        <!-- workaround:remember-marketplace-plugin-autosave-path-resolution-broken -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not trust the `remember` plugin&#x27;s marketplace autosave path without checking its log output. If sessions are not being saved, inspect `.remember/logs/autonomous/` for `cd` failures and prefer a self-hosted install or a patched plugin version that derives its root from `CLAUDE_PLUGIN_ROOT` and the project path from `CLAUDE_PROJECT_DIR` instead of walking upward from the cached script location.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46448" target="_blank">#46448</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
