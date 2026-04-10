@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">861</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-10.</span></p>
+        <p class="subtitle"><span id="total-count">862</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-10.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9072,6 +9072,18 @@
                         <!-- workaround:read-glob-prefix-expands-deny-list-into-prompt-bloat -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid leading `**/` prefixes in broad `Read(...)` deny patterns when large dependency trees such as `.venv`, `node_modules`, or generated caches are present. Prefer anchored project-relative rules like `Read(.venv/**)` or narrower explicit paths, and check `/context` after changing deny rules before trusting the session budget.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46255" target="_blank">#46255</a></div>
+        </div>
+        <div class="kl-entry" data-category="Context &amp; memory" data-issues="46263" id="continue-rolls-back-to-parallel-agent-launch-point" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#862</span>
+                <span class="kl-cat">Context &amp; memory</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>`--continue` can roll a session back to the last parallel Agent launch point</h3>
+            <p>After sessions that launch many Agents in parallel, `--continue` can resume from the moment those Agents were spawned instead of from the true end of the conversation. In the reported repro, the JSONL tail was flooded with `file-history-snapshot` records timestamped at the Agent launch window, while later user and assistant turns existed earlier in the file. On resume, Claude Code appears to trust the tail snapshot ordering and an orphaned final snapshot ID more than the actual last conversational turn, producing a rollback loop that repeatedly reopens the session at the stale pre-work state and hides all subsequent progress.</p>
+                        <!-- workaround:continue-rolls-back-to-parallel-agent-launch-point -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not trust `--continue` blindly after large parallel Agent bursts in long-running sessions. Before closing the session, export or summarize the latest state elsewhere, and if a resumed session jumps back to an older Agent dispatch point, start a fresh session from a manual summary instead of repeatedly resuming the corrupted transcript.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46263" target="_blank">#46263</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

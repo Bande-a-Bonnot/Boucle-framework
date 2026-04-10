@@ -7,6 +7,14 @@
   <updated>2026-04-10T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] `--continue` can roll a session back to the last parallel Agent launch point</title>
+    <id>https://framework.boucle.sh/limitations.html#continue-rolls-back-to-parallel-agent-launch-point</id>
+    <link href="https://framework.boucle.sh/limitations.html#continue-rolls-back-to-parallel-agent-launch-point"/>
+    <updated>2026-04-10T00:00:00Z</updated>
+    <summary>After sessions that launch many Agents in parallel, `--continue` can resume from the moment those Agents were spawned instead of from the true end of the conversation. In the reported repro, the JSONL tail was flooded with `file-history-snapshot` records timestamped at the Agent launch window, while later user and assistant turns existed earlier in the file. On resume, Claude Code appears to trust the tail snapshot ordering and an orphaned final snapshot ID more than the actual last conversational turn, producing a rollback loop that repeatedly reopens the session at the stale pre-work state and hides all subsequent progress.</summary>
+    <category term="Context &amp; memory"/>
+  </entry>
+  <entry>
     <title>[HIGH] `Read(**/...)` deny rules can expand into thousands of sandbox paths and consume the whole context window</title>
     <id>https://framework.boucle.sh/limitations.html#read-glob-prefix-expands-deny-list-into-prompt-bloat</id>
     <link href="https://framework.boucle.sh/limitations.html#read-glob-prefix-expands-deny-list-into-prompt-bloat"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-10T00:00:00Z</updated>
     <summary>Claude Desktop SSH Code can fail during remote probe before any CLI deployment when the target host uses `csh` or `tcsh` as its default login shell. The probe appears to send bash-style stderr redirection such as `2&gt;/dev/null`, which csh-family shells reject with `Ambiguous output redirect`. SSH authentication succeeds, but new remote sessions stop at probe time and the folder picker reports the remote path as invalid.</summary>
     <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Resuming a conversation can recount prior context as fresh token usage</title>
-    <id>https://framework.boucle.sh/limitations.html#resume-rebills-previous-context-as-new-usage</id>
-    <link href="https://framework.boucle.sh/limitations.html#resume-rebills-previous-context-as-new-usage"/>
-    <updated>2026-04-10T00:00:00Z</updated>
-    <summary>When a user closes Claude Code and later resumes the same long-running conversation, previously consumed context can be counted again as if it were fresh token usage. Reports describe a session ending around 750k/1M context, then immediately reappearing as another 750k of new usage on resume the next day. This turns one large session into repeated billed consumption simply by reopening it.</summary>
-    <category term="Performance &amp; cost"/>
   </entry>
 </feed>

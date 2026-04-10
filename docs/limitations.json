@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 861,
+  "count": 862,
   "categories": {
     "Hook behavior & events": 165,
     "Permission system": 106,
@@ -9,7 +9,7 @@
     "Subagent & spawned agents": 37,
     "Platform & compatibility": 23,
     "Desktop & IDE integration": 22,
-    "Context & memory": 18,
+    "Context & memory": 19,
     "CLI & terminal": 17,
     "Configuration behavior": 15,
     "Tool behavior": 13,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 400,
+    "HIGH": 401,
     "LOW": 97,
     "MEDIUM": 302
   },
@@ -10527,30 +10527,42 @@
       "cc_version": "2.1.100",
       "date_added": "2026-04-10",
       "workaround": "Avoid leading `**/` prefixes in broad `Read(...)` deny patterns when large dependency trees such as `.venv`, `node_modules`, or generated caches are present. Prefer anchored project-relative rules like `Read(.venv/**)` or narrower explicit paths, and check `/context` after changing deny rules before trusting the session budget."
+    },
+    {
+      "id": "continue-rolls-back-to-parallel-agent-launch-point",
+      "title": "`--continue` can roll a session back to the last parallel Agent launch point",
+      "category": "Context & memory",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "After sessions that launch many Agents in parallel, `--continue` can resume from the moment those Agents were spawned instead of from the true end of the conversation. In the reported repro, the JSONL tail was flooded with `file-history-snapshot` records timestamped at the Agent launch window, while later user and assistant turns existed earlier in the file. On resume, Claude Code appears to trust the tail snapshot ordering and an orphaned final snapshot ID more than the actual last conversational turn, producing a rollback loop that repeatedly reopens the session at the stale pre-work state and hides all subsequent progress.",
+      "cc_issue": 46263,
+      "cc_version": "2.1.100",
+      "date_added": "2026-04-10",
+      "workaround": "Do not trust `--continue` blindly after large parallel Agent bursts in long-running sessions. Before closing the session, export or summarize the latest state elsewhere, and if a resumed session jumps back to an older Agent dispatch point, start a fresh session from a manual summary instead of repeatedly resuming the corrupted transcript."
     }
   ],
   "status_summary": {
-    "open": 847,
+    "open": 848,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 400,
+    "high": 401,
     "low": 97,
     "medium": 302
   },
   "lastUpdated": "2026-04-10",
   "stats": {
-    "total": 861,
+    "total": 862,
     "critical": 62,
-    "high": 400,
+    "high": 401,
     "medium": 302,
     "low": 97,
-    "open": 847,
+    "open": 848,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-10",
-  "total": 861
+  "total": 862
 }
