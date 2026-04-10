@@ -7,6 +7,14 @@
   <updated>2026-04-10T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Claude Code update can fail on Windows when `$HOME` is remapped away from `%USERPROFILE%`</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-update-uses-home-instead-of-userprofile</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-update-uses-home-instead-of-userprofile"/>
+    <updated>2026-04-10T00:00:00Z</updated>
+    <summary>On Windows, if PowerShell or the user profile remaps `$HOME` to a different location such as a OneDrive-synced directory, `claude update` can try to create its versions directory under that alternate home path instead of under the actual installed-user profile. In the reported repro, the original install succeeded and the binary was on the correct path, but the updater later failed with `EEXIST: file already exists, mkdir &#x27;C:\Users\...\OneDrive - ...\.local\share\claude\versions&#x27;` and also surfaced PATH complaints. This is not the older multiple-installation updater conflict: the failure comes from mixing two Windows home-directory authorities, `%USERPROFILE%` and `$HOME`, inside the update path logic itself.</summary>
+    <category term="File system &amp; paths"/>
+  </entry>
+  <entry>
     <title>[HIGH] `--continue` can roll a session back to the last parallel Agent launch point</title>
     <id>https://framework.boucle.sh/limitations.html#continue-rolls-back-to-parallel-agent-launch-point</id>
     <link href="https://framework.boucle.sh/limitations.html#continue-rolls-back-to-parallel-agent-launch-point"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-10T00:00:00Z</updated>
     <summary>PreToolUse hook `if` patterns are matched against the full raw Bash command string from the beginning rather than against each chained subcommand. A hook such as `Bash(git commit*)` fires for `git commit -m ...` but is silently skipped for `git checkout -b branch &amp;&amp; git add . &amp;&amp; git commit -m ...` or similar `;` chains because the string starts with another command. This lets routine chained commands bypass guard hooks that users rely on for linting, test gates, or branch protections before commits.</summary>
     <category term="Hook bypass &amp; evasion"/>
-  </entry>
-  <entry>
-    <title>[HIGH] SSH Code fails to probe remote machines whose default shell is csh/tcsh</title>
-    <id>https://framework.boucle.sh/limitations.html#ssh-code-probe-breaks-on-csh-tcsh-default-shells</id>
-    <link href="https://framework.boucle.sh/limitations.html#ssh-code-probe-breaks-on-csh-tcsh-default-shells"/>
-    <updated>2026-04-10T00:00:00Z</updated>
-    <summary>Claude Desktop SSH Code can fail during remote probe before any CLI deployment when the target host uses `csh` or `tcsh` as its default login shell. The probe appears to send bash-style stderr redirection such as `2&gt;/dev/null`, which csh-family shells reject with `Ambiguous output redirect`. SSH authentication succeeds, but new remote sessions stop at probe time and the folder picker reports the remote path as invalid.</summary>
-    <category term="Desktop &amp; IDE integration"/>
   </entry>
 </feed>
