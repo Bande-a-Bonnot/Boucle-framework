@@ -7,6 +7,14 @@
   <updated>2026-04-10T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Perforce-synced project `.mcp.json` can be ignored on startup</title>
+    <id>https://framework.boucle.sh/limitations.html#perforce-synced-read-only-project-mcp-json-not-loaded</id>
+    <link href="https://framework.boucle.sh/limitations.html#perforce-synced-read-only-project-mcp-json-not-loaded"/>
+    <updated>2026-04-10T00:00:00Z</updated>
+    <summary>On Windows, Claude Code can fail to load MCP servers from a project-scoped `.mcp.json` when that file is synced into the workspace through Perforce and left read-only. In the reported repro, user-level and managed MCP servers loaded normally, while the project-scoped servers were silently absent at startup until the same definitions were re-added manually with `claude mcp add --scope project`. This is distinct from the older Windows drive-root `.mcp.json` bug and broader CLAUDE_CONFIG_DIR hierarchy problems: here the config file exists at the expected project path, but the startup loader appears to skip the Perforce-synced read-only project file specifically.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[HIGH] `--channels plugin:...` sessions can attach the channel but omit the plugin&#x27;s MCP tools entirely</title>
     <id>https://framework.boucle.sh/limitations.html#channels-plugin-session-missing-plugin-mcp-tools</id>
     <link href="https://framework.boucle.sh/limitations.html#channels-plugin-session-missing-plugin-mcp-tools"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-10T00:00:00Z</updated>
     <summary>If the user suspends Claude Code with Ctrl+Z and later resumes it with `fg`, the input editor&#x27;s undo buffer is wiped. This is especially destructive after an accidental Ctrl+K or other prompt edit because Ctrl+Z is common undo muscle memory in other applications. The suspend does not undo the change, and resuming destroys the remaining Ctrl+_ recovery path, making the deleted prompt text unrecoverable.</summary>
     <category term="CLI &amp; terminal"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Unreachable `PermissionRequest` HTTP hooks can silently deny tool use instead of falling through</title>
-    <id>https://framework.boucle.sh/limitations.html#permissionrequest-http-hook-connection-failure-denies-tool-use</id>
-    <link href="https://framework.boucle.sh/limitations.html#permissionrequest-http-hook-connection-failure-denies-tool-use"/>
-    <updated>2026-04-10T00:00:00Z</updated>
-    <summary>When Claude Code is configured with a `PermissionRequest` HTTP hook whose endpoint is unreachable, connection failures such as `ECONNREFUSED` can be treated as if the user explicitly rejected the tool call. Instead of surfacing the normal permission prompt or continuing with the documented non-blocking fallback behavior, Claude immediately returns a rejection message saying the user does not want to proceed. This is distinct from the older PermissionRequest race and ignore bugs: the failure is in the HTTP transport error path itself, where the docs promise connection failures and timeouts should be non-blocking but the runtime can fail closed and silently deny the action.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>
