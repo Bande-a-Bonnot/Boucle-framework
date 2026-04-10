@@ -7,6 +7,14 @@
   <updated>2026-04-10T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] `/model` thinking effort level resets between sessions</title>
+    <id>https://framework.boucle.sh/limitations.html#model-thinking-effort-resets-between-sessions</id>
+    <link href="https://framework.boucle.sh/limitations.html#model-thinking-effort-resets-between-sessions"/>
+    <updated>2026-04-10T00:00:00Z</updated>
+    <summary>Claude Code can remember the selected model across sessions while silently forgetting the thinking effort level chosen through `/model` (for example `auto`, `low`, `medium`, or `high`). In the reported repro, the effort setting changed successfully inside the current session but the next fresh session reverted to the default `medium` value. This is distinct from older `/model` regressions that wipe permissions, strip hook filters, or leave tools pointing at stale model IDs: the break is in persistence of the effort preference itself, so users can believe they are reopening a session with the same reasoning budget when the CLI has already fallen back to a different level.</summary>
+    <category term="Configuration &amp; settings"/>
+  </entry>
+  <entry>
     <title>[HIGH] Agent SDK `query()` can leave slash commands unexpanded and pass them through as literal prompt text</title>
     <id>https://framework.boucle.sh/limitations.html#agent-sdk-query-leaves-slash-commands-unexpanded</id>
     <link href="https://framework.boucle.sh/limitations.html#agent-sdk-query-leaves-slash-commands-unexpanded"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-10T00:00:00Z</updated>
     <summary>On Windows, hook commands that actually consume stdin payloads can hang indefinitely because Claude Code never cleanly closes the hook process stdin stream. A common repro is a Node-based PreToolUse, UserPromptSubmit, or Stop hook that waits for `process.stdin` to end before parsing the JSON payload. The hook process never exits, Claude waits forever for the hook result, and the session stalls on statuses such as `Stewing...` or `Wibbling...` without spending tokens or surfacing a timeout. This is distinct from the older Windows hook JSON-corruption bug: the payload is not merely malformed, the hook can deadlock the entire session by waiting forever for EOF.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Linux native installs in v2.1.98+ can ship without `apply-seccomp`, causing all sandboxed Bash commands to fail at startup</title>
-    <id>https://framework.boucle.sh/limitations.html#linux-native-install-missing-apply-seccomp-helper</id>
-    <link href="https://framework.boucle.sh/limitations.html#linux-native-install-missing-apply-seccomp-helper"/>
-    <updated>2026-04-10T00:00:00Z</updated>
-    <summary>On Linux native installs, Claude Code v2.1.98+ can be packaged without the `apply-seccomp` helper that the bwrap sandbox expects during initialization. In affected installs, even a trivial Bash call such as `echo` fails immediately with `Sandbox failed to initialize`, while the same machine works again when the user rolls back to v2.1.97. This is distinct from the older execute-bit regression: the helper is not merely non-executable, it is missing from the installed version directory entirely, which turns the sandbox startup path into a hard fail for every Bash command on otherwise compatible Linux systems.</summary>
-    <category term="Sandbox &amp; permissions"/>
   </entry>
 </feed>
