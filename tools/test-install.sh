@@ -1032,6 +1032,41 @@ else
   pass "doctor exits non-zero on errors"
 fi
 
+echo "--- Verify subcommand ---"
+rm -rf "$TEST_HOME/.claude"
+bash "$SCRIPT_DIR/install.sh" bash-guard git-safe file-guard >/dev/null 2>&1
+output=$(bash "$SCRIPT_DIR/install.sh" verify 2>&1)
+
+if echo "$output" | grep -q "Verifying installed hooks"; then
+  pass "verify runs successfully"
+else
+  fail "verify did not run"
+fi
+
+if echo "$output" | grep -q "OK.*bash-guard.*blocked rm -rf /"; then
+  pass "verify recognizes bash-guard stderr deny path"
+else
+  fail "verify did not recognize bash-guard deny path"
+fi
+
+if echo "$output" | grep -q "OK.*git-safe.*blocked git push --force"; then
+  pass "verify recognizes git-safe stderr deny path"
+else
+  fail "verify did not recognize git-safe deny path"
+fi
+
+if echo "$output" | grep -q "OK.*file-guard.*blocked relative path write"; then
+  pass "verify recognizes file-guard JSON deny path"
+else
+  fail "verify did not recognize file-guard deny path"
+fi
+
+if echo "$output" | grep -q "did not block"; then
+  fail "verify reported a blocking hook as not blocking"
+else
+  pass "verify no longer false-warns on blocking hooks"
+fi
+
 echo ""
 echo "=== Check Subcommand Tests ==="
 

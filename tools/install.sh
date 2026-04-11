@@ -54,6 +54,34 @@ hook_desc() {
   esac
 }
 
+run_verify_hook() {
+  local hook_path="$1"
+  local payload="$2"
+  local stdout_file stderr_file rc
+
+  stdout_file=$(mktemp)
+  stderr_file=$(mktemp)
+
+  if printf '%s' "$payload" | "$hook_path" >"$stdout_file" 2>"$stderr_file"; then
+    rc=0
+  else
+    rc=$?
+  fi
+
+  VERIFY_RC="$rc"
+  VERIFY_STDOUT=$(cat "$stdout_file")
+  VERIFY_STDERR=$(cat "$stderr_file")
+  rm -f "$stdout_file" "$stderr_file"
+}
+
+verify_blocked() {
+  if [ "${VERIFY_RC:-0}" -eq 2 ] && [ -z "${VERIFY_STDOUT:-}" ] && [ -n "${VERIFY_STDERR:-}" ]; then
+    return 0
+  fi
+
+  printf '%s' "${VERIFY_STDOUT:-}" | grep -q '"deny"'
+}
+
 ALL_HOOKS="read-once file-guard git-safe bash-guard branch-guard worktree-guard session-log"
 RECOMMENDED_HOOKS="bash-guard git-safe file-guard"
 
@@ -385,8 +413,8 @@ if [ $# -gt 0 ] && [ "$1" = "verify" ]; then
 
     case "$hook" in
       bash-guard)
-        result=$(echo '{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}' | "$hook_path" 2>/dev/null || true)
-        if echo "$result" | grep -q '"deny"'; then
+        run_verify_hook "$hook_path" '{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}'
+        if verify_blocked; then
           echo -e "  ${GREEN}OK${RESET}  ${hook}  blocked rm -rf /"
           v_ok=$((v_ok + 1))
         else
@@ -395,8 +423,8 @@ if [ $# -gt 0 ] && [ "$1" = "verify" ]; then
         fi
         ;;
       git-safe)
-        result=$(echo '{"tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}' | "$hook_path" 2>/dev/null || true)
-        if echo "$result" | grep -q '"deny"'; then
+        run_verify_hook "$hook_path" '{"tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}'
+        if verify_blocked; then
           echo -e "  ${GREEN}OK${RESET}  ${hook}  blocked git push --force"
           v_ok=$((v_ok + 1))
         else
@@ -405,8 +433,8 @@ if [ $# -gt 0 ] && [ "$1" = "verify" ]; then
         fi
         ;;
       file-guard)
-        result=$(echo '{"tool_name":"Write","tool_input":{"file_path":"relative/path.txt","content":"test"}}' | "$hook_path" 2>/dev/null || true)
-        if echo "$result" | grep -q '"deny"'; then
+        run_verify_hook "$hook_path" '{"tool_name":"Write","tool_input":{"file_path":"relative/path.txt","content":"test"}}'
+        if verify_blocked; then
           echo -e "  ${GREEN}OK${RESET}  ${hook}  blocked relative path write"
           v_ok=$((v_ok + 1))
         else
@@ -1242,8 +1270,8 @@ for hook in $installed; do
   # Test payloads for hooks that can be trivially verified
   case "$hook" in
     bash-guard)
-      result=$(echo '{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}' | "$hook_path" 2>/dev/null || true)
-      if echo "$result" | grep -q '"deny"'; then
+      run_verify_hook "$hook_path" '{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}'
+      if verify_blocked; then
         echo -e "  ${GREEN}OK${RESET}: ${hook} blocked test payload (rm -rf /)"
         verify_ok=$((verify_ok + 1))
       else
@@ -1252,8 +1280,8 @@ for hook in $installed; do
       fi
       ;;
     git-safe)
-      result=$(echo '{"tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}' | "$hook_path" 2>/dev/null || true)
-      if echo "$result" | grep -q '"deny"'; then
+      run_verify_hook "$hook_path" '{"tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}'
+      if verify_blocked; then
         echo -e "  ${GREEN}OK${RESET}: ${hook} blocked test payload (git push --force)"
         verify_ok=$((verify_ok + 1))
       else
@@ -1262,8 +1290,8 @@ for hook in $installed; do
       fi
       ;;
     branch-guard)
-      result=$(echo '{"tool_name":"Bash","tool_input":{"command":"git commit -m test"}}' | BRANCH_GUARD_PROTECTED="main" GIT_BRANCH="main" "$hook_path" 2>/dev/null || true)
-      if echo "$result" | grep -q '"deny"'; then
+      BRANCH_GUARD_PROTECTED="main" GIT_BRANCH="main" run_verify_hook "$hook_path" '{"tool_name":"Bash","tool_input":{"command":"git commit -m test"}}'
+      if verify_blocked; then
         echo -e "  ${GREEN}OK${RESET}: ${hook} blocked test payload (commit on main)"
         verify_ok=$((verify_ok + 1))
       else
@@ -1294,8 +1322,8 @@ for hook in $installed; do
       ;;
     file-guard)
       # file-guard always blocks relative paths in Write/Edit (no config needed)
-      result=$(echo '{"tool_name":"Write","tool_input":{"file_path":"relative/path.txt","content":"test"}}' | "$hook_path" 2>/dev/null || true)
-      if echo "$result" | grep -q '"deny"'; then
+      run_verify_hook "$hook_path" '{"tool_name":"Write","tool_input":{"file_path":"relative/path.txt","content":"test"}}'
+      if verify_blocked; then
         echo -e "  ${GREEN}OK${RESET}: ${hook} blocked test payload (relative path write)"
         verify_ok=$((verify_ok + 1))
       else
