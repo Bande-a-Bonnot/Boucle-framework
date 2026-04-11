@@ -1,9 +1,9 @@
 {
   "version": "0.12.0",
-  "count": 901,
+  "count": 902,
   "categories": {
     "Hook behavior & events": 169,
-    "Permission system": 107,
+    "Permission system": 108,
     "Hook bypass & evasion": 96,
     "MCP & plugin issues": 44,
     "Subagent & spawned agents": 38,
@@ -170,7 +170,7 @@
     "CRITICAL": 62,
     "HIGH": 434,
     "LOW": 97,
-    "MEDIUM": 308
+    "MEDIUM": 309
   },
   "entries": [
     {
@@ -11009,10 +11009,22 @@
       "cc_version": "2.1.101",
       "date_added": "2026-04-11",
       "workaround": "Do not assume `/reload-plugins` preserves channel subscriptions for notification-driven plugins right now. If inbound channel traffic matters, restart the session after reloading plugins, then verify that a fresh inbound message still reaches the conversation before trusting the channel again."
+    },
+    {
+      "id": "escaped-spaces-in-bash-paths-can-force-confirmation-prompts-despite-allow-rules",
+      "title": "Escaped spaces in Bash paths can force confirmation prompts despite allow rules",
+      "category": "Permission system",
+      "severity": "MEDIUM",
+      "status": "open",
+      "description": "Claude Code's hardcoded `Contains backslash-escaped whitespace` safety check can treat ordinary shell-escaped paths with spaces as suspicious and force a confirmation prompt even when the command is clearly read-only and already covered by sandbox or allow rules. In the reported macOS v2.1.101 repro, routine commands such as `cat /Users/user/Projects/1st\\ PATO\\ AI\\ Hackathon/.gitignore` and `git -C /Users/user/Projects/1st\\ PATO\\ AI\\ Hackathon status` triggered repeated prompts solely because the working directory name contained spaces and Claude emitted the normal `\\ ` shell escaping. This is distinct from older path-with-spaces hook breakage or Windows glob-normalization bugs: here the command itself is valid, the low-risk scanner still recognizes it as harmless, and the broken layer is the hardcoded permission heuristic overriding the user's configured auto-allow path.",
+      "cc_issue": 46736,
+      "cc_version": "2.1.101",
+      "date_added": "2026-04-11",
+      "workaround": "Do not assume sandbox mode or Bash allow rules will suppress prompts for ordinary commands in directories whose names contain spaces right now. If repeated confirmations matter, rename the project path to remove spaces, work from a symlinked path without spaces, or avoid relying on escaped-path Bash invocations until Anthropic narrows the whitespace safety check."
     }
   ],
   "status_summary": {
-    "open": 887,
+    "open": 888,
     "fixed": 13,
     "mitigated": 1
   },
@@ -11020,19 +11032,19 @@
     "critical": 62,
     "high": 434,
     "low": 97,
-    "medium": 308
+    "medium": 309
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 901,
+    "total": 902,
     "critical": 62,
     "high": 434,
-    "medium": 308,
+    "medium": 309,
     "low": 97,
-    "open": 887,
+    "open": 888,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 901
+  "total": 902
 }

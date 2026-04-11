@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Escaped spaces in Bash paths can force confirmation prompts despite allow rules</title>
+    <id>https://framework.boucle.sh/limitations.html#escaped-spaces-in-bash-paths-can-force-confirmation-prompts-despite-allow-rules</id>
+    <link href="https://framework.boucle.sh/limitations.html#escaped-spaces-in-bash-paths-can-force-confirmation-prompts-despite-allow-rules"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>Claude Code&#x27;s hardcoded `Contains backslash-escaped whitespace` safety check can treat ordinary shell-escaped paths with spaces as suspicious and force a confirmation prompt even when the command is clearly read-only and already covered by sandbox or allow rules. In the reported macOS v2.1.101 repro, routine commands such as `cat /Users/user/Projects/1st\ PATO\ AI\ Hackathon/.gitignore` and `git -C /Users/user/Projects/1st\ PATO\ AI\ Hackathon status` triggered repeated prompts solely because the working directory name contained spaces and Claude emitted the normal `\ ` shell escaping. This is distinct from older path-with-spaces hook breakage or Windows glob-normalization bugs: here the command itself is valid, the low-risk scanner still recognizes it as harmless, and the broken layer is the hardcoded permission heuristic overriding the user&#x27;s configured auto-allow path.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
     <title>[HIGH] `/reload-plugins` can drop inbound channel notifications until the session is restarted</title>
     <id>https://framework.boucle.sh/limitations.html#reload-plugins-can-drop-inbound-channel-notifications-until-session-restart</id>
     <link href="https://framework.boucle.sh/limitations.html#reload-plugins-can-drop-inbound-channel-notifications-until-session-restart"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>The official `remember@claude-plugins-official` plugin can appear installed and active while never actually persisting any session memory when it is installed through the marketplace. In the reported repro, the PostToolUse hook fired and the background autosave log files were created, but `save-session.sh` still computed its project root by walking up three directories from its own script path. That logic only works for self-hosted installs under `project/.claude/remember/`; under the marketplace cache layout it resolves to the plugin cache parent instead, so every autosave dies on a bad `cd` into a non-existent `.claude/remember` path. This is distinct from broader `CLAUDE_PLUGIN_ROOT` injection failures or stale plugin registry paths: here the hook process launches, logging works, and the plugin root is known, but the plugin&#x27;s own save script still assumes the old on-disk layout and silently drops all autosaves.</summary>
     <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Bundled Claude Code CLI 2.1.92 can fail under Claude Desktop&#x27;s `disclaimer` helper, leaving the Code tab silent</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-code-tab-bundled-cli-fails-under-disclaimer-helper</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-code-tab-bundled-cli-fails-under-disclaimer-helper"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>On macOS Desktop, the Code tab launches its bundled Claude Code CLI through Claude Desktop&#x27;s `disclaimer` helper, which uses the disclaimed spawn path (`posix_spawnattr_set_disclaim_np`). A follow-up repro showed the bundled 2.1.92 CLI can fail immediately with `Unexpected` under that helper even though the same binary runs fine directly from Terminal and a newer 2.1.101 CLI works under the exact same helper. This corrects the earlier Electron-env interpretation from issue #46440: the user-visible symptom is still a silent Code tab, but the cleaner mechanism is the 2.1.92 bundled CLI&#x27;s startup failure specifically under the `disclaimer` helper. This remains distinct from the existing macOS Tahoe `shellPathWorker` crash because the UI can load normally and only the bundled backend process fails to start.</summary>
-    <category term="Desktop &amp; IDE integration"/>
   </entry>
 </feed>

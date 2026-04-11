@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">901</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
+        <p class="subtitle"><span id="total-count">902</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9552,6 +9552,18 @@
                         <!-- workaround:reload-plugins-can-drop-inbound-channel-notifications-until-session-restart -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume `/reload-plugins` preserves channel subscriptions for notification-driven plugins right now. If inbound channel traffic matters, restart the session after reloading plugins, then verify that a fresh inbound message still reaches the conversation before trusting the channel again.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46728" target="_blank">#46728</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="46736" id="escaped-spaces-in-bash-paths-can-force-confirmation-prompts-despite-allow-rules" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#902</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Escaped spaces in Bash paths can force confirmation prompts despite allow rules</h3>
+            <p>Claude Code&#x27;s hardcoded `Contains backslash-escaped whitespace` safety check can treat ordinary shell-escaped paths with spaces as suspicious and force a confirmation prompt even when the command is clearly read-only and already covered by sandbox or allow rules. In the reported macOS v2.1.101 repro, routine commands such as `cat /Users/user/Projects/1st\ PATO\ AI\ Hackathon/.gitignore` and `git -C /Users/user/Projects/1st\ PATO\ AI\ Hackathon status` triggered repeated prompts solely because the working directory name contained spaces and Claude emitted the normal `\ ` shell escaping. This is distinct from older path-with-spaces hook breakage or Windows glob-normalization bugs: here the command itself is valid, the low-risk scanner still recognizes it as harmless, and the broken layer is the hardcoded permission heuristic overriding the user&#x27;s configured auto-allow path.</p>
+                        <!-- workaround:escaped-spaces-in-bash-paths-can-force-confirmation-prompts-despite-allow-rules -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume sandbox mode or Bash allow rules will suppress prompts for ordinary commands in directories whose names contain spaces right now. If repeated confirmations matter, rename the project path to remove spaces, work from a symlinked path without spaces, or avoid relying on escaped-path Bash invocations until Anthropic narrows the whitespace safety check.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46736" target="_blank">#46736</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
