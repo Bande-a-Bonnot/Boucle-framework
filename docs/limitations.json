@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 891,
+  "count": 892,
   "categories": {
     "Hook behavior & events": 166,
     "Permission system": 107,
@@ -18,8 +18,8 @@
     "hooks": 9,
     "Performance & cost": 9,
     "auth": 8,
+    "File system & paths": 8,
     "Agents & subagents": 7,
-    "File system & paths": 7,
     "MCP": 7,
     "Permissions": 7,
     "MCP & integrations": 6,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 426,
+    "HIGH": 427,
     "LOW": 97,
     "MEDIUM": 306
   },
@@ -4592,6 +4592,19 @@
       ],
       "description": "When Claude Code executes commands via the Bash tool in `/sandbox` mode, it silently creates a set of empty (0 byte), read-only (-r--r--r--) dotfiles in the current working directory: `.bashrc`, `.bash_profile`, `.gitconfig`, `.gitmodules`, `.profile`, `.ripgreprc`, `.zprofile`, `.zshrc`. All files are created at the same millisecond. This reproduces consistently across all directories and persists after uninstall/reinstall. The issue has been present since at least 2025 (issue #17087) with no fix to date.",
       "workaround": "Run `find . -maxdepth 1 -name '.*' -size 0 -perm 444 -delete` after sandbox sessions to clean up ghost files. Alternatively, run sandbox sessions in a temporary directory.",
+      "status": "open"
+    },
+    {
+      "id": "sandbox-home-bash-profile-stub-breaks-login-shell-path",
+      "title": "Sandbox can leave an empty `~/.bash_profile` in `$HOME`, breaking later login-shell PATH initialization.",
+      "category": "File system & paths",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/46584",
+        "https://github.com/anthropics/claude-code/issues/46585"
+      ],
+      "description": "On Linux with the bwrap sandbox enabled, Claude Code can create an empty 0-byte `~/.bash_profile` in the user's home directory as a bind-mount target, then leave that stub behind after the session exits. This is distinct from the older current-working-directory ghost-dotfile bug: the persisted file lands in `$HOME` and changes future shell startup behavior. On Debian/Ubuntu-style setups that rely on `~/.profile` instead of `~/.bash_profile`, Bash login shells stop at the newly-created empty `~/.bash_profile`, skip `~/.profile`, and silently lose PATH additions such as `~/.local/bin` and `~/bin`. Tools installed with `pipx`, `uv`, `cargo install`, or other user-level package managers can disappear from PATH after the next login or reboot.",
+      "workaround": "Delete the empty `~/.bash_profile` after sandbox sessions if your setup normally relies on `~/.profile` (for example: `rm -f ~/.bash_profile` when the file is 0 bytes and was not intentionally created). If you need `~/.local/bin` available regardless, mirror the PATH setup into a real `~/.bash_profile` or another startup file sourced by your login shell.",
       "status": "open"
     },
     {
@@ -10890,27 +10903,27 @@
     }
   ],
   "status_summary": {
-    "open": 877,
+    "open": 878,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 426,
+    "high": 427,
     "low": 97,
     "medium": 306
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 891,
+    "total": 892,
     "critical": 62,
-    "high": 426,
+    "high": 427,
     "medium": 306,
     "low": 97,
-    "open": 877,
+    "open": 878,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 891
+  "total": 892
 }
