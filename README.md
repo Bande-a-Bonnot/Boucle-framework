@@ -159,7 +159,7 @@ Blocks dangerous commands across these categories:
 - **Mount points** -- `rm -rf` on NFS/shared storage ([#36640](https://github.com/anthropics/claude-code/issues/36640))
 - **Git** -- `git push --force`, `git filter-branch` ([#37331](https://github.com/anthropics/claude-code/issues/37331): all files deleted via force push)
 
-Evaluates each segment of compound commands. Catches [multi-line comment bypass](https://github.com/anthropics/claude-code/issues/38119) where comment lines before a dangerous command evade deny rules. Detects encoding bypass attempts (base64/hex/octal obfuscation), here-string/here-doc redirection, eval-string injection, [workaround bypass attempts](https://github.com/anthropics/claude-code/issues/34358), library injection (LD_PRELOAD), wrapper command bypass, credential file operations, macOS Keychain access, scheduled task persistence, and service management. Allowlist via `.bash-guard` config. ~690 tests (bash + PowerShell).
+Evaluates each segment of compound commands. Catches [multi-line comment bypass](https://github.com/anthropics/claude-code/issues/38119) where comment lines before a dangerous command evade deny rules. Detects encoding bypass attempts (base64/hex/octal obfuscation), here-string/here-doc redirection, eval-string injection, [workaround bypass attempts](https://github.com/anthropics/claude-code/issues/34358), library injection (LD_PRELOAD), wrapper command bypass, credential file operations, macOS Keychain access, scheduled task persistence, and service management. Allowlist via `.bash-guard` config. 590 verified bash tests, with additional PowerShell coverage when `pwsh` is available.
 
 ### [branch-guard](tools/branch-guard/) — Enforce feature-branch workflow
 
