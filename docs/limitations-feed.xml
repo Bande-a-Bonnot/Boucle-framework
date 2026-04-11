@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] `/config` can copy project-local permissions into global `~/.claude/settings.json`</title>
+    <id>https://framework.boucle.sh/limitations.html#config-save-can-copy-project-local-permissions-into-global-settings-json</id>
+    <link href="https://framework.boucle.sh/limitations.html#config-save-can-copy-project-local-permissions-into-global-settings-json"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>Saving changes through the interactive `/config` UI can merge the effective permission state from a project or subdirectory `settings.local.json` into the user&#x27;s global `~/.claude/settings.json`. In the reported Linux repro on 2.1.101, the local directory config contained a broader `permissions.allow` list and a `defaultMode`, while the global file intentionally had a smaller allow list. Changing only the default mode in `/config` caused Claude Code to persist the broader local permission set into the global settings file without prompting, effectively promoting project-scoped grants into a permanent cross-project allow list. This is distinct from earlier cases where project-level allow rules are ignored or UI toggles fail to write `defaultMode`: here `/config` saves the wrong scope and mutates the user&#x27;s global trust boundary.</summary>
+    <category term="Configuration &amp; settings"/>
+  </entry>
+  <entry>
     <title>[HIGH] Plugin `WorktreeCreate` hooks can be silently skipped on CLI `--worktree` startup</title>
     <id>https://framework.boucle.sh/limitations.html#plugin-worktreecreate-hooks-silently-skipped-on-cli-worktree-start</id>
     <link href="https://framework.boucle.sh/limitations.html#plugin-worktreecreate-hooks-silently-skipped-on-cli-worktree-start"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>On Windows, Claude Code can fail to load MCP servers from a project-scoped `.mcp.json` when that file is synced into the workspace through Perforce and left read-only. In the reported repro, user-level and managed MCP servers loaded normally, while the project-scoped servers were silently absent at startup until the same definitions were re-added manually with `claude mcp add --scope project`. This is distinct from the older Windows drive-root `.mcp.json` bug and broader CLAUDE_CONFIG_DIR hierarchy problems: here the config file exists at the expected project path, but the startup loader appears to skip the Perforce-synced read-only project file specifically.</summary>
     <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `--channels plugin:...` sessions can attach the channel but omit the plugin&#x27;s MCP tools entirely</title>
-    <id>https://framework.boucle.sh/limitations.html#channels-plugin-session-missing-plugin-mcp-tools</id>
-    <link href="https://framework.boucle.sh/limitations.html#channels-plugin-session-missing-plugin-mcp-tools"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>When Claude Code is launched with `--channels plugin:&lt;name&gt;@claude-plugins-official`, the channel subsystem can attach successfully and show the normal &quot;Listening for channel messages&quot; banner while silently failing to inject the plugin&#x27;s own MCP tools into the session tool list. In the reported regression, the iMessage plugin still appeared connected in `claude mcp list`, the plugin process started cleanly, and the session JSONL recorded the normal deferred tool delta, but the plugin&#x27;s `chat_messages` and `reply` tools never appeared. This is distinct from older channel-plugin failures where notifications are not injected, idle sessions are not woken, or attribution is wrong: here the plugin transport is present but the callable MCP tool surface is missing from the session entirely, so inbound messages may arrive but the session cannot reply through the plugin.</summary>
-    <category term="Plugin &amp; channel system"/>
   </entry>
 </feed>

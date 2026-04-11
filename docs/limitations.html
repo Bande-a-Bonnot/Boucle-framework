@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">897</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
+        <p class="subtitle"><span id="total-count">898</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9504,6 +9504,18 @@
                         <!-- workaround:plugin-worktreecreate-hooks-silently-skipped-on-cli-worktree-start -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume marketplace or local plugins can currently enforce `WorktreeCreate` or `WorktreeRemove` on the CLI `--worktree` path. If your worktree bootstrap logic matters, register those hooks in a loaded settings file and verify with file logging that the hook actually ran before trusting the created worktree.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46664" target="_blank">#46664</a></div>
+        </div>
+        <div class="kl-entry" data-category="Configuration &amp; settings" data-issues="46681" id="config-save-can-copy-project-local-permissions-into-global-settings-json" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#898</span>
+                <span class="kl-cat">Configuration &amp; settings</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>`/config` can copy project-local permissions into global `~/.claude/settings.json`</h3>
+            <p>Saving changes through the interactive `/config` UI can merge the effective permission state from a project or subdirectory `settings.local.json` into the user&#x27;s global `~/.claude/settings.json`. In the reported Linux repro on 2.1.101, the local directory config contained a broader `permissions.allow` list and a `defaultMode`, while the global file intentionally had a smaller allow list. Changing only the default mode in `/config` caused Claude Code to persist the broader local permission set into the global settings file without prompting, effectively promoting project-scoped grants into a permanent cross-project allow list. This is distinct from earlier cases where project-level allow rules are ignored or UI toggles fail to write `defaultMode`: here `/config` saves the wrong scope and mutates the user&#x27;s global trust boundary.</p>
+                        <!-- workaround:config-save-can-copy-project-local-permissions-into-global-settings-json -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not trust `/config` edits to preserve permission scope boundaries right now if you use both global and project-local settings. Before saving, back up `~/.claude/settings.json`; after any `/config` change, diff the global file and remove unexpected `permissions` entries copied from `settings.local.json`. Prefer manual file edits for sensitive permission changes until Anthropic fixes the scope-merging behavior.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46681" target="_blank">#46681</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

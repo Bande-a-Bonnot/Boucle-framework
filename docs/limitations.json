@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 897,
+  "count": 898,
   "categories": {
     "Hook behavior & events": 168,
     "Permission system": 107,
@@ -22,11 +22,11 @@
     "Agents & subagents": 7,
     "MCP": 7,
     "Permissions": 7,
+    "Configuration & settings": 6,
     "MCP & integrations": 6,
     "Remote & cloud": 6,
     "Scheduling & remote triggers": 6,
     "Auth & accounts": 5,
-    "Configuration & settings": 5,
     "Desktop & platform bugs": 5,
     "UX & display": 5,
     "Core & session management": 4,
@@ -168,7 +168,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 431,
+    "HIGH": 432,
     "LOW": 97,
     "MEDIUM": 307
   },
@@ -10961,30 +10961,42 @@
       "cc_version": "2.1.101",
       "date_added": "2026-04-11",
       "workaround": "Do not assume marketplace or local plugins can currently enforce `WorktreeCreate` or `WorktreeRemove` on the CLI `--worktree` path. If your worktree bootstrap logic matters, register those hooks in a loaded settings file and verify with file logging that the hook actually ran before trusting the created worktree."
+    },
+    {
+      "id": "config-save-can-copy-project-local-permissions-into-global-settings-json",
+      "title": "`/config` can copy project-local permissions into global `~/.claude/settings.json`",
+      "category": "Configuration & settings",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "Saving changes through the interactive `/config` UI can merge the effective permission state from a project or subdirectory `settings.local.json` into the user's global `~/.claude/settings.json`. In the reported Linux repro on 2.1.101, the local directory config contained a broader `permissions.allow` list and a `defaultMode`, while the global file intentionally had a smaller allow list. Changing only the default mode in `/config` caused Claude Code to persist the broader local permission set into the global settings file without prompting, effectively promoting project-scoped grants into a permanent cross-project allow list. This is distinct from earlier cases where project-level allow rules are ignored or UI toggles fail to write `defaultMode`: here `/config` saves the wrong scope and mutates the user's global trust boundary.",
+      "cc_issue": 46681,
+      "cc_version": "2.1.101",
+      "date_added": "2026-04-11",
+      "workaround": "Do not trust `/config` edits to preserve permission scope boundaries right now if you use both global and project-local settings. Before saving, back up `~/.claude/settings.json`; after any `/config` change, diff the global file and remove unexpected `permissions` entries copied from `settings.local.json`. Prefer manual file edits for sensitive permission changes until Anthropic fixes the scope-merging behavior."
     }
   ],
   "status_summary": {
-    "open": 883,
+    "open": 884,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 431,
+    "high": 432,
     "low": 97,
     "medium": 307
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 897,
+    "total": 898,
     "critical": 62,
-    "high": 431,
+    "high": 432,
     "medium": 307,
     "low": 97,
-    "open": 883,
+    "open": 884,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 897
+  "total": 898
 }
