@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 883,
+  "count": 884,
   "categories": {
     "Hook behavior & events": 165,
     "Permission system": 107,
@@ -28,6 +28,7 @@
     "Desktop & platform bugs": 5,
     "Remote & cloud": 5,
     "UX & display": 5,
+    "Core & session management": 4,
     "Data integrity": 4,
     "permissions": 4,
     "sandbox": 4,
@@ -35,7 +36,6 @@
     "Scheduled tasks": 4,
     "tui": 4,
     "CLI / TUI rendering": 3,
-    "Core & session management": 3,
     "cowork": 3,
     "Cowork & remote": 3,
     "Desktop": 3,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 418,
+    "HIGH": 419,
     "LOW": 97,
     "MEDIUM": 306
   },
@@ -10791,30 +10791,42 @@
       "cc_version": null,
       "date_added": "2026-04-11",
       "workaround": "Do not trust the marketplace UI alone for git-sourced marketplaces right now. After adding one, verify the clone directory actually contains plugin files; if refresh/update/delete stop working, repair it manually with `git clone`, `git pull`, or direct edits/removal in `~/.claude/plugins/known_marketplaces.json`, then restart Claude Code."
+    },
+    {
+      "id": "deleted-worktree-session-can-survive-indefinitely-and-ignore-sigterm",
+      "title": "Claude Code session can survive deleted worktrees indefinitely and ignore `SIGTERM`",
+      "category": "Core & session management",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "If a normal Claude Code CLI session is launched inside a git worktree and that worktree is deleted from another terminal, the Claude process can continue running for hours with its cwd still pointing at the removed directory. In the reported repro on macOS v2.1.100, the orphaned session stayed alive for more than 11 hours, never exited on its own, and ignored a normal `kill`/`SIGTERM`, requiring `SIGKILL` to terminate it. This is distinct from the older Remote Control worktree-deletion failure: here the core session lifecycle and signal-handling break even without `--spawn` or remote-control features, leaving an unrecoverable orphan process attached to a deleted cwd.",
+      "cc_issue": 46493,
+      "cc_version": "2.1.100",
+      "date_added": "2026-04-11",
+      "workaround": "Do not remove a git worktree while an active Claude Code session is still running inside it. If you discover an orphaned session after the worktree has been deleted, verify it with `lsof -p <pid> | grep cwd` and terminate it with `kill -9` if a normal `kill` does nothing."
     }
   ],
   "status_summary": {
-    "open": 869,
+    "open": 870,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 418,
+    "high": 419,
     "low": 97,
     "medium": 306
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 883,
+    "total": 884,
     "critical": 62,
-    "high": 418,
+    "high": 419,
     "medium": 306,
     "low": 97,
-    "open": 869,
+    "open": 870,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 883
+  "total": 884
 }
