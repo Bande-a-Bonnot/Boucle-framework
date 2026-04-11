@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Windows `Stop` hooks using `pwsh` can receive no redirected stdin payload at all</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-stop-hook-pwsh-receives-no-stdin-payload</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-stop-hook-pwsh-receives-no-stdin-payload"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>On native Windows setups using PowerShell hook commands, Claude Code can deliver a `Stop` hook with no redirected stdin at all even when an equivalent `UserPromptSubmit` hook on the same machine and the same `pwsh -File ...` launcher receives JSON normally. In the reported v2.1.101 repro on Windows 11 with both PowerShell 5.1 and pwsh 7 installed, `[Console]::IsInputRedirected` stayed false inside the `Stop` hook script and a full diagnostic logger wrote nothing, which means the hook never receives the event payload needed to inspect or block the final assistant output. This is distinct from the older Windows stdin EOF deadlock and JSON corruption bugs: the `Stop` hook is invoked, but its stdin pipe is not connected in the first place, while other hook events still work through the same PowerShell runtime.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Desktop MCP reconnect can flood `tools/list` until the server times out</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-mcp-reconnect-can-flood-tools-list-and-starve-tool-calls</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-mcp-reconnect-can-flood-tools-list-and-starve-tool-calls"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>When the Claude Agent SDK starts a session with `query({ prompt: &quot;/skill ...&quot; })`, the spawned Claude Code process can discover the relevant skill and list it in the init event while still passing the raw `/skill ...` string through to the model instead of expanding the slash command first. This creates a contract gap between the interactive CLI and the SDK path: workflows that reliably preload skill content in the TUI become model-choice-dependent in SDK mode because the model must decide to call the Skill tool itself. This is distinct from older skill discovery, autocomplete, or custom-agent preload bugs because the failure happens after slash command discovery, at the prompt-expansion layer specific to `query()` input handling.</summary>
     <category term="Skills / slash commands"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `claude mcp add` on Windows can rewrite `cmd /c` into `cmd C:/`, corrupting the saved MCP command</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-mcp-add-rewrites-cmd-slash-c-to-c-drive-path</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-mcp-add-rewrites-cmd-slash-c-to-c-drive-path"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>On Windows, `claude mcp add ... -- cmd /c ...` can serialize the `/c` argument incorrectly when writing the MCP server configuration, replacing it with `C:/` in `~/.claude.json`. This corrupts the saved launcher command before the MCP server is ever started, so stdio servers that legitimately need `cmd /c` end up broken on first use. This is distinct from older Windows MCP loading or drive-letter issues because the failure happens at command-write time: Claude Code mutates a valid shell flag into a drive path while persisting the config.</summary>
-    <category term="MCP &amp; plugin issues"/>
   </entry>
 </feed>

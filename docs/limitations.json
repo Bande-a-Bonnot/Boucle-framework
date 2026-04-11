@@ -1,8 +1,8 @@
 {
   "version": "0.12.0",
-  "count": 892,
+  "count": 893,
   "categories": {
-    "Hook behavior & events": 166,
+    "Hook behavior & events": 167,
     "Permission system": 107,
     "Hook bypass & evasion": 96,
     "MCP & plugin issues": 44,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 427,
+    "HIGH": 428,
     "LOW": 97,
     "MEDIUM": 306
   },
@@ -10900,30 +10900,42 @@
       "cc_version": null,
       "date_added": "2026-04-11",
       "workaround": "If an MCP extension starts timing out after reconnects and its logs show repeated `tools/list` storms instead of real tool calls, do not treat that as a server-side tool failure. Restart both Claude Desktop and the affected extension or native host, and inspect the MCP log for duplicate `tools/list` bursts before spending time debugging the extension's own tools."
+    },
+    {
+      "id": "windows-stop-hook-pwsh-receives-no-stdin-payload",
+      "title": "Windows `Stop` hooks using `pwsh` can receive no redirected stdin payload at all",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "On native Windows setups using PowerShell hook commands, Claude Code can deliver a `Stop` hook with no redirected stdin at all even when an equivalent `UserPromptSubmit` hook on the same machine and the same `pwsh -File ...` launcher receives JSON normally. In the reported v2.1.101 repro on Windows 11 with both PowerShell 5.1 and pwsh 7 installed, `[Console]::IsInputRedirected` stayed false inside the `Stop` hook script and a full diagnostic logger wrote nothing, which means the hook never receives the event payload needed to inspect or block the final assistant output. This is distinct from the older Windows stdin EOF deadlock and JSON corruption bugs: the `Stop` hook is invoked, but its stdin pipe is not connected in the first place, while other hook events still work through the same PowerShell runtime.",
+      "cc_issue": 46601,
+      "cc_version": "2.1.101",
+      "date_added": "2026-04-11",
+      "workaround": "Do not rely on a native Windows `Stop` hook plus `pwsh` as the only final-output enforcement layer until Claude Code proves that the event payload is really being piped into the script. Verify with a diagnostic hook that checks `[Console]::IsInputRedirected` and logs stdin bytes, or move that safety check to another hook event or a non-Windows environment for now."
     }
   ],
   "status_summary": {
-    "open": 878,
+    "open": 879,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 427,
+    "high": 428,
     "low": 97,
     "medium": 306
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 892,
+    "total": 893,
     "critical": 62,
-    "high": 427,
+    "high": 428,
     "medium": 306,
     "low": 97,
-    "open": 878,
+    "open": 879,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 892
+  "total": 893
 }

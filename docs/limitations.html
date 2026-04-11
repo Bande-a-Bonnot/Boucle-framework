@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">892</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
+        <p class="subtitle"><span id="total-count">893</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9444,6 +9444,18 @@
                         <!-- workaround:desktop-mcp-reconnect-can-flood-tools-list-and-starve-tool-calls -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If an MCP extension starts timing out after reconnects and its logs show repeated `tools/list` storms instead of real tool calls, do not treat that as a server-side tool failure. Restart both Claude Desktop and the affected extension or native host, and inspect the MCP log for duplicate `tools/list` bursts before spending time debugging the extension&#x27;s own tools.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46563" target="_blank">#46563</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="46601" id="windows-stop-hook-pwsh-receives-no-stdin-payload" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#893</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Windows `Stop` hooks using `pwsh` can receive no redirected stdin payload at all</h3>
+            <p>On native Windows setups using PowerShell hook commands, Claude Code can deliver a `Stop` hook with no redirected stdin at all even when an equivalent `UserPromptSubmit` hook on the same machine and the same `pwsh -File ...` launcher receives JSON normally. In the reported v2.1.101 repro on Windows 11 with both PowerShell 5.1 and pwsh 7 installed, `[Console]::IsInputRedirected` stayed false inside the `Stop` hook script and a full diagnostic logger wrote nothing, which means the hook never receives the event payload needed to inspect or block the final assistant output. This is distinct from the older Windows stdin EOF deadlock and JSON corruption bugs: the `Stop` hook is invoked, but its stdin pipe is not connected in the first place, while other hook events still work through the same PowerShell runtime.</p>
+                        <!-- workaround:windows-stop-hook-pwsh-receives-no-stdin-payload -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on a native Windows `Stop` hook plus `pwsh` as the only final-output enforcement layer until Claude Code proves that the event payload is really being piped into the script. Verify with a diagnostic hook that checks `[Console]::IsInputRedirected` and logs stdin bytes, or move that safety check to another hook event or a non-Windows environment for now.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46601" target="_blank">#46601</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
