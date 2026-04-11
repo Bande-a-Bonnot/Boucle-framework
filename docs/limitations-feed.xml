@@ -4,13 +4,21 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-04-10T00:00:00Z</updated>
+  <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
+  <entry>
+    <title>[HIGH] Git-sourced plugin marketplaces can succeed with empty clones, stale refresh state, and broken update/delete actions</title>
+    <id>https://framework.boucle.sh/limitations.html#git-sourced-marketplace-manager-can-leave-empty-clones-and-stale-lifecycle-state</id>
+    <link href="https://framework.boucle.sh/limitations.html#git-sourced-marketplace-manager-can-leave-empty-clones-and-stale-lifecycle-state"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>Claude Code&#x27;s marketplace manager can leave git-sourced marketplaces in a half-installed or stale state across the full lifecycle. In the reported repro, adding a marketplace by URL sometimes succeeded while leaving the clone directory empty, refresh actions did not pull newer upstream data even after changes landed, and update/delete controls were grayed out or silently ineffective while `known_marketplaces.json` was still rewritten on startup. This is distinct from the older failed auto-update deletion path, execute-bit stripping, or project-CWD update mismatch: here the manager&#x27;s own registration and state-refresh layer can report success while the local marketplace stays empty or stale and the built-in repair actions do not recover it.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
   <entry>
     <title>[HIGH] `remember` marketplace plugin can silently fail every autosave because `save-session.sh` resolves the wrong root</title>
     <id>https://framework.boucle.sh/limitations.html#remember-marketplace-plugin-autosave-path-resolution-broken</id>
     <link href="https://framework.boucle.sh/limitations.html#remember-marketplace-plugin-autosave-path-resolution-broken"/>
-    <updated>2026-04-10T00:00:00Z</updated>
+    <updated>2026-04-11T00:00:00Z</updated>
     <summary>The official `remember@claude-plugins-official` plugin can appear installed and active while never actually persisting any session memory when it is installed through the marketplace. In the reported repro, the PostToolUse hook fired and the background autosave log files were created, but `save-session.sh` still computed its project root by walking up three directories from its own script path. That logic only works for self-hosted installs under `project/.claude/remember/`; under the marketplace cache layout it resolves to the plugin cache parent instead, so every autosave dies on a bad `cd` into a non-existent `.claude/remember` path. This is distinct from broader `CLAUDE_PLUGIN_ROOT` injection failures or stale plugin registry paths: here the hook process launches, logging works, and the plugin root is known, but the plugin&#x27;s own save script still assumes the old on-disk layout and silently drops all autosaves.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -18,7 +26,7 @@
     <title>[HIGH] Bundled Claude Code CLI 2.1.92 can fail under Claude Desktop&#x27;s `disclaimer` helper, leaving the Code tab silent</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-code-tab-bundled-cli-fails-under-disclaimer-helper</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-code-tab-bundled-cli-fails-under-disclaimer-helper"/>
-    <updated>2026-04-10T00:00:00Z</updated>
+    <updated>2026-04-11T00:00:00Z</updated>
     <summary>On macOS Desktop, the Code tab launches its bundled Claude Code CLI through Claude Desktop&#x27;s `disclaimer` helper, which uses the disclaimed spawn path (`posix_spawnattr_set_disclaim_np`). A follow-up repro showed the bundled 2.1.92 CLI can fail immediately with `Unexpected` under that helper even though the same binary runs fine directly from Terminal and a newer 2.1.101 CLI works under the exact same helper. This corrects the earlier Electron-env interpretation from issue #46440: the user-visible symptom is still a silent Code tab, but the cleaner mechanism is the 2.1.92 bundled CLI&#x27;s startup failure specifically under the `disclaimer` helper. This remains distinct from the existing macOS Tahoe `shellPathWorker` crash because the UI can load normally and only the bundled backend process fails to start.</summary>
     <category term="Desktop &amp; IDE integration"/>
   </entry>
@@ -26,7 +34,7 @@
     <title>[HIGH] `/model opus` and `&quot;model&quot;: &quot;opus&quot;` can silently select 200k context instead of Max&#x27;s default 1M Opus</title>
     <id>https://framework.boucle.sh/limitations.html#model-opus-alias-falls-back-to-200k-instead-of-max-1m-default</id>
     <link href="https://framework.boucle.sh/limitations.html#model-opus-alias-falls-back-to-200k-instead-of-max-1m-default"/>
-    <updated>2026-04-10T00:00:00Z</updated>
+    <updated>2026-04-11T00:00:00Z</updated>
     <summary>On Claude Max, selecting Opus through the interactive `/model` picker can correctly attach the default 1M-context variant, while using the plain `opus` alias through `/model opus` or `&quot;model&quot;: &quot;opus&quot;` in `settings.json` resolves to the 200k variant instead. Both paths appear to target the same Opus 4.6 model family, so users can believe they have configured the normal Max default while every new session actually starts on the smaller window. This is distinct from entitlement failures that reject `opus[1m]` outright or subagent bugs that strip the `[1m]` suffix later: the alias/config resolution itself chooses the lower-capacity model at session start.</summary>
     <category term="Configuration &amp; settings"/>
   </entry>
@@ -34,7 +42,7 @@
     <title>[HIGH] Spawned subagents can lose the `Agent` tool entirely, blocking agent-of-agents orchestration</title>
     <id>https://framework.boucle.sh/limitations.html#spawned-subagents-missing-agent-tool-block-orchestrator-patterns</id>
     <link href="https://framework.boucle.sh/limitations.html#spawned-subagents-missing-agent-tool-block-orchestrator-patterns"/>
-    <updated>2026-04-10T00:00:00Z</updated>
+    <updated>2026-04-11T00:00:00Z</updated>
     <summary>A subagent spawned via the `Agent` tool can start without the `Agent` tool in its own toolset even when its agent type is configured for all tools. In the reported repro, foreground teammates, foreground inline subagents, and background subagents all lacked the ability to spawn further agents; teammate-mode runs surfaced an explicit &quot;Teammates cannot spawn other teammates&quot; failure, while inline subagents simply had no callable `Agent()` capability at all. This is distinct from older subagent permission, skill preload, or custom-agent frontmatter bugs: the subagent launches successfully and receives a broad tool surface, but the delegation layer itself is stripped, so orchestrator or manager agents cannot recursively fan out work as documented.</summary>
     <category term="Agents &amp; subagents"/>
   </entry>
@@ -42,7 +50,7 @@
     <title>[HIGH] Perforce-synced project `.mcp.json` can be ignored on startup</title>
     <id>https://framework.boucle.sh/limitations.html#perforce-synced-read-only-project-mcp-json-not-loaded</id>
     <link href="https://framework.boucle.sh/limitations.html#perforce-synced-read-only-project-mcp-json-not-loaded"/>
-    <updated>2026-04-10T00:00:00Z</updated>
+    <updated>2026-04-11T00:00:00Z</updated>
     <summary>On Windows, Claude Code can fail to load MCP servers from a project-scoped `.mcp.json` when that file is synced into the workspace through Perforce and left read-only. In the reported repro, user-level and managed MCP servers loaded normally, while the project-scoped servers were silently absent at startup until the same definitions were re-added manually with `claude mcp add --scope project`. This is distinct from the older Windows drive-root `.mcp.json` bug and broader CLAUDE_CONFIG_DIR hierarchy problems: here the config file exists at the expected project path, but the startup loader appears to skip the Perforce-synced read-only project file specifically.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -50,7 +58,7 @@
     <title>[HIGH] `--channels plugin:...` sessions can attach the channel but omit the plugin&#x27;s MCP tools entirely</title>
     <id>https://framework.boucle.sh/limitations.html#channels-plugin-session-missing-plugin-mcp-tools</id>
     <link href="https://framework.boucle.sh/limitations.html#channels-plugin-session-missing-plugin-mcp-tools"/>
-    <updated>2026-04-10T00:00:00Z</updated>
+    <updated>2026-04-11T00:00:00Z</updated>
     <summary>When Claude Code is launched with `--channels plugin:&lt;name&gt;@claude-plugins-official`, the channel subsystem can attach successfully and show the normal &quot;Listening for channel messages&quot; banner while silently failing to inject the plugin&#x27;s own MCP tools into the session tool list. In the reported regression, the iMessage plugin still appeared connected in `claude mcp list`, the plugin process started cleanly, and the session JSONL recorded the normal deferred tool delta, but the plugin&#x27;s `chat_messages` and `reply` tools never appeared. This is distinct from older channel-plugin failures where notifications are not injected, idle sessions are not woken, or attribution is wrong: here the plugin transport is present but the callable MCP tool surface is missing from the session entirely, so inbound messages may arrive but the session cannot reply through the plugin.</summary>
     <category term="Plugin &amp; channel system"/>
   </entry>
@@ -58,7 +66,7 @@
     <title>[MEDIUM] Copying text from the VS Code chat panel can paste active editor content instead</title>
     <id>https://framework.boucle.sh/limitations.html#vscode-chat-copy-pastes-active-editor-content-instead</id>
     <link href="https://framework.boucle.sh/limitations.html#vscode-chat-copy-pastes-active-editor-content-instead"/>
-    <updated>2026-04-10T00:00:00Z</updated>
+    <updated>2026-04-11T00:00:00Z</updated>
     <summary>In the VS Code extension, selecting text from Claude&#x27;s chat panel and copying it can put content from the currently active editor tab on the clipboard instead of the selected chat text. The report describes intermittent failures where copying a short phrase from the chat produced an unrelated Python import line from the open source file. This is distinct from older `/copy` encoding bugs and no-flicker clipboard corruption: the break is in the VS Code chat-panel selection path itself, where the clipboard source is taken from the editor rather than the chat selection the user actually highlighted.</summary>
     <category term="VS Code extension"/>
   </entry>
@@ -66,7 +74,7 @@
     <title>[HIGH] Tmux teammate mode can trap MCP permission prompts inside non-interactive agent panes</title>
     <id>https://framework.boucle.sh/limitations.html#tmux-teammate-mode-traps-mcp-permission-prompts-in-agent-pane</id>
     <link href="https://framework.boucle.sh/limitations.html#tmux-teammate-mode-traps-mcp-permission-prompts-in-agent-pane"/>
-    <updated>2026-04-10T00:00:00Z</updated>
+    <updated>2026-04-11T00:00:00Z</updated>
     <summary>When Claude Code runs with `--teammate-mode tmux` and an agent team member hits an MCP tool approval gate, the permission dialog can appear only inside the teammate&#x27;s tmux pane instead of being escalated back to the lead conversation. Because that pane is not interactive, the user cannot approve or deny the request there, the lead window never shows an actionable prompt, and the agent waits indefinitely. This is distinct from older Desktop remote-session visibility bugs and teammate permission-rule inheritance gaps: the failure is in the tmux teammate escalation path itself, where approval UI is rendered into a dead pane instead of reaching the main control surface.</summary>
     <category term="Permission system"/>
   </entry>
@@ -74,7 +82,7 @@
     <title>[MEDIUM] `/model` thinking effort level resets between sessions</title>
     <id>https://framework.boucle.sh/limitations.html#model-thinking-effort-resets-between-sessions</id>
     <link href="https://framework.boucle.sh/limitations.html#model-thinking-effort-resets-between-sessions"/>
-    <updated>2026-04-10T00:00:00Z</updated>
+    <updated>2026-04-11T00:00:00Z</updated>
     <summary>Claude Code can remember the selected model across sessions while silently forgetting the thinking effort level chosen through `/model` (for example `auto`, `low`, `medium`, or `high`). In the reported repro, the effort setting changed successfully inside the current session but the next fresh session reverted to the default `medium` value. This is distinct from older `/model` regressions that wipe permissions, strip hook filters, or leave tools pointing at stale model IDs: the break is in persistence of the effort preference itself, so users can believe they are reopening a session with the same reasoning budget when the CLI has already fallen back to a different level.</summary>
     <category term="Configuration &amp; settings"/>
   </entry>
@@ -82,7 +90,7 @@
     <title>[HIGH] Agent SDK `query()` can leave slash commands unexpanded and pass them through as literal prompt text</title>
     <id>https://framework.boucle.sh/limitations.html#agent-sdk-query-leaves-slash-commands-unexpanded</id>
     <link href="https://framework.boucle.sh/limitations.html#agent-sdk-query-leaves-slash-commands-unexpanded"/>
-    <updated>2026-04-10T00:00:00Z</updated>
+    <updated>2026-04-11T00:00:00Z</updated>
     <summary>When the Claude Agent SDK starts a session with `query({ prompt: &quot;/skill ...&quot; })`, the spawned Claude Code process can discover the relevant skill and list it in the init event while still passing the raw `/skill ...` string through to the model instead of expanding the slash command first. This creates a contract gap between the interactive CLI and the SDK path: workflows that reliably preload skill content in the TUI become model-choice-dependent in SDK mode because the model must decide to call the Skill tool itself. This is distinct from older skill discovery, autocomplete, or custom-agent preload bugs because the failure happens after slash command discovery, at the prompt-expansion layer specific to `query()` input handling.</summary>
     <category term="Skills / slash commands"/>
   </entry>
@@ -90,7 +98,7 @@
     <title>[HIGH] `claude mcp add` on Windows can rewrite `cmd /c` into `cmd C:/`, corrupting the saved MCP command</title>
     <id>https://framework.boucle.sh/limitations.html#windows-mcp-add-rewrites-cmd-slash-c-to-c-drive-path</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-mcp-add-rewrites-cmd-slash-c-to-c-drive-path"/>
-    <updated>2026-04-10T00:00:00Z</updated>
+    <updated>2026-04-11T00:00:00Z</updated>
     <summary>On Windows, `claude mcp add ... -- cmd /c ...` can serialize the `/c` argument incorrectly when writing the MCP server configuration, replacing it with `C:/` in `~/.claude.json`. This corrupts the saved launcher command before the MCP server is ever started, so stdio servers that legitimately need `cmd /c` end up broken on first use. This is distinct from older Windows MCP loading or drive-letter issues because the failure happens at command-write time: Claude Code mutates a valid shell flag into a drive path while persisting the config.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -98,7 +106,7 @@
     <title>[HIGH] Cowork on Windows can corrupt non-ASCII file contents while syncing sandbox output back to the host</title>
     <id>https://framework.boucle.sh/limitations.html#cowork-windows-sync-corrupts-non-ascii-files</id>
     <link href="https://framework.boucle.sh/limitations.html#cowork-windows-sync-corrupts-non-ascii-files"/>
-    <updated>2026-04-10T00:00:00Z</updated>
+    <updated>2026-04-11T00:00:00Z</updated>
     <summary>When Cowork writes files containing non-ASCII characters on Windows, the file can remain correct inside the Cowork sandbox but become mojibake once it is synced back to the host filesystem. Reported examples include dashes, curly quotes, bullets, and the euro sign, all of which were preserved when read from inside the sandbox and then silently re-encoded as Windows-1252 style garbage on the host side. This is distinct from older TUI, hook, or copy-paste Unicode regressions because the corruption happens in the Cowork sandbox-to-host file sync path itself, turning apparently successful agent output into damaged files for external editors, scripts, or downstream automation.</summary>
     <category term="Data integrity"/>
   </entry>
@@ -106,7 +114,7 @@
     <title>[HIGH] Aborted MCP elicitation requests can leak zombie queue entries and block later approval prompts</title>
     <id>https://framework.boucle.sh/limitations.html#mcp-elicitation-abort-leaks-zombie-queue-entry</id>
     <link href="https://framework.boucle.sh/limitations.html#mcp-elicitation-abort-leaks-zombie-queue-entry"/>
-    <updated>2026-04-10T00:00:00Z</updated>
+    <updated>2026-04-11T00:00:00Z</updated>
     <summary>When an MCP elicitation request is queued and then aborted before the dialog cleanup path runs, Claude Code can leave that aborted entry at the head of the internal elicitation queue. Later elicitation requests from the same session stack up behind the zombie entry and never surface to the user, so tool calls appear to hang until the upstream MCP server times out. This is distinct from older AskUserQuestion or notification-hook gaps: the failure is in the MCP elicitation queue cleanup layer itself, and it can break otherwise-valid approval dialogs after one cancelled or transport-aborted request.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -114,7 +122,7 @@
     <title>[HIGH] MCP OAuth tokens can expire permanently on the `claude.ai` proxy path without any refresh or reauth flow</title>
     <id>https://framework.boucle.sh/limitations.html#claude-ai-proxy-mcp-oauth-tokens-never-refresh</id>
     <link href="https://framework.boucle.sh/limitations.html#claude-ai-proxy-mcp-oauth-tokens-never-refresh"/>
-    <updated>2026-04-10T00:00:00Z</updated>
+    <updated>2026-04-11T00:00:00Z</updated>
     <summary>MCP servers connected through the `claude.ai` marketplace proxy (`mcp-proxy.anthropic.com`) can reconnect their SSE transport successfully after token expiry but still never perform an OAuth refresh or reauthorization flow. In the reported repro, server logs showed no follow-up `/token` or `/authorize` traffic after expiry, client debug logs reported only a successful proxy transport reconnection, and the next tool call then failed upstream with the stale token. This is distinct from the older direct HTTP MCP refresh bug that Anthropic fixed earlier: the break is specific to the `claude.ai` proxy transport, where the client appears to recover the connection layer while leaving expired credentials untouched.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -122,7 +130,7 @@
     <title>[HIGH] `Context limit reached` state can survive `/clear` and block even basic CLI operations</title>
     <id>https://framework.boucle.sh/limitations.html#context-limit-state-can-survive-clear-and-block-basic-cli-operations</id>
     <link href="https://framework.boucle.sh/limitations.html#context-limit-state-can-survive-clear-and-block-basic-cli-operations"/>
-    <updated>2026-04-10T00:00:00Z</updated>
+    <updated>2026-04-11T00:00:00Z</updated>
     <summary>After Claude Code reaches a context limit, the session can enter a broken state where `/clear` appears to do nothing and even basic commands such as `--version`, `/help`, or startup skill entrypoints immediately fail again with `Context limit reached`. In the report, startup skill loading still read its markdown file before the hard stop fired, and the failure persisted across terminal restarts and a full machine reboot. This is distinct from older compaction-limit issues because the problem is not only that compaction fails at the boundary; the limit state itself appears to stick and block fresh CLI operations that should be able to start outside the old conversation context.</summary>
     <category term="Context &amp; memory"/>
   </entry>
@@ -130,7 +138,7 @@
     <title>[HIGH] Custom agent `skills:` frontmatter can fail to inject SKILL.md content into the spawned subagent context</title>
     <id>https://framework.boucle.sh/limitations.html#custom-agent-skills-frontmatter-does-not-inject-skill-content</id>
     <link href="https://framework.boucle.sh/limitations.html#custom-agent-skills-frontmatter-does-not-inject-skill-content"/>
-    <updated>2026-04-10T00:00:00Z</updated>
+    <updated>2026-04-11T00:00:00Z</updated>
     <summary>A custom agent defined in `~/.claude/agents/*.md` can declare a `skills:` frontmatter list exactly as documented, yet the spawned subagent still starts without the referenced skill content in its prompt context. In the reported repro, the subagent could not find distinctive strings from the target SKILL.md, only saw file-path mentions from the agent body, and had no Skill tool available to load the missing content itself. This is distinct from older subagent skill-invocation bugs: the failure happens before invocation, at the documented skill-content injection layer that is supposed to preload the skill into the custom subagent context.</summary>
     <category term="Subagent &amp; spawned agents"/>
   </entry>
@@ -138,7 +146,7 @@
     <title>[HIGH] `/ultraplan` can attach an ancestor git repository instead of the nested repo in the current working directory</title>
     <id>https://framework.boucle.sh/limitations.html#ultraplan-attaches-ancestor-repo-instead-of-nested-cwd-repo</id>
     <link href="https://framework.boucle.sh/limitations.html#ultraplan-attaches-ancestor-repo-instead-of-nested-cwd-repo"/>
-    <updated>2026-04-10T00:00:00Z</updated>
+    <updated>2026-04-11T00:00:00Z</updated>
     <summary>When `/ultraplan` is invoked from inside a nested git repository, Claude Code can ignore the child repository that `git rev-parse --show-toplevel` resolves for the current working directory and instead attach an ancestor repository higher in the path tree. This is distinct from the older stale-project-context bug: the wrong repo is chosen deterministically on the first invocation, with no prior ultraplan session required. If the ancestor repo is dirty, the cloud flow surfaces a misleading uncommitted-changes error from the wrong codebase; if it is clean, the plan proceeds silently against the ancestor project, so users can review or implement changes for an unrelated repository without realizing the attachment was wrong from the start.</summary>
     <category term="Remote"/>
   </entry>
@@ -146,7 +154,7 @@
     <title>[MEDIUM] `/terminal-setup` can refuse Windows Terminal while simultaneously listing it as supported</title>
     <id>https://framework.boucle.sh/limitations.html#terminal-setup-refuses-windows-terminal-while-listing-it-as-supported</id>
     <link href="https://framework.boucle.sh/limitations.html#terminal-setup-refuses-windows-terminal-while-listing-it-as-supported"/>
-    <updated>2026-04-10T00:00:00Z</updated>
+    <updated>2026-04-11T00:00:00Z</updated>
     <summary>On Windows 11, running `/terminal-setup` from inside Windows Terminal can fail immediately with `Terminal setup cannot be run from windows-terminal.` even though the same command output then tells the user to run terminal setup in Windows Terminal to configure `Shift+Enter`. This is not just a missing feature or unsupported shell edge case. The tool detects the current terminal as `windows-terminal`, rejects it, and then advertises that exact terminal as a supported target, leaving users with a contradictory setup path and no way to trust whether the shortcut helper supports their environment at all.</summary>
     <category term="CLI &amp; terminal"/>
   </entry>
@@ -154,16 +162,8 @@
     <title>[HIGH] Auto-updater can ignore `autoUpdatesChannel: &quot;latest&quot;` and silently downgrade back to stable</title>
     <id>https://framework.boucle.sh/limitations.html#autoupdateschannel-latest-downgrades-to-stable</id>
     <link href="https://framework.boucle.sh/limitations.html#autoupdateschannel-latest-downgrades-to-stable"/>
-    <updated>2026-04-10T00:00:00Z</updated>
+    <updated>2026-04-11T00:00:00Z</updated>
     <summary>On macOS native installs, enabling automatic updates while setting `autoUpdatesChannel` to `&quot;latest&quot;` can still make Claude Code fetch the stable channel and relink the binary back to an older stable build on the next launch. In the reported repro, a fresh `latest` install at v2.1.100 was reverted to v2.1.89 after restart, even after the older stable directory had been deleted locally, which means the updater was not merely preferring an already-cached binary but actively resolving the wrong release channel from the network. This is the inverse of the separate bug where stable users are upgraded to latest: here the explicit opt-in to latest is ignored and the updater downgrades the install behind the user&#x27;s back.</summary>
     <category term="Configuration &amp; settings"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Claude Code update can fail on Windows when `$HOME` is remapped away from `%USERPROFILE%`</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-update-uses-home-instead-of-userprofile</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-update-uses-home-instead-of-userprofile"/>
-    <updated>2026-04-10T00:00:00Z</updated>
-    <summary>On Windows, if PowerShell or the user profile remaps `$HOME` to a different location such as a OneDrive-synced directory, `claude update` can try to create its versions directory under that alternate home path instead of under the actual installed-user profile. In the reported repro, the original install succeeded and the binary was on the correct path, but the updater later failed with `EEXIST: file already exists, mkdir &#x27;C:\Users\...\OneDrive - ...\.local\share\claude\versions&#x27;` and also surfaced PATH complaints. This is not the older multiple-installation updater conflict: the failure comes from mixing two Windows home-directory authorities, `%USERPROFILE%` and `$HOME`, inside the update path logic itself.</summary>
-    <category term="File system &amp; paths"/>
   </entry>
 </feed>
