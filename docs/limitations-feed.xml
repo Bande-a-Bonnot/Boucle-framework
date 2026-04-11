@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Microsoft 365 MCP OAuth can fail when `WWW-Authenticate` exposes relative `resource_metadata`</title>
+    <id>https://framework.boucle.sh/limitations.html#microsoft-365-mcp-oauth-fails-on-relative-resource-metadata</id>
+    <link href="https://framework.boucle.sh/limitations.html#microsoft-365-mcp-oauth-fails-on-relative-resource-metadata"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>The Microsoft 365 claude.ai MCP connector can stay stuck at `Needs authentication` and never complete OAuth because its 401 `WWW-Authenticate` response advertises `resource_metadata` as a relative path instead of an absolute URL. In the reported Windows repro on the latest Claude Code CLI, Gmail and Google Calendar authenticated normally on the same machine, while the Microsoft 365 connector looped on unauthenticated requests and surfaced `invalid_request_error` with `code: Field required`. This is distinct from older MCP OAuth token-refresh, proxy-token, and step-up-scope failures: the OAuth flow never starts cleanly because protected-resource discovery breaks before Claude can resolve the metadata endpoint.</summary>
+    <category term="MCP &amp; integrations"/>
+  </entry>
+  <entry>
     <title>[HIGH] Remote Control session creation can fail when the repo has a non-null git origin URL</title>
     <id>https://framework.boucle.sh/limitations.html#remote-control-session-creation-fails-when-git-origin-url-is-present</id>
     <link href="https://framework.boucle.sh/limitations.html#remote-control-session-creation-fails-when-git-origin-url-is-present"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>MCP servers connected through the `claude.ai` marketplace proxy (`mcp-proxy.anthropic.com`) can reconnect their SSE transport successfully after token expiry but still never perform an OAuth refresh or reauthorization flow. In the reported repro, server logs showed no follow-up `/token` or `/authorize` traffic after expiry, client debug logs reported only a successful proxy transport reconnection, and the next tool call then failed upstream with the stale token. This is distinct from the older direct HTTP MCP refresh bug that Anthropic fixed earlier: the break is specific to the `claude.ai` proxy transport, where the client appears to recover the connection layer while leaving expired credentials untouched.</summary>
     <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `Context limit reached` state can survive `/clear` and block even basic CLI operations</title>
-    <id>https://framework.boucle.sh/limitations.html#context-limit-state-can-survive-clear-and-block-basic-cli-operations</id>
-    <link href="https://framework.boucle.sh/limitations.html#context-limit-state-can-survive-clear-and-block-basic-cli-operations"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>After Claude Code reaches a context limit, the session can enter a broken state where `/clear` appears to do nothing and even basic commands such as `--version`, `/help`, or startup skill entrypoints immediately fail again with `Context limit reached`. In the report, startup skill loading still read its markdown file before the hard stop fired, and the failure persisted across terminal restarts and a full machine reboot. This is distinct from older compaction-limit issues because the problem is not only that compaction fails at the boundary; the limit state itself appears to stick and block fresh CLI operations that should be able to start outside the old conversation context.</summary>
-    <category term="Context &amp; memory"/>
   </entry>
 </feed>
