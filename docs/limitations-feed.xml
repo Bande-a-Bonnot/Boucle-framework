@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Project-scoped HTTP MCP can fail health checks and fall back to the OAuth `authenticate` stub</title>
+    <id>https://framework.boucle.sh/limitations.html#project-scoped-http-mcp-fails-health-check-and-falls-back-to-oauth-stub</id>
+    <link href="https://framework.boucle.sh/limitations.html#project-scoped-http-mcp-fails-health-check-and-falls-back-to-oauth-stub"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>An HTTP MCP server configured in a project `.mcp.json` with bearer-auth headers can report `Status: ✗ Failed to connect` and expose only the generic OAuth `authenticate` stub, even though the same URL and headers work normally when registered at user scope. In the reported repro on Claude Desktop&#x27;s bundled 2.1.92 binary, direct `curl` initialize and `tools/list` calls succeeded, `claude mcp add --scope user ...` showed the full tool list, but the project-scoped entry failed the deeper `claude mcp get` probe and misrepresented the server as an OAuth flow instead of a bearer-auth HTTP server. This is distinct from older project-scope loader bugs and project-file-read problems: the project config is found, but project-scoped HTTP MCP health probing or header handling diverges from user scope and silently hides the real tools behind a misleading auth fallback.</summary>
+    <category term="MCP &amp; integrations"/>
+  </entry>
+  <entry>
     <title>[HIGH] Claude Code session can survive deleted worktrees indefinitely and ignore `SIGTERM`</title>
     <id>https://framework.boucle.sh/limitations.html#deleted-worktree-session-can-survive-indefinitely-and-ignore-sigterm</id>
     <link href="https://framework.boucle.sh/limitations.html#deleted-worktree-session-can-survive-indefinitely-and-ignore-sigterm"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>When `/ultraplan` is invoked from inside a nested git repository, Claude Code can ignore the child repository that `git rev-parse --show-toplevel` resolves for the current working directory and instead attach an ancestor repository higher in the path tree. This is distinct from the older stale-project-context bug: the wrong repo is chosen deterministically on the first invocation, with no prior ultraplan session required. If the ancestor repo is dirty, the cloud flow surfaces a misleading uncommitted-changes error from the wrong codebase; if it is clean, the plan proceeds silently against the ancestor project, so users can review or implement changes for an unrelated repository without realizing the attachment was wrong from the start.</summary>
     <category term="Remote"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] `/terminal-setup` can refuse Windows Terminal while simultaneously listing it as supported</title>
-    <id>https://framework.boucle.sh/limitations.html#terminal-setup-refuses-windows-terminal-while-listing-it-as-supported</id>
-    <link href="https://framework.boucle.sh/limitations.html#terminal-setup-refuses-windows-terminal-while-listing-it-as-supported"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>On Windows 11, running `/terminal-setup` from inside Windows Terminal can fail immediately with `Terminal setup cannot be run from windows-terminal.` even though the same command output then tells the user to run terminal setup in Windows Terminal to configure `Shift+Enter`. This is not just a missing feature or unsupported shell edge case. The tool detects the current terminal as `windows-terminal`, rejects it, and then advertises that exact terminal as a supported target, leaving users with a contradictory setup path and no way to trust whether the shortcut helper supports their environment at all.</summary>
-    <category term="CLI &amp; terminal"/>
   </entry>
 </feed>

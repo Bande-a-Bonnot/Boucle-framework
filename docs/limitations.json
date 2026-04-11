@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 884,
+  "count": 885,
   "categories": {
     "Hook behavior & events": 165,
     "Permission system": 107,
@@ -40,6 +40,7 @@
     "Cowork & remote": 3,
     "Desktop": 3,
     "Hooks": 3,
+    "MCP & integrations": 3,
     "MCP & plugins": 3,
     "Memory & context": 3,
     "Model behavior": 3,
@@ -60,7 +61,6 @@
     "IDE integration": 2,
     "IDE integrations": 2,
     "mcp": 2,
-    "MCP & integrations": 2,
     "MCP and plugins": 2,
     "MCP integration": 2,
     "Model behavior & compliance": 2,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 419,
+    "HIGH": 420,
     "LOW": 97,
     "MEDIUM": 306
   },
@@ -10803,30 +10803,42 @@
       "cc_version": "2.1.100",
       "date_added": "2026-04-11",
       "workaround": "Do not remove a git worktree while an active Claude Code session is still running inside it. If you discover an orphaned session after the worktree has been deleted, verify it with `lsof -p <pid> | grep cwd` and terminate it with `kill -9` if a normal `kill` does nothing."
+    },
+    {
+      "id": "project-scoped-http-mcp-fails-health-check-and-falls-back-to-oauth-stub",
+      "title": "Project-scoped HTTP MCP can fail health checks and fall back to the OAuth `authenticate` stub",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "An HTTP MCP server configured in a project `.mcp.json` with bearer-auth headers can report `Status: \u2717 Failed to connect` and expose only the generic OAuth `authenticate` stub, even though the same URL and headers work normally when registered at user scope. In the reported repro on Claude Desktop's bundled 2.1.92 binary, direct `curl` initialize and `tools/list` calls succeeded, `claude mcp add --scope user ...` showed the full tool list, but the project-scoped entry failed the deeper `claude mcp get` probe and misrepresented the server as an OAuth flow instead of a bearer-auth HTTP server. This is distinct from older project-scope loader bugs and project-file-read problems: the project config is found, but project-scoped HTTP MCP health probing or header handling diverges from user scope and silently hides the real tools behind a misleading auth fallback.",
+      "cc_issue": 46510,
+      "cc_version": "2.1.92",
+      "date_added": "2026-04-11",
+      "workaround": "If a bearer-auth HTTP MCP server works at user scope but fails from project `.mcp.json`, do not trust the project-scope status banner or `authenticate` stub. Verify the endpoint independently with `curl` or `claude mcp get`, and register the server at user scope until the project-scope HTTP path is fixed."
     }
   ],
   "status_summary": {
-    "open": 870,
+    "open": 871,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 419,
+    "high": 420,
     "low": 97,
     "medium": 306
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 884,
+    "total": 885,
     "critical": 62,
-    "high": 419,
+    "high": 420,
     "medium": 306,
     "low": 97,
-    "open": 870,
+    "open": 871,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 884
+  "total": 885
 }

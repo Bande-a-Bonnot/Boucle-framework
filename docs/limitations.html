@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">884</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
+        <p class="subtitle"><span id="total-count">885</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9348,6 +9348,18 @@
                         <!-- workaround:deleted-worktree-session-can-survive-indefinitely-and-ignore-sigterm -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not remove a git worktree while an active Claude Code session is still running inside it. If you discover an orphaned session after the worktree has been deleted, verify it with `lsof -p &lt;pid&gt; | grep cwd` and terminate it with `kill -9` if a normal `kill` does nothing.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46493" target="_blank">#46493</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="46510" id="project-scoped-http-mcp-fails-health-check-and-falls-back-to-oauth-stub" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#885</span>
+                <span class="kl-cat">MCP &amp; integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Project-scoped HTTP MCP can fail health checks and fall back to the OAuth `authenticate` stub</h3>
+            <p>An HTTP MCP server configured in a project `.mcp.json` with bearer-auth headers can report `Status: ✗ Failed to connect` and expose only the generic OAuth `authenticate` stub, even though the same URL and headers work normally when registered at user scope. In the reported repro on Claude Desktop&#x27;s bundled 2.1.92 binary, direct `curl` initialize and `tools/list` calls succeeded, `claude mcp add --scope user ...` showed the full tool list, but the project-scoped entry failed the deeper `claude mcp get` probe and misrepresented the server as an OAuth flow instead of a bearer-auth HTTP server. This is distinct from older project-scope loader bugs and project-file-read problems: the project config is found, but project-scoped HTTP MCP health probing or header handling diverges from user scope and silently hides the real tools behind a misleading auth fallback.</p>
+                        <!-- workaround:project-scoped-http-mcp-fails-health-check-and-falls-back-to-oauth-stub -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If a bearer-auth HTTP MCP server works at user scope but fails from project `.mcp.json`, do not trust the project-scope status banner or `authenticate` stub. Verify the endpoint independently with `curl` or `claude mcp get`, and register the server at user scope until the project-scope HTTP path is fixed.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46510" target="_blank">#46510</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
