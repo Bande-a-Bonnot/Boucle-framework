@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Official iMessage plugin `reply` can fail on newer `any;-;` chat GUIDs</title>
+    <id>https://framework.boucle.sh/limitations.html#imessage-plugin-reply-can-fail-on-any-chat-guid-format</id>
+    <link href="https://framework.boucle.sh/limitations.html#imessage-plugin-reply-can-fail-on-any-chat-guid-format"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>On newer macOS releases, the official iMessage channel plugin can receive inbound DMs successfully yet fail to send replies because `chat.db` now stores some direct-message GUIDs with an `any;-;` prefix that Messages.app AppleScript does not accept as a `chat id`. In the reported macOS Tahoe repro with plugin v0.1.0, the inbound message arrived with `chat_id=&quot;any;-;+81...&quot;`, the plugin&#x27;s allowlist lookup accepted that GUID, but the `reply` tool still failed because its AppleScript sends directly to `chat id (item 2 of argv)`, which raises AppleScript error `-1728` for the same `any;-;` identifier. This is distinct from older iMessage plugin failures where permission relays go to the wrong contact, harness attribution cannot be disabled, or channel tools fail to inject at session start: here inbound delivery and allowlist validation both succeed, and the broken layer is the reply transport&#x27;s mismatch between the newer database GUID format and the AppleScript send API.</summary>
+    <category term="Plugin &amp; channel system"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Escaped spaces in Bash paths can force confirmation prompts despite allow rules</title>
     <id>https://framework.boucle.sh/limitations.html#escaped-spaces-in-bash-paths-can-force-confirmation-prompts-despite-allow-rules</id>
     <link href="https://framework.boucle.sh/limitations.html#escaped-spaces-in-bash-paths-can-force-confirmation-prompts-despite-allow-rules"/>
@@ -156,14 +164,6 @@
     <link href="https://framework.boucle.sh/limitations.html#git-sourced-marketplace-manager-can-leave-empty-clones-and-stale-lifecycle-state"/>
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>Claude Code&#x27;s marketplace manager can leave git-sourced marketplaces in a half-installed or stale state across the full lifecycle. In the reported repro, adding a marketplace by URL sometimes succeeded while leaving the clone directory empty, refresh actions did not pull newer upstream data even after changes landed, and update/delete controls were grayed out or silently ineffective while `known_marketplaces.json` was still rewritten on startup. This is distinct from the older failed auto-update deletion path, execute-bit stripping, or project-CWD update mismatch: here the manager&#x27;s own registration and state-refresh layer can report success while the local marketplace stays empty or stale and the built-in repair actions do not recover it.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `remember` marketplace plugin can silently fail every autosave because `save-session.sh` resolves the wrong root</title>
-    <id>https://framework.boucle.sh/limitations.html#remember-marketplace-plugin-autosave-path-resolution-broken</id>
-    <link href="https://framework.boucle.sh/limitations.html#remember-marketplace-plugin-autosave-path-resolution-broken"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>The official `remember@claude-plugins-official` plugin can appear installed and active while never actually persisting any session memory when it is installed through the marketplace. In the reported repro, the PostToolUse hook fired and the background autosave log files were created, but `save-session.sh` still computed its project root by walking up three directories from its own script path. That logic only works for self-hosted installs under `project/.claude/remember/`; under the marketplace cache layout it resolves to the plugin cache parent instead, so every autosave dies on a bad `cd` into a non-existent `.claude/remember` path. This is distinct from broader `CLAUDE_PLUGIN_ROOT` injection failures or stale plugin registry paths: here the hook process launches, logging works, and the plugin root is known, but the plugin&#x27;s own save script still assumes the old on-disk layout and silently drops all autosaves.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
 </feed>

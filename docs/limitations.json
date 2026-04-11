@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 902,
+  "count": 903,
   "categories": {
     "Hook behavior & events": 169,
     "Permission system": 108,
@@ -28,11 +28,11 @@
     "Scheduling & remote triggers": 6,
     "Auth & accounts": 5,
     "Desktop & platform bugs": 5,
+    "Plugin & channel system": 5,
     "UX & display": 5,
     "Core & session management": 4,
     "Data integrity": 4,
     "permissions": 4,
-    "Plugin & channel system": 4,
     "sandbox": 4,
     "Sandbox & permissions": 4,
     "Scheduled tasks": 4,
@@ -168,7 +168,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 434,
+    "HIGH": 435,
     "LOW": 97,
     "MEDIUM": 309
   },
@@ -11021,30 +11021,42 @@
       "cc_version": "2.1.101",
       "date_added": "2026-04-11",
       "workaround": "Do not assume sandbox mode or Bash allow rules will suppress prompts for ordinary commands in directories whose names contain spaces right now. If repeated confirmations matter, rename the project path to remove spaces, work from a symlinked path without spaces, or avoid relying on escaped-path Bash invocations until Anthropic narrows the whitespace safety check."
+    },
+    {
+      "id": "imessage-plugin-reply-can-fail-on-any-chat-guid-format",
+      "title": "Official iMessage plugin `reply` can fail on newer `any;-;` chat GUIDs",
+      "category": "Plugin & channel system",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "On newer macOS releases, the official iMessage channel plugin can receive inbound DMs successfully yet fail to send replies because `chat.db` now stores some direct-message GUIDs with an `any;-;` prefix that Messages.app AppleScript does not accept as a `chat id`. In the reported macOS Tahoe repro with plugin v0.1.0, the inbound message arrived with `chat_id=\"any;-;+81...\"`, the plugin's allowlist lookup accepted that GUID, but the `reply` tool still failed because its AppleScript sends directly to `chat id (item 2 of argv)`, which raises AppleScript error `-1728` for the same `any;-;` identifier. This is distinct from older iMessage plugin failures where permission relays go to the wrong contact, harness attribution cannot be disabled, or channel tools fail to inject at session start: here inbound delivery and allowlist validation both succeed, and the broken layer is the reply transport's mismatch between the newer database GUID format and the AppleScript send API.",
+      "cc_issue": 46747,
+      "cc_version": null,
+      "date_added": "2026-04-11",
+      "workaround": "Do not assume the official iMessage plugin can currently reply to every inbound DM on newer macOS builds. If replies fail with an AppleScript `-1728` chat-id error on `any;-;` GUIDs, fall back to sending via participant/service resolution, patch the plugin locally, or avoid trusting the plugin for unattended iMessage reply flows until Anthropic normalizes the GUID before calling AppleScript."
     }
   ],
   "status_summary": {
-    "open": 888,
+    "open": 889,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 434,
+    "high": 435,
     "low": 97,
     "medium": 309
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 902,
+    "total": 903,
     "critical": 62,
-    "high": 434,
+    "high": 435,
     "medium": 309,
     "low": 97,
-    "open": 888,
+    "open": 889,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 902
+  "total": 903
 }
