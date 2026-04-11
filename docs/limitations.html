@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">890</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
+        <p class="subtitle"><span id="total-count">891</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9420,6 +9420,18 @@
                         <!-- workaround:compact-preserves-loop-skill-but-loses-cron-control-scope -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not trust `/compact` as a safe boundary after using `/loop`. Before compacting, cancel every active loop from the original session and verify with `CronList` there. If stale loop prompts keep arriving after compaction, resume the original session that created the cron job and delete it there rather than relying on the compacted session&#x27;s empty `CronList` output.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46561" target="_blank">#46561</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="46563" id="desktop-mcp-reconnect-can-flood-tools-list-and-starve-tool-calls" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#891</span>
+                <span class="kl-cat">MCP &amp; integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Desktop MCP reconnect can flood `tools/list` until the server times out</h3>
+            <p>Claude Desktop can enter a runaway MCP reconnect state where it repeatedly issues `tools/list` requests in pairs or larger bursts instead of returning to normal tool traffic, eventually starving real tool calls and tripping the server timeout. In the reported Windows repro with the Desktop Commander extension installed from the marketplace, normal sessions showed one `tools/list` at handshake, but after a reconnect the desktop app began sending hundreds of sequential `tools/list` requests across later sessions, with no `tools/call` traffic interspersed and message IDs climbing into the 1300s. This is distinct from older stdio MCP kill and no-auto-reconnect failures: the server stays alive long enough to answer each list request, but Claude Desktop&#x27;s reconnect path appears to multiply discovery requests until the extension becomes unusable and the user must restart both sides.</p>
+                        <!-- workaround:desktop-mcp-reconnect-can-flood-tools-list-and-starve-tool-calls -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If an MCP extension starts timing out after reconnects and its logs show repeated `tools/list` storms instead of real tool calls, do not treat that as a server-side tool failure. Restart both Claude Desktop and the affected extension or native host, and inspect the MCP log for duplicate `tools/list` bursts before spending time debugging the extension&#x27;s own tools.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46563" target="_blank">#46563</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

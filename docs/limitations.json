@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 890,
+  "count": 891,
   "categories": {
     "Hook behavior & events": 166,
     "Permission system": 107,
@@ -22,12 +22,12 @@
     "File system & paths": 7,
     "MCP": 7,
     "Permissions": 7,
+    "MCP & integrations": 6,
     "Remote & cloud": 6,
     "Scheduling & remote triggers": 6,
     "Auth & accounts": 5,
     "Configuration & settings": 5,
     "Desktop & platform bugs": 5,
-    "MCP & integrations": 5,
     "UX & display": 5,
     "Core & session management": 4,
     "Data integrity": 4,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 425,
+    "HIGH": 426,
     "LOW": 97,
     "MEDIUM": 306
   },
@@ -10875,30 +10875,42 @@
       "cc_version": null,
       "date_added": "2026-04-11",
       "workaround": "Do not trust `/compact` as a safe boundary after using `/loop`. Before compacting, cancel every active loop from the original session and verify with `CronList` there. If stale loop prompts keep arriving after compaction, resume the original session that created the cron job and delete it there rather than relying on the compacted session's empty `CronList` output."
+    },
+    {
+      "id": "desktop-mcp-reconnect-can-flood-tools-list-and-starve-tool-calls",
+      "title": "Desktop MCP reconnect can flood `tools/list` until the server times out",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "Claude Desktop can enter a runaway MCP reconnect state where it repeatedly issues `tools/list` requests in pairs or larger bursts instead of returning to normal tool traffic, eventually starving real tool calls and tripping the server timeout. In the reported Windows repro with the Desktop Commander extension installed from the marketplace, normal sessions showed one `tools/list` at handshake, but after a reconnect the desktop app began sending hundreds of sequential `tools/list` requests across later sessions, with no `tools/call` traffic interspersed and message IDs climbing into the 1300s. This is distinct from older stdio MCP kill and no-auto-reconnect failures: the server stays alive long enough to answer each list request, but Claude Desktop's reconnect path appears to multiply discovery requests until the extension becomes unusable and the user must restart both sides.",
+      "cc_issue": 46563,
+      "cc_version": null,
+      "date_added": "2026-04-11",
+      "workaround": "If an MCP extension starts timing out after reconnects and its logs show repeated `tools/list` storms instead of real tool calls, do not treat that as a server-side tool failure. Restart both Claude Desktop and the affected extension or native host, and inspect the MCP log for duplicate `tools/list` bursts before spending time debugging the extension's own tools."
     }
   ],
   "status_summary": {
-    "open": 876,
+    "open": 877,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 425,
+    "high": 426,
     "low": 97,
     "medium": 306
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 890,
+    "total": 891,
     "critical": 62,
-    "high": 425,
+    "high": 426,
     "medium": 306,
     "low": 97,
-    "open": 876,
+    "open": 877,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 890
+  "total": 891
 }
