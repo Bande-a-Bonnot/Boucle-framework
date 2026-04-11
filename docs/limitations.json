@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 894,
+  "count": 895,
   "categories": {
     "Hook behavior & events": 167,
     "Permission system": 107,
@@ -47,6 +47,7 @@
     "Model behavior & output": 3,
     "model-behavior": 3,
     "Permissions & safety": 3,
+    "Plugin & channel system": 3,
     "Remote": 3,
     "Sandbox": 3,
     "Security": 3,
@@ -70,7 +71,6 @@
     "Performance & resources": 2,
     "Permissions and safety": 2,
     "platform": 2,
-    "Plugin & channel system": 2,
     "security": 2,
     "session-management": 2,
     "Skills & commands": 2,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 428,
+    "HIGH": 429,
     "LOW": 97,
     "MEDIUM": 307
   },
@@ -10924,30 +10924,42 @@
       "cc_version": null,
       "date_added": "2026-04-11",
       "workaround": "If the desktop status bar blanks during a large `Write`, do not assume the agent has stopped or the file write failed. Check the target file on disk before interrupting the turn, and avoid relying on a dummy keystroke to unstick the UI unless you can tolerate that extra input being sent as a real user message on the next turn."
+    },
+    {
+      "id": "telegram-channel-plugin-can-attach-without-ever-spawning-mcp-server",
+      "title": "Telegram channel plugin can attach without ever spawning its MCP server",
+      "category": "Plugin & channel system",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "On Linux in Claude Code v2.1.101, launching a session with `--channels plugin:telegram@claude-plugins-official` can show the normal \"Listening for channel messages\" attach banner while never spawning the Telegram plugin's `bun` MCP server process at all. In the reported repro, the plugin was installed, other MCP servers spawned normally as child processes, Telegram messages queued successfully in the bot API, and the token was valid, but no `bun run ... telegram ... start` process ever appeared and no inbound messages were consumed. This is distinct from the newer channel-tool injection regression where the plugin process starts cleanly but its tools never enter the session: here the failure happens one layer earlier, because the channel attach path claims success while the plugin runtime itself never launches.",
+      "cc_issue": 46617,
+      "cc_version": "2.1.101",
+      "date_added": "2026-04-11",
+      "workaround": "Do not trust the `Listening for channel messages` banner alone when using the official Telegram channel plugin. Verify that a Telegram `bun` child process is actually running, and if it is missing, fall back to a version known to spawn the plugin correctly or avoid relying on Telegram inbound delivery until Anthropic fixes the channel-launch path."
     }
   ],
   "status_summary": {
-    "open": 880,
+    "open": 881,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 428,
+    "high": 429,
     "low": 97,
     "medium": 307
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 894,
+    "total": 895,
     "critical": 62,
-    "high": 428,
+    "high": 429,
     "medium": 307,
     "low": 97,
-    "open": 880,
+    "open": 881,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 894
+  "total": 895
 }

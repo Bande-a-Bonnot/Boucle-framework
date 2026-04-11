@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Telegram channel plugin can attach without ever spawning its MCP server</title>
+    <id>https://framework.boucle.sh/limitations.html#telegram-channel-plugin-can-attach-without-ever-spawning-mcp-server</id>
+    <link href="https://framework.boucle.sh/limitations.html#telegram-channel-plugin-can-attach-without-ever-spawning-mcp-server"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>On Linux in Claude Code v2.1.101, launching a session with `--channels plugin:telegram@claude-plugins-official` can show the normal &quot;Listening for channel messages&quot; attach banner while never spawning the Telegram plugin&#x27;s `bun` MCP server process at all. In the reported repro, the plugin was installed, other MCP servers spawned normally as child processes, Telegram messages queued successfully in the bot API, and the token was valid, but no `bun run ... telegram ... start` process ever appeared and no inbound messages were consumed. This is distinct from the newer channel-tool injection regression where the plugin process starts cleanly but its tools never enter the session: here the failure happens one layer earlier, because the channel attach path claims success while the plugin runtime itself never launches.</summary>
+    <category term="Plugin &amp; channel system"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Desktop status indicators can freeze during long single `Write` tool calls</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-status-indicators-freeze-during-long-single-write-calls</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-status-indicators-freeze-during-long-single-write-calls"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>When Claude Code runs with `--teammate-mode tmux` and an agent team member hits an MCP tool approval gate, the permission dialog can appear only inside the teammate&#x27;s tmux pane instead of being escalated back to the lead conversation. Because that pane is not interactive, the user cannot approve or deny the request there, the lead window never shows an actionable prompt, and the agent waits indefinitely. This is distinct from older Desktop remote-session visibility bugs and teammate permission-rule inheritance gaps: the failure is in the tmux teammate escalation path itself, where approval UI is rendered into a dead pane instead of reaching the main control surface.</summary>
     <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] `/model` thinking effort level resets between sessions</title>
-    <id>https://framework.boucle.sh/limitations.html#model-thinking-effort-resets-between-sessions</id>
-    <link href="https://framework.boucle.sh/limitations.html#model-thinking-effort-resets-between-sessions"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>Claude Code can remember the selected model across sessions while silently forgetting the thinking effort level chosen through `/model` (for example `auto`, `low`, `medium`, or `high`). In the reported repro, the effort setting changed successfully inside the current session but the next fresh session reverted to the default `medium` value. This is distinct from older `/model` regressions that wipe permissions, strip hook filters, or leave tools pointing at stale model IDs: the break is in persistence of the effort preference itself, so users can believe they are reopening a session with the same reasoning budget when the CLI has already fallen back to a different level.</summary>
-    <category term="Configuration &amp; settings"/>
   </entry>
 </feed>
