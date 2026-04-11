@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 886,
+  "count": 887,
   "categories": {
     "Hook behavior & events": 165,
     "Permission system": 107,
@@ -22,11 +22,11 @@
     "File system & paths": 7,
     "MCP": 7,
     "Permissions": 7,
+    "Remote & cloud": 6,
     "Scheduling & remote triggers": 6,
     "Auth & accounts": 5,
     "Configuration & settings": 5,
     "Desktop & platform bugs": 5,
-    "Remote & cloud": 5,
     "UX & display": 5,
     "Core & session management": 4,
     "Data integrity": 4,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 421,
+    "HIGH": 422,
     "LOW": 97,
     "MEDIUM": 306
   },
@@ -10827,30 +10827,42 @@
       "cc_version": "2.1.101",
       "date_added": "2026-04-11",
       "workaround": "If `switch_browser` reports that no other browsers are available even though another Chrome profile has the extension installed, bring the target Chrome profile window to the foreground and wake the extension worker again. Do not assume background or unfocused Chrome profiles will register reliably until Anthropic changes the worker to handle `chrome.windows.getCurrent()` returning null or uses `getLastFocused()` instead."
+    },
+    {
+      "id": "remote-control-session-creation-fails-when-git-origin-url-is-present",
+      "title": "Remote Control session creation can fail when the repo has a non-null git origin URL",
+      "category": "Remote & cloud",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "Starting `claude remote-control --spawn same-dir` inside a git repository with an `origin` remote can leave the bridge stuck at `Ready` with `Capacity: 0/32` because the initial session-creation API rejects the populated `git_repo_url` field with `400 source: Extra inputs are not permitted`. In the reported repro on macOS 2.1.101, the exact same command created the initial session successfully when `origin` was removed and the bridge sent `\"git_repo_url\": null` instead. This is distinct from older Remote Control auth, worktree, and post-connect delivery failures: the connection breaks before the first session is ever created, and the triggering condition is specifically the presence of a remote URL in the bridge payload.",
+      "cc_issue": 46535,
+      "cc_version": "2.1.101",
+      "date_added": "2026-04-11",
+      "workaround": "If Remote Control shows `Ready` but never creates the initial session in a normal git checkout, test whether the repo's `origin` URL is the trigger. As a temporary workaround, remove the `origin` remote before starting `claude remote-control`, wait for the first session to be created, then restore the remote. Verify that the session actually appears in `claude.ai/code` before trusting the bridge state banner."
     }
   ],
   "status_summary": {
-    "open": 872,
+    "open": 873,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 421,
+    "high": 422,
     "low": 97,
     "medium": 306
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 886,
+    "total": 887,
     "critical": 62,
-    "high": 421,
+    "high": 422,
     "medium": 306,
     "low": 97,
-    "open": 872,
+    "open": 873,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 886
+  "total": 887
 }

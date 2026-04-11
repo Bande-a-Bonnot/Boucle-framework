@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Remote Control session creation can fail when the repo has a non-null git origin URL</title>
+    <id>https://framework.boucle.sh/limitations.html#remote-control-session-creation-fails-when-git-origin-url-is-present</id>
+    <link href="https://framework.boucle.sh/limitations.html#remote-control-session-creation-fails-when-git-origin-url-is-present"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>Starting `claude remote-control --spawn same-dir` inside a git repository with an `origin` remote can leave the bridge stuck at `Ready` with `Capacity: 0/32` because the initial session-creation API rejects the populated `git_repo_url` field with `400 source: Extra inputs are not permitted`. In the reported repro on macOS 2.1.101, the exact same command created the initial session successfully when `origin` was removed and the bridge sent `&quot;git_repo_url&quot;: null` instead. This is distinct from older Remote Control auth, worktree, and post-connect delivery failures: the connection breaks before the first session is ever created, and the triggering condition is specifically the presence of a remote URL in the bridge payload.</summary>
+    <category term="Remote &amp; cloud"/>
+  </entry>
+  <entry>
     <title>[HIGH] Chrome extension service worker can fail to register when no Chrome window is focused</title>
     <id>https://framework.boucle.sh/limitations.html#chrome-profile-extension-service-worker-fails-when-no-window-is-focused</id>
     <link href="https://framework.boucle.sh/limitations.html#chrome-profile-extension-service-worker-fails-when-no-window-is-focused"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>After Claude Code reaches a context limit, the session can enter a broken state where `/clear` appears to do nothing and even basic commands such as `--version`, `/help`, or startup skill entrypoints immediately fail again with `Context limit reached`. In the report, startup skill loading still read its markdown file before the hard stop fired, and the failure persisted across terminal restarts and a full machine reboot. This is distinct from older compaction-limit issues because the problem is not only that compaction fails at the boundary; the limit state itself appears to stick and block fresh CLI operations that should be able to start outside the old conversation context.</summary>
     <category term="Context &amp; memory"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Custom agent `skills:` frontmatter can fail to inject SKILL.md content into the spawned subagent context</title>
-    <id>https://framework.boucle.sh/limitations.html#custom-agent-skills-frontmatter-does-not-inject-skill-content</id>
-    <link href="https://framework.boucle.sh/limitations.html#custom-agent-skills-frontmatter-does-not-inject-skill-content"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>A custom agent defined in `~/.claude/agents/*.md` can declare a `skills:` frontmatter list exactly as documented, yet the spawned subagent still starts without the referenced skill content in its prompt context. In the reported repro, the subagent could not find distinctive strings from the target SKILL.md, only saw file-path mentions from the agent body, and had no Skill tool available to load the missing content itself. This is distinct from older subagent skill-invocation bugs: the failure happens before invocation, at the documented skill-content injection layer that is supposed to preload the skill into the custom subagent context.</summary>
-    <category term="Subagent &amp; spawned agents"/>
   </entry>
 </feed>

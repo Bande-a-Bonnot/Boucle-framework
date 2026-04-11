@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">886</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
+        <p class="subtitle"><span id="total-count">887</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9372,6 +9372,18 @@
                         <!-- workaround:chrome-profile-extension-service-worker-fails-when-no-window-is-focused -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If `switch_browser` reports that no other browsers are available even though another Chrome profile has the extension installed, bring the target Chrome profile window to the foreground and wake the extension worker again. Do not assume background or unfocused Chrome profiles will register reliably until Anthropic changes the worker to handle `chrome.windows.getCurrent()` returning null or uses `getLastFocused()` instead.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46514" target="_blank">#46514</a></div>
+        </div>
+        <div class="kl-entry" data-category="Remote &amp; cloud" data-issues="46535" id="remote-control-session-creation-fails-when-git-origin-url-is-present" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#887</span>
+                <span class="kl-cat">Remote &amp; cloud</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Remote Control session creation can fail when the repo has a non-null git origin URL</h3>
+            <p>Starting `claude remote-control --spawn same-dir` inside a git repository with an `origin` remote can leave the bridge stuck at `Ready` with `Capacity: 0/32` because the initial session-creation API rejects the populated `git_repo_url` field with `400 source: Extra inputs are not permitted`. In the reported repro on macOS 2.1.101, the exact same command created the initial session successfully when `origin` was removed and the bridge sent `&quot;git_repo_url&quot;: null` instead. This is distinct from older Remote Control auth, worktree, and post-connect delivery failures: the connection breaks before the first session is ever created, and the triggering condition is specifically the presence of a remote URL in the bridge payload.</p>
+                        <!-- workaround:remote-control-session-creation-fails-when-git-origin-url-is-present -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If Remote Control shows `Ready` but never creates the initial session in a normal git checkout, test whether the repo&#x27;s `origin` URL is the trigger. As a temporary workaround, remove the `origin` remote before starting `claude remote-control`, wait for the first session to be created, then restore the remote. Verify that the session actually appears in `claude.ai/code` before trusting the bridge state banner.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46535" target="_blank">#46535</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
