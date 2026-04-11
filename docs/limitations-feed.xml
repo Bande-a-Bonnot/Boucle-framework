@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Plugin `WorktreeCreate` hooks can be silently skipped on CLI `--worktree` startup</title>
+    <id>https://framework.boucle.sh/limitations.html#plugin-worktreecreate-hooks-silently-skipped-on-cli-worktree-start</id>
+    <link href="https://framework.boucle.sh/limitations.html#plugin-worktreecreate-hooks-silently-skipped-on-cli-worktree-start"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>On macOS in Claude Code v2.1.101, `WorktreeCreate` and `WorktreeRemove` hooks registered by a plugin through `hooks/hooks.json` can be silently dropped when a session starts with `claude --worktree &lt;name&gt;`, even though the same plugin&#x27;s `SessionStart` and `UserPromptSubmit` hooks still fire and the same worktree hook command works from `settings.json`. In the reported repro, Claude created the worktree through its built-in `.claude/worktrees/&lt;name&gt;` path while the plugin hook never ran at all, leaving plugin-managed worktree setup steps such as env mirroring, dependency install, or secret bootstrap completely inert. This is distinct from the older worktree-hook failures where mid-session `EnterWorktree` skips hooks, `--worktree --tmux` bypasses the lifecycle entirely, or settings-based `WorktreeCreate` hooks hang the session. Here, the CLI `--worktree` surface still dispatches the settings hook path but silently omits the plugin-registered one for the same event.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Model can overwrite a notarized DMG with an unnotarized CLI build</title>
     <id>https://framework.boucle.sh/limitations.html#model-can-overwrite-notarized-dmg-with-unnotarized-cli-build</id>
     <link href="https://framework.boucle.sh/limitations.html#model-can-overwrite-notarized-dmg-with-unnotarized-cli-build"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>When Claude Code is launched with `--channels plugin:&lt;name&gt;@claude-plugins-official`, the channel subsystem can attach successfully and show the normal &quot;Listening for channel messages&quot; banner while silently failing to inject the plugin&#x27;s own MCP tools into the session tool list. In the reported regression, the iMessage plugin still appeared connected in `claude mcp list`, the plugin process started cleanly, and the session JSONL recorded the normal deferred tool delta, but the plugin&#x27;s `chat_messages` and `reply` tools never appeared. This is distinct from older channel-plugin failures where notifications are not injected, idle sessions are not woken, or attribution is wrong: here the plugin transport is present but the callable MCP tool surface is missing from the session entirely, so inbound messages may arrive but the session cannot reply through the plugin.</summary>
     <category term="Plugin &amp; channel system"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Copying text from the VS Code chat panel can paste active editor content instead</title>
-    <id>https://framework.boucle.sh/limitations.html#vscode-chat-copy-pastes-active-editor-content-instead</id>
-    <link href="https://framework.boucle.sh/limitations.html#vscode-chat-copy-pastes-active-editor-content-instead"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>In the VS Code extension, selecting text from Claude&#x27;s chat panel and copying it can put content from the currently active editor tab on the clipboard instead of the selected chat text. The report describes intermittent failures where copying a short phrase from the chat produced an unrelated Python import line from the open source file. This is distinct from older `/copy` encoding bugs and no-flicker clipboard corruption: the break is in the VS Code chat-panel selection path itself, where the clipboard source is taken from the editor rather than the chat selection the user actually highlighted.</summary>
-    <category term="VS Code extension"/>
   </entry>
 </feed>

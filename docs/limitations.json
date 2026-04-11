@@ -1,8 +1,8 @@
 {
   "version": "0.12.0",
-  "count": 896,
+  "count": 897,
   "categories": {
-    "Hook behavior & events": 167,
+    "Hook behavior & events": 168,
     "Permission system": 107,
     "Hook bypass & evasion": 96,
     "MCP & plugin issues": 44,
@@ -168,7 +168,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 430,
+    "HIGH": 431,
     "LOW": 97,
     "MEDIUM": 307
   },
@@ -10949,30 +10949,42 @@
       "cc_version": null,
       "date_added": "2026-04-11",
       "workaround": "Do not let Claude overwrite release artifacts in place on macOS packaging workflows. Treat notarized DMGs, signed app bundles, and export directories as protected outputs, require fresh output paths for any agent-driven rebuild, and re-run the human-controlled archive/export/notarization path before trusting a package for distribution."
+    },
+    {
+      "id": "plugin-worktreecreate-hooks-silently-skipped-on-cli-worktree-start",
+      "title": "Plugin `WorktreeCreate` hooks can be silently skipped on CLI `--worktree` startup",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "On macOS in Claude Code v2.1.101, `WorktreeCreate` and `WorktreeRemove` hooks registered by a plugin through `hooks/hooks.json` can be silently dropped when a session starts with `claude --worktree <name>`, even though the same plugin's `SessionStart` and `UserPromptSubmit` hooks still fire and the same worktree hook command works from `settings.json`. In the reported repro, Claude created the worktree through its built-in `.claude/worktrees/<name>` path while the plugin hook never ran at all, leaving plugin-managed worktree setup steps such as env mirroring, dependency install, or secret bootstrap completely inert. This is distinct from the older worktree-hook failures where mid-session `EnterWorktree` skips hooks, `--worktree --tmux` bypasses the lifecycle entirely, or settings-based `WorktreeCreate` hooks hang the session. Here, the CLI `--worktree` surface still dispatches the settings hook path but silently omits the plugin-registered one for the same event.",
+      "cc_issue": 46664,
+      "cc_version": "2.1.101",
+      "date_added": "2026-04-11",
+      "workaround": "Do not assume marketplace or local plugins can currently enforce `WorktreeCreate` or `WorktreeRemove` on the CLI `--worktree` path. If your worktree bootstrap logic matters, register those hooks in a loaded settings file and verify with file logging that the hook actually ran before trusting the created worktree."
     }
   ],
   "status_summary": {
-    "open": 882,
+    "open": 883,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 430,
+    "high": 431,
     "low": 97,
     "medium": 307
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 896,
+    "total": 897,
     "critical": 62,
-    "high": 430,
+    "high": 431,
     "medium": 307,
     "low": 97,
-    "open": 882,
+    "open": 883,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 896
+  "total": 897
 }
