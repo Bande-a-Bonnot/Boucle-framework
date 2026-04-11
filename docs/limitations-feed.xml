@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Official `security-guidance` plugin can block documentation writes on bare `exec(` substring</title>
+    <id>https://framework.boucle.sh/limitations.html#security-guidance-plugin-blocks-doc-writes-on-bare-exec-substring</id>
+    <link href="https://framework.boucle.sh/limitations.html#security-guidance-plugin-blocks-doc-writes-on-bare-exec-substring"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>The official `security-guidance` marketplace plugin can falsely block ordinary `Write`, `Edit`, and `MultiEdit` operations when the file content contains the bare substring `exec(`, even inside Markdown or prose examples. In the reported repro on 2026-04-11, a documentation write containing harmless snippets such as `db.exec(schema)` triggered the plugin&#x27;s `child_process_exec` rule because its Python hook scans the full file body with naive substring matching and no file-type awareness, then exits with code 2 to deny the tool call. This is distinct from the older Windows `python3` launcher bug in the same plugin: there, the hook never starts on Windows; here, the hook runs successfully but applies the wrong security heuristic and turns normal doc-writing into a false-positive command-injection block.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Tmux team lead can stall after teammate reports until any local keypress</title>
     <id>https://framework.boucle.sh/limitations.html#tmux-team-lead-can-stall-after-teammate-reports-until-keypress</id>
     <link href="https://framework.boucle.sh/limitations.html#tmux-team-lead-can-stall-after-teammate-reports-until-keypress"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>On Claude Max, selecting Opus through the interactive `/model` picker can correctly attach the default 1M-context variant, while using the plain `opus` alias through `/model opus` or `&quot;model&quot;: &quot;opus&quot;` in `settings.json` resolves to the 200k variant instead. Both paths appear to target the same Opus 4.6 model family, so users can believe they have configured the normal Max default while every new session actually starts on the smaller window. This is distinct from entitlement failures that reject `opus[1m]` outright or subagent bugs that strip the `[1m]` suffix later: the alias/config resolution itself chooses the lower-capacity model at session start.</summary>
     <category term="Configuration &amp; settings"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Spawned subagents can lose the `Agent` tool entirely, blocking agent-of-agents orchestration</title>
-    <id>https://framework.boucle.sh/limitations.html#spawned-subagents-missing-agent-tool-block-orchestrator-patterns</id>
-    <link href="https://framework.boucle.sh/limitations.html#spawned-subagents-missing-agent-tool-block-orchestrator-patterns"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>A subagent spawned via the `Agent` tool can start without the `Agent` tool in its own toolset even when its agent type is configured for all tools. In the reported repro, foreground teammates, foreground inline subagents, and background subagents all lacked the ability to spawn further agents; teammate-mode runs surfaced an explicit &quot;Teammates cannot spawn other teammates&quot; failure, while inline subagents simply had no callable `Agent()` capability at all. This is distinct from older subagent permission, skill preload, or custom-agent frontmatter bugs: the subagent launches successfully and receives a broad tool surface, but the delegation layer itself is stripped, so orchestrator or manager agents cannot recursively fan out work as documented.</summary>
-    <category term="Agents &amp; subagents"/>
   </entry>
 </feed>

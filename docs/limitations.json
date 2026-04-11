@@ -1,8 +1,8 @@
 {
   "version": "0.12.0",
-  "count": 899,
+  "count": 900,
   "categories": {
-    "Hook behavior & events": 168,
+    "Hook behavior & events": 169,
     "Permission system": 107,
     "Hook bypass & evasion": 96,
     "MCP & plugin issues": 44,
@@ -170,7 +170,7 @@
     "CRITICAL": 62,
     "HIGH": 433,
     "LOW": 97,
-    "MEDIUM": 307
+    "MEDIUM": 308
   },
   "entries": [
     {
@@ -10985,10 +10985,22 @@
       "cc_version": "2.1.101",
       "date_added": "2026-04-11",
       "workaround": "Do not assume a tmux team lead will wake itself when teammates finish right now. For unattended multi-iteration team workflows, either keep a human ready to prod the lead pane, avoid tmux teammate mode for orchestration-heavy runs, or restructure the workflow so each dispatch round is short and manually supervised before relying on the next iteration."
+    },
+    {
+      "id": "security-guidance-plugin-blocks-doc-writes-on-bare-exec-substring",
+      "title": "Official `security-guidance` plugin can block documentation writes on bare `exec(` substring",
+      "category": "Hook behavior & events",
+      "severity": "MEDIUM",
+      "status": "open",
+      "description": "The official `security-guidance` marketplace plugin can falsely block ordinary `Write`, `Edit`, and `MultiEdit` operations when the file content contains the bare substring `exec(`, even inside Markdown or prose examples. In the reported repro on 2026-04-11, a documentation write containing harmless snippets such as `db.exec(schema)` triggered the plugin's `child_process_exec` rule because its Python hook scans the full file body with naive substring matching and no file-type awareness, then exits with code 2 to deny the tool call. This is distinct from the older Windows `python3` launcher bug in the same plugin: there, the hook never starts on Windows; here, the hook runs successfully but applies the wrong security heuristic and turns normal doc-writing into a false-positive command-injection block.",
+      "cc_issue": 46720,
+      "cc_version": null,
+      "date_added": "2026-04-11",
+      "workaround": "If you use the official `security-guidance` plugin, do not assume documentation or markdown writes containing `exec(` will pass cleanly. Write placeholder text first and patch examples in smaller edits, disable the plugin temporarily for doc-heavy sessions, or fork the plugin and narrow the rule so it only scans relevant code contexts instead of raw file contents."
     }
   ],
   "status_summary": {
-    "open": 885,
+    "open": 886,
     "fixed": 13,
     "mitigated": 1
   },
@@ -10996,19 +11008,19 @@
     "critical": 62,
     "high": 433,
     "low": 97,
-    "medium": 307
+    "medium": 308
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 899,
+    "total": 900,
     "critical": 62,
     "high": 433,
-    "medium": 307,
+    "medium": 308,
     "low": 97,
-    "open": 885,
+    "open": 886,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 899
+  "total": 900
 }
