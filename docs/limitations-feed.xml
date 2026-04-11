@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Startup `-w` worktrees can survive `/exit` without any keep-or-remove cleanup prompt</title>
+    <id>https://framework.boucle.sh/limitations.html#startup-worktree-exit-skips-keep-or-remove-cleanup-prompt</id>
+    <link href="https://framework.boucle.sh/limitations.html#startup-worktree-exit-skips-keep-or-remove-cleanup-prompt"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>When Claude Code is launched with `claude -w &lt;name&gt;` so the session starts directly inside a freshly created git worktree, invoking `/exit` immediately can terminate the session without ever asking whether to keep or remove that worktree. The worktree directory and its branch are left behind on disk even though the built-in ExitWorktree contract says the user should be prompted on session exit while still inside the worktree. This is distinct from the older `symlinkDirectories` cleanup bug and the `--worktree` no-create failure: here the startup worktree is created successfully, but the `/exit` shutdown path bypasses the cleanup prompt and silently leaks the worktree and branch.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Microsoft 365 MCP OAuth can fail when `WWW-Authenticate` exposes relative `resource_metadata`</title>
     <id>https://framework.boucle.sh/limitations.html#microsoft-365-mcp-oauth-fails-on-relative-resource-metadata</id>
     <link href="https://framework.boucle.sh/limitations.html#microsoft-365-mcp-oauth-fails-on-relative-resource-metadata"/>
@@ -156,14 +164,6 @@
     <link href="https://framework.boucle.sh/limitations.html#mcp-elicitation-abort-leaks-zombie-queue-entry"/>
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>When an MCP elicitation request is queued and then aborted before the dialog cleanup path runs, Claude Code can leave that aborted entry at the head of the internal elicitation queue. Later elicitation requests from the same session stack up behind the zombie entry and never surface to the user, so tool calls appear to hang until the upstream MCP server times out. This is distinct from older AskUserQuestion or notification-hook gaps: the failure is in the MCP elicitation queue cleanup layer itself, and it can break otherwise-valid approval dialogs after one cancelled or transport-aborted request.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] MCP OAuth tokens can expire permanently on the `claude.ai` proxy path without any refresh or reauth flow</title>
-    <id>https://framework.boucle.sh/limitations.html#claude-ai-proxy-mcp-oauth-tokens-never-refresh</id>
-    <link href="https://framework.boucle.sh/limitations.html#claude-ai-proxy-mcp-oauth-tokens-never-refresh"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>MCP servers connected through the `claude.ai` marketplace proxy (`mcp-proxy.anthropic.com`) can reconnect their SSE transport successfully after token expiry but still never perform an OAuth refresh or reauthorization flow. In the reported repro, server logs showed no follow-up `/token` or `/authorize` traffic after expiry, client debug logs reported only a successful proxy transport reconnection, and the next tool call then failed upstream with the stale token. This is distinct from the older direct HTTP MCP refresh bug that Anthropic fixed earlier: the break is specific to the `claude.ai` proxy transport, where the client appears to recover the connection layer while leaving expired credentials untouched.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
 </feed>

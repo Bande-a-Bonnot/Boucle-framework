@@ -1,8 +1,8 @@
 {
   "version": "0.12.0",
-  "count": 888,
+  "count": 889,
   "categories": {
-    "Hook behavior & events": 165,
+    "Hook behavior & events": 166,
     "Permission system": 107,
     "Hook bypass & evasion": 96,
     "MCP & plugin issues": 44,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 423,
+    "HIGH": 424,
     "LOW": 97,
     "MEDIUM": 306
   },
@@ -10851,30 +10851,42 @@
       "cc_version": null,
       "date_added": "2026-04-11",
       "workaround": "If the Microsoft 365 claude.ai connector repeatedly falls back to `Needs authentication` while other claude.ai connectors still work, treat it as a connector-side OAuth discovery bug rather than a local Windows auth failure. Verify the mismatch with `claude mcp list` and avoid relying on the built-in Microsoft 365 connector until Anthropic serves an absolute `resource_metadata` URL in the `WWW-Authenticate` header."
+    },
+    {
+      "id": "startup-worktree-exit-skips-keep-or-remove-cleanup-prompt",
+      "title": "Startup `-w` worktrees can survive `/exit` without any keep-or-remove cleanup prompt",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "When Claude Code is launched with `claude -w <name>` so the session starts directly inside a freshly created git worktree, invoking `/exit` immediately can terminate the session without ever asking whether to keep or remove that worktree. The worktree directory and its branch are left behind on disk even though the built-in ExitWorktree contract says the user should be prompted on session exit while still inside the worktree. This is distinct from the older `symlinkDirectories` cleanup bug and the `--worktree` no-create failure: here the startup worktree is created successfully, but the `/exit` shutdown path bypasses the cleanup prompt and silently leaks the worktree and branch.",
+      "cc_issue": 46557,
+      "cc_version": "2.1.101",
+      "date_added": "2026-04-11",
+      "workaround": "Do not assume `/exit` will offer to clean up a startup `-w` worktree right now. If you launch a session with `claude -w`, verify afterwards with `git worktree list` whether the worktree was removed, and manually run `git worktree remove <path>` plus `git branch -d <branch>` when you intended to discard it."
     }
   ],
   "status_summary": {
-    "open": 874,
+    "open": 875,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 423,
+    "high": 424,
     "low": 97,
     "medium": 306
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 888,
+    "total": 889,
     "critical": 62,
-    "high": 423,
+    "high": 424,
     "medium": 306,
     "low": 97,
-    "open": 874,
+    "open": 875,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 888
+  "total": 889
 }
