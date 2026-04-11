@@ -670,7 +670,7 @@ bash tools/worktree-guard/test.sh
 
 **v0.12.0** — 195 Rust tests + ~1758 hook tests (bash + PowerShell). Zero clippy warnings. CI on Ubuntu + macOS + Windows. Docker support.
 
-New in v0.12.0: Searchable Known Limitations page (365 entries). test-hook.sh dry-run tester. file-guard v2.1.89 absolute path fix. safety-check 3 silent failure fixes. Installer UX improvements. README navigation banner + platform matrix. See [CHANGELOG](CHANGELOG.md) for details.
+New in v0.12.0: Searchable Known Limitations page (now 888 entries). test-hook.sh dry-run tester. file-guard v2.1.89 absolute path fix. safety-check 3 silent failure fixes. Installer UX improvements. README navigation banner + platform matrix. See [CHANGELOG](CHANGELOG.md) for details.
 
 32 stars, 4 external contributors, 2 forks.
 
