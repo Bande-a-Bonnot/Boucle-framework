@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 900,
+  "count": 901,
   "categories": {
     "Hook behavior & events": 169,
     "Permission system": 107,
@@ -32,6 +32,7 @@
     "Core & session management": 4,
     "Data integrity": 4,
     "permissions": 4,
+    "Plugin & channel system": 4,
     "sandbox": 4,
     "Sandbox & permissions": 4,
     "Scheduled tasks": 4,
@@ -47,7 +48,6 @@
     "Model behavior & output": 3,
     "model-behavior": 3,
     "Permissions & safety": 3,
-    "Plugin & channel system": 3,
     "Remote": 3,
     "Sandbox": 3,
     "Security": 3,
@@ -168,7 +168,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 433,
+    "HIGH": 434,
     "LOW": 97,
     "MEDIUM": 308
   },
@@ -10997,30 +10997,42 @@
       "cc_version": null,
       "date_added": "2026-04-11",
       "workaround": "If you use the official `security-guidance` plugin, do not assume documentation or markdown writes containing `exec(` will pass cleanly. Write placeholder text first and patch examples in smaller edits, disable the plugin temporarily for doc-heavy sessions, or fork the plugin and narrow the rule so it only scans relevant code contexts instead of raw file contents."
+    },
+    {
+      "id": "reload-plugins-can-drop-inbound-channel-notifications-until-session-restart",
+      "title": "`/reload-plugins` can drop inbound channel notifications until the session is restarted",
+      "category": "Plugin & channel system",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "After `/reload-plugins`, Claude Code can reconnect plugin MCP tools successfully while silently failing to re-establish the inbound `notifications/claude/channel` subscription for channel-capable plugins. In the reported v2.1.101 repro on an exe.dev VM with `telegram@claude-plugins-official` loaded through `--channels`, Telegram messages appeared in the conversation before the reload, `/reload-plugins` completed normally, and the plugin's outbound `reply` tool kept working afterward, but new inbound Telegram DMs never surfaced again until the entire session was restarted. This is distinct from older channel regressions where notifications never work on first attach, tool injection is missing, or the channel plugin process never spawns: here the session starts healthy, `/reload-plugins` breaks only the inbound listener layer, and outbound tool calls still prove the plugin transport remains alive.",
+      "cc_issue": 46728,
+      "cc_version": "2.1.101",
+      "date_added": "2026-04-11",
+      "workaround": "Do not assume `/reload-plugins` preserves channel subscriptions for notification-driven plugins right now. If inbound channel traffic matters, restart the session after reloading plugins, then verify that a fresh inbound message still reaches the conversation before trusting the channel again."
     }
   ],
   "status_summary": {
-    "open": 886,
+    "open": 887,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 433,
+    "high": 434,
     "low": 97,
     "medium": 308
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 900,
+    "total": 901,
     "critical": 62,
-    "high": 433,
+    "high": 434,
     "medium": 308,
     "low": 97,
-    "open": 886,
+    "open": 887,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 900
+  "total": 901
 }
