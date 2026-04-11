@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] `/compact` can preserve `/loop` guidance while losing the cron scope needed to stop it</title>
+    <id>https://framework.boucle.sh/limitations.html#compact-preserves-loop-skill-but-loses-cron-control-scope</id>
+    <link href="https://framework.boucle.sh/limitations.html#compact-preserves-loop-skill-but-loses-cron-control-scope"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>After a conversation uses `/loop`, later stops the loop, and then runs `/compact`, the compacted session can still restore the loop skill guidance (`Skills restored (loop)`) and keep treating incoming cron-fired prompts as active loop work even though the new session no longer owns the original cron jobs. In the reported repro, `CronList` inside the compacted session returned no jobs while stale loop executions kept firing, leaving the user with no in-band way to `CronDelete` the pre-compaction jobs from the session that still believed it should honor the loop contract. This is distinct from older auto-compaction thrash bugs: the failure is cross-session state drift where compaction preserves behavioral guidance but drops the scheduler control surface needed to cancel the behavior safely.</summary>
+    <category term="Context / compaction"/>
+  </entry>
+  <entry>
     <title>[HIGH] Startup `-w` worktrees can survive `/exit` without any keep-or-remove cleanup prompt</title>
     <id>https://framework.boucle.sh/limitations.html#startup-worktree-exit-skips-keep-or-remove-cleanup-prompt</id>
     <link href="https://framework.boucle.sh/limitations.html#startup-worktree-exit-skips-keep-or-remove-cleanup-prompt"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>When Cowork writes files containing non-ASCII characters on Windows, the file can remain correct inside the Cowork sandbox but become mojibake once it is synced back to the host filesystem. Reported examples include dashes, curly quotes, bullets, and the euro sign, all of which were preserved when read from inside the sandbox and then silently re-encoded as Windows-1252 style garbage on the host side. This is distinct from older TUI, hook, or copy-paste Unicode regressions because the corruption happens in the Cowork sandbox-to-host file sync path itself, turning apparently successful agent output into damaged files for external editors, scripts, or downstream automation.</summary>
     <category term="Data integrity"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Aborted MCP elicitation requests can leak zombie queue entries and block later approval prompts</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-elicitation-abort-leaks-zombie-queue-entry</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-elicitation-abort-leaks-zombie-queue-entry"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>When an MCP elicitation request is queued and then aborted before the dialog cleanup path runs, Claude Code can leave that aborted entry at the head of the internal elicitation queue. Later elicitation requests from the same session stack up behind the zombie entry and never surface to the user, so tool calls appear to hang until the upstream MCP server times out. This is distinct from older AskUserQuestion or notification-hook gaps: the failure is in the MCP elicitation queue cleanup layer itself, and it can break otherwise-valid approval dialogs after one cancelled or transport-aborted request.</summary>
-    <category term="MCP &amp; plugin issues"/>
   </entry>
 </feed>

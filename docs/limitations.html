@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">889</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
+        <p class="subtitle"><span id="total-count">890</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9408,6 +9408,18 @@
                         <!-- workaround:startup-worktree-exit-skips-keep-or-remove-cleanup-prompt -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume `/exit` will offer to clean up a startup `-w` worktree right now. If you launch a session with `claude -w`, verify afterwards with `git worktree list` whether the worktree was removed, and manually run `git worktree remove &lt;path&gt;` plus `git branch -d &lt;branch&gt;` when you intended to discard it.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46557" target="_blank">#46557</a></div>
+        </div>
+        <div class="kl-entry" data-category="Context / compaction" data-issues="46561" id="compact-preserves-loop-skill-but-loses-cron-control-scope" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#890</span>
+                <span class="kl-cat">Context / compaction</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>`/compact` can preserve `/loop` guidance while losing the cron scope needed to stop it</h3>
+            <p>After a conversation uses `/loop`, later stops the loop, and then runs `/compact`, the compacted session can still restore the loop skill guidance (`Skills restored (loop)`) and keep treating incoming cron-fired prompts as active loop work even though the new session no longer owns the original cron jobs. In the reported repro, `CronList` inside the compacted session returned no jobs while stale loop executions kept firing, leaving the user with no in-band way to `CronDelete` the pre-compaction jobs from the session that still believed it should honor the loop contract. This is distinct from older auto-compaction thrash bugs: the failure is cross-session state drift where compaction preserves behavioral guidance but drops the scheduler control surface needed to cancel the behavior safely.</p>
+                        <!-- workaround:compact-preserves-loop-skill-but-loses-cron-control-scope -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not trust `/compact` as a safe boundary after using `/loop`. Before compacting, cancel every active loop from the original session and verify with `CronList` there. If stale loop prompts keep arriving after compaction, resume the original session that created the cron job and delete it there rather than relying on the compacted session&#x27;s empty `CronList` output.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46561" target="_blank">#46561</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

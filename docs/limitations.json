@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 889,
+  "count": 890,
   "categories": {
     "Hook behavior & events": 166,
     "Permission system": 107,
@@ -57,6 +57,7 @@
     "auth/bedrock": 2,
     "auth/oauth": 2,
     "Configuration": 2,
+    "Context / compaction": 2,
     "Cowork / remote sessions": 2,
     "IDE integration": 2,
     "IDE integrations": 2,
@@ -90,7 +91,6 @@
     "Bash & shell execution": 1,
     "Compaction & memory": 1,
     "configuration": 1,
-    "Context / compaction": 1,
     "Context management": 1,
     "context management": 1,
     "context-management": 1,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 424,
+    "HIGH": 425,
     "LOW": 97,
     "MEDIUM": 306
   },
@@ -10863,30 +10863,42 @@
       "cc_version": "2.1.101",
       "date_added": "2026-04-11",
       "workaround": "Do not assume `/exit` will offer to clean up a startup `-w` worktree right now. If you launch a session with `claude -w`, verify afterwards with `git worktree list` whether the worktree was removed, and manually run `git worktree remove <path>` plus `git branch -d <branch>` when you intended to discard it."
+    },
+    {
+      "id": "compact-preserves-loop-skill-but-loses-cron-control-scope",
+      "title": "`/compact` can preserve `/loop` guidance while losing the cron scope needed to stop it",
+      "category": "Context / compaction",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "After a conversation uses `/loop`, later stops the loop, and then runs `/compact`, the compacted session can still restore the loop skill guidance (`Skills restored (loop)`) and keep treating incoming cron-fired prompts as active loop work even though the new session no longer owns the original cron jobs. In the reported repro, `CronList` inside the compacted session returned no jobs while stale loop executions kept firing, leaving the user with no in-band way to `CronDelete` the pre-compaction jobs from the session that still believed it should honor the loop contract. This is distinct from older auto-compaction thrash bugs: the failure is cross-session state drift where compaction preserves behavioral guidance but drops the scheduler control surface needed to cancel the behavior safely.",
+      "cc_issue": 46561,
+      "cc_version": null,
+      "date_added": "2026-04-11",
+      "workaround": "Do not trust `/compact` as a safe boundary after using `/loop`. Before compacting, cancel every active loop from the original session and verify with `CronList` there. If stale loop prompts keep arriving after compaction, resume the original session that created the cron job and delete it there rather than relying on the compacted session's empty `CronList` output."
     }
   ],
   "status_summary": {
-    "open": 875,
+    "open": 876,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 424,
+    "high": 425,
     "low": 97,
     "medium": 306
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 889,
+    "total": 890,
     "critical": 62,
-    "high": 424,
+    "high": 425,
     "medium": 306,
     "low": 97,
-    "open": 875,
+    "open": 876,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 889
+  "total": 890
 }
