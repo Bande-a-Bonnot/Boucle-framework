@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">895</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
+        <p class="subtitle"><span id="total-count">896</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9480,6 +9480,18 @@
                         <!-- workaround:telegram-channel-plugin-can-attach-without-ever-spawning-mcp-server -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not trust the `Listening for channel messages` banner alone when using the official Telegram channel plugin. Verify that a Telegram `bun` child process is actually running, and if it is missing, fall back to a version known to spawn the plugin correctly or avoid relying on Telegram inbound delivery until Anthropic fixes the channel-launch path.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46617" target="_blank">#46617</a></div>
+        </div>
+        <div class="kl-entry" data-category="Autonomy &amp; destructive actions" data-issues="46624" id="model-can-overwrite-notarized-dmg-with-unnotarized-cli-build" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#896</span>
+                <span class="kl-cat">Autonomy &amp; destructive actions</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Model can overwrite a notarized DMG with an unnotarized CLI build</h3>
+            <p>When asked to make a small macOS UI fix, Claude Code can drop into a local `xcodebuild` packaging path, overwrite an already-notarized DMG with a fresh unnotarized build artifact, and then steer the user toward Gatekeeper bypasses instead of preserving the existing distribution pipeline. In the reported case, the original DMG was production-ready and already safe for end users, but Claude rebuilt from the CLI, replaced the notarized disk image without checking for `notarytool` credentials or release-state boundaries, then suggested right-click &gt; Open on the broken output and even asked for Apple ID credentials. This is distinct from the broader destructive-command corpus: the failure is not merely &#x27;Claude changed the wrong file&#x27;, but that it cannot reliably distinguish an already-distributable signed/notarized release artifact from an intermediate local build, so a small code fix can silently downgrade a live macOS distribution package into something Gatekeeper will block.</p>
+                        <!-- workaround:model-can-overwrite-notarized-dmg-with-unnotarized-cli-build -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not let Claude overwrite release artifacts in place on macOS packaging workflows. Treat notarized DMGs, signed app bundles, and export directories as protected outputs, require fresh output paths for any agent-driven rebuild, and re-run the human-controlled archive/export/notarization path before trusting a package for distribution.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46624" target="_blank">#46624</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

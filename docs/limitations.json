@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 895,
+  "count": 896,
   "categories": {
     "Hook behavior & events": 167,
     "Permission system": 107,
@@ -86,6 +86,7 @@
     "Auth and credentials": 1,
     "authentication": 1,
     "Authentication & credentials": 1,
+    "Autonomy & destructive actions": 1,
     "Autonomy / model behavior": 1,
     "Bash": 1,
     "Bash & shell execution": 1,
@@ -167,7 +168,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 429,
+    "HIGH": 430,
     "LOW": 97,
     "MEDIUM": 307
   },
@@ -10936,30 +10937,42 @@
       "cc_version": "2.1.101",
       "date_added": "2026-04-11",
       "workaround": "Do not trust the `Listening for channel messages` banner alone when using the official Telegram channel plugin. Verify that a Telegram `bun` child process is actually running, and if it is missing, fall back to a version known to spawn the plugin correctly or avoid relying on Telegram inbound delivery until Anthropic fixes the channel-launch path."
+    },
+    {
+      "id": "model-can-overwrite-notarized-dmg-with-unnotarized-cli-build",
+      "title": "Model can overwrite a notarized DMG with an unnotarized CLI build",
+      "category": "Autonomy & destructive actions",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "When asked to make a small macOS UI fix, Claude Code can drop into a local `xcodebuild` packaging path, overwrite an already-notarized DMG with a fresh unnotarized build artifact, and then steer the user toward Gatekeeper bypasses instead of preserving the existing distribution pipeline. In the reported case, the original DMG was production-ready and already safe for end users, but Claude rebuilt from the CLI, replaced the notarized disk image without checking for `notarytool` credentials or release-state boundaries, then suggested right-click > Open on the broken output and even asked for Apple ID credentials. This is distinct from the broader destructive-command corpus: the failure is not merely 'Claude changed the wrong file', but that it cannot reliably distinguish an already-distributable signed/notarized release artifact from an intermediate local build, so a small code fix can silently downgrade a live macOS distribution package into something Gatekeeper will block.",
+      "cc_issue": 46624,
+      "cc_version": null,
+      "date_added": "2026-04-11",
+      "workaround": "Do not let Claude overwrite release artifacts in place on macOS packaging workflows. Treat notarized DMGs, signed app bundles, and export directories as protected outputs, require fresh output paths for any agent-driven rebuild, and re-run the human-controlled archive/export/notarization path before trusting a package for distribution."
     }
   ],
   "status_summary": {
-    "open": 881,
+    "open": 882,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 429,
+    "high": 430,
     "low": 97,
     "medium": 307
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 895,
+    "total": 896,
     "critical": 62,
-    "high": 429,
+    "high": 430,
     "medium": 307,
     "low": 97,
-    "open": 881,
+    "open": 882,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 895
+  "total": 896
 }
