@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Desktop status indicators can freeze during long single `Write` tool calls</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-status-indicators-freeze-during-long-single-write-calls</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-status-indicators-freeze-during-long-single-write-calls"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>In the Claude desktop app, a long-running turn that ends with one large `Write` tool call can blank the live status indicators mid-turn even though the underlying agent loop keeps progressing and the file is written successfully. In the reported Windows desktop repro, the token counter, thinking indicator, and active tool label all disappeared during a single 150-250 line `Write`, then returned only after the user typed into the input box. This is distinct from older TUI freeze, statusline-hook, and long-session rendering bugs: the desktop client loses its live activity/status display specifically during a large one-shot `Write`, while the write itself still completes underneath.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
+  <entry>
     <title>[HIGH] Windows `Stop` hooks using `pwsh` can receive no redirected stdin payload at all</title>
     <id>https://framework.boucle.sh/limitations.html#windows-stop-hook-pwsh-receives-no-stdin-payload</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-stop-hook-pwsh-receives-no-stdin-payload"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>Claude Code can remember the selected model across sessions while silently forgetting the thinking effort level chosen through `/model` (for example `auto`, `low`, `medium`, or `high`). In the reported repro, the effort setting changed successfully inside the current session but the next fresh session reverted to the default `medium` value. This is distinct from older `/model` regressions that wipe permissions, strip hook filters, or leave tools pointing at stale model IDs: the break is in persistence of the effort preference itself, so users can believe they are reopening a session with the same reasoning budget when the CLI has already fallen back to a different level.</summary>
     <category term="Configuration &amp; settings"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Agent SDK `query()` can leave slash commands unexpanded and pass them through as literal prompt text</title>
-    <id>https://framework.boucle.sh/limitations.html#agent-sdk-query-leaves-slash-commands-unexpanded</id>
-    <link href="https://framework.boucle.sh/limitations.html#agent-sdk-query-leaves-slash-commands-unexpanded"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>When the Claude Agent SDK starts a session with `query({ prompt: &quot;/skill ...&quot; })`, the spawned Claude Code process can discover the relevant skill and list it in the init event while still passing the raw `/skill ...` string through to the model instead of expanding the slash command first. This creates a contract gap between the interactive CLI and the SDK path: workflows that reliably preload skill content in the TUI become model-choice-dependent in SDK mode because the model must decide to call the Skill tool itself. This is distinct from older skill discovery, autocomplete, or custom-agent preload bugs because the failure happens after slash command discovery, at the prompt-expansion layer specific to `query()` input handling.</summary>
-    <category term="Skills / slash commands"/>
   </entry>
 </feed>

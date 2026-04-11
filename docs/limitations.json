@@ -1,13 +1,13 @@
 {
   "version": "0.12.0",
-  "count": 893,
+  "count": 894,
   "categories": {
     "Hook behavior & events": 167,
     "Permission system": 107,
     "Hook bypass & evasion": 96,
     "MCP & plugin issues": 44,
     "Subagent & spawned agents": 38,
-    "Desktop & IDE integration": 23,
+    "Desktop & IDE integration": 24,
     "Platform & compatibility": 23,
     "Context & memory": 20,
     "CLI & terminal": 18,
@@ -169,7 +169,7 @@
     "CRITICAL": 62,
     "HIGH": 428,
     "LOW": 97,
-    "MEDIUM": 306
+    "MEDIUM": 307
   },
   "entries": [
     {
@@ -10912,10 +10912,22 @@
       "cc_version": "2.1.101",
       "date_added": "2026-04-11",
       "workaround": "Do not rely on a native Windows `Stop` hook plus `pwsh` as the only final-output enforcement layer until Claude Code proves that the event payload is really being piped into the script. Verify with a diagnostic hook that checks `[Console]::IsInputRedirected` and logs stdin bytes, or move that safety check to another hook event or a non-Windows environment for now."
+    },
+    {
+      "id": "desktop-status-indicators-freeze-during-long-single-write-calls",
+      "title": "Desktop status indicators can freeze during long single `Write` tool calls",
+      "category": "Desktop & IDE integration",
+      "severity": "MEDIUM",
+      "status": "open",
+      "description": "In the Claude desktop app, a long-running turn that ends with one large `Write` tool call can blank the live status indicators mid-turn even though the underlying agent loop keeps progressing and the file is written successfully. In the reported Windows desktop repro, the token counter, thinking indicator, and active tool label all disappeared during a single 150-250 line `Write`, then returned only after the user typed into the input box. This is distinct from older TUI freeze, statusline-hook, and long-session rendering bugs: the desktop client loses its live activity/status display specifically during a large one-shot `Write`, while the write itself still completes underneath.",
+      "cc_issue": 46614,
+      "cc_version": null,
+      "date_added": "2026-04-11",
+      "workaround": "If the desktop status bar blanks during a large `Write`, do not assume the agent has stopped or the file write failed. Check the target file on disk before interrupting the turn, and avoid relying on a dummy keystroke to unstick the UI unless you can tolerate that extra input being sent as a real user message on the next turn."
     }
   ],
   "status_summary": {
-    "open": 879,
+    "open": 880,
     "fixed": 13,
     "mitigated": 1
   },
@@ -10923,19 +10935,19 @@
     "critical": 62,
     "high": 428,
     "low": 97,
-    "medium": 306
+    "medium": 307
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 893,
+    "total": 894,
     "critical": 62,
     "high": 428,
-    "medium": 306,
+    "medium": 307,
     "low": 97,
-    "open": 879,
+    "open": 880,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 893
+  "total": 894
 }
