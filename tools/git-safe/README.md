@@ -54,7 +54,7 @@ GIT_SAFE_CONFIG=path  # Custom config file location
 
 ## How it works
 
-git-safe is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code/hooks) that inspects Bash commands before execution. It uses pattern matching to detect destructive git operations and returns a `block` decision with an explanation.
+git-safe is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code/hooks) that inspects Bash commands before execution. It uses pattern matching to detect destructive git operations and hard-blocks them with a human-readable reason on `stderr` plus exit code `2`, which is the most reliable deny path across Claude Code surfaces today.
 
 Safe operations (`git status`, `git commit`, `git push`, `git branch -d`, etc.) pass through without interference.
 

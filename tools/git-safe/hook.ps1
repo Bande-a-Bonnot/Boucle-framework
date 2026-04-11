@@ -42,12 +42,11 @@ function Write-Log {
     }
 }
 
-# Helper: output a block decision as JSON
+# Helper: block via stderr + exit 2, the most reliable hard-block path.
 function Block-Tool {
     param([string]$Reason)
-    $result = @{ hookSpecificOutput = @{ permissionDecision = 'deny'; permissionDecisionReason = $Reason } } | ConvertTo-Json -Compress -Depth 3
-    Write-Output $result
-    exit 0
+    [Console]::Error.WriteLine($Reason)
+    exit 2
 }
 
 # Read hook input from stdin

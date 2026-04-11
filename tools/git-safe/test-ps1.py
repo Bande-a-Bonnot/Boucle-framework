@@ -44,7 +44,7 @@ def run_hook(json_input, env_overrides=None, cwd=None):
         env=env,
         cwd=cwd,
     )
-    return result.stdout.strip(), result.returncode
+    return result.stdout.strip(), result.stderr.strip(), result.returncode
 
 
 def make_input(tool_name, command=None):
@@ -58,13 +58,16 @@ def assert_blocked(desc, json_input, **kwargs):
     global PASS, FAIL, TOTAL
     TOTAL += 1
     try:
-        stdout, _ = run_hook(json_input, **kwargs)
-        if '"decision":"block"' in stdout or '"decision": "block"' in stdout:
+        stdout, stderr, rc = run_hook(json_input, **kwargs)
+        if rc == 2 and not stdout and "git-safe:" in stderr:
             PASS += 1
             print(f"  {GREEN}PASS{NC}: {desc}")
         else:
             FAIL += 1
-            print(f"  {RED}FAIL{NC}: {desc} (expected block, got: {stdout!r})")
+            print(
+                f"  {RED}FAIL{NC}: {desc} "
+                f"(expected rc=2 with stderr reason, got rc={rc} stdout={stdout!r} stderr={stderr!r})"
+            )
     except Exception as e:
         FAIL += 1
         print(f"  {RED}FAIL{NC}: {desc} (exception: {e})")
@@ -74,13 +77,16 @@ def assert_allowed(desc, json_input, **kwargs):
     global PASS, FAIL, TOTAL
     TOTAL += 1
     try:
-        stdout, _ = run_hook(json_input, **kwargs)
-        if '"decision":"block"' in stdout or '"decision": "block"' in stdout:
-            FAIL += 1
-            print(f"  {RED}FAIL{NC}: {desc} (expected allow, got: {stdout!r})")
-        else:
+        stdout, stderr, rc = run_hook(json_input, **kwargs)
+        if rc == 0 and not stdout and not stderr:
             PASS += 1
             print(f"  {GREEN}PASS{NC}: {desc}")
+        else:
+            FAIL += 1
+            print(
+                f"  {RED}FAIL{NC}: {desc} "
+                f"(expected clean allow, got rc={rc} stdout={stdout!r} stderr={stderr!r})"
+            )
     except Exception as e:
         FAIL += 1
         print(f"  {RED}FAIL{NC}: {desc} (exception: {e})")
