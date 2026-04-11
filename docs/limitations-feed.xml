@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Chrome extension service worker can fail to register when no Chrome window is focused</title>
+    <id>https://framework.boucle.sh/limitations.html#chrome-profile-extension-service-worker-fails-when-no-window-is-focused</id>
+    <link href="https://framework.boucle.sh/limitations.html#chrome-profile-extension-service-worker-fails-when-no-window-is-focused"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>In a multi-profile Chrome setup, Claude&#x27;s browser extension service worker can fail to register one profile with the MCP daemon if that profile&#x27;s window is not the currently focused window when the worker wakes. The reported repro showed `chrome.windows.getCurrent()` returning null in the background service worker, which then threw `No current window` and prevented the profile from advertising itself to Claude Code. This is distinct from the older native-host ordering bug where the extension always binds to Desktop first: here the correct native host can exist, but the profile never reaches registration because the service-worker window lookup assumes a currently focused Chrome window.</summary>
+    <category term="MCP &amp; integrations"/>
+  </entry>
+  <entry>
     <title>[HIGH] Project-scoped HTTP MCP can fail health checks and fall back to the OAuth `authenticate` stub</title>
     <id>https://framework.boucle.sh/limitations.html#project-scoped-http-mcp-fails-health-check-and-falls-back-to-oauth-stub</id>
     <link href="https://framework.boucle.sh/limitations.html#project-scoped-http-mcp-fails-health-check-and-falls-back-to-oauth-stub"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>A custom agent defined in `~/.claude/agents/*.md` can declare a `skills:` frontmatter list exactly as documented, yet the spawned subagent still starts without the referenced skill content in its prompt context. In the reported repro, the subagent could not find distinctive strings from the target SKILL.md, only saw file-path mentions from the agent body, and had no Skill tool available to load the missing content itself. This is distinct from older subagent skill-invocation bugs: the failure happens before invocation, at the documented skill-content injection layer that is supposed to preload the skill into the custom subagent context.</summary>
     <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `/ultraplan` can attach an ancestor git repository instead of the nested repo in the current working directory</title>
-    <id>https://framework.boucle.sh/limitations.html#ultraplan-attaches-ancestor-repo-instead-of-nested-cwd-repo</id>
-    <link href="https://framework.boucle.sh/limitations.html#ultraplan-attaches-ancestor-repo-instead-of-nested-cwd-repo"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>When `/ultraplan` is invoked from inside a nested git repository, Claude Code can ignore the child repository that `git rev-parse --show-toplevel` resolves for the current working directory and instead attach an ancestor repository higher in the path tree. This is distinct from the older stale-project-context bug: the wrong repo is chosen deterministically on the first invocation, with no prior ultraplan session required. If the ancestor repo is dirty, the cloud flow surfaces a misleading uncommitted-changes error from the wrong codebase; if it is clean, the plan proceeds silently against the ancestor project, so users can review or implement changes for an unrelated repository without realizing the attachment was wrong from the start.</summary>
-    <category term="Remote"/>
   </entry>
 </feed>

@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">885</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
+        <p class="subtitle"><span id="total-count">886</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9360,6 +9360,18 @@
                         <!-- workaround:project-scoped-http-mcp-fails-health-check-and-falls-back-to-oauth-stub -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If a bearer-auth HTTP MCP server works at user scope but fails from project `.mcp.json`, do not trust the project-scope status banner or `authenticate` stub. Verify the endpoint independently with `curl` or `claude mcp get`, and register the server at user scope until the project-scope HTTP path is fixed.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46510" target="_blank">#46510</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="46514" id="chrome-profile-extension-service-worker-fails-when-no-window-is-focused" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#886</span>
+                <span class="kl-cat">MCP &amp; integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Chrome extension service worker can fail to register when no Chrome window is focused</h3>
+            <p>In a multi-profile Chrome setup, Claude&#x27;s browser extension service worker can fail to register one profile with the MCP daemon if that profile&#x27;s window is not the currently focused window when the worker wakes. The reported repro showed `chrome.windows.getCurrent()` returning null in the background service worker, which then threw `No current window` and prevented the profile from advertising itself to Claude Code. This is distinct from the older native-host ordering bug where the extension always binds to Desktop first: here the correct native host can exist, but the profile never reaches registration because the service-worker window lookup assumes a currently focused Chrome window.</p>
+                        <!-- workaround:chrome-profile-extension-service-worker-fails-when-no-window-is-focused -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If `switch_browser` reports that no other browsers are available even though another Chrome profile has the extension installed, bring the target Chrome profile window to the foreground and wake the extension worker again. Do not assume background or unfocused Chrome profiles will register reliably until Anthropic changes the worker to handle `chrome.windows.getCurrent()` returning null or uses `getLastFocused()` instead.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46514" target="_blank">#46514</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

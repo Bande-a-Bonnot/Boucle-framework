@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 885,
+  "count": 886,
   "categories": {
     "Hook behavior & events": 165,
     "Permission system": 107,
@@ -30,6 +30,7 @@
     "UX & display": 5,
     "Core & session management": 4,
     "Data integrity": 4,
+    "MCP & integrations": 4,
     "permissions": 4,
     "sandbox": 4,
     "Sandbox & permissions": 4,
@@ -40,7 +41,6 @@
     "Cowork & remote": 3,
     "Desktop": 3,
     "Hooks": 3,
-    "MCP & integrations": 3,
     "MCP & plugins": 3,
     "Memory & context": 3,
     "Model behavior": 3,
@@ -167,7 +167,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 420,
+    "HIGH": 421,
     "LOW": 97,
     "MEDIUM": 306
   },
@@ -10815,30 +10815,42 @@
       "cc_version": "2.1.92",
       "date_added": "2026-04-11",
       "workaround": "If a bearer-auth HTTP MCP server works at user scope but fails from project `.mcp.json`, do not trust the project-scope status banner or `authenticate` stub. Verify the endpoint independently with `curl` or `claude mcp get`, and register the server at user scope until the project-scope HTTP path is fixed."
+    },
+    {
+      "id": "chrome-profile-extension-service-worker-fails-when-no-window-is-focused",
+      "title": "Chrome extension service worker can fail to register when no Chrome window is focused",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "In a multi-profile Chrome setup, Claude's browser extension service worker can fail to register one profile with the MCP daemon if that profile's window is not the currently focused window when the worker wakes. The reported repro showed `chrome.windows.getCurrent()` returning null in the background service worker, which then threw `No current window` and prevented the profile from advertising itself to Claude Code. This is distinct from the older native-host ordering bug where the extension always binds to Desktop first: here the correct native host can exist, but the profile never reaches registration because the service-worker window lookup assumes a currently focused Chrome window.",
+      "cc_issue": 46514,
+      "cc_version": "2.1.101",
+      "date_added": "2026-04-11",
+      "workaround": "If `switch_browser` reports that no other browsers are available even though another Chrome profile has the extension installed, bring the target Chrome profile window to the foreground and wake the extension worker again. Do not assume background or unfocused Chrome profiles will register reliably until Anthropic changes the worker to handle `chrome.windows.getCurrent()` returning null or uses `getLastFocused()` instead."
     }
   ],
   "status_summary": {
-    "open": 871,
+    "open": 872,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 420,
+    "high": 421,
     "low": 97,
     "medium": 306
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 885,
+    "total": 886,
     "critical": 62,
-    "high": 420,
+    "high": 421,
     "medium": 306,
     "low": 97,
-    "open": 871,
+    "open": 872,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 885
+  "total": 886
 }
