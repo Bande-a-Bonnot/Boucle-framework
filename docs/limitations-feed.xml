@@ -4,13 +4,13 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-04-11T00:00:00Z</updated>
+  <updated>2026-04-12T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
     <title>[MEDIUM] Mobile edit approval dialogs can overlap the keyboard and cause accidental rejection</title>
     <id>https://framework.boucle.sh/limitations.html#mobile-edit-approval-dialog-can-overlap-keyboard-and-cause-accidental-rejection</id>
     <link href="https://framework.boucle.sh/limitations.html#mobile-edit-approval-dialog-can-overlap-keyboard-and-cause-accidental-rejection"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>When Claude Code is used from the Claude mobile app on iOS or Android, an incoming file-edit approval dialog can appear in the same screen region as the on-screen keyboard. In the reported repro, the user is typing a follow-up message while Claude is working, and the approval sheet lands directly over the keyboard area so a normal tap can hit `Reject` instead of a key. This is distinct from the older remote/mobile approval-propagation gaps where prompts never arrive on mobile at all: here the permission UI does arrive, but its placement makes legitimate approvals easy to reject by accident and can discard valid file edits mid-session.</summary>
     <category term="Permission system"/>
   </entry>
@@ -18,7 +18,7 @@
     <title>[HIGH] Windows MSIX installs can lose Code sessions on restart because session saves fail with `EXDEV`</title>
     <id>https://framework.boucle.sh/limitations.html#msix-session-save-exdev-leaves-code-sessions-unrecoverable-after-restart</id>
     <link href="https://framework.boucle.sh/limitations.html#msix-session-save-exdev-leaves-code-sessions-unrecoverable-after-restart"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>On Windows 11 Claude Desktop MSIX installs, Code sessions can appear healthy during the current run yet disappear after every restart because the session save path never finalizes the metadata file. In the reported repro, Desktop writes `local_*.json.tmp` under the Code sessions directory and then tries to atomically rename it to `.json`, but the MSIX VFS reparse path crosses drive boundaries and `fs.rename()` fails with `EXDEV: cross-device link not permitted`. Thousands of save attempts can fail silently in logs while every session remains stuck as `.json.tmp`, which means the restart path has nothing durable to load. This is distinct from the older macOS React-state disappearance entry and VS Code/Desktop session-list conflicts: the broken layer here is the Windows MSIX session-persistence write path itself, not sidebar state or cross-client visibility.</summary>
     <category term="Desktop &amp; IDE integration"/>
   </entry>
@@ -26,7 +26,7 @@
     <title>[MEDIUM] Auto-memory can create and overwrite memory files but cannot delete them</title>
     <id>https://framework.boucle.sh/limitations.html#auto-memory-can-create-and-overwrite-files-but-cannot-delete-them</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-memory-can-create-and-overwrite-files-but-cannot-delete-them"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>Claude Code&#x27;s built-in memory system can create and update files under `~/.claude/projects/*/memory/`, but a later request to forget or delete one of those same memories can fail because the deletion path falls between tool contracts. In the reported repro, the agent can write the memory file through the `Write` tool, yet `rm` through Bash is blocked with `Read-only file system` because the sandbox does not grant write access to that memory directory, and the `Write` tool itself has no delete capability. This is distinct from the older auto-memory truncation, worktree divergence, and approval-bypass entries: the broken layer here is lifecycle completeness of the built-in memory store itself, which can create persistent state it cannot later remove cleanly when the user asks to forget it.</summary>
     <category term="Configuration behavior"/>
   </entry>
@@ -34,7 +34,7 @@
     <title>[HIGH] Windows Bun runtime can crash with `Illegal instruction` at the context-compression boundary</title>
     <id>https://framework.boucle.sh/limitations.html#windows-bun-can-illegal-instruction-crash-at-compression-boundary</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-bun-can-illegal-instruction-crash-at-compression-boundary"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>On Windows 11 in Claude Code v2.1.81 using Bun v1.3.11 on the x64 baseline build, long sessions can crash specifically during context compression rather than during ordinary tool execution. In the reported 4-5 hour repro, the same machine survives heavy parallel agents, large file reads, long Bash runs, and long sequential tool chains, but repeatedly panics at the compression boundary with `panic(main thread): Illegal instruction` while the UI is in `Propagating...` or `Churning...`. The same session then restarts and continues normally until the next compression cycle, which narrows the broken layer to Bun or Claude Code&#x27;s compression-path runtime on Windows rather than generic load, memory pressure, or tool complexity. This is distinct from earlier Windows tool-result wrapper drops, renderer freezes, and broad context-limit failures because the session dies inside the compression runtime itself with a Bun crash report instead of hanging or returning bad tool output.</summary>
     <category term="Core engine"/>
   </entry>
@@ -42,7 +42,7 @@
     <title>[HIGH] Shell snapshot can capture unresolvable zsh autoload stubs that break system commands</title>
     <id>https://framework.boucle.sh/limitations.html#shell-snapshot-captures-unresolvable-zsh-autoload-stubs</id>
     <link href="https://framework.boucle.sh/limitations.html#shell-snapshot-captures-unresolvable-zsh-autoload-stubs"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>On macOS zsh setups that use Prezto-style autoload wrappers, Claude Code&#x27;s shell snapshot generator can capture undefined autoload stubs such as `make () { builtin autoload -XUz }` and replay them in later Bash tool subprocesses. Those stubs shadow the real `/usr/bin/make`, `/usr/bin/diff`, and similar commands, but the replayed subprocess no longer has the original `fpath` needed to resolve the autoload target, so ordinary tool calls fail with errors like `(eval):1: make: function definition file not found`. The reporter measured 83 `# undefined` stubs in a newer snapshot versus 0 in an older one, showing this is not just user shell customization but a regression in what the snapshot now preserves. This is distinct from the older shell-snapshot PATH drift and desktop GUI PATH truncation entries: here the broken layer is function capture itself, which can poison otherwise valid system-command invocations even when PATH is correct.</summary>
     <category term="Configuration behavior"/>
   </entry>
@@ -50,7 +50,7 @@
     <title>[HIGH] Windows marketplace updates can wedge permanently on a stale `.bak/` rollback directory</title>
     <id>https://framework.boucle.sh/limitations.html#windows-marketplace-update-can-wedge-permanently-on-stale-bak-directory</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-marketplace-update-can-wedge-permanently-on-stale-bak-directory"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>On Windows in Claude Code 2.1.101, one failed `claude plugin marketplace update` can leave a stale `&lt;marketplace&gt;.bak/` directory that permanently wedges every later marketplace update and startup sync for that marketplace. In the reported native Windows repro, the updater uses a rename dance (`live -&gt; .bak`, `staging -&gt; live`) that assumes POSIX-like rename behavior, but `fs.rename()` on Windows returns `EPERM` when the destination `.bak/` already exists. Once that stale rollback directory is left behind, the next update cannot rename the live marketplace into `.bak/`, rollback cannot restore `.bak/` over the still-existing live directory, and the freshly fetched `.staging/` tree never gets promoted. This is distinct from earlier git-sourced marketplace lifecycle failures, stale custom-marketplace refresh state, and execute-bit loss on plugin updates: here the broken layer is the Windows rollback/update rename path itself, which can leave an official or git-backed marketplace permanently stuck in a failed-to-load state until the orphaned `.bak/` directory is removed manually.</summary>
     <category term="Plugin &amp; channel system"/>
   </entry>
@@ -58,7 +58,7 @@
     <title>[HIGH] Managed `.mobileconfig` deny policy can still miss `Write(...)` rules even when `Bash(...)` denies work</title>
     <id>https://framework.boucle.sh/limitations.html#mobileconfig-managed-deny-can-still-miss-write-rules-after-bash-deny-recovers</id>
     <link href="https://framework.boucle.sh/limitations.html#mobileconfig-managed-deny-can-still-miss-write-rules-after-bash-deny-recovers"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>On macOS Sequoia, deny rules delivered through an MDM `.mobileconfig` profile for the `com.anthropic.claudecode` domain can partially recover while still leaving the `Write` tool unenforced. In the reported repro, the same managed profile blocked `Bash(gh repo create --public*)` exactly as expected after restart, yet `Write(**/.env)` and `Write(**/.env.*)` from that same profile still allowed Claude Code to create or overwrite `.env` files with no warning. This is distinct from the older managed-settings.json failure where enterprise deny rules were ignored wholesale: here the managed policy path is clearly active because `Bash` denies in the same profile work, and the broken layer is the remaining `Write`-deny enforcement path inside the MDM/mobileconfig preference source.</summary>
     <category term="Permission system"/>
   </entry>
@@ -66,7 +66,7 @@
     <title>[HIGH] Windows 2.1.101 can drop tool results across tool types with `[Tool result missing due to internal error]`</title>
     <id>https://framework.boucle.sh/limitations.html#windows-tool-results-can-drop-across-tools-with-internal-error-wrapper</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-tool-results-can-drop-across-tools-with-internal-error-wrapper"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>On Windows 11 in Claude Code 2.1.101, ordinary tool calls across multiple tool families can intermittently return the wrapper string `[Tool result missing due to internal error]` instead of any real tool output, actionable tool-level error, or retry. The reported regressions span Bash, Glob, Write, Read, and WebFetch in the same native-install session family, with transcript scans showing the pattern only after 2.1.101 landed and one affected session dropping 5 of 15 tool results. This is distinct from the older Skill-only internal-error hang, Android Remote Control persistent-approval failure, `git push`-specific remote hang, and `2&gt;&amp;1` subagent Bash crash: here the broken layer is the general tool-result delivery wrapper itself, which can discard results for unrelated built-in tools inside an ordinary Windows CLI session.</summary>
     <category term="Tool behavior"/>
   </entry>
@@ -74,7 +74,7 @@
     <title>[HIGH] Official iMessage plugin `reply` can fail on newer `any;-;` chat GUIDs</title>
     <id>https://framework.boucle.sh/limitations.html#imessage-plugin-reply-can-fail-on-any-chat-guid-format</id>
     <link href="https://framework.boucle.sh/limitations.html#imessage-plugin-reply-can-fail-on-any-chat-guid-format"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>On newer macOS releases, the official iMessage channel plugin can receive inbound DMs successfully yet fail to send replies because `chat.db` now stores some direct-message GUIDs with an `any;-;` prefix that Messages.app AppleScript does not accept as a `chat id`. In the reported macOS Tahoe repro with plugin v0.1.0, the inbound message arrived with `chat_id=&quot;any;-;+81...&quot;`, the plugin&#x27;s allowlist lookup accepted that GUID, but the `reply` tool still failed because its AppleScript sends directly to `chat id (item 2 of argv)`, which raises AppleScript error `-1728` for the same `any;-;` identifier. This is distinct from older iMessage plugin failures where permission relays go to the wrong contact, harness attribution cannot be disabled, or channel tools fail to inject at session start: here inbound delivery and allowlist validation both succeed, and the broken layer is the reply transport&#x27;s mismatch between the newer database GUID format and the AppleScript send API.</summary>
     <category term="Plugin &amp; channel system"/>
   </entry>
@@ -82,7 +82,7 @@
     <title>[MEDIUM] Escaped spaces in Bash paths can force confirmation prompts despite allow rules</title>
     <id>https://framework.boucle.sh/limitations.html#escaped-spaces-in-bash-paths-can-force-confirmation-prompts-despite-allow-rules</id>
     <link href="https://framework.boucle.sh/limitations.html#escaped-spaces-in-bash-paths-can-force-confirmation-prompts-despite-allow-rules"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>Claude Code&#x27;s hardcoded `Contains backslash-escaped whitespace` safety check can treat ordinary shell-escaped paths with spaces as suspicious and force a confirmation prompt even when the command is clearly read-only and already covered by sandbox or allow rules. In the reported macOS v2.1.101 repro, routine commands such as `cat /Users/user/Projects/1st\ PATO\ AI\ Hackathon/.gitignore` and `git -C /Users/user/Projects/1st\ PATO\ AI\ Hackathon status` triggered repeated prompts solely because the working directory name contained spaces and Claude emitted the normal `\ ` shell escaping. This is distinct from older path-with-spaces hook breakage or Windows glob-normalization bugs: here the command itself is valid, the low-risk scanner still recognizes it as harmless, and the broken layer is the hardcoded permission heuristic overriding the user&#x27;s configured auto-allow path.</summary>
     <category term="Permission system"/>
   </entry>
@@ -90,7 +90,7 @@
     <title>[HIGH] `/reload-plugins` can drop inbound channel notifications until the session is restarted</title>
     <id>https://framework.boucle.sh/limitations.html#reload-plugins-can-drop-inbound-channel-notifications-until-session-restart</id>
     <link href="https://framework.boucle.sh/limitations.html#reload-plugins-can-drop-inbound-channel-notifications-until-session-restart"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>After `/reload-plugins`, Claude Code can reconnect plugin MCP tools successfully while silently failing to re-establish the inbound `notifications/claude/channel` subscription for channel-capable plugins. In the reported v2.1.101 repro on an exe.dev VM with `telegram@claude-plugins-official` loaded through `--channels`, Telegram messages appeared in the conversation before the reload, `/reload-plugins` completed normally, and the plugin&#x27;s outbound `reply` tool kept working afterward, but new inbound Telegram DMs never surfaced again until the entire session was restarted. This is distinct from older channel regressions where notifications never work on first attach, tool injection is missing, or the channel plugin process never spawns: here the session starts healthy, `/reload-plugins` breaks only the inbound listener layer, and outbound tool calls still prove the plugin transport remains alive.</summary>
     <category term="Plugin &amp; channel system"/>
   </entry>
@@ -98,7 +98,7 @@
     <title>[MEDIUM] Official `security-guidance` plugin can block documentation writes on bare `exec(` substring</title>
     <id>https://framework.boucle.sh/limitations.html#security-guidance-plugin-blocks-doc-writes-on-bare-exec-substring</id>
     <link href="https://framework.boucle.sh/limitations.html#security-guidance-plugin-blocks-doc-writes-on-bare-exec-substring"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>The official `security-guidance` marketplace plugin can falsely block ordinary `Write`, `Edit`, and `MultiEdit` operations when the file content contains the bare substring `exec(`, even inside Markdown or prose examples. In the reported repro on 2026-04-11, a documentation write containing harmless snippets such as `db.exec(schema)` triggered the plugin&#x27;s `child_process_exec` rule because its Python hook scans the full file body with naive substring matching and no file-type awareness, then exits with code 2 to deny the tool call. This is distinct from the older Windows `python3` launcher bug in the same plugin: there, the hook never starts on Windows; here, the hook runs successfully but applies the wrong security heuristic and turns normal doc-writing into a false-positive command-injection block.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -106,7 +106,7 @@
     <title>[HIGH] Tmux team lead can stall after teammate reports until any local keypress</title>
     <id>https://framework.boucle.sh/limitations.html#tmux-team-lead-can-stall-after-teammate-reports-until-keypress</id>
     <link href="https://framework.boucle.sh/limitations.html#tmux-team-lead-can-stall-after-teammate-reports-until-keypress"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>When Claude Code runs an agent team in `teammateMode: &quot;tmux&quot;`, the lead `@main` session can stop progressing after teammates finish work and return their reports with `SendMessage`. In the reported macOS repro on 2.1.101, the teammate summaries and idle notifications were visibly delivered into the main conversation, but the lead agent took no next action at all: no new tool calls, no reasoning text, and no follow-up dispatch. Pressing any key in the lead tmux pane immediately revived the session and caused Claude to process the already-delivered reports. This is distinct from older teammate lifecycle drift, dropped `SendMessage`, or invisible permission-prompt failures because the messages do arrive and the team remains intact; the broken layer is the lead session&#x27;s wake-up path, which does not resume orchestration on inbox activity until a local terminal input event nudges it.</summary>
     <category term="Agents &amp; subagents"/>
   </entry>
@@ -114,7 +114,7 @@
     <title>[HIGH] `/config` can copy project-local permissions into global `~/.claude/settings.json`</title>
     <id>https://framework.boucle.sh/limitations.html#config-save-can-copy-project-local-permissions-into-global-settings-json</id>
     <link href="https://framework.boucle.sh/limitations.html#config-save-can-copy-project-local-permissions-into-global-settings-json"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>Saving changes through the interactive `/config` UI can merge the effective permission state from a project or subdirectory `settings.local.json` into the user&#x27;s global `~/.claude/settings.json`. In the reported Linux repro on 2.1.101, the local directory config contained a broader `permissions.allow` list and a `defaultMode`, while the global file intentionally had a smaller allow list. Changing only the default mode in `/config` caused Claude Code to persist the broader local permission set into the global settings file without prompting, effectively promoting project-scoped grants into a permanent cross-project allow list. This is distinct from earlier cases where project-level allow rules are ignored or UI toggles fail to write `defaultMode`: here `/config` saves the wrong scope and mutates the user&#x27;s global trust boundary.</summary>
     <category term="Configuration &amp; settings"/>
   </entry>
@@ -122,7 +122,7 @@
     <title>[HIGH] Plugin `WorktreeCreate` hooks can be silently skipped on CLI `--worktree` startup</title>
     <id>https://framework.boucle.sh/limitations.html#plugin-worktreecreate-hooks-silently-skipped-on-cli-worktree-start</id>
     <link href="https://framework.boucle.sh/limitations.html#plugin-worktreecreate-hooks-silently-skipped-on-cli-worktree-start"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>On macOS in Claude Code v2.1.101, `WorktreeCreate` and `WorktreeRemove` hooks registered by a plugin through `hooks/hooks.json` can be silently dropped when a session starts with `claude --worktree &lt;name&gt;`, even though the same plugin&#x27;s `SessionStart` and `UserPromptSubmit` hooks still fire and the same worktree hook command works from `settings.json`. In the reported repro, Claude created the worktree through its built-in `.claude/worktrees/&lt;name&gt;` path while the plugin hook never ran at all, leaving plugin-managed worktree setup steps such as env mirroring, dependency install, or secret bootstrap completely inert. This is distinct from the older worktree-hook failures where mid-session `EnterWorktree` skips hooks, `--worktree --tmux` bypasses the lifecycle entirely, or settings-based `WorktreeCreate` hooks hang the session. Here, the CLI `--worktree` surface still dispatches the settings hook path but silently omits the plugin-registered one for the same event.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -130,7 +130,7 @@
     <title>[HIGH] Model can overwrite a notarized DMG with an unnotarized CLI build</title>
     <id>https://framework.boucle.sh/limitations.html#model-can-overwrite-notarized-dmg-with-unnotarized-cli-build</id>
     <link href="https://framework.boucle.sh/limitations.html#model-can-overwrite-notarized-dmg-with-unnotarized-cli-build"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>When asked to make a small macOS UI fix, Claude Code can drop into a local `xcodebuild` packaging path, overwrite an already-notarized DMG with a fresh unnotarized build artifact, and then steer the user toward Gatekeeper bypasses instead of preserving the existing distribution pipeline. In the reported case, the original DMG was production-ready and already safe for end users, but Claude rebuilt from the CLI, replaced the notarized disk image without checking for `notarytool` credentials or release-state boundaries, then suggested right-click &gt; Open on the broken output and even asked for Apple ID credentials. This is distinct from the broader destructive-command corpus: the failure is not merely &#x27;Claude changed the wrong file&#x27;, but that it cannot reliably distinguish an already-distributable signed/notarized release artifact from an intermediate local build, so a small code fix can silently downgrade a live macOS distribution package into something Gatekeeper will block.</summary>
     <category term="Autonomy &amp; destructive actions"/>
   </entry>
@@ -138,7 +138,7 @@
     <title>[HIGH] Telegram channel plugin can attach without ever spawning its MCP server</title>
     <id>https://framework.boucle.sh/limitations.html#telegram-channel-plugin-can-attach-without-ever-spawning-mcp-server</id>
     <link href="https://framework.boucle.sh/limitations.html#telegram-channel-plugin-can-attach-without-ever-spawning-mcp-server"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>On Linux in Claude Code v2.1.101, launching a session with `--channels plugin:telegram@claude-plugins-official` can show the normal &quot;Listening for channel messages&quot; attach banner while never spawning the Telegram plugin&#x27;s `bun` MCP server process at all. In the reported repro, the plugin was installed, other MCP servers spawned normally as child processes, Telegram messages queued successfully in the bot API, and the token was valid, but no `bun run ... telegram ... start` process ever appeared and no inbound messages were consumed. This is distinct from the newer channel-tool injection regression where the plugin process starts cleanly but its tools never enter the session: here the failure happens one layer earlier, because the channel attach path claims success while the plugin runtime itself never launches.</summary>
     <category term="Plugin &amp; channel system"/>
   </entry>
@@ -146,7 +146,7 @@
     <title>[MEDIUM] Desktop status indicators can freeze during long single `Write` tool calls</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-status-indicators-freeze-during-long-single-write-calls</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-status-indicators-freeze-during-long-single-write-calls"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>In the Claude desktop app, a long-running turn that ends with one large `Write` tool call can blank the live status indicators mid-turn even though the underlying agent loop keeps progressing and the file is written successfully. In the reported Windows desktop repro, the token counter, thinking indicator, and active tool label all disappeared during a single 150-250 line `Write`, then returned only after the user typed into the input box. This is distinct from older TUI freeze, statusline-hook, and long-session rendering bugs: the desktop client loses its live activity/status display specifically during a large one-shot `Write`, while the write itself still completes underneath.</summary>
     <category term="Desktop &amp; IDE integration"/>
   </entry>
@@ -154,7 +154,7 @@
     <title>[HIGH] Windows `Stop` hooks using `pwsh` can receive no redirected stdin payload at all</title>
     <id>https://framework.boucle.sh/limitations.html#windows-stop-hook-pwsh-receives-no-stdin-payload</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-stop-hook-pwsh-receives-no-stdin-payload"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>On native Windows setups using PowerShell hook commands, Claude Code can deliver a `Stop` hook with no redirected stdin at all even when an equivalent `UserPromptSubmit` hook on the same machine and the same `pwsh -File ...` launcher receives JSON normally. In the reported v2.1.101 repro on Windows 11 with both PowerShell 5.1 and pwsh 7 installed, `[Console]::IsInputRedirected` stayed false inside the `Stop` hook script and a full diagnostic logger wrote nothing, which means the hook never receives the event payload needed to inspect or block the final assistant output. This is distinct from the older Windows stdin EOF deadlock and JSON corruption bugs: the `Stop` hook is invoked, but its stdin pipe is not connected in the first place, while other hook events still work through the same PowerShell runtime.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -162,7 +162,7 @@
     <title>[HIGH] Desktop MCP reconnect can flood `tools/list` until the server times out</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-mcp-reconnect-can-flood-tools-list-and-starve-tool-calls</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-mcp-reconnect-can-flood-tools-list-and-starve-tool-calls"/>
-    <updated>2026-04-11T00:00:00Z</updated>
+    <updated>2026-04-12T00:00:00Z</updated>
     <summary>Claude Desktop can enter a runaway MCP reconnect state where it repeatedly issues `tools/list` requests in pairs or larger bursts instead of returning to normal tool traffic, eventually starving real tool calls and tripping the server timeout. In the reported Windows repro with the Desktop Commander extension installed from the marketplace, normal sessions showed one `tools/list` at handshake, but after a reconnect the desktop app began sending hundreds of sequential `tools/list` requests across later sessions, with no `tools/call` traffic interspersed and message IDs climbing into the 1300s. This is distinct from older stdio MCP kill and no-auto-reconnect failures: the server stays alive long enough to answer each list request, but Claude Desktop&#x27;s reconnect path appears to multiply discovery requests until the extension becomes unusable and the user must restart both sides.</summary>
     <category term="MCP &amp; integrations"/>
   </entry>

@@ -34,6 +34,7 @@ def build_expected(data: dict) -> dict:
     category_counts = Counter(entry.get("category", "Unknown") for entry in entries)
     severity_counts = Counter(entry["severity"] for entry in entries)
     status_counts = Counter(entry["status"] for entry in entries)
+    latest_date = max((entry.get("date_added") for entry in entries if entry.get("date_added")), default=None)
 
     total = len(entries)
     data["count"] = total
@@ -56,6 +57,9 @@ def build_expected(data: dict) -> dict:
         "fixed": data["status_summary"]["fixed"],
         "mitigated": data["status_summary"]["mitigated"],
     }
+    if latest_date:
+        data["last_updated"] = latest_date
+        data["lastUpdated"] = latest_date
     return data
 
 
