@@ -7,6 +7,14 @@
   <updated>2026-04-12T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Windows `statusLine.command` can drop stdout from external binaries unless wrapped in `bash -c`</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-statusline-command-can-drop-stdout-from-external-binaries-unless-wrapped-in-bash-c</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-statusline-command-can-drop-stdout-from-external-binaries-unless-wrapped-in-bash-c"/>
+    <updated>2026-04-12T00:00:00Z</updated>
+    <summary>On Windows, `statusLine.command` can execute external programs such as `py`, `python`, `python3`, or even a fully-qualified Python binary without ever surfacing their stdout in the Claude Code status line, leaving the HUD blank with no error message. In the reported v2.1.92 repro, the same script produced correct output when run manually and also worked immediately when wrapped in `bash -c &#x27;...&#x27;`, while Bash builtins like `echo` and `printf` rendered normally without the wrapper. This is distinct from earlier statusline regressions where the wrong JSON payload reached the command, `rate_limits` fields were missing, no-flicker mode suppressed the whole statusline, or `/compact` left stale values behind: here the narrower failure surface is the stdout-capture path for non-builtin child processes themselves on Windows.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] `CLAUDE_CONFIG_DIR` profiles can still inject the global `~/.claude/CLAUDE.md`</title>
     <id>https://framework.boucle.sh/limitations.html#claude-config-dir-profiles-can-still-inject-global-claude-md-from-home-directory</id>
     <link href="https://framework.boucle.sh/limitations.html#claude-config-dir-profiles-can-still-inject-global-claude-md-from-home-directory"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-12T00:00:00Z</updated>
     <summary>On Windows 11 in Claude Code 2.1.101, ordinary tool calls across multiple tool families can intermittently return the wrapper string `[Tool result missing due to internal error]` instead of any real tool output, actionable tool-level error, or retry. The reported regressions span Bash, Glob, Write, Read, and WebFetch in the same native-install session family, with transcript scans showing the pattern only after 2.1.101 landed and one affected session dropping 5 of 15 tool results. This is distinct from the older Skill-only internal-error hang, Android Remote Control persistent-approval failure, `git push`-specific remote hang, and `2&gt;&amp;1` subagent Bash crash: here the broken layer is the general tool-result delivery wrapper itself, which can discard results for unrelated built-in tools inside an ordinary Windows CLI session.</summary>
     <category term="Tool behavior"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Official iMessage plugin `reply` can fail on newer `any;-;` chat GUIDs</title>
-    <id>https://framework.boucle.sh/limitations.html#imessage-plugin-reply-can-fail-on-any-chat-guid-format</id>
-    <link href="https://framework.boucle.sh/limitations.html#imessage-plugin-reply-can-fail-on-any-chat-guid-format"/>
-    <updated>2026-04-12T00:00:00Z</updated>
-    <summary>On newer macOS releases, the official iMessage channel plugin can receive inbound DMs successfully yet fail to send replies because `chat.db` now stores some direct-message GUIDs with an `any;-;` prefix that Messages.app AppleScript does not accept as a `chat id`. In the reported macOS Tahoe repro with plugin v0.1.0, the inbound message arrived with `chat_id=&quot;any;-;+81...&quot;`, the plugin&#x27;s allowlist lookup accepted that GUID, but the `reply` tool still failed because its AppleScript sends directly to `chat id (item 2 of argv)`, which raises AppleScript error `-1728` for the same `any;-;` identifier. This is distinct from older iMessage plugin failures where permission relays go to the wrong contact, harness attribution cannot be disabled, or channel tools fail to inject at session start: here inbound delivery and allowlist validation both succeed, and the broken layer is the reply transport&#x27;s mismatch between the newer database GUID format and the AppleScript send API.</summary>
-    <category term="Plugin &amp; channel system"/>
   </entry>
 </feed>
