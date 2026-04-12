@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">915</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-12.</span></p>
+        <p class="subtitle"><span id="total-count">916</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-12.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9709,9 +9709,21 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If Preview opens on top of the chat in Windows Desktop, treat it as a layout bug rather than a failed dev server. The temporary menu-toggle snap can confirm the preview is alive, but the safer workaround is to close Preview, use the browser directly, or rely on `preview_eval` and screenshots until Anthropic fixes the pane positioning.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46944" target="_blank">#46944</a></div>
         </div>
-        <div class="kl-entry" data-category="MCP &amp; plugins" data-issues="46951" id="development-channel-mcp-servers-can-connect-without-exposing-tools-to-the-model" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="Telemetry &amp; insights" data-issues="46958" id="unknown-skill-errors-can-overwrite-session-meta-first-prompt-and-pollute-insights" data-severity="medium" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#915</span>
+                <span class="kl-cat">Telemetry &amp; insights</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>`Unknown skill` errors can overwrite session-meta `first_prompt` and pollute `/insights`</h3>
+            <p>When a slash command fails with `Unknown skill`, Claude Code can write the error string itself into `~/.claude/usage-data/session-meta/*.json` as the session&#x27;s `first_prompt`, even though the real user input was different. In the reported repro, the corrupted records also showed zero tokens, zero tool calls, and two identical `user_message_timestamps`, suggesting the failure path re-ingested Claude&#x27;s own error echo as if it were a second user message. This is distinct from the older Windows `session-meta` EBUSY crash and non-atomic write corruption entries: here the file write succeeds, but the telemetry content is semantically wrong and `/insights` or third-party usage tools end up showing `Unknown skill: ...` as the user&#x27;s first prompt.</p>
+                        <!-- workaround:unknown-skill-errors-can-overwrite-session-meta-first-prompt-and-pollute-insights -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not trust `/insights` or third-party `session-meta` consumers blindly after slash-command failures. Treat zero-token sessions whose `first_prompt` starts with `Unknown skill:` and whose duplicate message timestamps are identical as corrupted telemetry, and filter or repair them before drawing conclusions from usage rollups.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46958" target="_blank">#46958</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugins" data-issues="46951" id="development-channel-mcp-servers-can-connect-without-exposing-tools-to-the-model" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#916</span>
                 <span class="kl-cat">MCP &amp; plugins</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>

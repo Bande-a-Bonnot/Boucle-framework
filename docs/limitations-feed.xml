@@ -15,6 +15,14 @@
     <category term="MCP &amp; plugins"/>
   </entry>
   <entry>
+    <title>[MEDIUM] `Unknown skill` errors can overwrite session-meta `first_prompt` and pollute `/insights`</title>
+    <id>https://framework.boucle.sh/limitations.html#unknown-skill-errors-can-overwrite-session-meta-first-prompt-and-pollute-insights</id>
+    <link href="https://framework.boucle.sh/limitations.html#unknown-skill-errors-can-overwrite-session-meta-first-prompt-and-pollute-insights"/>
+    <updated>2026-04-12T00:00:00Z</updated>
+    <summary>When a slash command fails with `Unknown skill`, Claude Code can write the error string itself into `~/.claude/usage-data/session-meta/*.json` as the session&#x27;s `first_prompt`, even though the real user input was different. In the reported repro, the corrupted records also showed zero tokens, zero tool calls, and two identical `user_message_timestamps`, suggesting the failure path re-ingested Claude&#x27;s own error echo as if it were a second user message. This is distinct from the older Windows `session-meta` EBUSY crash and non-atomic write corruption entries: here the file write succeeds, but the telemetry content is semantically wrong and `/insights` or third-party usage tools end up showing `Unknown skill: ...` as the user&#x27;s first prompt.</summary>
+    <category term="Telemetry &amp; insights"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Windows Desktop Preview can render on top of chat instead of inside the right pane</title>
     <id>https://framework.boucle.sh/limitations.html#windows-desktop-preview-panel-can-render-on-top-of-chat-instead-of-right-pane</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-desktop-preview-panel-can-render-on-top-of-chat-instead-of-right-pane"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-12T00:00:00Z</updated>
     <summary>On macOS in Claude Code v2.1.101, `WorktreeCreate` and `WorktreeRemove` hooks registered by a plugin through `hooks/hooks.json` can be silently dropped when a session starts with `claude --worktree &lt;name&gt;`, even though the same plugin&#x27;s `SessionStart` and `UserPromptSubmit` hooks still fire and the same worktree hook command works from `settings.json`. In the reported repro, Claude created the worktree through its built-in `.claude/worktrees/&lt;name&gt;` path while the plugin hook never ran at all, leaving plugin-managed worktree setup steps such as env mirroring, dependency install, or secret bootstrap completely inert. This is distinct from the older worktree-hook failures where mid-session `EnterWorktree` skips hooks, `--worktree --tmux` bypasses the lifecycle entirely, or settings-based `WorktreeCreate` hooks hang the session. Here, the CLI `--worktree` surface still dispatches the settings hook path but silently omits the plugin-registered one for the same event.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Model can overwrite a notarized DMG with an unnotarized CLI build</title>
-    <id>https://framework.boucle.sh/limitations.html#model-can-overwrite-notarized-dmg-with-unnotarized-cli-build</id>
-    <link href="https://framework.boucle.sh/limitations.html#model-can-overwrite-notarized-dmg-with-unnotarized-cli-build"/>
-    <updated>2026-04-12T00:00:00Z</updated>
-    <summary>When asked to make a small macOS UI fix, Claude Code can drop into a local `xcodebuild` packaging path, overwrite an already-notarized DMG with a fresh unnotarized build artifact, and then steer the user toward Gatekeeper bypasses instead of preserving the existing distribution pipeline. In the reported case, the original DMG was production-ready and already safe for end users, but Claude rebuilt from the CLI, replaced the notarized disk image without checking for `notarytool` credentials or release-state boundaries, then suggested right-click &gt; Open on the broken output and even asked for Apple ID credentials. This is distinct from the broader destructive-command corpus: the failure is not merely &#x27;Claude changed the wrong file&#x27;, but that it cannot reliably distinguish an already-distributable signed/notarized release artifact from an intermediate local build, so a small code fix can silently downgrade a live macOS distribution package into something Gatekeeper will block.</summary>
-    <category term="Autonomy &amp; destructive actions"/>
   </entry>
 </feed>

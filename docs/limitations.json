@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 915,
+  "count": 916,
   "categories": {
     "Hook behavior & events": 169,
     "Permission system": 110,
@@ -154,6 +154,7 @@
     "skills": 1,
     "Skills & plugins": 1,
     "Skills & slash commands": 1,
+    "Telemetry & insights": 1,
     "Tools": 1,
     "Tools & permissions": 1,
     "Tools and execution": 1,
@@ -171,7 +172,7 @@
     "CRITICAL": 62,
     "HIGH": 443,
     "LOW": 97,
-    "MEDIUM": 313
+    "MEDIUM": 314
   },
   "entries": [
     {
@@ -11168,6 +11169,18 @@
       "workaround": "If Preview opens on top of the chat in Windows Desktop, treat it as a layout bug rather than a failed dev server. The temporary menu-toggle snap can confirm the preview is alive, but the safer workaround is to close Preview, use the browser directly, or rely on `preview_eval` and screenshots until Anthropic fixes the pane positioning."
     },
     {
+      "id": "unknown-skill-errors-can-overwrite-session-meta-first-prompt-and-pollute-insights",
+      "title": "`Unknown skill` errors can overwrite session-meta `first_prompt` and pollute `/insights`",
+      "category": "Telemetry & insights",
+      "severity": "MEDIUM",
+      "status": "open",
+      "description": "When a slash command fails with `Unknown skill`, Claude Code can write the error string itself into `~/.claude/usage-data/session-meta/*.json` as the session's `first_prompt`, even though the real user input was different. In the reported repro, the corrupted records also showed zero tokens, zero tool calls, and two identical `user_message_timestamps`, suggesting the failure path re-ingested Claude's own error echo as if it were a second user message. This is distinct from the older Windows `session-meta` EBUSY crash and non-atomic write corruption entries: here the file write succeeds, but the telemetry content is semantically wrong and `/insights` or third-party usage tools end up showing `Unknown skill: ...` as the user's first prompt.",
+      "cc_issue": 46958,
+      "cc_version": null,
+      "date_added": "2026-04-12",
+      "workaround": "Do not trust `/insights` or third-party `session-meta` consumers blindly after slash-command failures. Treat zero-token sessions whose `first_prompt` starts with `Unknown skill:` and whose duplicate message timestamps are identical as corrupted telemetry, and filter or repair them before drawing conclusions from usage rollups."
+    },
+    {
       "id": "development-channel-mcp-servers-can-connect-without-exposing-tools-to-the-model",
       "title": "Development-channel MCP servers can connect without exposing tools to the model",
       "category": "MCP & plugins",
@@ -11181,7 +11194,7 @@
     }
   ],
   "status_summary": {
-    "open": 901,
+    "open": 902,
     "fixed": 13,
     "mitigated": 1
   },
@@ -11189,19 +11202,19 @@
     "critical": 62,
     "high": 443,
     "low": 97,
-    "medium": 313
+    "medium": 314
   },
   "lastUpdated": "2026-04-12",
   "stats": {
-    "total": 915,
+    "total": 916,
     "critical": 62,
     "high": 443,
-    "medium": 313,
+    "medium": 314,
     "low": 97,
-    "open": 901,
+    "open": 902,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-12",
-  "total": 915
+  "total": 916
 }
