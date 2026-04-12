@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Managed `.mobileconfig` deny policy can still miss `Write(...)` rules even when `Bash(...)` denies work</title>
+    <id>https://framework.boucle.sh/limitations.html#mobileconfig-managed-deny-can-still-miss-write-rules-after-bash-deny-recovers</id>
+    <link href="https://framework.boucle.sh/limitations.html#mobileconfig-managed-deny-can-still-miss-write-rules-after-bash-deny-recovers"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>On macOS Sequoia, deny rules delivered through an MDM `.mobileconfig` profile for the `com.anthropic.claudecode` domain can partially recover while still leaving the `Write` tool unenforced. In the reported repro, the same managed profile blocked `Bash(gh repo create --public*)` exactly as expected after restart, yet `Write(**/.env)` and `Write(**/.env.*)` from that same profile still allowed Claude Code to create or overwrite `.env` files with no warning. This is distinct from the older managed-settings.json failure where enterprise deny rules were ignored wholesale: here the managed policy path is clearly active because `Bash` denies in the same profile work, and the broken layer is the remaining `Write`-deny enforcement path inside the MDM/mobileconfig preference source.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
     <title>[HIGH] Windows 2.1.101 can drop tool results across tool types with `[Tool result missing due to internal error]`</title>
     <id>https://framework.boucle.sh/limitations.html#windows-tool-results-can-drop-across-tools-with-internal-error-wrapper</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-tool-results-can-drop-across-tools-with-internal-error-wrapper"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>An HTTP MCP server configured in a project `.mcp.json` with bearer-auth headers can report `Status: ✗ Failed to connect` and expose only the generic OAuth `authenticate` stub, even though the same URL and headers work normally when registered at user scope. In the reported repro on Claude Desktop&#x27;s bundled 2.1.92 binary, direct `curl` initialize and `tools/list` calls succeeded, `claude mcp add --scope user ...` showed the full tool list, but the project-scoped entry failed the deeper `claude mcp get` probe and misrepresented the server as an OAuth flow instead of a bearer-auth HTTP server. This is distinct from older project-scope loader bugs and project-file-read problems: the project config is found, but project-scoped HTTP MCP health probing or header handling diverges from user scope and silently hides the real tools behind a misleading auth fallback.</summary>
     <category term="MCP &amp; integrations"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Claude Code session can survive deleted worktrees indefinitely and ignore `SIGTERM`</title>
-    <id>https://framework.boucle.sh/limitations.html#deleted-worktree-session-can-survive-indefinitely-and-ignore-sigterm</id>
-    <link href="https://framework.boucle.sh/limitations.html#deleted-worktree-session-can-survive-indefinitely-and-ignore-sigterm"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>If a normal Claude Code CLI session is launched inside a git worktree and that worktree is deleted from another terminal, the Claude process can continue running for hours with its cwd still pointing at the removed directory. In the reported repro on macOS v2.1.100, the orphaned session stayed alive for more than 11 hours, never exited on its own, and ignored a normal `kill`/`SIGTERM`, requiring `SIGKILL` to terminate it. This is distinct from the older Remote Control worktree-deletion failure: here the core session lifecycle and signal-handling break even without `--spawn` or remote-control features, leaving an unrecoverable orphan process attached to a deleted cwd.</summary>
-    <category term="Core &amp; session management"/>
   </entry>
 </feed>

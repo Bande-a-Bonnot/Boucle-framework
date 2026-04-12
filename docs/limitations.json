@@ -1,9 +1,9 @@
 {
   "version": "0.12.0",
-  "count": 904,
+  "count": 905,
   "categories": {
     "Hook behavior & events": 169,
-    "Permission system": 108,
+    "Permission system": 109,
     "Hook bypass & evasion": 96,
     "MCP & plugin issues": 44,
     "Subagent & spawned agents": 38,
@@ -168,7 +168,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 436,
+    "HIGH": 437,
     "LOW": 97,
     "MEDIUM": 309
   },
@@ -11045,30 +11045,42 @@
       "cc_version": "2.1.101",
       "date_added": "2026-04-11",
       "workaround": "Do not trust a Windows 2.1.101 session that starts surfacing `[Tool result missing due to internal error]` on ordinary tools. Retry only as a short diagnostic, then restart or downgrade the CLI and verify side effects on disk or over the network before assuming the tool actually ran."
+    },
+    {
+      "id": "mobileconfig-managed-deny-can-still-miss-write-rules-after-bash-deny-recovers",
+      "title": "Managed `.mobileconfig` deny policy can still miss `Write(...)` rules even when `Bash(...)` denies work",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "On macOS Sequoia, deny rules delivered through an MDM `.mobileconfig` profile for the `com.anthropic.claudecode` domain can partially recover while still leaving the `Write` tool unenforced. In the reported repro, the same managed profile blocked `Bash(gh repo create --public*)` exactly as expected after restart, yet `Write(**/.env)` and `Write(**/.env.*)` from that same profile still allowed Claude Code to create or overwrite `.env` files with no warning. This is distinct from the older managed-settings.json failure where enterprise deny rules were ignored wholesale: here the managed policy path is clearly active because `Bash` denies in the same profile work, and the broken layer is the remaining `Write`-deny enforcement path inside the MDM/mobileconfig preference source.",
+      "cc_issue": 46809,
+      "cc_version": null,
+      "date_added": "2026-04-12",
+      "workaround": "Do not assume macOS MDM profiles currently enforce `Write(...)` deny rules just because `Bash(...)` denies from the same policy are working. In managed deployments, verify both file-tool and Bash denies explicitly before trusting the policy, keep sensitive files protected with OS permissions or hook-level guards, and prefer user-level settings or additional host controls until Anthropic fixes the remaining `Write` gap."
     }
   ],
   "status_summary": {
-    "open": 890,
+    "open": 891,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 436,
+    "high": 437,
     "low": 97,
     "medium": 309
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 904,
+    "total": 905,
     "critical": 62,
-    "high": 436,
+    "high": 437,
     "medium": 309,
     "low": 97,
-    "open": 890,
+    "open": 891,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 904
+  "total": 905
 }
