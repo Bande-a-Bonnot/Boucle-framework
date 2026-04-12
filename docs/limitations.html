@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">906</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
+        <p class="subtitle"><span id="total-count">907</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9612,6 +9612,18 @@
                         <!-- workaround:windows-marketplace-update-can-wedge-permanently-on-stale-bak-directory -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If a Windows marketplace update starts failing with `EPERM` on a `.bak` rename and plugins from that marketplace all show `failed to load`, inspect the marketplace cache directory, delete the stale `&lt;marketplace&gt;.bak/` rollback directory, then rerun `claude plugin marketplace update`. Do not trust repeated automatic startup syncs to recover the marketplace on their own until Anthropic cleans up stale rollback directories before the rename step.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46830" target="_blank">#46830</a></div>
+        </div>
+        <div class="kl-entry" data-category="Configuration behavior" data-issues="46856" id="shell-snapshot-captures-unresolvable-zsh-autoload-stubs" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#907</span>
+                <span class="kl-cat">Configuration behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Shell snapshot can capture unresolvable zsh autoload stubs that break system commands</h3>
+            <p>On macOS zsh setups that use Prezto-style autoload wrappers, Claude Code&#x27;s shell snapshot generator can capture undefined autoload stubs such as `make () { builtin autoload -XUz }` and replay them in later Bash tool subprocesses. Those stubs shadow the real `/usr/bin/make`, `/usr/bin/diff`, and similar commands, but the replayed subprocess no longer has the original `fpath` needed to resolve the autoload target, so ordinary tool calls fail with errors like `(eval):1: make: function definition file not found`. The reporter measured 83 `# undefined` stubs in a newer snapshot versus 0 in an older one, showing this is not just user shell customization but a regression in what the snapshot now preserves. This is distinct from the older shell-snapshot PATH drift and desktop GUI PATH truncation entries: here the broken layer is function capture itself, which can poison otherwise valid system-command invocations even when PATH is correct.</p>
+                        <!-- workaround:shell-snapshot-captures-unresolvable-zsh-autoload-stubs -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If Bash tool calls on macOS zsh setups start failing with `function definition file not found` for ordinary commands like `make` or `diff`, inspect the generated shell snapshot for `# undefined` autoload stubs and remove or `unfunction` the affected wrappers in your shell init as a temporary workaround. A more reliable short-term escape hatch is to point Claude Code at a manually cleaned shell snapshot or to launch from a simpler shell profile until Anthropic filters unresolved autoload stubs out of snapshot capture.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46856" target="_blank">#46856</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

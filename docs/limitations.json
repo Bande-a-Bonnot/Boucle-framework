@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 906,
+  "count": 907,
   "categories": {
     "Hook behavior & events": 169,
     "Permission system": 109,
@@ -11,7 +11,7 @@
     "Platform & compatibility": 23,
     "Context & memory": 20,
     "CLI & terminal": 18,
-    "Configuration behavior": 15,
+    "Configuration behavior": 16,
     "Tool behavior": 14,
     "TUI & display": 13,
     "Security & trust boundaries": 11,
@@ -168,7 +168,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 438,
+    "HIGH": 439,
     "LOW": 97,
     "MEDIUM": 309
   },
@@ -11069,30 +11069,42 @@
       "cc_version": "2.1.101",
       "date_added": "2026-04-12",
       "workaround": "If a Windows marketplace update starts failing with `EPERM` on a `.bak` rename and plugins from that marketplace all show `failed to load`, inspect the marketplace cache directory, delete the stale `<marketplace>.bak/` rollback directory, then rerun `claude plugin marketplace update`. Do not trust repeated automatic startup syncs to recover the marketplace on their own until Anthropic cleans up stale rollback directories before the rename step."
+    },
+    {
+      "id": "shell-snapshot-captures-unresolvable-zsh-autoload-stubs",
+      "title": "Shell snapshot can capture unresolvable zsh autoload stubs that break system commands",
+      "category": "Configuration behavior",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "On macOS zsh setups that use Prezto-style autoload wrappers, Claude Code's shell snapshot generator can capture undefined autoload stubs such as `make () { builtin autoload -XUz }` and replay them in later Bash tool subprocesses. Those stubs shadow the real `/usr/bin/make`, `/usr/bin/diff`, and similar commands, but the replayed subprocess no longer has the original `fpath` needed to resolve the autoload target, so ordinary tool calls fail with errors like `(eval):1: make: function definition file not found`. The reporter measured 83 `# undefined` stubs in a newer snapshot versus 0 in an older one, showing this is not just user shell customization but a regression in what the snapshot now preserves. This is distinct from the older shell-snapshot PATH drift and desktop GUI PATH truncation entries: here the broken layer is function capture itself, which can poison otherwise valid system-command invocations even when PATH is correct.",
+      "cc_issue": 46856,
+      "cc_version": null,
+      "date_added": "2026-04-12",
+      "workaround": "If Bash tool calls on macOS zsh setups start failing with `function definition file not found` for ordinary commands like `make` or `diff`, inspect the generated shell snapshot for `# undefined` autoload stubs and remove or `unfunction` the affected wrappers in your shell init as a temporary workaround. A more reliable short-term escape hatch is to point Claude Code at a manually cleaned shell snapshot or to launch from a simpler shell profile until Anthropic filters unresolved autoload stubs out of snapshot capture."
     }
   ],
   "status_summary": {
-    "open": 892,
+    "open": 893,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 438,
+    "high": 439,
     "low": 97,
     "medium": 309
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 906,
+    "total": 907,
     "critical": 62,
-    "high": 438,
+    "high": 439,
     "medium": 309,
     "low": 97,
-    "open": 892,
+    "open": 893,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 906
+  "total": 907
 }

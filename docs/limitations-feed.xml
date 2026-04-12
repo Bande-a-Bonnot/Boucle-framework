@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Shell snapshot can capture unresolvable zsh autoload stubs that break system commands</title>
+    <id>https://framework.boucle.sh/limitations.html#shell-snapshot-captures-unresolvable-zsh-autoload-stubs</id>
+    <link href="https://framework.boucle.sh/limitations.html#shell-snapshot-captures-unresolvable-zsh-autoload-stubs"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>On macOS zsh setups that use Prezto-style autoload wrappers, Claude Code&#x27;s shell snapshot generator can capture undefined autoload stubs such as `make () { builtin autoload -XUz }` and replay them in later Bash tool subprocesses. Those stubs shadow the real `/usr/bin/make`, `/usr/bin/diff`, and similar commands, but the replayed subprocess no longer has the original `fpath` needed to resolve the autoload target, so ordinary tool calls fail with errors like `(eval):1: make: function definition file not found`. The reporter measured 83 `# undefined` stubs in a newer snapshot versus 0 in an older one, showing this is not just user shell customization but a regression in what the snapshot now preserves. This is distinct from the older shell-snapshot PATH drift and desktop GUI PATH truncation entries: here the broken layer is function capture itself, which can poison otherwise valid system-command invocations even when PATH is correct.</summary>
+    <category term="Configuration behavior"/>
+  </entry>
+  <entry>
     <title>[HIGH] Windows marketplace updates can wedge permanently on a stale `.bak/` rollback directory</title>
     <id>https://framework.boucle.sh/limitations.html#windows-marketplace-update-can-wedge-permanently-on-stale-bak-directory</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-marketplace-update-can-wedge-permanently-on-stale-bak-directory"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>Starting `claude remote-control --spawn same-dir` inside a git repository with an `origin` remote can leave the bridge stuck at `Ready` with `Capacity: 0/32` because the initial session-creation API rejects the populated `git_repo_url` field with `400 source: Extra inputs are not permitted`. In the reported repro on macOS 2.1.101, the exact same command created the initial session successfully when `origin` was removed and the bridge sent `&quot;git_repo_url&quot;: null` instead. This is distinct from older Remote Control auth, worktree, and post-connect delivery failures: the connection breaks before the first session is ever created, and the triggering condition is specifically the presence of a remote URL in the bridge payload.</summary>
     <category term="Remote &amp; cloud"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Chrome extension service worker can fail to register when no Chrome window is focused</title>
-    <id>https://framework.boucle.sh/limitations.html#chrome-profile-extension-service-worker-fails-when-no-window-is-focused</id>
-    <link href="https://framework.boucle.sh/limitations.html#chrome-profile-extension-service-worker-fails-when-no-window-is-focused"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>In a multi-profile Chrome setup, Claude&#x27;s browser extension service worker can fail to register one profile with the MCP daemon if that profile&#x27;s window is not the currently focused window when the worker wakes. The reported repro showed `chrome.windows.getCurrent()` returning null in the background service worker, which then threw `No current window` and prevented the profile from advertising itself to Claude Code. This is distinct from the older native-host ordering bug where the extension always binds to Desktop first: here the correct native host can exist, but the profile never reaches registration because the service-worker window lookup assumes a currently focused Chrome window.</summary>
-    <category term="MCP &amp; integrations"/>
   </entry>
 </feed>
