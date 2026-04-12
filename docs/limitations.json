@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 927,
+  "count": 928,
   "categories": {
     "Hook behavior & events": 170,
     "Permission system": 110,
@@ -9,8 +9,8 @@
     "Subagent & spawned agents": 38,
     "Desktop & IDE integration": 26,
     "Platform & compatibility": 23,
+    "CLI & terminal": 20,
     "Context & memory": 20,
-    "CLI & terminal": 19,
     "Configuration behavior": 17,
     "TUI & display": 15,
     "Tool behavior": 14,
@@ -170,7 +170,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 451,
+    "HIGH": 452,
     "LOW": 97,
     "MEDIUM": 317
   },
@@ -11323,30 +11323,42 @@
       "cc_version": "latest",
       "date_added": "2026-04-12",
       "workaround": "Do not assume a subagent's tool output is isolated from the parent session's MCP context right now. If you are using subagents for security-sensitive review or prompt-injection analysis, treat unexpected `system-reminder` or MCP registration blocks as runtime leakage, not proof the fetched source emitted them, and keep any final decision or execution step in the parent session until Anthropic fixes the boundary."
+    },
+    {
+      "id": "resume-can-lose-container-sessions-when-pid-keyed-session-index-overwrites-bind-mounted-metadata",
+      "title": "`/resume` can lose container sessions when a PID-keyed session index overwrites bind-mounted metadata",
+      "category": "CLI & terminal",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "When Claude Code runs inside a devcontainer or other container with `~/.claude` bind-mounted from the host, `/resume` can silently lose older sessions after the container restarts even though the underlying conversation JSONL files are still intact. In the reported WSL2 devcontainer repro, session metadata files under `~/.claude/sessions/` were keyed by PID (for example `8743.json`). After a container restart, the PID namespace reset, a new Claude process reused the same PID, and its metadata overwrote the old PID-keyed file. That destroys the mapping from PID to session UUID, so `/resume` no longer lists the older session even though the transcript remains on disk under `~/.claude/projects/`. This is distinct from earlier `/resume` failures tied to worktrees, branch filters, stale compaction boundaries, or cache/index drift in editor UIs: here the narrower broken layer is the PID-keyed metadata index itself, which is unsafe across container restarts and bind-mounted homes.",
+      "cc_issue": 47128,
+      "cc_version": "latest",
+      "date_added": "2026-04-12",
+      "workaround": "Do not assume `/resume` is a complete source of truth for containerized sessions when `~/.claude` is bind-mounted across restarts. If a session disappears after rebuilding or restarting the container, inspect the JSONL files directly under `~/.claude/projects/` and recover from the saved transcript manually. Until Anthropic changes the index away from PID-keyed metadata, avoid treating container restarts as safe boundaries for resumable session history."
     }
   ],
   "status_summary": {
-    "open": 913,
+    "open": 914,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 451,
+    "high": 452,
     "low": 97,
     "medium": 317
   },
   "lastUpdated": "2026-04-12",
   "stats": {
-    "total": 927,
+    "total": 928,
     "critical": 62,
-    "high": 451,
+    "high": 452,
     "medium": 317,
     "low": 97,
-    "open": 913,
+    "open": 914,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-12",
-  "total": 927
+  "total": 928
 }

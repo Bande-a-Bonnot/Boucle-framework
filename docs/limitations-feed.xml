@@ -7,6 +7,14 @@
   <updated>2026-04-12T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] `/resume` can lose container sessions when a PID-keyed session index overwrites bind-mounted metadata</title>
+    <id>https://framework.boucle.sh/limitations.html#resume-can-lose-container-sessions-when-pid-keyed-session-index-overwrites-bind-mounted-metadata</id>
+    <link href="https://framework.boucle.sh/limitations.html#resume-can-lose-container-sessions-when-pid-keyed-session-index-overwrites-bind-mounted-metadata"/>
+    <updated>2026-04-12T00:00:00Z</updated>
+    <summary>When Claude Code runs inside a devcontainer or other container with `~/.claude` bind-mounted from the host, `/resume` can silently lose older sessions after the container restarts even though the underlying conversation JSONL files are still intact. In the reported WSL2 devcontainer repro, session metadata files under `~/.claude/sessions/` were keyed by PID (for example `8743.json`). After a container restart, the PID namespace reset, a new Claude process reused the same PID, and its metadata overwrote the old PID-keyed file. That destroys the mapping from PID to session UUID, so `/resume` no longer lists the older session even though the transcript remains on disk under `~/.claude/projects/`. This is distinct from earlier `/resume` failures tied to worktrees, branch filters, stale compaction boundaries, or cache/index drift in editor UIs: here the narrower broken layer is the PID-keyed metadata index itself, which is unsafe across container restarts and bind-mounted homes.</summary>
+    <category term="CLI &amp; terminal"/>
+  </entry>
+  <entry>
     <title>[HIGH] Parent MCP registration blocks can leak into subagent tool output</title>
     <id>https://framework.boucle.sh/limitations.html#parent-mcp-registration-blocks-can-leak-into-subagent-tool-output</id>
     <link href="https://framework.boucle.sh/limitations.html#parent-mcp-registration-blocks-can-leak-into-subagent-tool-output"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-12T00:00:00Z</updated>
     <summary>Claude Code&#x27;s built-in memory system can create and update files under `~/.claude/projects/*/memory/`, but a later request to forget or delete one of those same memories can fail because the deletion path falls between tool contracts. In the reported repro, the agent can write the memory file through the `Write` tool, yet `rm` through Bash is blocked with `Read-only file system` because the sandbox does not grant write access to that memory directory, and the `Write` tool itself has no delete capability. This is distinct from the older auto-memory truncation, worktree divergence, and approval-bypass entries: the broken layer here is lifecycle completeness of the built-in memory store itself, which can create persistent state it cannot later remove cleanly when the user asks to forget it.</summary>
     <category term="Configuration behavior"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows Bun runtime can crash with `Illegal instruction` at the context-compression boundary</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-bun-can-illegal-instruction-crash-at-compression-boundary</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-bun-can-illegal-instruction-crash-at-compression-boundary"/>
-    <updated>2026-04-12T00:00:00Z</updated>
-    <summary>On Windows 11 in Claude Code v2.1.81 using Bun v1.3.11 on the x64 baseline build, long sessions can crash specifically during context compression rather than during ordinary tool execution. In the reported 4-5 hour repro, the same machine survives heavy parallel agents, large file reads, long Bash runs, and long sequential tool chains, but repeatedly panics at the compression boundary with `panic(main thread): Illegal instruction` while the UI is in `Propagating...` or `Churning...`. The same session then restarts and continues normally until the next compression cycle, which narrows the broken layer to Bun or Claude Code&#x27;s compression-path runtime on Windows rather than generic load, memory pressure, or tool complexity. This is distinct from earlier Windows tool-result wrapper drops, renderer freezes, and broad context-limit failures because the session dies inside the compression runtime itself with a Bun crash report instead of hanging or returning bad tool output.</summary>
-    <category term="Core engine"/>
   </entry>
 </feed>

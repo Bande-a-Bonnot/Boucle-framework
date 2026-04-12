@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">927</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-12.</span></p>
+        <p class="subtitle"><span id="total-count">928</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-12.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9864,6 +9864,18 @@
                         <!-- workaround:parent-mcp-registration-blocks-can-leak-into-subagent-tool-output -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume a subagent&#x27;s tool output is isolated from the parent session&#x27;s MCP context right now. If you are using subagents for security-sensitive review or prompt-injection analysis, treat unexpected `system-reminder` or MCP registration blocks as runtime leakage, not proof the fetched source emitted them, and keep any final decision or execution step in the parent session until Anthropic fixes the boundary.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/47118" target="_blank">#47118</a></div>
+        </div>
+        <div class="kl-entry" data-category="CLI &amp; terminal" data-issues="47128" id="resume-can-lose-container-sessions-when-pid-keyed-session-index-overwrites-bind-mounted-metadata" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#928</span>
+                <span class="kl-cat">CLI &amp; terminal</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>`/resume` can lose container sessions when a PID-keyed session index overwrites bind-mounted metadata</h3>
+            <p>When Claude Code runs inside a devcontainer or other container with `~/.claude` bind-mounted from the host, `/resume` can silently lose older sessions after the container restarts even though the underlying conversation JSONL files are still intact. In the reported WSL2 devcontainer repro, session metadata files under `~/.claude/sessions/` were keyed by PID (for example `8743.json`). After a container restart, the PID namespace reset, a new Claude process reused the same PID, and its metadata overwrote the old PID-keyed file. That destroys the mapping from PID to session UUID, so `/resume` no longer lists the older session even though the transcript remains on disk under `~/.claude/projects/`. This is distinct from earlier `/resume` failures tied to worktrees, branch filters, stale compaction boundaries, or cache/index drift in editor UIs: here the narrower broken layer is the PID-keyed metadata index itself, which is unsafe across container restarts and bind-mounted homes.</p>
+                        <!-- workaround:resume-can-lose-container-sessions-when-pid-keyed-session-index-overwrites-bind-mounted-metadata -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume `/resume` is a complete source of truth for containerized sessions when `~/.claude` is bind-mounted across restarts. If a session disappears after rebuilding or restarting the container, inspect the JSONL files directly under `~/.claude/projects/` and recover from the saved transcript manually. Until Anthropic changes the index away from PID-keyed metadata, avoid treating container restarts as safe boundaries for resumable session history.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/47128" target="_blank">#47128</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
