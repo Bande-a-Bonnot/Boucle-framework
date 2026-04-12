@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 912,
+  "count": 913,
   "categories": {
     "Hook behavior & events": 169,
     "Permission system": 110,
@@ -20,9 +20,9 @@
     "Agents & subagents": 8,
     "auth": 8,
     "File system & paths": 8,
+    "Configuration & settings": 7,
     "MCP": 7,
     "Permissions": 7,
-    "Configuration & settings": 6,
     "MCP & integrations": 6,
     "Plugin & channel system": 6,
     "Remote & cloud": 6,
@@ -169,7 +169,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 441,
+    "HIGH": 442,
     "LOW": 97,
     "MEDIUM": 312
   },
@@ -11142,30 +11142,42 @@
       "cc_version": "v2.1.104",
       "date_added": "2026-04-12",
       "workaround": "Do not rely on the icon alone when checking permission mode on macOS 12. Use the accompanying text label if present, or run a harmless command that would normally prompt before assuming Claude is in the wrong mode. Updating macOS or switching to a build that uses a text-safe glyph should avoid the garbled boxes."
+    },
+    {
+      "id": "model-command-can-overwrite-settings-json-and-wipe-hooks-and-statusline-config",
+      "title": "`/model` can overwrite `settings.json` and wipe hooks and statusLine config",
+      "category": "Configuration & settings",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "On Windows in Claude Code v2.1.104, running `/model` (and possibly `/effort`) can rewrite the user's global `~/.claude/settings.json` as a minimal object such as `{\"env\": {}}`, silently deleting unrelated configuration like `statusLine` commands and `hooks`. In the reported repro, the hook scripts and statusline command still existed on disk, but the JSON file that pointed to them was recreated at the exact time `/model` and `/effort` were used, leaving the user with no visible hook or statusline behavior and no warning that their config had been destroyed. This is distinct from the older `/model` bug that strips only the hook `if` property and from `/config` scope-leak bugs: here the command appears to perform a whole-file overwrite, wiping multiple independent settings families at once instead of mutating one field incorrectly.",
+      "cc_issue": 46921,
+      "cc_version": "2.1.104",
+      "date_added": "2026-04-12",
+      "workaround": "Back up `~/.claude/settings.json` before using `/model` or `/effort` if you rely on custom hooks or a statusLine. After any model-setting change, diff the file immediately and restore lost sections from backup if the command rewrote the file. Prefer editing model defaults by hand in a version-controlled settings file until Anthropic switches the command to a read-modify-write merge."
     }
   ],
   "status_summary": {
-    "open": 898,
+    "open": 899,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 441,
+    "high": 442,
     "low": 97,
     "medium": 312
   },
   "lastUpdated": "2026-04-12",
   "stats": {
-    "total": 912,
+    "total": 913,
     "critical": 62,
-    "high": 441,
+    "high": 442,
     "medium": 312,
     "low": 97,
-    "open": 898,
+    "open": 899,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-12",
-  "total": 912
+  "total": 913
 }

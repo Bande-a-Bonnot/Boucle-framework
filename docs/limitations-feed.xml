@@ -7,6 +7,14 @@
   <updated>2026-04-12T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] `/model` can overwrite `settings.json` and wipe hooks and statusLine config</title>
+    <id>https://framework.boucle.sh/limitations.html#model-command-can-overwrite-settings-json-and-wipe-hooks-and-statusline-config</id>
+    <link href="https://framework.boucle.sh/limitations.html#model-command-can-overwrite-settings-json-and-wipe-hooks-and-statusline-config"/>
+    <updated>2026-04-12T00:00:00Z</updated>
+    <summary>On Windows in Claude Code v2.1.104, running `/model` (and possibly `/effort`) can rewrite the user&#x27;s global `~/.claude/settings.json` as a minimal object such as `{&quot;env&quot;: {}}`, silently deleting unrelated configuration like `statusLine` commands and `hooks`. In the reported repro, the hook scripts and statusline command still existed on disk, but the JSON file that pointed to them was recreated at the exact time `/model` and `/effort` were used, leaving the user with no visible hook or statusline behavior and no warning that their config had been destroyed. This is distinct from the older `/model` bug that strips only the hook `if` property and from `/config` scope-leak bugs: here the command appears to perform a whole-file overwrite, wiping multiple independent settings families at once instead of mutating one field incorrectly.</summary>
+    <category term="Configuration &amp; settings"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] macOS 12 terminals can render the permission mode icon as garbled boxes</title>
     <id>https://framework.boucle.sh/limitations.html#macos-12-permission-mode-icon-renders-as-garbled-boxes-in-terminal</id>
     <link href="https://framework.boucle.sh/limitations.html#macos-12-permission-mode-icon-renders-as-garbled-boxes-in-terminal"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-12T00:00:00Z</updated>
     <summary>In the Claude desktop app, a long-running turn that ends with one large `Write` tool call can blank the live status indicators mid-turn even though the underlying agent loop keeps progressing and the file is written successfully. In the reported Windows desktop repro, the token counter, thinking indicator, and active tool label all disappeared during a single 150-250 line `Write`, then returned only after the user typed into the input box. This is distinct from older TUI freeze, statusline-hook, and long-session rendering bugs: the desktop client loses its live activity/status display specifically during a large one-shot `Write`, while the write itself still completes underneath.</summary>
     <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows `Stop` hooks using `pwsh` can receive no redirected stdin payload at all</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-stop-hook-pwsh-receives-no-stdin-payload</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-stop-hook-pwsh-receives-no-stdin-payload"/>
-    <updated>2026-04-12T00:00:00Z</updated>
-    <summary>On native Windows setups using PowerShell hook commands, Claude Code can deliver a `Stop` hook with no redirected stdin at all even when an equivalent `UserPromptSubmit` hook on the same machine and the same `pwsh -File ...` launcher receives JSON normally. In the reported v2.1.101 repro on Windows 11 with both PowerShell 5.1 and pwsh 7 installed, `[Console]::IsInputRedirected` stayed false inside the `Stop` hook script and a full diagnostic logger wrote nothing, which means the hook never receives the event payload needed to inspect or block the final assistant output. This is distinct from the older Windows stdin EOF deadlock and JSON corruption bugs: the `Stop` hook is invoked, but its stdin pipe is not connected in the first place, while other hook events still work through the same PowerShell runtime.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>
