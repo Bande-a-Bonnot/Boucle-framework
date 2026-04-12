@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Windows Bun runtime can crash with `Illegal instruction` at the context-compression boundary</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-bun-can-illegal-instruction-crash-at-compression-boundary</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-bun-can-illegal-instruction-crash-at-compression-boundary"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>On Windows 11 in Claude Code v2.1.81 using Bun v1.3.11 on the x64 baseline build, long sessions can crash specifically during context compression rather than during ordinary tool execution. In the reported 4-5 hour repro, the same machine survives heavy parallel agents, large file reads, long Bash runs, and long sequential tool chains, but repeatedly panics at the compression boundary with `panic(main thread): Illegal instruction` while the UI is in `Propagating...` or `Churning...`. The same session then restarts and continues normally until the next compression cycle, which narrows the broken layer to Bun or Claude Code&#x27;s compression-path runtime on Windows rather than generic load, memory pressure, or tool complexity. This is distinct from earlier Windows tool-result wrapper drops, renderer freezes, and broad context-limit failures because the session dies inside the compression runtime itself with a Bun crash report instead of hanging or returning bad tool output.</summary>
+    <category term="Core engine"/>
+  </entry>
+  <entry>
     <title>[HIGH] Shell snapshot can capture unresolvable zsh autoload stubs that break system commands</title>
     <id>https://framework.boucle.sh/limitations.html#shell-snapshot-captures-unresolvable-zsh-autoload-stubs</id>
     <link href="https://framework.boucle.sh/limitations.html#shell-snapshot-captures-unresolvable-zsh-autoload-stubs"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>The Microsoft 365 claude.ai MCP connector can stay stuck at `Needs authentication` and never complete OAuth because its 401 `WWW-Authenticate` response advertises `resource_metadata` as a relative path instead of an absolute URL. In the reported Windows repro on the latest Claude Code CLI, Gmail and Google Calendar authenticated normally on the same machine, while the Microsoft 365 connector looped on unauthenticated requests and surfaced `invalid_request_error` with `code: Field required`. This is distinct from older MCP OAuth token-refresh, proxy-token, and step-up-scope failures: the OAuth flow never starts cleanly because protected-resource discovery breaks before Claude can resolve the metadata endpoint.</summary>
     <category term="MCP &amp; integrations"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Remote Control session creation can fail when the repo has a non-null git origin URL</title>
-    <id>https://framework.boucle.sh/limitations.html#remote-control-session-creation-fails-when-git-origin-url-is-present</id>
-    <link href="https://framework.boucle.sh/limitations.html#remote-control-session-creation-fails-when-git-origin-url-is-present"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>Starting `claude remote-control --spawn same-dir` inside a git repository with an `origin` remote can leave the bridge stuck at `Ready` with `Capacity: 0/32` because the initial session-creation API rejects the populated `git_repo_url` field with `400 source: Extra inputs are not permitted`. In the reported repro on macOS 2.1.101, the exact same command created the initial session successfully when `origin` was removed and the bridge sent `&quot;git_repo_url&quot;: null` instead. This is distinct from older Remote Control auth, worktree, and post-connect delivery failures: the connection breaks before the first session is ever created, and the triggering condition is specifically the presence of a remote URL in the bridge payload.</summary>
-    <category term="Remote &amp; cloud"/>
   </entry>
 </feed>

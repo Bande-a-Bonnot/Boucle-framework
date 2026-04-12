@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">907</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
+        <p class="subtitle"><span id="total-count">908</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9624,6 +9624,18 @@
                         <!-- workaround:shell-snapshot-captures-unresolvable-zsh-autoload-stubs -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If Bash tool calls on macOS zsh setups start failing with `function definition file not found` for ordinary commands like `make` or `diff`, inspect the generated shell snapshot for `# undefined` autoload stubs and remove or `unfunction` the affected wrappers in your shell init as a temporary workaround. A more reliable short-term escape hatch is to point Claude Code at a manually cleaned shell snapshot or to launch from a simpler shell profile until Anthropic filters unresolved autoload stubs out of snapshot capture.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46856" target="_blank">#46856</a></div>
+        </div>
+        <div class="kl-entry" data-category="Core engine" data-issues="46867" id="windows-bun-can-illegal-instruction-crash-at-compression-boundary" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#908</span>
+                <span class="kl-cat">Core engine</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Windows Bun runtime can crash with `Illegal instruction` at the context-compression boundary</h3>
+            <p>On Windows 11 in Claude Code v2.1.81 using Bun v1.3.11 on the x64 baseline build, long sessions can crash specifically during context compression rather than during ordinary tool execution. In the reported 4-5 hour repro, the same machine survives heavy parallel agents, large file reads, long Bash runs, and long sequential tool chains, but repeatedly panics at the compression boundary with `panic(main thread): Illegal instruction` while the UI is in `Propagating...` or `Churning...`. The same session then restarts and continues normally until the next compression cycle, which narrows the broken layer to Bun or Claude Code&#x27;s compression-path runtime on Windows rather than generic load, memory pressure, or tool complexity. This is distinct from earlier Windows tool-result wrapper drops, renderer freezes, and broad context-limit failures because the session dies inside the compression runtime itself with a Bun crash report instead of hanging or returning bad tool output.</p>
+                        <!-- workaround:windows-bun-can-illegal-instruction-crash-at-compression-boundary -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If a long Windows session starts crashing only when Claude Code compacts context, treat the compression boundary as unsafe. Export or summarize work before the session nears compaction, restart into a fresh session sooner than usual, and avoid assuming that ordinary tool stability means the next compression cycle is safe until Anthropic fixes the Bun/runtime crash path.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46867" target="_blank">#46867</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

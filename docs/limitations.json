@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 907,
+  "count": 908,
   "categories": {
     "Hook behavior & events": 169,
     "Permission system": 109,
@@ -96,6 +96,7 @@
     "context management": 1,
     "context-management": 1,
     "core": 1,
+    "Core engine": 1,
     "Cost & usage": 1,
     "Cowork": 1,
     "Cowork & cloud": 1,
@@ -168,7 +169,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 439,
+    "HIGH": 440,
     "LOW": 97,
     "MEDIUM": 309
   },
@@ -11081,30 +11082,42 @@
       "cc_version": null,
       "date_added": "2026-04-12",
       "workaround": "If Bash tool calls on macOS zsh setups start failing with `function definition file not found` for ordinary commands like `make` or `diff`, inspect the generated shell snapshot for `# undefined` autoload stubs and remove or `unfunction` the affected wrappers in your shell init as a temporary workaround. A more reliable short-term escape hatch is to point Claude Code at a manually cleaned shell snapshot or to launch from a simpler shell profile until Anthropic filters unresolved autoload stubs out of snapshot capture."
+    },
+    {
+      "id": "windows-bun-can-illegal-instruction-crash-at-compression-boundary",
+      "title": "Windows Bun runtime can crash with `Illegal instruction` at the context-compression boundary",
+      "category": "Core engine",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "On Windows 11 in Claude Code v2.1.81 using Bun v1.3.11 on the x64 baseline build, long sessions can crash specifically during context compression rather than during ordinary tool execution. In the reported 4-5 hour repro, the same machine survives heavy parallel agents, large file reads, long Bash runs, and long sequential tool chains, but repeatedly panics at the compression boundary with `panic(main thread): Illegal instruction` while the UI is in `Propagating...` or `Churning...`. The same session then restarts and continues normally until the next compression cycle, which narrows the broken layer to Bun or Claude Code's compression-path runtime on Windows rather than generic load, memory pressure, or tool complexity. This is distinct from earlier Windows tool-result wrapper drops, renderer freezes, and broad context-limit failures because the session dies inside the compression runtime itself with a Bun crash report instead of hanging or returning bad tool output.",
+      "cc_issue": 46867,
+      "cc_version": "2.1.81",
+      "date_added": "2026-04-12",
+      "workaround": "If a long Windows session starts crashing only when Claude Code compacts context, treat the compression boundary as unsafe. Export or summarize work before the session nears compaction, restart into a fresh session sooner than usual, and avoid assuming that ordinary tool stability means the next compression cycle is safe until Anthropic fixes the Bun/runtime crash path."
     }
   ],
   "status_summary": {
-    "open": 893,
+    "open": 894,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 439,
+    "high": 440,
     "low": 97,
     "medium": 309
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 907,
+    "total": 908,
     "critical": 62,
-    "high": 439,
+    "high": 440,
     "medium": 309,
     "low": 97,
-    "open": 893,
+    "open": 894,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 907
+  "total": 908
 }
