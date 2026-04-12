@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">918</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-12.</span></p>
+        <p class="subtitle"><span id="total-count">919</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-12.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9756,6 +9756,18 @@
                         <!-- workaround:agent-sdk-stream-json-bash-subprocess-cwd-can-collapse-to-root-under-non-shell-parents -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not trust the init event&#x27;s `cwd` alone when driving Claude Code through a non-shell stream-json host right now. Force absolute paths or prefix every Bash call with an explicit `cd /your/target &amp;&amp; ...` guard, and verify `pwd` inside the session before relying on relative paths or `CLAUDE.md` discovery.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46985" target="_blank">#46985</a></div>
+        </div>
+        <div class="kl-entry" data-category="Cowork" data-issues="47016" id="cowork-save-skill-install-can-silently-truncate-skill-md-files" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#919</span>
+                <span class="kl-cat">Cowork</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Cowork `Save skill` installs can silently truncate `SKILL.md` files</h3>
+            <p>Cowork&#x27;s `Save skill` install path can write a shorter `SKILL.md` into the mounted skills directory than the intact file packaged inside the `.skill` zip, with no error or warning to the user. In the reported Windows repros, the source file and the packaged zip both remained complete, but the installed copy inside `/sessions/*/mnt/.claude/skills/.../SKILL.md` lost 14-18 lines and ended mid-word on every install. This is narrower than the older Cowork skill-update truncation bug, which only clipped files that grew relative to a previous install, and narrower than the older stale virtiofs mount bug, which served outdated host content after external edits: here the break happens inside Cowork&#x27;s own `Save skill` install pipeline on fresh package writes, even when the `.skill` payload itself is already verified intact.</p>
+                        <!-- workaround:cowork-save-skill-install-can-silently-truncate-skill-md-files -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not trust Cowork&#x27;s `Save skill` button as proof that a packaged skill installed cleanly right now. After install, verify the mounted `SKILL.md` line count or tail against the unpacked `.skill` archive, and if they differ, repair the Windows-side skills directory manually and restart sessions so the FUSE cache reloads the correct file.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/47016" target="_blank">#47016</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

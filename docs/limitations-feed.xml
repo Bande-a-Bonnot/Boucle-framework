@@ -7,6 +7,14 @@
   <updated>2026-04-12T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Cowork `Save skill` installs can silently truncate `SKILL.md` files</title>
+    <id>https://framework.boucle.sh/limitations.html#cowork-save-skill-install-can-silently-truncate-skill-md-files</id>
+    <link href="https://framework.boucle.sh/limitations.html#cowork-save-skill-install-can-silently-truncate-skill-md-files"/>
+    <updated>2026-04-12T00:00:00Z</updated>
+    <summary>Cowork&#x27;s `Save skill` install path can write a shorter `SKILL.md` into the mounted skills directory than the intact file packaged inside the `.skill` zip, with no error or warning to the user. In the reported Windows repros, the source file and the packaged zip both remained complete, but the installed copy inside `/sessions/*/mnt/.claude/skills/.../SKILL.md` lost 14-18 lines and ended mid-word on every install. This is narrower than the older Cowork skill-update truncation bug, which only clipped files that grew relative to a previous install, and narrower than the older stale virtiofs mount bug, which served outdated host content after external edits: here the break happens inside Cowork&#x27;s own `Save skill` install pipeline on fresh package writes, even when the `.skill` payload itself is already verified intact.</summary>
+    <category term="Cowork"/>
+  </entry>
+  <entry>
     <title>[HIGH] Agent SDK stream-json Bash subprocess `cwd` can collapse to `/` under non-shell parents</title>
     <id>https://framework.boucle.sh/limitations.html#agent-sdk-stream-json-bash-subprocess-cwd-can-collapse-to-root-under-non-shell-parents</id>
     <link href="https://framework.boucle.sh/limitations.html#agent-sdk-stream-json-bash-subprocess-cwd-can-collapse-to-root-under-non-shell-parents"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-12T00:00:00Z</updated>
     <summary>The official `security-guidance` marketplace plugin can falsely block ordinary `Write`, `Edit`, and `MultiEdit` operations when the file content contains the bare substring `exec(`, even inside Markdown or prose examples. In the reported repro on 2026-04-11, a documentation write containing harmless snippets such as `db.exec(schema)` triggered the plugin&#x27;s `child_process_exec` rule because its Python hook scans the full file body with naive substring matching and no file-type awareness, then exits with code 2 to deny the tool call. This is distinct from the older Windows `python3` launcher bug in the same plugin: there, the hook never starts on Windows; here, the hook runs successfully but applies the wrong security heuristic and turns normal doc-writing into a false-positive command-injection block.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Tmux team lead can stall after teammate reports until any local keypress</title>
-    <id>https://framework.boucle.sh/limitations.html#tmux-team-lead-can-stall-after-teammate-reports-until-keypress</id>
-    <link href="https://framework.boucle.sh/limitations.html#tmux-team-lead-can-stall-after-teammate-reports-until-keypress"/>
-    <updated>2026-04-12T00:00:00Z</updated>
-    <summary>When Claude Code runs an agent team in `teammateMode: &quot;tmux&quot;`, the lead `@main` session can stop progressing after teammates finish work and return their reports with `SendMessage`. In the reported macOS repro on 2.1.101, the teammate summaries and idle notifications were visibly delivered into the main conversation, but the lead agent took no next action at all: no new tool calls, no reasoning text, and no follow-up dispatch. Pressing any key in the lead tmux pane immediately revived the session and caused Claude to process the already-delivered reports. This is distinct from older teammate lifecycle drift, dropped `SendMessage`, or invisible permission-prompt failures because the messages do arrive and the team remains intact; the broken layer is the lead session&#x27;s wake-up path, which does not resume orchestration on inbox activity until a local terminal input event nudges it.</summary>
-    <category term="Agents &amp; subagents"/>
   </entry>
 </feed>

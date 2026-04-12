@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 918,
+  "count": 919,
   "categories": {
     "Hook behavior & events": 169,
     "Permission system": 110,
@@ -59,6 +59,7 @@
     "auth/oauth": 2,
     "Configuration": 2,
     "Context / compaction": 2,
+    "Cowork": 2,
     "Cowork / remote sessions": 2,
     "IDE integration": 2,
     "IDE integrations": 2,
@@ -98,7 +99,6 @@
     "core": 1,
     "Core engine": 1,
     "Cost & usage": 1,
-    "Cowork": 1,
     "Cowork & cloud": 1,
     "data-integrity": 1,
     "data-loss": 1,
@@ -170,7 +170,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 444,
+    "HIGH": 445,
     "LOW": 97,
     "MEDIUM": 315
   },
@@ -11215,30 +11215,42 @@
       "cc_version": "2.1.104",
       "date_added": "2026-04-12",
       "workaround": "Do not trust the init event's `cwd` alone when driving Claude Code through a non-shell stream-json host right now. Force absolute paths or prefix every Bash call with an explicit `cd /your/target && ...` guard, and verify `pwd` inside the session before relying on relative paths or `CLAUDE.md` discovery."
+    },
+    {
+      "id": "cowork-save-skill-install-can-silently-truncate-skill-md-files",
+      "title": "Cowork `Save skill` installs can silently truncate `SKILL.md` files",
+      "category": "Cowork",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "Cowork's `Save skill` install path can write a shorter `SKILL.md` into the mounted skills directory than the intact file packaged inside the `.skill` zip, with no error or warning to the user. In the reported Windows repros, the source file and the packaged zip both remained complete, but the installed copy inside `/sessions/*/mnt/.claude/skills/.../SKILL.md` lost 14-18 lines and ended mid-word on every install. This is narrower than the older Cowork skill-update truncation bug, which only clipped files that grew relative to a previous install, and narrower than the older stale virtiofs mount bug, which served outdated host content after external edits: here the break happens inside Cowork's own `Save skill` install pipeline on fresh package writes, even when the `.skill` payload itself is already verified intact.",
+      "cc_issue": 47016,
+      "cc_version": "2.1.92 (Cowork)",
+      "date_added": "2026-04-12",
+      "workaround": "Do not trust Cowork's `Save skill` button as proof that a packaged skill installed cleanly right now. After install, verify the mounted `SKILL.md` line count or tail against the unpacked `.skill` archive, and if they differ, repair the Windows-side skills directory manually and restart sessions so the FUSE cache reloads the correct file."
     }
   ],
   "status_summary": {
-    "open": 904,
+    "open": 905,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 444,
+    "high": 445,
     "low": 97,
     "medium": 315
   },
   "lastUpdated": "2026-04-12",
   "stats": {
-    "total": 918,
+    "total": 919,
     "critical": 62,
-    "high": 444,
+    "high": 445,
     "medium": 315,
     "low": 97,
-    "open": 904,
+    "open": 905,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-12",
-  "total": 918
+  "total": 919
 }
