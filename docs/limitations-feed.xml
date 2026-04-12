@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Mobile edit approval dialogs can overlap the keyboard and cause accidental rejection</title>
+    <id>https://framework.boucle.sh/limitations.html#mobile-edit-approval-dialog-can-overlap-keyboard-and-cause-accidental-rejection</id>
+    <link href="https://framework.boucle.sh/limitations.html#mobile-edit-approval-dialog-can-overlap-keyboard-and-cause-accidental-rejection"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>When Claude Code is used from the Claude mobile app on iOS or Android, an incoming file-edit approval dialog can appear in the same screen region as the on-screen keyboard. In the reported repro, the user is typing a follow-up message while Claude is working, and the approval sheet lands directly over the keyboard area so a normal tap can hit `Reject` instead of a key. This is distinct from the older remote/mobile approval-propagation gaps where prompts never arrive on mobile at all: here the permission UI does arrive, but its placement makes legitimate approvals easy to reject by accident and can discard valid file edits mid-session.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
     <title>[HIGH] Windows MSIX installs can lose Code sessions on restart because session saves fail with `EXDEV`</title>
     <id>https://framework.boucle.sh/limitations.html#msix-session-save-exdev-leaves-code-sessions-unrecoverable-after-restart</id>
     <link href="https://framework.boucle.sh/limitations.html#msix-session-save-exdev-leaves-code-sessions-unrecoverable-after-restart"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>Claude Desktop can enter a runaway MCP reconnect state where it repeatedly issues `tools/list` requests in pairs or larger bursts instead of returning to normal tool traffic, eventually starving real tool calls and tripping the server timeout. In the reported Windows repro with the Desktop Commander extension installed from the marketplace, normal sessions showed one `tools/list` at handshake, but after a reconnect the desktop app began sending hundreds of sequential `tools/list` requests across later sessions, with no `tools/call` traffic interspersed and message IDs climbing into the 1300s. This is distinct from older stdio MCP kill and no-auto-reconnect failures: the server stays alive long enough to answer each list request, but Claude Desktop&#x27;s reconnect path appears to multiply discovery requests until the extension becomes unusable and the user must restart both sides.</summary>
     <category term="MCP &amp; integrations"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `/compact` can preserve `/loop` guidance while losing the cron scope needed to stop it</title>
-    <id>https://framework.boucle.sh/limitations.html#compact-preserves-loop-skill-but-loses-cron-control-scope</id>
-    <link href="https://framework.boucle.sh/limitations.html#compact-preserves-loop-skill-but-loses-cron-control-scope"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>After a conversation uses `/loop`, later stops the loop, and then runs `/compact`, the compacted session can still restore the loop skill guidance (`Skills restored (loop)`) and keep treating incoming cron-fired prompts as active loop work even though the new session no longer owns the original cron jobs. In the reported repro, `CronList` inside the compacted session returned no jobs while stale loop executions kept firing, leaving the user with no in-band way to `CronDelete` the pre-compaction jobs from the session that still believed it should honor the loop contract. This is distinct from older auto-compaction thrash bugs: the failure is cross-session state drift where compaction preserves behavioral guidance but drops the scheduler control surface needed to cancel the behavior safely.</summary>
-    <category term="Context / compaction"/>
   </entry>
 </feed>
