@@ -7,6 +7,14 @@
   <updated>2026-04-12T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] VS Code Claude process tree can lose local-network TCP access while another terminal on the same host still works</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-claude-process-tree-can-lose-local-network-tcp-access-while-terminal-on-same-host-still-works</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-claude-process-tree-can-lose-local-network-tcp-access-while-terminal-on-same-host-still-works"/>
+    <updated>2026-04-12T00:00:00Z</updated>
+    <summary>When Claude Code is launched inside the VS Code extension on macOS, Bash and Python tool calls can fail to establish TCP connections to a local network host with `No route to host` or `errno 65` even though the same user, machine, interface, and destination work immediately from iTerm2. In the reported repro, `ssh`, `nc -z`, `ping`, and a direct Python `socket.connect()` all failed from the Claude process tree while `traceroute` still reached the target host in under a millisecond and the identical commands succeeded outside Claude. This is distinct from the older macOS silent-TCP-drop freeze entry, which starts after an existing connection disappears mid-session: here the broken layer is the initial transport access of the VS Code / Claude subprocess tree itself, apparently before any session work can reach the host.</summary>
+    <category term="Bash &amp; shell execution"/>
+  </entry>
+  <entry>
     <title>[HIGH] Cowork Gmail `search_threads` can fail with `Internal error encountered` while other Gmail tools still work</title>
     <id>https://framework.boucle.sh/limitations.html#cowork-gmail-search-threads-can-fail-with-internal-error-while-other-gmail-tools-still-work</id>
     <link href="https://framework.boucle.sh/limitations.html#cowork-gmail-search-threads-can-fail-with-internal-error-while-other-gmail-tools-still-work"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-12T00:00:00Z</updated>
     <summary>Claude Code&#x27;s hardcoded `Contains backslash-escaped whitespace` safety check can treat ordinary shell-escaped paths with spaces as suspicious and force a confirmation prompt even when the command is clearly read-only and already covered by sandbox or allow rules. In the reported macOS v2.1.101 repro, routine commands such as `cat /Users/user/Projects/1st\ PATO\ AI\ Hackathon/.gitignore` and `git -C /Users/user/Projects/1st\ PATO\ AI\ Hackathon status` triggered repeated prompts solely because the working directory name contained spaces and Claude emitted the normal `\ ` shell escaping. This is distinct from older path-with-spaces hook breakage or Windows glob-normalization bugs: here the command itself is valid, the low-risk scanner still recognizes it as harmless, and the broken layer is the hardcoded permission heuristic overriding the user&#x27;s configured auto-allow path.</summary>
     <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `/reload-plugins` can drop inbound channel notifications until the session is restarted</title>
-    <id>https://framework.boucle.sh/limitations.html#reload-plugins-can-drop-inbound-channel-notifications-until-session-restart</id>
-    <link href="https://framework.boucle.sh/limitations.html#reload-plugins-can-drop-inbound-channel-notifications-until-session-restart"/>
-    <updated>2026-04-12T00:00:00Z</updated>
-    <summary>After `/reload-plugins`, Claude Code can reconnect plugin MCP tools successfully while silently failing to re-establish the inbound `notifications/claude/channel` subscription for channel-capable plugins. In the reported v2.1.101 repro on an exe.dev VM with `telegram@claude-plugins-official` loaded through `--channels`, Telegram messages appeared in the conversation before the reload, `/reload-plugins` completed normally, and the plugin&#x27;s outbound `reply` tool kept working afterward, but new inbound Telegram DMs never surfaced again until the entire session was restarted. This is distinct from older channel regressions where notifications never work on first attach, tool injection is missing, or the channel plugin process never spawns: here the session starts healthy, `/reload-plugins` breaks only the inbound listener layer, and outbound tool calls still prove the plugin transport remains alive.</summary>
-    <category term="Plugin &amp; channel system"/>
   </entry>
 </feed>
