@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 917,
+  "count": 918,
   "categories": {
     "Hook behavior & events": 169,
     "Permission system": 110,
@@ -15,11 +15,11 @@
     "TUI & display": 15,
     "Tool behavior": 14,
     "Security & trust boundaries": 11,
+    "File system & paths": 9,
     "hooks": 9,
     "Performance & cost": 9,
     "Agents & subagents": 8,
     "auth": 8,
-    "File system & paths": 8,
     "Configuration & settings": 7,
     "MCP": 7,
     "Permissions": 7,
@@ -170,7 +170,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 443,
+    "HIGH": 444,
     "LOW": 97,
     "MEDIUM": 315
   },
@@ -11203,30 +11203,42 @@
       "cc_version": null,
       "date_added": "2026-04-12",
       "workaround": "Do not rely on the repeated `Ctrl+B, Ctrl+B` hint as a real confirmation boundary right now. If backgrounding a running tool would be risky, keep your hands off `Ctrl+B` entirely and wait for the command to finish or use a different recovery path until Anthropic makes the shortcut behavior match the UI."
+    },
+    {
+      "id": "agent-sdk-stream-json-bash-subprocess-cwd-can-collapse-to-root-under-non-shell-parents",
+      "title": "Agent SDK stream-json Bash subprocess `cwd` can collapse to `/` under non-shell parents",
+      "category": "File system & paths",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "When `claude` is spawned programmatically from a non-shell parent (Node, Bun, Python, or similar) with `--input-format stream-json --output-format stream-json`, the session can report the correct `cwd` in the `system/init` event while every later Bash tool subprocess still runs from `/`. The same prompt, flags, and environment work correctly when an interactive shell is the direct parent, so the break appears to sit specifically in the Bash tool spawn path for the headless SDK-style execution flow. This is distinct from older worktree, realpath, and parallel-Bash cwd issues because the logical session directory is known correctly at init time and only the later Bash subprocess loses it.",
+      "cc_issue": 46985,
+      "cc_version": "2.1.104",
+      "date_added": "2026-04-12",
+      "workaround": "Do not trust the init event's `cwd` alone when driving Claude Code through a non-shell stream-json host right now. Force absolute paths or prefix every Bash call with an explicit `cd /your/target && ...` guard, and verify `pwd` inside the session before relying on relative paths or `CLAUDE.md` discovery."
     }
   ],
   "status_summary": {
-    "open": 903,
+    "open": 904,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 443,
+    "high": 444,
     "low": 97,
     "medium": 315
   },
   "lastUpdated": "2026-04-12",
   "stats": {
-    "total": 917,
+    "total": 918,
     "critical": 62,
-    "high": 443,
+    "high": 444,
     "medium": 315,
     "low": 97,
-    "open": 903,
+    "open": 904,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-12",
-  "total": 917
+  "total": 918
 }
