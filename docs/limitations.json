@@ -1,13 +1,13 @@
 {
   "version": "0.12.0",
-  "count": 909,
+  "count": 910,
   "categories": {
     "Hook behavior & events": 169,
     "Permission system": 109,
     "Hook bypass & evasion": 96,
     "MCP & plugin issues": 44,
     "Subagent & spawned agents": 38,
-    "Desktop & IDE integration": 24,
+    "Desktop & IDE integration": 25,
     "Platform & compatibility": 23,
     "Context & memory": 20,
     "CLI & terminal": 18,
@@ -169,7 +169,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 440,
+    "HIGH": 441,
     "LOW": 97,
     "MEDIUM": 310
   },
@@ -11106,30 +11106,42 @@
       "cc_version": null,
       "date_added": "2026-04-12",
       "workaround": "If Claude Code says it forgot a memory but cannot remove the underlying file, treat the deletion as incomplete. Manually inspect `~/.claude/projects/*/memory/`, remove the orphaned memory file yourself, and update any index file such as `MEMORY.md` if needed until Anthropic either allows safe deletion in the sandbox or adds a first-class delete path for memory files."
+    },
+    {
+      "id": "msix-session-save-exdev-leaves-code-sessions-unrecoverable-after-restart",
+      "title": "Windows MSIX installs can lose Code sessions on restart because session saves fail with `EXDEV`",
+      "category": "Desktop & IDE integration",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "On Windows 11 Claude Desktop MSIX installs, Code sessions can appear healthy during the current run yet disappear after every restart because the session save path never finalizes the metadata file. In the reported repro, Desktop writes `local_*.json.tmp` under the Code sessions directory and then tries to atomically rename it to `.json`, but the MSIX VFS reparse path crosses drive boundaries and `fs.rename()` fails with `EXDEV: cross-device link not permitted`. Thousands of save attempts can fail silently in logs while every session remains stuck as `.json.tmp`, which means the restart path has nothing durable to load. This is distinct from the older macOS React-state disappearance entry and VS Code/Desktop session-list conflicts: the broken layer here is the Windows MSIX session-persistence write path itself, not sidebar state or cross-client visibility.",
+      "cc_issue": 46881,
+      "cc_version": "1.1617.0",
+      "date_added": "2026-04-12",
+      "workaround": "Do not trust session persistence on Windows MSIX installs if Desktop logs repeated `EXDEV` errors while saving Code sessions. Before restarting, copy any critical session output elsewhere. As a temporary recovery, close Desktop and manually copy `local_*.json.tmp` files to matching `.json` names in the sessions directory, or avoid the MSIX packaging path until Anthropic adds an `EXDEV` fallback such as copy-and-unlink for session saves."
     }
   ],
   "status_summary": {
-    "open": 895,
+    "open": 896,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 440,
+    "high": 441,
     "low": 97,
     "medium": 310
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 909,
+    "total": 910,
     "critical": 62,
-    "high": 440,
+    "high": 441,
     "medium": 310,
     "low": 97,
-    "open": 895,
+    "open": 896,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 909
+  "total": 910
 }

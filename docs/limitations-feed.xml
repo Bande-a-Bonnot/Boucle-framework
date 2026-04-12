@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Windows MSIX installs can lose Code sessions on restart because session saves fail with `EXDEV`</title>
+    <id>https://framework.boucle.sh/limitations.html#msix-session-save-exdev-leaves-code-sessions-unrecoverable-after-restart</id>
+    <link href="https://framework.boucle.sh/limitations.html#msix-session-save-exdev-leaves-code-sessions-unrecoverable-after-restart"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>On Windows 11 Claude Desktop MSIX installs, Code sessions can appear healthy during the current run yet disappear after every restart because the session save path never finalizes the metadata file. In the reported repro, Desktop writes `local_*.json.tmp` under the Code sessions directory and then tries to atomically rename it to `.json`, but the MSIX VFS reparse path crosses drive boundaries and `fs.rename()` fails with `EXDEV: cross-device link not permitted`. Thousands of save attempts can fail silently in logs while every session remains stuck as `.json.tmp`, which means the restart path has nothing durable to load. This is distinct from the older macOS React-state disappearance entry and VS Code/Desktop session-list conflicts: the broken layer here is the Windows MSIX session-persistence write path itself, not sidebar state or cross-client visibility.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Auto-memory can create and overwrite memory files but cannot delete them</title>
     <id>https://framework.boucle.sh/limitations.html#auto-memory-can-create-and-overwrite-files-but-cannot-delete-them</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-memory-can-create-and-overwrite-files-but-cannot-delete-them"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>After a conversation uses `/loop`, later stops the loop, and then runs `/compact`, the compacted session can still restore the loop skill guidance (`Skills restored (loop)`) and keep treating incoming cron-fired prompts as active loop work even though the new session no longer owns the original cron jobs. In the reported repro, `CronList` inside the compacted session returned no jobs while stale loop executions kept firing, leaving the user with no in-band way to `CronDelete` the pre-compaction jobs from the session that still believed it should honor the loop contract. This is distinct from older auto-compaction thrash bugs: the failure is cross-session state drift where compaction preserves behavioral guidance but drops the scheduler control surface needed to cancel the behavior safely.</summary>
     <category term="Context / compaction"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Startup `-w` worktrees can survive `/exit` without any keep-or-remove cleanup prompt</title>
-    <id>https://framework.boucle.sh/limitations.html#startup-worktree-exit-skips-keep-or-remove-cleanup-prompt</id>
-    <link href="https://framework.boucle.sh/limitations.html#startup-worktree-exit-skips-keep-or-remove-cleanup-prompt"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>When Claude Code is launched with `claude -w &lt;name&gt;` so the session starts directly inside a freshly created git worktree, invoking `/exit` immediately can terminate the session without ever asking whether to keep or remove that worktree. The worktree directory and its branch are left behind on disk even though the built-in ExitWorktree contract says the user should be prompted on session exit while still inside the worktree. This is distinct from the older `symlinkDirectories` cleanup bug and the `--worktree` no-create failure: here the startup worktree is created successfully, but the `/exit` shutdown path bypasses the cleanup prompt and silently leaks the worktree and branch.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>

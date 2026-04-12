@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">909</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
+        <p class="subtitle"><span id="total-count">910</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9648,6 +9648,18 @@
                         <!-- workaround:auto-memory-can-create-and-overwrite-files-but-cannot-delete-them -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If Claude Code says it forgot a memory but cannot remove the underlying file, treat the deletion as incomplete. Manually inspect `~/.claude/projects/*/memory/`, remove the orphaned memory file yourself, and update any index file such as `MEMORY.md` if needed until Anthropic either allows safe deletion in the sandbox or adds a first-class delete path for memory files.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46871" target="_blank">#46871</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="46881" id="msix-session-save-exdev-leaves-code-sessions-unrecoverable-after-restart" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#910</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Windows MSIX installs can lose Code sessions on restart because session saves fail with `EXDEV`</h3>
+            <p>On Windows 11 Claude Desktop MSIX installs, Code sessions can appear healthy during the current run yet disappear after every restart because the session save path never finalizes the metadata file. In the reported repro, Desktop writes `local_*.json.tmp` under the Code sessions directory and then tries to atomically rename it to `.json`, but the MSIX VFS reparse path crosses drive boundaries and `fs.rename()` fails with `EXDEV: cross-device link not permitted`. Thousands of save attempts can fail silently in logs while every session remains stuck as `.json.tmp`, which means the restart path has nothing durable to load. This is distinct from the older macOS React-state disappearance entry and VS Code/Desktop session-list conflicts: the broken layer here is the Windows MSIX session-persistence write path itself, not sidebar state or cross-client visibility.</p>
+                        <!-- workaround:msix-session-save-exdev-leaves-code-sessions-unrecoverable-after-restart -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not trust session persistence on Windows MSIX installs if Desktop logs repeated `EXDEV` errors while saving Code sessions. Before restarting, copy any critical session output elsewhere. As a temporary recovery, close Desktop and manually copy `local_*.json.tmp` files to matching `.json` names in the sessions directory, or avoid the MSIX packaging path until Anthropic adds an `EXDEV` fallback such as copy-and-unlink for session saves.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46881" target="_blank">#46881</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
