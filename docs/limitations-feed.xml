@@ -7,6 +7,14 @@
   <updated>2026-04-12T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] `Ctrl+B` can background a running tool on single press despite a double-press UI hint</title>
+    <id>https://framework.boucle.sh/limitations.html#ctrl-b-can-background-a-running-tool-on-single-press-despite-double-press-ui-hint</id>
+    <link href="https://framework.boucle.sh/limitations.html#ctrl-b-can-background-a-running-tool-on-single-press-despite-double-press-ui-hint"/>
+    <updated>2026-04-12T00:00:00Z</updated>
+    <summary>While a tool is actively running, Claude Code can show a bottom-of-screen hint that says `Ctrl+B, Ctrl+B` is required to background the task, yet a single `Ctrl+B` immediately backgrounds it. In the reported Linux repro, the contrast with `Ctrl+F, Ctrl+F` for terminating background agents made the mismatch especially misleading: one shortcut really is double-confirmed, while the other only looks that way in the UI. This is distinct from earlier TUI freeze, auto-background, and background-agent lifecycle entries because the runtime action succeeds; the broken layer is the safety contract between the on-screen shortcut hint and the actual keybinding behavior.</summary>
+    <category term="TUI &amp; display"/>
+  </entry>
+  <entry>
     <title>[HIGH] Development-channel MCP servers can connect without exposing tools to the model</title>
     <id>https://framework.boucle.sh/limitations.html#development-channel-mcp-servers-can-connect-without-exposing-tools-to-the-model</id>
     <link href="https://framework.boucle.sh/limitations.html#development-channel-mcp-servers-can-connect-without-exposing-tools-to-the-model"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-12T00:00:00Z</updated>
     <summary>Saving changes through the interactive `/config` UI can merge the effective permission state from a project or subdirectory `settings.local.json` into the user&#x27;s global `~/.claude/settings.json`. In the reported Linux repro on 2.1.101, the local directory config contained a broader `permissions.allow` list and a `defaultMode`, while the global file intentionally had a smaller allow list. Changing only the default mode in `/config` caused Claude Code to persist the broader local permission set into the global settings file without prompting, effectively promoting project-scoped grants into a permanent cross-project allow list. This is distinct from earlier cases where project-level allow rules are ignored or UI toggles fail to write `defaultMode`: here `/config` saves the wrong scope and mutates the user&#x27;s global trust boundary.</summary>
     <category term="Configuration &amp; settings"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Plugin `WorktreeCreate` hooks can be silently skipped on CLI `--worktree` startup</title>
-    <id>https://framework.boucle.sh/limitations.html#plugin-worktreecreate-hooks-silently-skipped-on-cli-worktree-start</id>
-    <link href="https://framework.boucle.sh/limitations.html#plugin-worktreecreate-hooks-silently-skipped-on-cli-worktree-start"/>
-    <updated>2026-04-12T00:00:00Z</updated>
-    <summary>On macOS in Claude Code v2.1.101, `WorktreeCreate` and `WorktreeRemove` hooks registered by a plugin through `hooks/hooks.json` can be silently dropped when a session starts with `claude --worktree &lt;name&gt;`, even though the same plugin&#x27;s `SessionStart` and `UserPromptSubmit` hooks still fire and the same worktree hook command works from `settings.json`. In the reported repro, Claude created the worktree through its built-in `.claude/worktrees/&lt;name&gt;` path while the plugin hook never ran at all, leaving plugin-managed worktree setup steps such as env mirroring, dependency install, or secret bootstrap completely inert. This is distinct from the older worktree-hook failures where mid-session `EnterWorktree` skips hooks, `--worktree --tmux` bypasses the lifecycle entirely, or settings-based `WorktreeCreate` hooks hang the session. Here, the CLI `--worktree` surface still dispatches the settings hook path but silently omits the plugin-registered one for the same event.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>
