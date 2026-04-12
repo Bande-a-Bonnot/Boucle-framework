@@ -7,6 +7,14 @@
   <updated>2026-04-12T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] `CLAUDE_CONFIG_DIR` profiles can still inject the global `~/.claude/CLAUDE.md`</title>
+    <id>https://framework.boucle.sh/limitations.html#claude-config-dir-profiles-can-still-inject-global-claude-md-from-home-directory</id>
+    <link href="https://framework.boucle.sh/limitations.html#claude-config-dir-profiles-can-still-inject-global-claude-md-from-home-directory"/>
+    <updated>2026-04-12T00:00:00Z</updated>
+    <summary>When Claude Code is launched with `CLAUDE_CONFIG_DIR` pointing at an alternate profile directory, the session can still preload instructions from the default `~/.claude/CLAUDE.md` instead of isolating itself to the selected config root. In the reported macOS v2.1.104 repro, the model explicitly confirmed that `/Users/.../.claude/CLAUDE.md` had already been injected into context as startup `claudeMd` content even though `CLAUDE_CONFIG_DIR` was set to a different directory. This is distinct from the older `CLAUDE_CONFIG_DIR` MCP hierarchy and plugin-isolation bugs because the break is not limited to MCP or marketplace state: the wrong profile&#x27;s top-level instruction file itself crosses the boundary at session start, so supposedly isolated local profiles can inherit unrelated rules, tooling guidance, or secrets from the default home profile before the user does any work.</summary>
+    <category term="Configuration &amp; settings"/>
+  </entry>
+  <entry>
     <title>[HIGH] VS Code Claude process tree can lose local-network TCP access while another terminal on the same host still works</title>
     <id>https://framework.boucle.sh/limitations.html#vscode-claude-process-tree-can-lose-local-network-tcp-access-while-terminal-on-same-host-still-works</id>
     <link href="https://framework.boucle.sh/limitations.html#vscode-claude-process-tree-can-lose-local-network-tcp-access-while-terminal-on-same-host-still-works"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-12T00:00:00Z</updated>
     <summary>On newer macOS releases, the official iMessage channel plugin can receive inbound DMs successfully yet fail to send replies because `chat.db` now stores some direct-message GUIDs with an `any;-;` prefix that Messages.app AppleScript does not accept as a `chat id`. In the reported macOS Tahoe repro with plugin v0.1.0, the inbound message arrived with `chat_id=&quot;any;-;+81...&quot;`, the plugin&#x27;s allowlist lookup accepted that GUID, but the `reply` tool still failed because its AppleScript sends directly to `chat id (item 2 of argv)`, which raises AppleScript error `-1728` for the same `any;-;` identifier. This is distinct from older iMessage plugin failures where permission relays go to the wrong contact, harness attribution cannot be disabled, or channel tools fail to inject at session start: here inbound delivery and allowlist validation both succeed, and the broken layer is the reply transport&#x27;s mismatch between the newer database GUID format and the AppleScript send API.</summary>
     <category term="Plugin &amp; channel system"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Escaped spaces in Bash paths can force confirmation prompts despite allow rules</title>
-    <id>https://framework.boucle.sh/limitations.html#escaped-spaces-in-bash-paths-can-force-confirmation-prompts-despite-allow-rules</id>
-    <link href="https://framework.boucle.sh/limitations.html#escaped-spaces-in-bash-paths-can-force-confirmation-prompts-despite-allow-rules"/>
-    <updated>2026-04-12T00:00:00Z</updated>
-    <summary>Claude Code&#x27;s hardcoded `Contains backslash-escaped whitespace` safety check can treat ordinary shell-escaped paths with spaces as suspicious and force a confirmation prompt even when the command is clearly read-only and already covered by sandbox or allow rules. In the reported macOS v2.1.101 repro, routine commands such as `cat /Users/user/Projects/1st\ PATO\ AI\ Hackathon/.gitignore` and `git -C /Users/user/Projects/1st\ PATO\ AI\ Hackathon status` triggered repeated prompts solely because the working directory name contained spaces and Claude emitted the normal `\ ` shell escaping. This is distinct from older path-with-spaces hook breakage or Windows glob-normalization bugs: here the command itself is valid, the low-risk scanner still recognizes it as harmless, and the broken layer is the hardcoded permission heuristic overriding the user&#x27;s configured auto-allow path.</summary>
-    <category term="Permission system"/>
   </entry>
 </feed>

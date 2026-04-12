@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 921,
+  "count": 922,
   "categories": {
     "Hook behavior & events": 169,
     "Permission system": 110,
@@ -20,7 +20,7 @@
     "Performance & cost": 9,
     "Agents & subagents": 8,
     "auth": 8,
-    "Configuration & settings": 7,
+    "Configuration & settings": 8,
     "MCP": 7,
     "MCP & integrations": 7,
     "Permissions": 7,
@@ -170,7 +170,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 447,
+    "HIGH": 448,
     "LOW": 97,
     "MEDIUM": 315
   },
@@ -11251,30 +11251,42 @@
       "cc_version": "2.1.101",
       "date_added": "2026-04-12",
       "workaround": "Do not assume Claude Code running under the VS Code extension has the same LAN reachability as your normal terminal right now. Verify local-network access with a simple `nc` or `socket.connect()` check inside Claude before relying on SSH or service orchestration, and if it fails, run those network-dependent steps from an external terminal or the standalone CLI until Anthropic fixes the process-tree-specific transport block."
+    },
+    {
+      "id": "claude-config-dir-profiles-can-still-inject-global-claude-md-from-home-directory",
+      "title": "`CLAUDE_CONFIG_DIR` profiles can still inject the global `~/.claude/CLAUDE.md`",
+      "category": "Configuration & settings",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "When Claude Code is launched with `CLAUDE_CONFIG_DIR` pointing at an alternate profile directory, the session can still preload instructions from the default `~/.claude/CLAUDE.md` instead of isolating itself to the selected config root. In the reported macOS v2.1.104 repro, the model explicitly confirmed that `/Users/.../.claude/CLAUDE.md` had already been injected into context as startup `claudeMd` content even though `CLAUDE_CONFIG_DIR` was set to a different directory. This is distinct from the older `CLAUDE_CONFIG_DIR` MCP hierarchy and plugin-isolation bugs because the break is not limited to MCP or marketplace state: the wrong profile's top-level instruction file itself crosses the boundary at session start, so supposedly isolated local profiles can inherit unrelated rules, tooling guidance, or secrets from the default home profile before the user does any work.",
+      "cc_issue": 47056,
+      "cc_version": "2.1.104",
+      "date_added": "2026-04-12",
+      "workaround": "Do not assume `CLAUDE_CONFIG_DIR` currently gives you full startup-instruction isolation. If profile separation matters, keep `~/.claude/CLAUDE.md` empty or move it aside before launching alternate profiles, or use a separate OS user/home directory instead of relying on `CLAUDE_CONFIG_DIR` alone until Anthropic makes CLAUDE.md discovery honor the selected config root."
     }
   ],
   "status_summary": {
-    "open": 907,
+    "open": 908,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 447,
+    "high": 448,
     "low": 97,
     "medium": 315
   },
   "lastUpdated": "2026-04-12",
   "stats": {
-    "total": 921,
+    "total": 922,
     "critical": 62,
-    "high": 447,
+    "high": 448,
     "medium": 315,
     "low": 97,
-    "open": 907,
+    "open": 908,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-12",
-  "total": 921
+  "total": 922
 }
