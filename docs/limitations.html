@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">908</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
+        <p class="subtitle"><span id="total-count">909</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-11.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9636,6 +9636,18 @@
                         <!-- workaround:windows-bun-can-illegal-instruction-crash-at-compression-boundary -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If a long Windows session starts crashing only when Claude Code compacts context, treat the compression boundary as unsafe. Export or summarize work before the session nears compaction, restart into a fresh session sooner than usual, and avoid assuming that ordinary tool stability means the next compression cycle is safe until Anthropic fixes the Bun/runtime crash path.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46867" target="_blank">#46867</a></div>
+        </div>
+        <div class="kl-entry" data-category="Configuration behavior" data-issues="46871" id="auto-memory-can-create-and-overwrite-files-but-cannot-delete-them" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#909</span>
+                <span class="kl-cat">Configuration behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Auto-memory can create and overwrite memory files but cannot delete them</h3>
+            <p>Claude Code&#x27;s built-in memory system can create and update files under `~/.claude/projects/*/memory/`, but a later request to forget or delete one of those same memories can fail because the deletion path falls between tool contracts. In the reported repro, the agent can write the memory file through the `Write` tool, yet `rm` through Bash is blocked with `Read-only file system` because the sandbox does not grant write access to that memory directory, and the `Write` tool itself has no delete capability. This is distinct from the older auto-memory truncation, worktree divergence, and approval-bypass entries: the broken layer here is lifecycle completeness of the built-in memory store itself, which can create persistent state it cannot later remove cleanly when the user asks to forget it.</p>
+                        <!-- workaround:auto-memory-can-create-and-overwrite-files-but-cannot-delete-them -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If Claude Code says it forgot a memory but cannot remove the underlying file, treat the deletion as incomplete. Manually inspect `~/.claude/projects/*/memory/`, remove the orphaned memory file yourself, and update any index file such as `MEMORY.md` if needed until Anthropic either allows safe deletion in the sandbox or adds a first-class delete path for memory files.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/46871" target="_blank">#46871</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

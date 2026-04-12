@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Auto-memory can create and overwrite memory files but cannot delete them</title>
+    <id>https://framework.boucle.sh/limitations.html#auto-memory-can-create-and-overwrite-files-but-cannot-delete-them</id>
+    <link href="https://framework.boucle.sh/limitations.html#auto-memory-can-create-and-overwrite-files-but-cannot-delete-them"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>Claude Code&#x27;s built-in memory system can create and update files under `~/.claude/projects/*/memory/`, but a later request to forget or delete one of those same memories can fail because the deletion path falls between tool contracts. In the reported repro, the agent can write the memory file through the `Write` tool, yet `rm` through Bash is blocked with `Read-only file system` because the sandbox does not grant write access to that memory directory, and the `Write` tool itself has no delete capability. This is distinct from the older auto-memory truncation, worktree divergence, and approval-bypass entries: the broken layer here is lifecycle completeness of the built-in memory store itself, which can create persistent state it cannot later remove cleanly when the user asks to forget it.</summary>
+    <category term="Configuration behavior"/>
+  </entry>
+  <entry>
     <title>[HIGH] Windows Bun runtime can crash with `Illegal instruction` at the context-compression boundary</title>
     <id>https://framework.boucle.sh/limitations.html#windows-bun-can-illegal-instruction-crash-at-compression-boundary</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-bun-can-illegal-instruction-crash-at-compression-boundary"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>When Claude Code is launched with `claude -w &lt;name&gt;` so the session starts directly inside a freshly created git worktree, invoking `/exit` immediately can terminate the session without ever asking whether to keep or remove that worktree. The worktree directory and its branch are left behind on disk even though the built-in ExitWorktree contract says the user should be prompted on session exit while still inside the worktree. This is distinct from the older `symlinkDirectories` cleanup bug and the `--worktree` no-create failure: here the startup worktree is created successfully, but the `/exit` shutdown path bypasses the cleanup prompt and silently leaks the worktree and branch.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Microsoft 365 MCP OAuth can fail when `WWW-Authenticate` exposes relative `resource_metadata`</title>
-    <id>https://framework.boucle.sh/limitations.html#microsoft-365-mcp-oauth-fails-on-relative-resource-metadata</id>
-    <link href="https://framework.boucle.sh/limitations.html#microsoft-365-mcp-oauth-fails-on-relative-resource-metadata"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>The Microsoft 365 claude.ai MCP connector can stay stuck at `Needs authentication` and never complete OAuth because its 401 `WWW-Authenticate` response advertises `resource_metadata` as a relative path instead of an absolute URL. In the reported Windows repro on the latest Claude Code CLI, Gmail and Google Calendar authenticated normally on the same machine, while the Microsoft 365 connector looped on unauthenticated requests and surfaced `invalid_request_error` with `code: Field required`. This is distinct from older MCP OAuth token-refresh, proxy-token, and step-up-scope failures: the OAuth flow never starts cleanly because protected-resource discovery breaks before Claude can resolve the metadata endpoint.</summary>
-    <category term="MCP &amp; integrations"/>
   </entry>
 </feed>

@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 908,
+  "count": 909,
   "categories": {
     "Hook behavior & events": 169,
     "Permission system": 109,
@@ -11,7 +11,7 @@
     "Platform & compatibility": 23,
     "Context & memory": 20,
     "CLI & terminal": 18,
-    "Configuration behavior": 16,
+    "Configuration behavior": 17,
     "Tool behavior": 14,
     "TUI & display": 13,
     "Security & trust boundaries": 11,
@@ -171,7 +171,7 @@
     "CRITICAL": 62,
     "HIGH": 440,
     "LOW": 97,
-    "MEDIUM": 309
+    "MEDIUM": 310
   },
   "entries": [
     {
@@ -11094,10 +11094,22 @@
       "cc_version": "2.1.81",
       "date_added": "2026-04-12",
       "workaround": "If a long Windows session starts crashing only when Claude Code compacts context, treat the compression boundary as unsafe. Export or summarize work before the session nears compaction, restart into a fresh session sooner than usual, and avoid assuming that ordinary tool stability means the next compression cycle is safe until Anthropic fixes the Bun/runtime crash path."
+    },
+    {
+      "id": "auto-memory-can-create-and-overwrite-files-but-cannot-delete-them",
+      "title": "Auto-memory can create and overwrite memory files but cannot delete them",
+      "category": "Configuration behavior",
+      "severity": "MEDIUM",
+      "status": "open",
+      "description": "Claude Code's built-in memory system can create and update files under `~/.claude/projects/*/memory/`, but a later request to forget or delete one of those same memories can fail because the deletion path falls between tool contracts. In the reported repro, the agent can write the memory file through the `Write` tool, yet `rm` through Bash is blocked with `Read-only file system` because the sandbox does not grant write access to that memory directory, and the `Write` tool itself has no delete capability. This is distinct from the older auto-memory truncation, worktree divergence, and approval-bypass entries: the broken layer here is lifecycle completeness of the built-in memory store itself, which can create persistent state it cannot later remove cleanly when the user asks to forget it.",
+      "cc_issue": 46871,
+      "cc_version": null,
+      "date_added": "2026-04-12",
+      "workaround": "If Claude Code says it forgot a memory but cannot remove the underlying file, treat the deletion as incomplete. Manually inspect `~/.claude/projects/*/memory/`, remove the orphaned memory file yourself, and update any index file such as `MEMORY.md` if needed until Anthropic either allows safe deletion in the sandbox or adds a first-class delete path for memory files."
     }
   ],
   "status_summary": {
-    "open": 894,
+    "open": 895,
     "fixed": 13,
     "mitigated": 1
   },
@@ -11105,19 +11117,19 @@
     "critical": 62,
     "high": 440,
     "low": 97,
-    "medium": 309
+    "medium": 310
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 908,
+    "total": 909,
     "critical": 62,
     "high": 440,
-    "medium": 309,
+    "medium": 310,
     "low": 97,
-    "open": 894,
+    "open": 895,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 908
+  "total": 909
 }
