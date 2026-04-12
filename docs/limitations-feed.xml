@@ -7,6 +7,14 @@
   <updated>2026-04-12T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Parent MCP registration blocks can leak into subagent tool output</title>
+    <id>https://framework.boucle.sh/limitations.html#parent-mcp-registration-blocks-can-leak-into-subagent-tool-output</id>
+    <link href="https://framework.boucle.sh/limitations.html#parent-mcp-registration-blocks-can-leak-into-subagent-tool-output"/>
+    <updated>2026-04-12T00:00:00Z</updated>
+    <summary>A subagent spawned through the `Agent` tool can receive parent-scoped MCP registration content inside its own tool results even when the subagent has no MCP servers configured. In the reported macOS repro, multiple subagents saw `system-reminder` blocks describing the parent agent&#x27;s MCP server registrations (Gamma, Supabase, Vercel, and others) embedded inline with otherwise normal WebFetch, Bash, and other tool output. This is narrower than older cases where disabled MCP servers still expose tool names in the parent&#x27;s deferred tools list: here the parent&#x27;s MCP registration material crosses the agent boundary and is delivered through the subagent&#x27;s tool-output stream itself, breaking context isolation and making the leaked runtime content indistinguishable from a real prompt-injection payload.</summary>
+    <category term="Agents &amp; subagents"/>
+  </entry>
+  <entry>
     <title>[HIGH] Channel notification handler can stop surfacing inbound messages after hours while the plugin and reply tools still work</title>
     <id>https://framework.boucle.sh/limitations.html#channel-notification-handler-can-stop-surfacing-inbound-messages-after-hours-while-plugin-and-reply-tools-still-work</id>
     <link href="https://framework.boucle.sh/limitations.html#channel-notification-handler-can-stop-surfacing-inbound-messages-after-hours-while-plugin-and-reply-tools-still-work"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-12T00:00:00Z</updated>
     <summary>On Windows 11 in Claude Code v2.1.81 using Bun v1.3.11 on the x64 baseline build, long sessions can crash specifically during context compression rather than during ordinary tool execution. In the reported 4-5 hour repro, the same machine survives heavy parallel agents, large file reads, long Bash runs, and long sequential tool chains, but repeatedly panics at the compression boundary with `panic(main thread): Illegal instruction` while the UI is in `Propagating...` or `Churning...`. The same session then restarts and continues normally until the next compression cycle, which narrows the broken layer to Bun or Claude Code&#x27;s compression-path runtime on Windows rather than generic load, memory pressure, or tool complexity. This is distinct from earlier Windows tool-result wrapper drops, renderer freezes, and broad context-limit failures because the session dies inside the compression runtime itself with a Bun crash report instead of hanging or returning bad tool output.</summary>
     <category term="Core engine"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Shell snapshot can capture unresolvable zsh autoload stubs that break system commands</title>
-    <id>https://framework.boucle.sh/limitations.html#shell-snapshot-captures-unresolvable-zsh-autoload-stubs</id>
-    <link href="https://framework.boucle.sh/limitations.html#shell-snapshot-captures-unresolvable-zsh-autoload-stubs"/>
-    <updated>2026-04-12T00:00:00Z</updated>
-    <summary>On macOS zsh setups that use Prezto-style autoload wrappers, Claude Code&#x27;s shell snapshot generator can capture undefined autoload stubs such as `make () { builtin autoload -XUz }` and replay them in later Bash tool subprocesses. Those stubs shadow the real `/usr/bin/make`, `/usr/bin/diff`, and similar commands, but the replayed subprocess no longer has the original `fpath` needed to resolve the autoload target, so ordinary tool calls fail with errors like `(eval):1: make: function definition file not found`. The reporter measured 83 `# undefined` stubs in a newer snapshot versus 0 in an older one, showing this is not just user shell customization but a regression in what the snapshot now preserves. This is distinct from the older shell-snapshot PATH drift and desktop GUI PATH truncation entries: here the broken layer is function capture itself, which can poison otherwise valid system-command invocations even when PATH is correct.</summary>
-    <category term="Configuration behavior"/>
   </entry>
 </feed>

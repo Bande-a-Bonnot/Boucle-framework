@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 926,
+  "count": 927,
   "categories": {
     "Hook behavior & events": 170,
     "Permission system": 110,
@@ -15,10 +15,10 @@
     "TUI & display": 15,
     "Tool behavior": 14,
     "Security & trust boundaries": 11,
+    "Agents & subagents": 9,
     "File system & paths": 9,
     "hooks": 9,
     "Performance & cost": 9,
-    "Agents & subagents": 8,
     "auth": 8,
     "Configuration & settings": 8,
     "MCP": 7,
@@ -170,7 +170,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 450,
+    "HIGH": 451,
     "LOW": 97,
     "MEDIUM": 317
   },
@@ -11311,30 +11311,42 @@
       "cc_version": "latest (multi-version repro)",
       "date_added": "2026-04-12",
       "workaround": "Do not trust a long-running channel session just because outbound `reply` calls still work. If inbound messages matter, send a real test message periodically and restart the Claude Code session before long idle windows; for now, the only confirmed recovery is a full session restart every couple of hours."
+    },
+    {
+      "id": "parent-mcp-registration-blocks-can-leak-into-subagent-tool-output",
+      "title": "Parent MCP registration blocks can leak into subagent tool output",
+      "category": "Agents & subagents",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "A subagent spawned through the `Agent` tool can receive parent-scoped MCP registration content inside its own tool results even when the subagent has no MCP servers configured. In the reported macOS repro, multiple subagents saw `system-reminder` blocks describing the parent agent's MCP server registrations (Gamma, Supabase, Vercel, and others) embedded inline with otherwise normal WebFetch, Bash, and other tool output. This is narrower than older cases where disabled MCP servers still expose tool names in the parent's deferred tools list: here the parent's MCP registration material crosses the agent boundary and is delivered through the subagent's tool-output stream itself, breaking context isolation and making the leaked runtime content indistinguishable from a real prompt-injection payload.",
+      "cc_issue": 47118,
+      "cc_version": "latest",
+      "date_added": "2026-04-12",
+      "workaround": "Do not assume a subagent's tool output is isolated from the parent session's MCP context right now. If you are using subagents for security-sensitive review or prompt-injection analysis, treat unexpected `system-reminder` or MCP registration blocks as runtime leakage, not proof the fetched source emitted them, and keep any final decision or execution step in the parent session until Anthropic fixes the boundary."
     }
   ],
   "status_summary": {
-    "open": 912,
+    "open": 913,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 450,
+    "high": 451,
     "low": 97,
     "medium": 317
   },
   "lastUpdated": "2026-04-12",
   "stats": {
-    "total": 926,
+    "total": 927,
     "critical": 62,
-    "high": 450,
+    "high": 451,
     "medium": 317,
     "low": 97,
-    "open": 912,
+    "open": 913,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-12",
-  "total": 926
+  "total": 927
 }

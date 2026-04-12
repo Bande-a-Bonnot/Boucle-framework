@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">926</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-12.</span></p>
+        <p class="subtitle"><span id="total-count">927</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-12.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9852,6 +9852,18 @@
                         <!-- workaround:channel-notification-handler-can-stop-surfacing-inbound-messages-after-hours-while-plugin-and-reply-tools-still-work -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not trust a long-running channel session just because outbound `reply` calls still work. If inbound messages matter, send a real test message periodically and restart the Claude Code session before long idle windows; for now, the only confirmed recovery is a full session restart every couple of hours.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/47112" target="_blank">#47112</a></div>
+        </div>
+        <div class="kl-entry" data-category="Agents &amp; subagents" data-issues="47118" id="parent-mcp-registration-blocks-can-leak-into-subagent-tool-output" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#927</span>
+                <span class="kl-cat">Agents &amp; subagents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Parent MCP registration blocks can leak into subagent tool output</h3>
+            <p>A subagent spawned through the `Agent` tool can receive parent-scoped MCP registration content inside its own tool results even when the subagent has no MCP servers configured. In the reported macOS repro, multiple subagents saw `system-reminder` blocks describing the parent agent&#x27;s MCP server registrations (Gamma, Supabase, Vercel, and others) embedded inline with otherwise normal WebFetch, Bash, and other tool output. This is narrower than older cases where disabled MCP servers still expose tool names in the parent&#x27;s deferred tools list: here the parent&#x27;s MCP registration material crosses the agent boundary and is delivered through the subagent&#x27;s tool-output stream itself, breaking context isolation and making the leaked runtime content indistinguishable from a real prompt-injection payload.</p>
+                        <!-- workaround:parent-mcp-registration-blocks-can-leak-into-subagent-tool-output -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume a subagent&#x27;s tool output is isolated from the parent session&#x27;s MCP context right now. If you are using subagents for security-sensitive review or prompt-injection analysis, treat unexpected `system-reminder` or MCP registration blocks as runtime leakage, not proof the fetched source emitted them, and keep any final decision or execution step in the parent session until Anthropic fixes the boundary.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/47118" target="_blank">#47118</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
