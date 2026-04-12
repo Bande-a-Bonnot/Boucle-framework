@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">928</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-12.</span></p>
+        <p class="subtitle"><span id="total-count">929</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-12.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9876,6 +9876,18 @@
                         <!-- workaround:resume-can-lose-container-sessions-when-pid-keyed-session-index-overwrites-bind-mounted-metadata -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume `/resume` is a complete source of truth for containerized sessions when `~/.claude` is bind-mounted across restarts. If a session disappears after rebuilding or restarting the container, inspect the JSONL files directly under `~/.claude/projects/` and recover from the saved transcript manually. Until Anthropic changes the index away from PID-keyed metadata, avoid treating container restarts as safe boundaries for resumable session history.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/47128" target="_blank">#47128</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="47135" id="compact-can-disconnect-stdio-mcp-plugins-and-kill-their-tools-until-restart" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#929</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>`/compact` can disconnect stdio MCP plugins and kill their tools until restart</h3>
+            <p>When Claude Code compacts context, stdio-based MCP plugins can disconnect permanently and leave all of their tools unavailable until the whole session is restarted. In the reported WSL2 Telegram plugin repro, `claude --channels plugin:telegram@claude-plugins-official` started healthy, Telegram reply tools worked normally, and the break only appeared immediately after manual `/compact` or automatic compaction near the context limit. After compaction, Claude reported `MCP server disconnected` and the plugin&#x27;s stdio transport shut down because the process treated the compact-time stdin close/reset as a real session end. This is distinct from older plugin failures where the runtime never spawns, inbound notifications degrade after hours, or `/reload-plugins` breaks an existing subscription: here the narrower broken layer is the compaction lifecycle itself, which tears down an otherwise healthy stdio MCP connection mid-session.</p>
+                        <!-- workaround:compact-can-disconnect-stdio-mcp-plugins-and-kill-their-tools-until-restart -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume stdio MCP plugins will survive `/compact` right now. If a plugin-backed channel or tool matters in a long conversation, plan for a full Claude Code restart after compaction, or keep the plugin work in shorter sessions that stay below the compaction boundary until Anthropic preserves or reconnects the stdio transport automatically.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/47135" target="_blank">#47135</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

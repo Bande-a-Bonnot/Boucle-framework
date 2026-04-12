@@ -7,6 +7,14 @@
   <updated>2026-04-12T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] `/compact` can disconnect stdio MCP plugins and kill their tools until restart</title>
+    <id>https://framework.boucle.sh/limitations.html#compact-can-disconnect-stdio-mcp-plugins-and-kill-their-tools-until-restart</id>
+    <link href="https://framework.boucle.sh/limitations.html#compact-can-disconnect-stdio-mcp-plugins-and-kill-their-tools-until-restart"/>
+    <updated>2026-04-12T00:00:00Z</updated>
+    <summary>When Claude Code compacts context, stdio-based MCP plugins can disconnect permanently and leave all of their tools unavailable until the whole session is restarted. In the reported WSL2 Telegram plugin repro, `claude --channels plugin:telegram@claude-plugins-official` started healthy, Telegram reply tools worked normally, and the break only appeared immediately after manual `/compact` or automatic compaction near the context limit. After compaction, Claude reported `MCP server disconnected` and the plugin&#x27;s stdio transport shut down because the process treated the compact-time stdin close/reset as a real session end. This is distinct from older plugin failures where the runtime never spawns, inbound notifications degrade after hours, or `/reload-plugins` breaks an existing subscription: here the narrower broken layer is the compaction lifecycle itself, which tears down an otherwise healthy stdio MCP connection mid-session.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[HIGH] `/resume` can lose container sessions when a PID-keyed session index overwrites bind-mounted metadata</title>
     <id>https://framework.boucle.sh/limitations.html#resume-can-lose-container-sessions-when-pid-keyed-session-index-overwrites-bind-mounted-metadata</id>
     <link href="https://framework.boucle.sh/limitations.html#resume-can-lose-container-sessions-when-pid-keyed-session-index-overwrites-bind-mounted-metadata"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-12T00:00:00Z</updated>
     <summary>On Windows 11 Claude Desktop MSIX installs, Code sessions can appear healthy during the current run yet disappear after every restart because the session save path never finalizes the metadata file. In the reported repro, Desktop writes `local_*.json.tmp` under the Code sessions directory and then tries to atomically rename it to `.json`, but the MSIX VFS reparse path crosses drive boundaries and `fs.rename()` fails with `EXDEV: cross-device link not permitted`. Thousands of save attempts can fail silently in logs while every session remains stuck as `.json.tmp`, which means the restart path has nothing durable to load. This is distinct from the older macOS React-state disappearance entry and VS Code/Desktop session-list conflicts: the broken layer here is the Windows MSIX session-persistence write path itself, not sidebar state or cross-client visibility.</summary>
     <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Auto-memory can create and overwrite memory files but cannot delete them</title>
-    <id>https://framework.boucle.sh/limitations.html#auto-memory-can-create-and-overwrite-files-but-cannot-delete-them</id>
-    <link href="https://framework.boucle.sh/limitations.html#auto-memory-can-create-and-overwrite-files-but-cannot-delete-them"/>
-    <updated>2026-04-12T00:00:00Z</updated>
-    <summary>Claude Code&#x27;s built-in memory system can create and update files under `~/.claude/projects/*/memory/`, but a later request to forget or delete one of those same memories can fail because the deletion path falls between tool contracts. In the reported repro, the agent can write the memory file through the `Write` tool, yet `rm` through Bash is blocked with `Read-only file system` because the sandbox does not grant write access to that memory directory, and the `Write` tool itself has no delete capability. This is distinct from the older auto-memory truncation, worktree divergence, and approval-bypass entries: the broken layer here is lifecycle completeness of the built-in memory store itself, which can create persistent state it cannot later remove cleanly when the user asks to forget it.</summary>
-    <category term="Configuration behavior"/>
   </entry>
 </feed>

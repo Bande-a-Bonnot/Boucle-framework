@@ -1,11 +1,11 @@
 {
   "version": "0.12.0",
-  "count": 928,
+  "count": 929,
   "categories": {
     "Hook behavior & events": 170,
     "Permission system": 110,
     "Hook bypass & evasion": 96,
-    "MCP & plugin issues": 45,
+    "MCP & plugin issues": 46,
     "Subagent & spawned agents": 38,
     "Desktop & IDE integration": 26,
     "Platform & compatibility": 23,
@@ -170,7 +170,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 452,
+    "HIGH": 453,
     "LOW": 97,
     "MEDIUM": 317
   },
@@ -11335,30 +11335,42 @@
       "cc_version": "latest",
       "date_added": "2026-04-12",
       "workaround": "Do not assume `/resume` is a complete source of truth for containerized sessions when `~/.claude` is bind-mounted across restarts. If a session disappears after rebuilding or restarting the container, inspect the JSONL files directly under `~/.claude/projects/` and recover from the saved transcript manually. Until Anthropic changes the index away from PID-keyed metadata, avoid treating container restarts as safe boundaries for resumable session history."
+    },
+    {
+      "id": "compact-can-disconnect-stdio-mcp-plugins-and-kill-their-tools-until-restart",
+      "title": "`/compact` can disconnect stdio MCP plugins and kill their tools until restart",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "When Claude Code compacts context, stdio-based MCP plugins can disconnect permanently and leave all of their tools unavailable until the whole session is restarted. In the reported WSL2 Telegram plugin repro, `claude --channels plugin:telegram@claude-plugins-official` started healthy, Telegram reply tools worked normally, and the break only appeared immediately after manual `/compact` or automatic compaction near the context limit. After compaction, Claude reported `MCP server disconnected` and the plugin's stdio transport shut down because the process treated the compact-time stdin close/reset as a real session end. This is distinct from older plugin failures where the runtime never spawns, inbound notifications degrade after hours, or `/reload-plugins` breaks an existing subscription: here the narrower broken layer is the compaction lifecycle itself, which tears down an otherwise healthy stdio MCP connection mid-session.",
+      "cc_issue": 47135,
+      "cc_version": "latest",
+      "date_added": "2026-04-12",
+      "workaround": "Do not assume stdio MCP plugins will survive `/compact` right now. If a plugin-backed channel or tool matters in a long conversation, plan for a full Claude Code restart after compaction, or keep the plugin work in shorter sessions that stay below the compaction boundary until Anthropic preserves or reconnects the stdio transport automatically."
     }
   ],
   "status_summary": {
-    "open": 914,
+    "open": 915,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 452,
+    "high": 453,
     "low": 97,
     "medium": 317
   },
   "lastUpdated": "2026-04-12",
   "stats": {
-    "total": 928,
+    "total": 929,
     "critical": 62,
-    "high": 452,
+    "high": 453,
     "medium": 317,
     "low": 97,
-    "open": 914,
+    "open": 915,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-12",
-  "total": 928
+  "total": 929
 }
