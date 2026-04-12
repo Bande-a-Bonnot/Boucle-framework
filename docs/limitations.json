@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 905,
+  "count": 906,
   "categories": {
     "Hook behavior & events": 169,
     "Permission system": 109,
@@ -24,11 +24,11 @@
     "Permissions": 7,
     "Configuration & settings": 6,
     "MCP & integrations": 6,
+    "Plugin & channel system": 6,
     "Remote & cloud": 6,
     "Scheduling & remote triggers": 6,
     "Auth & accounts": 5,
     "Desktop & platform bugs": 5,
-    "Plugin & channel system": 5,
     "UX & display": 5,
     "Core & session management": 4,
     "Data integrity": 4,
@@ -168,7 +168,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 437,
+    "HIGH": 438,
     "LOW": 97,
     "MEDIUM": 309
   },
@@ -11057,30 +11057,42 @@
       "cc_version": null,
       "date_added": "2026-04-12",
       "workaround": "Do not assume macOS MDM profiles currently enforce `Write(...)` deny rules just because `Bash(...)` denies from the same policy are working. In managed deployments, verify both file-tool and Bash denies explicitly before trusting the policy, keep sensitive files protected with OS permissions or hook-level guards, and prefer user-level settings or additional host controls until Anthropic fixes the remaining `Write` gap."
+    },
+    {
+      "id": "windows-marketplace-update-can-wedge-permanently-on-stale-bak-directory",
+      "title": "Windows marketplace updates can wedge permanently on a stale `.bak/` rollback directory",
+      "category": "Plugin & channel system",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "On Windows in Claude Code 2.1.101, one failed `claude plugin marketplace update` can leave a stale `<marketplace>.bak/` directory that permanently wedges every later marketplace update and startup sync for that marketplace. In the reported native Windows repro, the updater uses a rename dance (`live -> .bak`, `staging -> live`) that assumes POSIX-like rename behavior, but `fs.rename()` on Windows returns `EPERM` when the destination `.bak/` already exists. Once that stale rollback directory is left behind, the next update cannot rename the live marketplace into `.bak/`, rollback cannot restore `.bak/` over the still-existing live directory, and the freshly fetched `.staging/` tree never gets promoted. This is distinct from earlier git-sourced marketplace lifecycle failures, stale custom-marketplace refresh state, and execute-bit loss on plugin updates: here the broken layer is the Windows rollback/update rename path itself, which can leave an official or git-backed marketplace permanently stuck in a failed-to-load state until the orphaned `.bak/` directory is removed manually.",
+      "cc_issue": 46830,
+      "cc_version": "2.1.101",
+      "date_added": "2026-04-12",
+      "workaround": "If a Windows marketplace update starts failing with `EPERM` on a `.bak` rename and plugins from that marketplace all show `failed to load`, inspect the marketplace cache directory, delete the stale `<marketplace>.bak/` rollback directory, then rerun `claude plugin marketplace update`. Do not trust repeated automatic startup syncs to recover the marketplace on their own until Anthropic cleans up stale rollback directories before the rename step."
     }
   ],
   "status_summary": {
-    "open": 891,
+    "open": 892,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 437,
+    "high": 438,
     "low": 97,
     "medium": 309
   },
   "lastUpdated": "2026-04-11",
   "stats": {
-    "total": 905,
+    "total": 906,
     "critical": 62,
-    "high": 437,
+    "high": 438,
     "medium": 309,
     "low": 97,
-    "open": 891,
+    "open": 892,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-11",
-  "total": 905
+  "total": 906
 }

@@ -7,6 +7,14 @@
   <updated>2026-04-11T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Windows marketplace updates can wedge permanently on a stale `.bak/` rollback directory</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-marketplace-update-can-wedge-permanently-on-stale-bak-directory</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-marketplace-update-can-wedge-permanently-on-stale-bak-directory"/>
+    <updated>2026-04-11T00:00:00Z</updated>
+    <summary>On Windows in Claude Code 2.1.101, one failed `claude plugin marketplace update` can leave a stale `&lt;marketplace&gt;.bak/` directory that permanently wedges every later marketplace update and startup sync for that marketplace. In the reported native Windows repro, the updater uses a rename dance (`live -&gt; .bak`, `staging -&gt; live`) that assumes POSIX-like rename behavior, but `fs.rename()` on Windows returns `EPERM` when the destination `.bak/` already exists. Once that stale rollback directory is left behind, the next update cannot rename the live marketplace into `.bak/`, rollback cannot restore `.bak/` over the still-existing live directory, and the freshly fetched `.staging/` tree never gets promoted. This is distinct from earlier git-sourced marketplace lifecycle failures, stale custom-marketplace refresh state, and execute-bit loss on plugin updates: here the broken layer is the Windows rollback/update rename path itself, which can leave an official or git-backed marketplace permanently stuck in a failed-to-load state until the orphaned `.bak/` directory is removed manually.</summary>
+    <category term="Plugin &amp; channel system"/>
+  </entry>
+  <entry>
     <title>[HIGH] Managed `.mobileconfig` deny policy can still miss `Write(...)` rules even when `Bash(...)` denies work</title>
     <id>https://framework.boucle.sh/limitations.html#mobileconfig-managed-deny-can-still-miss-write-rules-after-bash-deny-recovers</id>
     <link href="https://framework.boucle.sh/limitations.html#mobileconfig-managed-deny-can-still-miss-write-rules-after-bash-deny-recovers"/>
@@ -156,14 +164,6 @@
     <link href="https://framework.boucle.sh/limitations.html#chrome-profile-extension-service-worker-fails-when-no-window-is-focused"/>
     <updated>2026-04-11T00:00:00Z</updated>
     <summary>In a multi-profile Chrome setup, Claude&#x27;s browser extension service worker can fail to register one profile with the MCP daemon if that profile&#x27;s window is not the currently focused window when the worker wakes. The reported repro showed `chrome.windows.getCurrent()` returning null in the background service worker, which then threw `No current window` and prevented the profile from advertising itself to Claude Code. This is distinct from the older native-host ordering bug where the extension always binds to Desktop first: here the correct native host can exist, but the profile never reaches registration because the service-worker window lookup assumes a currently focused Chrome window.</summary>
-    <category term="MCP &amp; integrations"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Project-scoped HTTP MCP can fail health checks and fall back to the OAuth `authenticate` stub</title>
-    <id>https://framework.boucle.sh/limitations.html#project-scoped-http-mcp-fails-health-check-and-falls-back-to-oauth-stub</id>
-    <link href="https://framework.boucle.sh/limitations.html#project-scoped-http-mcp-fails-health-check-and-falls-back-to-oauth-stub"/>
-    <updated>2026-04-11T00:00:00Z</updated>
-    <summary>An HTTP MCP server configured in a project `.mcp.json` with bearer-auth headers can report `Status: ✗ Failed to connect` and expose only the generic OAuth `authenticate` stub, even though the same URL and headers work normally when registered at user scope. In the reported repro on Claude Desktop&#x27;s bundled 2.1.92 binary, direct `curl` initialize and `tools/list` calls succeeded, `claude mcp add --scope user ...` showed the full tool list, but the project-scoped entry failed the deeper `claude mcp get` probe and misrepresented the server as an OAuth flow instead of a bearer-auth HTTP server. This is distinct from older project-scope loader bugs and project-file-read problems: the project config is found, but project-scoped HTTP MCP health probing or header handling diverges from user scope and silently hides the real tools behind a misleading auth fallback.</summary>
     <category term="MCP &amp; integrations"/>
   </entry>
 </feed>
