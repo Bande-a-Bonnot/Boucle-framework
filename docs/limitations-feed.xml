@@ -7,6 +7,14 @@
   <updated>2026-04-12T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Cowork Gmail `search_threads` can fail with `Internal error encountered` while other Gmail tools still work</title>
+    <id>https://framework.boucle.sh/limitations.html#cowork-gmail-search-threads-can-fail-with-internal-error-while-other-gmail-tools-still-work</id>
+    <link href="https://framework.boucle.sh/limitations.html#cowork-gmail-search-threads-can-fail-with-internal-error-while-other-gmail-tools-still-work"/>
+    <updated>2026-04-12T00:00:00Z</updated>
+    <summary>In Cowork (Claude Desktop), the first-party Gmail connector&#x27;s `search_threads` tool can fail with the generic `Internal error encountered.` message on every call even while the same authenticated session still succeeds with `list_drafts`, `get_thread`, `list_labels`, and `create_draft`. The reported macOS repro failed 100% of the time across both interactive and scheduled Cowork sessions from April 9 through April 12, 2026, regardless of whether the query was empty or used simple filters like `is:unread` or `in:inbox`. This is distinct from older Gmail auth-entry, connector-loading, and cross-account-override bugs because the OAuth session is already valid and multiple Gmail tools prove the connector is alive; the failure is isolated specifically to the `search_threads` endpoint that many inbox-driven automations depend on.</summary>
+    <category term="MCP &amp; integrations"/>
+  </entry>
+  <entry>
     <title>[HIGH] Cowork `Save skill` installs can silently truncate `SKILL.md` files</title>
     <id>https://framework.boucle.sh/limitations.html#cowork-save-skill-install-can-silently-truncate-skill-md-files</id>
     <link href="https://framework.boucle.sh/limitations.html#cowork-save-skill-install-can-silently-truncate-skill-md-files"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-12T00:00:00Z</updated>
     <summary>After `/reload-plugins`, Claude Code can reconnect plugin MCP tools successfully while silently failing to re-establish the inbound `notifications/claude/channel` subscription for channel-capable plugins. In the reported v2.1.101 repro on an exe.dev VM with `telegram@claude-plugins-official` loaded through `--channels`, Telegram messages appeared in the conversation before the reload, `/reload-plugins` completed normally, and the plugin&#x27;s outbound `reply` tool kept working afterward, but new inbound Telegram DMs never surfaced again until the entire session was restarted. This is distinct from older channel regressions where notifications never work on first attach, tool injection is missing, or the channel plugin process never spawns: here the session starts healthy, `/reload-plugins` breaks only the inbound listener layer, and outbound tool calls still prove the plugin transport remains alive.</summary>
     <category term="Plugin &amp; channel system"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Official `security-guidance` plugin can block documentation writes on bare `exec(` substring</title>
-    <id>https://framework.boucle.sh/limitations.html#security-guidance-plugin-blocks-doc-writes-on-bare-exec-substring</id>
-    <link href="https://framework.boucle.sh/limitations.html#security-guidance-plugin-blocks-doc-writes-on-bare-exec-substring"/>
-    <updated>2026-04-12T00:00:00Z</updated>
-    <summary>The official `security-guidance` marketplace plugin can falsely block ordinary `Write`, `Edit`, and `MultiEdit` operations when the file content contains the bare substring `exec(`, even inside Markdown or prose examples. In the reported repro on 2026-04-11, a documentation write containing harmless snippets such as `db.exec(schema)` triggered the plugin&#x27;s `child_process_exec` rule because its Python hook scans the full file body with naive substring matching and no file-type awareness, then exits with code 2 to deny the tool call. This is distinct from the older Windows `python3` launcher bug in the same plugin: there, the hook never starts on Windows; here, the hook runs successfully but applies the wrong security heuristic and turns normal doc-writing into a false-positive command-injection block.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>
