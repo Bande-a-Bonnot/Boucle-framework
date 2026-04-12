@@ -1,11 +1,11 @@
 {
   "version": "0.12.0",
-  "count": 925,
+  "count": 926,
   "categories": {
     "Hook behavior & events": 170,
     "Permission system": 110,
     "Hook bypass & evasion": 96,
-    "MCP & plugin issues": 44,
+    "MCP & plugin issues": 45,
     "Subagent & spawned agents": 38,
     "Desktop & IDE integration": 26,
     "Platform & compatibility": 23,
@@ -170,7 +170,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 449,
+    "HIGH": 450,
     "LOW": 97,
     "MEDIUM": 317
   },
@@ -11299,30 +11299,42 @@
       "cc_version": "2.1.104",
       "date_added": "2026-04-12",
       "workaround": "Do not assume `!` shell commands can safely handle interactive stdin prompts right now. For secret-entry flows, prefer the tool's non-Claude UI (for example the GitHub web UI), or feed the value through a safer out-of-band path you control instead of relying on Claude Code to surface the prompt."
+    },
+    {
+      "id": "channel-notification-handler-can-stop-surfacing-inbound-messages-after-hours-while-plugin-and-reply-tools-still-work",
+      "title": "Channel notification handler can stop surfacing inbound messages after hours while the plugin and reply tools still work",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "In long-running Claude Code sessions using `--channels plugin:telegram@claude-plugins-official`, inbound `notifications/claude/channel` events can stop surfacing after roughly 2-3 hours even though the Telegram plugin process stays alive, outbound reply tools keep working, MCP stdio remains healthy, and the bot API is still reachable. In the reported Docker/Linux repro, `ss` and `strace` both showed the `bun` plugin process still connected to Telegram and actively writing notifications, while Claude Code stopped injecting any new `<channel ...>` messages into the conversation until the session was restarted. This is distinct from older channel regressions where inbound notifications never work on first attach, idle sessions do not wake, `/reload-plugins` breaks a previously healthy subscription, or the plugin runtime never spawns: here the session begins healthy and then degrades over time at the inbound-notification handler layer only, while outbound tools continue proving the plugin transport is still alive.",
+      "cc_issue": 47112,
+      "cc_version": "latest (multi-version repro)",
+      "date_added": "2026-04-12",
+      "workaround": "Do not trust a long-running channel session just because outbound `reply` calls still work. If inbound messages matter, send a real test message periodically and restart the Claude Code session before long idle windows; for now, the only confirmed recovery is a full session restart every couple of hours."
     }
   ],
   "status_summary": {
-    "open": 911,
+    "open": 912,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 449,
+    "high": 450,
     "low": 97,
     "medium": 317
   },
   "lastUpdated": "2026-04-12",
   "stats": {
-    "total": 925,
+    "total": 926,
     "critical": 62,
-    "high": 449,
+    "high": 450,
     "medium": 317,
     "low": 97,
-    "open": 911,
+    "open": 912,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-12",
-  "total": 925
+  "total": 926
 }

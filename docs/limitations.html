@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">925</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-12.</span></p>
+        <p class="subtitle"><span id="total-count">926</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-12.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9840,6 +9840,18 @@
                         <!-- workaround:bang-shell-commands-can-silently-skip-interactive-stdin-prompts -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume `!` shell commands can safely handle interactive stdin prompts right now. For secret-entry flows, prefer the tool&#x27;s non-Claude UI (for example the GitHub web UI), or feed the value through a safer out-of-band path you control instead of relying on Claude Code to surface the prompt.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/47103" target="_blank">#47103</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="47112" id="channel-notification-handler-can-stop-surfacing-inbound-messages-after-hours-while-plugin-and-reply-tools-still-work" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#926</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Channel notification handler can stop surfacing inbound messages after hours while the plugin and reply tools still work</h3>
+            <p>In long-running Claude Code sessions using `--channels plugin:telegram@claude-plugins-official`, inbound `notifications/claude/channel` events can stop surfacing after roughly 2-3 hours even though the Telegram plugin process stays alive, outbound reply tools keep working, MCP stdio remains healthy, and the bot API is still reachable. In the reported Docker/Linux repro, `ss` and `strace` both showed the `bun` plugin process still connected to Telegram and actively writing notifications, while Claude Code stopped injecting any new `&lt;channel ...&gt;` messages into the conversation until the session was restarted. This is distinct from older channel regressions where inbound notifications never work on first attach, idle sessions do not wake, `/reload-plugins` breaks a previously healthy subscription, or the plugin runtime never spawns: here the session begins healthy and then degrades over time at the inbound-notification handler layer only, while outbound tools continue proving the plugin transport is still alive.</p>
+                        <!-- workaround:channel-notification-handler-can-stop-surfacing-inbound-messages-after-hours-while-plugin-and-reply-tools-still-work -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not trust a long-running channel session just because outbound `reply` calls still work. If inbound messages matter, send a real test message periodically and restart the Claude Code session before long idle windows; for now, the only confirmed recovery is a full session restart every couple of hours.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/47112" target="_blank">#47112</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
