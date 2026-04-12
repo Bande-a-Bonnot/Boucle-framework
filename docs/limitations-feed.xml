@@ -7,6 +7,14 @@
   <updated>2026-04-12T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] `claude -p --output-format json` can drop final text when `text` and `tool_use` share one assistant message</title>
+    <id>https://framework.boucle.sh/limitations.html#claude-p-output-format-json-can-drop-final-text-when-text-and-tool-use-share-one-assistant-message</id>
+    <link href="https://framework.boucle.sh/limitations.html#claude-p-output-format-json-can-drop-final-text-when-text-and-tool-use-share-one-assistant-message"/>
+    <updated>2026-04-12T00:00:00Z</updated>
+    <summary>In `claude -p --output-format json`, the top-level `result` field can come back as an empty string even when the model already produced visible text, if the same final assistant message also contains a `tool_use` block and the model has nothing more to say after the tool returns. The tool still executes, tokens are consumed, and the text remains visible in the saved session history when the user later resumes the session, but the JSON envelope itself silently drops that text. This is narrower than the older `result`-always-empty print-mode regressions because plain text-only responses still work on v2.1.104; the break happens specifically when one assistant turn mixes output text and a terminal `tool_use` such as `TodoWrite`.</summary>
+    <category term="CLI &amp; terminal"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Windows `statusLine.command` can drop stdout from external binaries unless wrapped in `bash -c`</title>
     <id>https://framework.boucle.sh/limitations.html#windows-statusline-command-can-drop-stdout-from-external-binaries-unless-wrapped-in-bash-c</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-statusline-command-can-drop-stdout-from-external-binaries-unless-wrapped-in-bash-c"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-12T00:00:00Z</updated>
     <summary>On macOS Sequoia, deny rules delivered through an MDM `.mobileconfig` profile for the `com.anthropic.claudecode` domain can partially recover while still leaving the `Write` tool unenforced. In the reported repro, the same managed profile blocked `Bash(gh repo create --public*)` exactly as expected after restart, yet `Write(**/.env)` and `Write(**/.env.*)` from that same profile still allowed Claude Code to create or overwrite `.env` files with no warning. This is distinct from the older managed-settings.json failure where enterprise deny rules were ignored wholesale: here the managed policy path is clearly active because `Bash` denies in the same profile work, and the broken layer is the remaining `Write`-deny enforcement path inside the MDM/mobileconfig preference source.</summary>
     <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows 2.1.101 can drop tool results across tool types with `[Tool result missing due to internal error]`</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-tool-results-can-drop-across-tools-with-internal-error-wrapper</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-tool-results-can-drop-across-tools-with-internal-error-wrapper"/>
-    <updated>2026-04-12T00:00:00Z</updated>
-    <summary>On Windows 11 in Claude Code 2.1.101, ordinary tool calls across multiple tool families can intermittently return the wrapper string `[Tool result missing due to internal error]` instead of any real tool output, actionable tool-level error, or retry. The reported regressions span Bash, Glob, Write, Read, and WebFetch in the same native-install session family, with transcript scans showing the pattern only after 2.1.101 landed and one affected session dropping 5 of 15 tool results. This is distinct from the older Skill-only internal-error hang, Android Remote Control persistent-approval failure, `git push`-specific remote hang, and `2&gt;&amp;1` subagent Bash crash: here the broken layer is the general tool-result delivery wrapper itself, which can discard results for unrelated built-in tools inside an ordinary Windows CLI session.</summary>
-    <category term="Tool behavior"/>
   </entry>
 </feed>
