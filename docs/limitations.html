@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">924</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-12.</span></p>
+        <p class="subtitle"><span id="total-count">925</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-12.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9828,6 +9828,18 @@
                         <!-- workaround:claude-p-output-format-json-can-drop-final-text-when-text-and-tool-use-share-one-assistant-message -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat an empty `result` from `claude -p --output-format json` as proof the model said nothing if the prompt may have ended with a tool call. For now, either force the final response to emit text after the last tool completes, inspect the saved session history, or resume the session with a follow-up prompt asking Claude to repeat its last textual output.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/47091" target="_blank">#47091</a></div>
+        </div>
+        <div class="kl-entry" data-category="Bash &amp; shell execution" data-issues="47103" id="bang-shell-commands-can-silently-skip-interactive-stdin-prompts" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#925</span>
+                <span class="kl-cat">Bash &amp; shell execution</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>`!` shell commands can silently skip interactive stdin prompts and complete without user input</h3>
+            <p>When a user runs a direct shell command through Claude Code&#x27;s `!` prefix and that command expects an interactive stdin prompt, the prompt can fail to appear entirely and the command can return immediately with no visible interaction. In the reported Windows 11 / Git Bash repro on v2.1.104, `! gh secret set MY_SECRET` never displayed GitHub CLI&#x27;s secure value prompt, finished silently, and left the secret unset. This is distinct from older Windows hook stdin deadlocks and OAuth code-entry freezes: the broken layer is Claude Code&#x27;s direct `!` shell execution path itself, where interactive stdin prompting does not reach the user even though the command is supposed to run inside the current session.</p>
+                        <!-- workaround:bang-shell-commands-can-silently-skip-interactive-stdin-prompts -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume `!` shell commands can safely handle interactive stdin prompts right now. For secret-entry flows, prefer the tool&#x27;s non-Claude UI (for example the GitHub web UI), or feed the value through a safer out-of-band path you control instead of relying on Claude Code to surface the prompt.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/47103" target="_blank">#47103</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

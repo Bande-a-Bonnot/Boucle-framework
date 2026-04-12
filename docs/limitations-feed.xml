@@ -7,6 +7,14 @@
   <updated>2026-04-12T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] `!` shell commands can silently skip interactive stdin prompts and complete without user input</title>
+    <id>https://framework.boucle.sh/limitations.html#bang-shell-commands-can-silently-skip-interactive-stdin-prompts</id>
+    <link href="https://framework.boucle.sh/limitations.html#bang-shell-commands-can-silently-skip-interactive-stdin-prompts"/>
+    <updated>2026-04-12T00:00:00Z</updated>
+    <summary>When a user runs a direct shell command through Claude Code&#x27;s `!` prefix and that command expects an interactive stdin prompt, the prompt can fail to appear entirely and the command can return immediately with no visible interaction. In the reported Windows 11 / Git Bash repro on v2.1.104, `! gh secret set MY_SECRET` never displayed GitHub CLI&#x27;s secure value prompt, finished silently, and left the secret unset. This is distinct from older Windows hook stdin deadlocks and OAuth code-entry freezes: the broken layer is Claude Code&#x27;s direct `!` shell execution path itself, where interactive stdin prompting does not reach the user even though the command is supposed to run inside the current session.</summary>
+    <category term="Bash &amp; shell execution"/>
+  </entry>
+  <entry>
     <title>[HIGH] `claude -p --output-format json` can drop final text when `text` and `tool_use` share one assistant message</title>
     <id>https://framework.boucle.sh/limitations.html#claude-p-output-format-json-can-drop-final-text-when-text-and-tool-use-share-one-assistant-message</id>
     <link href="https://framework.boucle.sh/limitations.html#claude-p-output-format-json-can-drop-final-text-when-text-and-tool-use-share-one-assistant-message"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-12T00:00:00Z</updated>
     <summary>On Windows in Claude Code 2.1.101, one failed `claude plugin marketplace update` can leave a stale `&lt;marketplace&gt;.bak/` directory that permanently wedges every later marketplace update and startup sync for that marketplace. In the reported native Windows repro, the updater uses a rename dance (`live -&gt; .bak`, `staging -&gt; live`) that assumes POSIX-like rename behavior, but `fs.rename()` on Windows returns `EPERM` when the destination `.bak/` already exists. Once that stale rollback directory is left behind, the next update cannot rename the live marketplace into `.bak/`, rollback cannot restore `.bak/` over the still-existing live directory, and the freshly fetched `.staging/` tree never gets promoted. This is distinct from earlier git-sourced marketplace lifecycle failures, stale custom-marketplace refresh state, and execute-bit loss on plugin updates: here the broken layer is the Windows rollback/update rename path itself, which can leave an official or git-backed marketplace permanently stuck in a failed-to-load state until the orphaned `.bak/` directory is removed manually.</summary>
     <category term="Plugin &amp; channel system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Managed `.mobileconfig` deny policy can still miss `Write(...)` rules even when `Bash(...)` denies work</title>
-    <id>https://framework.boucle.sh/limitations.html#mobileconfig-managed-deny-can-still-miss-write-rules-after-bash-deny-recovers</id>
-    <link href="https://framework.boucle.sh/limitations.html#mobileconfig-managed-deny-can-still-miss-write-rules-after-bash-deny-recovers"/>
-    <updated>2026-04-12T00:00:00Z</updated>
-    <summary>On macOS Sequoia, deny rules delivered through an MDM `.mobileconfig` profile for the `com.anthropic.claudecode` domain can partially recover while still leaving the `Write` tool unenforced. In the reported repro, the same managed profile blocked `Bash(gh repo create --public*)` exactly as expected after restart, yet `Write(**/.env)` and `Write(**/.env.*)` from that same profile still allowed Claude Code to create or overwrite `.env` files with no warning. This is distinct from the older managed-settings.json failure where enterprise deny rules were ignored wholesale: here the managed policy path is clearly active because `Bash` denies in the same profile work, and the broken layer is the remaining `Write`-deny enforcement path inside the MDM/mobileconfig preference source.</summary>
-    <category term="Permission system"/>
   </entry>
 </feed>
