@@ -1,6 +1,6 @@
 {
   "version": "0.12.0",
-  "count": 914,
+  "count": 915,
   "categories": {
     "Hook behavior & events": 169,
     "Permission system": 110,
@@ -32,6 +32,7 @@
     "UX & display": 5,
     "Core & session management": 4,
     "Data integrity": 4,
+    "MCP & plugins": 4,
     "permissions": 4,
     "sandbox": 4,
     "Sandbox & permissions": 4,
@@ -42,7 +43,6 @@
     "Cowork & remote": 3,
     "Desktop": 3,
     "Hooks": 3,
-    "MCP & plugins": 3,
     "Memory & context": 3,
     "Model behavior": 3,
     "Model behavior & output": 3,
@@ -169,7 +169,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 442,
+    "HIGH": 443,
     "LOW": 97,
     "MEDIUM": 313
   },
@@ -11166,30 +11166,42 @@
       "cc_version": null,
       "date_added": "2026-04-12",
       "workaround": "If Preview opens on top of the chat in Windows Desktop, treat it as a layout bug rather than a failed dev server. The temporary menu-toggle snap can confirm the preview is alive, but the safer workaround is to close Preview, use the browser directly, or rely on `preview_eval` and screenshots until Anthropic fixes the pane positioning."
+    },
+    {
+      "id": "development-channel-mcp-servers-can-connect-without-exposing-tools-to-the-model",
+      "title": "Development-channel MCP servers can connect without exposing tools to the model",
+      "category": "MCP & plugins",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "In Claude Code v2.1.101, an MCP server loaded with `--dangerously-load-development-channels server:<name>` can appear fully healthy in `/mcp` while none of its tools are actually callable by the model. In the reported repro, the server declares both ordinary `tools` and experimental `claude/channel` capabilities, `/mcp` shows it as connected with the tool list present, yet the model says it has no access to those tools and `ToolSearch` cannot find them. This is distinct from the older channel-plugin entry where Rust servers fail to load unless the dangerous development-channel flag is present at all: here the same flag now becomes part of the regression, because the server does connect but its tools never enter the model-visible MCP index after the v2.1.101 config-partition refactor.",
+      "cc_issue": 46951,
+      "cc_version": "v2.1.101",
+      "date_added": "2026-04-12",
+      "workaround": "If a development-channel MCP server shows connected in `/mcp` but the model cannot call its tools, pin Claude Code to v2.1.100 or avoid the `--dangerously-load-development-channels` launch path until Anthropic restores tool indexing for those servers. Treat `/mcp` connection status alone as insufficient evidence that the model can see the server."
     }
   ],
   "status_summary": {
-    "open": 900,
+    "open": 901,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 442,
+    "high": 443,
     "low": 97,
     "medium": 313
   },
   "lastUpdated": "2026-04-12",
   "stats": {
-    "total": 914,
+    "total": 915,
     "critical": 62,
-    "high": 442,
+    "high": 443,
     "medium": 313,
     "low": 97,
-    "open": 900,
+    "open": 901,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-12",
-  "total": 914
+  "total": 915
 }

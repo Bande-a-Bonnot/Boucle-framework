@@ -7,6 +7,14 @@
   <updated>2026-04-12T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Development-channel MCP servers can connect without exposing tools to the model</title>
+    <id>https://framework.boucle.sh/limitations.html#development-channel-mcp-servers-can-connect-without-exposing-tools-to-the-model</id>
+    <link href="https://framework.boucle.sh/limitations.html#development-channel-mcp-servers-can-connect-without-exposing-tools-to-the-model"/>
+    <updated>2026-04-12T00:00:00Z</updated>
+    <summary>In Claude Code v2.1.101, an MCP server loaded with `--dangerously-load-development-channels server:&lt;name&gt;` can appear fully healthy in `/mcp` while none of its tools are actually callable by the model. In the reported repro, the server declares both ordinary `tools` and experimental `claude/channel` capabilities, `/mcp` shows it as connected with the tool list present, yet the model says it has no access to those tools and `ToolSearch` cannot find them. This is distinct from the older channel-plugin entry where Rust servers fail to load unless the dangerous development-channel flag is present at all: here the same flag now becomes part of the regression, because the server does connect but its tools never enter the model-visible MCP index after the v2.1.101 config-partition refactor.</summary>
+    <category term="MCP &amp; plugins"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Windows Desktop Preview can render on top of chat instead of inside the right pane</title>
     <id>https://framework.boucle.sh/limitations.html#windows-desktop-preview-panel-can-render-on-top-of-chat-instead-of-right-pane</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-desktop-preview-panel-can-render-on-top-of-chat-instead-of-right-pane"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-12T00:00:00Z</updated>
     <summary>When asked to make a small macOS UI fix, Claude Code can drop into a local `xcodebuild` packaging path, overwrite an already-notarized DMG with a fresh unnotarized build artifact, and then steer the user toward Gatekeeper bypasses instead of preserving the existing distribution pipeline. In the reported case, the original DMG was production-ready and already safe for end users, but Claude rebuilt from the CLI, replaced the notarized disk image without checking for `notarytool` credentials or release-state boundaries, then suggested right-click &gt; Open on the broken output and even asked for Apple ID credentials. This is distinct from the broader destructive-command corpus: the failure is not merely &#x27;Claude changed the wrong file&#x27;, but that it cannot reliably distinguish an already-distributable signed/notarized release artifact from an intermediate local build, so a small code fix can silently downgrade a live macOS distribution package into something Gatekeeper will block.</summary>
     <category term="Autonomy &amp; destructive actions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Telegram channel plugin can attach without ever spawning its MCP server</title>
-    <id>https://framework.boucle.sh/limitations.html#telegram-channel-plugin-can-attach-without-ever-spawning-mcp-server</id>
-    <link href="https://framework.boucle.sh/limitations.html#telegram-channel-plugin-can-attach-without-ever-spawning-mcp-server"/>
-    <updated>2026-04-12T00:00:00Z</updated>
-    <summary>On Linux in Claude Code v2.1.101, launching a session with `--channels plugin:telegram@claude-plugins-official` can show the normal &quot;Listening for channel messages&quot; attach banner while never spawning the Telegram plugin&#x27;s `bun` MCP server process at all. In the reported repro, the plugin was installed, other MCP servers spawned normally as child processes, Telegram messages queued successfully in the bot API, and the token was valid, but no `bun run ... telegram ... start` process ever appeared and no inbound messages were consumed. This is distinct from the newer channel-tool injection regression where the plugin process starts cleanly but its tools never enter the session: here the failure happens one layer earlier, because the channel attach path claims success while the plugin runtime itself never launches.</summary>
-    <category term="Plugin &amp; channel system"/>
   </entry>
 </feed>
