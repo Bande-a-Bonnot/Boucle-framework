@@ -555,22 +555,17 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-362 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. Or use Ctrl-F below:
+931 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. The biggest clusters right now are:
 
 | Category | Count | Examples |
 |----------|-------|----------|
-| Hook behavior & events | 136 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, hooks stop after 2.5h, PostToolUse format-on-save breaks consecutive edits, CLAUDE_ENV_FILE broken, no persistent child env, statusline receives hook stdout, no ToolStarted event between PreToolUse and PostToolUse |
-| Hook bypass & evasion | 88 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch, `$()` subshell pattern-match failure, goal-directed tool switching, apiKeyHelper arbitrary code execution, `find` command injection (CVE-2026-24887) |
-| Permission system | 80 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, DenyRead/Write overridden by user AllowRead/Write, `git restore` without confirmation |
-| Subagent & spawned agents | 15 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, teammate hooks bypass, subagent file creation bypass, worktree isolation wrong commit |
-| Configuration behavior | 10 | Managed settings bypass, sandbox disable, MCP priority conflicts, authentication config issues |
-| MCP & plugin issues | 10 | Plugin notification stops after first session, symlink marketplace silent fail, plugin MCP killed after startup, stale cache in Discover tab |
-| Platform & compatibility | 6 | Git Bash regression, Desktop env.PATH ignored, renderer strips `<context>` tags, non-login shell PATH missing |
-| Desktop & IDE integration | 5 | JetBrains extension file overwrite, Desktop junk sessions, Cowork cloud FS rejection |
-| Context & memory | 4 | CLAUDE.md rules advisory-only, Opus 1M ignores CLAUDE.md in long sessions, context miscount |
-| Security & trust boundaries | 4 | Managed settings bypass via config injection, trust dialog bypass |
-| Scheduling & remote triggers | 3 | Ghost trigger quota consumed, MCP connectors not injected, triggers silently drop runs |
-| Performance & cost | 1 | Nested subagent token burn |
+| Hook behavior & events | 170 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, hooks stop after long sessions, PostToolUse format-on-save breaks consecutive edits, CLAUDE_ENV_FILE broken, no persistent child env, statusline receives hook stdout, no ToolStarted event between PreToolUse and PostToolUse |
+| Permission system | 110 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, DenyRead/Write overridden by user AllowRead/Write, `git restore` without confirmation |
+| Hook bypass & evasion | 96 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch, `$()` subshell pattern-match failure, goal-directed tool switching, apiKeyHelper arbitrary code execution, `find` command injection (CVE-2026-24887) |
+| MCP & plugin issues | 47 | OAuth/auth fallback bugs, missing tool injection, channel/plugin lifecycle failures, stale marketplace state, connected-but-unusable servers |
+| Subagent & spawned agents | 38 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, teammate hooks bypass, subagent file creation bypass, worktree isolation wrong commit |
+
+For the long tail, use the [searchable limitations page](https://framework.boucle.sh/limitations.html) or the machine-readable [JSON](https://framework.boucle.sh/limitations.json). The corpus changes every loop, so the page stays authoritative.
 
 ---
 
