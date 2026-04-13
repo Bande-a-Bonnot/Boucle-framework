@@ -1,11 +1,11 @@
 {
   "version": "0.12.0",
-  "count": 930,
+  "count": 931,
   "categories": {
     "Hook behavior & events": 170,
     "Permission system": 110,
     "Hook bypass & evasion": 96,
-    "MCP & plugin issues": 46,
+    "MCP & plugin issues": 47,
     "Subagent & spawned agents": 38,
     "Desktop & IDE integration": 26,
     "Platform & compatibility": 23,
@@ -170,7 +170,7 @@
   },
   "severity_counts": {
     "CRITICAL": 62,
-    "HIGH": 453,
+    "HIGH": 454,
     "LOW": 97,
     "MEDIUM": 318
   },
@@ -11359,30 +11359,42 @@
       "cc_version": "latest",
       "date_added": "2026-04-13",
       "workaround": "Do not assume a parent slash command will resume automatically after a nested slash-command call right now. Inline the critical work into one command, or add an explicit verification or reminder step that forces Claude to re-check the parent command's remaining tasks before it returns to the user."
+    },
+    {
+      "id": "telegram-channel-dispatch-can-spawn-broken-print-runs-and-drop-every-incoming-message",
+      "title": "Telegram channel dispatch can spawn broken `--print` runs and drop every incoming message",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "When Claude Code is launched with `--channels plugin:telegram@claude-plugins-official`, incoming Telegram messages can fail in the channel dispatch layer even though the Telegram MCP server itself is healthy. In the reported macOS repro with `telegram@claude-plugins-official` v0.0.5, the plugin worked when started manually, successfully polled Telegram, and emitted valid `notifications/claude/channel` payloads, but Claude's channels runner responded to every incoming message with `Error: Input must be provided either through stdin or as a prompt argument when using --print`. No `bun` child process or `bot.pid` was created under the normal `claude --channels` path, `claude-channels-error.log` filled with repeated `--print` input errors, and no Telegram message ever reached the active session. This is distinct from earlier Telegram failures where the plugin runtime never spawns, channel notifications are dropped after transport is established, tools are missing from an attached session, or `/reload-plugins` or `/compact` break a healthy connection later: here the narrower broken layer is the channels dispatch path itself, which tries to hand channel messages to a `--print` flow without actually passing the message content.",
+      "cc_issue": 47153,
+      "cc_version": "latest",
+      "date_added": "2026-04-13",
+      "workaround": "Do not assume `claude --channels` is actually dispatching Telegram messages just because the plugin works when started manually. Until Anthropic fixes the channel runner, verify that Telegram messages create real child processes or session activity instead of only writing `--print` errors, and prefer shorter-lived manual plugin tests or non-channel invocation paths before trusting unattended Telegram delivery."
     }
   ],
   "status_summary": {
-    "open": 916,
+    "open": 917,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 62,
-    "high": 453,
+    "high": 454,
     "low": 97,
     "medium": 318
   },
   "lastUpdated": "2026-04-13",
   "stats": {
-    "total": 930,
+    "total": 931,
     "critical": 62,
-    "high": 453,
+    "high": 454,
     "medium": 318,
     "low": 97,
-    "open": 916,
+    "open": 917,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-04-13",
-  "total": 930
+  "total": 931
 }

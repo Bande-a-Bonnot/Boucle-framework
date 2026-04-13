@@ -7,6 +7,14 @@
   <updated>2026-04-13T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Telegram channel dispatch can spawn broken `--print` runs and drop every incoming message</title>
+    <id>https://framework.boucle.sh/limitations.html#telegram-channel-dispatch-can-spawn-broken-print-runs-and-drop-every-incoming-message</id>
+    <link href="https://framework.boucle.sh/limitations.html#telegram-channel-dispatch-can-spawn-broken-print-runs-and-drop-every-incoming-message"/>
+    <updated>2026-04-13T00:00:00Z</updated>
+    <summary>When Claude Code is launched with `--channels plugin:telegram@claude-plugins-official`, incoming Telegram messages can fail in the channel dispatch layer even though the Telegram MCP server itself is healthy. In the reported macOS repro with `telegram@claude-plugins-official` v0.0.5, the plugin worked when started manually, successfully polled Telegram, and emitted valid `notifications/claude/channel` payloads, but Claude&#x27;s channels runner responded to every incoming message with `Error: Input must be provided either through stdin or as a prompt argument when using --print`. No `bun` child process or `bot.pid` was created under the normal `claude --channels` path, `claude-channels-error.log` filled with repeated `--print` input errors, and no Telegram message ever reached the active session. This is distinct from earlier Telegram failures where the plugin runtime never spawns, channel notifications are dropped after transport is established, tools are missing from an attached session, or `/reload-plugins` or `/compact` break a healthy connection later: here the narrower broken layer is the channels dispatch path itself, which tries to hand channel messages to a `--print` flow without actually passing the message content.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Nested slash-command chains can stop after the first sub-command and forget the parent plan</title>
     <id>https://framework.boucle.sh/limitations.html#nested-slash-command-chains-can-stop-after-the-first-sub-command-and-forget-the-parent-plan</id>
     <link href="https://framework.boucle.sh/limitations.html#nested-slash-command-chains-can-stop-after-the-first-sub-command-and-forget-the-parent-plan"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-13T00:00:00Z</updated>
     <summary>On macOS 12 (Monterey), Claude Code&#x27;s bottom status bar can render the permission mode indicator as two replacement boxes instead of a readable icon. The reported root cause is that Claude uses U+23FA (⏺) on darwin while using U+25CF (●) elsewhere; macOS 12 terminals treat U+23FA as an emoji-width glyph, but common terminal/font combinations do not render it correctly in that TUI slot. This is distinct from older status-bar state and rendering bugs because the permission mode itself remains correct and usable; the regression is the icon choice on one macOS generation.</summary>
     <category term="TUI &amp; display"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Mobile edit approval dialogs can overlap the keyboard and cause accidental rejection</title>
-    <id>https://framework.boucle.sh/limitations.html#mobile-edit-approval-dialog-can-overlap-keyboard-and-cause-accidental-rejection</id>
-    <link href="https://framework.boucle.sh/limitations.html#mobile-edit-approval-dialog-can-overlap-keyboard-and-cause-accidental-rejection"/>
-    <updated>2026-04-13T00:00:00Z</updated>
-    <summary>When Claude Code is used from the Claude mobile app on iOS or Android, an incoming file-edit approval dialog can appear in the same screen region as the on-screen keyboard. In the reported repro, the user is typing a follow-up message while Claude is working, and the approval sheet lands directly over the keyboard area so a normal tap can hit `Reject` instead of a key. This is distinct from the older remote/mobile approval-propagation gaps where prompts never arrive on mobile at all: here the permission UI does arrive, but its placement makes legitimate approvals easy to reject by accident and can discard valid file edits mid-session.</summary>
-    <category term="Permission system"/>
   </entry>
 </feed>
