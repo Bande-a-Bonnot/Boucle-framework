@@ -4,13 +4,21 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-04-12T00:00:00Z</updated>
+  <updated>2026-04-13T00:00:00Z</updated>
   <author><name>Boucle</name></author>
+  <entry>
+    <title>[MEDIUM] Nested slash-command chains can stop after the first sub-command and forget the parent plan</title>
+    <id>https://framework.boucle.sh/limitations.html#nested-slash-command-chains-can-stop-after-the-first-sub-command-and-forget-the-parent-plan</id>
+    <link href="https://framework.boucle.sh/limitations.html#nested-slash-command-chains-can-stop-after-the-first-sub-command-and-forget-the-parent-plan"/>
+    <updated>2026-04-13T00:00:00Z</updated>
+    <summary>A user-defined slash command can instruct Claude Code to run several other slash commands in sequence, yet only the first nested command actually runs before Claude returns control to the user. In the reported repro, `/end-session` was supposed to execute `/update-brain`, `/update-daily`, and `/update-memory` in order, but Claude consistently completed only the first nested command and then stopped. This is distinct from older slash-command bugs around discovery, autocomplete, or SDK-side prompt expansion: the nested command is found and executed successfully, but the parent command&#x27;s remaining steps are forgotten after the first `Skill` tool return. The narrower broken layer is continuation of the parent slash-command plan after a nested slash-command invocation completes.</summary>
+    <category term="Skills / slash commands"/>
+  </entry>
   <entry>
     <title>[HIGH] `/compact` can disconnect stdio MCP plugins and kill their tools until restart</title>
     <id>https://framework.boucle.sh/limitations.html#compact-can-disconnect-stdio-mcp-plugins-and-kill-their-tools-until-restart</id>
     <link href="https://framework.boucle.sh/limitations.html#compact-can-disconnect-stdio-mcp-plugins-and-kill-their-tools-until-restart"/>
-    <updated>2026-04-12T00:00:00Z</updated>
+    <updated>2026-04-13T00:00:00Z</updated>
     <summary>When Claude Code compacts context, stdio-based MCP plugins can disconnect permanently and leave all of their tools unavailable until the whole session is restarted. In the reported WSL2 Telegram plugin repro, `claude --channels plugin:telegram@claude-plugins-official` started healthy, Telegram reply tools worked normally, and the break only appeared immediately after manual `/compact` or automatic compaction near the context limit. After compaction, Claude reported `MCP server disconnected` and the plugin&#x27;s stdio transport shut down because the process treated the compact-time stdin close/reset as a real session end. This is distinct from older plugin failures where the runtime never spawns, inbound notifications degrade after hours, or `/reload-plugins` breaks an existing subscription: here the narrower broken layer is the compaction lifecycle itself, which tears down an otherwise healthy stdio MCP connection mid-session.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -18,7 +26,7 @@
     <title>[HIGH] `/resume` can lose container sessions when a PID-keyed session index overwrites bind-mounted metadata</title>
     <id>https://framework.boucle.sh/limitations.html#resume-can-lose-container-sessions-when-pid-keyed-session-index-overwrites-bind-mounted-metadata</id>
     <link href="https://framework.boucle.sh/limitations.html#resume-can-lose-container-sessions-when-pid-keyed-session-index-overwrites-bind-mounted-metadata"/>
-    <updated>2026-04-12T00:00:00Z</updated>
+    <updated>2026-04-13T00:00:00Z</updated>
     <summary>When Claude Code runs inside a devcontainer or other container with `~/.claude` bind-mounted from the host, `/resume` can silently lose older sessions after the container restarts even though the underlying conversation JSONL files are still intact. In the reported WSL2 devcontainer repro, session metadata files under `~/.claude/sessions/` were keyed by PID (for example `8743.json`). After a container restart, the PID namespace reset, a new Claude process reused the same PID, and its metadata overwrote the old PID-keyed file. That destroys the mapping from PID to session UUID, so `/resume` no longer lists the older session even though the transcript remains on disk under `~/.claude/projects/`. This is distinct from earlier `/resume` failures tied to worktrees, branch filters, stale compaction boundaries, or cache/index drift in editor UIs: here the narrower broken layer is the PID-keyed metadata index itself, which is unsafe across container restarts and bind-mounted homes.</summary>
     <category term="CLI &amp; terminal"/>
   </entry>
@@ -26,7 +34,7 @@
     <title>[HIGH] Parent MCP registration blocks can leak into subagent tool output</title>
     <id>https://framework.boucle.sh/limitations.html#parent-mcp-registration-blocks-can-leak-into-subagent-tool-output</id>
     <link href="https://framework.boucle.sh/limitations.html#parent-mcp-registration-blocks-can-leak-into-subagent-tool-output"/>
-    <updated>2026-04-12T00:00:00Z</updated>
+    <updated>2026-04-13T00:00:00Z</updated>
     <summary>A subagent spawned through the `Agent` tool can receive parent-scoped MCP registration content inside its own tool results even when the subagent has no MCP servers configured. In the reported macOS repro, multiple subagents saw `system-reminder` blocks describing the parent agent&#x27;s MCP server registrations (Gamma, Supabase, Vercel, and others) embedded inline with otherwise normal WebFetch, Bash, and other tool output. This is narrower than older cases where disabled MCP servers still expose tool names in the parent&#x27;s deferred tools list: here the parent&#x27;s MCP registration material crosses the agent boundary and is delivered through the subagent&#x27;s tool-output stream itself, breaking context isolation and making the leaked runtime content indistinguishable from a real prompt-injection payload.</summary>
     <category term="Agents &amp; subagents"/>
   </entry>
@@ -34,7 +42,7 @@
     <title>[HIGH] Channel notification handler can stop surfacing inbound messages after hours while the plugin and reply tools still work</title>
     <id>https://framework.boucle.sh/limitations.html#channel-notification-handler-can-stop-surfacing-inbound-messages-after-hours-while-plugin-and-reply-tools-still-work</id>
     <link href="https://framework.boucle.sh/limitations.html#channel-notification-handler-can-stop-surfacing-inbound-messages-after-hours-while-plugin-and-reply-tools-still-work"/>
-    <updated>2026-04-12T00:00:00Z</updated>
+    <updated>2026-04-13T00:00:00Z</updated>
     <summary>In long-running Claude Code sessions using `--channels plugin:telegram@claude-plugins-official`, inbound `notifications/claude/channel` events can stop surfacing after roughly 2-3 hours even though the Telegram plugin process stays alive, outbound reply tools keep working, MCP stdio remains healthy, and the bot API is still reachable. In the reported Docker/Linux repro, `ss` and `strace` both showed the `bun` plugin process still connected to Telegram and actively writing notifications, while Claude Code stopped injecting any new `&lt;channel ...&gt;` messages into the conversation until the session was restarted. This is distinct from older channel regressions where inbound notifications never work on first attach, idle sessions do not wake, `/reload-plugins` breaks a previously healthy subscription, or the plugin runtime never spawns: here the session begins healthy and then degrades over time at the inbound-notification handler layer only, while outbound tools continue proving the plugin transport is still alive.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -42,7 +50,7 @@
     <title>[MEDIUM] `!` shell commands can silently skip interactive stdin prompts and complete without user input</title>
     <id>https://framework.boucle.sh/limitations.html#bang-shell-commands-can-silently-skip-interactive-stdin-prompts</id>
     <link href="https://framework.boucle.sh/limitations.html#bang-shell-commands-can-silently-skip-interactive-stdin-prompts"/>
-    <updated>2026-04-12T00:00:00Z</updated>
+    <updated>2026-04-13T00:00:00Z</updated>
     <summary>When a user runs a direct shell command through Claude Code&#x27;s `!` prefix and that command expects an interactive stdin prompt, the prompt can fail to appear entirely and the command can return immediately with no visible interaction. In the reported Windows 11 / Git Bash repro on v2.1.104, `! gh secret set MY_SECRET` never displayed GitHub CLI&#x27;s secure value prompt, finished silently, and left the secret unset. This is distinct from older Windows hook stdin deadlocks and OAuth code-entry freezes: the broken layer is Claude Code&#x27;s direct `!` shell execution path itself, where interactive stdin prompting does not reach the user even though the command is supposed to run inside the current session.</summary>
     <category term="Bash &amp; shell execution"/>
   </entry>
@@ -50,7 +58,7 @@
     <title>[HIGH] `claude -p --output-format json` can drop final text when `text` and `tool_use` share one assistant message</title>
     <id>https://framework.boucle.sh/limitations.html#claude-p-output-format-json-can-drop-final-text-when-text-and-tool-use-share-one-assistant-message</id>
     <link href="https://framework.boucle.sh/limitations.html#claude-p-output-format-json-can-drop-final-text-when-text-and-tool-use-share-one-assistant-message"/>
-    <updated>2026-04-12T00:00:00Z</updated>
+    <updated>2026-04-13T00:00:00Z</updated>
     <summary>In `claude -p --output-format json`, the top-level `result` field can come back as an empty string even when the model already produced visible text, if the same final assistant message also contains a `tool_use` block and the model has nothing more to say after the tool returns. The tool still executes, tokens are consumed, and the text remains visible in the saved session history when the user later resumes the session, but the JSON envelope itself silently drops that text. This is narrower than the older `result`-always-empty print-mode regressions because plain text-only responses still work on v2.1.104; the break happens specifically when one assistant turn mixes output text and a terminal `tool_use` such as `TodoWrite`.</summary>
     <category term="CLI &amp; terminal"/>
   </entry>
@@ -58,7 +66,7 @@
     <title>[MEDIUM] Windows `statusLine.command` can drop stdout from external binaries unless wrapped in `bash -c`</title>
     <id>https://framework.boucle.sh/limitations.html#windows-statusline-command-can-drop-stdout-from-external-binaries-unless-wrapped-in-bash-c</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-statusline-command-can-drop-stdout-from-external-binaries-unless-wrapped-in-bash-c"/>
-    <updated>2026-04-12T00:00:00Z</updated>
+    <updated>2026-04-13T00:00:00Z</updated>
     <summary>On Windows, `statusLine.command` can execute external programs such as `py`, `python`, `python3`, or even a fully-qualified Python binary without ever surfacing their stdout in the Claude Code status line, leaving the HUD blank with no error message. In the reported v2.1.92 repro, the same script produced correct output when run manually and also worked immediately when wrapped in `bash -c &#x27;...&#x27;`, while Bash builtins like `echo` and `printf` rendered normally without the wrapper. This is distinct from earlier statusline regressions where the wrong JSON payload reached the command, `rate_limits` fields were missing, no-flicker mode suppressed the whole statusline, or `/compact` left stale values behind: here the narrower failure surface is the stdout-capture path for non-builtin child processes themselves on Windows.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -66,7 +74,7 @@
     <title>[HIGH] `CLAUDE_CONFIG_DIR` profiles can still inject the global `~/.claude/CLAUDE.md`</title>
     <id>https://framework.boucle.sh/limitations.html#claude-config-dir-profiles-can-still-inject-global-claude-md-from-home-directory</id>
     <link href="https://framework.boucle.sh/limitations.html#claude-config-dir-profiles-can-still-inject-global-claude-md-from-home-directory"/>
-    <updated>2026-04-12T00:00:00Z</updated>
+    <updated>2026-04-13T00:00:00Z</updated>
     <summary>When Claude Code is launched with `CLAUDE_CONFIG_DIR` pointing at an alternate profile directory, the session can still preload instructions from the default `~/.claude/CLAUDE.md` instead of isolating itself to the selected config root. In the reported macOS v2.1.104 repro, the model explicitly confirmed that `/Users/.../.claude/CLAUDE.md` had already been injected into context as startup `claudeMd` content even though `CLAUDE_CONFIG_DIR` was set to a different directory. This is distinct from the older `CLAUDE_CONFIG_DIR` MCP hierarchy and plugin-isolation bugs because the break is not limited to MCP or marketplace state: the wrong profile&#x27;s top-level instruction file itself crosses the boundary at session start, so supposedly isolated local profiles can inherit unrelated rules, tooling guidance, or secrets from the default home profile before the user does any work.</summary>
     <category term="Configuration &amp; settings"/>
   </entry>
@@ -74,7 +82,7 @@
     <title>[HIGH] VS Code Claude process tree can lose local-network TCP access while another terminal on the same host still works</title>
     <id>https://framework.boucle.sh/limitations.html#vscode-claude-process-tree-can-lose-local-network-tcp-access-while-terminal-on-same-host-still-works</id>
     <link href="https://framework.boucle.sh/limitations.html#vscode-claude-process-tree-can-lose-local-network-tcp-access-while-terminal-on-same-host-still-works"/>
-    <updated>2026-04-12T00:00:00Z</updated>
+    <updated>2026-04-13T00:00:00Z</updated>
     <summary>When Claude Code is launched inside the VS Code extension on macOS, Bash and Python tool calls can fail to establish TCP connections to a local network host with `No route to host` or `errno 65` even though the same user, machine, interface, and destination work immediately from iTerm2. In the reported repro, `ssh`, `nc -z`, `ping`, and a direct Python `socket.connect()` all failed from the Claude process tree while `traceroute` still reached the target host in under a millisecond and the identical commands succeeded outside Claude. This is distinct from the older macOS silent-TCP-drop freeze entry, which starts after an existing connection disappears mid-session: here the broken layer is the initial transport access of the VS Code / Claude subprocess tree itself, apparently before any session work can reach the host.</summary>
     <category term="Bash &amp; shell execution"/>
   </entry>
@@ -82,7 +90,7 @@
     <title>[HIGH] Cowork Gmail `search_threads` can fail with `Internal error encountered` while other Gmail tools still work</title>
     <id>https://framework.boucle.sh/limitations.html#cowork-gmail-search-threads-can-fail-with-internal-error-while-other-gmail-tools-still-work</id>
     <link href="https://framework.boucle.sh/limitations.html#cowork-gmail-search-threads-can-fail-with-internal-error-while-other-gmail-tools-still-work"/>
-    <updated>2026-04-12T00:00:00Z</updated>
+    <updated>2026-04-13T00:00:00Z</updated>
     <summary>In Cowork (Claude Desktop), the first-party Gmail connector&#x27;s `search_threads` tool can fail with the generic `Internal error encountered.` message on every call even while the same authenticated session still succeeds with `list_drafts`, `get_thread`, `list_labels`, and `create_draft`. The reported macOS repro failed 100% of the time across both interactive and scheduled Cowork sessions from April 9 through April 12, 2026, regardless of whether the query was empty or used simple filters like `is:unread` or `in:inbox`. This is distinct from older Gmail auth-entry, connector-loading, and cross-account-override bugs because the OAuth session is already valid and multiple Gmail tools prove the connector is alive; the failure is isolated specifically to the `search_threads` endpoint that many inbox-driven automations depend on.</summary>
     <category term="MCP &amp; integrations"/>
   </entry>
@@ -90,7 +98,7 @@
     <title>[HIGH] Cowork `Save skill` installs can silently truncate `SKILL.md` files</title>
     <id>https://framework.boucle.sh/limitations.html#cowork-save-skill-install-can-silently-truncate-skill-md-files</id>
     <link href="https://framework.boucle.sh/limitations.html#cowork-save-skill-install-can-silently-truncate-skill-md-files"/>
-    <updated>2026-04-12T00:00:00Z</updated>
+    <updated>2026-04-13T00:00:00Z</updated>
     <summary>Cowork&#x27;s `Save skill` install path can write a shorter `SKILL.md` into the mounted skills directory than the intact file packaged inside the `.skill` zip, with no error or warning to the user. In the reported Windows repros, the source file and the packaged zip both remained complete, but the installed copy inside `/sessions/*/mnt/.claude/skills/.../SKILL.md` lost 14-18 lines and ended mid-word on every install. This is narrower than the older Cowork skill-update truncation bug, which only clipped files that grew relative to a previous install, and narrower than the older stale virtiofs mount bug, which served outdated host content after external edits: here the break happens inside Cowork&#x27;s own `Save skill` install pipeline on fresh package writes, even when the `.skill` payload itself is already verified intact.</summary>
     <category term="Cowork"/>
   </entry>
@@ -98,7 +106,7 @@
     <title>[HIGH] Agent SDK stream-json Bash subprocess `cwd` can collapse to `/` under non-shell parents</title>
     <id>https://framework.boucle.sh/limitations.html#agent-sdk-stream-json-bash-subprocess-cwd-can-collapse-to-root-under-non-shell-parents</id>
     <link href="https://framework.boucle.sh/limitations.html#agent-sdk-stream-json-bash-subprocess-cwd-can-collapse-to-root-under-non-shell-parents"/>
-    <updated>2026-04-12T00:00:00Z</updated>
+    <updated>2026-04-13T00:00:00Z</updated>
     <summary>When `claude` is spawned programmatically from a non-shell parent (Node, Bun, Python, or similar) with `--input-format stream-json --output-format stream-json`, the session can report the correct `cwd` in the `system/init` event while every later Bash tool subprocess still runs from `/`. The same prompt, flags, and environment work correctly when an interactive shell is the direct parent, so the break appears to sit specifically in the Bash tool spawn path for the headless SDK-style execution flow. This is distinct from older worktree, realpath, and parallel-Bash cwd issues because the logical session directory is known correctly at init time and only the later Bash subprocess loses it.</summary>
     <category term="File system &amp; paths"/>
   </entry>
@@ -106,7 +114,7 @@
     <title>[MEDIUM] `Ctrl+B` can background a running tool on single press despite a double-press UI hint</title>
     <id>https://framework.boucle.sh/limitations.html#ctrl-b-can-background-a-running-tool-on-single-press-despite-double-press-ui-hint</id>
     <link href="https://framework.boucle.sh/limitations.html#ctrl-b-can-background-a-running-tool-on-single-press-despite-double-press-ui-hint"/>
-    <updated>2026-04-12T00:00:00Z</updated>
+    <updated>2026-04-13T00:00:00Z</updated>
     <summary>While a tool is actively running, Claude Code can show a bottom-of-screen hint that says `Ctrl+B, Ctrl+B` is required to background the task, yet a single `Ctrl+B` immediately backgrounds it. In the reported Linux repro, the contrast with `Ctrl+F, Ctrl+F` for terminating background agents made the mismatch especially misleading: one shortcut really is double-confirmed, while the other only looks that way in the UI. This is distinct from earlier TUI freeze, auto-background, and background-agent lifecycle entries because the runtime action succeeds; the broken layer is the safety contract between the on-screen shortcut hint and the actual keybinding behavior.</summary>
     <category term="TUI &amp; display"/>
   </entry>
@@ -114,7 +122,7 @@
     <title>[HIGH] Development-channel MCP servers can connect without exposing tools to the model</title>
     <id>https://framework.boucle.sh/limitations.html#development-channel-mcp-servers-can-connect-without-exposing-tools-to-the-model</id>
     <link href="https://framework.boucle.sh/limitations.html#development-channel-mcp-servers-can-connect-without-exposing-tools-to-the-model"/>
-    <updated>2026-04-12T00:00:00Z</updated>
+    <updated>2026-04-13T00:00:00Z</updated>
     <summary>In Claude Code v2.1.101, an MCP server loaded with `--dangerously-load-development-channels server:&lt;name&gt;` can appear fully healthy in `/mcp` while none of its tools are actually callable by the model. In the reported repro, the server declares both ordinary `tools` and experimental `claude/channel` capabilities, `/mcp` shows it as connected with the tool list present, yet the model says it has no access to those tools and `ToolSearch` cannot find them. This is distinct from the older channel-plugin entry where Rust servers fail to load unless the dangerous development-channel flag is present at all: here the same flag now becomes part of the regression, because the server does connect but its tools never enter the model-visible MCP index after the v2.1.101 config-partition refactor.</summary>
     <category term="MCP &amp; plugins"/>
   </entry>
@@ -122,7 +130,7 @@
     <title>[MEDIUM] `Unknown skill` errors can overwrite session-meta `first_prompt` and pollute `/insights`</title>
     <id>https://framework.boucle.sh/limitations.html#unknown-skill-errors-can-overwrite-session-meta-first-prompt-and-pollute-insights</id>
     <link href="https://framework.boucle.sh/limitations.html#unknown-skill-errors-can-overwrite-session-meta-first-prompt-and-pollute-insights"/>
-    <updated>2026-04-12T00:00:00Z</updated>
+    <updated>2026-04-13T00:00:00Z</updated>
     <summary>When a slash command fails with `Unknown skill`, Claude Code can write the error string itself into `~/.claude/usage-data/session-meta/*.json` as the session&#x27;s `first_prompt`, even though the real user input was different. In the reported repro, the corrupted records also showed zero tokens, zero tool calls, and two identical `user_message_timestamps`, suggesting the failure path re-ingested Claude&#x27;s own error echo as if it were a second user message. This is distinct from the older Windows `session-meta` EBUSY crash and non-atomic write corruption entries: here the file write succeeds, but the telemetry content is semantically wrong and `/insights` or third-party usage tools end up showing `Unknown skill: ...` as the user&#x27;s first prompt.</summary>
     <category term="Telemetry &amp; insights"/>
   </entry>
@@ -130,7 +138,7 @@
     <title>[MEDIUM] Windows Desktop Preview can render on top of chat instead of inside the right pane</title>
     <id>https://framework.boucle.sh/limitations.html#windows-desktop-preview-panel-can-render-on-top-of-chat-instead-of-right-pane</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-desktop-preview-panel-can-render-on-top-of-chat-instead-of-right-pane"/>
-    <updated>2026-04-12T00:00:00Z</updated>
+    <updated>2026-04-13T00:00:00Z</updated>
     <summary>On the Windows Claude Code Desktop app, opening the Preview surface can place the live browser content on the left side of the window, directly over the conversation, even though the preview pane background appears in the correct right-side region. In the reported repro, clicking the three-dot menu beside the Preview tab temporarily snaps the browser view back into the right pane, but dismissing the menu makes the content jump left again and overlap the chat. This is distinct from older `preview_start` failures, Docker port mismatches, and generic message-overlap bugs: the preview process itself is running, and the broken layer is desktop pane layout/compositing rather than preview server detection or transcript rendering.</summary>
     <category term="Desktop &amp; IDE integration"/>
   </entry>
@@ -138,7 +146,7 @@
     <title>[HIGH] `/model` can overwrite `settings.json` and wipe hooks and statusLine config</title>
     <id>https://framework.boucle.sh/limitations.html#model-command-can-overwrite-settings-json-and-wipe-hooks-and-statusline-config</id>
     <link href="https://framework.boucle.sh/limitations.html#model-command-can-overwrite-settings-json-and-wipe-hooks-and-statusline-config"/>
-    <updated>2026-04-12T00:00:00Z</updated>
+    <updated>2026-04-13T00:00:00Z</updated>
     <summary>On Windows in Claude Code v2.1.104, running `/model` (and possibly `/effort`) can rewrite the user&#x27;s global `~/.claude/settings.json` as a minimal object such as `{&quot;env&quot;: {}}`, silently deleting unrelated configuration like `statusLine` commands and `hooks`. In the reported repro, the hook scripts and statusline command still existed on disk, but the JSON file that pointed to them was recreated at the exact time `/model` and `/effort` were used, leaving the user with no visible hook or statusline behavior and no warning that their config had been destroyed. This is distinct from the older `/model` bug that strips only the hook `if` property and from `/config` scope-leak bugs: here the command appears to perform a whole-file overwrite, wiping multiple independent settings families at once instead of mutating one field incorrectly.</summary>
     <category term="Configuration &amp; settings"/>
   </entry>
@@ -146,7 +154,7 @@
     <title>[MEDIUM] macOS 12 terminals can render the permission mode icon as garbled boxes</title>
     <id>https://framework.boucle.sh/limitations.html#macos-12-permission-mode-icon-renders-as-garbled-boxes-in-terminal</id>
     <link href="https://framework.boucle.sh/limitations.html#macos-12-permission-mode-icon-renders-as-garbled-boxes-in-terminal"/>
-    <updated>2026-04-12T00:00:00Z</updated>
+    <updated>2026-04-13T00:00:00Z</updated>
     <summary>On macOS 12 (Monterey), Claude Code&#x27;s bottom status bar can render the permission mode indicator as two replacement boxes instead of a readable icon. The reported root cause is that Claude uses U+23FA (⏺) on darwin while using U+25CF (●) elsewhere; macOS 12 terminals treat U+23FA as an emoji-width glyph, but common terminal/font combinations do not render it correctly in that TUI slot. This is distinct from older status-bar state and rendering bugs because the permission mode itself remains correct and usable; the regression is the icon choice on one macOS generation.</summary>
     <category term="TUI &amp; display"/>
   </entry>
@@ -154,16 +162,8 @@
     <title>[MEDIUM] Mobile edit approval dialogs can overlap the keyboard and cause accidental rejection</title>
     <id>https://framework.boucle.sh/limitations.html#mobile-edit-approval-dialog-can-overlap-keyboard-and-cause-accidental-rejection</id>
     <link href="https://framework.boucle.sh/limitations.html#mobile-edit-approval-dialog-can-overlap-keyboard-and-cause-accidental-rejection"/>
-    <updated>2026-04-12T00:00:00Z</updated>
+    <updated>2026-04-13T00:00:00Z</updated>
     <summary>When Claude Code is used from the Claude mobile app on iOS or Android, an incoming file-edit approval dialog can appear in the same screen region as the on-screen keyboard. In the reported repro, the user is typing a follow-up message while Claude is working, and the approval sheet lands directly over the keyboard area so a normal tap can hit `Reject` instead of a key. This is distinct from the older remote/mobile approval-propagation gaps where prompts never arrive on mobile at all: here the permission UI does arrive, but its placement makes legitimate approvals easy to reject by accident and can discard valid file edits mid-session.</summary>
     <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows MSIX installs can lose Code sessions on restart because session saves fail with `EXDEV`</title>
-    <id>https://framework.boucle.sh/limitations.html#msix-session-save-exdev-leaves-code-sessions-unrecoverable-after-restart</id>
-    <link href="https://framework.boucle.sh/limitations.html#msix-session-save-exdev-leaves-code-sessions-unrecoverable-after-restart"/>
-    <updated>2026-04-12T00:00:00Z</updated>
-    <summary>On Windows 11 Claude Desktop MSIX installs, Code sessions can appear healthy during the current run yet disappear after every restart because the session save path never finalizes the metadata file. In the reported repro, Desktop writes `local_*.json.tmp` under the Code sessions directory and then tries to atomically rename it to `.json`, but the MSIX VFS reparse path crosses drive boundaries and `fs.rename()` fails with `EXDEV: cross-device link not permitted`. Thousands of save attempts can fail silently in logs while every session remains stuck as `.json.tmp`, which means the restart path has nothing durable to load. This is distinct from the older macOS React-state disappearance entry and VS Code/Desktop session-list conflicts: the broken layer here is the Windows MSIX session-persistence write path itself, not sidebar state or cross-client visibility.</summary>
-    <category term="Desktop &amp; IDE integration"/>
   </entry>
 </feed>
