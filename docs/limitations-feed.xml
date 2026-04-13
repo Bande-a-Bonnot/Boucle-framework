@@ -7,6 +7,14 @@
   <updated>2026-04-13T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] `/btw` side conversations can vanish without any transcript being written to disk</title>
+    <id>https://framework.boucle.sh/limitations.html#btw-side-conversations-can-vanish-without-any-subagent-transcript-being-written-to-disk</id>
+    <link href="https://framework.boucle.sh/limitations.html#btw-side-conversations-can-vanish-without-any-subagent-transcript-being-written-to-disk"/>
+    <updated>2026-04-13T00:00:00Z</updated>
+    <summary>In Claude Code v2.1.104, `/btw` side conversations can appear to work normally in the UI, accept multiple turns, and then disappear completely when closed because no transcript is persisted anywhere on disk. In the reported macOS repro, earlier versions created `agent-aside_question-*.jsonl` files under the session&#x27;s `subagents/` directory, but v2.1.104 wrote no such files and left the main session JSONL with `isSidechain: false` on every message. This is distinct from the older `/btw` single-turn clarifying-question failure: here the model may answer, but the narrower broken layer is persistence of the side conversation itself, so users who rely on `/btw` as a scratchpad or mine those side threads into external memory lose the entire exchange the moment they close it.</summary>
+    <category term="CLI &amp; terminal"/>
+  </entry>
+  <entry>
     <title>[HIGH] Telegram channel dispatch can spawn broken `--print` runs and drop every incoming message</title>
     <id>https://framework.boucle.sh/limitations.html#telegram-channel-dispatch-can-spawn-broken-print-runs-and-drop-every-incoming-message</id>
     <link href="https://framework.boucle.sh/limitations.html#telegram-channel-dispatch-can-spawn-broken-print-runs-and-drop-every-incoming-message"/>
@@ -157,13 +165,5 @@
     <updated>2026-04-13T00:00:00Z</updated>
     <summary>On Windows in Claude Code v2.1.104, running `/model` (and possibly `/effort`) can rewrite the user&#x27;s global `~/.claude/settings.json` as a minimal object such as `{&quot;env&quot;: {}}`, silently deleting unrelated configuration like `statusLine` commands and `hooks`. In the reported repro, the hook scripts and statusline command still existed on disk, but the JSON file that pointed to them was recreated at the exact time `/model` and `/effort` were used, leaving the user with no visible hook or statusline behavior and no warning that their config had been destroyed. This is distinct from the older `/model` bug that strips only the hook `if` property and from `/config` scope-leak bugs: here the command appears to perform a whole-file overwrite, wiping multiple independent settings families at once instead of mutating one field incorrectly.</summary>
     <category term="Configuration &amp; settings"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] macOS 12 terminals can render the permission mode icon as garbled boxes</title>
-    <id>https://framework.boucle.sh/limitations.html#macos-12-permission-mode-icon-renders-as-garbled-boxes-in-terminal</id>
-    <link href="https://framework.boucle.sh/limitations.html#macos-12-permission-mode-icon-renders-as-garbled-boxes-in-terminal"/>
-    <updated>2026-04-13T00:00:00Z</updated>
-    <summary>On macOS 12 (Monterey), Claude Code&#x27;s bottom status bar can render the permission mode indicator as two replacement boxes instead of a readable icon. The reported root cause is that Claude uses U+23FA (⏺) on darwin while using U+25CF (●) elsewhere; macOS 12 terminals treat U+23FA as an emoji-width glyph, but common terminal/font combinations do not render it correctly in that TUI slot. This is distinct from older status-bar state and rendering bugs because the permission mode itself remains correct and usable; the regression is the icon choice on one macOS generation.</summary>
-    <category term="TUI &amp; display"/>
   </entry>
 </feed>
