@@ -672,7 +672,7 @@ bash tools/worktree-guard/test.sh
 
 New in v0.12.0: Searchable Known Limitations page (now 931 entries). test-hook.sh dry-run tester. file-guard v2.1.89 absolute path fix. safety-check 3 silent failure fixes. Installer UX improvements. README navigation banner + platform matrix. See [CHANGELOG](CHANGELOG.md) for details.
 
-58 stars, 4 external contributors, 4 forks.
+59 stars, 4 external contributors, 4 forks.
 
 ## Contributing
 
