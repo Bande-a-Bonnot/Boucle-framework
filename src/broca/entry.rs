@@ -68,9 +68,7 @@ impl Entry {
             return false;
         };
         // Parse created timestamp: "%Y%m%d-%H%M%S"
-        if let Ok(created_dt) =
-            NaiveDateTime::parse_from_str(&self.created, "%Y%m%d-%H%M%S")
-        {
+        if let Ok(created_dt) = NaiveDateTime::parse_from_str(&self.created, "%Y%m%d-%H%M%S") {
             let age_days = (Utc::now().naive_utc() - created_dt).num_days();
             return age_days > ttl as i64;
         }
@@ -120,8 +118,7 @@ impl Entry {
         let tags = extract_tags(frontmatter);
         let created = extract_field(frontmatter, "created").unwrap_or_default();
         let superseded_by = extract_field(frontmatter, "superseded_by");
-        let ttl_days = extract_field(frontmatter, "ttl")
-            .and_then(|v| v.parse::<u32>().ok());
+        let ttl_days = extract_field(frontmatter, "ttl").and_then(|v| v.parse::<u32>().ok());
 
         Ok(Entry {
             filename: filename.to_string(),

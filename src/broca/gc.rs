@@ -420,7 +420,15 @@ mod tests {
     fn test_candidates_skips_healthy_entries() {
         let dir = tempfile::tempdir().unwrap();
 
-        broca::remember(dir.path(), "fact", "Good Fact", "accurate content", &[], None).unwrap();
+        broca::remember(
+            dir.path(),
+            "fact",
+            "Good Fact",
+            "accurate content",
+            &[],
+            None,
+        )
+        .unwrap();
 
         let result = candidates(dir.path(), &GcConfig::default()).unwrap();
         assert!(result.is_empty());

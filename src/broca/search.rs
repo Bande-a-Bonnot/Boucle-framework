@@ -851,7 +851,15 @@ mod tests {
     #[test]
     fn test_cross_ref_no_relations_file() {
         let dir = tempfile::tempdir().unwrap();
-        broca::remember(dir.path(), "fact", "Test entry", "rust programming", &[], None).unwrap();
+        broca::remember(
+            dir.path(),
+            "fact",
+            "Test entry",
+            "rust programming",
+            &[],
+            None,
+        )
+        .unwrap();
 
         // No RELATIONS.md — should work fine without boost
         let results = recall(dir.path(), "rust", 5).unwrap();

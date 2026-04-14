@@ -320,7 +320,14 @@ fn main() {
                     let tag_list: Vec<String> = tags
                         .map(|t| t.split(',').map(|s| s.trim().to_string()).collect())
                         .unwrap_or_default();
-                    match broca::remember(&memory_dir, &entry_type, &title, &content, &tag_list, ttl) {
+                    match broca::remember(
+                        &memory_dir,
+                        &entry_type,
+                        &title,
+                        &content,
+                        &tag_list,
+                        ttl,
+                    ) {
                         Ok(path) => println!("Stored: {}", path.display()),
                         Err(e) => {
                             eprintln!("Error: {e}");
@@ -349,7 +356,8 @@ fn main() {
                                         println!("   ⚠ superseded by: {sup}");
                                     }
                                     if entry.is_stale {
-                                        let ttl_str = entry.ttl_days
+                                        let ttl_str = entry
+                                            .ttl_days
                                             .map(|d| format!(" (TTL: {d}d)"))
                                             .unwrap_or_default();
                                         println!("   ⚠ stale{ttl_str}: this fact may be outdated");
