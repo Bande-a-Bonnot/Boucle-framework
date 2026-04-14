@@ -16,6 +16,17 @@
 #   - git push --delete / origin :branch (removes remote refs)
 #   - git rebase without safeguards
 #   - git reflog expire (destroys recovery data)
+#   - git filter-branch / filter-repo (rewrites entire history)
+#   - git push --mirror (overwrites all remote refs)
+#   - git update-ref -d (low-level ref deletion)
+#   - git gc --prune=now (premature garbage collection)
+#   - git remote remove (removes remote configuration)
+#   - git submodule deinit --force (force-removes submodule data)
+#   - git worktree remove --force (force-removes dirty worktrees)
+#   - git tag -d (deletes local tags)
+#   - git config --system/--global (modifies global git config)
+#   - git merge --no-verify (skips pre-merge hooks)
+#   - git push via refspec to protected branches
 #
 # Install:
 #   curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/git-safe/install.sh | bash
@@ -191,6 +202,123 @@ fi
 # git push origin :branch (alternate delete syntax)
 if echo "$COMMAND" | grep -qE 'git\s+push\s+\S+\s+:[^/\s]' 2>/dev/null; then
   is_allowed "push --delete" || block "git push origin :branch permanently removes a remote branch." "Use 'git branch -d' for local cleanup instead, or add 'allow: push --delete' to .git-safe."
+fi
+
+# git rebase (can rewrite history and lose commits)
+# Allow: --abort, --continue, --skip, --quit (recovery operations)
+# Uses ([[:space:]]|$) to catch bare "git rebase" with no args
+# Checks -i/--interactive anywhere in command to catch "git rebase --autosquash -i"
+if echo "$COMMAND" | grep -qE 'git[[:space:]]+rebase([[:space:]]|$)' 2>/dev/null; then
+  if echo "$COMMAND" | grep -qE 'git[[:space:]]+rebase[[:space:]]+.*--(abort|continue|skip|quit)([[:space:]]|$)' 2>/dev/null; then
+    log "ALLOW: rebase recovery operation"
+  elif echo "$COMMAND" | grep -qE '(^|[[:space:]])(-i|--interactive)([[:space:]]|$)' 2>/dev/null; then
+    is_allowed "rebase -i" || block "Interactive rebase can rewrite, squash, drop, or reorder commits, permanently altering history." "Use non-interactive rebase if you just need to replay commits, or add 'allow: rebase -i' to .git-safe."
+  else
+    is_allowed "rebase" || block "git rebase replays commits onto a new base, which can lose work during conflict resolution and rewrites history." "Prefer git merge to preserve history, or add 'allow: rebase' to .git-safe."
+  fi
+fi
+
+# git merge to protected branches (main/master/production/release)
+# Can't detect current branch from command alone, so check for explicit patterns
+if echo "$COMMAND" | grep -qE 'git\s+merge\s' 2>/dev/null; then
+  # Allow recovery: --abort, --continue, --quit
+  if echo "$COMMAND" | grep -qE 'git\s+merge\s+.*--(abort|continue|quit)' 2>/dev/null; then
+    log "ALLOW: merge recovery operation"
+  # Block --no-verify on merge (skips hooks)
+  elif echo "$COMMAND" | grep -qE 'git\s+merge\s.*--no-verify' 2>/dev/null; then
+    is_allowed "no-verify" || block "git merge --no-verify skips pre-merge hooks." "Remove --no-verify and let hooks run, or add 'allow: no-verify' to .git-safe."
+  fi
+fi
+
+# git push to protected branches via refspec (e.g. git push origin feature:main)
+# Parses the command token-by-token, skipping flags and the repository argument,
+# then scans EVERY remaining refspec for a protected destination. Handles:
+#   - Flag placement anywhere: git push -u origin feature:main
+#   - SSH remote URLs (contain ':'): git push git@github.com:org/repo.git feature:main
+#   - Multiple refspecs: git push origin feature:dev hotfix:main
+#   - Full ref format: git push origin feature:refs/heads/main
+#   - Avoids false positives on hyphenated names: release-candidate is allowed
+if echo "$COMMAND" | grep -qE 'git[[:space:]]+push[[:space:]]' 2>/dev/null; then
+  _gs_seen_git=0
+  _gs_seen_push=0
+  _gs_seen_repo=0
+  for _gs_tok in $COMMAND; do
+    # Skip until we see 'git' then 'push'
+    if [ "$_gs_seen_git" = "0" ]; then
+      [ "$_gs_tok" = "git" ] && _gs_seen_git=1
+      continue
+    fi
+    if [ "$_gs_seen_push" = "0" ]; then
+      [ "$_gs_tok" = "push" ] && _gs_seen_push=1
+      continue
+    fi
+    # Skip flags (anything starting with -)
+    case "$_gs_tok" in
+      -*) continue ;;
+    esac
+    # First non-flag argument is the repository — skip it (may be URL with ':')
+    if [ "$_gs_seen_repo" = "0" ]; then
+      _gs_seen_repo=1
+      continue
+    fi
+    # All remaining non-flag tokens are refspecs — check each for protected dst
+    case "$_gs_tok" in
+      *:*)
+        _gs_dst="${_gs_tok#*:}"
+        _gs_dst="${_gs_dst#refs/heads/}"
+        case "$_gs_dst" in
+          main|master|production|release)
+            block "Pushing to a protected branch ($_gs_dst) via refspec can bypass branch protections." "Push to a feature branch and open a PR instead."
+            ;;
+        esac
+        ;;
+    esac
+  done
+fi
+
+# git filter-branch / git filter-repo (rewrites entire repository history)
+if echo "$COMMAND" | grep -qE 'git\s+filter-(branch|repo)\s' 2>/dev/null; then
+  is_allowed "filter-branch" || block "git filter-branch/filter-repo rewrites entire repository history at scale." "This is rarely needed. Add 'allow: filter-branch' to .git-safe only if you understand the impact."
+fi
+
+# git push --mirror (overwrites ALL remote refs to match local)
+if echo "$COMMAND" | grep -qE 'git\s+push\s+.*--mirror' 2>/dev/null; then
+  is_allowed "push --mirror" || block "git push --mirror overwrites all remote refs to match local, destroying remote branches and tags." "Push specific branches instead, or add 'allow: push --mirror' to .git-safe."
+fi
+
+# git update-ref -d (low-level ref deletion, bypasses branch safeguards)
+if echo "$COMMAND" | grep -qE 'git\s+update-ref\s+.*-d\b' 2>/dev/null; then
+  is_allowed "update-ref -d" || block "git update-ref -d deletes refs directly, bypassing normal branch/tag deletion safeguards." "Use git branch -d or git tag -d instead, or add 'allow: update-ref -d' to .git-safe."
+fi
+
+# git gc --prune=now (immediately garbage-collects unreachable objects)
+if echo "$COMMAND" | grep -qE 'git\s+gc\s+.*--prune=(now|all)' 2>/dev/null; then
+  is_allowed "gc --prune" || block "git gc --prune=now immediately garbage-collects unreachable objects before reflog can save them." "Use git gc without --prune=now to respect reflog expiry, or add 'allow: gc --prune' to .git-safe."
+fi
+
+# git remote remove/rm (removes remote configuration)
+if echo "$COMMAND" | grep -qE 'git\s+remote\s+(remove|rm)\s' 2>/dev/null; then
+  is_allowed "remote remove" || block "git remote remove deletes remote configuration, losing track of upstream." "Add 'allow: remote remove' to .git-safe to permit this."
+fi
+
+# git submodule deinit --force (force-removes submodule working tree)
+if echo "$COMMAND" | grep -qE 'git\s+submodule\s+deinit\s+.*--force' 2>/dev/null; then
+  is_allowed "submodule deinit" || block "git submodule deinit --force removes submodule working tree data." "Use without --force, or add 'allow: submodule deinit' to .git-safe."
+fi
+
+# git worktree remove --force (force-removes worktree with uncommitted changes)
+if echo "$COMMAND" | grep -qE 'git\s+worktree\s+remove\s+.*--force' 2>/dev/null; then
+  is_allowed "worktree remove --force" || block "git worktree remove --force removes a worktree even with uncommitted changes." "Commit or stash changes first, or add 'allow: worktree remove --force' to .git-safe."
+fi
+
+# git tag -d (deletes local tags, including release tags)
+if echo "$COMMAND" | grep -qE 'git\s+tag\s+.*-[a-zA-Z]*d' 2>/dev/null; then
+  is_allowed "tag -d" || block "git tag -d deletes local tags which may include release infrastructure." "Add 'allow: tag -d' to .git-safe to permit this."
+fi
+
+# git config --system / --global (modifies git config beyond this repo)
+if echo "$COMMAND" | grep -qE 'git\s+config\s+.*--(system|global)\s' 2>/dev/null; then
+  is_allowed "config --global" || block "git config --system/--global modifies git configuration beyond this repository." "Use --local for repo-specific config, or add 'allow: config --global' to .git-safe."
 fi
 
 # Force push to main/master (extra protection)
