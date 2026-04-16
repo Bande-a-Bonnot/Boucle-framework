@@ -256,7 +256,7 @@ if echo "$COMMAND" | grep -qE 'git[[:space:]]+push[[:space:]]' 2>/dev/null; then
     case "$_gs_tok" in
       -*) continue ;;
     esac
-    # First non-flag argument is the repository — skip it (may be URL with ':')
+    # First non-flag argument is the repository/remote — skip it entirely.
     if [ "$_gs_seen_repo" = "0" ]; then
       _gs_seen_repo=1
       continue
@@ -277,7 +277,7 @@ if echo "$COMMAND" | grep -qE 'git[[:space:]]+push[[:space:]]' 2>/dev/null; then
 fi
 
 # git filter-branch / git filter-repo (rewrites entire repository history)
-if echo "$COMMAND" | grep -qE 'git\s+filter-(branch|repo)\s' 2>/dev/null; then
+if echo "$COMMAND" | grep -qE 'git\s+filter-(branch|repo)([[:space:]]|$)' 2>/dev/null; then
   is_allowed "filter-branch" || block "git filter-branch/filter-repo rewrites entire repository history at scale." "This is rarely needed. Add 'allow: filter-branch' to .git-safe only if you understand the impact."
 fi
 
@@ -311,13 +311,15 @@ if echo "$COMMAND" | grep -qE 'git\s+worktree\s+remove\s+.*--force' 2>/dev/null;
   is_allowed "worktree remove --force" || block "git worktree remove --force removes a worktree even with uncommitted changes." "Commit or stash changes first, or add 'allow: worktree remove --force' to .git-safe."
 fi
 
-# git tag -d (deletes local tags, including release tags)
-if echo "$COMMAND" | grep -qE 'git\s+tag\s+.*-[a-zA-Z]*d' 2>/dev/null; then
+# git tag -d / --delete (deletes local tags, including release tags)
+if echo "$COMMAND" | grep -qE 'git\s+tag([[:space:]]+.*)?([[:space:]]|^)(-d|--delete)([[:space:]]|$)' 2>/dev/null; then
   is_allowed "tag -d" || block "git tag -d deletes local tags which may include release infrastructure." "Add 'allow: tag -d' to .git-safe to permit this."
 fi
 
 # git config --system / --global (modifies git config beyond this repo)
-if echo "$COMMAND" | grep -qE 'git\s+config\s+.*--(system|global)\s' 2>/dev/null; then
+if echo "$COMMAND" | grep -qE 'git\s+config\s+.*--system([[:space:]]|$)' 2>/dev/null; then
+  is_allowed "config --system" || block "git config --system modifies machine-wide git configuration." "Use --local for repo-specific config, or add 'allow: config --system' to .git-safe."
+elif echo "$COMMAND" | grep -qE 'git\s+config\s+.*--global([[:space:]]|$)' 2>/dev/null; then
   is_allowed "config --global" || block "git config --system/--global modifies git configuration beyond this repository." "Use --local for repo-specific config, or add 'allow: config --global' to .git-safe."
 fi
 
