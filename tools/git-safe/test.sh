@@ -70,6 +70,8 @@ assert_allowed "git commit" \
   '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"fix: update readme\""}}'
 assert_allowed "git push (normal)" \
   '{"tool_name":"Bash","tool_input":{"command":"git push origin feature-branch"}}'
+assert_allowed "git push to SSH remote URL (not a refspec)" \
+  '{"tool_name":"Bash","tool_input":{"command":"git push git@github.com:org/repo.git feature-branch"}}'
 assert_allowed "git pull" \
   '{"tool_name":"Bash","tool_input":{"command":"git pull origin main"}}'
 assert_allowed "git fetch" \
@@ -208,6 +210,26 @@ assert_blocked "force push to main" \
   '{"tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}'
 assert_blocked "force push to master" \
   '{"tool_name":"Bash","tool_input":{"command":"git push --force origin master"}}'
+assert_blocked "push later refspec to protected branch" \
+  '{"tool_name":"Bash","tool_input":{"command":"git push origin feature:dev hotfix:main"}}'
+
+# --- Additional destructive operations ---
+echo ""
+echo "Additional destructive operations:"
+assert_blocked "git filter-repo (bare command)" \
+  '{"tool_name":"Bash","tool_input":{"command":"git filter-repo"}}'
+assert_blocked "git filter-branch (bare command)" \
+  '{"tool_name":"Bash","tool_input":{"command":"git filter-branch"}}'
+assert_blocked "git tag -d v1.0.0" \
+  '{"tool_name":"Bash","tool_input":{"command":"git tag -d v1.0.0"}}'
+assert_blocked "git tag --delete v1.0.0" \
+  '{"tool_name":"Bash","tool_input":{"command":"git tag --delete v1.0.0"}}'
+assert_allowed "git tag --merged main" \
+  '{"tool_name":"Bash","tool_input":{"command":"git tag --merged main"}}'
+assert_blocked "git config --global user.name test" \
+  '{"tool_name":"Bash","tool_input":{"command":"git config --global user.name test"}}'
+assert_blocked "git config --system user.name test" \
+  '{"tool_name":"Bash","tool_input":{"command":"git config --system user.name test"}}'
 
 # --- Allowlist config ---
 echo ""
@@ -228,12 +250,17 @@ GIT_SAFE_CONFIG="$TMPDIR/.git-safe" assert_allowed "push --force allowed by conf
 
 echo "allow: no-verify" >> "$TMPDIR/.git-safe"
 echo "allow: push --delete" >> "$TMPDIR/.git-safe"
+echo "allow: config --system" >> "$TMPDIR/.git-safe"
 
 GIT_SAFE_CONFIG="$TMPDIR/.git-safe" assert_allowed "no-verify allowed by config" \
   '{"tool_name":"Bash","tool_input":{"command":"git commit --no-verify -m \"allowed\""}}'
 
 GIT_SAFE_CONFIG="$TMPDIR/.git-safe" assert_allowed "push --delete allowed by config" \
   '{"tool_name":"Bash","tool_input":{"command":"git push --delete origin old-branch"}}'
+GIT_SAFE_CONFIG="$TMPDIR/.git-safe" assert_allowed "config --system allowed by config" \
+  '{"tool_name":"Bash","tool_input":{"command":"git config --system user.name test"}}'
+GIT_SAFE_CONFIG="$TMPDIR/.git-safe" assert_blocked "config --global still blocked without explicit allow" \
+  '{"tool_name":"Bash","tool_input":{"command":"git config --global user.name test"}}'
 
 # Force push to main still blocked even with config
 GIT_SAFE_CONFIG="$TMPDIR/.git-safe" assert_blocked "force push to main still blocked with allowlist" \
