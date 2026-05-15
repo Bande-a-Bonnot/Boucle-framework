@@ -112,14 +112,15 @@ for h in pre:
         if '$HOOK_PATH' in cmd:
             found = True
             if 'hooks' not in h:
-                cleaned.append({'hooks': [{'type': 'command', 'command': '$HOOK_PATH'}]})
+                cleaned.append({'matcher': 'Bash', 'hooks': [{'type': 'command', 'command': '$HOOK_PATH'}]})
             else:
+                h['matcher'] = 'Bash'
                 cleaned.append(h)
     else:
         cleaned.append(h)
 
 if not found:
-    cleaned.append({'hooks': [{'type': 'command', 'command': '$HOOK_PATH'}]})
+    cleaned.append({'matcher': 'Bash', 'hooks': [{'type': 'command', 'command': '$HOOK_PATH'}]})
     print('  Hook registered')
 else:
     print('  Already installed')
@@ -140,6 +141,7 @@ else
   "hooks": {
     "PreToolUse": [
       {
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
