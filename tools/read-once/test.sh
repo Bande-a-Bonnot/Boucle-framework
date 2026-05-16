@@ -647,6 +647,39 @@ assert_eq "CLI install uses absolute hook command" "${INSTALL_HOME}/.claude/read
 assert_eq "CLI install copied hook" "1" "$([ -x "${INSTALL_HOME}/.claude/read-once/hook.sh" ] && echo 1 || echo 0)"
 assert_contains "CLI install reports installed hook" "read-once hook installed" "$INSTALL_OUTPUT"
 
+# PowerShell CLI install is hard to execute on hosts without pwsh, but it must
+# still avoid the Windows "~" expansion bug and register both hook events.
+PS_CLI="${SCRIPT_DIR}/read-once.ps1"
+TOTAL=$((TOTAL + 1))
+if ! grep -q 'command = "pwsh -File ~/.claude/read-once/hook.ps1"' "$PS_CLI" \
+   && grep -q 'command = "pwsh -File $(Quote-CommandPath $InstalledHook)"' "$PS_CLI"; then
+  PASS=$((PASS + 1))
+  echo "  ✓ PowerShell install uses absolute hook command"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ PowerShell install should use absolute hook command"
+fi
+
+TOTAL=$((TOTAL + 1))
+if grep -q 'Copy-Item $CompactSource $InstalledCompact' "$PS_CLI" \
+   && grep -q 'command = "pwsh -File $(Quote-CommandPath $InstalledCompact)"' "$PS_CLI" \
+   && grep -q '\$settings\.hooks\.PostCompact \+=' "$PS_CLI"; then
+  PASS=$((PASS + 1))
+  echo "  ✓ PowerShell install registers PostCompact hook"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ PowerShell install should register PostCompact hook"
+fi
+
+TOTAL=$((TOTAL + 1))
+if grep -q '\$settings\.hooks\.PostCompact = \$filtered' "$PS_CLI"; then
+  PASS=$((PASS + 1))
+  echo "  ✓ PowerShell uninstall removes PostCompact hook"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ PowerShell uninstall should remove PostCompact hook"
+fi
+
 # --- PostCompact hook tests ---
 echo ""
 echo "--- PostCompact hook (compact.sh) ---"

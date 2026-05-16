@@ -75,7 +75,7 @@ Add to `.claude/settings.json` by hand:
 }
 ```
 
-On Windows, use `"command": "pwsh -File ~/.claude/read-once/hook.ps1"` for PreToolUse and `"command": "pwsh -File ~/.claude/read-once/compact.ps1"` for PostCompact.
+On Windows, use absolute paths with `pwsh -File`, for example `"command": "pwsh -File \"C:/Users/you/.claude/read-once/hook.ps1\""` for PreToolUse and the matching absolute `compact.ps1` path for PostCompact. The PowerShell installer writes those absolute commands automatically.
 
 ## How it works
 
@@ -223,7 +223,7 @@ Configuration:
   Diff:     0 (READ_ONCE_DIFF)
   Disabled: 0 (READ_ONCE_DISABLED)
 
-13/13 checks passed. read-once is ready.
+All checks passed. read-once is ready.
 ```
 
 If any check fails, verify tells you exactly what to fix.

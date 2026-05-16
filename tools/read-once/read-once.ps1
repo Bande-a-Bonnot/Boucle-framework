@@ -6,7 +6,7 @@
 #   pwsh read-once.ps1 status        Quick health check
 #   pwsh read-once.ps1 verify        Full diagnostic with dry-run test
 #   pwsh read-once.ps1 clear         Clear session cache (start fresh)
-#   pwsh read-once.ps1 install       Install hook to ~/.claude/read-once/hook.ps1
+#   pwsh read-once.ps1 install       Install hooks to ~/.claude/read-once/
 #   pwsh read-once.ps1 upgrade       Update installed hook to latest version
 #   pwsh read-once.ps1 uninstall     Remove hook from .claude/settings.json
 #   pwsh read-once.ps1 help          Show this help
@@ -22,8 +22,15 @@ $CacheDir = Join-Path $HOME '.claude' 'read-once'
 $StatsFile = Join-Path $CacheDir 'stats.jsonl'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $HookSource = Join-Path $ScriptDir 'hook.ps1'
+$CompactSource = Join-Path $ScriptDir 'compact.ps1'
 $SettingsFile = Join-Path $HOME '.claude' 'settings.json'
 $InstalledHook = Join-Path $CacheDir 'hook.ps1'
+$InstalledCompact = Join-Path $CacheDir 'compact.ps1'
+
+function Quote-CommandPath {
+    param([string]$Path)
+    '"' + $Path.Replace('"', '\"') + '"'
+}
 
 function Show-Stats {
     if (-not (Test-Path $StatsFile)) {
@@ -178,7 +185,7 @@ function Install-Hook {
         return
     }
 
-    # Copy hook to stable path
+    # Copy hooks to stable paths
     if (-not (Test-Path $CacheDir)) {
         New-Item -ItemType Directory -Path $CacheDir -Force | Out-Null
     }
@@ -187,8 +194,13 @@ function Install-Hook {
         Write-Host "Error: hook.ps1 not found at $HookSource"
         exit 1
     }
+    if (-not (Test-Path $CompactSource)) {
+        Write-Host "Error: compact.ps1 not found at $CompactSource"
+        exit 1
+    }
 
     Copy-Item $HookSource $InstalledHook -Force
+    Copy-Item $CompactSource $InstalledCompact -Force
 
     # Update settings.json
     $settings = Get-Content $SettingsFile -Raw | ConvertFrom-Json
@@ -199,25 +211,38 @@ function Install-Hook {
     if (-not $settings.hooks.PreToolUse) {
         $settings.hooks | Add-Member -NotePropertyName 'PreToolUse' -NotePropertyValue @()
     }
+    if (-not $settings.hooks.PostCompact) {
+        $settings.hooks | Add-Member -NotePropertyName 'PostCompact' -NotePropertyValue @()
+    }
 
     $hookEntry = [PSCustomObject]@{
         matcher = 'Read'
         hooks = @(
             [PSCustomObject]@{
                 type = 'command'
-                command = "pwsh -File ~/.claude/read-once/hook.ps1"
+                command = "pwsh -File $(Quote-CommandPath $InstalledHook)"
+            }
+        )
+    }
+    $compactEntry = [PSCustomObject]@{
+        hooks = @(
+            [PSCustomObject]@{
+                type = 'command'
+                command = "pwsh -File $(Quote-CommandPath $InstalledCompact)"
             }
         )
     }
 
     $settings.hooks.PreToolUse += $hookEntry
+    $settings.hooks.PostCompact += $compactEntry
     $settings | ConvertTo-Json -Depth 10 | Set-Content $SettingsFile
 
-    Write-Host "read-once hook installed."
+    Write-Host "read-once hooks installed."
     Write-Host "Hook: $InstalledHook"
+    Write-Host "PostCompact: $InstalledCompact"
     Write-Host ""
     Write-Host "Your Claude Code sessions will now track and deduplicate file reads."
-    Write-Host "The hook is installed at a stable path - you can move or delete the source repo."
+    Write-Host "The hooks are installed at stable paths - you can move or delete the source repo."
 }
 
 function Invoke-Upgrade {
@@ -230,7 +255,10 @@ function Invoke-Upgrade {
         exit 1
     }
     Copy-Item $HookSource $InstalledHook -Force
-    Write-Host "Hook upgraded to latest version."
+    if (Test-Path $CompactSource) {
+        Copy-Item $CompactSource $InstalledCompact -Force
+    }
+    Write-Host "Hooks upgraded to latest version."
 }
 
 function Invoke-Uninstall {
@@ -248,9 +276,16 @@ function Invoke-Uninstall {
         })
         $settings.hooks.PreToolUse = $filtered
     }
+    if ($settings.hooks -and $settings.hooks.PostCompact) {
+        $filtered = @($settings.hooks.PostCompact | Where-Object {
+            $cmd = $_.hooks[0].command
+            -not ($cmd -and $cmd -match 'read-once')
+        })
+        $settings.hooks.PostCompact = $filtered
+    }
 
     $settings | ConvertTo-Json -Depth 10 | Set-Content $SettingsFile
-    Write-Host "read-once hook removed from settings."
+    Write-Host "read-once hooks removed from settings."
 }
 
 function Clear-Cache {
@@ -323,6 +358,12 @@ function Invoke-Verify {
         Check-Fail "Hook file not found at $InstalledHook" "pwsh read-once.ps1 install"
     }
 
+    if (Test-Path $InstalledCompact) {
+        Check-Pass "PostCompact hook file exists at $InstalledCompact"
+    } else {
+        Check-Fail "PostCompact hook file not found at $InstalledCompact" "pwsh read-once.ps1 install"
+    }
+
     if (Test-Path $SettingsFile) {
         Check-Pass "~/.claude/settings.json exists"
         try {
@@ -341,7 +382,7 @@ function Invoke-Verify {
                     } else {
                         $hookPath = $expanded
                     }
-                    $hookPath = $hookPath -replace '^~', $HOME
+                    $hookPath = ($hookPath -replace '^~', $HOME).Trim([char[]]@('"', "'"))
                     if (Test-Path $hookPath) {
                         Check-Pass "Hook command path resolves ($hookCmd)"
                     } else {
@@ -350,6 +391,13 @@ function Invoke-Verify {
                 }
             } else {
                 Check-Fail "No PreToolUse Read matcher in settings.json" "pwsh read-once.ps1 install"
+            }
+
+            $compactHooks = @($settings.hooks.PostCompact | Where-Object { $_.hooks[0].command -match 'read-once' })
+            if ($compactHooks.Count -gt 0) {
+                Check-Pass "PostCompact hook configured"
+            } else {
+                Check-Fail "No PostCompact hook in settings.json" "pwsh read-once.ps1 install"
             }
         } catch {
             Check-Fail "settings.json is invalid JSON" "Check for syntax errors"
