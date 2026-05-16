@@ -841,7 +841,7 @@ done
 
 # Hooks using deprecated decision:block format without hookSpecificOutput (claude-code#15486)
 # The old format {"decision":"block","reason":"..."} still works but is deprecated.
-# New format: {"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"..."}}
+# New format: {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"..."}}
 # Migration avoids breakage if the old format is removed in a future CLI version.
 for hookdir in "${HOME}/.claude/hooks" ".claude/hooks"; do
     [ -d "$hookdir" ] || continue
@@ -858,7 +858,7 @@ for hookdir in "${HOME}/.claude/hooks" ".claude/hooks"; do
     if [ -n "$DEPRECATED_HOOKS" ]; then
         scope="Hook(s)"
         [ "$hookdir" = ".claude/hooks" ] && scope="Project hook(s)"
-        WARNINGS+=("${scope} use deprecated decision:block format:${DEPRECATED_HOOKS}. This format still works but is deprecated. Migrate to {\"hookSpecificOutput\":{\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"...\"}} to avoid breakage in future CLI versions. (see claude-code#15486)")
+        WARNINGS+=("${scope} use deprecated decision:block format:${DEPRECATED_HOOKS}. This format still works but is deprecated. Migrate to {\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"...\"}} to avoid breakage in future CLI versions. (see claude-code#15486)")
     fi
 done
 # Also check settings.json hook commands for deprecated decision:block
@@ -885,7 +885,51 @@ except Exception:
 PYEOF_DEPRECATED
     )
     if [ "$_DEPRECATED_BLOCK" = "true" ]; then
-        WARNINGS+=("Settings hook commands use deprecated decision:block format. Migrate to hookSpecificOutput with permissionDecision:deny. The old format still works but may be removed in a future CLI version. (see claude-code#15486)")
+        WARNINGS+=("Settings hook commands use deprecated decision:block format. Migrate to hookSpecificOutput with hookEventName:PreToolUse and permissionDecision:deny. The old format still works but may be removed in a future CLI version. (see claude-code#15486)")
+        break
+    fi
+done
+
+# Hook-specific JSON output missing hookEventName fails Claude Code validation.
+for hookdir in "${HOME}/.claude/hooks" ".claude/hooks"; do
+    [ -d "$hookdir" ] || continue
+    MISSING_EVENT_HOOKS=""
+    for hookfile in "$hookdir"/*; do
+        [ -f "$hookfile" ] || continue
+        if grep -qlE 'hookSpecificOutput' "$hookfile" 2>/dev/null && \
+           grep -qlE 'permissionDecision' "$hookfile" 2>/dev/null && \
+           ! grep -qlE 'hookEventName' "$hookfile" 2>/dev/null; then
+            MISSING_EVENT_HOOKS="${MISSING_EVENT_HOOKS} $(basename "$hookfile")"
+        fi
+    done
+    if [ -n "$MISSING_EVENT_HOOKS" ]; then
+        scope="Hook(s)"
+        [ "$hookdir" = ".claude/hooks" ] && scope="Project hook(s)"
+        WARNINGS+=("${scope} emit hookSpecificOutput without hookEventName:${MISSING_EVENT_HOOKS}. Claude Code validates hookSpecificOutput as event-specific JSON; include \"hookEventName\":\"PreToolUse\" with permissionDecision outputs.")
+    fi
+done
+for _cfg in "$SETTINGS_FILE" "$PROJECT_SETTINGS"; do
+    [ -f "$_cfg" ] || continue
+    _MISSING_EVENT=$(python3 - "$_cfg" << 'PYEOF_MISSING_EVENT'
+import json, sys
+try:
+    s = json.load(open(sys.argv[1]))
+    hooks = s.get("hooks", {})
+    for hook_type in hooks:
+        for entry in hooks[hook_type]:
+            cmd = entry.get("command", "")
+            for h in entry.get("hooks", []):
+                cmd += " " + h.get("command", "")
+            if "hookSpecificOutput" in cmd and "permissionDecision" in cmd and "hookEventName" not in cmd:
+                print("true")
+                sys.exit(0)
+    print("false")
+except Exception:
+    print("false")
+PYEOF_MISSING_EVENT
+    )
+    if [ "$_MISSING_EVENT" = "true" ]; then
+        WARNINGS+=("Settings hook commands emit hookSpecificOutput without hookEventName. Claude Code validates hookSpecificOutput as event-specific JSON; include \"hookEventName\":\"PreToolUse\" with permissionDecision outputs.")
         break
     fi
 done
@@ -1581,8 +1625,8 @@ if [ "$VERIFY_MODE" = "1" ] && [ -n "$HOOK_PATHS" ]; then
         fi
 
         if [ "$expect_block" = "true" ]; then
-            # Should have blocked — look for deny in JSON output (both old and new format)
-            if [ -n "$output" ] && echo "$output" | grep -qE '"permissionDecision"[[:space:]]*:[[:space:]]*"deny"|"decision"[[:space:]]*:[[:space:]]*"block"'; then
+            # Should have blocked — accept JSON deny output or Claude Code's exit-code-2 block protocol.
+            if { [ -n "$output" ] && echo "$output" | grep -qE '"permissionDecision"[[:space:]]*:[[:space:]]*"deny"|"decision"[[:space:]]*:[[:space:]]*"block"'; } || [ "$exit_code" -eq 2 ]; then
                 VERIFY_PASS=$((VERIFY_PASS + 1))
                 printf "  ${GREEN}✓${NC} %s — blocks correctly\n" "$name"
             else

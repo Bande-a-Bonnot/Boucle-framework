@@ -19,7 +19,7 @@ assert_blocked() {
   TOTAL=$((TOTAL + 1))
 
   result=$(echo "$input" | bash "$HOOK" 2>/dev/null || true)
-  if echo "$result" | grep -q '"permissionDecision":"deny"'; then
+  if echo "$result" | python3 -c "import sys,json; hso=json.load(sys.stdin)['hookSpecificOutput']; assert hso['hookEventName']=='PreToolUse' and hso['permissionDecision']=='deny'" 2>/dev/null; then
     PASS=$((PASS + 1))
     echo -e "  ${GREEN}PASS${NC}: $desc"
   else
@@ -370,12 +370,12 @@ else
 fi
 
 TOTAL=$((TOTAL + 1))
-if echo "$result" | python3 -c "import sys,json; d=json.load(sys.stdin); hso=d['hookSpecificOutput']; assert hso['permissionDecision']=='deny'" 2>/dev/null; then
+if echo "$result" | python3 -c "import sys,json; d=json.load(sys.stdin); hso=d['hookSpecificOutput']; assert hso['hookEventName']=='PreToolUse' and hso['permissionDecision']=='deny'" 2>/dev/null; then
   PASS=$((PASS + 1))
-  echo -e "  ${GREEN}PASS${NC}: JSON has permissionDecision:deny"
+  echo -e "  ${GREEN}PASS${NC}: JSON has PreToolUse permissionDecision:deny"
 else
   FAIL=$((FAIL + 1))
-  echo -e "  ${RED}FAIL${NC}: JSON missing permissionDecision field"
+  echo -e "  ${RED}FAIL${NC}: JSON missing hookEventName or permissionDecision field"
 fi
 
 TOTAL=$((TOTAL + 1))
