@@ -259,6 +259,11 @@ function Clear-Cache {
         Remove-Item $_.FullName -Force
         $removed++
     }
+    $globalCache = Join-Path $CacheDir 'cache-global.jsonl'
+    if (Test-Path $globalCache) {
+        Remove-Item $globalCache -Force
+        $removed++
+    }
     Write-Host "Session cache cleared ($removed files). Stats preserved."
     Write-Host "To clear stats too: Remove-Item $StatsFile"
 }

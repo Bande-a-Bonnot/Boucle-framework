@@ -19,6 +19,7 @@
 # Config (env vars):
 #   READ_ONCE_MODE=warn     "warn" (default) allows read with advisory, "deny" blocks it.
 #                           warn mode prevents Edit deadlock and parallel read cascade failures.
+#                           deny mode only blocks same-session re-reads; cross-session cache hits warn.
 #   READ_ONCE_TTL=1200      Seconds before a cached read expires (default: 1200)
 #   READ_ONCE_DIFF=1        Show only diff when files change (default: 0)
 #   READ_ONCE_DIFF_MAX=40   Max diff lines before falling back to full re-read (default: 40)
@@ -119,6 +120,7 @@ else
   SESSION_HASH=$(echo -n "$SESSION_ID" | shasum -a 256 | cut -c1-16)
 fi
 CACHE_FILE="${CACHE_DIR}/session-${SESSION_HASH}.jsonl"
+GLOBAL_CACHE_FILE="${CACHE_DIR}/cache-global.jsonl"
 STATS_FILE="${CACHE_DIR}/stats.jsonl"
 TOKEN_CACHE_FILE="${CACHE_DIR}/token-estimates.jsonl"
 
@@ -139,6 +141,16 @@ write_cache_entry() {
     --argjson ts "$NOW" \
     --argjson tokens "$ESTIMATED_TOKENS" \
     '{path:$path,mtime:$mtime,ts:$ts,tokens:$tokens}' >> "$CACHE_FILE"
+}
+
+write_global_cache_entry() {
+  jq -cn \
+    --arg path "$FILE_PATH" \
+    --arg mtime "$CURRENT_MTIME" \
+    --arg session "$SESSION_HASH" \
+    --argjson ts "$NOW" \
+    --argjson tokens "$ESTIMATED_TOKENS" \
+    '{path:$path,mtime:$mtime,ts:$ts,tokens:$tokens,session:$session}' >> "$GLOBAL_CACHE_FILE"
 }
 
 is_binary_read_target() {
@@ -238,6 +250,41 @@ if [ -f "$CACHE_FILE" ]; then
   fi
 fi
 
+if [ -z "$CACHED_MTIME" ] && [ -f "$GLOBAL_CACHE_FILE" ]; then
+  GLOBAL_ENTRY=$(jq -Rrc --arg path "$FILE_PATH" 'fromjson? | select(.path == $path)' "$GLOBAL_CACHE_FILE" 2>/dev/null | tail -1 || echo "")
+  if [ -n "$GLOBAL_ENTRY" ]; then
+    GLOBAL_MTIME=$(echo "$GLOBAL_ENTRY" | jq -r '.mtime // empty' 2>/dev/null || echo "")
+    GLOBAL_TS=$(echo "$GLOBAL_ENTRY" | jq -r '.ts // empty' 2>/dev/null || echo "")
+
+    GLOBAL_AGE=0
+    if [ -n "$GLOBAL_TS" ]; then
+      GLOBAL_AGE=$(( NOW - GLOBAL_TS ))
+    fi
+
+    if [ "$GLOBAL_MTIME" = "$CURRENT_MTIME" ] && [ "$GLOBAL_AGE" -lt "$TTL" ]; then
+      # Another session has seen this exact file version, but this session has
+      # not. Allow the read so Edit's first-read precondition can be satisfied.
+      write_cache_entry
+      write_global_cache_entry
+
+      jq -cn \
+        --arg path "$FILE_PATH" \
+        --arg session "$SESSION_HASH" \
+        --arg event "global_hit" \
+        --argjson ts "$NOW" \
+        --argjson tokens "$ESTIMATED_TOKENS" \
+        '{ts:$ts,path:$path,tokens:$tokens,session:$session,event:$event}' >> "$STATS_FILE"
+
+      BASENAME=$(basename "$FILE_PATH")
+      TTL_MIN=$(( TTL / 60 ))
+      MINUTES_AGO=$(( GLOBAL_AGE / 60 ))
+      REASON="read-once: ${BASENAME} (~${ESTIMATED_TOKENS} tokens) was read in another session ${MINUTES_AGO}m ago and is unchanged. Allowing this first read in the current session so Edit can use it; same-session re-reads can be blocked for ${TTL_MIN}m."
+      jq -cn --arg r "$REASON" '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","permissionDecisionReason":$r}}'
+      exit 0
+    fi
+  fi
+fi
+
 if [ -n "$CACHED_MTIME" ] && [ "$CACHED_MTIME" = "$CURRENT_MTIME" ]; then
   # File hasn't changed since last read. But has the cache expired?
   ENTRY_AGE=0
@@ -249,6 +296,7 @@ if [ -n "$CACHED_MTIME" ] && [ "$CACHED_MTIME" = "$CURRENT_MTIME" ]; then
     # Cache expired — allow re-read (context may have compacted)
     # Update the cache entry with fresh timestamp
     write_cache_entry
+    write_global_cache_entry
     jq -cn \
       --arg path "$FILE_PATH" \
       --arg session "$SESSION_HASH" \
@@ -311,6 +359,7 @@ if [ -n "$CACHED_MTIME" ] && [ "$DIFF_MODE" = "1" ] && [ -f "$SNAP_FILE" ]; then
     # Diff is small enough — deny with diff in the reason
     # Update cache and snapshot
     write_cache_entry
+    write_global_cache_entry
     cp "$FILE_PATH" "$SNAP_FILE"
 
     DIFF_TOKENS=$(( DIFF_LINES * 10 ))
@@ -341,6 +390,7 @@ fi
 
 # Record the read
 write_cache_entry
+write_global_cache_entry
 
 # Save snapshot for future diffs
 if [ "$DIFF_MODE" = "1" ]; then

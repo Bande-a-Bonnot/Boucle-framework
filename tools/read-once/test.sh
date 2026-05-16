@@ -138,9 +138,18 @@ assert_empty "Modified file allowed through" "$OUTPUT"
 
 # --- Test 5: Different session, same file ---
 echo ""
-echo "5. Different session (independent cache)"
+echo "5. Different session (global advisory, session-local deny)"
 OUTPUT=$(run_hook "$(make_input Read "$TEST_FILE" "different-session")")
-assert_empty "Different session allows read" "$OUTPUT"
+assert_contains "Different session allows with global advisory" "allow" "$OUTPUT"
+assert_contains "Different session explains current-session first read" "first read in the current session" "$OUTPUT"
+
+export READ_ONCE_MODE=deny
+OUTPUT=$(run_hook "$(make_input Read "$TEST_FILE" "different-session-2")")
+assert_contains "Deny mode: cross-session first read still allows" "allow" "$OUTPUT"
+assert_contains "Deny mode: cross-session first read avoids Edit deadlock" "Edit" "$OUTPUT"
+OUTPUT=$(run_hook "$(make_input Read "$TEST_FILE" "different-session-2")")
+assert_contains "Deny mode: second same-session read blocks" "block" "$OUTPUT"
+unset READ_ONCE_MODE
 
 # --- Test 6: Nonexistent file ---
 echo ""
@@ -659,9 +668,11 @@ assert_contains "compact: pre-seed cache hit" "already in context" "$RESULT"
 COMPACT_RESULT=$(echo '{"session_id":"'"$SESSION"'","hook_event_name":"PostCompact","trigger":"auto","compact_summary":"test summary"}' | "$COMPACT_HOOK")
 assert_empty "compact: hook exits cleanly" "$COMPACT_RESULT"
 
-# After compaction, re-read should be allowed (cache cleared)
+# After compaction, re-read should be allowed. The session cache is cleared,
+# while the global cache can still provide a non-blocking advisory.
 RESULT=$(echo '{"tool_name":"Read","tool_input":{"file_path":"'"$TEST_FILE"'"},"session_id":"'"$SESSION"'"}' | "$HOOK")
-assert_empty "compact: re-read allowed after compaction" "$RESULT"
+assert_contains "compact: re-read allowed after compaction" "allow" "$RESULT"
+assert_contains "compact: post-compaction read is current-session first read" "first read in the current session" "$RESULT"
 
 # Test: compact logs event to stats
 STATS_FILE="${TEST_DIR}/.claude/read-once/stats.jsonl"
