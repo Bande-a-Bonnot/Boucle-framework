@@ -45,16 +45,163 @@ log() {
   fi
 }
 
-# Only check git commit commands
-if ! echo "$COMMAND" | grep -qE 'git\s+commit' 2>/dev/null; then
-  log "SKIP: not a git commit"
-  exit 0
-fi
+# Print command segments split on unquoted shell separators. Characters inside
+# single or double quotes are replaced with spaces so examples like
+# echo "git commit -m test" do not look executable to the matcher.
+command_segments() {
+  awk '
+    {
+      out = ""
+      sq = 0
+      dq = 0
+      esc = 0
+      for (i = 1; i <= length($0); i++) {
+        c = substr($0, i, 1)
+        n = substr($0, i + 1, 1)
 
-# Skip --amend (amending existing commits is OK on any branch — the original
-# commit was already allowed or made outside Claude Code)
-if echo "$COMMAND" | grep -qE '\-\-amend' 2>/dev/null; then
-  log "SKIP: amend (not a new commit)"
+        if (esc) {
+          out = out ((sq || dq) ? " " : c)
+          esc = 0
+          continue
+        }
+
+        if (c == "\\" && !sq) {
+          out = out (dq ? " " : c)
+          esc = 1
+          continue
+        }
+
+        if (c == "'"'"'" && !dq) {
+          sq = !sq
+          out = out " "
+          continue
+        }
+
+        if (c == "\"" && !sq) {
+          dq = !dq
+          out = out " "
+          continue
+        }
+
+        if (sq || dq) {
+          out = out " "
+          continue
+        }
+
+        if (c == ";" || c == "|") {
+          print out
+          out = ""
+          if (c == "|" && n == "|") {
+            i++
+          }
+          continue
+        }
+
+        if (c == "&" && n == "&") {
+          print out
+          out = ""
+          i++
+          continue
+        }
+
+        out = out c
+      }
+      print out
+    }
+  ' <<< "$COMMAND"
+}
+
+is_git_binary_token() {
+  local token="$1"
+  token="${token##*/}"
+  token="${token%.exe}"
+  [ "$token" = "git" ]
+}
+
+is_assignment_token() {
+  [[ "$1" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]
+}
+
+is_git_commit_segment() {
+  local segment="$1"
+  local words=()
+  local i=0
+  local token=""
+  local subcommand=""
+
+  read -r -a words <<< "$segment"
+  [ ${#words[@]} -gt 0 ] || return 1
+
+  while [ $i -lt ${#words[@]} ]; do
+    token="${words[$i]}"
+    if [ "$token" = "env" ] || [ "$token" = "command" ] || [ "$token" = "exec" ]; then
+      i=$((i + 1))
+      continue
+    fi
+    if is_assignment_token "$token"; then
+      i=$((i + 1))
+      continue
+    fi
+    break
+  done
+
+  [ $i -lt ${#words[@]} ] || return 1
+  is_git_binary_token "${words[$i]}" || return 1
+  i=$((i + 1))
+
+  while [ $i -lt ${#words[@]} ]; do
+    token="${words[$i]}"
+    case "$token" in
+      -C|-c|--git-dir|--work-tree|--namespace|--exec-path|--config-env)
+        i=$((i + 2))
+        continue
+        ;;
+      --git-dir=*|--work-tree=*|--namespace=*|--exec-path=*|--config-env=*)
+        i=$((i + 1))
+        continue
+        ;;
+      --)
+        i=$((i + 1))
+        break
+        ;;
+      -*)
+        i=$((i + 1))
+        continue
+        ;;
+      *)
+        break
+        ;;
+    esac
+  done
+
+  [ $i -lt ${#words[@]} ] || return 1
+  subcommand="${words[$i]}"
+  [ "$subcommand" = "commit" ] || return 1
+
+  for token in "${words[@]:$((i + 1))}"; do
+    if [ "$token" = "--amend" ]; then
+      return 2
+    fi
+  done
+
+  return 0
+}
+
+HAS_NEW_COMMIT=0
+while IFS= read -r segment; do
+  set +e
+  is_git_commit_segment "$segment"
+  status=$?
+  set -e
+  if [ "$status" -eq 0 ]; then
+    HAS_NEW_COMMIT=1
+    break
+  fi
+done < <(command_segments)
+
+# Only check actual git commit command segments.
+if [ "$HAS_NEW_COMMIT" -eq 0 ]; then
+  log "SKIP: not a git commit"
   exit 0
 fi
 

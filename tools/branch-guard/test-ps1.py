@@ -63,7 +63,7 @@ def assert_blocked(desc, json_input, env_overrides=None, cwd=None):
     TOTAL += 1
     try:
         stdout, _ = run_hook(json_input, env_overrides, cwd)
-        if '"decision":"block"' in stdout or '"decision": "block"' in stdout:
+        if '"permissionDecision":"deny"' in stdout or '"permissionDecision": "deny"' in stdout:
             PASS += 1
             print(f"  {GREEN}PASS{NC}: {desc}")
         else:
@@ -79,7 +79,7 @@ def assert_allowed(desc, json_input, env_overrides=None, cwd=None):
     TOTAL += 1
     try:
         stdout, rc = run_hook(json_input, env_overrides, cwd)
-        if '"decision":"block"' in stdout or '"decision": "block"' in stdout:
+        if '"permissionDecision":"deny"' in stdout or '"permissionDecision": "deny"' in stdout:
             FAIL += 1
             print(f"  {RED}FAIL{NC}: {desc} (expected allow, got: {stdout!r})")
         else:
@@ -203,6 +203,23 @@ def main():
             cwd=repo,
         )
 
+        print("\nFalse-positive avoidance:")
+        assert_allowed(
+            "allow issue body mentioning git commit",
+            make_hook_input("Bash", 'gh issue create --body "Run: git commit -m fix"'),
+            cwd=repo,
+        )
+        assert_allowed(
+            "allow echo mentioning git commit",
+            make_hook_input("Bash", 'echo "Use git commit -m msg"'),
+            cwd=repo,
+        )
+        assert_allowed(
+            "allow grep documentation for git commit",
+            make_hook_input("Bash", 'grep -r "git commit" docs/'),
+            cwd=repo,
+        )
+
         # --- Env var override ---
         print("\nEnvironment variable overrides:")
         subprocess.run(["git", "checkout", "-q", "main"],
@@ -268,6 +285,66 @@ def main():
         assert_blocked(
             "git commit with heredoc message",
             make_hook_input("Bash", "git commit -m \"$(cat <<'EOF'\ntest message\nEOF\n)\""),
+            cwd=repo,
+        )
+
+        assert_blocked(
+            "git commit after && on main",
+            make_hook_input("Bash", 'cd . && git commit -m "fix"'),
+            cwd=repo,
+        )
+
+        assert_blocked(
+            "git commit after semicolon on main",
+            make_hook_input("Bash", 'true; git commit -m "fix"'),
+            cwd=repo,
+        )
+
+        assert_blocked(
+            "git -C commit on main",
+            make_hook_input("Bash", 'git -C . commit -m "fix"'),
+            cwd=repo,
+        )
+
+        assert_blocked(
+            "git --git-dir/--work-tree commit on main",
+            make_hook_input("Bash", 'git --git-dir=.git --work-tree=. commit -m "fix"'),
+            cwd=repo,
+        )
+
+        assert_blocked(
+            "git -c commit on main",
+            make_hook_input("Bash", 'git -c user.email=x@y commit -m "fix"'),
+            cwd=repo,
+        )
+
+        assert_blocked(
+            "env assignment before git commit on main",
+            make_hook_input("Bash", 'env GIT_AUTHOR_NAME=Test git commit -m "fix"'),
+            cwd=repo,
+        )
+
+        assert_blocked(
+            "command wrapper before git commit on main",
+            make_hook_input("Bash", 'command git commit -m "fix"'),
+            cwd=repo,
+        )
+
+        assert_blocked(
+            "absolute git path commit on main",
+            make_hook_input("Bash", '/usr/bin/git commit -m "fix"'),
+            cwd=repo,
+        )
+
+        assert_blocked(
+            "quoted --amend elsewhere does not exempt a new commit",
+            make_hook_input("Bash", 'echo "--amend" && git commit -m "fix"'),
+            cwd=repo,
+        )
+
+        assert_allowed(
+            "git -C commit --amend on main",
+            make_hook_input("Bash", 'git -C . commit --amend --no-edit'),
             cwd=repo,
         )
 

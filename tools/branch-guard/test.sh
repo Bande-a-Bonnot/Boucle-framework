@@ -92,6 +92,18 @@ assert_allowed "non-git command" \
 assert_allowed "empty command" \
   '{"tool_name":"Bash","tool_input":{"command":""}}'
 
+# --- Commands that mention git commit but do not execute it should pass through ---
+echo ""
+echo "False-positive avoidance:"
+assert_allowed "issue body mentioning git commit" \
+  '{"tool_name":"Bash","tool_input":{"command":"gh issue create --body \"Run: git commit -m fix\""}}'
+assert_allowed "echo mentioning git commit" \
+  '{"tool_name":"Bash","tool_input":{"command":"echo \"Use git commit -m msg\""}}'
+assert_allowed "grep documentation for git commit" \
+  '{"tool_name":"Bash","tool_input":{"command":"grep -r \"git commit\" docs/"}}'
+assert_allowed "pipe JSON payload mentioning git commit" \
+  '{"tool_name":"Bash","tool_input":{"command":"echo \"{\\\"tool_name\\\":\\\"Bash\\\",\\\"tool_input\\\":{\\\"command\\\":\\\"git commit -m test\\\"}}\" | bash branch-guard/hook.sh"}}'
+
 # --- Commits on main (should be blocked) ---
 echo ""
 echo "Commits on main (should block):"
@@ -106,6 +118,24 @@ assert_blocked "git commit -a on main" \
   '{"tool_name":"Bash","tool_input":{"command":"git commit -a -m \"update\""}}'
 assert_blocked "git commit with long flags on main" \
   '{"tool_name":"Bash","tool_input":{"command":"git commit --message=\"something\" --signoff"}}'
+assert_blocked "git commit after && on main" \
+  '{"tool_name":"Bash","tool_input":{"command":"cd . && git commit -m \"fix\""}}'
+assert_blocked "git commit after semicolon on main" \
+  '{"tool_name":"Bash","tool_input":{"command":"true; git commit -m \"fix\""}}'
+assert_blocked "git -C commit on main" \
+  '{"tool_name":"Bash","tool_input":{"command":"git -C . commit -m \"fix\""}}'
+assert_blocked "git --git-dir/--work-tree commit on main" \
+  '{"tool_name":"Bash","tool_input":{"command":"git --git-dir=.git --work-tree=. commit -m \"fix\""}}'
+assert_blocked "git -c commit on main" \
+  '{"tool_name":"Bash","tool_input":{"command":"git -c user.email=x@y commit -m \"fix\""}}'
+assert_blocked "env assignment before git commit on main" \
+  '{"tool_name":"Bash","tool_input":{"command":"env GIT_AUTHOR_NAME=Test git commit -m \"fix\""}}'
+assert_blocked "command wrapper before git commit on main" \
+  '{"tool_name":"Bash","tool_input":{"command":"command git commit -m \"fix\""}}'
+assert_blocked "absolute git path commit on main" \
+  '{"tool_name":"Bash","tool_input":{"command":"/usr/bin/git commit -m \"fix\""}}'
+assert_blocked "quoted --amend elsewhere does not exempt a new commit" \
+  '{"tool_name":"Bash","tool_input":{"command":"echo \"--amend\" && git commit -m \"fix\""}}'
 
 # --- Amend should be allowed (even on protected branches) ---
 echo ""
@@ -114,6 +144,8 @@ assert_allowed "git commit --amend on main" \
   '{"tool_name":"Bash","tool_input":{"command":"git commit --amend -m \"fix typo\""}}'
 assert_allowed "git commit --amend --no-edit on main" \
   '{"tool_name":"Bash","tool_input":{"command":"git commit --amend --no-edit"}}'
+assert_allowed "git -C commit --amend on main" \
+  '{"tool_name":"Bash","tool_input":{"command":"git -C . commit --amend --no-edit"}}'
 
 # --- Commits on master (should be blocked) ---
 echo ""

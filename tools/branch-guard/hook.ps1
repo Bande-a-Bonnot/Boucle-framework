@@ -54,15 +54,159 @@ if ($toolName -ne 'Bash') { exit 0 }
 $command = $hookInput.tool_input.command
 if (-not $command) { exit 0 }
 
-# Only check git commit commands
-if ($command -notmatch 'git\s+commit') {
-    Write-Log "SKIP: not a git commit"
-    exit 0
+function Get-CommandSegments {
+    param([string]$Command)
+
+    $segments = @()
+    $chars = $Command.ToCharArray()
+    $out = New-Object System.Text.StringBuilder
+    $inSingleQuote = $false
+    $inDoubleQuote = $false
+    $escaped = $false
+
+    for ($i = 0; $i -lt $chars.Length; $i++) {
+        $c = $chars[$i]
+        $next = if ($i + 1 -lt $chars.Length) { $chars[$i + 1] } else { [char]0 }
+
+        if ($escaped) {
+            if ($inSingleQuote -or $inDoubleQuote) {
+                [void]$out.Append(' ')
+            } else {
+                [void]$out.Append($c)
+            }
+            $escaped = $false
+            continue
+        }
+
+        if ($c -eq '\' -and -not $inSingleQuote) {
+            if ($inDoubleQuote) {
+                [void]$out.Append(' ')
+            } else {
+                [void]$out.Append($c)
+            }
+            $escaped = $true
+            continue
+        }
+
+        if ($c -eq "'" -and -not $inDoubleQuote) {
+            $inSingleQuote = -not $inSingleQuote
+            [void]$out.Append(' ')
+            continue
+        }
+
+        if ($c -eq '"' -and -not $inSingleQuote) {
+            $inDoubleQuote = -not $inDoubleQuote
+            [void]$out.Append(' ')
+            continue
+        }
+
+        if ($inSingleQuote -or $inDoubleQuote) {
+            [void]$out.Append(' ')
+            continue
+        }
+
+        if ($c -eq ';' -or $c -eq '|') {
+            $segments += $out.ToString()
+            [void]$out.Clear()
+            if ($c -eq '|' -and $next -eq '|') {
+                $i++
+            }
+            continue
+        }
+
+        if ($c -eq '&' -and $next -eq '&') {
+            $segments += $out.ToString()
+            [void]$out.Clear()
+            $i++
+            continue
+        }
+
+        [void]$out.Append($c)
+    }
+
+    $segments += $out.ToString()
+    return $segments
 }
 
-# Skip --amend (amending existing commits is OK on any branch)
-if ($command -match '--amend') {
-    Write-Log "SKIP: amend (not a new commit)"
+function Test-GitBinaryToken {
+    param([string]$Token)
+    $name = [System.IO.Path]::GetFileName($Token)
+    if ($name.EndsWith('.exe', [System.StringComparison]::OrdinalIgnoreCase)) {
+        $name = $name.Substring(0, $name.Length - 4)
+    }
+    return $name -eq 'git'
+}
+
+function Test-AssignmentToken {
+    param([string]$Token)
+    return $Token -match '^[A-Za-z_][A-Za-z0-9_]*='
+}
+
+function Test-NewGitCommitSegment {
+    param([string]$Segment)
+
+    $words = @($Segment -split '\s+' | Where-Object { $_ })
+    if ($words.Count -eq 0) { return $false }
+
+    $i = 0
+    while ($i -lt $words.Count) {
+        $token = $words[$i]
+        if ($token -in @('env', 'command', 'exec') -or (Test-AssignmentToken $token)) {
+            $i++
+            continue
+        }
+        break
+    }
+
+    if ($i -ge $words.Count -or -not (Test-GitBinaryToken $words[$i])) { return $false }
+    $i++
+
+    while ($i -lt $words.Count) {
+        $token = $words[$i]
+        switch -Regex ($token) {
+            '^(-C|-c|--git-dir|--work-tree|--namespace|--exec-path|--config-env)$' {
+                $i += 2
+                continue
+            }
+            '^(--git-dir=|--work-tree=|--namespace=|--exec-path=|--config-env=)' {
+                $i++
+                continue
+            }
+            '^--$' {
+                $i++
+                break
+            }
+            '^-' {
+                $i++
+                continue
+            }
+            default {
+                break
+            }
+        }
+        break
+    }
+
+    if ($i -ge $words.Count -or $words[$i] -ne 'commit') { return $false }
+
+    $remaining = @()
+    if ($i + 1 -lt $words.Count) {
+        $remaining = $words[($i + 1)..($words.Count - 1)]
+    }
+    return -not ($remaining -contains '--amend')
+}
+
+$hasNewCommit = $false
+foreach ($segment in Get-CommandSegments $command) {
+    if (Test-NewGitCommitSegment $segment) {
+        $hasNewCommit = $true
+        break
+    }
+}
+
+# Only check actual git commit command segments.
+if (-not $hasNewCommit) {
+    Write-Log "SKIP: not a git commit"
     exit 0
 }
 
