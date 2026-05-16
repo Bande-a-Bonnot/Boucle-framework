@@ -34,6 +34,22 @@ fi
 # Read hook input from stdin
 INPUT=$(cat)
 
+find_python_cmd() {
+  if [ -n "${READ_ONCE_PYTHON_CMD:-}" ] && command -v "$READ_ONCE_PYTHON_CMD" >/dev/null 2>&1; then
+    printf '%s\n' "$READ_ONCE_PYTHON_CMD"
+    return 0
+  fi
+  for _cmd in py python3 python; do
+    if command -v "$_cmd" >/dev/null 2>&1; then
+      printf '%s\n' "$_cmd"
+      return 0
+    fi
+  done
+  return 1
+}
+
+PYTHON_CMD=$(find_python_cmd || true)
+
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
 
 # Only handle Read tool
@@ -104,6 +120,7 @@ else
 fi
 CACHE_FILE="${CACHE_DIR}/session-${SESSION_HASH}.jsonl"
 STATS_FILE="${CACHE_DIR}/stats.jsonl"
+TOKEN_CACHE_FILE="${CACHE_DIR}/token-estimates.jsonl"
 
 # Snapshot path for this file (used in diff mode)
 if [ "$DIFF_MODE" = "1" ]; then
@@ -124,6 +141,72 @@ write_cache_entry() {
     '{path:$path,mtime:$mtime,ts:$ts,tokens:$tokens}' >> "$CACHE_FILE"
 }
 
+is_binary_read_target() {
+  case "${1##*.}" in
+    7z|a|avif|bin|bmp|class|dll|dmg|exe|gif|gz|heic|ico|jar|jpeg|jpg|mov|mp3|mp4|o|pdf|png|pyc|rar|so|tar|tiff|webp|zip)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+estimate_read_tokens() {
+  local file="$1"
+  local cache_entry cached estimated
+
+  if is_binary_read_target "$file"; then
+    printf '0\n'
+    return 0
+  fi
+
+  cache_entry=$(jq -Rrc \
+    --arg path "$file" \
+    --arg mtime "$CURRENT_MTIME" \
+    'fromjson? | select(.path == $path and .mtime == $mtime)' \
+    "$TOKEN_CACHE_FILE" 2>/dev/null | tail -1 || true)
+  cached=$(printf '%s' "$cache_entry" | jq -r '.tokens // empty' 2>/dev/null || true)
+  if [ -n "$cached" ]; then
+    printf '%s\n' "$cached"
+    return 0
+  fi
+
+  if [ -n "$PYTHON_CMD" ] && "$PYTHON_CMD" - "$file" >/dev/null 2>&1 <<'PY_CHECK'
+import importlib.util
+import sys
+sys.exit(0 if importlib.util.find_spec("tiktoken") else 1)
+PY_CHECK
+  then
+    estimated=$("$PYTHON_CMD" - "$file" <<'PY_ESTIMATE'
+import sys
+import tiktoken
+
+path = sys.argv[1]
+enc = tiktoken.get_encoding("cl100k_base")
+parts = []
+with open(path, "r", encoding="utf-8", errors="replace") as f:
+    for idx, line in enumerate(f, 1):
+        if idx > 2000:
+            break
+        parts.append(f"{idx:>6}\t{line}")
+print(len(enc.encode("".join(parts))))
+PY_ESTIMATE
+)
+    jq -cn --arg path "$file" --arg mtime "$CURRENT_MTIME" --argjson tokens "$estimated" \
+      '{path:$path,mtime:$mtime,tokens:$tokens}' >> "$TOKEN_CACHE_FILE"
+    printf '%s\n' "$estimated"
+    return 0
+  fi
+
+  # Fallback: estimate only Claude Read's first 2000 displayed lines. This
+  # avoids crediting token savings for file content Claude would not return.
+  estimated=$(awk 'NR <= 2000 { printf "%6d\t%s\n", NR, $0 }' "$file" \
+    | wc -c \
+    | awk '{ n = int(($1 / 4) * 17 / 10); if (n < 1 && $1 > 0) n = 1; print n }')
+  jq -cn --arg path "$file" --arg mtime "$CURRENT_MTIME" --argjson tokens "$estimated" \
+    '{path:$path,mtime:$mtime,tokens:$tokens}' >> "$TOKEN_CACHE_FILE"
+  printf '%s\n' "$estimated"
+}
+
 # Get current file mtime (portable macOS/Linux)
 if [ ! -f "$FILE_PATH" ]; then
   # File doesn't exist — let Read handle the error
@@ -140,9 +223,8 @@ if [ -z "$CURRENT_MTIME" ]; then
   exit 0
 fi
 
-# Get file size for token estimation (~4 chars per token, line numbers add ~70%)
-FILE_SIZE=$(wc -c < "$FILE_PATH" 2>/dev/null | tr -d ' ')
-ESTIMATED_TOKENS=$(( (FILE_SIZE / 4) * 170 / 100 ))
+# Estimate token cost for what Claude Read would actually return.
+ESTIMATED_TOKENS=$(estimate_read_tokens "$FILE_PATH")
 
 # Check if we've seen this file before in this session
 CACHED_MTIME=""

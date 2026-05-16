@@ -7,6 +7,16 @@ REPO="https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/too
 INSTALL_DIR="${HOME}/.claude/read-once"
 SETTINGS="${HOME}/.claude/settings.json"
 
+find_python_cmd() {
+  for _cmd in py python3 python; do
+    if command -v "$_cmd" >/dev/null 2>&1; then
+      printf '%s\n' "$_cmd"
+      return 0
+    fi
+  done
+  return 1
+}
+
 hook_command() {
   local path="$1"
   case "$(uname -s 2>/dev/null || true)" in
@@ -70,6 +80,7 @@ echo "read-once: downloaded hook.sh, compact.sh, and read-once CLI"
 
 HOOK_COMMAND=$(hook_command "${INSTALL_DIR}/hook.sh")
 COMPACT_COMMAND=$(hook_command "${INSTALL_DIR}/compact.sh")
+PYTHON_CMD=$(find_python_cmd || true)
 
 # Add hook to settings.json
 if [ ! -f "$SETTINGS" ]; then
@@ -106,9 +117,9 @@ SETTINGS_EOF
   echo "read-once: created settings with hooks configured (PreToolUse + PostCompact)"
 else
   # Handle JSONC comments in settings.json (prevents silent failures)
-  if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$SETTINGS" 2>/dev/null; then
-    if command -v python3 >/dev/null 2>&1; then
-      python3 - "$SETTINGS" << 'JSONC_FIX'
+  if [ -n "$PYTHON_CMD" ] && ! "$PYTHON_CMD" -c "import json,sys; json.load(open(sys.argv[1]))" "$SETTINGS" 2>/dev/null; then
+    if [ -n "$PYTHON_CMD" ]; then
+      "$PYTHON_CMD" - "$SETTINGS" << 'JSONC_FIX'
 import json, sys, shutil
 path = sys.argv[1]
 with open(path) as f: raw = f.read()
@@ -137,6 +148,8 @@ JSONC_FIX
     else
       echo "read-once: Warning: settings.json may contain JSONC comments. Remove them if hooks fail."
     fi
+  elif [ -z "$PYTHON_CMD" ]; then
+    echo "read-once: Warning: Python not found; skipping JSONC comment cleanup."
   fi
 
   # Check if hook already configured

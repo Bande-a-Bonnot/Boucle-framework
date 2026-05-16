@@ -18,6 +18,22 @@ STATS_FILE="${CACHE_DIR}/stats.jsonl"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 HOOK_PATH="${SCRIPT_DIR}/hook.sh"
 
+find_python_cmd() {
+  if [ -n "${READ_ONCE_PYTHON_CMD:-}" ] && command -v "$READ_ONCE_PYTHON_CMD" >/dev/null 2>&1; then
+    printf '%s\n' "$READ_ONCE_PYTHON_CMD"
+    return 0
+  fi
+  for _cmd in py python3 python; do
+    if command -v "$_cmd" >/dev/null 2>&1; then
+      printf '%s\n' "$_cmd"
+      return 0
+    fi
+  done
+  return 1
+}
+
+PYTHON_CMD=$(find_python_cmd || true)
+
 cmd="${1:-help}"
 
 case "$cmd" in
@@ -68,8 +84,8 @@ case "$cmd" in
     echo "  Savings:             ${SAVINGS_PCT}%"
 
     # Cost estimates: Sonnet=$3/MTok input, Opus=$15/MTok input
-    if command -v python3 &>/dev/null && [ "$TOKENS_SAVED" -gt 0 ]; then
-      COST_LINE=$(echo "$TOKENS_SAVED" | python3 -c "
+    if [ -n "$PYTHON_CMD" ] && [ "$TOKENS_SAVED" -gt 0 ]; then
+      COST_LINE=$(echo "$TOKENS_SAVED" | "$PYTHON_CMD" -c "
 import sys
 t=int(sys.stdin.read().strip())
 s=t*3/1000000
@@ -243,10 +259,10 @@ print('  Est. cost saved:     \$%.4f (Sonnet) / \$%.4f (Opus)' % (s, o))
       check_warn "bash ${BASH_VERSION} (4+ recommended, but hook works on 3.2+)"
     fi
 
-    if command -v python3 &>/dev/null; then
-      check_pass "python3 found (needed for diff mode)"
+    if [ -n "$PYTHON_CMD" ]; then
+      check_pass "Python found (${PYTHON_CMD}, optional for exact token estimates)"
     else
-      check_warn "python3 not found (diff mode will be unavailable)"
+      check_warn "Python not found (falling back to approximate token estimates)"
     fi
 
     if command -v stat &>/dev/null; then

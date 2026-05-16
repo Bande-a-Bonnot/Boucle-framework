@@ -467,6 +467,35 @@ assert_empty "Cost: first read passes" "$OUTPUT"
 OUTPUT=$(run_hook "$(make_input Read "$COST_FILE" "$COST_SESSION")")
 assert_contains "Cost: advisory includes Sonnet cost" "Sonnet" "$OUTPUT"
 
+# --- Group 19b: Token estimates match Claude Read truncation ---
+echo ""
+echo "--- Group 19b: Truncation-aware token estimates ---"
+
+LONG_SESSION="test-long-token-estimate-$$"
+LONG_FILE="${TEST_DIR}/long-token-estimate.txt"
+for i in $(seq 1 4000); do printf 'line %04d %090d\n' "$i" 0; done > "$LONG_FILE"
+
+OUTPUT=$(run_hook "$(make_input Read "$LONG_FILE" "$LONG_SESSION")")
+assert_empty "Token estimate: long file first read passes" "$OUTPUT"
+LONG_TOKENS=$(grep "\"path\":\"${LONG_FILE}\"" "$STATS" 2>/dev/null | grep '"event":"miss"' | tail -1 | jq -r '.tokens // 0')
+TOTAL=$((TOTAL + 1))
+if [ "$LONG_TOKENS" -gt 0 ] && [ "$LONG_TOKENS" -lt 140000 ]; then
+  PASS=$((PASS + 1))
+  echo "  ✓ Token estimate: long file only counts displayed Read lines"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ Token estimate should stay below full-file overcount"
+  echo "    actual tokens: $LONG_TOKENS"
+fi
+
+BIN_SESSION="test-binary-token-estimate-$$"
+BIN_FILE="${TEST_DIR}/binary-image.png"
+printf '\211PNG\r\n\032\n' > "$BIN_FILE"
+OUTPUT=$(run_hook "$(make_input Read "$BIN_FILE" "$BIN_SESSION")")
+assert_empty "Token estimate: binary first read passes" "$OUTPUT"
+BIN_TOKENS=$(grep "\"path\":\"${BIN_FILE}\"" "$STATS" 2>/dev/null | grep '"event":"miss"' | tail -1 | jq -r '.tokens // -1')
+assert_eq "Token estimate: binary/image files count as zero" "0" "$BIN_TOKENS"
+
 # --- Group 20: Stats CLI cost estimates ---
 echo ""
 echo "--- Group 20: Stats CLI cost line ---"
@@ -519,6 +548,24 @@ if echo "$VERIFY_OUTPUT" | grep -q "\[ok\].*jq found"; then
 else
   FAIL=$((FAIL + 1))
   echo "  ✗ Verify: jq check missing"
+fi
+
+FAKEBIN="${TEST_DIR}/fakebin"
+mkdir -p "$FAKEBIN"
+cat > "${FAKEBIN}/py" <<'EOSH'
+#!/bin/sh
+exec python3 "$@"
+EOSH
+chmod +x "${FAKEBIN}/py"
+PY_VERIFY_OUTPUT=$(PATH="${FAKEBIN}:$PATH" HOME="$TEST_DIR" "$CLI" verify 2>&1 || true)
+TOTAL=$((TOTAL + 1))
+if echo "$PY_VERIFY_OUTPUT" | grep -q "\[ok\].*Python found (py"; then
+  PASS=$((PASS + 1))
+  echo "  ✓ Verify: accepts py launcher when python3 is not the preferred command"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ Verify: should detect py launcher"
+  echo "    output: $PY_VERIFY_OUTPUT"
 fi
 
 TOTAL=$((TOTAL + 1))

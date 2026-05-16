@@ -199,7 +199,7 @@ read-once verify
 Dependencies:
   [ok]   jq found (jq-1.7.1)
   [ok]   bash 5.2.37 (4+ required)
-  [ok]   python3 found (needed for diff mode)
+  [ok]   Python found (python3, optional for exact token estimates)
   [ok]   stat found
 
 Installation:
@@ -238,13 +238,14 @@ Environment variables:
 | `READ_ONCE_DIFF` | `0` | Set to `1` to show only diffs when files change (instead of full re-read). |
 | `READ_ONCE_DIFF_MAX` | `40` | Max diff lines before falling back to full re-read. |
 | `READ_ONCE_DISABLED` | `0` | Set to `1` to disable the hook entirely. |
+| `READ_ONCE_PYTHON_CMD` | auto | Override Python launcher detection (`py`, `python3`, then `python`). |
 
 ## Requirements
 
 **macOS / Linux:**
 - `jq` (for JSON parsing)
 - `bash` 4+
-- `python3` (optional, for diff mode JSON escaping)
+- Python (`py`, `python3`, or `python`, optional for exact token estimates and JSONC cleanup)
 - Claude Code with hooks support
 
 **Windows:**
@@ -258,7 +259,7 @@ Claude Code re-reads files more than you'd think. Common patterns:
 - Re-reading config files across different parts of a task
 - Reading the same file in subagents that share a session
 
-Each blocked re-read saves the full file token cost (including the ~70% overhead from line numbers in `cat -n` format). Run `./read-once stats` after a session to see your actual savings.
+Each blocked re-read saves the file token cost Claude Code would have returned. `read-once` estimates the first 2000 displayed lines, including line-number overhead, and returns 0 for common binary/image/archive extensions. If Python with `tiktoken` is available it uses `cl100k_base`; otherwise it falls back to a truncation-aware byte estimate. Run `./read-once stats` after a session to see your actual savings.
 
 ## FAQ
 
