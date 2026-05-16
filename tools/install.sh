@@ -658,10 +658,81 @@ if [ $# -gt 0 ] && [ "$1" = "uninstall" ]; then
     exit 0
   fi
 
+  settings_has_hook() {
+    [ -f "$SETTINGS" ] || return 1
+    python3 - "$SETTINGS" "$1" << 'PYEOF'
+import json, os, re, sys
+
+settings_path, hook = sys.argv[1], sys.argv[2]
+
+def strip_jsonc(text):
+    out, i, n = [], 0, len(text)
+    in_str = False
+    while i < n:
+        if in_str:
+            if text[i] == '\\' and i + 1 < n:
+                out.append(text[i:i+2]); i += 2; continue
+            if text[i] == '"': in_str = False
+            out.append(text[i]); i += 1
+        else:
+            if text[i] == '"':
+                in_str = True; out.append(text[i]); i += 1
+            elif i + 1 < n and text[i:i+2] == '//':
+                while i < n and text[i] != '\n': i += 1
+            elif i + 1 < n and text[i:i+2] == '/*':
+                i += 2
+                while i + 1 < n and text[i:i+2] != '*/': i += 1
+                i += 2
+            else:
+                out.append(text[i]); i += 1
+    return ''.join(out)
+
+try:
+    with open(settings_path) as f:
+        settings = json.loads(f.read())
+except Exception:
+    try:
+        with open(settings_path) as f:
+            settings = json.loads(strip_jsonc(f.read()))
+    except Exception:
+        sys.exit(1)
+
+def commands(entry):
+    if not isinstance(entry, dict):
+        return []
+    out = []
+    command = entry.get("command", "")
+    if command:
+        out.append(command)
+    for hook_entry in entry.get("hooks", []):
+        if isinstance(hook_entry, dict) and hook_entry.get("command", ""):
+            out.append(hook_entry["command"])
+    return out
+
+needle = "/" + hook + "/hook.sh"
+for entries in settings.get("hooks", {}).values():
+    for entry in entries:
+        for command in commands(entry):
+            expanded = os.path.expanduser(command)
+            if needle in expanded or expanded.endswith(needle):
+                sys.exit(0)
+            if hook == "session-log" and re.search(r'(^|[ /\\])session-log\.sh($|[ "\'])', expanded):
+                sys.exit(0)
+sys.exit(1)
+PYEOF
+  }
+
+  hook_installed() {
+    local hook="$1"
+    [ -d "${HOME}/.claude/${hook}" ] && return 0
+    [ "$hook" = "session-log" ] && [ -f "${HOME}/.claude/hooks/session-log.sh" ] && return 0
+    settings_has_hook "$hook"
+  }
+
   if [ "$1" = "all" ]; then
     to_remove=""
     for hook in $ALL_HOOKS; do
-      if [ -d "${HOME}/.claude/${hook}" ]; then
+      if hook_installed "$hook"; then
         to_remove="${to_remove} ${hook}"
       fi
     done
@@ -688,6 +759,13 @@ if [ $# -gt 0 ] && [ "$1" = "uninstall" ]; then
     if [ -d "$dir" ]; then
       rm -rf "$dir"
       echo -e "  ${GREEN}✓${RESET} Removed ${CYAN}${hook}${RESET}"
+      removed="${removed} ${hook}"
+    elif [ "$hook" = "session-log" ] && [ -f "${HOME}/.claude/hooks/session-log.sh" ]; then
+      rm -f "${HOME}/.claude/hooks/session-log.sh"
+      echo -e "  ${GREEN}✓${RESET} Removed ${CYAN}${hook}${RESET} legacy hook"
+      removed="${removed} ${hook}"
+    elif settings_has_hook "$hook"; then
+      echo -e "  ${GREEN}✓${RESET} Removed ${CYAN}${hook}${RESET} settings entry"
       removed="${removed} ${hook}"
     else
       echo -e "  ${DIM}SKIP${RESET} ${hook} (not installed)"
@@ -737,19 +815,35 @@ except (json.JSONDecodeError, ValueError):
 if "hooks" not in settings:
     sys.exit(0)
 
+def commands(entry):
+    if not isinstance(entry, dict):
+        return []
+    out = []
+    command = entry.get("command", "")
+    if command:
+        out.append(command)
+    for hook_entry in entry.get("hooks", []):
+        if isinstance(hook_entry, dict) and hook_entry.get("command", ""):
+            out.append(hook_entry["command"])
+    return out
+
+def remove_command(hook, command):
+    expanded = os.path.expanduser(command)
+    expected = os.path.expanduser("~/.claude/" + hook + "/hook.sh")
+    if expanded == expected:
+        return True
+    if hook == "session-log" and re.search(r'(^|[ /\\])session-log\.sh($|[ "\'])', expanded):
+        return True
+    return False
+
 for hook in hooks_to_remove:
-    command = os.path.expanduser("~/.claude/" + hook + "/hook.sh")
     for event in list(settings["hooks"].keys()):
         entries = settings["hooks"][event]
         original_len = len(entries)
         settings["hooks"][event] = [
             h for h in entries
             if not (
-                isinstance(h, dict) and (
-                    h.get("command", "") == command or
-                    any(hk.get("command", "") == command
-                        for hk in h.get("hooks", []))
-                )
+                isinstance(h, dict) and any(remove_command(hook, c) for c in commands(h))
             )
         ]
         if len(settings["hooks"][event]) < original_len:
