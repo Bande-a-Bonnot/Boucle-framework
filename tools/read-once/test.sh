@@ -118,6 +118,7 @@ OUTPUT=$(run_hook "$(make_input Read "$TEST_FILE")")
 assert_contains "Deny mode: blocks with decision:block" "block" "$OUTPUT"
 assert_contains "Deny mode: mentions already in context" "already in context" "$OUTPUT"
 # Verify robust response format (top-level decision, not hookSpecificOutput — see claude-code#37597)
+TOTAL=$((TOTAL + 1))
 if echo "$OUTPUT" | jq -e '.decision == "block"' >/dev/null 2>&1; then
   echo "PASS: Deny mode uses robust top-level decision format"
   PASS=$((PASS + 1))
@@ -146,6 +147,19 @@ echo ""
 echo "6. Nonexistent file"
 OUTPUT=$(run_hook "$(make_input Read "/nonexistent/file.txt")")
 assert_empty "Nonexistent file passes through" "$OUTPUT"
+
+# --- Test 6b: Windows-style backslashes normalize under Git Bash ---
+echo ""
+echo "6b. Windows-style backslash paths"
+WIN_FILE="${TEST_DIR}/windows-path.txt"
+echo "Windows path content" > "$WIN_FILE"
+WIN_PATH=$(printf '%s' "$WIN_FILE" | sed 's#/#\\\\#g')
+WIN_INPUT=$(jq -cn --arg path "$WIN_PATH" --arg sid "windows-path-$$" \
+  '{tool_name:"Read", tool_input:{file_path:$path}, session_id:$sid}')
+OUTPUT=$(run_hook "$WIN_INPUT")
+assert_empty "Backslash path: first read passes through" "$OUTPUT"
+OUTPUT=$(run_hook "$WIN_INPUT")
+assert_contains "Backslash path: second read hits normalized cache" "already in context" "$OUTPUT"
 
 # --- Test 7: Partial reads (offset/limit) should not be cached ---
 echo ""
@@ -183,6 +197,25 @@ assert_empty "Missing file_path passes through" "$OUTPUT"
 
 OUTPUT=$(echo '{"tool_name":"Read","tool_input":{"file_path":"/tmp/x"}}' | bash "$HOOK" 2>/dev/null || true)
 assert_empty "Missing session_id passes through" "$OUTPUT"
+
+# --- Test 8b: Advisory JSON escaping ---
+echo ""
+echo "8b. Advisory JSON escaping"
+QUOTE_FILE="${TEST_DIR}/quote \"unicode\" file.txt"
+echo "quoted path" > "$QUOTE_FILE"
+QUOTE_INPUT=$(jq -cn --arg path "$QUOTE_FILE" --arg sid "quote-session-$$" \
+  '{tool_name:"Read", tool_input:{file_path:$path}, session_id:$sid}')
+run_hook "$QUOTE_INPUT" > /dev/null
+OUTPUT=$(run_hook "$QUOTE_INPUT")
+TOTAL=$((TOTAL + 1))
+if echo "$OUTPUT" | jq empty >/dev/null 2>&1; then
+  PASS=$((PASS + 1))
+  echo "  ✓ Quoted basename advisory is valid JSON"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ Quoted basename advisory should be valid JSON"
+  echo "    actual: $OUTPUT"
+fi
 
 # --- Test 9: Stats file gets written ---
 echo ""
@@ -544,6 +577,19 @@ else
   FAIL=$((FAIL + 1))
   echo "  ✗ Verify: should detect missing installation"
 fi
+
+# --- Group 22: CLI install writes a Claude-resolvable absolute hook command ---
+echo ""
+echo "--- Group 22: CLI install command path ---"
+
+INSTALL_HOME="${TEST_DIR}/cli-install-home"
+mkdir -p "${INSTALL_HOME}/.claude"
+echo '{}' > "${INSTALL_HOME}/.claude/settings.json"
+INSTALL_OUTPUT=$(HOME="$INSTALL_HOME" "$CLI" install 2>&1 || true)
+HOOK_CMD=$(jq -r '.hooks.PreToolUse[] | select(.matcher == "Read") | .hooks[0].command // empty' "${INSTALL_HOME}/.claude/settings.json" 2>/dev/null | head -1)
+assert_eq "CLI install uses absolute hook command" "${INSTALL_HOME}/.claude/read-once/hook.sh" "$HOOK_CMD"
+assert_eq "CLI install copied hook" "1" "$([ -x "${INSTALL_HOME}/.claude/read-once/hook.sh" ] && echo 1 || echo 0)"
+assert_contains "CLI install reports installed hook" "read-once hook installed" "$INSTALL_OUTPUT"
 
 # --- PostCompact hook tests ---
 echo ""
