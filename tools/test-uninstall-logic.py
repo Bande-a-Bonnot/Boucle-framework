@@ -35,6 +35,12 @@ def make_settings(*hooks):
         if event not in settings["hooks"]:
             settings["hooks"][event] = []
         settings["hooks"][event].append(entry)
+        if hook == "read-once":
+            compact = os.path.expanduser("~/.claude/read-once/compact.sh")
+            settings["hooks"].setdefault("PostCompact", []).append({
+                "matcher": "",
+                "hooks": [{"type": "command", "command": compact, "timeout": 5000}],
+            })
     return settings
 
 
@@ -44,15 +50,17 @@ def run_uninstall(settings, hooks_to_remove):
     settings = copy.deepcopy(settings)
 
     for hook in hooks_to_remove:
-        command = os.path.expanduser(f"~/.claude/{hook}/hook.sh")
+        commands = {os.path.expanduser(f"~/.claude/{hook}/hook.sh")}
+        if hook == "read-once":
+            commands.add(os.path.expanduser("~/.claude/read-once/compact.sh"))
         for event in list(settings.get("hooks", {}).keys()):
             entries = settings["hooks"][event]
             settings["hooks"][event] = [
                 h for h in entries
                 if not (
                     isinstance(h, dict) and (
-                        h.get("command", "") == command or
-                        any(hk.get("command", "") == command
+                        h.get("command", "") in commands or
+                        any(hk.get("command", "") in commands
                             for hk in h.get("hooks", []))
                     )
                 )
@@ -94,6 +102,11 @@ if not has_hook(result, "read-once"):
     ok("read-once removed from settings")
 else:
     fail("read-once still in settings")
+
+if "PostCompact" not in result.get("hooks", {}):
+    ok("read-once PostCompact hook removed from settings")
+else:
+    fail("read-once PostCompact hook still in settings")
 
 if has_hook(result, "git-safe"):
     ok("git-safe preserved")

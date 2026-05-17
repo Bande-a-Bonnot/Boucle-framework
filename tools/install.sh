@@ -289,8 +289,13 @@ for hook in all_hooks:
     if hook == "read-once":
         cli_bash = os.path.join(hook_dir, "read-once")
         cli_ps1 = os.path.join(hook_dir, "read-once.ps1")
+        compact = os.path.join(hook_dir, "compact.sh")
         if not os.path.isfile(cli_bash) and not os.path.isfile(cli_ps1):
             issues.append("read-once CLI not found (run: install.sh upgrade)")
+        if not os.path.isfile(compact):
+            issues.append("read-once PostCompact hook not found (run: install.sh upgrade)")
+        elif not os.access(compact, os.X_OK):
+            issues.append(f"compact.sh not executable (run: chmod +x {compact})")
 
     # Check settings.json registration
     expected_matchers = {
@@ -316,6 +321,17 @@ for hook in all_hooks:
         elif hook in expected_matchers and found_entry is not None:
             if found_entry.get("matcher") != expected_matchers[hook]:
                 issues.append(f"missing matcher (fires on ALL tools instead of just {expected_matchers[hook]}; run: install.sh upgrade)")
+        if hook == "read-once":
+            compact_found = False
+            for entry in settings.get("hooks", {}).get("PostCompact", []):
+                for h in entry.get("hooks", []):
+                    if "read-once" in h.get("command", "") and "compact.sh" in h.get("command", ""):
+                        compact_found = True
+                        break
+                if compact_found:
+                    break
+            if not compact_found:
+                issues.append("PostCompact cache reset not registered (run: install.sh upgrade)")
 
     if not issues:
         desc = hook_descs.get(hook, "")
@@ -552,6 +568,16 @@ if [ $# -gt 0 ] && [ "$1" = "upgrade" ]; then
             else
               rm -f "${dir}/read-once.new"
             fi
+            if $DL "${REPO}/${hook}/compact.sh" > "${dir}/compact.sh.new" 2>/dev/null && [ -s "${dir}/compact.sh.new" ]; then
+              if ! cmp -s "${dir}/compact.sh" "${dir}/compact.sh.new"; then
+                mv "${dir}/compact.sh.new" "${dir}/compact.sh"
+                chmod +x "${dir}/compact.sh"
+              else
+                rm -f "${dir}/compact.sh.new"
+              fi
+            else
+              rm -f "${dir}/compact.sh.new"
+            fi
             ;;
           file-guard)
             if $DL "${REPO}/${hook}/init.sh" > "${dir}/init.sh.new" 2>/dev/null && [ -s "${dir}/init.sh.new" ]; then
@@ -738,7 +764,9 @@ if "hooks" not in settings:
     sys.exit(0)
 
 for hook in hooks_to_remove:
-    command = os.path.expanduser("~/.claude/" + hook + "/hook.sh")
+    commands = [os.path.expanduser("~/.claude/" + hook + "/hook.sh")]
+    if hook == "read-once":
+        commands.append(os.path.expanduser("~/.claude/read-once/compact.sh"))
     for event in list(settings["hooks"].keys()):
         entries = settings["hooks"][event]
         original_len = len(entries)
@@ -746,8 +774,8 @@ for hook in hooks_to_remove:
             h for h in entries
             if not (
                 isinstance(h, dict) and (
-                    h.get("command", "") == command or
-                    any(hk.get("command", "") == command
+                    h.get("command", "") in commands or
+                    any(hk.get("command", "") in commands
                         for hk in h.get("hooks", []))
                 )
             )
@@ -1131,6 +1159,12 @@ for hook in $selected; do
       else
         chmod +x "${install_dir}/read-once"
       fi
+      if ! $DL "${REPO}/${hook}/compact.sh" > "${install_dir}/compact.sh" 2>/dev/null; then
+        echo -e "  ${YELLOW}Warning: failed to download read-once PostCompact hook.${RESET}" >&2
+        echo -e "  ${DIM}Re-reads after compaction may still be blocked until you re-run install or upgrade.${RESET}" >&2
+      else
+        chmod +x "${install_dir}/compact.sh"
+      fi
       ;;
     file-guard)
       if ! $DL "${REPO}/${hook}/init.sh" > "${install_dir}/init.sh" 2>/dev/null; then
@@ -1226,24 +1260,37 @@ for hook in hooks_to_add:
     elif hook == "read-once":
         entry["matcher"] = "Read"
 
-    if event not in settings["hooks"]:
-        settings["hooks"][event] = []
+    registrations = [(event, command, entry)]
+    if hook == "read-once":
+        compact_command = os.path.expanduser("~/.claude/read-once/compact.sh")
+        registrations.append((
+            "PostCompact",
+            compact_command,
+            {
+                "matcher": "",
+                "hooks": [{"type": "command", "command": compact_command, "timeout": 5000}],
+            },
+        ))
 
-    # Check existing entries in both flat and nested formats
-    existing = []
-    for h in settings["hooks"][event]:
-        if isinstance(h, dict):
-            cmd = h.get("command", "")
-            if not cmd:
-                for hk in h.get("hooks", []):
-                    c = hk.get("command", "")
-                    if c: cmd = c; break
-            existing.append(cmd)
-    if command not in existing:
-        settings["hooks"][event].append(entry)
-        print("  Added " + hook + " to " + event + " hooks")
-    else:
-        print("  " + hook + " already configured")
+    for event, command, entry in registrations:
+        if event not in settings["hooks"]:
+            settings["hooks"][event] = []
+
+        # Check existing entries in both flat and nested formats
+        existing = []
+        for h in settings["hooks"][event]:
+            if isinstance(h, dict):
+                cmd = h.get("command", "")
+                if not cmd:
+                    for hk in h.get("hooks", []):
+                        c = hk.get("command", "")
+                        if c: cmd = c; break
+                existing.append(cmd)
+        if command not in existing:
+            settings["hooks"][event].append(entry)
+            print("  Added " + hook + " to " + event + " hooks")
+        else:
+            print("  " + hook + " already configured for " + event)
 
 with open(settings_path, "w") as f:
     json.dump(settings, f, indent=2)
@@ -1251,34 +1298,22 @@ with open(settings_path, "w") as f:
 PYEOF
 
 echo ""
-
-# Post-install verification: send test payloads to confirm hooks work
-echo -e "${BOLD}Verifying hooks...${RESET}"
+echo "Verifying hooks..."
 echo ""
+
 verify_ok=0
 verify_fail=0
 verify_skip=0
 
 for hook in $installed; do
   hook_path="${HOME}/.claude/${hook}/hook.sh"
-  if [ ! -x "$hook_path" ]; then
-    echo -e "  ${YELLOW}WARN${RESET}: ${hook} is not executable"
+  if [ ! -f "$hook_path" ]; then
+    echo -e "  ${YELLOW}WARN${RESET}: ${hook} file not found"
     verify_fail=$((verify_fail + 1))
     continue
   fi
 
-  # Test payloads for hooks that can be trivially verified
   case "$hook" in
-    bash-guard)
-      run_verify_hook "$hook_path" '{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}'
-      if verify_blocked; then
-        echo -e "  ${GREEN}OK${RESET}: ${hook} blocked test payload (rm -rf /)"
-        verify_ok=$((verify_ok + 1))
-      else
-        echo -e "  ${YELLOW}WARN${RESET}: ${hook} did not block test payload"
-        verify_fail=$((verify_fail + 1))
-      fi
-      ;;
     git-safe)
       run_verify_hook "$hook_path" '{"tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}'
       if verify_blocked; then
@@ -1289,21 +1324,41 @@ for hook in $installed; do
         verify_fail=$((verify_fail + 1))
       fi
       ;;
-    branch-guard)
-      BRANCH_GUARD_PROTECTED="main" GIT_BRANCH="main" run_verify_hook "$hook_path" '{"tool_name":"Bash","tool_input":{"command":"git commit -m test"}}'
+    bash-guard)
+      run_verify_hook "$hook_path" '{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}'
       if verify_blocked; then
-        echo -e "  ${GREEN}OK${RESET}: ${hook} blocked test payload (commit on main)"
+        echo -e "  ${GREEN}OK${RESET}: ${hook} blocked test payload (rm -rf /)"
         verify_ok=$((verify_ok + 1))
       else
-        # branch-guard needs git context, skip if no git repo
-        echo -e "  ${DIM}SKIP${RESET}: ${hook} (needs git repo context to verify)"
+        echo -e "  ${YELLOW}WARN${RESET}: ${hook} did not block test payload"
+        verify_fail=$((verify_fail + 1))
+      fi
+      ;;
+    branch-guard)
+      # branch-guard blocks commits only on protected branches; skip if not in a repo
+      if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        current_branch=$(git branch --show-current 2>/dev/null || true)
+        if [ "$current_branch" = "main" ] || [ "$current_branch" = "master" ]; then
+          run_verify_hook "$hook_path" '{"tool_name":"Bash","tool_input":{"command":"git commit -m test"}}'
+          if verify_blocked; then
+            echo -e "  ${GREEN}OK${RESET}: ${hook} blocked test payload (commit to protected branch)"
+            verify_ok=$((verify_ok + 1))
+          else
+            echo -e "  ${YELLOW}WARN${RESET}: ${hook} did not block test payload"
+            verify_fail=$((verify_fail + 1))
+          fi
+        else
+          echo -e "  ${DIM}SKIP${RESET}: ${hook} current branch '${current_branch}' is not protected (test requires main/master)"
+          verify_skip=$((verify_skip + 1))
+        fi
+      else
+        echo -e "  ${DIM}SKIP${RESET}: ${hook} (not in a git repo)"
         verify_skip=$((verify_skip + 1))
       fi
       ;;
     worktree-guard)
-      # worktree-guard needs git context, just check it doesn't crash on non-ExitWorktree
       if echo '{"tool_name":"Bash","tool_input":{"command":"echo test"}}' | "$hook_path" >/dev/null 2>&1; then
-        echo -e "  ${GREEN}OK${RESET}: ${hook} passes through non-ExitWorktree tools"
+        echo -e "  ${GREEN}OK${RESET}: ${hook} accepted non-ExitWorktree payload"
         verify_ok=$((verify_ok + 1))
       else
         echo -e "  ${YELLOW}WARN${RESET}: ${hook} returned an error"
@@ -1311,9 +1366,8 @@ for hook in $installed; do
       fi
       ;;
     session-log)
-      # session-log just needs to not crash on a valid payload
       if echo '{"tool_name":"Read","tool_input":{"file_path":"/tmp/verify-test"}}' | "$hook_path" >/dev/null 2>&1; then
-        echo -e "  ${GREEN}OK${RESET}: ${hook} accepted test payload without error"
+        echo -e "  ${GREEN}OK${RESET}: ${hook} accepted payload without error"
         verify_ok=$((verify_ok + 1))
       else
         echo -e "  ${YELLOW}WARN${RESET}: ${hook} returned an error"
@@ -1340,6 +1394,14 @@ for hook in $installed; do
         echo -e "  ${YELLOW}WARN${RESET}: ${hook} returned an error"
         verify_fail=$((verify_fail + 1))
       fi
+      compact_path="${HOME}/.claude/${hook}/compact.sh"
+      if [ -x "$compact_path" ] && echo '{"session_id":"verify-test","hook_event_name":"PostCompact"}' | "$compact_path" >/dev/null 2>&1; then
+        echo -e "  ${GREEN}OK${RESET}: ${hook} PostCompact hook accepted test payload"
+        verify_ok=$((verify_ok + 1))
+      else
+        echo -e "  ${YELLOW}WARN${RESET}: ${hook} PostCompact hook returned an error"
+        verify_fail=$((verify_fail + 1))
+      fi
       ;;
     *)
       echo -e "  ${DIM}SKIP${RESET}: ${hook} (no automated test available)"
@@ -1361,30 +1423,8 @@ INSTALL_URL="https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/m
 echo "Manage hooks:"
 echo "  Verify:    curl -fsSL $INSTALL_URL | bash -s -- verify"
 echo "  Upgrade:   curl -fsSL $INSTALL_URL | bash -s -- upgrade"
-echo "  Uninstall: curl -fsSL $INSTALL_URL | bash -s -- uninstall <hook-name>"
-echo "  More:      curl -fsSL $INSTALL_URL | bash -s -- help"
+echo "  Doctor:    curl -fsSL $INSTALL_URL | bash -s -- doctor"
+echo "  Uninstall: curl -fsSL $INSTALL_URL | bash -s -- uninstall <hook>"
+
 echo ""
-echo -e "${BOLD}Verify it works:${RESET}"
-echo "  1. Start a new Claude Code session (hooks activate on next session)"
-# Show one concrete example based on which hooks were installed
-_showed=0
-for _h in $installed; do
-  case "$_h" in
-    bash-guard)
-      echo "  2. Ask Claude to run a dangerous command. bash-guard will block it."
-      _showed=1; break ;;
-    git-safe)
-      echo "  2. Ask Claude to force-push. git-safe will prevent it."
-      _showed=1; break ;;
-    file-guard)
-      echo "  2. Ask Claude to edit .env. file-guard will block it."
-      _showed=1; break ;;
-  esac
-done
-if [ "$_showed" -eq 0 ]; then
-  echo "  2. Your hooks will automatically protect your next session"
-fi
-echo "  3. If something seems off, run: install.sh doctor"
-echo ""
-echo -e "${DIM}Docs: https://github.com/Bande-a-Bonnot/Boucle-framework${RESET}"
-echo -e "${DIM}Issues: https://github.com/Bande-a-Bonnot/Boucle-framework/issues${RESET}"
+exit 0

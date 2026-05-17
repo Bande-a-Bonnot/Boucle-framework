@@ -372,8 +372,12 @@ if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'doctor') {
         if ($name -eq 'read-once') {
             $cliPs1 = Join-Path $hookDir "read-once.ps1"
             $cliBash = Join-Path $hookDir "read-once"
+            $compactPs1 = Join-Path $hookDir "compact.ps1"
             if (-not (Test-Path $cliPs1) -and -not (Test-Path $cliBash)) {
                 $issues += "read-once CLI not found (run: install.ps1 upgrade)"
+            }
+            if (-not (Test-Path $compactPs1)) {
+                $issues += "read-once PostCompact hook not found (run: install.ps1 upgrade)"
             }
         }
 
@@ -395,6 +399,24 @@ if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'doctor') {
             }
             if (-not $found) {
                 $issues += "not registered in settings.json (run: install.ps1 $name)"
+            }
+            if ($name -eq 'read-once') {
+                $compactFound = $false
+                if ($settings['hooks'].ContainsKey('PostCompact')) {
+                    foreach ($entry in $settings['hooks']['PostCompact']) {
+                        foreach ($h in $entry['hooks']) {
+                            $cmd = $h['command']
+                            if ($cmd -and $cmd -like '*read-once*compact.ps1*') {
+                                $compactFound = $true
+                                break
+                            }
+                        }
+                        if ($compactFound) { break }
+                    }
+                }
+                if (-not $compactFound) {
+                    $issues += "PostCompact cache reset not registered (run: install.ps1 upgrade)"
+                }
             }
         }
 
@@ -541,6 +563,14 @@ foreach ($hook in $selected) {
         } catch {
             Write-Host "  Warning: failed to download read-once.ps1 CLI tool" -ForegroundColor Yellow
         }
+        $compactFile = Join-Path $installDir "compact.ps1"
+        try {
+            $compactContent = Invoke-RestMethod -Uri "$Repo/read-once/compact.ps1" -ErrorAction Stop
+            Set-Content -Path $compactFile -Value $compactContent -Encoding UTF8
+            Write-Host "  Downloaded read-once PostCompact hook (compact.ps1)" -ForegroundColor Green
+        } catch {
+            Write-Host "  Warning: failed to download read-once compact.ps1 hook" -ForegroundColor Yellow
+        }
     }
     elseif ($hook -eq 'file-guard') {
         # Create a default .file-guard config if none exists in cwd
@@ -619,37 +649,70 @@ foreach ($hook in $installed) {
     if ($hook -eq 'worktree-guard') {
         $entry['matcher'] = 'ExitWorktree'
     }
-
-    if (-not $settings['hooks'].ContainsKey($event)) {
-        $settings['hooks'][$event] = @()
+    elseif ($hook -eq 'read-once') {
+        $entry['matcher'] = 'Read'
     }
 
-    # Check if hook is already configured
-    $alreadyExists = $false
-    foreach ($h in $settings['hooks'][$event]) {
-        $cmd = $null
-        if ($h -is [hashtable] -or $h -is [System.Collections.IDictionary]) {
-            $cmd = $h['command']
-            if (-not $cmd -and $h.ContainsKey('hooks')) {
-                foreach ($hk in $h['hooks']) {
-                    if ($hk -is [hashtable] -or $hk -is [System.Collections.IDictionary]) {
-                        $cmd = $hk['command']
-                        if ($cmd) { break }
+    $registrations = @(@{
+        Event = $event
+        Command = $command
+        Entry = $entry
+    })
+    if ($hook -eq 'read-once') {
+        $compactFile = Join-Path $HOME ".claude" "read-once" "compact.ps1"
+        $compactCommand = "pwsh -File `"$compactFile`""
+        $registrations += @{
+            Event = 'PostCompact'
+            Command = $compactCommand
+            Entry = @{
+                matcher = ''
+                hooks = @(
+                    @{
+                        type = 'command'
+                        command = $compactCommand
+                        timeout = 5000
+                    }
+                )
+            }
+        }
+    }
+
+    foreach ($registration in $registrations) {
+        $event = $registration.Event
+        $command = $registration.Command
+        $entry = $registration.Entry
+
+        if (-not $settings['hooks'].ContainsKey($event)) {
+            $settings['hooks'][$event] = @()
+        }
+
+        # Check if hook is already configured
+        $alreadyExists = $false
+        foreach ($h in $settings['hooks'][$event]) {
+            $cmd = $null
+            if ($h -is [hashtable] -or $h -is [System.Collections.IDictionary]) {
+                $cmd = $h['command']
+                if (-not $cmd -and $h.ContainsKey('hooks')) {
+                    foreach ($hk in $h['hooks']) {
+                        if ($hk -is [hashtable] -or $hk -is [System.Collections.IDictionary]) {
+                            $cmd = $hk['command']
+                            if ($cmd) { break }
+                        }
                     }
                 }
             }
+            if ($cmd -and $cmd -eq $command) {
+                $alreadyExists = $true
+                break
+            }
         }
-        if ($cmd -and $cmd -like "*$hook*hook.ps1*") {
-            $alreadyExists = $true
-            break
-        }
-    }
 
-    if (-not $alreadyExists) {
-        $settings['hooks'][$event] += $entry
-        Write-Host "  Added $hook to $event hooks"
-    } else {
-        Write-Host "  $hook already configured"
+        if (-not $alreadyExists) {
+            $settings['hooks'][$event] += $entry
+            Write-Host "  Added $hook to $event hooks"
+        } else {
+            Write-Host "  $hook already configured for $event"
+        }
     }
 }
 
@@ -750,6 +813,24 @@ foreach ($hook in $installed) {
             } catch {
                 Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
                 Write-Host ": $hook returned an error"
+                $verifyFail++
+            }
+            $compactFile = Join-Path $HOME ".claude" $hook "compact.ps1"
+            $compactPayload = '{"session_id":"verify-test","hook_event_name":"PostCompact"}'
+            try {
+                if (Test-Path $compactFile) {
+                    $null = $compactPayload | pwsh -File $compactFile 2>$null
+                    Write-Host "  OK" -ForegroundColor Green -NoNewline
+                    Write-Host ": $hook PostCompact hook accepted test payload"
+                    $verifyOk++
+                } else {
+                    Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
+                    Write-Host ": $hook PostCompact hook file not found"
+                    $verifyFail++
+                }
+            } catch {
+                Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
+                Write-Host ": $hook PostCompact hook returned an error"
                 $verifyFail++
             }
         }

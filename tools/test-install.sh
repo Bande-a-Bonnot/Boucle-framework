@@ -41,10 +41,22 @@ else
   fail "CLI not found"
 fi
 
+if [ -f "$TEST_HOME/.claude/read-once/compact.sh" ]; then
+  pass "PostCompact hook downloaded"
+else
+  fail "PostCompact hook not found"
+fi
+
 if [ -x "$TEST_HOME/.claude/read-once/hook.sh" ]; then
   pass "hook.sh is executable"
 else
   fail "hook.sh not executable"
+fi
+
+if [ -x "$TEST_HOME/.claude/read-once/compact.sh" ]; then
+  pass "compact.sh is executable"
+else
+  fail "compact.sh not executable"
 fi
 
 # Test 3: Settings created
@@ -71,6 +83,23 @@ sys.exit(0 if found else 1)
   pass "read-once in settings.json"
 else
   fail "read-once not in settings.json"
+fi
+
+if python3 -c "
+import json, sys
+def get_cmds(entry):
+    c = entry.get('command', '')
+    if c: return [c]
+    return [h.get('command','') for h in entry.get('hooks',[])]
+with open(sys.argv[1]) as f:
+    s = json.load(f)
+hooks = s.get('hooks', {}).get('PostCompact', [])
+found = any('read-once' in c and 'compact.sh' in c for h in hooks for c in get_cmds(h))
+sys.exit(0 if found else 1)
+" "$TEST_HOME/.claude/settings.json" 2>/dev/null; then
+  pass "read-once PostCompact in settings.json"
+else
+  fail "read-once PostCompact not in settings.json"
 fi
 
 # Test 4: Multiple hooks
@@ -359,6 +388,25 @@ else
   fail "uninstall left hook in settings.json"
 fi
 
+has_read_once_compact=$(python3 -c "
+import json, sys
+def get_cmds(entry):
+    c = entry.get('command', '')
+    if c: return [c]
+    return [h.get('command','') for h in entry.get('hooks',[])]
+with open(sys.argv[1]) as f:
+    s = json.load(f)
+hooks = s.get('hooks', {}).get('PostCompact', [])
+found = any('read-once' in c and 'compact.sh' in c for h in hooks for c in get_cmds(h))
+print('yes' if found else 'no')
+" "$TEST_HOME/.claude/settings.json" 2>/dev/null)
+
+if [ "$has_read_once_compact" = "no" ]; then
+  pass "uninstall removed PostCompact hook from settings.json"
+else
+  fail "uninstall left PostCompact hook in settings.json"
+fi
+
 # Test 14: Uninstall preserves other hooks
 has_git_safe=$(python3 -c "
 import json, sys
@@ -636,6 +684,7 @@ bash "$SCRIPT_DIR/install.sh" read-once >/dev/null 2>&1
 # Modify both files
 echo "# outdated hook" > "$TEST_HOME/.claude/read-once/hook.sh"
 echo "# outdated cli" > "$TEST_HOME/.claude/read-once/read-once"
+echo "# outdated compact" > "$TEST_HOME/.claude/read-once/compact.sh"
 
 bash "$SCRIPT_DIR/install.sh" upgrade >/dev/null 2>&1
 
@@ -649,6 +698,12 @@ if grep -q "outdated" "$TEST_HOME/.claude/read-once/read-once" 2>/dev/null; then
   fail "upgrade did not update read-once CLI"
 else
   pass "upgrade updated read-once CLI"
+fi
+
+if grep -q "outdated" "$TEST_HOME/.claude/read-once/compact.sh" 2>/dev/null; then
+  fail "upgrade did not update read-once PostCompact hook"
+else
+  pass "upgrade updated read-once PostCompact hook"
 fi
 
 # Test 31: Help subcommand
