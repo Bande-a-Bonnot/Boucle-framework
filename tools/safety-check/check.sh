@@ -214,8 +214,30 @@ if [[ "${OS:-}" == "Windows_NT" ]] || [[ "$(uname -s 2>/dev/null)" == MINGW* ]] 
 fi
 
 # CLI version check: warn about known dangerous versions
-if command -v claude >/dev/null 2>&1; then
-    CLI_VERSION=$(claude --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "")
+read_claude_version() {
+    local tmp pid elapsed
+    tmp=$(mktemp) || return 0
+    (claude --version >"$tmp" 2>/dev/null) &
+    pid=$!
+    elapsed=0
+    while [ "$elapsed" -lt 3 ]; do
+        if ! kill -0 "$pid" 2>/dev/null; then
+            wait "$pid" 2>/dev/null || true
+            head -1 "$tmp"
+            rm -f "$tmp"
+            return 0
+        fi
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+    kill "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+    rm -f "$tmp"
+    return 0
+}
+
+if [ "${SAFETY_CHECK_SKIP_CLAUDE_VERSION:-}" != "1" ] && command -v claude >/dev/null 2>&1; then
+    CLI_VERSION=$(read_claude_version | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "")
     if [ -n "$CLI_VERSION" ]; then
         CLI_MAJOR_MINOR=$(echo "$CLI_VERSION" | cut -d. -f1-2)
         CLI_PATCH=$(echo "$CLI_VERSION" | cut -d. -f3)
@@ -234,6 +256,8 @@ if command -v claude >/dev/null 2>&1; then
                 WARNINGS+=("Claude CLI v$CLI_VERSION: this version was pulled from npm. Known issues: custom commands in .claude/commands/ are not discovered (claude-code#41497), SessionStart systemMessage display broken (claude-code#41285), custom skills (.claude/skills/) completely non-functional (claude-code#41530). Downgrade to v2.1.87 or wait for the next release.")
             fi
         fi
+    else
+        WARNINGS+=("Claude CLI is installed but 'claude --version' did not return within 3 seconds. Noninteractive runs may hang on CLI prompts; monitor long-running safety checks.")
     fi
 fi
 

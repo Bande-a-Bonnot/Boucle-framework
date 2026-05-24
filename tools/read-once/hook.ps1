@@ -48,8 +48,10 @@ if (-not $filePath -or -not $sessionId) { exit 0 }
 # Partial reads (offset/limit) are never cached
 if ($offset -or $limit) { exit 0 }
 
-# Session-scoped cache directory
-$cacheDir = Join-Path $HOME '.claude' 'read-once'
+# Session-scoped cache directory. Prefer env:HOME so tests and Git Bash
+# installs can isolate cache state on Windows.
+$homeRoot = if ($env:HOME) { $env:HOME } elseif ($env:USERPROFILE) { $env:USERPROFILE } else { $HOME }
+$cacheDir = Join-Path $homeRoot '.claude' 'read-once'
 if (-not (Test-Path $cacheDir)) { New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null }
 
 # Config

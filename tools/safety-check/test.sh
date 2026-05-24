@@ -8,6 +8,11 @@ PASS=0
 FAIL=0
 TOTAL=0
 
+# The safety check must guard real users from a hanging `claude --version`,
+# but this suite invokes check.sh many times and should not depend on the
+# operator's installed Claude CLI state.
+export SAFETY_CHECK_SKIP_CLAUDE_VERSION=1
+
 assert() {
     local name="$1"
     local expected="$2"
