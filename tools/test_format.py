@@ -59,6 +59,9 @@ def setup_hook_dir(test_home, hook):
         with open(os.path.join(hook_dir, "read-once"), "w") as fh:
             fh.write("#!/bin/bash\n")
         os.chmod(os.path.join(hook_dir, "read-once"), 0o755)
+        with open(os.path.join(hook_dir, "compact.sh"), "w") as fh:
+            fh.write("#!/bin/bash\n")
+        os.chmod(os.path.join(hook_dir, "compact.sh"), 0o755)
 
 
 def run_installer(test_home, hook):
@@ -149,6 +152,16 @@ for hook in HOOKS:
             p(f"{hook}: detected by safety-check logic")
         else:
             f(f"{hook}: NOT detected by safety-check")
+        if hook == "read-once":
+            compact_entries = settings.get("hooks", {}).get("PostCompact", [])
+            if compact_entries and check_nested_format(compact_entries):
+                p("read-once: writes nested PostCompact format")
+            else:
+                f("read-once: missing nested PostCompact format")
+            if check_hook_in_commands(compact_entries, "compact.sh"):
+                p("read-once: PostCompact command references compact.sh")
+            else:
+                f("read-once: PostCompact command does not reference compact.sh")
     finally:
         shutil.rmtree(test_home, ignore_errors=True)
 

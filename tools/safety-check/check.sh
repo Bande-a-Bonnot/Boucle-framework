@@ -87,7 +87,7 @@ try:
                "worktree-guard", "worktree_guard",
                "session-log", "session_log", "read-once", "read_once",
                "enforce-hooks", "enforce_hooks"]
-    all_hook_types = ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd",
+    all_hook_types = ["PreToolUse", "PostToolUse", "PostCompact", "SessionStart", "SessionEnd",
                       "Stop", "SubagentStop", "TaskCreated", "WorktreeCreate",
                       "WorktreeRemove", "UserPromptSubmit", "Notification",
                       "PermissionDenied"]
@@ -141,6 +141,7 @@ _merge_hooks() {
 _merge_hooks
 
 has_hook() { echo " $DETECTED_HOOKS " | grep -q " $1 "; }
+has_hook_event_command() { printf '%s\n' "$ALL_HOOK_CMDS" | grep -q "^$1:.*$2"; }
 
 # Check if a specific hook event type (e.g., "Stop") is configured in any settings file
 has_hook_type() {
@@ -213,8 +214,30 @@ if [[ "${OS:-}" == "Windows_NT" ]] || [[ "$(uname -s 2>/dev/null)" == MINGW* ]] 
 fi
 
 # CLI version check: warn about known dangerous versions
-if command -v claude >/dev/null 2>&1; then
-    CLI_VERSION=$(claude --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "")
+read_claude_version() {
+    local tmp pid elapsed
+    tmp=$(mktemp) || return 0
+    (claude --version >"$tmp" 2>/dev/null) &
+    pid=$!
+    elapsed=0
+    while [ "$elapsed" -lt 3 ]; do
+        if ! kill -0 "$pid" 2>/dev/null; then
+            wait "$pid" 2>/dev/null || true
+            head -1 "$tmp"
+            rm -f "$tmp"
+            return 0
+        fi
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+    kill "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+    rm -f "$tmp"
+    return 0
+}
+
+if [ "${SAFETY_CHECK_SKIP_CLAUDE_VERSION:-}" != "1" ] && command -v claude >/dev/null 2>&1; then
+    CLI_VERSION=$(read_claude_version | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "")
     if [ -n "$CLI_VERSION" ]; then
         CLI_MAJOR_MINOR=$(echo "$CLI_VERSION" | cut -d. -f1-2)
         CLI_PATCH=$(echo "$CLI_VERSION" | cut -d. -f3)
@@ -233,6 +256,8 @@ if command -v claude >/dev/null 2>&1; then
                 WARNINGS+=("Claude CLI v$CLI_VERSION: this version was pulled from npm. Known issues: custom commands in .claude/commands/ are not discovered (claude-code#41497), SessionStart systemMessage display broken (claude-code#41285), custom skills (.claude/skills/) completely non-functional (claude-code#41530). Downgrade to v2.1.87 or wait for the next release.")
             fi
         fi
+    else
+        WARNINGS+=("Claude CLI is installed but 'claude --version' did not return within 3 seconds. Noninteractive runs may hang on CLI prompts; monitor long-running safety checks.")
     fi
 fi
 
@@ -299,7 +324,7 @@ if [ -f "$SETTINGS_FILE" ]; then
 import json,sys
 try:
     s=json.load(open(sys.argv[1]))
-    print(s.get('permissions',{}).get('permissionMode',''))
+    print(s.get('permissionMode') or s.get('permissions',{}).get('permissionMode',''))
 except: print('')
 " "$SETTINGS_FILE" 2>/dev/null)
     if [ "$BYPASS_MODE" = "bypassPermissions" ]; then
@@ -758,7 +783,7 @@ try:
     if announcements:
         flags.append(f"sets companyAnnouncements — messages will appear as if from your company (social engineering risk)")
     # Flag 4: Project hooks that reference external URLs or suspicious commands
-    all_hook_types = ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd",
+    all_hook_types = ["PreToolUse", "PostToolUse", "PostCompact", "SessionStart", "SessionEnd",
                       "Stop", "SubagentStop", "TaskCreated", "WorktreeCreate",
                       "WorktreeRemove", "UserPromptSubmit", "Notification",
                       "PermissionDenied"]
@@ -1020,6 +1045,13 @@ check "read-once (prevents redundant file reads)" 5 \
     "$(has_hook read-once && echo true || echo false)" \
     "No read-once: Claude re-reads files it already has, wasting tokens" \
     "curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/read-once/install.sh | bash"
+
+if has_hook read-once; then
+    check "read-once PostCompact cache reset" 2 \
+        "$(has_hook_event_command "PostCompact" "read-once.*compact" && echo true || echo false)" \
+        "read-once installed without PostCompact cache reset: after compaction, first re-reads may still be blocked by stale session cache" \
+        "curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- upgrade"
+fi
 
 # === Section 6: Built-in protections ===
 echo ""
@@ -1496,7 +1528,17 @@ if [ -n "$HOOK_PATHS" ]; then
     while IFS= read -r hook_path; do
         [ -z "$hook_path" ] && continue
         # Expand ~ to HOME
-        expanded_path="${hook_path/#\~/$HOME}"
+        expanded_path="$hook_path"
+        if [[ "$expanded_path" == bash\ * ]]; then
+            expanded_path="${expanded_path#bash }"
+        elif [[ "$expanded_path" == python3\ * ]]; then
+            expanded_path="${expanded_path#python3 }"
+        elif [[ "$expanded_path" == pwsh\ -File\ * ]]; then
+            expanded_path="${expanded_path#pwsh -File }"
+        fi
+        expanded_path="${expanded_path%\"}"
+        expanded_path="${expanded_path#\"}"
+        expanded_path="${expanded_path/#\~/$HOME}"
         hook_basename=$(basename "$expanded_path")
         if [ ! -f "$expanded_path" ]; then
             printf "  ${RED}✗${NC} %s — file not found\n" "$hook_basename"
@@ -1570,19 +1612,24 @@ if [ "$VERIFY_MODE" = "1" ] && [ -n "$HOOK_PATHS" ]; then
         fi
 
         local output=""
+        local stderr=""
         local exit_code=0
+        local stderr_file
+        stderr_file=$(mktemp)
         # Run the hook (timeout via background+wait if coreutils timeout unavailable)
         if [[ "$hook_cmd" == bash\ * ]]; then
-            output=$(echo "$payload" | bash "$script_path" 2>/dev/null) || exit_code=$?
+            output=$(echo "$payload" | bash "$script_path" 2>"$stderr_file") || exit_code=$?
         elif [[ "$hook_cmd" == python3\ * ]]; then
-            output=$(echo "$payload" | python3 "$script_path" 2>/dev/null) || exit_code=$?
+            output=$(echo "$payload" | python3 "$script_path" 2>"$stderr_file") || exit_code=$?
         else
-            output=$(echo "$payload" | "$script_path" 2>/dev/null) || exit_code=$?
+            output=$(echo "$payload" | "$script_path" 2>"$stderr_file") || exit_code=$?
         fi
+        stderr=$(cat "$stderr_file")
+        rm -f "$stderr_file"
 
         if [ "$expect_block" = "true" ]; then
             # Should have blocked — look for deny in JSON output (both old and new format)
-            if [ -n "$output" ] && echo "$output" | grep -qE '"permissionDecision"[[:space:]]*:[[:space:]]*"deny"|"decision"[[:space:]]*:[[:space:]]*"block"'; then
+            if { [ -n "$output" ] && echo "$output" | grep -qE '"permissionDecision"[[:space:]]*:[[:space:]]*"deny"|"decision"[[:space:]]*:[[:space:]]*"block"'; } || { [ "$exit_code" -eq 2 ] && [ -n "$stderr" ]; }; then
                 VERIFY_PASS=$((VERIFY_PASS + 1))
                 printf "  ${GREEN}✓${NC} %s — blocks correctly\n" "$name"
             else
