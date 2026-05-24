@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 HOOK = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hook.ps1")
 PASS = 0
@@ -129,6 +130,24 @@ def make_repo(tmpdir, name="repo"):
     return clone
 
 
+def remove_tmpdir(path):
+    """Remove a temp git repo, retrying Windows file-lock cleanup."""
+    for _ in range(5):
+        try:
+            shutil.rmtree(path)
+            return
+        except PermissionError:
+            for root, dirs, files in os.walk(path):
+                for name in dirs + files:
+                    full_path = os.path.join(root, name)
+                    try:
+                        os.chmod(full_path, 0o700)
+                    except OSError:
+                        pass
+            time.sleep(0.2)
+    shutil.rmtree(path, ignore_errors=True)
+
+
 # ============================================================
 # Tests
 # ============================================================
@@ -159,7 +178,7 @@ def test_disabled_env():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_clean_repo_allowed():
@@ -173,7 +192,7 @@ def test_clean_repo_allowed():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_uncommitted_staged_blocked():
@@ -191,7 +210,7 @@ def test_uncommitted_staged_blocked():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_uncommitted_unstaged_blocked():
@@ -208,7 +227,7 @@ def test_uncommitted_unstaged_blocked():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_untracked_files_blocked():
@@ -225,7 +244,7 @@ def test_untracked_files_blocked():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_unmerged_commits_blocked():
@@ -245,7 +264,7 @@ def test_unmerged_commits_blocked():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_unpushed_commits_blocked():
@@ -265,7 +284,7 @@ def test_unpushed_commits_blocked():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_config_allow_uncommitted():
@@ -286,7 +305,7 @@ def test_config_allow_uncommitted():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_config_allow_untracked():
@@ -304,7 +323,7 @@ def test_config_allow_untracked():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_config_allow_unmerged():
@@ -325,7 +344,7 @@ def test_config_allow_unmerged():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_config_allow_unpushed():
@@ -345,7 +364,7 @@ def test_config_allow_unpushed():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_config_base_override():
@@ -370,7 +389,7 @@ def test_config_base_override():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_squash_merge_detected():
@@ -400,7 +419,7 @@ def test_squash_merge_detected():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_not_git_repo():
@@ -413,7 +432,7 @@ def test_not_git_repo():
             cwd=tmpdir,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_config_comments_ignored():
@@ -431,7 +450,7 @@ def test_config_comments_ignored():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_multiple_issues_first_blocks():
@@ -451,7 +470,7 @@ def test_multiple_issues_first_blocks():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 # ============================================================

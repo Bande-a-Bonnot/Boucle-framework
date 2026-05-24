@@ -7,11 +7,20 @@ CHECK_SCRIPT="$SCRIPT_DIR/check.sh"
 PASS=0
 FAIL=0
 TOTAL=0
+ORIGINAL_HOME="$HOME"
+TEST_HOME="$(mktemp -d)"
 
 # The safety check must guard real users from a hanging `claude --version`,
 # but this suite invokes check.sh many times and should not depend on the
 # operator's installed Claude CLI state.
 export SAFETY_CHECK_SKIP_CLAUDE_VERSION=1
+export HOME="$TEST_HOME"
+
+cleanup() {
+    export HOME="$ORIGINAL_HOME"
+    rm -rf "$TEST_HOME"
+}
+trap cleanup EXIT
 
 assert() {
     local name="$1"
@@ -3133,7 +3142,7 @@ echo '{}' > "$HOME/.claude/settings.json"
 mkdir -p "$TMPDIR_V88/bin"
 printf '#!/bin/bash\necho "claude v2.1.88"' > "$TMPDIR_V88/bin/claude"
 chmod +x "$TMPDIR_V88/bin/claude"
-V88_OUTPUT=$(PATH="$TMPDIR_V88/bin:$PATH" bash "$CHECK_SCRIPT" 2>&1) || true
+V88_OUTPUT=$(SAFETY_CHECK_SKIP_CLAUDE_VERSION=0 PATH="$TMPDIR_V88/bin:$PATH" bash "$CHECK_SCRIPT" 2>&1) || true
 assert "v2.1.88 warning shown" "pulled from npm" "$V88_OUTPUT"
 assert "v2.1.88 references commands issue" "claude-code#41497" "$V88_OUTPUT"
 assert "v2.1.88 references skills regression" "claude-code#41530" "$V88_OUTPUT"
@@ -3149,7 +3158,7 @@ echo '{}' > "$HOME/.claude/settings.json"
 mkdir -p "$TMPDIR_V87/bin"
 printf '#!/bin/bash\necho "claude v2.1.87"' > "$TMPDIR_V87/bin/claude"
 chmod +x "$TMPDIR_V87/bin/claude"
-V87_OUTPUT=$(PATH="$TMPDIR_V87/bin:$PATH" bash "$CHECK_SCRIPT" 2>&1) || true
+V87_OUTPUT=$(SAFETY_CHECK_SKIP_CLAUDE_VERSION=0 PATH="$TMPDIR_V87/bin:$PATH" bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "v2.1.87 no pulled-from-npm warning" "pulled from npm" "$V87_OUTPUT"
 export HOME="$SAVE_HOME"
 rm -rf "$TMPDIR_V87"
