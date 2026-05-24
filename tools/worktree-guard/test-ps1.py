@@ -355,7 +355,7 @@ def test_config_allow_unpushed():
     try:
         repo = make_repo(tmpdir)
         with open(os.path.join(repo, ".worktree-guard"), "w") as f:
-            f.write("allow: unpushed\n")
+            f.write("allow: unmerged\nallow: unpushed\n")
         with open(os.path.join(repo, "local.txt"), "w") as f:
             f.write("local")
         git(["add", ".worktree-guard", "local.txt"], cwd=repo)
@@ -380,13 +380,13 @@ def test_config_base_override():
             f.write("feature")
         git(["add", "feature.txt"], cwd=repo)
         git(["commit", "-m", "feature on develop"], cwd=repo)
-        # Create feature branch from develop (same content)
-        git(["checkout", "-b", "feature"], cwd=repo)
         # Config points base to develop, not main
         with open(os.path.join(repo, ".worktree-guard"), "w") as f:
             f.write("base: develop\n")
         git(["add", ".worktree-guard"], cwd=repo)
         git(["commit", "-m", "add worktree guard config"], cwd=repo)
+        # Create feature branch from develop (same content and config)
+        git(["checkout", "-b", "feature"], cwd=repo)
         assert_allowed(
             "base override to develop allows matching branch",
             make_input("ExitWorktree"),
