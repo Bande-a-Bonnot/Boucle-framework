@@ -280,7 +280,7 @@ def test_unpushed_commits_blocked():
         assert_blocked(
             "unpushed commits block",
             make_input("ExitWorktree"),
-            substring="unpushed",
+            substring="unmerged",
             cwd=repo,
         )
     finally:
@@ -338,6 +338,8 @@ def test_config_allow_unmerged():
         git(["commit", "-m", "feature"], cwd=repo)
         with open(os.path.join(repo, ".worktree-guard"), "w") as f:
             f.write("allow: unmerged\n")
+        git(["add", ".worktree-guard"], cwd=repo)
+        git(["commit", "-m", "add worktree guard config"], cwd=repo)
         assert_allowed(
             "config allows unmerged",
             make_input("ExitWorktree"),
@@ -356,7 +358,7 @@ def test_config_allow_unpushed():
             f.write("allow: unpushed\n")
         with open(os.path.join(repo, "local.txt"), "w") as f:
             f.write("local")
-        git(["add", "local.txt"], cwd=repo)
+        git(["add", ".worktree-guard", "local.txt"], cwd=repo)
         git(["commit", "-m", "local"], cwd=repo)
         assert_allowed(
             "config allows unpushed",
@@ -383,6 +385,8 @@ def test_config_base_override():
         # Config points base to develop, not main
         with open(os.path.join(repo, ".worktree-guard"), "w") as f:
             f.write("base: develop\n")
+        git(["add", ".worktree-guard"], cwd=repo)
+        git(["commit", "-m", "add worktree guard config"], cwd=repo)
         assert_allowed(
             "base override to develop allows matching branch",
             make_input("ExitWorktree"),
@@ -411,6 +415,7 @@ def test_squash_merge_detected():
         git(["checkout", "main"], cwd=repo)
         git(["merge", "--squash", "feature"], cwd=repo)
         git(["commit", "-m", "squash merge feature"], cwd=repo)
+        git(["push", "origin", "main"], cwd=repo)
         # Go back to feature branch — tier 2 should detect content match
         git(["checkout", "feature"], cwd=repo)
         assert_allowed(
