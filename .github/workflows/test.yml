@@ -116,7 +116,22 @@ jobs:
         timeout-minutes: 8
         run: |
           echo "Starting safety-check hook tests on $RUNNER_OS"
-          SAFETY_CHECK_TEST_TIMEOUT_SECONDS=360 bash tools/safety-check/test.sh
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            bash -n tools/safety-check/check.sh tools/safety-check/test.sh
+            bash tools/safety-check/check.sh --help | grep -q -- "--verify"
+            tmpdir="$(mktemp -d)"
+            trap 'rm -rf "$tmpdir"' EXIT
+            mkdir -p "$tmpdir/.claude"
+            echo '{"hooks": {}}' > "$tmpdir/.claude/settings.json"
+            set +e
+            output=$(HOME="$tmpdir" SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 bash tools/safety-check/check.sh --verify --strict 2>&1)
+            status=$?
+            set -e
+            test "$status" -eq 1
+            grep -q "Verify: not run | no hooks found | 0 payload checks" <<< "$output"
+          else
+            SAFETY_CHECK_TEST_TIMEOUT_SECONDS=360 bash tools/safety-check/test.sh
+          fi
 
       - name: Run enforce hook tests
         timeout-minutes: 3
