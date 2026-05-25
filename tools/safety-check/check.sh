@@ -386,6 +386,8 @@ try:
         or s.get('defaultMode')
         or perms.get('permissionMode')
         or perms.get('defaultMode')
+        or ('bypassPermissions' if s.get('bypassPermissions') is True else '')
+        or ('bypassPermissions' if perms.get('dangerouslySkipPermissions') is True else '')
         or ''
     )
     print(mode)
@@ -1702,6 +1704,7 @@ try:
     requested = sys.argv[2:]
     all_hook_types = requested or [
         "PreToolUse", "PostToolUse", "SessionStart", "SessionEnd",
+        "PostCompact",
         "Stop", "SubagentStop", "TaskCreated", "WorktreeCreate",
         "WorktreeRemove", "UserPromptSubmit", "Notification",
         "PermissionDenied",
@@ -1863,10 +1866,11 @@ if [ "$VERIFY_MODE" = "1" ] && [ -n "$HOOK_PATHS" ]; then
         rm -f "$stdout_file" "$stderr_file"
 
         if [ "$expect_block" = "true" ]; then
-            # Should have blocked. Accept both the old JSON-deny path and the newer
-            # hard-block contract: non-zero exit 2 with the deny reason on stderr.
-            if { [ "$exit_code" -eq 2 ] && [ -z "$output" ] && [ -n "$stderr_output" ]; } || \
-               { [ -n "$output" ] && echo "$output" | grep -qE '"permissionDecision"[[:space:]]*:[[:space:]]*"deny"|"decision"[[:space:]]*:[[:space:]]*"block"'; }; then
+            # Should have blocked. Strict verification requires a JSON block/deny
+            # decision on stdout; non-strict verification still accepts the
+            # documented exit-code-2 path but the audit warns about its platform risk.
+            if { [ -n "$output" ] && echo "$output" | grep -qE '"permissionDecision"[[:space:]]*:[[:space:]]*"deny"|"decision"[[:space:]]*:[[:space:]]*"block"'; } || \
+               { [ "$STRICT_MODE" != "1" ] && [ "$exit_code" -eq 2 ] && [ -z "$output" ] && [ -n "$stderr_output" ]; }; then
                 VERIFY_PASS=$((VERIFY_PASS + 1))
                 printf "  ${GREEN}✓${NC} %s - blocks correctly\n" "$name"
             else

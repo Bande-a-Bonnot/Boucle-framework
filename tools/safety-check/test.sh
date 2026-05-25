@@ -649,6 +649,18 @@ VBG_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
 assert "verify bash-guard blocks" "blocks correctly" "$VBG_OUTPUT"
 assert "verify bash-guard passes safe" "passes safe" "$VBG_OUTPUT"
 assert "verify has section header" "Hook Verification" "$VBG_OUTPUT"
+set +e
+VBG_STRICT_OUTPUT=$(bash "$CHECK_SCRIPT" --verify --strict 2>&1)
+VBG_STRICT_EXIT=$?
+set -e
+TOTAL=$((TOTAL + 1))
+if [ "$VBG_STRICT_EXIT" -eq 1 ]; then
+    PASS=$((PASS + 1))
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: strict exit-code-2 verify should exit 1, got $VBG_STRICT_EXIT"
+fi
+assert "strict exit-code-2 verify is fail-open" "FAIL-OPEN" "$VBG_STRICT_OUTPUT"
 rm -rf "$TMPDIR_VBG"
 
 # === Test 26b: --verify honors sh-wrapped hook scripts without executable bit ===
@@ -846,7 +858,14 @@ rm -rf "$TMPDIR_VSL"
 TMPDIR_VSUM=$(mktemp -d)
 export HOME="$TMPDIR_VSUM"
 mkdir -p "$TMPDIR_VSUM/.claude/hooks"
-cp "$SCRIPT_DIR/../bash-guard/hook.sh" "$TMPDIR_VSUM/.claude/hooks/bash-guard.sh"
+cat > "$TMPDIR_VSUM/.claude/hooks/bash-guard.sh" << 'VSUMHOOK'
+#!/usr/bin/env bash
+payload=$(cat)
+case "$payload" in
+  *"rm -rf /"*) printf '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"blocked"}}\n' ;;
+esac
+exit 0
+VSUMHOOK
 chmod +x "$TMPDIR_VSUM/.claude/hooks/bash-guard.sh"
 cat > "$TMPDIR_VSUM/.claude/settings.json" << VSUMSET
 {
@@ -1000,7 +1019,14 @@ rm -rf "$TMPDIR_VCUSTOM"
 TMPDIR_VMIXED_SKIP=$(mktemp -d)
 export HOME="$TMPDIR_VMIXED_SKIP"
 mkdir -p "$TMPDIR_VMIXED_SKIP/.claude/hooks"
-cp "$SCRIPT_DIR/../bash-guard/hook.sh" "$TMPDIR_VMIXED_SKIP/.claude/hooks/bash-guard.sh"
+cat > "$TMPDIR_VMIXED_SKIP/.claude/hooks/bash-guard.sh" << 'VMIXEDHOOK'
+#!/usr/bin/env bash
+payload=$(cat)
+case "$payload" in
+  *"rm -rf /"*) printf '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"blocked"}}\n' ;;
+esac
+exit 0
+VMIXEDHOOK
 chmod +x "$TMPDIR_VMIXED_SKIP/.claude/hooks/bash-guard.sh"
 cat > "$TMPDIR_VMIXED_SKIP/.claude/settings.json" << VMIXEDSKIP
 {
@@ -1076,6 +1102,46 @@ else
 fi
 assert "strict lifecycle skip keeps boundary" "Boundary: no PreToolUse payload checks ran" "$VLIFECYCLE_STRICT_OUTPUT"
 rm -rf "$TMPDIR_VLIFECYCLE"
+
+# === Test 35e: --verify skips PostCompact hooks from the default hook list ===
+TMPDIR_VPOSTCOMPACT=$(mktemp -d)
+export HOME="$TMPDIR_VPOSTCOMPACT"
+mkdir -p "$TMPDIR_VPOSTCOMPACT/.claude/hooks"
+cat > "$TMPDIR_VPOSTCOMPACT/.claude/hooks/session-compact.sh" << 'VPOSTCOMPACTHOOK'
+#!/usr/bin/env bash
+exit 0
+VPOSTCOMPACTHOOK
+chmod +x "$TMPDIR_VPOSTCOMPACT/.claude/hooks/session-compact.sh"
+cat > "$TMPDIR_VPOSTCOMPACT/.claude/settings.json" << VPOSTCOMPACT
+{
+  "hooks": {
+    "PostCompact": [
+      {
+        "hooks": [{"type": "command", "command": "bash $TMPDIR_VPOSTCOMPACT/.claude/hooks/session-compact.sh"}]
+      }
+    ]
+  }
+}
+VPOSTCOMPACT
+VPOSTCOMPACT_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+assert "verify PostCompact hook skipped" "skipped, not a PreToolUse hook" "$VPOSTCOMPACT_OUTPUT"
+assert "verify PostCompact counted skipped" "1 skipped" "$VPOSTCOMPACT_OUTPUT"
+assert "verify PostCompact says no payload checks ran" "No payload checks ran" "$VPOSTCOMPACT_OUTPUT"
+assert "verify PostCompact summary has zero payload checks" "Verify: 0 FAIL-OPEN | 0 payload checks | 1 skipped" "$VPOSTCOMPACT_OUTPUT"
+assert "verify PostCompact boundary says no pretooluse checks ran" "Boundary: no PreToolUse payload checks ran" "$VPOSTCOMPACT_OUTPUT"
+set +e
+VPOSTCOMPACT_STRICT_OUTPUT=$(bash "$CHECK_SCRIPT" --verify --strict 2>&1)
+VPOSTCOMPACT_STRICT_EXIT=$?
+set -e
+TOTAL=$((TOTAL + 1))
+if [ "$VPOSTCOMPACT_STRICT_EXIT" -eq 1 ]; then
+    PASS=$((PASS + 1))
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: strict all-skipped PostCompact verify should exit 1, got $VPOSTCOMPACT_STRICT_EXIT"
+fi
+assert "strict PostCompact skip keeps boundary" "Boundary: no PreToolUse payload checks ran" "$VPOSTCOMPACT_STRICT_OUTPUT"
+rm -rf "$TMPDIR_VPOSTCOMPACT"
 
 stage "rule coverage fixtures"
 # === Test 36: CLAUDE.md rule coverage - suggests file-guard ===
@@ -1544,6 +1610,38 @@ assert "bypassPermissions warning shown" "bypassPermissions" "$BYPASS_OUTPUT"
 assert "bypassPermissions mentions reset" "reset" "$BYPASS_OUTPUT"
 assert "bypassPermissions references #38372" "38372" "$BYPASS_OUTPUT"
 rm -rf "$TMPDIR_BYPASS"
+
+# === Test 69b: boolean bypassPermissions also maps to bypass mode warnings ===
+TMPDIR_BOOL_BYPASS=$(mktemp -d)
+export HOME="$TMPDIR_BOOL_BYPASS"
+mkdir -p "$TMPDIR_BOOL_BYPASS/.claude"
+cat > "$TMPDIR_BOOL_BYPASS/.claude/settings.json" << 'BOOLBYPASS'
+{
+  "bypassPermissions": true
+}
+BOOLBYPASS
+BOOL_BYPASS_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "boolean bypassPermissions warning shown" "bypassPermissions" "$BOOL_BYPASS_OUTPUT"
+assert "boolean bypassPermissions mentions reset" "reset" "$BOOL_BYPASS_OUTPUT"
+assert "boolean bypassPermissions triggers sensitive-file warning" "sensitive-file prompt" "$BOOL_BYPASS_OUTPUT"
+rm -rf "$TMPDIR_BOOL_BYPASS"
+
+# === Test 69c: permissions.dangerouslySkipPermissions maps to bypass mode warnings ===
+TMPDIR_DANG_BYPASS=$(mktemp -d)
+export HOME="$TMPDIR_DANG_BYPASS"
+mkdir -p "$TMPDIR_DANG_BYPASS/.claude"
+cat > "$TMPDIR_DANG_BYPASS/.claude/settings.json" << 'DANGBYPASS'
+{
+  "permissions": {
+    "dangerouslySkipPermissions": true
+  }
+}
+DANGBYPASS
+DANG_BYPASS_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "dangerouslySkipPermissions warning shown" "bypassPermissions" "$DANG_BYPASS_OUTPUT"
+assert "dangerouslySkipPermissions mentions reset" "reset" "$DANG_BYPASS_OUTPUT"
+assert "dangerouslySkipPermissions triggers sensitive-file warning" "sensitive-file prompt" "$DANG_BYPASS_OUTPUT"
+rm -rf "$TMPDIR_DANG_BYPASS"
 
 # === Test 70: No bypassPermissions warning for default mode ===
 TMPDIR_DEFAULT=$(mktemp -d)

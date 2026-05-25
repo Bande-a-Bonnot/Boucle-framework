@@ -17,7 +17,7 @@ The default audit checks whether hooks are configured. Verification mode checks 
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
-Each hook payload check has a 5 second timeout, so a stuck hook is reported as `FAIL-OPEN` evidence instead of hanging the audit. Set `HOOK_VERIFY_TIMEOUT_SECONDS` only if a deliberately slow local hook needs a longer bound.
+Each hook payload check has a 5-second timeout, so a stuck hook is reported as `FAIL-OPEN` evidence instead of hanging the audit. Set `HOOK_VERIFY_TIMEOUT_SECONDS` only if a deliberately slow local hook needs a longer bound.
 
 Use `--help` to check supported flags. Unknown flags fail closed instead of falling back to the basic audit, so a typo cannot make `--verify` look like it ran.
 
