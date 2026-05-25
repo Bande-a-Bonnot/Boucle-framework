@@ -76,9 +76,13 @@ If those are clean, document the remaining platform warnings as residual risk. F
 | git-safe | 15 | Blocks force push, hard reset |
 | file-guard | 15 | Protects `.env`, keys, secrets |
 | branch-guard | 10 | Prevents commits to main/master |
+| worktree-guard | 10 | Prevents unsafe worktree exit when changes or commits are still unmerged |
 | session-log | 15 | Audit trail of all tool calls |
-| read-once | 10 | Prevents redundant file reads |
+| read-once | 5 | Prevents redundant file reads |
 | Permission rules | 5 | Allow/deny rules in settings |
+| enforce-hooks | 10 | Turns `CLAUDE.md` rules into hook checks |
+| `@enforced` rules | 5 | Marks `CLAUDE.md` rules for deterministic enforcement |
+| read-once PostCompact reset | 2 | Conditional check when read-once is installed |
 
 ## Grades
 

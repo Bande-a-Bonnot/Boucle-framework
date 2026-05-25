@@ -1625,6 +1625,8 @@ _run_hook_with_timeout() {
     local timeout_seconds="$3"
     local payload="$4"
     python3 - "$interpreter" "$script_path" "$timeout_seconds" "$payload" << 'PYEOF_RUNHOOK'
+import os
+import signal
 import subprocess
 import sys
 
@@ -1734,15 +1736,6 @@ _sort_hook_paths() {
     local paths="$1"
     if [ -n "$paths" ]; then
         printf "%s\n" "$paths" | sort -u
-    fi
-}
-
-_count_nonempty_lines() {
-    local lines="$1"
-    if [ -z "$lines" ]; then
-        printf "0"
-    else
-        printf "%s\n" "$lines" | awk 'NF { count++ } END { print count + 0 }'
     fi
 }
 
