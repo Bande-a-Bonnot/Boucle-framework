@@ -7,6 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TOTAL_PASS=0
 TOTAL_FAIL=0
 FAILED_SUITES=""
+SUITE_TIMEOUT_SECONDS="${SUITE_TIMEOUT_SECONDS:-420}"
 
 echo "=== Environment ==="
 echo "OS: $(uname -s) $(uname -r)"
@@ -25,10 +26,14 @@ run_suite() {
   echo "  $name"
   echo "========================================"
 
-  if bash "$script"; then
+  if perl -e 'alarm shift @ARGV; exec @ARGV' "$SUITE_TIMEOUT_SECONDS" bash "$script"; then
     echo "  -> $name: OK"
   else
+    local exit_code=$?
     echo "  -> $name: FAILED"
+    if [ "$exit_code" -eq 142 ]; then
+      echo "  -> $name: timed out after ${SUITE_TIMEOUT_SECONDS}s"
+    fi
     TOTAL_FAIL=$((TOTAL_FAIL + 1))
     FAILED_SUITES="$FAILED_SUITES $name"
     return 1
