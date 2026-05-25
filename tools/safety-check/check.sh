@@ -1869,7 +1869,7 @@ if [ "$VERIFY_MODE" = "1" ] && [ -n "$HOOK_PATHS" ]; then
             # Should have blocked. Strict verification requires a JSON block/deny
             # decision on stdout; non-strict verification still accepts the
             # documented exit-code-2 path but the audit warns about its platform risk.
-            if { [ -n "$output" ] && echo "$output" | grep -qE '"permissionDecision"[[:space:]]*:[[:space:]]*"deny"|"decision"[[:space:]]*:[[:space:]]*"block"'; } || \
+            if { [ "$exit_code" -eq 0 ] && [ -n "$output" ] && echo "$output" | grep -qE '"permissionDecision"[[:space:]]*:[[:space:]]*"deny"|"decision"[[:space:]]*:[[:space:]]*"block"'; } || \
                { [ "$STRICT_MODE" != "1" ] && [ "$exit_code" -eq 2 ] && [ -z "$output" ] && [ -n "$stderr_output" ]; }; then
                 VERIFY_PASS=$((VERIFY_PASS + 1))
                 printf "  ${GREEN}✓${NC} %s - blocks correctly\n" "$name"

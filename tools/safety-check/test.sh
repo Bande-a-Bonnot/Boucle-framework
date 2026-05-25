@@ -694,8 +694,50 @@ assert "verify sh-wrapped hook summary passes" "Verify: 0 FAIL-OPEN | 2 payload 
 assert_not "verify sh-wrapped hook not marked non-executable" "not executable" "$VSH_OUTPUT"
 rm -rf "$TMPDIR_VSH"
 
+# === Test 26c: --verify rejects JSON deny output from a crashing hook ===
+TMPDIR_VCRASH=$(mktemp -d)
+export HOME="$TMPDIR_VCRASH"
+mkdir -p "$TMPDIR_VCRASH/.claude/hooks"
+cat > "$TMPDIR_VCRASH/.claude/hooks/bash-guard.sh" << 'VCRASHHOOK'
+#!/usr/bin/env bash
+payload=$(cat)
+case "$payload" in
+  *"rm -rf /"*) printf '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"blocked"}}\n' ;;
+esac
+exit 1
+VCRASHHOOK
+chmod +x "$TMPDIR_VCRASH/.claude/hooks/bash-guard.sh"
+cat > "$TMPDIR_VCRASH/.claude/settings.json" << VCRASHSETTINGS
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "bash $TMPDIR_VCRASH/.claude/hooks/bash-guard.sh"}]
+      }
+    ]
+  }
+}
+VCRASHSETTINGS
+VCRASH_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+assert "verify JSON plus exit 1 is fail-open" "FAIL-OPEN" "$VCRASH_OUTPUT"
+assert_not "verify JSON plus exit 1 does not pass" "All.*payload checks passed" "$VCRASH_OUTPUT"
+set +e
+VCRASH_STRICT_OUTPUT=$(bash "$CHECK_SCRIPT" --verify --strict 2>&1)
+VCRASH_STRICT_EXIT=$?
+set -e
+TOTAL=$((TOTAL + 1))
+if [ "$VCRASH_STRICT_EXIT" -eq 1 ]; then
+    PASS=$((PASS + 1))
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: strict JSON plus exit 1 verify should exit 1, got $VCRASH_STRICT_EXIT"
+fi
+assert "strict JSON plus exit 1 is fail-open" "FAIL-OPEN" "$VCRASH_STRICT_OUTPUT"
+rm -rf "$TMPDIR_VCRASH"
+
 stage "verify timeout guard"
-# === Test 26c: --verify cannot hang forever on a stuck hook ===
+# === Test 26d: --verify cannot hang forever on a stuck hook ===
 TMPDIR_VHANG=$(mktemp -d)
 export HOME="$TMPDIR_VHANG"
 mkdir -p "$TMPDIR_VHANG/.claude/hooks"
