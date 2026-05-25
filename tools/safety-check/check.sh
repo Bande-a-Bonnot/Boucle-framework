@@ -1886,7 +1886,7 @@ if [ "$VERIFY_MODE" = "1" ] && [ -n "$HOOK_PATHS" ]; then
             fi
         else
             # Should pass through - just verify it doesn't crash
-            if [ "$exit_code" -le 1 ]; then
+            if [ "$exit_code" -eq 0 ]; then
                 VERIFY_PASS=$((VERIFY_PASS + 1))
                 printf "  ${GREEN}✓${NC} %s - passes safe payload\n" "$name"
             else

@@ -721,6 +721,7 @@ cat > "$TMPDIR_VCRASH/.claude/settings.json" << VCRASHSETTINGS
 VCRASHSETTINGS
 VCRASH_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
 assert "verify JSON plus exit 1 is fail-open" "FAIL-OPEN" "$VCRASH_OUTPUT"
+assert "verify JSON plus exit 1 fails safe payload" "crashed on safe payload (exit 1)" "$VCRASH_OUTPUT"
 assert_not "verify JSON plus exit 1 does not pass" "All.*payload checks passed" "$VCRASH_OUTPUT"
 set +e
 VCRASH_STRICT_OUTPUT=$(bash "$CHECK_SCRIPT" --verify --strict 2>&1)
