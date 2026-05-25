@@ -114,7 +114,12 @@ jobs:
 
       - name: Run safety-check hook tests
         timeout-minutes: 12
-        run: perl -e 'alarm 720; exec @ARGV' bash tools/safety-check/test.sh
+        run: |
+          if command -v timeout >/dev/null 2>&1; then
+            timeout -k 30s 9m bash tools/safety-check/test.sh
+          else
+            perl -e 'alarm 540; exec @ARGV' bash tools/safety-check/test.sh
+          fi
 
       - name: Run enforce hook tests
         timeout-minutes: 3
