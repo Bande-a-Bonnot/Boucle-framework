@@ -118,6 +118,7 @@ assert_not() {
     note_progress
 }
 
+stage "baseline audit"
 # === Test 1: Script runs without errors ===
 OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert "script runs" "Safety Score:" "$OUTPUT"
@@ -720,6 +721,7 @@ assert "verify hanging hook is fail-open evidence" "FAIL-OPEN" "$VHANG_OUTPUT"
 assert "verify hanging hook still prints summary" "Verify:" "$VHANG_OUTPUT"
 rm -rf "$TMPDIR_VHANG"
 
+stage "verify hook matrix"
 # === Test 27: --verify with broken (fail-open) hook ===
 TMPDIR_VBROKEN=$(mktemp -d)
 export HOME="$TMPDIR_VBROKEN"
@@ -1075,6 +1077,7 @@ fi
 assert "strict lifecycle skip keeps boundary" "Boundary: no PreToolUse payload checks ran" "$VLIFECYCLE_STRICT_OUTPUT"
 rm -rf "$TMPDIR_VLIFECYCLE"
 
+stage "rule coverage fixtures"
 # === Test 36: CLAUDE.md rule coverage - suggests file-guard ===
 TMPDIR_RC1=$(mktemp -d)
 export HOME="$TMPDIR_RC1"
