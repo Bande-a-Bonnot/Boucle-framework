@@ -43,6 +43,10 @@ note_progress() {
     fi
 }
 
+stage() {
+    echo "safety-check stage: $1"
+}
+
 assert() {
     local name="$1"
     local expected="$2"
@@ -164,6 +168,7 @@ assert "strict without verify explains requirement" "Option --strict requires --
 assert "strict without verify shows usage" "Usage: check.sh" "$STRICT_NO_VERIFY_OUTPUT"
 assert_not "strict without verify does not run audit" "Safety Score:" "$STRICT_NO_VERIFY_OUTPUT"
 
+stage "version timeout guard"
 # === Test 9e: Hanging claude --version cannot hang the audit ===
 TMPDIR_HANGING_CLAUDE=$(mktemp -d)
 TMPDIR_HANGING_AUDIT=$(mktemp -d)
@@ -636,6 +641,7 @@ assert "verify sh-wrapped hook summary passes" "Verify: 0 FAIL-OPEN | 2 payload 
 assert_not "verify sh-wrapped hook not marked non-executable" "not executable" "$VSH_OUTPUT"
 rm -rf "$TMPDIR_VSH"
 
+stage "verify timeout guard"
 # === Test 26c: --verify cannot hang forever on a stuck hook ===
 TMPDIR_VHANG=$(mktemp -d)
 export HOME="$TMPDIR_VHANG"
@@ -3552,6 +3558,7 @@ assert_not "non-symlinked .claude no warning" "claude-code#41451" "$NOSYM_OUTPUT
 cd "$ORIG_DIR"
 rm -rf "$TMPDIR_NOSYM"
 
+stage "version warning fixtures"
 # Test: v2.1.88 version warning
 SAVE_HOME="$HOME"
 TMPDIR_V88=$(mktemp -d)
