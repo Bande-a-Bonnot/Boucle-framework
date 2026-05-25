@@ -10,6 +10,10 @@ TOTAL=0
 ORIGINAL_HOME="$HOME"
 TEST_HOME="$(mktemp -d)"
 PROGRESS_EVERY=25
+CURRENT_STAGE="startup"
+PROGRESS_FILE="$(mktemp)"
+SAFETY_CHECK_TEST_TIMEOUT_SECONDS="${SAFETY_CHECK_TEST_TIMEOUT_SECONDS:-540}"
+WATCHDOG_PID=""
 
 # The safety check must guard real users from a hanging `claude --version`,
 # but this suite invokes check.sh many times and should not depend on the
@@ -31,19 +35,55 @@ chmod +x "$FAKE_BIN/claude"
 export PATH="$FAKE_BIN:$PATH"
 
 cleanup() {
+    if [ -n "$WATCHDOG_PID" ]; then
+        kill "$WATCHDOG_PID" 2>/dev/null || true
+        wait "$WATCHDOG_PID" 2>/dev/null || true
+    fi
     export HOME="$ORIGINAL_HOME"
     export PATH="$ORIGINAL_PATH"
-    rm -rf "$TEST_HOME" "$FAKE_BIN"
+    rm -rf "$TEST_HOME" "$FAKE_BIN" "$PROGRESS_FILE"
 }
 trap cleanup EXIT
 
+record_progress() {
+    printf "stage=%s assertions=%s pass=%s fail=%s\n" "$CURRENT_STAGE" "$TOTAL" "$PASS" "$FAIL" > "$PROGRESS_FILE"
+}
+
+if [ "$SAFETY_CHECK_TEST_TIMEOUT_SECONDS" -gt 0 ] 2>/dev/null; then
+    (
+        sleep "$SAFETY_CHECK_TEST_TIMEOUT_SECONDS"
+        echo "safety-check tests: timeout after ${SAFETY_CHECK_TEST_TIMEOUT_SECONDS}s" >&2
+        if [ -f "$PROGRESS_FILE" ]; then
+            sed 's/^/safety-check tests: last progress: /' "$PROGRESS_FILE" >&2
+        fi
+        if command -v ps >/dev/null 2>&1; then
+            echo "safety-check tests: process snapshot:" >&2
+            ps -o pid,ppid,stat,etime,command -p "$$" >&2 || true
+            if command -v pgrep >/dev/null 2>&1; then
+                child_pids=$(pgrep -P "$$" 2>/dev/null | tr '\n' ',' | sed 's/,$//' || true)
+                if [ -n "$child_pids" ]; then
+                    ps -o pid,ppid,stat,etime,command -p "$child_pids" >&2 || true
+                fi
+            fi
+        fi
+        kill -TERM "$$" 2>/dev/null || true
+        sleep 2
+        kill -KILL "$$" 2>/dev/null || true
+    ) &
+    WATCHDOG_PID=$!
+fi
+record_progress
+
 note_progress() {
+    record_progress
     if [ "$TOTAL" -gt 0 ] && [ $((TOTAL % PROGRESS_EVERY)) -eq 0 ]; then
         echo "safety-check tests: $TOTAL assertions checked"
     fi
 }
 
 stage() {
+    CURRENT_STAGE="$1"
+    record_progress
     echo "safety-check stage: $1"
 }
 
