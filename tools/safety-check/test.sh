@@ -9,6 +9,7 @@ FAIL=0
 TOTAL=0
 ORIGINAL_HOME="$HOME"
 TEST_HOME="$(mktemp -d)"
+PROGRESS_EVERY=25
 
 # The safety check must guard real users from a hanging `claude --version`,
 # but this suite invokes check.sh many times and should not depend on the
@@ -36,6 +37,12 @@ cleanup() {
 }
 trap cleanup EXIT
 
+note_progress() {
+    if [ "$TOTAL" -gt 0 ] && [ $((TOTAL % PROGRESS_EVERY)) -eq 0 ]; then
+        echo "safety-check tests: $TOTAL assertions checked"
+    fi
+}
+
 assert() {
     local name="$1"
     local expected="$2"
@@ -49,6 +56,7 @@ assert() {
         echo "  Expected to find: $expected"
         echo "  In output: $(head -3 <<< "$actual")"
     fi
+    note_progress
 }
 
 assert_not() {
@@ -63,6 +71,7 @@ assert_not() {
     else
         PASS=$((PASS + 1))
     fi
+    note_progress
 }
 
 # === Test 1: Script runs without errors ===
