@@ -709,25 +709,25 @@ fi
 # Test 31: Help subcommand
 echo "--- Help output ---"
 output=$(bash "$SCRIPT_DIR/install.sh" help 2>&1)
-if echo "$output" | grep -q "Commands:"; then
+if grep -q "Commands:" <<< "$output"; then
   pass "help shows commands section"
 else
   fail "help missing commands section"
 fi
 
-if echo "$output" | grep -q "recommended"; then
+if grep -q "recommended" <<< "$output"; then
   pass "help mentions recommended"
 else
   fail "help missing recommended command"
 fi
 
-if echo "$output" | grep -q "Available hooks:"; then
+if grep -q "Available hooks:" <<< "$output"; then
   pass "help shows available hooks"
 else
   fail "help missing available hooks"
 fi
 
-if echo "$output" | grep -q "Examples:"; then
+if grep -q "Examples:" <<< "$output"; then
   pass "help shows examples"
 else
   fail "help missing examples"
@@ -736,7 +736,7 @@ fi
 # Test 32: --help flag
 echo "--- --help flag ---"
 output2=$(bash "$SCRIPT_DIR/install.sh" --help 2>&1)
-if echo "$output2" | grep -q "Commands:"; then
+if grep -q "Commands:" <<< "$output2"; then
   pass "--help works same as help"
 else
   fail "--help does not show help"
@@ -745,7 +745,7 @@ fi
 # Test 33: -h flag
 echo "--- -h flag ---"
 output3=$(bash "$SCRIPT_DIR/install.sh" -h 2>&1)
-if echo "$output3" | grep -q "Commands:"; then
+if grep -q "Commands:" <<< "$output3"; then
   pass "-h works same as help"
 else
   fail "-h does not show help"
