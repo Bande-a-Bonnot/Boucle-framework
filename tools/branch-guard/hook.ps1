@@ -163,27 +163,27 @@ function Test-NewGitCommitSegment {
 
     while ($i -lt $words.Count) {
         $token = $words[$i]
-        switch -Regex ($token) {
-            '^(-C|-c|--git-dir|--work-tree|--namespace|--exec-path|--config-env)$' {
-                $i += 2
-                continue
-            }
-            '^(--git-dir=|--work-tree=|--namespace=|--exec-path=|--config-env=)' {
-                $i++
-                continue
-            }
-            '^--$' {
-                $i++
-                break
-            }
-            '^-' {
-                $i++
-                continue
-            }
-            default {
-                break
-            }
+
+        if ($token -match '^(-C|-c|--git-dir|--work-tree|--namespace|--exec-path|--config-env)$') {
+            $i += 2
+            continue
         }
+
+        if ($token -match '^(--git-dir=|--work-tree=|--namespace=|--exec-path=|--config-env=)') {
+            $i++
+            continue
+        }
+
+        if ($token -match '^--$') {
+            $i++
+            break
+        }
+
+        if ($token -match '^-') {
+            $i++
+            continue
+        }
+
         break
     }
 
