@@ -84,8 +84,74 @@ jobs:
       - name: Run bash tests
         run: bash test/run_all.sh
 
-      - name: Run all hook tests
-        run: bash tools/test-all.sh
+      - name: Run read-once hook tests
+        timeout-minutes: 3
+        run: bash tools/read-once/test.sh
+
+      - name: Run file-guard hook tests
+        timeout-minutes: 3
+        run: bash tools/file-guard/test.sh
+
+      - name: Run git-safe hook tests
+        timeout-minutes: 3
+        run: bash tools/git-safe/test.sh
+
+      - name: Run bash-guard hook tests
+        timeout-minutes: 5
+        run: bash tools/bash-guard/test.sh
+
+      - name: Run branch-guard hook tests
+        timeout-minutes: 3
+        run: bash tools/branch-guard/test.sh
+
+      - name: Run worktree-guard hook tests
+        timeout-minutes: 3
+        run: bash tools/worktree-guard/test.sh
+
+      - name: Run session-log hook tests
+        timeout-minutes: 3
+        run: bash tools/session-log/test.sh
+
+      - name: Run safety-check hook tests
+        timeout-minutes: 8
+        run: |
+          echo "Starting safety-check hook tests on $RUNNER_OS"
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            bash -n tools/safety-check/check.sh tools/safety-check/test.sh
+            bash tools/safety-check/check.sh --help | grep -q -- "--verify"
+            tmpdir="$(mktemp -d)"
+            trap 'rm -rf "$tmpdir"' EXIT
+            mkdir -p "$tmpdir/.claude"
+            echo '{"hooks": {}}' > "$tmpdir/.claude/settings.json"
+            set +e
+            output=$(HOME="$tmpdir" SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 bash tools/safety-check/check.sh --verify --strict 2>&1)
+            status=$?
+            set -e
+            test "$status" -eq 1
+            grep -q "Verify: not run | no hooks found | 0 payload checks" <<< "$output"
+          else
+            SAFETY_CHECK_TEST_TIMEOUT_SECONDS=360 bash tools/safety-check/test.sh
+          fi
+
+      - name: Run enforce hook tests
+        timeout-minutes: 3
+        run: bash tools/enforce/test.sh
+
+      - name: Run file-guard init tests
+        timeout-minutes: 3
+        run: bash tools/file-guard/test-init.sh
+
+      - name: Run session-report tests
+        timeout-minutes: 3
+        run: bash tools/session-log/test-report.sh
+
+      - name: Run unified installer tests
+        timeout-minutes: 5
+        run: bash tools/test-install.sh
+
+      - name: Run format regression tests
+        timeout-minutes: 3
+        run: bash tools/test-format.sh
 
   # PowerShell hook tests (Windows)
   powershell:
