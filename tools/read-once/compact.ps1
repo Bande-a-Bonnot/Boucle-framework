@@ -18,7 +18,10 @@ $hookInput = $rawInput | ConvertFrom-Json
 $sessionId = $hookInput.session_id
 if (-not $sessionId) { exit 0 }
 
-$cacheDir = Join-Path $HOME '.claude' 'read-once'
+# Prefer env:HOME so tests and Git Bash installs can isolate cache state on
+# Windows; fall back to the native profile path for normal PowerShell use.
+$homeRoot = if ($env:HOME) { $env:HOME } elseif ($env:USERPROFILE) { $env:USERPROFILE } else { $HOME }
+$cacheDir = Join-Path $homeRoot '.claude' 'read-once'
 
 # Must hash session_id the same way hook.ps1 does
 $sha = [System.Security.Cryptography.SHA256]::Create()

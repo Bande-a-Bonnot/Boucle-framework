@@ -7,6 +7,27 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TOTAL_PASS=0
 TOTAL_FAIL=0
 FAILED_SUITES=""
+SUITE_TIMEOUT_SECONDS="${SUITE_TIMEOUT_SECONDS:-420}"
+HEARTBEAT_INTERVAL_SECONDS="${HEARTBEAT_INTERVAL_SECONDS:-60}"
+HEARTBEAT_PID=""
+
+start_heartbeat() {
+  (
+    while true; do
+      sleep "$HEARTBEAT_INTERVAL_SECONDS" || exit 0
+      printf '[test-all] still running at %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    done
+  ) &
+  HEARTBEAT_PID="$!"
+}
+
+stop_heartbeat() {
+  if [ -n "$HEARTBEAT_PID" ]; then
+    kill "$HEARTBEAT_PID" 2>/dev/null || true
+    wait "$HEARTBEAT_PID" 2>/dev/null || true
+  fi
+}
+trap stop_heartbeat EXIT INT TERM
 
 echo "=== Environment ==="
 echo "OS: $(uname -s) $(uname -r)"
@@ -16,6 +37,9 @@ echo "python3: $(python3 --version 2>/dev/null || echo 'not found')"
 echo "shasum: $(which shasum 2>/dev/null || echo 'not found')"
 echo "sha256sum: $(which sha256sum 2>/dev/null || echo 'not found')"
 echo "grep: $(grep --version 2>/dev/null | head -1 || echo 'unknown')"
+echo "suite timeout: ${SUITE_TIMEOUT_SECONDS}s"
+echo "heartbeat interval: ${HEARTBEAT_INTERVAL_SECONDS}s"
+start_heartbeat
 
 run_suite() {
   local name="$1"
@@ -25,10 +49,14 @@ run_suite() {
   echo "  $name"
   echo "========================================"
 
-  if bash "$script"; then
+  if perl -e 'alarm shift @ARGV; exec @ARGV' "$SUITE_TIMEOUT_SECONDS" bash "$script"; then
     echo "  -> $name: OK"
   else
+    local exit_code=$?
     echo "  -> $name: FAILED"
+    if [ "$exit_code" -eq 142 ]; then
+      echo "  -> $name: timed out after ${SUITE_TIMEOUT_SECONDS}s"
+    fi
     TOTAL_FAIL=$((TOTAL_FAIL + 1))
     FAILED_SUITES="$FAILED_SUITES $name"
     return 1
