@@ -105,9 +105,9 @@ ALLOWED=()
 DENIED=()
 
 _load_bash_guard_config() {
-  local cfg="$1"
-  [ -f "$cfg" ] || return 0
-  while IFS= read -r line; do
+  local cfg="$1" line pattern
+  [ -f "$cfg" ] && [ -r "$cfg" ] || return 0
+  while IFS= read -r line || [ -n "$line" ]; do
     line=$(echo "$line" | sed 's/#.*//' | xargs)
     [ -z "$line" ] && continue
     if [[ "$line" == allow:* ]]; then
@@ -120,12 +120,16 @@ _load_bash_guard_config() {
   done < "$cfg"
 }
 
-if [ -n "${BASH_GUARD_CONFIG:-}" ]; then
-  # Explicit single-file override — no layering (backward compat)
+if [ -n "${BASH_GUARD_CONFIG+x}" ]; then
+  # Explicit single-file override — no layering (backward compat).
+  # Empty string (BASH_GUARD_CONFIG="") means: skip all config layers.
   _load_bash_guard_config "$BASH_GUARD_CONFIG"
 else
-  # Three-layer merge: global → project → local
-  _load_bash_guard_config "$HOME/.bash-guard"
+  # Three-layer merge: global → project → local.
+  # Note: an allow: in any layer whitelists the operation for built-in checks
+  # across all projects. Use a custom deny: rule in .bash-guard to override a
+  # global allow: for a specific project (custom deny runs before is_allowed).
+  [ -n "${HOME:-}" ] && _load_bash_guard_config "$HOME/.bash-guard"
   _load_bash_guard_config ".bash-guard"
   _load_bash_guard_config ".bash-guard.local"
 fi

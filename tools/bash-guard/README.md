@@ -86,11 +86,13 @@ bash-guard supports a three-layer config hierarchy, loaded and merged in order:
 | Project | `.bash-guard` | This project | Yes (team-shared) |
 | Local | `.bash-guard.local` | This project | No (add to `.gitignore`) |
 
-Rules from all present layers are merged. An `allow:` in any layer whitelists the operation across all layers. A `deny:` in any layer adds a custom block. Missing files are silently skipped.
+Rules from all present layers are merged. An `allow:` in any layer whitelists the operation for built-in checks across all layers. A `deny:` in any layer adds a custom block. Missing files are silently skipped.
+
+**Layer priority note:** A global `allow:` in `~/.bash-guard` applies to all projects. If a specific project needs to restrict an operation that your global config allows, add a custom `deny:` rule to the project's `.bash-guard` — custom deny rules run before `is_allowed` and always take precedence.
 
 **Example:**
 
-```
+```ini
 # ~/.bash-guard — personal defaults for all projects
 allow: docker-exec
 
@@ -103,13 +105,13 @@ allow: sudo
 
 To set rules for the current project only, create `.bash-guard` in the project root:
 
-```
+```ini
 allow: sudo
 allow: rm -rf
 allow: pipe-to-shell
 ```
 
-Set `BASH_GUARD_CONFIG=/path/to/file` to load a single explicit config file instead, bypassing the three-layer hierarchy (backward-compatible single-file override).
+Set `BASH_GUARD_CONFIG=/path/to/file` to load a single explicit config file instead, bypassing the three-layer hierarchy (backward-compatible single-file override). Set `BASH_GUARD_CONFIG=` (empty string) to skip all config layers and run with built-in rules only.
 
 Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `disk-util`, `system-write`, `eval`, `global-install`, `docker-destroy`, `docker-mount`, `docker-exec`, `db-destroy`, `env-dump`, `debug-trace`, `read-secrets`, `infra-destroy`, `mass-delete`, `git-clean`, `shred`, `truncate`, `file-upload`, `system-db`, `mount-delete`, `decode-exec`, `lang-exec`, `here-exec`, `pip-target`, `pip-user`, `path-traversal`.
 
@@ -171,7 +173,7 @@ For allowed commands, bash-guard stays silent and exits `0`.
 bash test.sh
 ```
 
-590 verified bash tests covering all blocked patterns, disk utility destruction, data exfiltration, programmatic env dumps, sensitive file access, workaround bypass prevention, compound command bypass, multi-line comment bypass ([#38119](https://github.com/anthropics/claude-code/issues/38119)), system database protection, mount point protection, encoding bypass detection, here-string/here-doc detection, library injection, wrapper bypass, credential file operations, macOS Keychain, scheduled tasks, system services, SSH keys, and safe variants.
+598 verified bash tests covering all blocked patterns, disk utility destruction, data exfiltration, programmatic env dumps, sensitive file access, workaround bypass prevention, compound command bypass, multi-line comment bypass ([#38119](https://github.com/anthropics/claude-code/issues/38119)), system database protection, mount point protection, encoding bypass detection, here-string/here-doc detection, library injection, wrapper bypass, credential file operations, macOS Keychain, scheduled tasks, system services, SSH keys, and safe variants.
 
 ## License
 
