@@ -1,0 +1,78 @@
+env:
+  CARGO_TERM_COLOR: always
+
+steps:
+  - label: ":linux: Linux ARM64"
+    key: linux-arm64
+    agents:
+      queue: "ci-linux-arm64"
+    plugins:
+      - github.com/Bande-a-Bonnot/tart-ci#v0.1.1:
+          image: "ci-linux-arm64-rust-bazel"
+          os: "linux"
+          always_pull: false
+          headless: true
+    command: |
+      set -euo pipefail
+
+      if [[ -z "$${HOME:-}" || "$$HOME" == "/" ]]; then
+        export HOME=/home/admin
+      fi
+      export CARGO_HOME="$${CARGO_HOME:-$$HOME/.cargo}"
+      export RUSTUP_HOME="$${RUSTUP_HOME:-/opt/rustup}"
+      export PATH="/usr/local/bin:/opt/cargo/bin:$$CARGO_HOME/bin:$$PATH"
+
+      rustc --version
+      cargo --version
+      rustfmt --version
+      cargo clippy --version
+      python3 --version
+
+      cargo fmt --check
+      cargo clippy -- -D warnings
+      cargo test --verbose
+      cargo build --verbose
+      bash test/run_all.sh
+      bash tools/test-all.sh
+
+  - label: ":mac: macOS Apple Silicon"
+    key: macos-apple-silicon
+    agents:
+      queue: "ci-macos-apple-silicon"
+    plugins:
+      - github.com/Bande-a-Bonnot/tart-ci#v0.1.1:
+          image: "ghcr.io/cirruslabs/macos-sequoia-base:latest"
+          os: "macos"
+          always_pull: false
+          headless: true
+    command: |
+      set -euo pipefail
+
+      if [[ -z "$${HOME:-}" ]]; then
+        export HOME=/Users/admin
+      fi
+      export CARGO_HOME="$${CARGO_HOME:-$$HOME/.cargo}"
+      export RUSTUP_HOME="$${RUSTUP_HOME:-$$HOME/.rustup}"
+      export PATH="$$CARGO_HOME/bin:/opt/homebrew/bin:/usr/local/bin:$$PATH"
+
+      if ! command -v cargo >/dev/null 2>&1; then
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+          | HOME="$$HOME" CARGO_HOME="$$CARGO_HOME" RUSTUP_HOME="$$RUSTUP_HOME" sh -s -- -y --profile minimal --no-modify-path
+        . "$$CARGO_HOME/env"
+      fi
+
+      if command -v rustup >/dev/null 2>&1; then
+        rustup component add rustfmt clippy
+      fi
+      rustc --version
+      cargo --version
+      rustfmt --version
+      cargo clippy --version
+      python3 --version
+
+      cargo fmt --check
+      cargo clippy -- -D warnings
+      cargo test --verbose
+      cargo build --verbose
+      bash test/run_all.sh
+      bash tools/test-all.sh

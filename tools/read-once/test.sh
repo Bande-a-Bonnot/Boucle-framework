@@ -511,6 +511,7 @@ echo "--- Group 20: Stats CLI cost line ---"
 
 # Stats should show cost line when tokens have been saved
 STATS_OUTPUT=$("${SCRIPT_DIR}/read-once" stats 2>&1)
+TOTAL=$((TOTAL + 1))
 if echo "$STATS_OUTPUT" | grep -q "Est. cost saved"; then
   echo "PASS: Stats shows cost estimate"
   PASS=$((PASS + 1))
@@ -769,7 +770,7 @@ fi
 # --- Summary ---
 echo ""
 echo "===================="
-echo "Results: ${PASS}/${TOTAL} passed, ${FAIL} failed"
+echo "Results: ${PASS} passed, ${FAIL} failed"
 
 if [ "$FAIL" -gt 0 ]; then
   exit 1

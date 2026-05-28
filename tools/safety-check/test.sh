@@ -7,13 +7,92 @@ CHECK_SCRIPT="$SCRIPT_DIR/check.sh"
 PASS=0
 FAIL=0
 TOTAL=0
+ORIGINAL_HOME="$HOME"
+TEST_HOME="$(mktemp -d)"
+PROGRESS_EVERY=25
+CURRENT_STAGE="startup"
+PROGRESS_FILE="$(mktemp)"
+SAFETY_CHECK_TEST_TIMEOUT_SECONDS="${SAFETY_CHECK_TEST_TIMEOUT_SECONDS:-540}"
+WATCHDOG_PID=""
+
+# The safety check must guard real users from a hanging `claude --version`,
+# but this suite invokes check.sh many times and should not depend on the
+# operator's installed Claude CLI state.
+export SAFETY_CHECK_SKIP_CLAUDE_VERSION=1
+export HOME="$TEST_HOME"
+
+ORIGINAL_PATH="$PATH"
+FAKE_BIN=$(mktemp -d)
+cat > "$FAKE_BIN/claude" << 'FAKECLAUDE'
+#!/usr/bin/env bash
+if [ "${1:-}" = "--version" ]; then
+    printf '2.1.90\n'
+    exit 0
+fi
+exit 0
+FAKECLAUDE
+chmod +x "$FAKE_BIN/claude"
+export PATH="$FAKE_BIN:$PATH"
+
+cleanup() {
+    if [ -n "$WATCHDOG_PID" ]; then
+        kill "$WATCHDOG_PID" 2>/dev/null || true
+        wait "$WATCHDOG_PID" 2>/dev/null || true
+    fi
+    export HOME="$ORIGINAL_HOME"
+    export PATH="$ORIGINAL_PATH"
+    rm -rf "$TEST_HOME" "$FAKE_BIN" "$PROGRESS_FILE"
+}
+trap cleanup EXIT
+
+record_progress() {
+    printf "stage=%s assertions=%s pass=%s fail=%s\n" "$CURRENT_STAGE" "$TOTAL" "$PASS" "$FAIL" > "$PROGRESS_FILE"
+}
+
+if [ "$SAFETY_CHECK_TEST_TIMEOUT_SECONDS" -gt 0 ] 2>/dev/null; then
+    (
+        sleep "$SAFETY_CHECK_TEST_TIMEOUT_SECONDS"
+        echo "safety-check tests: timeout after ${SAFETY_CHECK_TEST_TIMEOUT_SECONDS}s" >&2
+        if [ -f "$PROGRESS_FILE" ]; then
+            sed 's/^/safety-check tests: last progress: /' "$PROGRESS_FILE" >&2
+        fi
+        if command -v ps >/dev/null 2>&1; then
+            echo "safety-check tests: process snapshot:" >&2
+            ps -o pid,ppid,stat,etime,command -p "$$" >&2 || true
+            if command -v pgrep >/dev/null 2>&1; then
+                child_pids=$(pgrep -P "$$" 2>/dev/null | tr '\n' ',' | sed 's/,$//' || true)
+                if [ -n "$child_pids" ]; then
+                    ps -o pid,ppid,stat,etime,command -p "$child_pids" >&2 || true
+                fi
+            fi
+        fi
+        kill -TERM "$$" 2>/dev/null || true
+        sleep 2
+        kill -KILL "$$" 2>/dev/null || true
+    ) &
+    WATCHDOG_PID=$!
+fi
+record_progress
+
+note_progress() {
+    record_progress
+    if [ "$TOTAL" -gt 0 ] && [ $((TOTAL % PROGRESS_EVERY)) -eq 0 ]; then
+        echo "safety-check tests: $TOTAL assertions checked"
+    fi
+}
+
+stage() {
+    CURRENT_STAGE="$1"
+    record_progress
+    echo "safety-check stage: $1"
+}
 
 assert() {
     local name="$1"
     local expected="$2"
     local actual="$3"
     TOTAL=$((TOTAL + 1))
-    if grep -q "$expected" <<< "$actual"; then
+    if grep -q -- "$expected" <<< "$actual"; then
         PASS=$((PASS + 1))
     else
         FAIL=$((FAIL + 1))
@@ -21,6 +100,7 @@ assert() {
         echo "  Expected to find: $expected"
         echo "  In output: $(head -3 <<< "$actual")"
     fi
+    note_progress
 }
 
 assert_not() {
@@ -28,15 +108,17 @@ assert_not() {
     local not_expected="$2"
     local actual="$3"
     TOTAL=$((TOTAL + 1))
-    if grep -q "$not_expected" <<< "$actual"; then
+    if grep -q -- "$not_expected" <<< "$actual"; then
         FAIL=$((FAIL + 1))
         echo "FAIL: $name"
         echo "  Should NOT contain: $not_expected"
     else
         PASS=$((PASS + 1))
     fi
+    note_progress
 }
 
+stage "baseline audit"
 # === Test 1: Script runs without errors ===
 OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert "script runs" "Safety Score:" "$OUTPUT"
@@ -87,6 +169,96 @@ else
     FAIL=$((FAIL + 1))
     echo "FAIL: exit code should be 0, got $EXIT_CODE"
 fi
+
+# === Test 9b: Help output is available without running audit ===
+HELP_OUTPUT=$(bash "$CHECK_SCRIPT" --help 2>&1) || true
+assert "help shows usage" "Usage: check.sh" "$HELP_OUTPUT"
+assert "help shows verify flag" "--verify" "$HELP_OUTPUT"
+assert "help shows strict flag" "--strict" "$HELP_OUTPUT"
+assert_not "help does not run audit" "Safety Score:" "$HELP_OUTPUT"
+
+# === Test 9c: Unknown flags fail closed instead of silently skipping verify ===
+set +e
+UNKNOWN_OUTPUT=$(bash "$CHECK_SCRIPT" --verfiy 2>&1)
+UNKNOWN_EXIT=$?
+set -e
+TOTAL=$((TOTAL + 1))
+if [ "$UNKNOWN_EXIT" -eq 2 ]; then
+    PASS=$((PASS + 1))
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: unknown flag should exit 2, got $UNKNOWN_EXIT"
+fi
+assert "unknown flag names the option" "Unknown option: --verfiy" "$UNKNOWN_OUTPUT"
+assert "unknown flag shows usage" "Usage: check.sh" "$UNKNOWN_OUTPUT"
+assert_not "unknown flag does not run audit" "Safety Score:" "$UNKNOWN_OUTPUT"
+
+# === Test 9d: Strict mode requires verify mode ===
+set +e
+STRICT_NO_VERIFY_OUTPUT=$(bash "$CHECK_SCRIPT" --strict 2>&1)
+STRICT_NO_VERIFY_EXIT=$?
+set -e
+TOTAL=$((TOTAL + 1))
+if [ "$STRICT_NO_VERIFY_EXIT" -eq 2 ]; then
+    PASS=$((PASS + 1))
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: strict without verify should exit 2, got $STRICT_NO_VERIFY_EXIT"
+fi
+assert "strict without verify explains requirement" "Option --strict requires --verify" "$STRICT_NO_VERIFY_OUTPUT"
+assert "strict without verify shows usage" "Usage: check.sh" "$STRICT_NO_VERIFY_OUTPUT"
+assert_not "strict without verify does not run audit" "Safety Score:" "$STRICT_NO_VERIFY_OUTPUT"
+
+stage "version timeout guard"
+# === Test 9e: Hanging claude --version cannot hang the audit ===
+TMPDIR_HANGING_CLAUDE=$(mktemp -d)
+TMPDIR_HANGING_AUDIT=$(mktemp -d)
+cat > "$TMPDIR_HANGING_CLAUDE/claude" << 'HANGINGCLAUDE'
+#!/usr/bin/env bash
+if [ "${1:-}" = "--version" ]; then
+    sleep 30
+    exit 0
+fi
+exit 0
+HANGINGCLAUDE
+chmod +x "$TMPDIR_HANGING_CLAUDE/claude"
+set +e
+HANGING_CLAUDE_OUTPUT=$(PATH="$TMPDIR_HANGING_CLAUDE:$ORIGINAL_PATH" python3 - "$CHECK_SCRIPT" "$TMPDIR_HANGING_AUDIT" << 'PY'
+import os
+import subprocess
+import sys
+
+try:
+    result = subprocess.run(
+        ["bash", sys.argv[1]],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        cwd=sys.argv[2],
+        env={**os.environ, "HOME": sys.argv[2], "SAFETY_CHECK_SKIP_CLAUDE_VERSION": "0"},
+    )
+except subprocess.TimeoutExpired:
+    print("audit timed out")
+    sys.exit(124)
+
+print(result.stdout)
+print(result.stderr, file=sys.stderr)
+sys.exit(result.returncode)
+PY
+)
+HANGING_CLAUDE_EXIT=$?
+set -e
+TOTAL=$((TOTAL + 1))
+if [ "$HANGING_CLAUDE_EXIT" -eq 0 ]; then
+    PASS=$((PASS + 1))
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: hanging claude --version should not hang audit, got exit $HANGING_CLAUDE_EXIT"
+fi
+assert "hanging claude version warns" "Claude CLI version check timed out" "$HANGING_CLAUDE_OUTPUT"
+assert "hanging claude version still prints score" "Safety Score:" "$HANGING_CLAUDE_OUTPUT"
+rm -rf "$TMPDIR_HANGING_CLAUDE"
+rm -rf "$TMPDIR_HANGING_AUDIT"
 
 # === Test 10: With fake settings file (mock full setup) ===
 TMPDIR_TEST=$(mktemp -d)
@@ -185,7 +357,7 @@ VALID_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no JSONC warning for valid JSON" "JSONC comments" "$VALID_OUTPUT"
 rm -rf "$TMPDIR_VALID"
 
-# === Test 15: Hook health checks — missing hook file ===
+# === Test 15: Hook health checks - missing hook file ===
 TMPDIR_HEALTH=$(mktemp -d)
 export HOME="$TMPDIR_HEALTH"
 mkdir -p "$TMPDIR_HEALTH/.claude"
@@ -205,7 +377,7 @@ assert "missing hook detected" "file not found" "$HEALTH_OUTPUT"
 assert "has hook health section" "Hook Health" "$HEALTH_OUTPUT"
 rm -rf "$TMPDIR_HEALTH"
 
-# === Test 16: Hook health checks — non-executable hook ===
+# === Test 16: Hook health checks - non-executable hook ===
 TMPDIR_NOEXEC=$(mktemp -d)
 export HOME="$TMPDIR_NOEXEC"
 mkdir -p "$TMPDIR_NOEXEC/.claude/hooks"
@@ -226,7 +398,7 @@ NOEXEC_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert "non-executable hook detected" "not executable" "$NOEXEC_OUTPUT"
 rm -rf "$TMPDIR_NOEXEC"
 
-# === Test 17: Hook health checks — healthy hook ===
+# === Test 17: Hook health checks - healthy hook ===
 TMPDIR_OK=$(mktemp -d)
 export HOME="$TMPDIR_OK"
 mkdir -p "$TMPDIR_OK/.claude/hooks"
@@ -247,6 +419,53 @@ OK_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert "healthy hook shows checkmark" "✓.*good-hook" "$OK_OUTPUT"
 assert_not "healthy hook no errors" "file not found" "$OK_OUTPUT"
 rm -rf "$TMPDIR_OK"
+
+# === Test 17b: Hook health - custom shell command is not a missing file ===
+TMPDIR_CUSTOM_HEALTH=$(mktemp -d)
+export HOME="$TMPDIR_CUSTOM_HEALTH"
+mkdir -p "$TMPDIR_CUSTOM_HEALTH/.claude"
+cat > "$TMPDIR_CUSTOM_HEALTH/.claude/settings.json" << CUSTOMHEALTH
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [{"type": "command", "command": "echo audit-only"}]
+      }
+    ]
+  }
+}
+CUSTOMHEALTH
+CUSTOM_HEALTH_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "custom command marked not file-checked" "custom command, not file-checked" "$CUSTOM_HEALTH_OUTPUT"
+assert_not "custom command not reported missing" "file not found" "$CUSTOM_HEALTH_OUTPUT"
+assert_not "custom command not a broken hook issue" "hook(s) are broken" "$CUSTOM_HEALTH_OUTPUT"
+rm -rf "$TMPDIR_CUSTOM_HEALTH"
+
+# === Test 17c: Hook health - interpreter-wrapped hooks do not need executable bit ===
+TMPDIR_SH_HEALTH=$(mktemp -d)
+export HOME="$TMPDIR_SH_HEALTH"
+mkdir -p "$TMPDIR_SH_HEALTH/.claude/hooks"
+cat > "$TMPDIR_SH_HEALTH/.claude/hooks/sh-hook.sh" << 'SHHEALTHHOOK'
+#!/bin/sh
+exit 0
+SHHEALTHHOOK
+chmod -x "$TMPDIR_SH_HEALTH/.claude/hooks/sh-hook.sh"
+cat > "$TMPDIR_SH_HEALTH/.claude/settings.json" << SHHEALTH
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [{"type": "command", "command": "sh $TMPDIR_SH_HEALTH/.claude/hooks/sh-hook.sh"}]
+      }
+    ]
+  }
+}
+SHHEALTH
+SH_HEALTH_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "sh-wrapped hook passes health" "✓.*sh-hook" "$SH_HEALTH_OUTPUT"
+assert_not "sh-wrapped hook not marked non-executable" "not executable" "$SH_HEALTH_OUTPUT"
+assert_not "sh-wrapped hook not a broken hook issue" "hook(s) are broken" "$SH_HEALTH_OUTPUT"
+rm -rf "$TMPDIR_SH_HEALTH"
 
 # === Test 18: enforce-hooks detection in user-level settings ===
 TMPDIR_ENFORCE=$(mktemp -d)
@@ -391,6 +610,20 @@ mkdir -p "$TMPDIR_VNONE/.claude"
 echo '{"hooks": {}}' > "$TMPDIR_VNONE/.claude/settings.json"
 VNONE_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
 assert "verify no hooks message" "No hooks found to verify" "$VNONE_OUTPUT"
+assert "verify no hooks summary line" "Verify: not run | no hooks found | 0 payload checks" "$VNONE_OUTPUT"
+assert "verify no hooks boundary line" "Boundary: install hooks before trusting the hook layer" "$VNONE_OUTPUT"
+set +e
+VNONE_STRICT_OUTPUT=$(bash "$CHECK_SCRIPT" --verify --strict 2>&1)
+VNONE_STRICT_EXIT=$?
+set -e
+TOTAL=$((TOTAL + 1))
+if [ "$VNONE_STRICT_EXIT" -eq 1 ]; then
+    PASS=$((PASS + 1))
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: strict no-hooks verify should exit 1, got $VNONE_STRICT_EXIT"
+fi
+assert "strict no-hooks still prints summary" "Verify: not run | no hooks found | 0 payload checks" "$VNONE_STRICT_OUTPUT"
 rm -rf "$TMPDIR_VNONE"
 
 # === Test 26: --verify with working bash-guard ===
@@ -416,8 +649,134 @@ VBG_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
 assert "verify bash-guard blocks" "blocks correctly" "$VBG_OUTPUT"
 assert "verify bash-guard passes safe" "passes safe" "$VBG_OUTPUT"
 assert "verify has section header" "Hook Verification" "$VBG_OUTPUT"
+set +e
+VBG_STRICT_OUTPUT=$(bash "$CHECK_SCRIPT" --verify --strict 2>&1)
+VBG_STRICT_EXIT=$?
+set -e
+TOTAL=$((TOTAL + 1))
+if [ "$VBG_STRICT_EXIT" -eq 1 ]; then
+    PASS=$((PASS + 1))
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: strict exit-code-2 verify should exit 1, got $VBG_STRICT_EXIT"
+fi
+assert "strict exit-code-2 verify is fail-open" "FAIL-OPEN" "$VBG_STRICT_OUTPUT"
 rm -rf "$TMPDIR_VBG"
 
+# === Test 26b: --verify honors sh-wrapped hook scripts without executable bit ===
+TMPDIR_VSH=$(mktemp -d)
+export HOME="$TMPDIR_VSH"
+mkdir -p "$TMPDIR_VSH/.claude/hooks"
+cat > "$TMPDIR_VSH/.claude/hooks/bash-guard.sh" << 'VSHHOOK'
+#!/bin/sh
+payload=$(cat)
+case "$payload" in
+  *"rm -rf /"*) printf '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"blocked"}}\n' ;;
+esac
+VSHHOOK
+chmod -x "$TMPDIR_VSH/.claude/hooks/bash-guard.sh"
+cat > "$TMPDIR_VSH/.claude/settings.json" << VSHSETTINGS
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "sh $TMPDIR_VSH/.claude/hooks/bash-guard.sh"}]
+      }
+    ]
+  }
+}
+VSHSETTINGS
+VSH_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+assert "verify sh-wrapped hook blocks" "blocks correctly" "$VSH_OUTPUT"
+assert "verify sh-wrapped hook passes safe" "passes safe" "$VSH_OUTPUT"
+assert "verify sh-wrapped hook summary passes" "Verify: 0 FAIL-OPEN | 2 payload checks" "$VSH_OUTPUT"
+assert_not "verify sh-wrapped hook not marked non-executable" "not executable" "$VSH_OUTPUT"
+rm -rf "$TMPDIR_VSH"
+
+# === Test 26c: --verify rejects JSON deny output from a crashing hook ===
+TMPDIR_VCRASH=$(mktemp -d)
+export HOME="$TMPDIR_VCRASH"
+mkdir -p "$TMPDIR_VCRASH/.claude/hooks"
+cat > "$TMPDIR_VCRASH/.claude/hooks/bash-guard.sh" << 'VCRASHHOOK'
+#!/usr/bin/env bash
+payload=$(cat)
+case "$payload" in
+  *"rm -rf /"*) printf '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"blocked"}}\n' ;;
+esac
+exit 1
+VCRASHHOOK
+chmod +x "$TMPDIR_VCRASH/.claude/hooks/bash-guard.sh"
+cat > "$TMPDIR_VCRASH/.claude/settings.json" << VCRASHSETTINGS
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "bash $TMPDIR_VCRASH/.claude/hooks/bash-guard.sh"}]
+      }
+    ]
+  }
+}
+VCRASHSETTINGS
+VCRASH_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+assert "verify JSON plus exit 1 is fail-open" "FAIL-OPEN" "$VCRASH_OUTPUT"
+assert "verify JSON plus exit 1 fails safe payload" "crashed on safe payload (exit 1)" "$VCRASH_OUTPUT"
+assert_not "verify JSON plus exit 1 does not pass" "All.*payload checks passed" "$VCRASH_OUTPUT"
+set +e
+VCRASH_STRICT_OUTPUT=$(bash "$CHECK_SCRIPT" --verify --strict 2>&1)
+VCRASH_STRICT_EXIT=$?
+set -e
+TOTAL=$((TOTAL + 1))
+if [ "$VCRASH_STRICT_EXIT" -eq 1 ]; then
+    PASS=$((PASS + 1))
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: strict JSON plus exit 1 verify should exit 1, got $VCRASH_STRICT_EXIT"
+fi
+assert "strict JSON plus exit 1 is fail-open" "FAIL-OPEN" "$VCRASH_STRICT_OUTPUT"
+rm -rf "$TMPDIR_VCRASH"
+
+stage "verify timeout guard"
+# === Test 26d: --verify cannot hang forever on a stuck hook ===
+TMPDIR_VHANG=$(mktemp -d)
+export HOME="$TMPDIR_VHANG"
+mkdir -p "$TMPDIR_VHANG/.claude/hooks"
+cat > "$TMPDIR_VHANG/.claude/hooks/bash-guard.sh" << 'VHANGHOOK'
+#!/usr/bin/env bash
+sleep 30
+exit 0
+VHANGHOOK
+chmod +x "$TMPDIR_VHANG/.claude/hooks/bash-guard.sh"
+cat > "$TMPDIR_VHANG/.claude/settings.json" << VHANGSETTINGS
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "bash $TMPDIR_VHANG/.claude/hooks/bash-guard.sh"}]
+      }
+    ]
+  }
+}
+VHANGSETTINGS
+set +e
+VHANG_OUTPUT=$(HOOK_VERIFY_TIMEOUT_SECONDS=1 bash "$CHECK_SCRIPT" --verify --strict 2>&1)
+VHANG_EXIT=$?
+set -e
+TOTAL=$((TOTAL + 1))
+if [ "$VHANG_EXIT" -eq 1 ]; then
+    PASS=$((PASS + 1))
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: strict hanging hook verify should exit 1, got $VHANG_EXIT"
+fi
+assert "verify hanging hook times out" "hook timed out after 1 seconds" "$VHANG_OUTPUT"
+assert "verify hanging hook is fail-open evidence" "FAIL-OPEN" "$VHANG_OUTPUT"
+assert "verify hanging hook still prints summary" "Verify:" "$VHANG_OUTPUT"
+rm -rf "$TMPDIR_VHANG"
+
+stage "verify hook matrix"
 # === Test 27: --verify with broken (fail-open) hook ===
 TMPDIR_VBROKEN=$(mktemp -d)
 export HOME="$TMPDIR_VBROKEN"
@@ -514,7 +873,7 @@ assert "verify file-guard passes safe" "passes safe" "$VFG_OUTPUT"
 unset FILE_GUARD_CONFIG
 rm -rf "$TMPDIR_VFG"
 
-# === Test 31: --verify with session-log (PostToolUse, should not block) ===
+# === Test 31: --verify with session-log (PostToolUse, skipped for payload verification) ===
 TMPDIR_VSL=$(mktemp -d)
 export HOME="$TMPDIR_VSL"
 mkdir -p "$TMPDIR_VSL/.claude/hooks"
@@ -533,14 +892,23 @@ cat > "$TMPDIR_VSL/.claude/settings.json" << VSLSET
 }
 VSLSET
 VSL_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
-assert "verify session-log accepts payloads" "accepts payloads" "$VSL_OUTPUT"
+assert "verify session-log skipped" "skipped, not a PreToolUse hook" "$VSL_OUTPUT"
+assert "verify session-log counted skipped" "1 skipped" "$VSL_OUTPUT"
+assert "verify session-log says no payload checks ran" "No payload checks ran" "$VSL_OUTPUT"
 rm -rf "$TMPDIR_VSL"
 
-# === Test 32: --verify summary line — all pass ===
+# === Test 32: --verify summary line - all pass ===
 TMPDIR_VSUM=$(mktemp -d)
 export HOME="$TMPDIR_VSUM"
 mkdir -p "$TMPDIR_VSUM/.claude/hooks"
-cp "$SCRIPT_DIR/../bash-guard/hook.sh" "$TMPDIR_VSUM/.claude/hooks/bash-guard.sh"
+cat > "$TMPDIR_VSUM/.claude/hooks/bash-guard.sh" << 'VSUMHOOK'
+#!/usr/bin/env bash
+payload=$(cat)
+case "$payload" in
+  *"rm -rf /"*) printf '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"blocked"}}\n' ;;
+esac
+exit 0
+VSUMHOOK
 chmod +x "$TMPDIR_VSUM/.claude/hooks/bash-guard.sh"
 cat > "$TMPDIR_VSUM/.claude/settings.json" << VSUMSET
 {
@@ -555,10 +923,22 @@ cat > "$TMPDIR_VSUM/.claude/settings.json" << VSUMSET
 }
 VSUMSET
 VSUM_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
-assert "verify summary all pass" "All.*verified hooks working" "$VSUM_OUTPUT"
+assert "verify summary all pass" "All.*payload checks passed" "$VSUM_OUTPUT"
+set +e
+VSUM_STRICT_OUTPUT=$(bash "$CHECK_SCRIPT" --verify --strict 2>&1)
+VSUM_STRICT_EXIT=$?
+set -e
+TOTAL=$((TOTAL + 1))
+if [ "$VSUM_STRICT_EXIT" -eq 0 ]; then
+    PASS=$((PASS + 1))
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: strict passing verify should exit 0, got $VSUM_STRICT_EXIT"
+fi
+assert "strict passing verify keeps summary" "Verify: 0 FAIL-OPEN" "$VSUM_STRICT_OUTPUT"
 rm -rf "$TMPDIR_VSUM"
 
-# === Test 33: --verify summary line — has failures ===
+# === Test 33: --verify summary line - has failures ===
 TMPDIR_VFAIL=$(mktemp -d)
 export HOME="$TMPDIR_VFAIL"
 mkdir -p "$TMPDIR_VFAIL/.claude/hooks"
@@ -582,6 +962,20 @@ cat > "$TMPDIR_VFAIL/.claude/settings.json" << VFAILSET
 VFAILSET
 VFAIL_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
 assert "verify summary shows failures" "FAIL-OPEN" "$VFAIL_OUTPUT"
+assert "verify summary says payload checks fail-open" "payload checks FAIL-OPEN" "$VFAIL_OUTPUT"
+assert "verify summary issue says payload check" "hook payload check" "$VFAIL_OUTPUT"
+set +e
+VFAIL_STRICT_OUTPUT=$(bash "$CHECK_SCRIPT" --verify --strict 2>&1)
+VFAIL_STRICT_EXIT=$?
+set -e
+TOTAL=$((TOTAL + 1))
+if [ "$VFAIL_STRICT_EXIT" -eq 1 ]; then
+    PASS=$((PASS + 1))
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: strict fail-open verify should exit 1, got $VFAIL_STRICT_EXIT"
+fi
+assert "strict fail-open still prints boundary" "Boundary: fix FAIL-OPEN hooks" "$VFAIL_STRICT_OUTPUT"
 rm -rf "$TMPDIR_VFAIL"
 
 # === Test 34: --verify with branch-guard (skipped) ===
@@ -628,7 +1022,172 @@ NV_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no verify section without flag" "Hook Verification" "$NV_OUTPUT"
 rm -rf "$TMPDIR_NOVERIFY"
 
-# === Test 36: CLAUDE.md rule coverage — suggests file-guard ===
+# === Test 35b: --verify skips custom shell snippets instead of false FAIL-OPEN ===
+TMPDIR_VCUSTOM=$(mktemp -d)
+export HOME="$TMPDIR_VCUSTOM"
+mkdir -p "$TMPDIR_VCUSTOM/.claude"
+cat > "$TMPDIR_VCUSTOM/.claude/settings.json" << VCUSTOM
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [{"type": "command", "command": "echo audit-only"}]
+      }
+    ]
+  }
+}
+VCUSTOM
+VCUSTOM_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+assert "verify custom command skipped" "custom command is not a direct hook script" "$VCUSTOM_OUTPUT"
+assert "verify custom command counted skipped" "1 skipped" "$VCUSTOM_OUTPUT"
+assert "verify custom command says no payload checks ran" "No payload checks ran" "$VCUSTOM_OUTPUT"
+assert "verify custom command summary has zero payload checks" "Verify: 0 FAIL-OPEN | 0 payload checks | 1 skipped" "$VCUSTOM_OUTPUT"
+assert "verify custom command boundary says unresolved skipped hooks" "Boundary: no hook payload checks ran; resolve skipped PreToolUse hooks" "$VCUSTOM_OUTPUT"
+assert_not "verify custom command not representative pass" "Boundary: hooks passed representative checks" "$VCUSTOM_OUTPUT"
+set +e
+VCUSTOM_STRICT_OUTPUT=$(bash "$CHECK_SCRIPT" --verify --strict 2>&1)
+VCUSTOM_STRICT_EXIT=$?
+set -e
+TOTAL=$((TOTAL + 1))
+if [ "$VCUSTOM_STRICT_EXIT" -eq 1 ]; then
+    PASS=$((PASS + 1))
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: strict all-skipped custom verify should exit 1, got $VCUSTOM_STRICT_EXIT"
+fi
+assert "strict custom skip keeps boundary" "Boundary: no hook payload checks ran; resolve skipped PreToolUse hooks" "$VCUSTOM_STRICT_OUTPUT"
+rm -rf "$TMPDIR_VCUSTOM"
+
+# === Test 35c: --verify --strict fails when a PreToolUse hook is skipped even if another hook passes ===
+TMPDIR_VMIXED_SKIP=$(mktemp -d)
+export HOME="$TMPDIR_VMIXED_SKIP"
+mkdir -p "$TMPDIR_VMIXED_SKIP/.claude/hooks"
+cat > "$TMPDIR_VMIXED_SKIP/.claude/hooks/bash-guard.sh" << 'VMIXEDHOOK'
+#!/usr/bin/env bash
+payload=$(cat)
+case "$payload" in
+  *"rm -rf /"*) printf '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"blocked"}}\n' ;;
+esac
+exit 0
+VMIXEDHOOK
+chmod +x "$TMPDIR_VMIXED_SKIP/.claude/hooks/bash-guard.sh"
+cat > "$TMPDIR_VMIXED_SKIP/.claude/settings.json" << VMIXEDSKIP
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "bash $TMPDIR_VMIXED_SKIP/.claude/hooks/bash-guard.sh"}]
+      },
+      {
+        "matcher": "*",
+        "hooks": [{"type": "command", "command": "echo audit-only"}]
+      }
+    ]
+  }
+}
+VMIXEDSKIP
+VMIXED_SKIP_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+assert "mixed skipped pretooluse still reports passing payloads" "All 2 payload checks passed" "$VMIXED_SKIP_OUTPUT"
+assert "mixed skipped pretooluse names strict boundary" "Boundary: resolve skipped PreToolUse hook checks before trusting strict verification" "$VMIXED_SKIP_OUTPUT"
+assert_not "mixed skipped pretooluse not representative pass" "Boundary: hooks passed representative checks" "$VMIXED_SKIP_OUTPUT"
+set +e
+VMIXED_SKIP_STRICT_OUTPUT=$(bash "$CHECK_SCRIPT" --verify --strict 2>&1)
+VMIXED_SKIP_STRICT_EXIT=$?
+set -e
+TOTAL=$((TOTAL + 1))
+if [ "$VMIXED_SKIP_STRICT_EXIT" -eq 1 ]; then
+    PASS=$((PASS + 1))
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: strict mixed skipped PreToolUse verify should exit 1, got $VMIXED_SKIP_STRICT_EXIT"
+fi
+assert "strict mixed skipped pretooluse keeps boundary" "Boundary: resolve skipped PreToolUse hook checks before trusting strict verification" "$VMIXED_SKIP_STRICT_OUTPUT"
+rm -rf "$TMPDIR_VMIXED_SKIP"
+
+# === Test 35d: --verify skips lifecycle hooks instead of sending tool payloads ===
+TMPDIR_VLIFECYCLE=$(mktemp -d)
+export HOME="$TMPDIR_VLIFECYCLE"
+mkdir -p "$TMPDIR_VLIFECYCLE/.claude/hooks"
+cat > "$TMPDIR_VLIFECYCLE/.claude/hooks/session-start.sh" << 'VLIFECYCLEHOOK'
+#!/usr/bin/env bash
+exit 0
+VLIFECYCLEHOOK
+chmod +x "$TMPDIR_VLIFECYCLE/.claude/hooks/session-start.sh"
+cat > "$TMPDIR_VLIFECYCLE/.claude/settings.json" << VLIFECYCLE
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [{"type": "command", "command": "bash $TMPDIR_VLIFECYCLE/.claude/hooks/session-start.sh"}]
+      }
+    ]
+  }
+}
+VLIFECYCLE
+VLIFECYCLE_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+assert "verify lifecycle hook skipped" "skipped, not a PreToolUse hook" "$VLIFECYCLE_OUTPUT"
+assert "verify lifecycle counted skipped" "1 skipped" "$VLIFECYCLE_OUTPUT"
+assert "verify lifecycle says no payload checks ran" "No payload checks ran" "$VLIFECYCLE_OUTPUT"
+assert "verify lifecycle summary has zero payload checks" "Verify: 0 FAIL-OPEN | 0 payload checks | 1 skipped" "$VLIFECYCLE_OUTPUT"
+assert "verify lifecycle boundary says no pretooluse checks ran" "Boundary: no PreToolUse payload checks ran" "$VLIFECYCLE_OUTPUT"
+assert_not "verify lifecycle not representative pass" "Boundary: hooks passed representative checks" "$VLIFECYCLE_OUTPUT"
+set +e
+VLIFECYCLE_STRICT_OUTPUT=$(bash "$CHECK_SCRIPT" --verify --strict 2>&1)
+VLIFECYCLE_STRICT_EXIT=$?
+set -e
+TOTAL=$((TOTAL + 1))
+if [ "$VLIFECYCLE_STRICT_EXIT" -eq 1 ]; then
+    PASS=$((PASS + 1))
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: strict all-skipped lifecycle verify should exit 1, got $VLIFECYCLE_STRICT_EXIT"
+fi
+assert "strict lifecycle skip keeps boundary" "Boundary: no PreToolUse payload checks ran" "$VLIFECYCLE_STRICT_OUTPUT"
+rm -rf "$TMPDIR_VLIFECYCLE"
+
+# === Test 35e: --verify skips PostCompact hooks from the default hook list ===
+TMPDIR_VPOSTCOMPACT=$(mktemp -d)
+export HOME="$TMPDIR_VPOSTCOMPACT"
+mkdir -p "$TMPDIR_VPOSTCOMPACT/.claude/hooks"
+cat > "$TMPDIR_VPOSTCOMPACT/.claude/hooks/session-compact.sh" << 'VPOSTCOMPACTHOOK'
+#!/usr/bin/env bash
+exit 0
+VPOSTCOMPACTHOOK
+chmod +x "$TMPDIR_VPOSTCOMPACT/.claude/hooks/session-compact.sh"
+cat > "$TMPDIR_VPOSTCOMPACT/.claude/settings.json" << VPOSTCOMPACT
+{
+  "hooks": {
+    "PostCompact": [
+      {
+        "hooks": [{"type": "command", "command": "bash $TMPDIR_VPOSTCOMPACT/.claude/hooks/session-compact.sh"}]
+      }
+    ]
+  }
+}
+VPOSTCOMPACT
+VPOSTCOMPACT_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+assert "verify PostCompact hook skipped" "skipped, not a PreToolUse hook" "$VPOSTCOMPACT_OUTPUT"
+assert "verify PostCompact counted skipped" "1 skipped" "$VPOSTCOMPACT_OUTPUT"
+assert "verify PostCompact says no payload checks ran" "No payload checks ran" "$VPOSTCOMPACT_OUTPUT"
+assert "verify PostCompact summary has zero payload checks" "Verify: 0 FAIL-OPEN | 0 payload checks | 1 skipped" "$VPOSTCOMPACT_OUTPUT"
+assert "verify PostCompact boundary says no pretooluse checks ran" "Boundary: no PreToolUse payload checks ran" "$VPOSTCOMPACT_OUTPUT"
+set +e
+VPOSTCOMPACT_STRICT_OUTPUT=$(bash "$CHECK_SCRIPT" --verify --strict 2>&1)
+VPOSTCOMPACT_STRICT_EXIT=$?
+set -e
+TOTAL=$((TOTAL + 1))
+if [ "$VPOSTCOMPACT_STRICT_EXIT" -eq 1 ]; then
+    PASS=$((PASS + 1))
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: strict all-skipped PostCompact verify should exit 1, got $VPOSTCOMPACT_STRICT_EXIT"
+fi
+assert "strict PostCompact skip keeps boundary" "Boundary: no PreToolUse payload checks ran" "$VPOSTCOMPACT_STRICT_OUTPUT"
+rm -rf "$TMPDIR_VPOSTCOMPACT"
+
+stage "rule coverage fixtures"
+# === Test 36: CLAUDE.md rule coverage - suggests file-guard ===
 TMPDIR_RC1=$(mktemp -d)
 export HOME="$TMPDIR_RC1"
 mkdir -p "$TMPDIR_RC1/.claude"
@@ -646,7 +1205,7 @@ assert "rule coverage mentions sensitive files" "sensitive files" "$RC1_OUTPUT"
 cd "$ORIG_DIR"
 rm -rf "$TMPDIR_RC1"
 
-# === Test 37: CLAUDE.md rule coverage — suggests git-safe ===
+# === Test 37: CLAUDE.md rule coverage - suggests git-safe ===
 TMPDIR_RC2=$(mktemp -d)
 export HOME="$TMPDIR_RC2"
 mkdir -p "$TMPDIR_RC2/.claude"
@@ -664,7 +1223,7 @@ assert "rule coverage mentions git operations" "destructive git" "$RC2_OUTPUT"
 cd "$ORIG_DIR"
 rm -rf "$TMPDIR_RC2"
 
-# === Test 38: CLAUDE.md rule coverage — suggests bash-guard ===
+# === Test 38: CLAUDE.md rule coverage - suggests bash-guard ===
 TMPDIR_RC3=$(mktemp -d)
 export HOME="$TMPDIR_RC3"
 mkdir -p "$TMPDIR_RC3/.claude"
@@ -682,7 +1241,7 @@ assert "rule coverage mentions dangerous commands" "dangerous commands" "$RC3_OU
 cd "$ORIG_DIR"
 rm -rf "$TMPDIR_RC3"
 
-# === Test 39: CLAUDE.md rule coverage — suggests branch-guard ===
+# === Test 39: CLAUDE.md rule coverage - suggests branch-guard ===
 TMPDIR_RC4=$(mktemp -d)
 export HOME="$TMPDIR_RC4"
 mkdir -p "$TMPDIR_RC4/.claude"
@@ -700,7 +1259,7 @@ assert "rule coverage mentions branch protection" "branch protection" "$RC4_OUTP
 cd "$ORIG_DIR"
 rm -rf "$TMPDIR_RC4"
 
-# === Test 40: CLAUDE.md rule coverage — no suggestions when hooks installed ===
+# === Test 40: CLAUDE.md rule coverage - no suggestions when hooks installed ===
 TMPDIR_RC5=$(mktemp -d)
 export HOME="$TMPDIR_RC5"
 mkdir -p "$TMPDIR_RC5/.claude"
@@ -730,7 +1289,7 @@ assert_not "no rule suggestions when all hooks installed" "Rules in CLAUDE.md th
 cd "$ORIG_DIR"
 rm -rf "$TMPDIR_RC5"
 
-# === Test 41: CLAUDE.md rule coverage — only suggests missing hooks ===
+# === Test 41: CLAUDE.md rule coverage - only suggests missing hooks ===
 TMPDIR_RC6=$(mktemp -d)
 export HOME="$TMPDIR_RC6"
 mkdir -p "$TMPDIR_RC6/.claude"
@@ -759,7 +1318,7 @@ assert_not "no git-safe suggestion when already installed" "git-safe.*destructiv
 cd "$ORIG_DIR"
 rm -rf "$TMPDIR_RC6"
 
-# === Test 42: No CLAUDE.md — no rule coverage section ===
+# === Test 42: No CLAUDE.md - no rule coverage section ===
 TMPDIR_RC7=$(mktemp -d)
 export HOME="$TMPDIR_RC7"
 mkdir -p "$TMPDIR_RC7/.claude"
@@ -772,7 +1331,7 @@ assert_not "no rule coverage section without CLAUDE.md" "Rules in CLAUDE.md that
 cd "$ORIG_DIR"
 rm -rf "$TMPDIR_RC7"
 
-# === Test 43: CLAUDE.md with no enforceable content — no suggestions ===
+# === Test 43: CLAUDE.md with no enforceable content - no suggestions ===
 TMPDIR_RC8=$(mktemp -d)
 export HOME="$TMPDIR_RC8"
 mkdir -p "$TMPDIR_RC8/.claude"
@@ -858,7 +1417,7 @@ assert "deny bypass mentions multi-line" "multi-line" "$DENY_OUTPUT"
 assert "deny bypass references issue 38119" "38119" "$DENY_OUTPUT"
 rm -rf "$TMPDIR_DENY"
 
-# === Test 55: Deny rules WITH bash-guard — no bypass warning ===
+# === Test 55: Deny rules WITH bash-guard - no bypass warning ===
 TMPDIR_DENYBG=$(mktemp -d)
 export HOME="$TMPDIR_DENYBG"
 mkdir -p "$TMPDIR_DENYBG/.claude"
@@ -878,7 +1437,7 @@ DENYBG_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no bypass warning when bash-guard installed" "bypassable" "$DENYBG_OUTPUT"
 rm -rf "$TMPDIR_DENYBG"
 
-# === Test 56: No deny rules — no bypass warning ===
+# === Test 56: No deny rules - no bypass warning ===
 TMPDIR_NODENY=$(mktemp -d)
 export HOME="$TMPDIR_NODENY"
 mkdir -p "$TMPDIR_NODENY/.claude"
@@ -893,7 +1452,7 @@ NODENY_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no bypass warning without deny rules" "bypassable" "$NODENY_OUTPUT"
 rm -rf "$TMPDIR_NODENY"
 
-# === Test 57: Deny rules without any permissions key — no bypass warning ===
+# === Test 57: Deny rules without any permissions key - no bypass warning ===
 TMPDIR_NOPERM=$(mktemp -d)
 export HOME="$TMPDIR_NOPERM"
 mkdir -p "$TMPDIR_NOPERM/.claude"
@@ -1094,6 +1653,38 @@ assert "bypassPermissions warning shown" "bypassPermissions" "$BYPASS_OUTPUT"
 assert "bypassPermissions mentions reset" "reset" "$BYPASS_OUTPUT"
 assert "bypassPermissions references #38372" "38372" "$BYPASS_OUTPUT"
 rm -rf "$TMPDIR_BYPASS"
+
+# === Test 69b: boolean bypassPermissions also maps to bypass mode warnings ===
+TMPDIR_BOOL_BYPASS=$(mktemp -d)
+export HOME="$TMPDIR_BOOL_BYPASS"
+mkdir -p "$TMPDIR_BOOL_BYPASS/.claude"
+cat > "$TMPDIR_BOOL_BYPASS/.claude/settings.json" << 'BOOLBYPASS'
+{
+  "bypassPermissions": true
+}
+BOOLBYPASS
+BOOL_BYPASS_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "boolean bypassPermissions warning shown" "bypassPermissions" "$BOOL_BYPASS_OUTPUT"
+assert "boolean bypassPermissions mentions reset" "reset" "$BOOL_BYPASS_OUTPUT"
+assert "boolean bypassPermissions triggers sensitive-file warning" "sensitive-file prompt" "$BOOL_BYPASS_OUTPUT"
+rm -rf "$TMPDIR_BOOL_BYPASS"
+
+# === Test 69c: permissions.dangerouslySkipPermissions maps to bypass mode warnings ===
+TMPDIR_DANG_BYPASS=$(mktemp -d)
+export HOME="$TMPDIR_DANG_BYPASS"
+mkdir -p "$TMPDIR_DANG_BYPASS/.claude"
+cat > "$TMPDIR_DANG_BYPASS/.claude/settings.json" << 'DANGBYPASS'
+{
+  "permissions": {
+    "dangerouslySkipPermissions": true
+  }
+}
+DANGBYPASS
+DANG_BYPASS_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "dangerouslySkipPermissions warning shown" "bypassPermissions" "$DANG_BYPASS_OUTPUT"
+assert "dangerouslySkipPermissions mentions reset" "reset" "$DANG_BYPASS_OUTPUT"
+assert "dangerouslySkipPermissions triggers sensitive-file warning" "sensitive-file prompt" "$DANG_BYPASS_OUTPUT"
+rm -rf "$TMPDIR_DANG_BYPASS"
 
 # === Test 70: No bypassPermissions warning for default mode ===
 TMPDIR_DEFAULT=$(mktemp -d)
@@ -2841,6 +3432,39 @@ assert "summary has grade line" "Grade .* | " "$OUTPUT"
 assert "summary has hook status" "bash-guard" "$OUTPUT"
 assert "summary has repo link" "github.com/Bande-a-Bonnot/Boucle-framework" "$OUTPUT"
 
+# Test: verify mode explains the trust boundary after hook payload checks
+TMPDIR_VERIFY_BOUNDARY=$(mktemp -d)
+mkdir -p "$TMPDIR_VERIFY_BOUNDARY/.claude/hooks"
+cat > "$TMPDIR_VERIFY_BOUNDARY/.claude/hooks/bash-guard.sh" << 'BOUNDARYHOOK'
+#!/usr/bin/env bash
+payload=$(cat)
+if echo "$payload" | grep -q "rm -rf /"; then
+  echo '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"blocked"}}'
+fi
+BOUNDARYHOOK
+chmod +x "$TMPDIR_VERIFY_BOUNDARY/.claude/hooks/bash-guard.sh"
+cat > "$TMPDIR_VERIFY_BOUNDARY/.claude/settings.json" << BOUNDARYSETTINGS
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "command": "bash $TMPDIR_VERIFY_BOUNDARY/.claude/hooks/bash-guard.sh" }
+        ]
+      }
+    ]
+  }
+}
+BOUNDARYSETTINGS
+BOUNDARY_OUTPUT=$(HOME="$TMPDIR_VERIFY_BOUNDARY" bash "$CHECK_SCRIPT" --verify 2>&1) || true
+assert "verify boundary section present" "Verification boundary" "$BOUNDARY_OUTPUT"
+assert "verify boundary reports zero fail-open" "Zero FAIL-OPEN hooks" "$BOUNDARY_OUTPUT"
+assert "verify boundary explains residual risk" "residual platform risk" "$BOUNDARY_OUTPUT"
+assert "summary includes verify fail-open count" "Verify: 0 FAIL-OPEN" "$BOUNDARY_OUTPUT"
+assert "summary includes verify boundary copy" "Boundary: hooks passed representative checks" "$BOUNDARY_OUTPUT"
+rm -rf "$TMPDIR_VERIFY_BOUNDARY"
+
 # Test: summary with hooks installed shows + markers
 TMPDIR_SUMMARY=$(mktemp -d)
 SETTINGS_SUMMARY="$TMPDIR_SUMMARY/.claude/settings.json"
@@ -2919,7 +3543,7 @@ TIMING2_OUTPUT=$(HOME="$TMPDIR_TIMING2" bash "$CHECK_SCRIPT" 2>&1) || true
 assert "hook timing warning for UserPromptSubmit (#41310)" "project directory.*exists" "$TIMING2_OUTPUT"
 rm -rf "$TMPDIR_TIMING2"
 
-# === Test: Model self-execution warning (#41307) — only in bypass mode ===
+# === Test: Model self-execution warning (#41307) - only in bypass mode ===
 TMPDIR_SELFEXEC=$(mktemp -d)
 mkdir -p "$TMPDIR_SELFEXEC/.claude"
 cat > "$TMPDIR_SELFEXEC/.claude/settings.json" << 'SELFEXECEOF'
@@ -2963,7 +3587,7 @@ NOTIME_OUTPUT=$(HOME="$TMPDIR_NOTIMING" bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no hook timing warning without SessionStart/UserPromptSubmit" "claude-code#41310" "$NOTIME_OUTPUT"
 rm -rf "$TMPDIR_NOTIMING"
 
-# === Test: Skills override CLAUDE.md warning (#41437) — skills + rules triggers warning ===
+# === Test: Skills override CLAUDE.md warning (#41437) - skills + rules triggers warning ===
 TMPDIR_SKILL=$(mktemp -d)
 export HOME="$TMPDIR_SKILL"
 mkdir -p "$TMPDIR_SKILL/.claude/skills"
@@ -3038,7 +3662,7 @@ assert "project skills source mentioned" "project-level skills" "$PROJSKILL_OUTP
 cd "$ORIG_DIR"
 rm -rf "$TMPDIR_PROJSKILL"
 
-# === Test: Background agent warning (#41461) — only in bypass mode ===
+# === Test: Background agent warning (#41461) - only in bypass mode ===
 # Not shown without bypass mode
 assert_not "background agent warning not shown without bypass (#41461)" "claude-code#41461" "$OUTPUT"
 # Set up bypass mode to trigger the warning
@@ -3118,6 +3742,7 @@ assert_not "non-symlinked .claude no warning" "claude-code#41451" "$NOSYM_OUTPUT
 cd "$ORIG_DIR"
 rm -rf "$TMPDIR_NOSYM"
 
+stage "version warning fixtures"
 # Test: v2.1.88 version warning
 SAVE_HOME="$HOME"
 TMPDIR_V88=$(mktemp -d)
@@ -3128,7 +3753,7 @@ echo '{}' > "$HOME/.claude/settings.json"
 mkdir -p "$TMPDIR_V88/bin"
 printf '#!/bin/bash\necho "claude v2.1.88"' > "$TMPDIR_V88/bin/claude"
 chmod +x "$TMPDIR_V88/bin/claude"
-V88_OUTPUT=$(PATH="$TMPDIR_V88/bin:$PATH" bash "$CHECK_SCRIPT" 2>&1) || true
+V88_OUTPUT=$(SAFETY_CHECK_SKIP_CLAUDE_VERSION=0 PATH="$TMPDIR_V88/bin:$PATH" bash "$CHECK_SCRIPT" 2>&1) || true
 assert "v2.1.88 warning shown" "pulled from npm" "$V88_OUTPUT"
 assert "v2.1.88 references commands issue" "claude-code#41497" "$V88_OUTPUT"
 assert "v2.1.88 references skills regression" "claude-code#41530" "$V88_OUTPUT"
@@ -3144,7 +3769,7 @@ echo '{}' > "$HOME/.claude/settings.json"
 mkdir -p "$TMPDIR_V87/bin"
 printf '#!/bin/bash\necho "claude v2.1.87"' > "$TMPDIR_V87/bin/claude"
 chmod +x "$TMPDIR_V87/bin/claude"
-V87_OUTPUT=$(PATH="$TMPDIR_V87/bin:$PATH" bash "$CHECK_SCRIPT" 2>&1) || true
+V87_OUTPUT=$(SAFETY_CHECK_SKIP_CLAUDE_VERSION=0 PATH="$TMPDIR_V87/bin:$PATH" bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "v2.1.87 no pulled-from-npm warning" "pulled from npm" "$V87_OUTPUT"
 export HOME="$SAVE_HOME"
 rm -rf "$TMPDIR_V87"

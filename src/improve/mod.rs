@@ -300,7 +300,7 @@ fn promote(root: &Path, patterns: &HashMap<String, Pattern>) -> Result<Option<St
         .collect();
 
     // Sort by count descending
-    candidates.sort_by(|a, b| b.1.count.cmp(&a.1.count));
+    candidates.sort_by_key(|b| std::cmp::Reverse(b.1.count));
 
     let pending = pending_path(root);
 
@@ -422,7 +422,7 @@ pub fn show_status(root: &Path) -> Result<(), String> {
     if !patterns.is_empty() {
         println!("Top patterns (by count):");
         let mut sorted: Vec<_> = patterns.iter().collect();
-        sorted.sort_by(|a, b| b.1.count.cmp(&a.1.count));
+        sorted.sort_by_key(|b| std::cmp::Reverse(b.1.count));
         for (fp, pat) in sorted.iter().take(10) {
             let status = if pat.response_id.is_some() {
                 "addressed"
