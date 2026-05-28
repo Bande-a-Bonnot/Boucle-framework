@@ -78,13 +78,38 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 ## Configure exceptions
 
-Create a `.bash-guard` file in your project root:
+bash-guard supports a three-layer config hierarchy, loaded and merged in order:
+
+| Layer | File | Scope | Commit to git? |
+|-------|------|-------|----------------|
+| Global | `~/.bash-guard` | All projects | No (personal) |
+| Project | `.bash-guard` | This project | Yes (team-shared) |
+| Local | `.bash-guard.local` | This project | No (add to `.gitignore`) |
+
+Rules from all present layers are merged. An `allow:` in any layer whitelists the operation across all layers. A `deny:` in any layer adds a custom block. Missing files are silently skipped.
+
+**Example:**
+
+```
+# ~/.bash-guard — personal defaults for all projects
+allow: docker-exec
+
+# .bash-guard — team rules committed to git
+deny: db-destroy
+
+# .bash-guard.local — personal overrides for this project (gitignored)
+allow: sudo
+```
+
+To set rules for the current project only, create `.bash-guard` in the project root:
 
 ```
 allow: sudo
 allow: rm -rf
 allow: pipe-to-shell
 ```
+
+Set `BASH_GUARD_CONFIG=/path/to/file` to load a single explicit config file instead, bypassing the three-layer hierarchy (backward-compatible single-file override).
 
 Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `disk-util`, `system-write`, `eval`, `global-install`, `docker-destroy`, `docker-mount`, `docker-exec`, `db-destroy`, `env-dump`, `debug-trace`, `read-secrets`, `infra-destroy`, `mass-delete`, `git-clean`, `shred`, `truncate`, `file-upload`, `system-db`, `mount-delete`, `decode-exec`, `lang-exec`, `here-exec`, `pip-target`, `pip-user`, `path-traversal`.
 
