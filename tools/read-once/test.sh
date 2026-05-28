@@ -118,6 +118,7 @@ OUTPUT=$(run_hook "$(make_input Read "$TEST_FILE")")
 assert_contains "Deny mode: blocks with decision:block" "block" "$OUTPUT"
 assert_contains "Deny mode: mentions already in context" "already in context" "$OUTPUT"
 # Verify robust response format (top-level decision, not hookSpecificOutput — see claude-code#37597)
+TOTAL=$((TOTAL + 1))
 if echo "$OUTPUT" | jq -e '.decision == "block"' >/dev/null 2>&1; then
   echo "PASS: Deny mode uses robust top-level decision format"
   PASS=$((PASS + 1))
@@ -440,6 +441,7 @@ echo "--- Group 20: Stats CLI cost line ---"
 
 # Stats should show cost line when tokens have been saved
 STATS_OUTPUT=$("${SCRIPT_DIR}/read-once" stats 2>&1)
+TOTAL=$((TOTAL + 1))
 if echo "$STATS_OUTPUT" | grep -q "Est. cost saved"; then
   echo "PASS: Stats shows cost estimate"
   PASS=$((PASS + 1))
@@ -632,7 +634,7 @@ fi
 # --- Summary ---
 echo ""
 echo "===================="
-echo "Results: ${PASS}/${TOTAL} passed, ${FAIL} failed"
+echo "Results: ${PASS} passed, ${FAIL} failed"
 
 if [ "$FAIL" -gt 0 ]; then
   exit 1

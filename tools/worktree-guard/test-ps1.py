@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 HOOK = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hook.ps1")
 PASS = 0
@@ -52,12 +53,21 @@ def make_input(tool_name):
     return {"tool_name": tool_name, "tool_input": {}}
 
 
+def is_block_output(stdout):
+    return (
+        '"decision":"block"' in stdout
+        or '"decision": "block"' in stdout
+        or '"permissionDecision":"deny"' in stdout
+        or '"permissionDecision": "deny"' in stdout
+    )
+
+
 def assert_blocked(desc, json_input, substring=None, **kwargs):
     global PASS, FAIL, TOTAL
     TOTAL += 1
     try:
         stdout, _ = run_hook(json_input, **kwargs)
-        if '"decision":"block"' in stdout or '"decision": "block"' in stdout:
+        if is_block_output(stdout):
             if substring and substring not in stdout:
                 FAIL += 1
                 print(f"  {RED}FAIL{NC}: {desc} (blocked but missing '{substring}' in: {stdout!r})")
@@ -77,7 +87,7 @@ def assert_allowed(desc, json_input, **kwargs):
     TOTAL += 1
     try:
         stdout, _ = run_hook(json_input, **kwargs)
-        if '"decision":"block"' in stdout or '"decision": "block"' in stdout:
+        if is_block_output(stdout):
             FAIL += 1
             print(f"  {RED}FAIL{NC}: {desc} (expected allow, got: {stdout!r})")
         else:
@@ -106,6 +116,7 @@ def make_repo(tmpdir, name="repo"):
     os.makedirs(bare)
     git(["init", "--bare", bare], cwd=tmpdir)
     git(["clone", bare, clone], cwd=tmpdir)
+    git(["checkout", "-b", "main"], cwd=clone)
     # Configure git identity for CI environments
     git(["config", "user.name", "test"], cwd=clone)
     git(["config", "user.email", "test@test.local"], cwd=clone)
@@ -115,8 +126,26 @@ def make_repo(tmpdir, name="repo"):
         f.write("# Test\n")
     git(["add", "README.md"], cwd=clone)
     git(["commit", "-m", "initial"], cwd=clone)
-    git(["push", "origin", "main"], cwd=clone)
+    git(["push", "-u", "origin", "main"], cwd=clone)
     return clone
+
+
+def remove_tmpdir(path):
+    """Remove a temp git repo, retrying Windows file-lock cleanup."""
+    for _ in range(5):
+        try:
+            shutil.rmtree(path)
+            return
+        except PermissionError:
+            for root, dirs, files in os.walk(path):
+                for name in dirs + files:
+                    full_path = os.path.join(root, name)
+                    try:
+                        os.chmod(full_path, 0o700)
+                    except OSError:
+                        pass
+            time.sleep(0.2)
+    shutil.rmtree(path, ignore_errors=True)
 
 
 # ============================================================
@@ -149,7 +178,7 @@ def test_disabled_env():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_clean_repo_allowed():
@@ -163,7 +192,7 @@ def test_clean_repo_allowed():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_uncommitted_staged_blocked():
@@ -181,7 +210,7 @@ def test_uncommitted_staged_blocked():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_uncommitted_unstaged_blocked():
@@ -198,7 +227,7 @@ def test_uncommitted_unstaged_blocked():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_untracked_files_blocked():
@@ -215,7 +244,7 @@ def test_untracked_files_blocked():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_unmerged_commits_blocked():
@@ -235,7 +264,7 @@ def test_unmerged_commits_blocked():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_unpushed_commits_blocked():
@@ -251,11 +280,11 @@ def test_unpushed_commits_blocked():
         assert_blocked(
             "unpushed commits block",
             make_input("ExitWorktree"),
-            substring="unpushed",
+            substring="unmerged",
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_config_allow_uncommitted():
@@ -276,7 +305,7 @@ def test_config_allow_uncommitted():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_config_allow_untracked():
@@ -294,7 +323,7 @@ def test_config_allow_untracked():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_config_allow_unmerged():
@@ -309,13 +338,15 @@ def test_config_allow_unmerged():
         git(["commit", "-m", "feature"], cwd=repo)
         with open(os.path.join(repo, ".worktree-guard"), "w") as f:
             f.write("allow: unmerged\n")
+        git(["add", ".worktree-guard"], cwd=repo)
+        git(["commit", "-m", "add worktree guard config"], cwd=repo)
         assert_allowed(
             "config allows unmerged",
             make_input("ExitWorktree"),
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_config_allow_unpushed():
@@ -324,10 +355,10 @@ def test_config_allow_unpushed():
     try:
         repo = make_repo(tmpdir)
         with open(os.path.join(repo, ".worktree-guard"), "w") as f:
-            f.write("allow: unpushed\n")
+            f.write("allow: unmerged\nallow: unpushed\n")
         with open(os.path.join(repo, "local.txt"), "w") as f:
             f.write("local")
-        git(["add", "local.txt"], cwd=repo)
+        git(["add", ".worktree-guard", "local.txt"], cwd=repo)
         git(["commit", "-m", "local"], cwd=repo)
         assert_allowed(
             "config allows unpushed",
@@ -335,7 +366,7 @@ def test_config_allow_unpushed():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_config_base_override():
@@ -349,18 +380,20 @@ def test_config_base_override():
             f.write("feature")
         git(["add", "feature.txt"], cwd=repo)
         git(["commit", "-m", "feature on develop"], cwd=repo)
-        # Create feature branch from develop (same content)
-        git(["checkout", "-b", "feature"], cwd=repo)
         # Config points base to develop, not main
         with open(os.path.join(repo, ".worktree-guard"), "w") as f:
             f.write("base: develop\n")
+        git(["add", ".worktree-guard"], cwd=repo)
+        git(["commit", "-m", "add worktree guard config"], cwd=repo)
+        # Create feature branch from develop (same content and config)
+        git(["checkout", "-b", "feature"], cwd=repo)
         assert_allowed(
             "base override to develop allows matching branch",
             make_input("ExitWorktree"),
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_squash_merge_detected():
@@ -382,6 +415,7 @@ def test_squash_merge_detected():
         git(["checkout", "main"], cwd=repo)
         git(["merge", "--squash", "feature"], cwd=repo)
         git(["commit", "-m", "squash merge feature"], cwd=repo)
+        git(["push", "origin", "main"], cwd=repo)
         # Go back to feature branch — tier 2 should detect content match
         git(["checkout", "feature"], cwd=repo)
         assert_allowed(
@@ -390,7 +424,7 @@ def test_squash_merge_detected():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_not_git_repo():
@@ -403,7 +437,7 @@ def test_not_git_repo():
             cwd=tmpdir,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_config_comments_ignored():
@@ -421,7 +455,7 @@ def test_config_comments_ignored():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 def test_multiple_issues_first_blocks():
@@ -441,7 +475,7 @@ def test_multiple_issues_first_blocks():
             cwd=repo,
         )
     finally:
-        shutil.rmtree(tmpdir)
+        remove_tmpdir(tmpdir)
 
 
 # ============================================================

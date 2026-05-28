@@ -58,12 +58,21 @@ def make_hook_input(tool_name, command=None):
     return payload
 
 
+def is_block_output(stdout):
+    return (
+        '"decision":"block"' in stdout
+        or '"decision": "block"' in stdout
+        or '"permissionDecision":"deny"' in stdout
+        or '"permissionDecision": "deny"' in stdout
+    )
+
+
 def assert_blocked(desc, json_input, env_overrides=None, cwd=None):
     global PASS, FAIL, TOTAL
     TOTAL += 1
     try:
         stdout, _ = run_hook(json_input, env_overrides, cwd)
-        if '"permissionDecision":"deny"' in stdout or '"permissionDecision": "deny"' in stdout:
+        if is_block_output(stdout):
             PASS += 1
             print(f"  {GREEN}PASS{NC}: {desc}")
         else:
@@ -79,7 +88,7 @@ def assert_allowed(desc, json_input, env_overrides=None, cwd=None):
     TOTAL += 1
     try:
         stdout, rc = run_hook(json_input, env_overrides, cwd)
-        if '"permissionDecision":"deny"' in stdout or '"permissionDecision": "deny"' in stdout:
+        if is_block_output(stdout):
             FAIL += 1
             print(f"  {RED}FAIL{NC}: {desc} (expected allow, got: {stdout!r})")
         else:

@@ -2,20 +2,55 @@
 # Claude Code Safety Check
 # Run: curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
 # Verify: curl -fsSL ... | bash -s -- --verify
+# Strict CI gate: curl -fsSL ... | bash -s -- --verify --strict
 #
 # Audits your Claude Code setup and scores it for safety.
-# --verify sends test payloads to each hook and checks they actually block.
-# No installation, no dependencies — just information.
+# --verify sends test payloads to PreToolUse hooks and checks they actually block.
+# No installation, no dependencies - just information.
 
 set -euo pipefail
 
+print_usage() {
+    cat << 'EOF'
+Claude Code Safety Check
+
+Usage: check.sh [--verify] [--strict] [--help]
+
+Options:
+  --verify  Send representative payloads to installed PreToolUse hooks and detect FAIL-OPEN results.
+  --strict  With --verify, exit 1 when hook verification fails or is inconclusive.
+  --help    Show this help text.
+EOF
+}
+
 # Parse flags
 VERIFY_MODE=0
+STRICT_MODE=0
 for arg in "$@"; do
-    if [ "$arg" = "--verify" ]; then
-        VERIFY_MODE=1
-    fi
+    case "$arg" in
+        --verify)
+            VERIFY_MODE=1
+            ;;
+        --strict)
+            STRICT_MODE=1
+            ;;
+        -h|--help)
+            print_usage
+            exit 0
+            ;;
+        *)
+            printf "Unknown option: %s\n\n" "$arg" >&2
+            print_usage >&2
+            exit 2
+            ;;
+    esac
 done
+
+if [ "$STRICT_MODE" = "1" ] && [ "$VERIFY_MODE" != "1" ]; then
+    printf "Option --strict requires --verify.\n\n" >&2
+    print_usage >&2
+    exit 2
+fi
 
 CLAUDE_DIR="${HOME}/.claude"
 SETTINGS_FILE="${CLAUDE_DIR}/settings.json"
@@ -87,7 +122,7 @@ try:
                "worktree-guard", "worktree_guard",
                "session-log", "session_log", "read-once", "read_once",
                "enforce-hooks", "enforce_hooks"]
-    all_hook_types = ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd",
+    all_hook_types = ["PreToolUse", "PostToolUse", "PostCompact", "SessionStart", "SessionEnd",
                       "Stop", "SubagentStop", "TaskCreated", "WorktreeCreate",
                       "WorktreeRemove", "UserPromptSubmit", "Notification",
                       "PermissionDenied"]
@@ -141,6 +176,7 @@ _merge_hooks() {
 _merge_hooks
 
 has_hook() { echo " $DETECTED_HOOKS " | grep -q " $1 "; }
+has_hook_event_command() { printf '%s\n' "$ALL_HOOK_CMDS" | grep -q "^$1:.*$2"; }
 
 # Check if a specific hook event type (e.g., "Stop") is configured in any settings file
 has_hook_type() {
@@ -171,7 +207,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
 # === Section 0: Environment Warnings ===
-# These are platform bugs that silently disable hooks — check before anything else
+# These are platform bugs that silently disable hooks - check before anything else
 WARNINGS=()
 
 # IS_DEMO check (claude-code#37780: silently disables all hooks)
@@ -213,8 +249,51 @@ if [[ "${OS:-}" == "Windows_NT" ]] || [[ "$(uname -s 2>/dev/null)" == MINGW* ]] 
 fi
 
 # CLI version check: warn about known dangerous versions
-if command -v claude >/dev/null 2>&1; then
-    CLI_VERSION=$(claude --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "")
+_claude_version_output() {
+    if command -v python3 >/dev/null 2>&1; then
+        python3 - << 'PYEOF_CLAUDE_VERSION'
+import os
+import signal
+import subprocess
+import sys
+
+try:
+    proc = subprocess.Popen(
+        ["claude", "--version"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
+    stdout, stderr = proc.communicate(timeout=3)
+except subprocess.TimeoutExpired:
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+        proc.communicate(timeout=1)
+    except Exception:
+        pass
+    sys.exit(124)
+except Exception:
+    sys.exit(1)
+
+output = (stdout or stderr or "").splitlines()
+if output:
+    print(output[0])
+sys.exit(proc.returncode)
+PYEOF_CLAUDE_VERSION
+    else
+        claude --version 2>/dev/null | head -1
+    fi
+}
+
+if [ "${SAFETY_CHECK_SKIP_CLAUDE_VERSION:-}" != "1" ] && command -v claude >/dev/null 2>&1; then
+    CLI_VERSION_RAW=""
+    CLI_VERSION_STATUS=0
+    CLI_VERSION_RAW=$(_claude_version_output 2>/dev/null) || CLI_VERSION_STATUS=$?
+    if [ "$CLI_VERSION_STATUS" -eq 124 ]; then
+        WARNINGS+=("Claude CLI version check timed out after 3 seconds. Skipping version-specific warnings so the audit can continue. Run 'claude --version' separately before trusting version-dependent checks.")
+    fi
+    CLI_VERSION=$(printf "%s\n" "$CLI_VERSION_RAW" | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)
     if [ -n "$CLI_VERSION" ]; then
         CLI_MAJOR_MINOR=$(echo "$CLI_VERSION" | cut -d. -f1-2)
         CLI_PATCH=$(echo "$CLI_VERSION" | cut -d. -f3)
@@ -228,11 +307,13 @@ if command -v claude >/dev/null 2>&1; then
             if [ "$CLI_PATCH" -ge 81 ] 2>/dev/null && [ "$CLI_PATCH" -le 84 ] 2>/dev/null; then
                 WARNINGS+=("Claude CLI v$CLI_VERSION: crashes when invoked by launchd/cron (regression v2.1.81-v2.1.84, see claude-code#37878, now fixed upstream). Update CLI to resolve.")
             fi
-            # v2.1.88: pulled from npm — custom commands broken + cli.js.map accidentally shipped (claude-code#41497)
+            # v2.1.88: pulled from npm - custom commands broken + cli.js.map accidentally shipped (claude-code#41497)
             if [ "$CLI_PATCH" -eq 88 ] 2>/dev/null; then
                 WARNINGS+=("Claude CLI v$CLI_VERSION: this version was pulled from npm. Known issues: custom commands in .claude/commands/ are not discovered (claude-code#41497), SessionStart systemMessage display broken (claude-code#41285), custom skills (.claude/skills/) completely non-functional (claude-code#41530). Downgrade to v2.1.87 or wait for the next release.")
             fi
         fi
+    else
+        WARNINGS+=("Claude CLI is installed but 'claude --version' did not return within 3 seconds. Noninteractive runs may hang on CLI prompts; monitor long-running safety checks.")
     fi
 fi
 
@@ -299,7 +380,17 @@ if [ -f "$SETTINGS_FILE" ]; then
 import json,sys
 try:
     s=json.load(open(sys.argv[1]))
-    print(s.get('permissions',{}).get('permissionMode',''))
+    perms=s.get('permissions',{})
+    mode=(
+        s.get('permissionMode')
+        or s.get('defaultMode')
+        or perms.get('permissionMode')
+        or perms.get('defaultMode')
+        or ('bypassPermissions' if s.get('bypassPermissions') is True else '')
+        or ('bypassPermissions' if perms.get('dangerouslySkipPermissions') is True else '')
+        or ''
+    )
+    print(mode)
 except: print('')
 " "$SETTINGS_FILE" 2>/dev/null)
     if [ "$BYPASS_MODE" = "bypassPermissions" ]; then
@@ -341,7 +432,7 @@ fi
 # Colon in filenames breaks permission matching (claude-code#38409: Edit/Write prompt despite allow-list)
 COLON_FILE=$(find . -maxdepth 5 -name '*:*' -not -path './.git/*' -not -path './node_modules/*' -not -path './.claude/*' -print -quit 2>/dev/null)
 if [ -n "$COLON_FILE" ]; then
-    WARNINGS+=("Project contains files with colons in filenames (e.g. $(basename "$COLON_FILE")). Claude Code permission matching breaks on paths containing ':' — Edit/Write will prompt for permission even when allowed or in bypassPermissions mode. Workaround: rename to bracket notation (e.g. [id].vue instead of :id.vue) or use a PreToolUse hook to auto-approve. (see claude-code#38409)")
+    WARNINGS+=("Project contains files with colons in filenames (e.g. $(basename "$COLON_FILE")). Claude Code permission matching breaks on paths containing ':' - Edit/Write will prompt for permission even when allowed or in bypassPermissions mode. Workaround: rename to bracket notation (e.g. [id].vue instead of :id.vue) or use a PreToolUse hook to auto-approve. (see claude-code#38409)")
 fi
 
 # Hooks using permissionDecision "ask" permanently break bypass mode (claude-code#37420)
@@ -403,7 +494,7 @@ esac
 # When the user profile path contains spaces (e.g. /Users/Lea Chan/), hook commands
 # that reference $HOME or CLAUDE_PLUGIN_ROOT get word-split by bash, causing:
 #   bash: /c/Users/Lea: No such file or directory
-# This affects ALL hooks — both plugin hooks and settings.json hooks.
+# This affects ALL hooks - both plugin hooks and settings.json hooks.
 case "$HOME" in
     *" "*)
         WARNINGS+=("Home directory contains spaces: $HOME. Hook commands that include your home path will fail because Claude Code's hook runner word-splits the path at spaces. Affected: all hooks in ~/.claude/. Workaround: create a symlink from a space-free path (e.g. ln -s \"$HOME\" /opt/claude-home) and update hook command paths, or use PowerShell hooks on Windows. (see claude-code#40084)")
@@ -439,7 +530,7 @@ try:
 except: print('false')
 " "$_se_cfg" 2>/dev/null)
     if [ "$_HAS_SESSION_END" = "true" ]; then
-        WARNINGS+=("SessionEnd hooks detected. Claude Code exits the process without waiting for SessionEnd hooks to complete — any async work (API calls, LLM summarization, network requests) is killed mid-execution. Workaround: detach heavy work into a background process with nohup/disown so it survives parent exit, then exit 0 immediately. (see claude-code#41577)")
+        WARNINGS+=("SessionEnd hooks detected. Claude Code exits the process without waiting for SessionEnd hooks to complete - any async work (API calls, LLM summarization, network requests) is killed mid-execution. Workaround: detach heavy work into a background process with nohup/disown so it survives parent exit, then exit 0 immediately. (see claude-code#41577)")
         break
     fi
 done
@@ -457,7 +548,7 @@ for hookdir in "${HOME}/.claude/hooks" ".claude/hooks"; do
     if [ -n "$UPDATEDINPUT_HOOKS" ]; then
         scope="Hook(s)"
         [ "$hookdir" = ".claude/hooks" ] && scope="Project hook(s)"
-        WARNINGS+=("${scope} use updatedInput:${UPDATEDINPUT_HOOKS}. The updatedInput field is silently ignored for Agent tool calls — the original prompt is used instead. Use decision:block to reject unsafe Agent prompts rather than trying to rewrite them. (see claude-code#39814)")
+        WARNINGS+=("${scope} use updatedInput:${UPDATEDINPUT_HOOKS}. The updatedInput field is silently ignored for Agent tool calls - the original prompt is used instead. Use decision:block to reject unsafe Agent prompts rather than trying to rewrite them. (see claude-code#39814)")
     fi
 done
 
@@ -510,7 +601,7 @@ except: pass
 " "$SETTINGS_FILE" 2>/dev/null)
     if [ -n "$ADDITIONAL_DIRS" ]; then
         DIR_COUNT=$(echo "$ADDITIONAL_DIRS" | wc -l | tr -d ' ')
-        WARNINGS+=("Global settings.json contains ${DIR_COUNT} additionalDirectories entry/entries. These directories are shared across ALL projects — approving file access outside the working directory in one project makes those paths available in every other project, and subagents will search them. Additionally, 'always allow' directory access is flaky and may not persist across sessions — Claude will re-prompt for access despite prior approval (claude-code#41579). Review and remove entries not needed for the current project. (see claude-code#40606, claude-code#41579)")
+        WARNINGS+=("Global settings.json contains ${DIR_COUNT} additionalDirectories entry/entries. These directories are shared across ALL projects - approving file access outside the working directory in one project makes those paths available in every other project, and subagents will search them. Additionally, 'always allow' directory access is flaky and may not persist across sessions - Claude will re-prompt for access despite prior approval (claude-code#41579). Review and remove entries not needed for the current project. (see claude-code#40606, claude-code#41579)")
     fi
 fi
 
@@ -530,7 +621,7 @@ try:
 except: pass
 " "$SETTINGS_FILE" 2>/dev/null)
     if [ "$HAS_BYPASS" = "yes" ]; then
-        WARNINGS+=("bypassPermissions is enabled globally. Note: entering plan mode does NOT deactivate bypass permissions — the model can execute write operations during what you expect to be a read-only analysis phase (claude-code#41545 confirms this with --dangerously-skip-permissions). PreToolUse hooks fire regardless of both modes and are the only reliable constraint during plan+bypass overlap. (see claude-code#40623, claude-code#41545)")
+        WARNINGS+=("bypassPermissions is enabled globally. Note: entering plan mode does NOT deactivate bypass permissions - the model can execute write operations during what you expect to be a read-only analysis phase (claude-code#41545 confirms this with --dangerously-skip-permissions). PreToolUse hooks fire regardless of both modes and are the only reliable constraint during plan+bypass overlap. (see claude-code#40623, claude-code#41545)")
     fi
 fi
 
@@ -606,17 +697,17 @@ if has_hook_type "WorktreeCreate"; then
     WARNINGS+=("WorktreeCreate hooks cause Claude Code to hang indefinitely when using 'claude -w'. Any WorktreeCreate hook, even a trivial 'echo ok', causes the session to freeze after the hook completes. The hook executes and returns but Claude Code never proceeds. This affects all hook commands, not just complex ones. Remove WorktreeCreate hooks if you need 'claude -w' to function. (see claude-code#41614)")
 fi
 
-# TaskCreated hooks — available since v2.1.84
+# TaskCreated hooks - available since v2.1.84
 if has_hook_type "TaskCreated"; then
     WARNINGS+=("TaskCreated hooks are configured. These fire when a task is created via TaskCreate. Note: TaskCreated hooks cannot block task creation (decision field is ignored). They are observe-only, useful for logging or notifications but not enforcement.")
 fi
 
-# SubagentStop hooks — subagent-scoped lifecycle
+# SubagentStop hooks - subagent-scoped lifecycle
 if has_hook_type "SubagentStop"; then
     WARNINGS+=("SubagentStop hooks are configured. These fire when a spawned subagent completes, providing the last_assistant_message field. Note: background agents may not inherit all hook configurations from the parent session. (see claude-code#40818)")
 fi
 
-# PermissionDenied hooks — new in v2.1.88 (claude-code#41261)
+# PermissionDenied hooks - new in v2.1.88 (claude-code#41261)
 # Fires after auto mode classifier denials. Return {retry: true} to tell model it can retry.
 if has_hook_type "PermissionDenied"; then
     WARNINGS+=("PermissionDenied hooks are configured. This event fires after auto mode classifier denials (new in v2.1.88). Return {\"retry\": true} in hookSpecificOutput to tell the model it can retry the denied operation. Without this hook, denied operations are not retried. Note: this event is not yet documented in the official hooks reference. (see claude-code#41261)")
@@ -637,13 +728,13 @@ fi
 
 # Model self-execution after long sessions (claude-code#41307)
 # In long sessions, after task-notification, the model can hallucinate 'Human:' text and execute it.
-# This is a model-level issue — hooks cannot distinguish real vs hallucinated user requests.
+# This is a model-level issue - hooks cannot distinguish real vs hallucinated user requests.
 # Only warn when bypass mode is active (indicates unattended/autonomous sessions where this is a real risk).
 if [ "${BYPASS_MODE:-}" = "bypassPermissions" ]; then
-    WARNINGS+=("In long sessions, the model can hallucinate 'Human:' prefixed text after task-notification delivery and then execute it as if it were a real user request, causing unauthorized tool calls. Hooks cannot distinguish these from real user requests because the tool calls themselves are genuine — only the trigger is hallucinated. Mitigation: use session time limits, avoid very long unattended sessions. (see claude-code#41307)")
+    WARNINGS+=("In long sessions, the model can hallucinate 'Human:' prefixed text after task-notification delivery and then execute it as if it were a real user request, causing unauthorized tool calls. Hooks cannot distinguish these from real user requests because the tool calls themselves are genuine - only the trigger is hallucinated. Mitigation: use session time limits, avoid very long unattended sessions. (see claude-code#41307)")
 fi
 
-# PreToolUse hooks on EnterPlanMode — hook output deprioritized (claude-code#41051)
+# PreToolUse hooks on EnterPlanMode - hook output deprioritized (claude-code#41051)
 _check_planmode_matcher() {
     local sf="$1"
     [ -f "$sf" ] || return 1
@@ -710,7 +801,7 @@ fi
 done  # end settings.local.json loop (user-level + project-level)
 
 # Sandbox allowedDomains HTTP bypass (claude-code#40213)
-# allowedDomains only filters HTTPS CONNECT — plain HTTP passes through unfiltered.
+# allowedDomains only filters HTTPS CONNECT - plain HTTP passes through unfiltered.
 if [ -f "$SETTINGS_FILE" ]; then
     HAS_ALLOWED_DOMAINS=$(python3 - "$SETTINGS_FILE" << 'PYEOF_AD'
 import json, sys
@@ -734,7 +825,7 @@ fi
 
 # Supply-chain: detect suspicious project-level .claude/settings.json (claude-code#38319)
 # A malicious repo can include .claude/settings.json that adds hooks or loosens permissions.
-# Project settings merge with user settings — they can ADD hooks and allow rules.
+# Project settings merge with user settings - they can ADD hooks and allow rules.
 if [ -f "$PROJECT_SETTINGS" ]; then
     SUPPLY_CHAIN_FLAGS=$(python3 - "$PROJECT_SETTINGS" << 'PYEOF_SC'
 import json, sys, re
@@ -756,9 +847,9 @@ try:
     # Flag 3: Project spoofs companyAnnouncements (claude-code#39998)
     announcements = s.get("companyAnnouncements")
     if announcements:
-        flags.append(f"sets companyAnnouncements — messages will appear as if from your company (social engineering risk)")
+        flags.append(f"sets companyAnnouncements - messages will appear as if from your company (social engineering risk)")
     # Flag 4: Project hooks that reference external URLs or suspicious commands
-    all_hook_types = ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd",
+    all_hook_types = ["PreToolUse", "PostToolUse", "PostCompact", "SessionStart", "SessionEnd",
                       "Stop", "SubagentStop", "TaskCreated", "WorktreeCreate",
                       "WorktreeRemove", "UserPromptSubmit", "Notification",
                       "PermissionDenied"]
@@ -807,7 +898,7 @@ for hookdir in "${HOME}/.claude/hooks" ".claude/hooks"; do
     if [ -n "$WARN_HOOKS" ]; then
         scope="Hook(s)"
         [ "$hookdir" = ".claude/hooks" ] && scope="Project hook(s)"
-        WARNINGS+=("${scope} use bare decision:warn without hookSpecificOutput:${WARN_HOOKS}. Warn-level hook responses without hookSpecificOutput are silently dropped — neither the user nor the model sees the warning. Use hookSpecificOutput with permissionDecision:allow and additionalContext instead. (see claude-code#40380)")
+        WARNINGS+=("${scope} use bare decision:warn without hookSpecificOutput:${WARN_HOOKS}. Warn-level hook responses without hookSpecificOutput are silently dropped - neither the user nor the model sees the warning. Use hookSpecificOutput with permissionDecision:allow and additionalContext instead. (see claude-code#40380)")
     fi
 done
 # Also check settings.json hook commands for the same pattern
@@ -936,16 +1027,16 @@ if [ "$_HAS_SKILLS" = "true" ]; then
         [ -d "${HOME}/.claude/skills" ] && _SKILL_SOURCES="user-level skills ($(ls "${HOME}/.claude/skills" 2>/dev/null | wc -l | tr -d ' ') items)"
         [ -d ".claude/skills" ] && _SKILL_SOURCES="${_SKILL_SOURCES:+${_SKILL_SOURCES}, }project-level skills ($(ls ".claude/skills" 2>/dev/null | wc -l | tr -d ' ') items)"
         [ "$_PLUGIN_SKILL_COUNT" -gt 0 ] && _SKILL_SOURCES="${_SKILL_SOURCES:+${_SKILL_SOURCES}, }plugin skills (${_PLUGIN_SKILL_COUNT} plugin skill dirs)"
-        WARNINGS+=("Skills/workflows can override CLAUDE.md directives. Active sources: ${_SKILL_SOURCES}. When a skill instructs the model to perform an action (e.g. 'commit all changed files'), CLAUDE.md rules prohibiting that action are deprioritized because skill instructions arrive as high-priority tool_result context. Use enforce-hooks (PreToolUse) to gate the specific operations you need protected — hooks enforce at the tool-call level and cannot be overridden by prompt content. (see claude-code#41437)")
+        WARNINGS+=("Skills/workflows can override CLAUDE.md directives. Active sources: ${_SKILL_SOURCES}. When a skill instructs the model to perform an action (e.g. 'commit all changed files'), CLAUDE.md rules prohibiting that action are deprioritized because skill instructions arrive as high-priority tool_result context. Use enforce-hooks (PreToolUse) to gate the specific operations you need protected - hooks enforce at the tool-call level and cannot be overridden by prompt content. (see claude-code#41437)")
     fi
 fi
 
 # Non-interactive sessions permanently stuck on usage limit (claude-code#41502, #41503)
 # In headless/remote-control/--print mode, hitting the usage limit shows a prompt
-# that cannot be answered — the session hangs indefinitely with no programmatic recovery.
+# that cannot be answered - the session hangs indefinitely with no programmatic recovery.
 # Check if running non-interactively (common for autonomous agents, CI, cron)
 if [ ! -t 0 ] || [ -n "${CI:-}" ] || [ -n "${CLAUDE_NON_INTERACTIVE:-}" ]; then
-    WARNINGS+=("Running non-interactively (stdin is not a terminal). If a Claude session hits a usage limit, it will prompt for confirmation but cannot receive input — the session hangs permanently. There is no programmatic workaround. Set session time limits or monitor for stuck processes. (see claude-code#41502, claude-code#41503)")
+    WARNINGS+=("Running non-interactively (stdin is not a terminal). If a Claude session hits a usage limit, it will prompt for confirmation but cannot receive input - the session hangs permanently. There is no programmatic workaround. Set session time limits or monitor for stuck processes. (see claude-code#41502, claude-code#41503)")
 fi
 
 EARLY_WARNING_COUNT=${#WARNINGS[@]}
@@ -967,7 +1058,7 @@ check "Claude Code installed" 5 \
 
 check "Settings file exists" 5 \
     "$([ -f "$SETTINGS_FILE" ] && echo true || echo false)" \
-    "No settings.json — Claude Code may be using defaults" \
+    "No settings.json - Claude Code may be using defaults" \
     ""
 
 # === Section 2: Destructive Command Protection ===
@@ -1020,6 +1111,13 @@ check "read-once (prevents redundant file reads)" 5 \
     "$(has_hook read-once && echo true || echo false)" \
     "No read-once: Claude re-reads files it already has, wasting tokens" \
     "curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/read-once/install.sh | bash"
+
+if has_hook read-once; then
+    check "read-once PostCompact cache reset" 2 \
+        "$(has_hook_event_command "PostCompact" "read-once.*compact" && echo true || echo false)" \
+        "read-once installed without PostCompact cache reset: after compaction, first re-reads may still be blocked by stale session cache" \
+        "curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- upgrade"
+fi
 
 # === Section 6: Built-in protections ===
 echo ""
@@ -1256,7 +1354,7 @@ except Exception:
 fi
 
 # MCP tool calls silently rejected by parameter value: #41528
-# Universal warning — affects anyone using MCP tools in allow lists
+# Universal warning - affects anyone using MCP tools in allow lists
 if [ -f "$SETTINGS_FILE" ]; then
     HAS_MCP_ALLOW=$(python3 -c "
 import json, sys
@@ -1329,7 +1427,8 @@ check "enforce-hooks (turns CLAUDE.md rules into hooks)" 10 \
 
 # Check for @enforced rules in CLAUDE.md
 if [ -f "CLAUDE.md" ]; then
-    ENFORCED_COUNT=$(grep -c '@enforced' CLAUDE.md 2>/dev/null || echo "0")
+    ENFORCED_COUNT=$(grep -c '@enforced' CLAUDE.md 2>/dev/null || true)
+    ENFORCED_COUNT=${ENFORCED_COUNT:-0}
     if [ "$ENFORCED_COUNT" -gt 0 ]; then
         check "CLAUDE.md has @enforced rules ($ENFORCED_COUNT found)" 5 \
             "true" \
@@ -1356,35 +1455,35 @@ if [ -f "CLAUDE.md" ]; then
     # Check for file protection rules not covered by file-guard
     if ! has_hook file-guard; then
         if grep -qiE '\.env|secret|credential|private.?key|api.?key|\.pem|\.key|token' CLAUDE.md 2>/dev/null; then
-            RULE_SUGGESTIONS+=("file-guard — your CLAUDE.md mentions sensitive files (.env, keys, credentials)")
+            RULE_SUGGESTIONS+=("file-guard - your CLAUDE.md mentions sensitive files (.env, keys, credentials)")
         fi
     fi
 
     # Check for git safety rules not covered by git-safe
     if ! has_hook git-safe; then
         if grep -qiE 'force.?push|reset.?--hard|checkout\s*\.|clean\s+-f|branch\s+-[dD]|push.?--delete' CLAUDE.md 2>/dev/null; then
-            RULE_SUGGESTIONS+=("git-safe — your CLAUDE.md mentions destructive git operations")
+            RULE_SUGGESTIONS+=("git-safe - your CLAUDE.md mentions destructive git operations")
         fi
     fi
 
     # Check for command safety rules not covered by bash-guard
     if ! has_hook bash-guard; then
         if grep -qiE 'rm\s+-rf|sudo|curl.*bash|drop\s+(table|database)|dangerous|destructive' CLAUDE.md 2>/dev/null; then
-            RULE_SUGGESTIONS+=("bash-guard — your CLAUDE.md mentions dangerous commands")
+            RULE_SUGGESTIONS+=("bash-guard - your CLAUDE.md mentions dangerous commands")
         fi
     fi
 
     # Check for branch protection rules not covered by branch-guard
     if ! has_hook branch-guard; then
         if grep -qiE 'feature.?branch|never.*commit.*main|no.*direct.*commit|protected.?branch' CLAUDE.md 2>/dev/null; then
-            RULE_SUGGESTIONS+=("branch-guard — your CLAUDE.md mentions branch protection")
+            RULE_SUGGESTIONS+=("branch-guard - your CLAUDE.md mentions branch protection")
         fi
     fi
 
     # Check for worktree safety rules not covered by worktree-guard
     if ! has_hook worktree-guard; then
         if grep -qiE 'worktree|merge.*before.*exit|push.*before.*exit|unmerged.*commit' CLAUDE.md 2>/dev/null; then
-            RULE_SUGGESTIONS+=("worktree-guard — your CLAUDE.md mentions worktree safety")
+            RULE_SUGGESTIONS+=("worktree-guard - your CLAUDE.md mentions worktree safety")
         fi
     fi
 
@@ -1447,20 +1546,169 @@ fi
 # Verify that registered hooks actually exist and are executable
 HOOK_HEALTH_ISSUES=0
 HOOK_PATHS=""
+VERIFY_RAN=0
+VERIFY_NO_HOOKS=0
+VERIFY_PASS=0
+VERIFY_FAIL=0
+VERIFY_SKIP=0
+VERIFY_PRETOOLUSE_SKIP=0
+VERIFY_TOTAL=0
+HOOK_VERIFY_TIMEOUT_SECONDS="${HOOK_VERIFY_TIMEOUT_SECONDS:-5}"
 
-# Collect hook paths from both user and project settings
+_hook_script_path() {
+    python3 - "$1" << 'PYEOF_HOOKPATH'
+import os
+import shlex
+import sys
+
+command = sys.argv[1]
+try:
+    parts = shlex.split(command)
+except ValueError:
+    sys.exit(0)
+
+if not parts:
+    sys.exit(0)
+
+first = os.path.basename(parts[0]).lower()
+path = ""
+
+if first in {"bash", "sh", "zsh", "python", "python3"}:
+    for part in parts[1:]:
+        if part == "--":
+            continue
+        if part == "-c":
+            path = ""
+            break
+        if part.startswith("-"):
+            continue
+        path = part
+        break
+elif first in {"pwsh", "powershell", "powershell.exe"}:
+    for i, part in enumerate(parts[1:], start=1):
+        if part.lower() == "-file" and i + 1 < len(parts):
+            path = parts[i + 1]
+            break
+else:
+    path = parts[0]
+
+if not path:
+    sys.exit(0)
+
+path = os.path.expanduser(os.path.expandvars(path))
+if "/" in path or "\\" in path or path.endswith((".sh", ".py", ".ps1")):
+    print(path)
+PYEOF_HOOKPATH
+}
+
+_hook_interpreter_name() {
+    python3 - "$1" << 'PYEOF_HOOKINTERP'
+import os
+import shlex
+import sys
+
+try:
+    parts = shlex.split(sys.argv[1])
+except ValueError:
+    sys.exit(0)
+
+if not parts:
+    sys.exit(0)
+
+first = os.path.basename(parts[0]).lower()
+if first in {"bash", "sh", "zsh", "python", "python3", "pwsh", "powershell", "powershell.exe"}:
+    print(first)
+PYEOF_HOOKINTERP
+}
+
+_run_hook_with_timeout() {
+    local interpreter="$1"
+    local script_path="$2"
+    local timeout_seconds="$3"
+    local payload="$4"
+    python3 - "$interpreter" "$script_path" "$timeout_seconds" "$payload" << 'PYEOF_RUNHOOK'
+import os
+import signal
+import subprocess
+import sys
+
+interpreter = sys.argv[1]
+script_path = sys.argv[2]
+try:
+    timeout_seconds = float(sys.argv[3])
+except Exception:
+    timeout_seconds = 5.0
+
+payload = sys.argv[4]
+if interpreter in {"bash", "sh", "zsh", "python", "python3"}:
+    cmd = [interpreter, script_path]
+elif interpreter in {"pwsh", "powershell", "powershell.exe"}:
+    cmd = [interpreter, "-File", script_path]
+else:
+    cmd = [script_path]
+
+proc = None
+try:
+    proc = subprocess.Popen(
+        cmd,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        stdin=subprocess.PIPE,
+        start_new_session=True,
+    )
+    stdout, stderr = proc.communicate(input=payload, timeout=timeout_seconds)
+except subprocess.TimeoutExpired as exc:
+    try:
+        if proc is not None:
+            os.killpg(proc.pid, signal.SIGKILL)
+            os.kill(proc.pid, signal.SIGKILL)
+    except Exception:
+        pass
+    try:
+        if proc is not None and proc.poll() is None:
+            subprocess.run(["/bin/kill", "-KILL", f"-{proc.pid}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    except Exception:
+        pass
+    try:
+        stdout, stderr = proc.communicate(timeout=1) if proc is not None else ("", "")
+    except Exception:
+        stdout, stderr = exc.stdout or "", exc.stderr or ""
+    if isinstance(stdout, bytes):
+        stdout = stdout.decode(errors="replace")
+    if isinstance(stderr, bytes):
+        stderr = stderr.decode(errors="replace")
+    sys.stdout.write(stdout)
+    sys.stderr.write(stderr)
+    sys.stderr.write(f"hook timed out after {timeout_seconds:g} seconds\n")
+    sys.exit(124)
+
+sys.stdout.write(stdout or "")
+sys.stderr.write(stderr or "")
+sys.exit(proc.returncode if proc is not None else 1)
+PYEOF_RUNHOOK
+}
+
+# Collect hook commands from both user and project settings.
+# By default this includes every hook event for health checks. Pass event names
+# to narrow the result for payload verification.
 _extract_hook_paths() {
     local file="$1"
+    shift || true
     [ -f "$file" ] || return 0
-    python3 - "$file" << 'PYEOF'
+    python3 - "$file" "$@" << 'PYEOF'
 import json, sys
 try:
     with open(sys.argv[1]) as f:
         s = json.load(f)
-    all_hook_types = ["PreToolUse", "PostToolUse", "SessionStart", "SessionEnd",
-                      "Stop", "SubagentStop", "TaskCreated", "WorktreeCreate",
-                      "WorktreeRemove", "UserPromptSubmit", "Notification",
-                      "PermissionDenied"]
+    requested = sys.argv[2:]
+    all_hook_types = requested or [
+        "PreToolUse", "PostToolUse", "SessionStart", "SessionEnd",
+        "PostCompact",
+        "Stop", "SubagentStop", "TaskCreated", "WorktreeCreate",
+        "WorktreeRemove", "UserPromptSubmit", "Notification",
+        "PermissionDenied",
+    ]
     for hook_type in all_hook_types:
         for entry in s.get("hooks", {}).get(hook_type, []):
             for hook in entry.get("hooks", []):
@@ -1473,21 +1721,46 @@ except Exception:
 PYEOF
 }
 
+_merge_hook_paths() {
+    local current="$1"
+    local extra="$2"
+    if [ -n "$extra" ]; then
+        if [ -n "$current" ]; then
+            printf "%s\n%s\n" "$current" "$extra"
+        else
+            printf "%s\n" "$extra"
+        fi
+    else
+        printf "%s\n" "$current"
+    fi
+}
+
+_sort_hook_paths() {
+    local paths="$1"
+    if [ -n "$paths" ]; then
+        printf "%s\n" "$paths" | sort -u
+    fi
+}
+
 HOOK_PATHS=$(_extract_hook_paths "$SETTINGS_FILE" 2>/dev/null)
+VERIFY_HOOK_PATHS=$(_extract_hook_paths "$SETTINGS_FILE" PreToolUse 2>/dev/null)
 if [ -f "$PROJECT_SETTINGS" ]; then
     PROJECT_HOOK_PATHS=$(_extract_hook_paths "$PROJECT_SETTINGS" 2>/dev/null)
-    if [ -n "$PROJECT_HOOK_PATHS" ]; then
-        if [ -n "$HOOK_PATHS" ]; then
-            HOOK_PATHS="$HOOK_PATHS"$'\n'"$PROJECT_HOOK_PATHS"
-        else
-            HOOK_PATHS="$PROJECT_HOOK_PATHS"
-        fi
-    fi
+    HOOK_PATHS=$(_merge_hook_paths "$HOOK_PATHS" "$PROJECT_HOOK_PATHS")
+    PROJECT_VERIFY_HOOK_PATHS=$(_extract_hook_paths "$PROJECT_SETTINGS" PreToolUse 2>/dev/null)
+    VERIFY_HOOK_PATHS=$(_merge_hook_paths "$VERIFY_HOOK_PATHS" "$PROJECT_VERIFY_HOOK_PATHS")
 fi
 
 # Deduplicate hook paths (same hook in user+project = show once)
+HOOK_PATHS=$(_sort_hook_paths "$HOOK_PATHS")
+VERIFY_HOOK_PATHS=$(_sort_hook_paths "$VERIFY_HOOK_PATHS")
+NON_PRETOOLUSE_HOOK_PATHS=""
 if [ -n "$HOOK_PATHS" ]; then
-    HOOK_PATHS=$(echo "$HOOK_PATHS" | sort -u)
+    if [ -n "$VERIFY_HOOK_PATHS" ]; then
+        NON_PRETOOLUSE_HOOK_PATHS=$(comm -23 <(printf "%s\n" "$HOOK_PATHS") <(printf "%s\n" "$VERIFY_HOOK_PATHS") || true)
+    else
+        NON_PRETOOLUSE_HOOK_PATHS="$HOOK_PATHS"
+    fi
 fi
 
 if [ -n "$HOOK_PATHS" ]; then
@@ -1495,14 +1768,18 @@ if [ -n "$HOOK_PATHS" ]; then
     printf "${BLUE}Hook Health${NC}\n"
     while IFS= read -r hook_path; do
         [ -z "$hook_path" ] && continue
-        # Expand ~ to HOME
-        expanded_path="${hook_path/#\~/$HOME}"
+        expanded_path=$(_hook_script_path "$hook_path" 2>/dev/null || true)
+        if [ -z "$expanded_path" ]; then
+            hook_basename=$(printf "%s" "$hook_path" | cut -c1-60)
+            printf "  ${DIM}- %s - custom command, not file-checked${NC}\n" "$hook_basename"
+            continue
+        fi
         hook_basename=$(basename "$expanded_path")
         if [ ! -f "$expanded_path" ]; then
-            printf "  ${RED}✗${NC} %s — file not found\n" "$hook_basename"
+            printf "  ${RED}✗${NC} %s - file not found\n" "$hook_basename"
             HOOK_HEALTH_ISSUES=$((HOOK_HEALTH_ISSUES + 1))
-        elif [ ! -x "$expanded_path" ]; then
-            printf "  ${RED}✗${NC} %s — not executable (run: chmod +x %s)\n" "$hook_basename" "$hook_path"
+        elif [ ! -x "$expanded_path" ] && [ -z "$(_hook_interpreter_name "$hook_path" 2>/dev/null || true)" ]; then
+            printf "  ${RED}✗${NC} %s - not executable (run: chmod +x %s)\n" "$hook_basename" "$hook_path"
             HOOK_HEALTH_ISSUES=$((HOOK_HEALTH_ISSUES + 1))
         else
             printf "  ${GREEN}✓${NC} %s\n" "$hook_basename"
@@ -1513,14 +1790,16 @@ if [ -n "$HOOK_PATHS" ]; then
     fi
 fi
 
-# === Section 9: Verify Mode — test hooks with real payloads ===
+# === Section 9: Verify Mode - test hooks with real payloads ===
 if [ "$VERIFY_MODE" = "1" ] && [ -n "$HOOK_PATHS" ]; then
     echo ""
     printf "${BOLD}Hook Verification${NC} ${DIM}(sending test payloads)${NC}\n"
 
+    VERIFY_RAN=1
     VERIFY_PASS=0
     VERIFY_FAIL=0
     VERIFY_SKIP=0
+    VERIFY_PRETOOLUSE_SKIP=0
     VERIFY_TOTAL=0
 
     # Test payloads for known hooks
@@ -1539,72 +1818,92 @@ if [ "$VERIFY_MODE" = "1" ] && [ -n "$HOOK_PATHS" ]; then
 
         if [ "$expect_block" = "skip" ]; then
             VERIFY_SKIP=$((VERIFY_SKIP + 1))
-            printf "  ${DIM}— %s (skipped, needs runtime state)${NC}\n" "$name"
+            VERIFY_PRETOOLUSE_SKIP=$((VERIFY_PRETOOLUSE_SKIP + 1))
+            printf "  ${DIM}- %s (skipped, needs runtime state)${NC}\n" "$name"
             return
         fi
-
-        VERIFY_TOTAL=$((VERIFY_TOTAL + 1))
 
         # Extract the script path from commands like "bash ~/.claude/hooks/foo.sh"
         local script_path=""
-        if [[ "$hook_cmd" == bash\ * ]]; then
-            script_path="${hook_cmd#bash }"
-        elif [[ "$hook_cmd" == python3\ * ]]; then
-            script_path="${hook_cmd#python3 }"
-        else
-            script_path="$hook_cmd"
+        script_path=$(_hook_script_path "$hook_cmd" 2>/dev/null || true)
+        if [ -z "$script_path" ]; then
+            VERIFY_SKIP=$((VERIFY_SKIP + 1))
+            VERIFY_PRETOOLUSE_SKIP=$((VERIFY_PRETOOLUSE_SKIP + 1))
+            printf "  ${DIM}- %s (skipped, custom command is not a direct hook script)${NC}\n" "$name"
+            return
         fi
-        # Expand ~
-        script_path="${script_path/#\~/$HOME}"
+        VERIFY_TOTAL=$((VERIFY_TOTAL + 1))
 
         if [ ! -f "$script_path" ]; then
             VERIFY_FAIL=$((VERIFY_FAIL + 1))
-            printf "  ${RED}✗${NC} %s — script not found: %s\n" "$name" "$script_path"
+            printf "  ${RED}✗${NC} %s - script not found: %s\n" "$name" "$script_path"
             return
         fi
 
-        if [ ! -x "$script_path" ] && [[ "$hook_cmd" != bash\ * ]] && [[ "$hook_cmd" != python3\ * ]]; then
+        local interpreter=""
+        interpreter=$(_hook_interpreter_name "$hook_cmd" 2>/dev/null || true)
+        if [ ! -x "$script_path" ] && [ -z "$interpreter" ]; then
             VERIFY_FAIL=$((VERIFY_FAIL + 1))
-            printf "  ${RED}✗${NC} %s — not executable\n" "$name"
+            printf "  ${RED}✗${NC} %s - not executable\n" "$name"
             return
         fi
 
         local output=""
+        local stderr_output=""
         local exit_code=0
+        local stdout_file=""
+        local stderr_file=""
         # Run the hook (timeout via background+wait if coreutils timeout unavailable)
-        if [[ "$hook_cmd" == bash\ * ]]; then
-            output=$(echo "$payload" | bash "$script_path" 2>/dev/null) || exit_code=$?
-        elif [[ "$hook_cmd" == python3\ * ]]; then
-            output=$(echo "$payload" | python3 "$script_path" 2>/dev/null) || exit_code=$?
+        stdout_file=$(mktemp)
+        stderr_file=$(mktemp)
+        if _run_hook_with_timeout "$interpreter" "$script_path" "$HOOK_VERIFY_TIMEOUT_SECONDS" "$payload" >"$stdout_file" 2>"$stderr_file"; then
+            exit_code=0
         else
-            output=$(echo "$payload" | "$script_path" 2>/dev/null) || exit_code=$?
+            exit_code=$?
         fi
+        output=$(cat "$stdout_file")
+        stderr_output=$(cat "$stderr_file")
+        rm -f "$stdout_file" "$stderr_file"
 
         if [ "$expect_block" = "true" ]; then
-            # Should have blocked — look for deny in JSON output (both old and new format)
-            if [ -n "$output" ] && echo "$output" | grep -qE '"permissionDecision"[[:space:]]*:[[:space:]]*"deny"|"decision"[[:space:]]*:[[:space:]]*"block"'; then
+            # Should have blocked. Strict verification requires a JSON block/deny
+            # decision on stdout; non-strict verification still accepts the
+            # documented exit-code-2 path but the audit warns about its platform risk.
+            if { [ "$exit_code" -eq 0 ] && [ -n "$output" ] && echo "$output" | grep -qE '"permissionDecision"[[:space:]]*:[[:space:]]*"deny"|"decision"[[:space:]]*:[[:space:]]*"block"'; } || \
+               { [ "$STRICT_MODE" != "1" ] && [ "$exit_code" -eq 2 ] && [ -z "$output" ] && [ -n "$stderr_output" ]; }; then
                 VERIFY_PASS=$((VERIFY_PASS + 1))
-                printf "  ${GREEN}✓${NC} %s — blocks correctly\n" "$name"
+                printf "  ${GREEN}✓${NC} %s - blocks correctly\n" "$name"
             else
                 VERIFY_FAIL=$((VERIFY_FAIL + 1))
-                printf "  ${RED}✗${NC} %s — did NOT block ${RED}(FAIL-OPEN)${NC}\n" "$name"
+                printf "  ${RED}✗${NC} %s - did NOT block ${RED}(FAIL-OPEN)${NC}\n" "$name"
                 if [ -n "$output" ]; then
                     printf "    ${DIM}Output: %s${NC}\n" "$(echo "$output" | head -1 | cut -c1-80)"
+                elif [ -n "$stderr_output" ]; then
+                    printf "    ${DIM}Stderr: %s${NC}\n" "$(echo "$stderr_output" | head -1 | cut -c1-80)"
                 else
                     printf "    ${DIM}No output (silent fail-open)${NC}\n"
                 fi
             fi
         else
-            # Should pass through — just verify it doesn't crash
-            if [ "$exit_code" -le 1 ]; then
+            # Should pass through - just verify it doesn't crash
+            if [ "$exit_code" -eq 0 ]; then
                 VERIFY_PASS=$((VERIFY_PASS + 1))
-                printf "  ${GREEN}✓${NC} %s — passes safe payload\n" "$name"
+                printf "  ${GREEN}✓${NC} %s - passes safe payload\n" "$name"
             else
                 VERIFY_FAIL=$((VERIFY_FAIL + 1))
-                printf "  ${RED}✗${NC} %s — crashed on safe payload (exit %d)\n" "$name" "$exit_code"
+                printf "  ${RED}✗${NC} %s - crashed on safe payload (exit %d)\n" "$name" "$exit_code"
             fi
         fi
     }
+
+    if [ -n "$NON_PRETOOLUSE_HOOK_PATHS" ]; then
+        while IFS= read -r hook_cmd; do
+            [ -z "$hook_cmd" ] && continue
+            VERIFY_SKIP=$((VERIFY_SKIP + 1))
+            hook_basename=$(printf "%s" "$hook_cmd" | cut -c1-60)
+            printf "  ${DIM}- %s (skipped, not a PreToolUse hook)${NC}\n" "$hook_basename"
+        done <<< "$NON_PRETOOLUSE_HOOK_PATHS"
+    fi
 
     # For each hook command, identify what it is and test it
     while IFS= read -r hook_cmd; do
@@ -1623,7 +1922,8 @@ if [ "$VERIFY_MODE" = "1" ] && [ -n "$HOOK_PATHS" ]; then
                 verify_hook "file-guard passes safe reads" "$hook_cmd" "$NONMATCH_PAYLOAD" "false"
             else
                 VERIFY_SKIP=$((VERIFY_SKIP + 1))
-                printf "  ${DIM}— file-guard (skipped, no .file-guard config found)${NC}\n"
+                VERIFY_PRETOOLUSE_SKIP=$((VERIFY_PRETOOLUSE_SKIP + 1))
+                printf "  ${DIM}- file-guard (skipped, no .file-guard config found)${NC}\n"
                 printf "    ${DIM}Create .file-guard with paths to protect, e.g.: echo '.env' > .file-guard${NC}\n"
             fi
         elif echo "$hook_cmd" | grep -q "branch-guard"; then
@@ -1637,29 +1937,33 @@ if [ "$VERIFY_MODE" = "1" ] && [ -n "$HOOK_PATHS" ]; then
         elif echo "$hook_cmd" | grep -q "enforce"; then
             verify_hook "enforce-hooks accepts payloads" "$hook_cmd" "$NONMATCH_PAYLOAD" "false"
         else
-            # Unknown hook — just test it doesn't crash
+            # Unknown hook - just test it doesn't crash
             hook_basename=$(basename "$hook_cmd" | head -1)
             verify_hook "$hook_basename accepts payloads" "$hook_cmd" "$NONMATCH_PAYLOAD" "false"
         fi
-    done <<< "$HOOK_PATHS"
+    done <<< "$VERIFY_HOOK_PATHS"
 
     # Summary
     echo ""
     if [ "$VERIFY_FAIL" -gt 0 ]; then
-        printf "  ${RED}%d/%d hooks FAIL-OPEN${NC}" "$VERIFY_FAIL" "$VERIFY_TOTAL"
+        printf "  ${RED}%d/%d payload checks FAIL-OPEN${NC}" "$VERIFY_FAIL" "$VERIFY_TOTAL"
         if [ "$VERIFY_SKIP" -gt 0 ]; then
             printf " ${DIM}(%d skipped)${NC}" "$VERIFY_SKIP"
         fi
         echo ""
-        ISSUES+=("$VERIFY_FAIL hook(s) did not block when they should have. This means dangerous commands can execute unchecked.")
+        ISSUES+=("$VERIFY_FAIL hook payload check(s) did not block when they should have. This means dangerous commands can execute unchecked.")
+    elif [ "$VERIFY_TOTAL" -eq 0 ] && [ "$VERIFY_SKIP" -gt 0 ]; then
+        printf "  ${YELLOW}No payload checks ran${NC} ${DIM}(%d skipped)${NC}\n" "$VERIFY_SKIP"
     else
-        printf "  ${GREEN}All %d verified hooks working correctly${NC}" "$VERIFY_PASS"
+        printf "  ${GREEN}All %d payload checks passed${NC}" "$VERIFY_PASS"
         if [ "$VERIFY_SKIP" -gt 0 ]; then
             printf " ${DIM}(%d skipped)${NC}" "$VERIFY_SKIP"
         fi
         echo ""
     fi
 elif [ "$VERIFY_MODE" = "1" ]; then
+    VERIFY_RAN=1
+    VERIFY_NO_HOOKS=1
     echo ""
     printf "${DIM}No hooks found to verify. Install hooks first.${NC}\n"
 fi
@@ -1698,9 +2002,29 @@ else
     VERDICT="Unsafe. Claude can do almost anything unchecked."
 fi
 
-printf "\n${BOLD}Safety Score: ${GRADE_COLOR}%d/%d (%d%%) — Grade %s${NC}\n" "$SCORE" "$MAX_SCORE" "$PCT" "$GRADE"
+printf "\n${BOLD}Safety Score: ${GRADE_COLOR}%d/%d (%d%%) - Grade %s${NC}\n" "$SCORE" "$MAX_SCORE" "$PCT" "$GRADE"
 printf "%s\n" "$VERDICT"
 printf "${DIM}%d/%d checks passed${NC}\n" "$CHECKS_PASSED" "$CHECKS_TOTAL"
+
+if [ "$VERIFY_RAN" = "1" ]; then
+    echo ""
+    printf "${BOLD}Verification boundary:${NC}\n"
+    if [ "$VERIFY_NO_HOOKS" = "1" ]; then
+        printf "  ${YELLOW}No hooks were found to verify.${NC} Install hooks before trusting the hook layer.\n"
+    elif [ "$VERIFY_TOTAL" -eq 0 ] && [ "$VERIFY_PRETOOLUSE_SKIP" -gt 0 ]; then
+        printf "  ${YELLOW}No hook payload checks ran.${NC} Resolve skipped PreToolUse hooks before trusting the hook layer.\n"
+    elif [ "$VERIFY_TOTAL" -eq 0 ]; then
+        printf "  ${YELLOW}No PreToolUse payload checks ran.${NC} Add or verify PreToolUse hooks before trusting the hook layer.\n"
+    elif [ "$VERIFY_FAIL" -gt 0 ]; then
+        printf "  ${RED}%d hook(s) still FAIL-OPEN.${NC} Fix those before trusting the hook layer.\n" "$VERIFY_FAIL"
+    elif [ "$VERIFY_PRETOOLUSE_SKIP" -gt 0 ]; then
+        printf "  ${YELLOW}%d PreToolUse hook check(s) were skipped.${NC} Resolve them before using strict gating.\n" "$VERIFY_PRETOOLUSE_SKIP"
+    else
+        printf "  ${GREEN}Zero FAIL-OPEN hooks in representative checks.${NC}\n"
+        printf "  If bypass flags, invalid settings JSON, and hook-health issues are also clear,\n"
+        printf "  treat remaining Claude Code warnings as residual platform risk, not a reason to reinstall hooks.\n"
+    fi
+fi
 
 # Show issues and fixes
 if [ ${#ISSUES[@]} -gt 0 ]; then
@@ -1741,8 +2065,33 @@ printf "[%s] bash-guard  [%s] git-safe  [%s] file-guard  [%s] read-once\n" \
     "$(_hook_mark bash-guard)" "$(_hook_mark git-safe)" "$(_hook_mark file-guard)" "$(_hook_mark read-once)"
 printf "[%s] branch-guard  [%s] session-log  [%s] enforce  [%s] worktree-guard\n" \
     "$(_hook_mark branch-guard)" "$(_hook_mark session-log)" "$(_hook_mark enforce-hooks)" "$(_hook_mark worktree-guard)"
+if [ "$VERIFY_RAN" = "1" ]; then
+    if [ "$VERIFY_NO_HOOKS" = "1" ]; then
+        printf "Verify: not run | no hooks found | 0 payload checks\n"
+        printf "Boundary: install hooks before trusting the hook layer.\n"
+    else
+        printf "Verify: %d FAIL-OPEN | %d payload checks | %d skipped\n" "$VERIFY_FAIL" "$VERIFY_TOTAL" "$VERIFY_SKIP"
+    fi
+    if [ "$VERIFY_NO_HOOKS" != "1" ] && [ "$VERIFY_FAIL" -gt 0 ]; then
+        printf "Boundary: fix FAIL-OPEN hooks before trusting the hook layer.\n"
+    elif [ "$VERIFY_NO_HOOKS" != "1" ] && [ "$VERIFY_TOTAL" -eq 0 ] && [ "$VERIFY_PRETOOLUSE_SKIP" -gt 0 ]; then
+        printf "Boundary: no hook payload checks ran; resolve skipped PreToolUse hooks before trusting the hook layer.\n"
+    elif [ "$VERIFY_NO_HOOKS" != "1" ] && [ "$VERIFY_TOTAL" -eq 0 ]; then
+        printf "Boundary: no PreToolUse payload checks ran; add or verify PreToolUse hooks before trusting the hook layer.\n"
+    elif [ "$VERIFY_NO_HOOKS" != "1" ] && [ "$VERIFY_PRETOOLUSE_SKIP" -gt 0 ]; then
+        printf "Boundary: resolve skipped PreToolUse hook checks before trusting strict verification.\n"
+    elif [ "$VERIFY_NO_HOOKS" != "1" ]; then
+        printf "Boundary: hooks passed representative checks; document residual platform warnings.\n"
+    fi
+fi
 printf "github.com/Bande-a-Bonnot/Boucle-framework\n"
 
 echo ""
 printf "${DIM}https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools${NC}\n"
 echo ""
+
+if [ "$STRICT_MODE" = "1" ]; then
+    if [ "$VERIFY_NO_HOOKS" = "1" ] || [ "$VERIFY_TOTAL" -eq 0 ] || [ "$VERIFY_FAIL" -gt 0 ] || [ "$VERIFY_PRETOOLUSE_SKIP" -gt 0 ] || [ "$HOOK_HEALTH_ISSUES" -gt 0 ]; then
+        exit 1
+    fi
+fi
