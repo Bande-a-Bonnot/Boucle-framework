@@ -52,7 +52,11 @@
 # Install:
 #   curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
 #
-# Config (.bash-guard):
+# Config (three-layer hierarchy, merged in order):
+#   ~/.bash-guard           global — personal defaults for all projects
+#   .bash-guard             project — commit to git for team sharing
+#   .bash-guard.local       local — personal overrides, add to .gitignore
+#
 #   allow: sudo           # whitelist specific operations
 #   allow: rm -rf
 #   allow: pipe-to-shell
@@ -63,6 +67,7 @@
 # Env vars:
 #   BASH_GUARD_DISABLED=1    Disable the hook entirely
 #   BASH_GUARD_LOG=1         Log all checks to stderr
+#   BASH_GUARD_CONFIG=path   Load a single explicit config file (no layering)
 
 set -euo pipefail
 
@@ -91,11 +96,18 @@ log() {
 }
 
 # Load allowlist and denylist from .bash-guard config
+# Supports three-layer hierarchy (merged in order):
+#   1. ~/.bash-guard        — global, applies to all projects
+#   2. .bash-guard          — project-level, commit to git for team sharing
+#   3. .bash-guard.local    — local personal overrides, add to .gitignore
+# Set BASH_GUARD_CONFIG to load a single explicit file instead (no layering).
 ALLOWED=()
 DENIED=()
-CONFIG="${BASH_GUARD_CONFIG:-.bash-guard}"
-if [ -f "$CONFIG" ]; then
-  while IFS= read -r line; do
+
+_load_bash_guard_config() {
+  local cfg="$1" line pattern
+  [ -f "$cfg" ] && [ -r "$cfg" ] || return 0
+  while IFS= read -r line || [ -n "$line" ]; do
     line=$(echo "$line" | sed 's/#.*//' | xargs)
     [ -z "$line" ] && continue
     if [[ "$line" == allow:* ]]; then
@@ -105,7 +117,21 @@ if [ -f "$CONFIG" ]; then
       pattern=$(echo "$line" | sed 's/^deny:\s*//' | xargs)
       DENIED+=("$pattern")
     fi
-  done < "$CONFIG"
+  done < "$cfg"
+}
+
+if [ -n "${BASH_GUARD_CONFIG+x}" ]; then
+  # Explicit single-file override — no layering (backward compat).
+  # Empty string (BASH_GUARD_CONFIG="") means: skip all config layers.
+  _load_bash_guard_config "$BASH_GUARD_CONFIG"
+else
+  # Three-layer merge: global → project → local.
+  # Note: an allow: in any layer whitelists the operation for built-in checks
+  # across all projects. Use a custom deny: rule in .bash-guard to override a
+  # global allow: for a specific project (custom deny runs before is_allowed).
+  [ -n "${HOME:-}" ] && _load_bash_guard_config "$HOME/.bash-guard"
+  _load_bash_guard_config ".bash-guard"
+  _load_bash_guard_config ".bash-guard.local"
 fi
 
 # Check if an operation is allowed via config

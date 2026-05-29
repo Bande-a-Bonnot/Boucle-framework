@@ -1085,6 +1085,123 @@ assert_allowed "gh api list rulesets" "gh api repos/owner/repo/rulesets"
 assert_allowed "gh api create issue" "gh api repos/owner/repo/issues -X POST -f title=bug"
 
 echo ""
+echo "--- Layered config (global, project, local) ---"
+
+_LAYERED_ORIG_DIR="$(pwd)"
+_LAYERED_HOME=$(mktemp -d)
+_LAYERED_PROJ=$(mktemp -d)
+
+# Test 1: global ~/.bash-guard allows an operation
+echo "allow: sudo" > "$_LAYERED_HOME/.bash-guard"
+cd "$_LAYERED_PROJ"
+run_hook "sudo apt-get update" env -u BASH_GUARD_CONFIG HOME="$_LAYERED_HOME"
+cd "$_LAYERED_ORIG_DIR"
+if [ "$HOOK_RC" -eq 0 ] && [ -z "$HOOK_STDOUT" ] && [ -z "$HOOK_STDERR" ]; then
+  PASS=$((PASS + 1))
+  echo "  PASS: global ~/.bash-guard allow:sudo"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: global ~/.bash-guard allow:sudo (rc=$HOOK_RC stderr='$HOOK_STDERR')"
+fi
+rm -f "$_LAYERED_HOME/.bash-guard"
+
+# Test 2: project .bash-guard allows an operation
+echo "allow: sudo" > "$_LAYERED_PROJ/.bash-guard"
+cd "$_LAYERED_PROJ"
+run_hook "sudo apt-get update" env -u BASH_GUARD_CONFIG HOME="$_LAYERED_HOME"
+cd "$_LAYERED_ORIG_DIR"
+if [ "$HOOK_RC" -eq 0 ] && [ -z "$HOOK_STDOUT" ] && [ -z "$HOOK_STDERR" ]; then
+  PASS=$((PASS + 1))
+  echo "  PASS: project .bash-guard allow:sudo"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: project .bash-guard allow:sudo (rc=$HOOK_RC stderr='$HOOK_STDERR')"
+fi
+rm -f "$_LAYERED_PROJ/.bash-guard"
+
+# Test 3: local .bash-guard.local allows an operation
+echo "allow: sudo" > "$_LAYERED_PROJ/.bash-guard.local"
+cd "$_LAYERED_PROJ"
+run_hook "sudo apt-get update" env -u BASH_GUARD_CONFIG HOME="$_LAYERED_HOME"
+cd "$_LAYERED_ORIG_DIR"
+if [ "$HOOK_RC" -eq 0 ] && [ -z "$HOOK_STDOUT" ] && [ -z "$HOOK_STDERR" ]; then
+  PASS=$((PASS + 1))
+  echo "  PASS: local .bash-guard.local allow:sudo"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: local .bash-guard.local allow:sudo (rc=$HOOK_RC stderr='$HOOK_STDERR')"
+fi
+rm -f "$_LAYERED_PROJ/.bash-guard.local"
+
+# Test 4: rules merge across layers — global allow + project deny both apply
+echo "allow: sudo" > "$_LAYERED_HOME/.bash-guard"
+echo "deny: unlink" > "$_LAYERED_PROJ/.bash-guard"
+cd "$_LAYERED_PROJ"
+run_hook "sudo apt-get update" env -u BASH_GUARD_CONFIG HOME="$_LAYERED_HOME"
+cd "$_LAYERED_ORIG_DIR"
+if [ "$HOOK_RC" -eq 0 ]; then
+  PASS=$((PASS + 1))
+  echo "  PASS: merge layers — global allow:sudo applies alongside project deny:unlink"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: merge layers — global allow:sudo should still apply (rc=$HOOK_RC)"
+fi
+cd "$_LAYERED_PROJ"
+run_hook "unlink myfile.txt" env -u BASH_GUARD_CONFIG HOME="$_LAYERED_HOME"
+cd "$_LAYERED_ORIG_DIR"
+if [ "$HOOK_RC" -eq 2 ] && echo "$HOOK_STDERR" | grep -q 'bash-guard:'; then
+  PASS=$((PASS + 1))
+  echo "  PASS: merge layers — project deny:unlink applies alongside global allow:sudo"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: merge layers — project deny:unlink should block unlink (rc=$HOOK_RC)"
+fi
+rm -f "$_LAYERED_HOME/.bash-guard" "$_LAYERED_PROJ/.bash-guard"
+
+# Test 5: BASH_GUARD_CONFIG overrides all layers (single-file, no layering)
+echo "allow: sudo" > "$_LAYERED_HOME/.bash-guard"
+_SINGLE_CFG=$(mktemp)  # empty config — no allow rules
+cd "$_LAYERED_PROJ"
+run_hook "sudo apt-get update" env -u BASH_GUARD_CONFIG HOME="$_LAYERED_HOME" BASH_GUARD_CONFIG="$_SINGLE_CFG"
+cd "$_LAYERED_ORIG_DIR"
+if [ "$HOOK_RC" -eq 2 ]; then
+  PASS=$((PASS + 1))
+  echo "  PASS: BASH_GUARD_CONFIG overrides all layers (no layering)"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: BASH_GUARD_CONFIG should suppress global config (rc=$HOOK_RC)"
+fi
+rm -f "$_SINGLE_CFG" "$_LAYERED_HOME/.bash-guard"
+
+# Test 6: missing layers are silently skipped, built-in rules still apply
+cd "$_LAYERED_PROJ"  # no .bash-guard, no .bash-guard.local, no ~/.bash-guard
+run_hook "sudo apt-get update" env -u BASH_GUARD_CONFIG HOME="$_LAYERED_HOME"
+cd "$_LAYERED_ORIG_DIR"
+if [ "$HOOK_RC" -eq 2 ] && echo "$HOOK_STDERR" | grep -q 'bash-guard:'; then
+  PASS=$((PASS + 1))
+  echo "  PASS: missing layers silently skipped, built-in rules apply"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: missing layers should not cause errors (rc=$HOOK_RC stderr='$HOOK_STDERR')"
+fi
+
+# Test 7: BASH_GUARD_CONFIG="" skips all config layers entirely
+echo "allow: sudo" > "$_LAYERED_HOME/.bash-guard"
+cd "$_LAYERED_PROJ"
+run_hook "sudo apt-get update" env HOME="$_LAYERED_HOME" BASH_GUARD_CONFIG=""
+cd "$_LAYERED_ORIG_DIR"
+if [ "$HOOK_RC" -eq 2 ] && echo "$HOOK_STDERR" | grep -q 'bash-guard:'; then
+  PASS=$((PASS + 1))
+  echo "  PASS: BASH_GUARD_CONFIG='' skips all layers, built-in rules apply"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: BASH_GUARD_CONFIG='' should skip all layers (rc=$HOOK_RC stderr='$HOOK_STDERR')"
+fi
+rm -f "$_LAYERED_HOME/.bash-guard"
+
+rm -rf "$_LAYERED_HOME" "$_LAYERED_PROJ"
+
+echo ""
 echo "================================"
 echo "Results: $PASS passed, $FAIL failed"
 echo "Total: $((PASS + FAIL)) tests"
