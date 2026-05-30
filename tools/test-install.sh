@@ -220,6 +220,26 @@ else
   fail "bash-guard matcher entry missing or legacy flat format returned"
 fi
 
+# Test 7d: git-safe installs with explicit Bash matcher and nested hook entry
+if python3 -c "
+import json, sys
+with open(sys.argv[1]) as f:
+    s = json.load(f)
+pre = s.get('hooks', {}).get('PreToolUse', [])
+matches = [
+    h for h in pre
+    if h.get('matcher') == 'Bash'
+    and any('git-safe' in hk.get('command', '') for hk in h.get('hooks', []))
+]
+assert len(matches) == 1, matches
+assert 'command' not in matches[0], matches[0]
+print('OK')
+" "$TEST_HOME/.claude/settings.json" 2>/dev/null | grep -q OK; then
+  pass "git-safe uses explicit Bash matcher entry"
+else
+  fail "git-safe matcher entry missing or legacy flat format returned"
+fi
+
 # Test 8: Existing settings preserved
 echo "--- Preserves existing settings ---"
 rm -rf "$TEST_HOME/.claude"
@@ -716,6 +736,54 @@ if [ "$preserved" = "yes" ]; then
   pass "upgrade preserved settings.json"
 else
   fail "upgrade corrupted settings.json"
+fi
+
+# Test 29b: Upgrade repairs old git-safe entries missing Bash matcher
+python3 - "$TEST_HOME/.claude/settings.json" <<'PY'
+import json, sys
+path = sys.argv[1]
+with open(path) as f:
+    s = json.load(f)
+for entry in s.get("hooks", {}).get("PreToolUse", []):
+    if any("git-safe" in h.get("command", "") for h in entry.get("hooks", [])):
+        entry.pop("matcher", None)
+with open(path, "w") as f:
+    json.dump(s, f, indent=2)
+    f.write("\n")
+PY
+
+bash "$SCRIPT_DIR/install.sh" upgrade >/dev/null 2>&1
+
+git_safe_matcher=$(python3 -c "
+import json, sys
+with open(sys.argv[1]) as f:
+    s = json.load(f)
+for entry in s.get('hooks', {}).get('PreToolUse', []):
+    if any('git-safe' in h.get('command', '') for h in entry.get('hooks', [])):
+        print(entry.get('matcher', ''))
+        break
+" "$TEST_HOME/.claude/settings.json" 2>/dev/null)
+
+if [ "$git_safe_matcher" = "Bash" ]; then
+  pass "upgrade repairs git-safe Bash matcher"
+else
+  fail "upgrade did not repair git-safe Bash matcher"
+fi
+
+read_once_compact_matcher=$(python3 -c "
+import json, sys
+with open(sys.argv[1]) as f:
+    s = json.load(f)
+for entry in s.get('hooks', {}).get('PostCompact', []):
+    if any('read-once/compact.sh' in h.get('command', '') for h in entry.get('hooks', [])):
+        print(entry.get('matcher', 'missing'))
+        break
+" "$TEST_HOME/.claude/settings.json" 2>/dev/null)
+
+if [ "$read_once_compact_matcher" = "" ]; then
+  pass "upgrade preserves read-once PostCompact empty matcher"
+else
+  fail "upgrade rewrote read-once PostCompact matcher"
 fi
 
 # Test 30: Upgrade read-once also updates CLI

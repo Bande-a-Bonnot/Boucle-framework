@@ -14,6 +14,7 @@ import tempfile
 import shutil
 import os
 import json
+import re
 import sys
 
 TOOLS = os.path.dirname(os.path.abspath(__file__))
@@ -185,6 +186,24 @@ try:
         f("two individual installs: some flat")
 finally:
     shutil.rmtree(test_home, ignore_errors=True)
+
+
+print("--- Manual fallback snippets ---")
+git_safe_installer = os.path.join(TOOLS, "git-safe", "install.sh")
+with open(git_safe_installer) as gf:
+    git_safe_source = gf.read()
+if (
+    re.search(r'\\"matcher\\"\s*:\s*\\"Bash\\"', git_safe_source)
+    and re.search(
+        r'\\"hooks\\"\s*:\s*\[\s*\{\s*\\"type\\"\s*:\s*\\"command\\"'
+        r'.*\\"command\\"\s*:\s*\\"\$HOOK_PATH\\"',
+        git_safe_source,
+        re.DOTALL,
+    )
+):
+    p("git-safe: manual fallback shows Bash matcher nested format")
+else:
+    f("git-safe: manual fallback still shows legacy flat format")
 
 
 print("--- Flat-to-nested migration ---")

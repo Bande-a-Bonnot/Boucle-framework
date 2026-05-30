@@ -112,14 +112,15 @@ for h in pre:
         if '$HOOK_PATH' in cmd:
             found = True
             if 'hooks' not in h:
-                cleaned.append({'hooks': [{'type': 'command', 'command': '$HOOK_PATH'}]})
+                cleaned.append({'matcher': 'Bash', 'hooks': [{'type': 'command', 'command': '$HOOK_PATH'}]})
             else:
+                h['matcher'] = 'Bash'
                 cleaned.append(h)
     else:
         cleaned.append(h)
 
 if not found:
-    cleaned.append({'hooks': [{'type': 'command', 'command': '$HOOK_PATH'}]})
+    cleaned.append({'matcher': 'Bash', 'hooks': [{'type': 'command', 'command': '$HOOK_PATH'}]})
     print('  Hook registered')
 else:
     print('  Already installed')
@@ -131,7 +132,7 @@ with open('$SETTINGS_FILE', 'w') as f:
     f.write('\n')
 " 2>/dev/null || {
     echo "  Warning: Could not auto-register. Add manually to $SETTINGS_FILE:"
-    echo "  hooks.PreToolUse: [{\"type\": \"command\", \"command\": \"$HOOK_PATH\"}]"
+    echo "  hooks.PreToolUse: [{\"matcher\":\"Bash\",\"hooks\":[{\"type\":\"command\",\"command\":\"$HOOK_PATH\"}]}]"
   }
 else
   mkdir -p "$(dirname "$SETTINGS_FILE")"
@@ -140,6 +141,7 @@ else
   "hooks": {
     "PreToolUse": [
       {
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",

@@ -36,12 +36,12 @@ $SettingsPath = Join-Path $HOME ".claude" "settings.json"
 
 # Hook catalog
 $HookCatalog = [ordered]@{
-    'bash-guard'     = @{ Desc = 'Block dangerous bash commands (rm -rf, sudo, curl|bash, cloud destroy)'; Event = 'PreToolUse' }
+    'bash-guard'     = @{ Desc = 'Block dangerous bash commands (rm -rf, sudo, curl|bash, cloud destroy)'; Event = 'PreToolUse'; Matcher = 'Bash' }
     'file-guard'     = @{ Desc = 'Block modifications to sensitive files (.env, keys)'; Event = 'PreToolUse' }
-    'git-safe'       = @{ Desc = 'Prevent destructive git operations (force push, reset --hard)'; Event = 'PreToolUse' }
+    'git-safe'       = @{ Desc = 'Prevent destructive git operations (force push, reset --hard)'; Event = 'PreToolUse'; Matcher = 'Bash' }
     'branch-guard'   = @{ Desc = 'Prevent direct commits to main/master (feature-branch workflow)'; Event = 'PreToolUse' }
-    'read-once'      = @{ Desc = 'Prevent redundant file reads, save tokens (~2000/read)'; Event = 'PreToolUse' }
-    'worktree-guard' = @{ Desc = 'Prevent worktree exit with uncommitted/unmerged changes'; Event = 'PreToolUse' }
+    'read-once'      = @{ Desc = 'Prevent redundant file reads, save tokens (~2000/read)'; Event = 'PreToolUse'; Matcher = 'Read' }
+    'worktree-guard' = @{ Desc = 'Prevent worktree exit with uncommitted/unmerged changes'; Event = 'PreToolUse'; Matcher = 'ExitWorktree' }
     'session-log'    = @{ Desc = 'Audit trail - log every tool call to JSONL'; Event = 'PostToolUse' }
 }
 
@@ -385,12 +385,14 @@ if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'doctor') {
         if ($null -ne $settings -and $settings.ContainsKey('hooks')) {
             $event = $info.Event
             $found = $false
+            $foundEntry = $null
             if ($settings['hooks'].ContainsKey($event)) {
                 foreach ($entry in $settings['hooks'][$event]) {
                     foreach ($h in $entry['hooks']) {
                         $cmd = $h['command']
                         if ($cmd -and $cmd -like "*$name*") {
                             $found = $true
+                            $foundEntry = $entry
                             break
                         }
                     }
@@ -399,6 +401,8 @@ if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'doctor') {
             }
             if (-not $found) {
                 $issues += "not registered in settings.json (run: install.ps1 $name)"
+            } elseif ($info.ContainsKey('Matcher') -and $null -ne $foundEntry -and $foundEntry['matcher'] -cne $info.Matcher) {
+                $issues += "matcher should be $($info.Matcher)"
             }
             if ($name -eq 'read-once') {
                 $compactFound = $false
@@ -645,12 +649,8 @@ foreach ($hook in $installed) {
             }
         )
     }
-    # worktree-guard uses ExitWorktree matcher for efficiency
-    if ($hook -eq 'worktree-guard') {
-        $entry['matcher'] = 'ExitWorktree'
-    }
-    elseif ($hook -eq 'read-once') {
-        $entry['matcher'] = 'Read'
+    if ($info.ContainsKey('Matcher')) {
+        $entry['matcher'] = $info.Matcher
     }
 
     $registrations = @(@{
@@ -681,6 +681,10 @@ foreach ($hook in $installed) {
         $event = $registration.Event
         $command = $registration.Command
         $entry = $registration.Entry
+        $expectedMatcher = $null
+        if ($entry.ContainsKey('matcher') -and $entry['matcher']) {
+            $expectedMatcher = $entry['matcher']
+        }
 
         if (-not $settings['hooks'].ContainsKey($event)) {
             $settings['hooks'][$event] = @()
@@ -688,6 +692,7 @@ foreach ($hook in $installed) {
 
         # Check if hook is already configured
         $alreadyExists = $false
+        $existingEntry = $null
         foreach ($h in $settings['hooks'][$event]) {
             $cmd = $null
             if ($h -is [hashtable] -or $h -is [System.Collections.IDictionary]) {
@@ -703,6 +708,7 @@ foreach ($hook in $installed) {
             }
             if ($cmd -and $cmd -eq $command) {
                 $alreadyExists = $true
+                $existingEntry = $h
                 break
             }
         }
@@ -711,7 +717,12 @@ foreach ($hook in $installed) {
             $settings['hooks'][$event] += $entry
             Write-Host "  Added $hook to $event hooks"
         } else {
-            Write-Host "  $hook already configured for $event"
+            if ($null -ne $expectedMatcher -and $null -ne $existingEntry -and $existingEntry['matcher'] -cne $expectedMatcher) {
+                $existingEntry['matcher'] = $expectedMatcher
+                Write-Host "  Updated $hook matcher to $expectedMatcher"
+            } else {
+                Write-Host "  $hook already configured for $event"
+            }
         }
     }
 }
