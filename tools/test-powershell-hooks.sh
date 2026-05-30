@@ -138,8 +138,21 @@ if [ -f "$SCRIPT_DIR/git-safe/hook.ps1" ]; then
     else
         fail "git-safe: missing main/master extra protection"
     fi
+
+    if grep -q '\['"'"'matcher'"'"'\] -cne \$info.Matcher' "$SCRIPT_DIR/install.ps1" &&
+       grep -q '\['"'"'matcher'"'"'\] -cne \$expectedMatcher' "$SCRIPT_DIR/install.ps1"; then
+        pass "PowerShell installer: matcher repairs are case-sensitive"
+    else
+        fail "PowerShell installer: matcher repairs are not case-sensitive"
+    fi
 else
     fail "git-safe/hook.ps1 does not exist"
+fi
+
+if grep -q "'git-safe'.*Matcher = 'Bash'" "$SCRIPT_DIR/install.ps1"; then
+    pass "PowerShell installer: git-safe uses Bash matcher"
+else
+    fail "PowerShell installer: git-safe missing Bash matcher"
 fi
 
 echo ""

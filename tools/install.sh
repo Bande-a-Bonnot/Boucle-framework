@@ -301,6 +301,7 @@ for hook in all_hooks:
     expected_matchers = {
         "read-once": "Read",
         "bash-guard": "Bash",
+        "git-safe": "Bash",
         "worktree-guard": "ExitWorktree",
     }
     if settings is not None:
@@ -618,7 +619,7 @@ try:
 except:
     print("0"); sys.exit(0)
 fixes = 0
-matchers = {"read-once": "Read", "bash-guard": "Bash", "worktree-guard": "ExitWorktree"}
+matchers = {"read-once": "Read", "bash-guard": "Bash", "git-safe": "Bash", "worktree-guard": "ExitWorktree"}
 for event in settings.get("hooks", {}):
     for entry in settings["hooks"][event]:
         if not isinstance(entry, dict):
@@ -631,7 +632,7 @@ for event in settings.get("hooks", {}):
         if not cmd:
             cmd = entry.get("command", "")
         for hook_name, expected_matcher in matchers.items():
-            if hook_name in cmd and entry.get("matcher") != expected_matcher:
+            if f"/{hook_name}/hook.sh" in cmd and entry.get("matcher") != expected_matcher:
                 entry["matcher"] = expected_matcher
                 fixes += 1
 if fixes > 0:
@@ -643,7 +644,7 @@ PYEOF
     )
     if [ "$matcher_fixes" -gt 0 ] 2>/dev/null; then
       echo -e "  ${GREEN}Fixed${RESET} $matcher_fixes missing matcher(s) in settings.json"
-      echo "    (read-once now only fires on Read tool calls, not every tool call)"
+      echo "    (tool-specific hooks now only fire for their matching tool calls)"
     fi
   fi
 
@@ -1255,7 +1256,7 @@ for hook in hooks_to_add:
     # matchers limit which tool calls trigger the hook, improving performance
     if hook == "worktree-guard":
         entry["matcher"] = "ExitWorktree"
-    elif hook == "bash-guard":
+    elif hook in ("bash-guard", "git-safe"):
         entry["matcher"] = "Bash"
     elif hook == "read-once":
         entry["matcher"] = "Read"
