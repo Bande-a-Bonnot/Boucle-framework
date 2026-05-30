@@ -53,12 +53,15 @@ def make_input(tool_name):
     return {"tool_name": tool_name, "tool_input": {}}
 
 
-def is_block_output(stdout):
+def is_pretooluse_deny(stdout):
+    try:
+        data = json.loads(stdout)
+    except json.JSONDecodeError:
+        return False
+    hso = data.get("hookSpecificOutput", {})
     return (
-        '"decision":"block"' in stdout
-        or '"decision": "block"' in stdout
-        or '"permissionDecision":"deny"' in stdout
-        or '"permissionDecision": "deny"' in stdout
+        hso.get("hookEventName") == "PreToolUse"
+        and hso.get("permissionDecision") == "deny"
     )
 
 
@@ -67,7 +70,7 @@ def assert_blocked(desc, json_input, substring=None, **kwargs):
     TOTAL += 1
     try:
         stdout, _ = run_hook(json_input, **kwargs)
-        if is_block_output(stdout):
+        if is_pretooluse_deny(stdout):
             if substring and substring not in stdout:
                 FAIL += 1
                 print(f"  {RED}FAIL{NC}: {desc} (blocked but missing '{substring}' in: {stdout!r})")
@@ -87,7 +90,7 @@ def assert_allowed(desc, json_input, **kwargs):
     TOTAL += 1
     try:
         stdout, _ = run_hook(json_input, **kwargs)
-        if is_block_output(stdout):
+        if is_pretooluse_deny(stdout):
             FAIL += 1
             print(f"  {RED}FAIL{NC}: {desc} (expected allow, got: {stdout!r})")
         else:

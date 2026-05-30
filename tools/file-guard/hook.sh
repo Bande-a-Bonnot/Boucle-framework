@@ -62,7 +62,7 @@ if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ]; then
   if [ -n "$FILE_PATH" ] && [[ "$FILE_PATH" != /* ]]; then
     ABSOLUTE_HINT="$(pwd)/$FILE_PATH"
     jq -cn --arg p "$FILE_PATH" --arg hint "$ABSOLUTE_HINT" \
-      '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":("file-guard: relative path \"" + $p + "\" rejected. Write/Edit require absolute paths to prevent writing to the wrong location. Try: " + $hint)}}'
+      '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: relative path \"" + $p + "\" rejected. Write/Edit require absolute paths to prevent writing to the wrong location. Try: " + $hint)}}'
     exit 0
   fi
 fi
@@ -315,12 +315,12 @@ case "$TOOL_NAME" in
     if [ ${#DENY_PATTERNS[@]} -gt 0 ]; then
       if matched=$(matches_any "$TARGET" "${DENY_PATTERNS[@]}"); then
         jq -cn --arg t "$TARGET" --arg p "$matched" \
-          '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":("file-guard: access to \"" + $t + "\" is denied (matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}}'
+          '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: access to \"" + $t + "\" is denied (matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}}'
         exit 0
       fi
       if [ -n "$SYM_TARGET" ] && matched=$(matches_any "$SYM_TARGET" "${DENY_PATTERNS[@]}"); then
         jq -cn --arg t "$TARGET" --arg r "$SYM_TARGET" --arg p "$matched" \
-          '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":("file-guard: \"" + $t + "\" is a symlink to denied path \"" + $r + "\" (matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}}'
+          '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: \"" + $t + "\" is a symlink to denied path \"" + $r + "\" (matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}}'
         exit 0
       fi
     fi
@@ -329,12 +329,12 @@ case "$TOOL_NAME" in
     if [ ${#WRITE_PATTERNS[@]} -gt 0 ]; then
       if matched=$(matches_any "$TARGET" "${WRITE_PATTERNS[@]}"); then
         jq -cn --arg t "$TARGET" --arg p "$matched" \
-          '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":("file-guard: \"" + $t + "\" is protected (matches pattern \"" + $p + "\"). Check .file-guard config to modify protections.")}}'
+          '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: \"" + $t + "\" is protected (matches pattern \"" + $p + "\"). Check .file-guard config to modify protections.")}}'
         exit 0
       fi
       if [ -n "$SYM_TARGET" ] && matched=$(matches_any "$SYM_TARGET" "${WRITE_PATTERNS[@]}"); then
         jq -cn --arg t "$TARGET" --arg r "$SYM_TARGET" --arg p "$matched" \
-          '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":("file-guard: \"" + $t + "\" is a symlink to protected path \"" + $r + "\" (matches pattern \"" + $p + "\"). Check .file-guard config.")}}'
+          '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: \"" + $t + "\" is a symlink to protected path \"" + $r + "\" (matches pattern \"" + $p + "\"). Check .file-guard config.")}}'
         exit 0
       fi
     fi
@@ -359,12 +359,12 @@ case "$TOOL_NAME" in
     # Only deny patterns block reads (write-protect allows reading)
     if matched=$(matches_any "$TARGET" "${DENY_PATTERNS[@]}"); then
       jq -cn --arg t "$TARGET" --arg p "$matched" \
-        '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":("file-guard: reading \"" + $t + "\" is denied (matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}}'
+        '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: reading \"" + $t + "\" is denied (matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}}'
       exit 0
     fi
     if [ -n "$SYM_TARGET" ] && matched=$(matches_any "$SYM_TARGET" "${DENY_PATTERNS[@]}"); then
       jq -cn --arg t "$TARGET" --arg r "$SYM_TARGET" --arg p "$matched" \
-        '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":("file-guard: reading \"" + $t + "\" is denied (symlink to \"" + $r + "\", matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}}'
+        '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: reading \"" + $t + "\" is denied (symlink to \"" + $r + "\", matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}}'
       exit 0
     fi
     ;;
@@ -388,12 +388,12 @@ case "$TOOL_NAME" in
 
     if matched=$(matches_any "$TARGET" "${DENY_PATTERNS[@]}"); then
       jq -cn --arg t "$TARGET" --arg p "$matched" \
-        '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":("file-guard: searching \"" + $t + "\" is denied (matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}}'
+        '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: searching \"" + $t + "\" is denied (matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}}'
       exit 0
     fi
     if [ -n "$SYM_TARGET" ] && matched=$(matches_any "$SYM_TARGET" "${DENY_PATTERNS[@]}"); then
       jq -cn --arg t "$TARGET" --arg r "$SYM_TARGET" --arg p "$matched" \
-        '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":("file-guard: searching \"" + $t + "\" is denied (symlink to \"" + $r + "\", matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}}'
+        '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: searching \"" + $t + "\" is denied (symlink to \"" + $r + "\", matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}}'
       exit 0
     fi
     ;;
@@ -416,12 +416,12 @@ case "$TOOL_NAME" in
 
     if matched=$(matches_any "$TARGET" "${DENY_PATTERNS[@]}"); then
       jq -cn --arg t "$TARGET" --arg p "$matched" \
-        '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":("file-guard: listing \"" + $t + "\" is denied (matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}}'
+        '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: listing \"" + $t + "\" is denied (matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}}'
       exit 0
     fi
     if [ -n "$SYM_TARGET" ] && matched=$(matches_any "$SYM_TARGET" "${DENY_PATTERNS[@]}"); then
       jq -cn --arg t "$TARGET" --arg r "$SYM_TARGET" --arg p "$matched" \
-        '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":("file-guard: listing \"" + $t + "\" is denied (symlink to \"" + $r + "\", matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}}'
+        '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: listing \"" + $t + "\" is denied (symlink to \"" + $r + "\", matches [deny] pattern \"" + $p + "\"). Check .file-guard config.")}}'
       exit 0
     fi
     ;;
@@ -442,7 +442,7 @@ case "$TOOL_NAME" in
         if echo "$COMMAND" | grep -qF "$dir" 2>/dev/null; then
           log "BASH DENY: command references denied directory '$pattern'"
           jq -cn --arg p "$pattern" \
-            '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":("file-guard: command references denied path \"" + $p + "\" (matches [deny] in .file-guard). Check .file-guard config.")}}'
+            '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: command references denied path \"" + $p + "\" (matches [deny] in .file-guard). Check .file-guard config.")}}'
           exit 0
         fi
       else
@@ -450,7 +450,7 @@ case "$TOOL_NAME" in
         if echo "$COMMAND" | grep -qF "$pattern" 2>/dev/null; then
           log "BASH DENY: command references denied file '$pattern'"
           jq -cn --arg p "$pattern" \
-            '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":("file-guard: command references denied path \"" + $p + "\" (matches [deny] in .file-guard). Check .file-guard config.")}}'
+            '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: command references denied path \"" + $p + "\" (matches [deny] in .file-guard). Check .file-guard config.")}}'
           exit 0
         fi
       fi
@@ -470,7 +470,7 @@ case "$TOOL_NAME" in
         if echo "$COMMAND" | grep -qF "$pattern" 2>/dev/null; then
           log "BASH MATCH: command contains modifier + pattern '$pattern'"
           jq -cn --arg p "$pattern" \
-            '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":("file-guard: command may modify protected path \"" + $p + "\" (matches .file-guard config). Use FILE_GUARD_DISABLED=1 to override.")}}'
+            '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: command may modify protected path \"" + $p + "\" (matches .file-guard config). Use FILE_GUARD_DISABLED=1 to override.")}}'
           exit 0
         fi
       fi

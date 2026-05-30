@@ -30,7 +30,7 @@ assert_blocked() {
   TOTAL=$((TOTAL + 1))
 
   result=$(echo "$input" | bash "$HOOK" 2>/dev/null || true)
-  if echo "$result" | grep -q '"permissionDecision":"deny"'; then
+  if echo "$result" | python3 -c "import sys,json; hso=json.load(sys.stdin)['hookSpecificOutput']; assert hso['hookEventName']=='PreToolUse' and hso['permissionDecision']=='deny'" 2>/dev/null; then
     PASS=$((PASS + 1))
     echo -e "  ${GREEN}PASS${NC}: $desc"
   else

@@ -2771,6 +2771,36 @@ MIGBLK_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no false positive for migrated hook with block in comments" "deprecated decision:block format" "$MIGBLK_OUTPUT"
 rm -rf "$TMPDIR_MIGBLK"
 
+# === Test: hookSpecificOutput missing hookEventName warning ===
+TMPDIR_MISSEVENT=$(mktemp -d)
+export HOME="$TMPDIR_MISSEVENT"
+mkdir -p "$TMPDIR_MISSEVENT/.claude/hooks"
+
+cat > "$TMPDIR_MISSEVENT/.claude/hooks/missing-event.sh" << 'MISSEVENTEOF'
+#!/usr/bin/env bash
+echo '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"blocked"}}'
+MISSEVENTEOF
+chmod +x "$TMPDIR_MISSEVENT/.claude/hooks/missing-event.sh"
+
+MISSEVENT_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "missing hookEventName warning present" "without hookEventName" "$MISSEVENT_OUTPUT"
+rm -rf "$TMPDIR_MISSEVENT"
+
+# === Test: hookSpecificOutput with hookEventName does NOT warn ===
+TMPDIR_HASEVENT=$(mktemp -d)
+export HOME="$TMPDIR_HASEVENT"
+mkdir -p "$TMPDIR_HASEVENT/.claude/hooks"
+
+cat > "$TMPDIR_HASEVENT/.claude/hooks/has-event.sh" << 'HASEVENTEOF'
+#!/usr/bin/env bash
+echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"blocked"}}'
+HASEVENTEOF
+chmod +x "$TMPDIR_HASEVENT/.claude/hooks/has-event.sh"
+
+HASEVENT_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no missing hookEventName warning for valid hookSpecificOutput" "without hookEventName" "$HASEVENT_OUTPUT"
+rm -rf "$TMPDIR_HASEVENT"
+
 # === Test: Settings.json with deprecated decision:block command ===
 TMPDIR_DEPSET=$(mktemp -d)
 export HOME="$TMPDIR_DEPSET"
