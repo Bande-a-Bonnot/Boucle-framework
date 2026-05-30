@@ -95,7 +95,7 @@ if status:
 log_file = os.path.join(log_dir, f'{date_str}.jsonl')
 with open(log_file, 'a') as f:
     f.write(json.dumps(entry, ensure_ascii=False) + '\n')
-" < /dev/stdin
+"
 
 # Always exit 0 — logging should never block Claude
 exit 0

@@ -451,7 +451,49 @@ else
   fail "uninstall did not skip non-installed hook"
 fi
 
-# Test 17: Uninstall all
+# Test 17: Uninstall legacy session-log install
+echo "--- Uninstall legacy session-log ---"
+rm -rf "$TEST_HOME/.claude"
+mkdir -p "$TEST_HOME/.claude/hooks"
+cp "$SCRIPT_DIR/session-log/hook.sh" "$TEST_HOME/.claude/hooks/session-log.sh"
+chmod +x "$TEST_HOME/.claude/hooks/session-log.sh"
+cat > "$TEST_HOME/.claude/settings.json" <<EOF
+{
+  "hooks": {
+    "PostToolUse": [
+      {"hooks": [{"type": "command", "command": "bash $TEST_HOME/.claude/hooks/session-log.sh"}]}
+    ]
+  }
+}
+EOF
+
+bash "$SCRIPT_DIR/install.sh" uninstall session-log >/dev/null 2>&1
+
+if [ ! -f "$TEST_HOME/.claude/hooks/session-log.sh" ]; then
+  pass "uninstall removed legacy session-log hook file"
+else
+  fail "uninstall left legacy session-log hook file"
+fi
+
+legacy_count=$(python3 -c "
+import json, sys
+def get_cmds(entry):
+    c = entry.get('command', '')
+    if c: return [c]
+    return [h.get('command','') for h in entry.get('hooks',[])]
+with open(sys.argv[1]) as f:
+    s = json.load(f)
+n = sum(1 for entries in s.get('hooks', {}).values() for h in entries for c in get_cmds(h) if 'session-log' in c)
+print(n)
+" "$TEST_HOME/.claude/settings.json" 2>/dev/null)
+
+if [ "$legacy_count" = "0" ]; then
+  pass "uninstall removed legacy session-log settings entry"
+else
+  fail "uninstall left legacy session-log settings entry"
+fi
+
+# Test 18: Uninstall all
 echo "--- Uninstall all ---"
 rm -rf "$TEST_HOME/.claude"
 bash "$SCRIPT_DIR/install.sh" bash-guard git-safe file-guard >/dev/null 2>&1
@@ -486,7 +528,7 @@ else
   fail "uninstall all left $hook_count hooks in settings.json"
 fi
 
-# Test 18: Uninstall preserves non-hook settings
+# Test 19: Uninstall preserves non-hook settings
 echo "--- Uninstall preserves other settings ---"
 rm -rf "$TEST_HOME/.claude"
 mkdir -p "$TEST_HOME/.claude"
@@ -509,7 +551,7 @@ else
   fail "uninstall lost non-hook settings"
 fi
 
-# Test 19: Uninstall no args shows usage
+# Test 20: Uninstall no args shows usage
 echo "--- Uninstall usage ---"
 output=$(bash "$SCRIPT_DIR/install.sh" uninstall 2>&1 || true)
 if echo "$output" | grep -qi "usage\|Usage"; then
@@ -518,7 +560,7 @@ else
   fail "uninstall no args missing usage"
 fi
 
-# Test 20: Install after uninstall works (round-trip)
+# Test 21: Install after uninstall works (round-trip)
 echo "--- Install after uninstall ---"
 rm -rf "$TEST_HOME/.claude"
 bash "$SCRIPT_DIR/install.sh" read-once >/dev/null 2>&1
@@ -554,7 +596,7 @@ fi
 echo ""
 echo "=== List Tests ==="
 
-# Test 21: List shows installed hooks
+# Test 22: List shows installed hooks
 echo "--- List installed hooks ---"
 rm -rf "$TEST_HOME/.claude"
 bash "$SCRIPT_DIR/install.sh" read-once git-safe >/dev/null 2>&1
@@ -566,7 +608,7 @@ else
   fail "list missing installed hooks"
 fi
 
-# Test 22: List does not show uninstalled hooks
+# Test 23: List does not show uninstalled hooks
 if echo "$output" | grep -q "bash-guard"; then
   fail "list shows non-installed hook"
 else

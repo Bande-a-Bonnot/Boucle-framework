@@ -114,6 +114,13 @@ assert_contains "$RESULT" "EXIT:0" "Invalid JSON exits 0 (non-blocking)"
 RESULT=$(echo '' | bash "$HOOK" 2>&1; echo "EXIT:$?")
 assert_contains "$RESULT" "EXIT:0" "Empty stdin exits 0 (non-blocking)"
 
+# Test 11b: Hook reads process stdin directly, without depending on /dev/stdin
+if grep -q '/dev/stdin' "$HOOK"; then
+    fail "Hook should not depend on /dev/stdin"
+else
+    pass "Hook does not depend on /dev/stdin"
+fi
+
 # Test 12: Tool input with special characters
 SPECIAL_INPUT='{"tool_name":"Bash","tool_input":{"command":"echo hello && grep pattern file"}}'
 echo "$SPECIAL_INPUT" | bash "$HOOK"
