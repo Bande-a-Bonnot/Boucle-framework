@@ -7,6 +7,31 @@ REPO="https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/too
 INSTALL_DIR="${HOME}/.claude/read-once"
 SETTINGS="${HOME}/.claude/settings.json"
 
+find_python_cmd() {
+  for _cmd in py python3 python; do
+    if command -v "$_cmd" >/dev/null 2>&1; then
+      printf '%s\n' "$_cmd"
+      return 0
+    fi
+  done
+  return 1
+}
+
+hook_command() {
+  local path="$1"
+  case "$(uname -s 2>/dev/null || true)" in
+    MINGW*|MSYS*|CYGWIN*)
+      if command -v cygpath >/dev/null 2>&1; then
+        path=$(cygpath -m "$path")
+      fi
+      printf 'bash %s' "$path"
+      ;;
+    *)
+      printf '%s' "$path"
+      ;;
+  esac
+}
+
 echo "read-once: installing to ${INSTALL_DIR}"
 
 # Check jq (needed at runtime to parse Claude Code hook input)
@@ -53,11 +78,15 @@ fi
 
 echo "read-once: downloaded hook.sh, compact.sh, and read-once CLI"
 
+HOOK_COMMAND=$(hook_command "${INSTALL_DIR}/hook.sh")
+COMPACT_COMMAND=$(hook_command "${INSTALL_DIR}/compact.sh")
+PYTHON_CMD=$(find_python_cmd || true)
+
 # Add hook to settings.json
 if [ ! -f "$SETTINGS" ]; then
   echo "read-once: creating ${SETTINGS}"
   mkdir -p "$(dirname "$SETTINGS")"
-  cat > "$SETTINGS" << 'SETTINGS_EOF'
+  cat > "$SETTINGS" << SETTINGS_EOF
 {
   "hooks": {
     "PreToolUse": [
@@ -66,7 +95,7 @@ if [ ! -f "$SETTINGS" ]; then
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/read-once/hook.sh"
+            "command": "${HOOK_COMMAND}"
           }
         ]
       }
@@ -77,7 +106,7 @@ if [ ! -f "$SETTINGS" ]; then
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/read-once/compact.sh"
+            "command": "${COMPACT_COMMAND}"
           }
         ]
       }
@@ -88,9 +117,9 @@ SETTINGS_EOF
   echo "read-once: created settings with hooks configured (PreToolUse + PostCompact)"
 else
   # Handle JSONC comments in settings.json (prevents silent failures)
-  if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$SETTINGS" 2>/dev/null; then
-    if command -v python3 >/dev/null 2>&1; then
-      python3 - "$SETTINGS" << 'JSONC_FIX'
+  if [ -n "$PYTHON_CMD" ] && ! "$PYTHON_CMD" -c "import json,sys; json.load(open(sys.argv[1]))" "$SETTINGS" 2>/dev/null; then
+    if [ -n "$PYTHON_CMD" ]; then
+      "$PYTHON_CMD" - "$SETTINGS" << 'JSONC_FIX'
 import json, sys, shutil
 path = sys.argv[1]
 with open(path) as f: raw = f.read()
@@ -119,6 +148,8 @@ JSONC_FIX
     else
       echo "read-once: Warning: settings.json may contain JSONC comments. Remove them if hooks fail."
     fi
+  elif [ -z "$PYTHON_CMD" ]; then
+    echo "read-once: Warning: Python not found; skipping JSONC comment cleanup."
   fi
 
   # Check if hook already configured
@@ -126,7 +157,7 @@ JSONC_FIX
     echo "read-once: hooks already in settings.json"
     # Upgrade: add PostCompact if missing (existing installs only have PreToolUse)
     if ! grep -q "compact.sh" "$SETTINGS" 2>/dev/null && command -v jq &>/dev/null; then
-      UPDATED=$(jq --arg hook "~/.claude/read-once/compact.sh" '
+      UPDATED=$(jq --arg hook "$COMPACT_COMMAND" '
         .hooks //= {} |
         .hooks.PostCompact //= [] |
         if (.hooks.PostCompact | map(select(.hooks[]?.command == $hook)) | length) == 0 then
@@ -144,7 +175,7 @@ JSONC_FIX
     fi
   elif command -v jq &>/dev/null; then
     # Auto-merge into existing settings using jq
-    UPDATED=$(jq --arg hook "~/.claude/read-once/hook.sh" --arg compact "~/.claude/read-once/compact.sh" '
+    UPDATED=$(jq --arg hook "$HOOK_COMMAND" --arg compact "$COMPACT_COMMAND" '
       .hooks //= {} |
       .hooks.PreToolUse //= [] |
       .hooks.PreToolUse += [{
@@ -176,7 +207,7 @@ JSONC_FIX
     echo '        "hooks": ['
     echo '          {'
     echo '            "type": "command",'
-    echo '            "command": "~/.claude/read-once/hook.sh"'
+    echo '            "command": "'"$HOOK_COMMAND"'"'
     echo '          }'
     echo '        ]'
     echo '      }'

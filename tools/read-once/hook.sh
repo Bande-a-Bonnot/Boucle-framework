@@ -19,6 +19,7 @@
 # Config (env vars):
 #   READ_ONCE_MODE=warn     "warn" (default) allows read with advisory, "deny" blocks it.
 #                           warn mode prevents Edit deadlock and parallel read cascade failures.
+#                           deny mode only blocks same-session re-reads; cross-session cache hits warn.
 #   READ_ONCE_TTL=1200      Seconds before a cached read expires (default: 1200)
 #   READ_ONCE_DIFF=1        Show only diff when files change (default: 0)
 #   READ_ONCE_DIFF_MAX=40   Max diff lines before falling back to full re-read (default: 40)
@@ -33,6 +34,22 @@ fi
 
 # Read hook input from stdin
 INPUT=$(cat)
+
+find_python_cmd() {
+  if [ -n "${READ_ONCE_PYTHON_CMD:-}" ] && command -v "$READ_ONCE_PYTHON_CMD" >/dev/null 2>&1; then
+    printf '%s\n' "$READ_ONCE_PYTHON_CMD"
+    return 0
+  fi
+  for _cmd in py python3 python; do
+    if command -v "$_cmd" >/dev/null 2>&1; then
+      printf '%s\n' "$_cmd"
+      return 0
+    fi
+  done
+  return 1
+}
+
+PYTHON_CMD=$(find_python_cmd || true)
 
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
 
@@ -49,6 +66,10 @@ LIMIT=$(echo "$INPUT" | jq -r '.tool_input.limit // empty')
 if [ -z "$FILE_PATH" ] || [ -z "$SESSION_ID" ]; then
   exit 0
 fi
+
+# Claude Code on Windows can pass Git Bash hooks C:\style paths. Bash file
+# tests need forward slashes, and Git Bash accepts C:/style paths.
+FILE_PATH="${FILE_PATH//\\//}"
 
 # Partial reads (offset/limit) are never cached — user is exploring
 # a large file piece by piece, each chunk is different content
@@ -99,7 +120,9 @@ else
   SESSION_HASH=$(echo -n "$SESSION_ID" | shasum -a 256 | cut -c1-16)
 fi
 CACHE_FILE="${CACHE_DIR}/session-${SESSION_HASH}.jsonl"
+GLOBAL_CACHE_FILE="${CACHE_DIR}/cache-global.jsonl"
 STATS_FILE="${CACHE_DIR}/stats.jsonl"
+TOKEN_CACHE_FILE="${CACHE_DIR}/token-estimates.jsonl"
 
 # Snapshot path for this file (used in diff mode)
 if [ "$DIFF_MODE" = "1" ]; then
@@ -110,6 +133,91 @@ if [ "$DIFF_MODE" = "1" ]; then
   fi
   SNAP_FILE="${SNAP_DIR}/${SESSION_HASH}-${PATH_HASH}"
 fi
+
+write_cache_entry() {
+  jq -cn \
+    --arg path "$FILE_PATH" \
+    --arg mtime "$CURRENT_MTIME" \
+    --argjson ts "$NOW" \
+    --argjson tokens "$ESTIMATED_TOKENS" \
+    '{path:$path,mtime:$mtime,ts:$ts,tokens:$tokens}' >> "$CACHE_FILE"
+}
+
+write_global_cache_entry() {
+  jq -cn \
+    --arg path "$FILE_PATH" \
+    --arg mtime "$CURRENT_MTIME" \
+    --arg session "$SESSION_HASH" \
+    --argjson ts "$NOW" \
+    --argjson tokens "$ESTIMATED_TOKENS" \
+    '{path:$path,mtime:$mtime,ts:$ts,tokens:$tokens,session:$session}' >> "$GLOBAL_CACHE_FILE"
+}
+
+is_binary_read_target() {
+  case "${1##*.}" in
+    7z|a|avif|bin|bmp|class|dll|dmg|exe|gif|gz|heic|ico|jar|jpeg|jpg|mov|mp3|mp4|o|pdf|png|pyc|rar|so|tar|tiff|webp|zip)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+estimate_read_tokens() {
+  local file="$1"
+  local cache_entry cached estimated
+
+  if is_binary_read_target "$file"; then
+    printf '0\n'
+    return 0
+  fi
+
+  cache_entry=$(jq -Rrc \
+    --arg path "$file" \
+    --arg mtime "$CURRENT_MTIME" \
+    'fromjson? | select(.path == $path and .mtime == $mtime)' \
+    "$TOKEN_CACHE_FILE" 2>/dev/null | tail -1 || true)
+  cached=$(printf '%s' "$cache_entry" | jq -r '.tokens // empty' 2>/dev/null || true)
+  if [ -n "$cached" ]; then
+    printf '%s\n' "$cached"
+    return 0
+  fi
+
+  if [ -n "$PYTHON_CMD" ] && "$PYTHON_CMD" - "$file" >/dev/null 2>&1 <<'PY_CHECK'
+import importlib.util
+import sys
+sys.exit(0 if importlib.util.find_spec("tiktoken") else 1)
+PY_CHECK
+  then
+    estimated=$("$PYTHON_CMD" - "$file" <<'PY_ESTIMATE'
+import sys
+import tiktoken
+
+path = sys.argv[1]
+enc = tiktoken.get_encoding("cl100k_base")
+parts = []
+with open(path, "r", encoding="utf-8", errors="replace") as f:
+    for idx, line in enumerate(f, 1):
+        if idx > 2000:
+            break
+        parts.append(f"{idx:>6}\t{line}")
+print(len(enc.encode("".join(parts))))
+PY_ESTIMATE
+)
+    jq -cn --arg path "$file" --arg mtime "$CURRENT_MTIME" --argjson tokens "$estimated" \
+      '{path:$path,mtime:$mtime,tokens:$tokens}' >> "$TOKEN_CACHE_FILE"
+    printf '%s\n' "$estimated"
+    return 0
+  fi
+
+  # Fallback: estimate only Claude Read's first 2000 displayed lines. This
+  # avoids crediting token savings for file content Claude would not return.
+  estimated=$(awk 'NR <= 2000 { printf "%6d\t%s\n", NR, $0 }' "$file" \
+    | wc -c \
+    | awk '{ n = int(($1 / 4) * 17 / 10); if (n < 1 && $1 > 0) n = 1; print n }')
+  jq -cn --arg path "$file" --arg mtime "$CURRENT_MTIME" --argjson tokens "$estimated" \
+    '{path:$path,mtime:$mtime,tokens:$tokens}' >> "$TOKEN_CACHE_FILE"
+  printf '%s\n' "$estimated"
+}
 
 # Get current file mtime (portable macOS/Linux)
 if [ ! -f "$FILE_PATH" ]; then
@@ -127,19 +235,53 @@ if [ -z "$CURRENT_MTIME" ]; then
   exit 0
 fi
 
-# Get file size for token estimation (~4 chars per token, line numbers add ~70%)
-FILE_SIZE=$(wc -c < "$FILE_PATH" 2>/dev/null | tr -d ' ')
-ESTIMATED_TOKENS=$(( (FILE_SIZE / 4) * 170 / 100 ))
+# Estimate token cost for what Claude Read would actually return.
+ESTIMATED_TOKENS=$(estimate_read_tokens "$FILE_PATH")
 
 # Check if we've seen this file before in this session
 CACHED_MTIME=""
 CACHED_TS=""
 if [ -f "$CACHE_FILE" ]; then
   # Find the most recent entry for this file path
-  LAST_ENTRY=$(grep -F "\"path\":\"${FILE_PATH}\"" "$CACHE_FILE" 2>/dev/null | tail -1 || echo "")
+  LAST_ENTRY=$(jq -Rrc --arg path "$FILE_PATH" 'fromjson? | select(.path == $path)' "$CACHE_FILE" 2>/dev/null | tail -1 || echo "")
   if [ -n "$LAST_ENTRY" ]; then
     CACHED_MTIME=$(echo "$LAST_ENTRY" | jq -r '.mtime // empty' 2>/dev/null || echo "")
     CACHED_TS=$(echo "$LAST_ENTRY" | jq -r '.ts // empty' 2>/dev/null || echo "")
+  fi
+fi
+
+if [ -z "$CACHED_MTIME" ] && [ -f "$GLOBAL_CACHE_FILE" ]; then
+  GLOBAL_ENTRY=$(jq -Rrc --arg path "$FILE_PATH" 'fromjson? | select(.path == $path)' "$GLOBAL_CACHE_FILE" 2>/dev/null | tail -1 || echo "")
+  if [ -n "$GLOBAL_ENTRY" ]; then
+    GLOBAL_MTIME=$(echo "$GLOBAL_ENTRY" | jq -r '.mtime // empty' 2>/dev/null || echo "")
+    GLOBAL_TS=$(echo "$GLOBAL_ENTRY" | jq -r '.ts // empty' 2>/dev/null || echo "")
+
+    GLOBAL_AGE=0
+    if [ -n "$GLOBAL_TS" ]; then
+      GLOBAL_AGE=$(( NOW - GLOBAL_TS ))
+    fi
+
+    if [ "$GLOBAL_MTIME" = "$CURRENT_MTIME" ] && [ "$GLOBAL_AGE" -lt "$TTL" ]; then
+      # Another session has seen this exact file version, but this session has
+      # not. Allow the read so Edit's first-read precondition can be satisfied.
+      write_cache_entry
+      write_global_cache_entry
+
+      jq -cn \
+        --arg path "$FILE_PATH" \
+        --arg session "$SESSION_HASH" \
+        --arg event "global_hit" \
+        --argjson ts "$NOW" \
+        --argjson tokens "$ESTIMATED_TOKENS" \
+        '{ts:$ts,path:$path,tokens:$tokens,session:$session,event:$event}' >> "$STATS_FILE"
+
+      BASENAME=$(basename "$FILE_PATH")
+      TTL_MIN=$(( TTL / 60 ))
+      MINUTES_AGO=$(( GLOBAL_AGE / 60 ))
+      REASON="read-once: ${BASENAME} (~${ESTIMATED_TOKENS} tokens) was read in another session ${MINUTES_AGO}m ago and is unchanged. Allowing this first read in the current session so Edit can use it; same-session re-reads can be blocked for ${TTL_MIN}m."
+      jq -cn --arg r "$REASON" '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","permissionDecisionReason":$r}}'
+      exit 0
+    fi
   fi
 fi
 
@@ -153,8 +295,15 @@ if [ -n "$CACHED_MTIME" ] && [ "$CACHED_MTIME" = "$CURRENT_MTIME" ]; then
   if [ "$ENTRY_AGE" -ge "$TTL" ]; then
     # Cache expired — allow re-read (context may have compacted)
     # Update the cache entry with fresh timestamp
-    echo "{\"path\":\"${FILE_PATH}\",\"mtime\":\"${CURRENT_MTIME}\",\"ts\":${NOW},\"tokens\":${ESTIMATED_TOKENS}}" >> "$CACHE_FILE"
-    echo "{\"ts\":${NOW},\"path\":\"${FILE_PATH}\",\"tokens\":${ESTIMATED_TOKENS},\"session\":\"${SESSION_HASH}\",\"event\":\"expired\"}" >> "$STATS_FILE"
+    write_cache_entry
+    write_global_cache_entry
+    jq -cn \
+      --arg path "$FILE_PATH" \
+      --arg session "$SESSION_HASH" \
+      --arg event "expired" \
+      --argjson ts "$NOW" \
+      --argjson tokens "$ESTIMATED_TOKENS" \
+      '{ts:$ts,path:$path,tokens:$tokens,session:$session,event:$event}' >> "$STATS_FILE"
     # Update snapshot for diff mode
     if [ "$DIFF_MODE" = "1" ]; then
       cp "$FILE_PATH" "$SNAP_FILE"
@@ -164,7 +313,13 @@ if [ -n "$CACHED_MTIME" ] && [ "$CACHED_MTIME" = "$CURRENT_MTIME" ]; then
 
   # Cache hit — file unchanged and within TTL
   MINUTES_AGO=$(( ENTRY_AGE / 60 ))
-  echo "{\"ts\":${NOW},\"path\":\"${FILE_PATH}\",\"tokens_saved\":${ESTIMATED_TOKENS},\"session\":\"${SESSION_HASH}\",\"event\":\"hit\"}" >> "$STATS_FILE"
+  jq -cn \
+    --arg path "$FILE_PATH" \
+    --arg session "$SESSION_HASH" \
+    --arg event "hit" \
+    --argjson ts "$NOW" \
+    --argjson tokens_saved "$ESTIMATED_TOKENS" \
+    '{ts:$ts,path:$path,tokens_saved:$tokens_saved,session:$session,event:$event}' >> "$STATS_FILE"
 
   # Calculate cumulative session savings for the deny message
   SESSION_SAVED=$(grep "\"session\":\"${SESSION_HASH}\"" "$STATS_FILE" 2>/dev/null | grep '"event":"hit"' | jq -r '.tokens_saved' 2>/dev/null | paste -sd+ - | bc 2>/dev/null || echo "$ESTIMATED_TOKENS")
@@ -188,15 +343,7 @@ if [ -n "$CACHED_MTIME" ] && [ "$CACHED_MTIME" = "$CURRENT_MTIME" ]; then
     # Warn mode (default) — allow the read with advisory message.
     # Prevents Edit tool deadlock (Edit requires a prior Read to succeed)
     # and parallel read cascade failures (one deny kills all parallel reads).
-    cat <<EOF
-{
-  "hookSpecificOutput": {
-    "hookEventName": "PreToolUse",
-    "permissionDecision": "allow",
-    "permissionDecisionReason": "${REASON}"
-  }
-}
-EOF
+    jq -cn --arg r "$REASON" '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","permissionDecisionReason":$r}}'
   fi
   exit 0
 fi
@@ -211,57 +358,39 @@ if [ -n "$CACHED_MTIME" ] && [ "$DIFF_MODE" = "1" ] && [ -f "$SNAP_FILE" ]; then
   if [ -n "$DIFF_OUTPUT" ] && [ "$DIFF_LINES" -le "$DIFF_MAX" ]; then
     # Diff is small enough — deny with diff in the reason
     # Update cache and snapshot
-    echo "{\"path\":\"${FILE_PATH}\",\"mtime\":\"${CURRENT_MTIME}\",\"ts\":${NOW},\"tokens\":${ESTIMATED_TOKENS}}" >> "$CACHE_FILE"
+    write_cache_entry
+    write_global_cache_entry
     cp "$FILE_PATH" "$SNAP_FILE"
 
     DIFF_TOKENS=$(( DIFF_LINES * 10 ))
     TOKENS_SAVED=$(( ESTIMATED_TOKENS - DIFF_TOKENS ))
     if [ "$TOKENS_SAVED" -lt 0 ]; then TOKENS_SAVED=0; fi
 
-    echo "{\"ts\":${NOW},\"path\":\"${FILE_PATH}\",\"tokens_saved\":${TOKENS_SAVED},\"session\":\"${SESSION_HASH}\",\"event\":\"diff\"}" >> "$STATS_FILE"
+    jq -cn \
+      --arg path "$FILE_PATH" \
+      --arg session "$SESSION_HASH" \
+      --arg event "diff" \
+      --argjson ts "$NOW" \
+      --argjson tokens_saved "$TOKENS_SAVED" \
+      '{ts:$ts,path:$path,tokens_saved:$tokens_saved,session:$session,event:$event}' >> "$STATS_FILE"
 
     BASENAME=$(basename "$FILE_PATH")
-    # Build JSON with properly escaped diff
-    REASON_PREFIX="read-once: ${BASENAME} changed since last read. You already have the previous version in context. Here are only the changes (saving ~${TOKENS_SAVED} tokens):\\n\\n"
-    REASON_SUFFIX="\\n\\nApply this diff mentally to your cached version of the file."
-    # Use python3 to safely escape the diff for JSON embedding
-    REASON=$(echo "$DIFF_OUTPUT" | python3 -c "
-import sys, json
-diff = sys.stdin.read()
-prefix = '''${REASON_PREFIX}'''
-suffix = '''${REASON_SUFFIX}'''
-# json.dumps gives us a quoted escaped string; strip the quotes
-escaped_diff = json.dumps(diff)[1:-1]
-print(prefix + escaped_diff + suffix)
-" 2>/dev/null)
+    REASON=$(printf 'read-once: %s changed since last read. You already have the previous version in context. Here are only the changes (saving ~%s tokens):\n\n%s\n\nApply this diff mentally to your cached version of the file.' "$BASENAME" "$TOKENS_SAVED" "$DIFF_OUTPUT")
 
-    if [ -z "$REASON" ]; then
-      # Python failed — fall through to full re-read
-      :
+    if [ "$MODE" = "deny" ]; then
+      # Use top-level decision:block so Claude reliably honors the deny path.
+      jq -cn --arg r "$REASON" '{"decision":"block","reason":$r}'
     else
-      if [ "$MODE" = "deny" ]; then
-        # Use top-level decision:block so Claude reliably honors the deny path.
-        jq -cn --arg r "$REASON" '{"decision":"block","reason":$r}'
-      else
-        cat <<EOF
-{
-  "hookSpecificOutput": {
-    "hookEventName": "PreToolUse",
-    "permissionDecision": "allow",
-    "permissionDecisionReason": "${REASON}"
-  }
-}
-EOF
-      fi
-      exit 0
+      jq -cn --arg r "$REASON" '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","permissionDecisionReason":$r}}'
     fi
-    # Python failed — fall through to full re-read
+    exit 0
   fi
-  # Diff too large or Python failed — fall through to full re-read
+  # Diff too large — fall through to full re-read
 fi
 
 # Record the read
-echo "{\"path\":\"${FILE_PATH}\",\"mtime\":\"${CURRENT_MTIME}\",\"ts\":${NOW},\"tokens\":${ESTIMATED_TOKENS}}" >> "$CACHE_FILE"
+write_cache_entry
+write_global_cache_entry
 
 # Save snapshot for future diffs
 if [ "$DIFF_MODE" = "1" ]; then
@@ -274,7 +403,13 @@ if [ -n "$CACHED_MTIME" ]; then
 else
   EVENT="miss"
 fi
-echo "{\"ts\":${NOW},\"path\":\"${FILE_PATH}\",\"tokens\":${ESTIMATED_TOKENS},\"session\":\"${SESSION_HASH}\",\"event\":\"${EVENT}\"}" >> "$STATS_FILE"
+jq -cn \
+  --arg path "$FILE_PATH" \
+  --arg session "$SESSION_HASH" \
+  --arg event "$EVENT" \
+  --argjson ts "$NOW" \
+  --argjson tokens "$ESTIMATED_TOKENS" \
+  '{ts:$ts,path:$path,tokens:$tokens,session:$session,event:$event}' >> "$STATS_FILE"
 
 # Allow the read
 exit 0

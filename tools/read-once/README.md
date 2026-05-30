@@ -2,9 +2,9 @@
 
 Stop Claude Code from re-reading files it already has in context.
 
-A PreToolUse hook that tracks file reads within a session. When Claude tries to re-read a file that hasn't changed, the hook tells Claude the content is already in context. Saves ~2000+ tokens per prevented re-read.
+A PreToolUse hook that tracks file reads within and across sessions. When Claude tries to re-read a file that has not changed, the hook tells Claude the content is already in context. Saves ~2000+ tokens per prevented same-session re-read.
 
-By default, read-once uses **warn mode**: it allows the read but attaches an advisory message. This prevents the Edit tool deadlock (Edit requires a prior Read) and parallel read cascade failures. Set `READ_ONCE_MODE=deny` for hard blocking if you want maximum token savings and don't use Edit frequently.
+By default, read-once uses **warn mode**: it allows the read but attaches an advisory message. Set `READ_ONCE_MODE=deny` for hard blocking of same-session re-reads. Deny mode still allows the first read in a new session, even when another session has the same file cached, so Edit's prior-Read requirement is not deadlocked by cross-session cache hits.
 
 ## Install
 
@@ -75,17 +75,18 @@ Add to `.claude/settings.json` by hand:
 }
 ```
 
-On Windows, use `"command": "pwsh -File ~/.claude/read-once/hook.ps1"` for PreToolUse and `"command": "pwsh -File ~/.claude/read-once/compact.ps1"` for PostCompact.
+On Windows, use absolute paths with `pwsh -File`, for example `"command": "pwsh -File \"C:/Users/you/.claude/read-once/hook.ps1\""` for PreToolUse and the matching absolute `compact.ps1` path for PostCompact. The PowerShell installer writes those absolute commands automatically.
 
 ## How it works
 
 1. Hook intercepts every `Read` tool call
 2. Partial reads (with `offset` or `limit`) always pass through — only full-file reads are cached
-3. Checks a session-scoped cache: has this file been read before?
-4. Compares file mtime — if unchanged, advises Claude the content is already in context
-5. In warn mode (default): allows the read with advisory. In deny mode: blocks the read entirely
-6. If the file changed since last read, allows it through (or shows just the diff — see below)
-7. Cache entries expire after 20 minutes (configurable) to handle context compaction
+3. Checks a session-scoped cache: has this session read the file before?
+4. Checks a global cache: has another session seen the same path and mtime recently?
+5. If this session already read the unchanged file, warn mode allows with an advisory and deny mode blocks
+6. If only another session saw it, read-once always allows the first current-session read and records it for future same-session dedupe
+7. If the file changed since last read, allows it through (or shows just the diff — see below)
+8. Cache entries expire after 20 minutes (configurable) to handle context compaction
 
 ### Diff mode (opt-in)
 
@@ -131,7 +132,7 @@ Claude Code compacts the context window during long sessions, dropping older con
 
 read-once handles this two ways:
 
-1. **PostCompact hook** (recommended): `compact.sh` registers as a PostCompact hook and clears the session cache immediately when compaction occurs. The installer configures this automatically.
+1. **PostCompact hook** (recommended): `compact.sh` registers as a PostCompact hook and clears the session cache immediately when compaction occurs. The global cache is kept as advisory state, so a post-compaction first read is allowed and future same-session re-reads can still be deduplicated. The installer configures this automatically.
 
 2. **TTL fallback**: Cache entries also expire after `READ_ONCE_TTL` seconds (default: 1200 = 20 minutes). This catches cases where PostCompact is not configured.
 
@@ -199,7 +200,7 @@ read-once verify
 Dependencies:
   [ok]   jq found (jq-1.7.1)
   [ok]   bash 5.2.37 (4+ required)
-  [ok]   python3 found (needed for diff mode)
+  [ok]   Python found (python3, optional for exact token estimates)
   [ok]   stat found
 
 Installation:
@@ -222,7 +223,7 @@ Configuration:
   Diff:     0 (READ_ONCE_DIFF)
   Disabled: 0 (READ_ONCE_DISABLED)
 
-13/13 checks passed. read-once is ready.
+All checks passed. read-once is ready.
 ```
 
 If any check fails, verify tells you exactly what to fix.
@@ -233,18 +234,19 @@ Environment variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `READ_ONCE_MODE` | `warn` | `warn` allows reads with advisory message. `deny` blocks reads entirely. Warn mode prevents Edit tool deadlock and parallel read cascade failures. |
+| `READ_ONCE_MODE` | `warn` | `warn` allows reads with advisory message. `deny` blocks same-session re-reads, while cross-session first reads still pass through with an advisory. |
 | `READ_ONCE_TTL` | `1200` | Cache TTL in seconds. After this, re-reads are allowed (compaction safety). |
 | `READ_ONCE_DIFF` | `0` | Set to `1` to show only diffs when files change (instead of full re-read). |
 | `READ_ONCE_DIFF_MAX` | `40` | Max diff lines before falling back to full re-read. |
 | `READ_ONCE_DISABLED` | `0` | Set to `1` to disable the hook entirely. |
+| `READ_ONCE_PYTHON_CMD` | auto | Override Python launcher detection (`py`, `python3`, then `python`). |
 
 ## Requirements
 
 **macOS / Linux:**
 - `jq` (for JSON parsing)
 - `bash` 4+
-- `python3` (optional, for diff mode JSON escaping)
+- Python (`py`, `python3`, or `python`, optional for exact token estimates and JSONC cleanup)
 - Claude Code with hooks support
 
 **Windows:**
@@ -258,12 +260,12 @@ Claude Code re-reads files more than you'd think. Common patterns:
 - Re-reading config files across different parts of a task
 - Reading the same file in subagents that share a session
 
-Each blocked re-read saves the full file token cost (including the ~70% overhead from line numbers in `cat -n` format). Run `./read-once stats` after a session to see your actual savings.
+Each blocked re-read saves the file token cost Claude Code would have returned. `read-once` estimates the first 2000 displayed lines, including line-number overhead, and returns 0 for common binary/image/archive extensions. If Python with `tiktoken` is available it uses `cl100k_base`; otherwise it falls back to a truncation-aware byte estimate. Run `./read-once stats` after a session to see your actual savings.
 
 ## FAQ
 
 **The Edit tool says "File has not been read yet" even though I already read it.**
-This happens in deny mode (`READ_ONCE_MODE=deny`). Claude Code's Edit tool requires a successful Read before it will edit a file. When read-once blocks the Read, Edit thinks the file was never read. The fix: use the default warn mode (`READ_ONCE_MODE=warn`), which allows reads with an advisory instead of blocking them.
+Claude Code's Edit tool requires a successful Read in the current session before it will edit a file. In deny mode (`READ_ONCE_MODE=deny`), read-once only blocks after the current session has already seen the file. If another session cached the file first, the first current-session read still passes through with an advisory, then later same-session re-reads can be blocked.
 
 **Won't this break after context compaction?**
 The installer configures a PostCompact hook (`compact.sh`) that clears the cache immediately when compaction happens. As a fallback, cache entries also expire after 20 minutes (configurable via `READ_ONCE_TTL`). You can also run `read-once clear` to reset manually.

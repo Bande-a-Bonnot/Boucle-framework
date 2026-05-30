@@ -20,6 +20,7 @@
 #
 # Config (env vars):
 #   READ_ONCE_MODE=warn     "warn" (default) allows read with advisory, "deny" blocks it.
+#                           deny mode only blocks same-session re-reads; cross-session cache hits warn.
 #   READ_ONCE_TTL=1200      Seconds before a cached read expires (default: 1200)
 #   READ_ONCE_DIFF=1        Show only diff when files change (default: 0)
 #   READ_ONCE_DIFF_MAX=40   Max diff lines before falling back to full re-read (default: 40)
@@ -98,6 +99,7 @@ if (($now - $lastCleanup) -gt 3600) {
 
 $sessionHash = Get-ShortHash $sessionId
 $cacheFile = Join-Path $cacheDir "session-${sessionHash}.jsonl"
+$globalCacheFile = Join-Path $cacheDir 'cache-global.jsonl'
 $statsFile = Join-Path $cacheDir 'stats.jsonl'
 
 if ($diffMode) {
@@ -132,6 +134,51 @@ if (Test-Path $cacheFile) {
     }
 }
 
+if (-not $cachedMtime -and (Test-Path $globalCacheFile)) {
+    $globalMtime = ''
+    $globalTs = ''
+    $lines = Get-Content $globalCacheFile -ErrorAction SilentlyContinue
+    foreach ($line in $lines) {
+        try {
+            $entry = $line | ConvertFrom-Json
+            if ($entry.path -eq $filePath) {
+                $globalMtime = [string]$entry.mtime
+                $globalTs = [string]$entry.ts
+            }
+        } catch {}
+    }
+
+    $globalAge = 0
+    if ($globalTs -match '^\d+$') {
+        $globalAge = $now - [long]$globalTs
+    }
+
+    if ($globalMtime -eq $currentMtime -and $globalAge -lt $ttl) {
+        # Another session has seen this exact file version, but this session has
+        # not. Allow the read so Edit's first-read precondition can be satisfied.
+        $record = @{ path = $filePath; mtime = $currentMtime; ts = $now; tokens = $estimatedTokens } | ConvertTo-Json -Compress
+        Add-Content -Path $cacheFile -Value $record
+        $globalRecord = @{ path = $filePath; mtime = $currentMtime; ts = $now; tokens = $estimatedTokens; session = $sessionHash } | ConvertTo-Json -Compress
+        Add-Content -Path $globalCacheFile -Value $globalRecord
+        $stat = @{ ts = $now; path = $filePath; tokens = $estimatedTokens; session = $sessionHash; event = 'global_hit' } | ConvertTo-Json -Compress
+        Add-Content -Path $statsFile -Value $stat
+
+        $baseName = Split-Path $filePath -Leaf
+        $ttlMin = [int]($ttl / 60)
+        $minutesAgo = [int]($globalAge / 60)
+        $reason = "read-once: ${baseName} (~${estimatedTokens} tokens) was read in another session ${minutesAgo}m ago and is unchanged. Allowing this first read in the current session so Edit can use it; same-session re-reads can be blocked for ${ttlMin}m."
+        $output = @{
+            hookSpecificOutput = @{
+                hookEventName = 'PreToolUse'
+                permissionDecision = 'allow'
+                permissionDecisionReason = $reason
+            }
+        } | ConvertTo-Json -Compress
+        Write-Output $output
+        exit 0
+    }
+}
+
 if ($cachedMtime -and $cachedMtime -eq $currentMtime) {
     # File hasn't changed since last read. Check TTL.
     $entryAge = 0
@@ -143,6 +190,8 @@ if ($cachedMtime -and $cachedMtime -eq $currentMtime) {
         # Cache expired -- allow re-read
         $record = @{ path = $filePath; mtime = $currentMtime; ts = $now; tokens = $estimatedTokens } | ConvertTo-Json -Compress
         Add-Content -Path $cacheFile -Value $record
+        $globalRecord = @{ path = $filePath; mtime = $currentMtime; ts = $now; tokens = $estimatedTokens; session = $sessionHash } | ConvertTo-Json -Compress
+        Add-Content -Path $globalCacheFile -Value $globalRecord
         $stat = @{ ts = $now; path = $filePath; tokens = $estimatedTokens; session = $sessionHash; event = 'expired' } | ConvertTo-Json -Compress
         Add-Content -Path $statsFile -Value $stat
         if ($diffMode) { Copy-Item $filePath $snapFile -Force }
@@ -223,6 +272,8 @@ if ($cachedMtime -and $diffMode -and (Test-Path $snapFile -ErrorAction SilentlyC
         # Update cache and snapshot
         $record = @{ path = $filePath; mtime = $currentMtime; ts = $now; tokens = $estimatedTokens } | ConvertTo-Json -Compress
         Add-Content -Path $cacheFile -Value $record
+        $globalRecord = @{ path = $filePath; mtime = $currentMtime; ts = $now; tokens = $estimatedTokens; session = $sessionHash } | ConvertTo-Json -Compress
+        Add-Content -Path $globalCacheFile -Value $globalRecord
         Copy-Item $filePath $snapFile -Force
         $stat = @{ ts = $now; path = $filePath; tokens_saved = $tokensSaved; session = $sessionHash; event = 'diff' } | ConvertTo-Json -Compress
         Add-Content -Path $statsFile -Value $stat
@@ -251,6 +302,8 @@ if ($cachedMtime -and $diffMode -and (Test-Path $snapFile -ErrorAction SilentlyC
 # Record the read
 $record = @{ path = $filePath; mtime = $currentMtime; ts = $now; tokens = $estimatedTokens } | ConvertTo-Json -Compress
 Add-Content -Path $cacheFile -Value $record
+$globalRecord = @{ path = $filePath; mtime = $currentMtime; ts = $now; tokens = $estimatedTokens; session = $sessionHash } | ConvertTo-Json -Compress
+Add-Content -Path $globalCacheFile -Value $globalRecord
 
 # Save snapshot for future diffs
 if ($diffMode) {

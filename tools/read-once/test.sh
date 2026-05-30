@@ -138,15 +138,37 @@ assert_empty "Modified file allowed through" "$OUTPUT"
 
 # --- Test 5: Different session, same file ---
 echo ""
-echo "5. Different session (independent cache)"
+echo "5. Different session (global advisory, session-local deny)"
 OUTPUT=$(run_hook "$(make_input Read "$TEST_FILE" "different-session")")
-assert_empty "Different session allows read" "$OUTPUT"
+assert_contains "Different session allows with global advisory" "allow" "$OUTPUT"
+assert_contains "Different session explains current-session first read" "first read in the current session" "$OUTPUT"
+
+export READ_ONCE_MODE=deny
+OUTPUT=$(run_hook "$(make_input Read "$TEST_FILE" "different-session-2")")
+assert_contains "Deny mode: cross-session first read still allows" "allow" "$OUTPUT"
+assert_contains "Deny mode: cross-session first read avoids Edit deadlock" "Edit" "$OUTPUT"
+OUTPUT=$(run_hook "$(make_input Read "$TEST_FILE" "different-session-2")")
+assert_contains "Deny mode: second same-session read blocks" "block" "$OUTPUT"
+unset READ_ONCE_MODE
 
 # --- Test 6: Nonexistent file ---
 echo ""
 echo "6. Nonexistent file"
 OUTPUT=$(run_hook "$(make_input Read "/nonexistent/file.txt")")
 assert_empty "Nonexistent file passes through" "$OUTPUT"
+
+# --- Test 6b: Windows-style backslashes normalize under Git Bash ---
+echo ""
+echo "6b. Windows-style backslash paths"
+WIN_FILE="${TEST_DIR}/windows-path.txt"
+echo "Windows path content" > "$WIN_FILE"
+WIN_PATH=$(printf '%s' "$WIN_FILE" | sed 's#/#\\\\#g')
+WIN_INPUT=$(jq -cn --arg path "$WIN_PATH" --arg sid "windows-path-$$" \
+  '{tool_name:"Read", tool_input:{file_path:$path}, session_id:$sid}')
+OUTPUT=$(run_hook "$WIN_INPUT")
+assert_empty "Backslash path: first read passes through" "$OUTPUT"
+OUTPUT=$(run_hook "$WIN_INPUT")
+assert_contains "Backslash path: second read hits normalized cache" "already in context" "$OUTPUT"
 
 # --- Test 7: Partial reads (offset/limit) should not be cached ---
 echo ""
@@ -184,6 +206,25 @@ assert_empty "Missing file_path passes through" "$OUTPUT"
 
 OUTPUT=$(echo '{"tool_name":"Read","tool_input":{"file_path":"/tmp/x"}}' | bash "$HOOK" 2>/dev/null || true)
 assert_empty "Missing session_id passes through" "$OUTPUT"
+
+# --- Test 8b: Advisory JSON escaping ---
+echo ""
+echo "8b. Advisory JSON escaping"
+QUOTE_FILE="${TEST_DIR}/quote \"unicode\" file.txt"
+echo "quoted path" > "$QUOTE_FILE"
+QUOTE_INPUT=$(jq -cn --arg path "$QUOTE_FILE" --arg sid "quote-session-$$" \
+  '{tool_name:"Read", tool_input:{file_path:$path}, session_id:$sid}')
+run_hook "$QUOTE_INPUT" > /dev/null
+OUTPUT=$(run_hook "$QUOTE_INPUT")
+TOTAL=$((TOTAL + 1))
+if echo "$OUTPUT" | jq empty >/dev/null 2>&1; then
+  PASS=$((PASS + 1))
+  echo "  ✓ Quoted basename advisory is valid JSON"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ Quoted basename advisory should be valid JSON"
+  echo "    actual: $OUTPUT"
+fi
 
 # --- Test 9: Stats file gets written ---
 echo ""
@@ -435,6 +476,35 @@ assert_empty "Cost: first read passes" "$OUTPUT"
 OUTPUT=$(run_hook "$(make_input Read "$COST_FILE" "$COST_SESSION")")
 assert_contains "Cost: advisory includes Sonnet cost" "Sonnet" "$OUTPUT"
 
+# --- Group 19b: Token estimates match Claude Read truncation ---
+echo ""
+echo "--- Group 19b: Truncation-aware token estimates ---"
+
+LONG_SESSION="test-long-token-estimate-$$"
+LONG_FILE="${TEST_DIR}/long-token-estimate.txt"
+for i in $(seq 1 4000); do printf 'line %04d %090d\n' "$i" 0; done > "$LONG_FILE"
+
+OUTPUT=$(run_hook "$(make_input Read "$LONG_FILE" "$LONG_SESSION")")
+assert_empty "Token estimate: long file first read passes" "$OUTPUT"
+LONG_TOKENS=$(grep "\"path\":\"${LONG_FILE}\"" "$STATS" 2>/dev/null | grep '"event":"miss"' | tail -1 | jq -r '.tokens // 0')
+TOTAL=$((TOTAL + 1))
+if [ "$LONG_TOKENS" -gt 0 ] && [ "$LONG_TOKENS" -lt 140000 ]; then
+  PASS=$((PASS + 1))
+  echo "  ✓ Token estimate: long file only counts displayed Read lines"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ Token estimate should stay below full-file overcount"
+  echo "    actual tokens: $LONG_TOKENS"
+fi
+
+BIN_SESSION="test-binary-token-estimate-$$"
+BIN_FILE="${TEST_DIR}/binary-image.png"
+printf '\211PNG\r\n\032\n' > "$BIN_FILE"
+OUTPUT=$(run_hook "$(make_input Read "$BIN_FILE" "$BIN_SESSION")")
+assert_empty "Token estimate: binary first read passes" "$OUTPUT"
+BIN_TOKENS=$(grep "\"path\":\"${BIN_FILE}\"" "$STATS" 2>/dev/null | grep '"event":"miss"' | tail -1 | jq -r '.tokens // -1')
+assert_eq "Token estimate: binary/image files count as zero" "0" "$BIN_TOKENS"
+
 # --- Group 20: Stats CLI cost estimates ---
 echo ""
 echo "--- Group 20: Stats CLI cost line ---"
@@ -488,6 +558,24 @@ if echo "$VERIFY_OUTPUT" | grep -q "\[ok\].*jq found"; then
 else
   FAIL=$((FAIL + 1))
   echo "  ✗ Verify: jq check missing"
+fi
+
+FAKEBIN="${TEST_DIR}/fakebin"
+mkdir -p "$FAKEBIN"
+cat > "${FAKEBIN}/py" <<'EOSH'
+#!/bin/sh
+exec python3 "$@"
+EOSH
+chmod +x "${FAKEBIN}/py"
+PY_VERIFY_OUTPUT=$(PATH="${FAKEBIN}:$PATH" HOME="$TEST_DIR" "$CLI" verify 2>&1 || true)
+TOTAL=$((TOTAL + 1))
+if echo "$PY_VERIFY_OUTPUT" | grep -q "\[ok\].*Python found (py"; then
+  PASS=$((PASS + 1))
+  echo "  ✓ Verify: accepts py launcher when python3 is not the preferred command"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ Verify: should detect py launcher"
+  echo "    output: $PY_VERIFY_OUTPUT"
 fi
 
 TOTAL=$((TOTAL + 1))
@@ -547,6 +635,52 @@ else
   echo "  ✗ Verify: should detect missing installation"
 fi
 
+# --- Group 22: CLI install writes a Claude-resolvable absolute hook command ---
+echo ""
+echo "--- Group 22: CLI install command path ---"
+
+INSTALL_HOME="${TEST_DIR}/cli-install-home"
+mkdir -p "${INSTALL_HOME}/.claude"
+echo '{}' > "${INSTALL_HOME}/.claude/settings.json"
+INSTALL_OUTPUT=$(HOME="$INSTALL_HOME" "$CLI" install 2>&1 || true)
+HOOK_CMD=$(jq -r '.hooks.PreToolUse[] | select(.matcher == "Read") | .hooks[0].command // empty' "${INSTALL_HOME}/.claude/settings.json" 2>/dev/null | head -1)
+assert_eq "CLI install uses absolute hook command" "${INSTALL_HOME}/.claude/read-once/hook.sh" "$HOOK_CMD"
+assert_eq "CLI install copied hook" "1" "$([ -x "${INSTALL_HOME}/.claude/read-once/hook.sh" ] && echo 1 || echo 0)"
+assert_contains "CLI install reports installed hook" "read-once hook installed" "$INSTALL_OUTPUT"
+
+# PowerShell CLI install is hard to execute on hosts without pwsh, but it must
+# still avoid the Windows "~" expansion bug and register both hook events.
+PS_CLI="${SCRIPT_DIR}/read-once.ps1"
+TOTAL=$((TOTAL + 1))
+if ! grep -q 'command = "pwsh -File ~/.claude/read-once/hook.ps1"' "$PS_CLI" \
+   && grep -q 'command = "pwsh -File $(Quote-CommandPath $InstalledHook)"' "$PS_CLI"; then
+  PASS=$((PASS + 1))
+  echo "  ✓ PowerShell install uses absolute hook command"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ PowerShell install should use absolute hook command"
+fi
+
+TOTAL=$((TOTAL + 1))
+if grep -q 'Copy-Item $CompactSource $InstalledCompact' "$PS_CLI" \
+   && grep -q 'command = "pwsh -File $(Quote-CommandPath $InstalledCompact)"' "$PS_CLI" \
+   && grep -q '\$settings\.hooks\.PostCompact \+=' "$PS_CLI"; then
+  PASS=$((PASS + 1))
+  echo "  ✓ PowerShell install registers PostCompact hook"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ PowerShell install should register PostCompact hook"
+fi
+
+TOTAL=$((TOTAL + 1))
+if grep -q '\$settings\.hooks\.PostCompact = \$filtered' "$PS_CLI"; then
+  PASS=$((PASS + 1))
+  echo "  ✓ PowerShell uninstall removes PostCompact hook"
+else
+  FAIL=$((FAIL + 1))
+  echo "  ✗ PowerShell uninstall should remove PostCompact hook"
+fi
+
 # --- PostCompact hook tests ---
 echo ""
 echo "--- PostCompact hook (compact.sh) ---"
@@ -568,9 +702,11 @@ assert_contains "compact: pre-seed cache hit" "already in context" "$RESULT"
 COMPACT_RESULT=$(echo '{"session_id":"'"$SESSION"'","hook_event_name":"PostCompact","trigger":"auto","compact_summary":"test summary"}' | "$COMPACT_HOOK")
 assert_empty "compact: hook exits cleanly" "$COMPACT_RESULT"
 
-# After compaction, re-read should be allowed (cache cleared)
+# After compaction, re-read should be allowed. The session cache is cleared,
+# while the global cache can still provide a non-blocking advisory.
 RESULT=$(echo '{"tool_name":"Read","tool_input":{"file_path":"'"$TEST_FILE"'"},"session_id":"'"$SESSION"'"}' | "$HOOK")
-assert_empty "compact: re-read allowed after compaction" "$RESULT"
+assert_contains "compact: re-read allowed after compaction" "allow" "$RESULT"
+assert_contains "compact: post-compaction read is current-session first read" "first read in the current session" "$RESULT"
 
 # Test: compact logs event to stats
 STATS_FILE="${TEST_DIR}/.claude/read-once/stats.jsonl"
