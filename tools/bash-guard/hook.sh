@@ -623,7 +623,15 @@ if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)service\s+\S+\s+(start|stop|restart)'
 fi
 
 # ssh-keygen (key generation) and ssh-add (agent operations)
-if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)ssh-keygen\s' 2>/dev/null; then
+# Exempt known_hosts management and read-only queries when given as the first
+# flag: -R (remove host), -F (find host), -l (show fingerprint). These create
+# no keys and grant no access — they only read or edit known_hosts. `-R` in
+# particular is the standard cleanup after a host key changes (e.g. a cloud
+# instance is replaced and presents a new key). Blocking it forces users to
+# allow the entire `ssh-keys` rule — including the far riskier ssh-add — just
+# to delete a stale known_hosts line, a net loss for security.
+if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)ssh-keygen(\s|$)' 2>/dev/null \
+   && ! echo "$COMMAND" | grep -qE '(^|[;&|]\s*)ssh-keygen\s+-[RFl]([[:space:]]|$)' 2>/dev/null; then
   is_allowed "ssh-keys" || block "ssh-keygen creates or modifies SSH keys which grant remote server access." "Add 'allow: ssh-keys' to .bash-guard if you need to generate SSH keys."
 fi
 if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)ssh-add\s' 2>/dev/null; then
