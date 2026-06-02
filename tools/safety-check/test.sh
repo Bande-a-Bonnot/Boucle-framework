@@ -100,7 +100,6 @@ assert() {
         echo "  Expected to find: $expected"
         echo "  In output: $(head -3 <<< "$actual")"
     fi
-    note_progress
 }
 
 assert_not() {
@@ -115,7 +114,6 @@ assert_not() {
     else
         PASS=$((PASS + 1))
     fi
-    note_progress
 }
 
 stage "baseline audit"
@@ -209,7 +207,6 @@ assert "strict without verify explains requirement" "Option --strict requires --
 assert "strict without verify shows usage" "Usage: check.sh" "$STRICT_NO_VERIFY_OUTPUT"
 assert_not "strict without verify does not run audit" "Safety Score:" "$STRICT_NO_VERIFY_OUTPUT"
 
-stage "version timeout guard"
 # === Test 9e: Hanging claude --version cannot hang the audit ===
 TMPDIR_HANGING_CLAUDE=$(mktemp -d)
 TMPDIR_HANGING_AUDIT=$(mktemp -d)
@@ -235,7 +232,7 @@ try:
         text=True,
         timeout=10,
         cwd=sys.argv[2],
-        env={**os.environ, "HOME": sys.argv[2], "SAFETY_CHECK_SKIP_CLAUDE_VERSION": "0"},
+        env={**os.environ, "HOME": sys.argv[2]},
     )
 except subprocess.TimeoutExpired:
     print("audit timed out")
@@ -323,6 +320,7 @@ export IS_DEMO=1
 DEMO_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert "IS_DEMO warning shown" "IS_DEMO" "$DEMO_OUTPUT"
 assert "IS_DEMO mentions hooks disabled" "disables ALL hooks" "$DEMO_OUTPUT"
+assert "IS_DEMO warning included in copy-paste summary" "Issue: IS_DEMO=1 is set" "$DEMO_OUTPUT"
 unset IS_DEMO
 rm -rf "$TMPDIR_DEMO"
 
@@ -346,6 +344,7 @@ cat > "$TMPDIR_JSONC/.claude/settings.json" << 'JSONC'
 JSONC
 JSONC_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert "JSONC warning shown" "JSONC comments" "$JSONC_OUTPUT"
+assert "JSONC warning included in copy-paste summary" "Issue: $TMPDIR_JSONC/.claude/settings.json contains JSONC comments" "$JSONC_OUTPUT"
 rm -rf "$TMPDIR_JSONC"
 
 # === Test 14: No JSONC warning for valid JSON ===
@@ -356,6 +355,22 @@ echo '{"hooks": {}}' > "$TMPDIR_VALID/.claude/settings.json"
 VALID_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no JSONC warning for valid JSON" "JSONC comments" "$VALID_OUTPUT"
 rm -rf "$TMPDIR_VALID"
+
+# === Test 14b: JSONC warning for invalid project settings ===
+TMPDIR_PROJECT_JSONC=$(mktemp -d)
+export HOME="$TMPDIR_PROJECT_JSONC"
+mkdir -p "$TMPDIR_PROJECT_JSONC/.claude" "$TMPDIR_PROJECT_JSONC/project/.claude"
+echo '{"hooks": {}}' > "$TMPDIR_PROJECT_JSONC/.claude/settings.json"
+cat > "$TMPDIR_PROJECT_JSONC/project/.claude/settings.json" << 'PROJECTJSONC'
+{
+  // This project-level comment breaks JSON parsing
+  "hooks": {}
+}
+PROJECTJSONC
+PROJECT_JSONC_OUTPUT=$(cd "$TMPDIR_PROJECT_JSONC/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "project JSONC warning shown" ".claude/settings.json contains JSONC comments" "$PROJECT_JSONC_OUTPUT"
+assert "project JSONC warning included in copy-paste summary" "Issue: .claude/settings.json contains JSONC comments" "$PROJECT_JSONC_OUTPUT"
+rm -rf "$TMPDIR_PROJECT_JSONC"
 
 # === Test 15: Hook health checks - missing hook file ===
 TMPDIR_HEALTH=$(mktemp -d)
@@ -375,6 +390,7 @@ HEALTH
 HEALTH_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert "missing hook detected" "file not found" "$HEALTH_OUTPUT"
 assert "has hook health section" "Hook Health" "$HEALTH_OUTPUT"
+assert "missing hook health included in copy-paste summary" "Issue: 1 hook(s) are broken" "$HEALTH_OUTPUT"
 rm -rf "$TMPDIR_HEALTH"
 
 # === Test 16: Hook health checks - non-executable hook ===
@@ -773,6 +789,7 @@ else
 fi
 assert "verify hanging hook times out" "hook timed out after 1 seconds" "$VHANG_OUTPUT"
 assert "verify hanging hook is fail-open evidence" "FAIL-OPEN" "$VHANG_OUTPUT"
+assert "verify hanging hook summary carries timeout issue" "Issue: 2 hook payload check(s) timed out after 1 seconds" "$VHANG_OUTPUT"
 assert "verify hanging hook still prints summary" "Verify:" "$VHANG_OUTPUT"
 rm -rf "$TMPDIR_VHANG"
 
@@ -869,6 +886,8 @@ cat > "$TMPDIR_VFG/.claude/settings.json" << VFGSET
 VFGSET
 VFG_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
 assert "verify file-guard blocks .env write" "blocks correctly" "$VFG_OUTPUT"
+assert "verify file-guard blocks .env multiedit" "file-guard blocks .env MultiEdit - blocks correctly" "$VFG_OUTPUT"
+assert "verify file-guard blocks .env notebook edit" "file-guard blocks .env NotebookEdit - blocks correctly" "$VFG_OUTPUT"
 assert "verify file-guard passes safe" "passes safe" "$VFG_OUTPUT"
 unset FILE_GUARD_CONFIG
 rm -rf "$TMPDIR_VFG"
@@ -3772,7 +3791,6 @@ assert_not "non-symlinked .claude no warning" "claude-code#41451" "$NOSYM_OUTPUT
 cd "$ORIG_DIR"
 rm -rf "$TMPDIR_NOSYM"
 
-stage "version warning fixtures"
 # Test: v2.1.88 version warning
 SAVE_HOME="$HOME"
 TMPDIR_V88=$(mktemp -d)
@@ -3783,7 +3801,7 @@ echo '{}' > "$HOME/.claude/settings.json"
 mkdir -p "$TMPDIR_V88/bin"
 printf '#!/bin/bash\necho "claude v2.1.88"' > "$TMPDIR_V88/bin/claude"
 chmod +x "$TMPDIR_V88/bin/claude"
-V88_OUTPUT=$(SAFETY_CHECK_SKIP_CLAUDE_VERSION=0 PATH="$TMPDIR_V88/bin:$PATH" bash "$CHECK_SCRIPT" 2>&1) || true
+V88_OUTPUT=$(PATH="$TMPDIR_V88/bin:$PATH" bash "$CHECK_SCRIPT" 2>&1) || true
 assert "v2.1.88 warning shown" "pulled from npm" "$V88_OUTPUT"
 assert "v2.1.88 references commands issue" "claude-code#41497" "$V88_OUTPUT"
 assert "v2.1.88 references skills regression" "claude-code#41530" "$V88_OUTPUT"
@@ -3799,7 +3817,7 @@ echo '{}' > "$HOME/.claude/settings.json"
 mkdir -p "$TMPDIR_V87/bin"
 printf '#!/bin/bash\necho "claude v2.1.87"' > "$TMPDIR_V87/bin/claude"
 chmod +x "$TMPDIR_V87/bin/claude"
-V87_OUTPUT=$(SAFETY_CHECK_SKIP_CLAUDE_VERSION=0 PATH="$TMPDIR_V87/bin:$PATH" bash "$CHECK_SCRIPT" 2>&1) || true
+V87_OUTPUT=$(PATH="$TMPDIR_V87/bin:$PATH" bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "v2.1.87 no pulled-from-npm warning" "pulled from npm" "$V87_OUTPUT"
 export HOME="$SAVE_HOME"
 rm -rf "$TMPDIR_V87"
@@ -3882,6 +3900,7 @@ export CLAUDE_CODE_SIMPLE=true
 SIMPLE_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert "CLAUDE_CODE_SIMPLE warning shown" "CLAUDE_CODE_SIMPLE" "$SIMPLE_OUTPUT"
 assert "CLAUDE_CODE_SIMPLE mentions hooks disabled" "disables ALL hooks" "$SIMPLE_OUTPUT"
+assert "CLAUDE_CODE_SIMPLE warning included in copy-paste summary" "Issue: CLAUDE_CODE_SIMPLE is set" "$SIMPLE_OUTPUT"
 unset CLAUDE_CODE_SIMPLE
 export HOME="$SAVE_HOME"
 rm -rf "$TMPDIR_SIMPLE"
@@ -3903,6 +3922,7 @@ export HOME="$TMPDIR_SIMPLE1"
 export CLAUDE_CODE_SIMPLE=1
 SIMPLE1_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert "CLAUDE_CODE_SIMPLE=1 warning shown" "CLAUDE_CODE_SIMPLE" "$SIMPLE1_OUTPUT"
+assert "CLAUDE_CODE_SIMPLE=1 warning included in copy-paste summary" "Issue: CLAUDE_CODE_SIMPLE is set" "$SIMPLE1_OUTPUT"
 unset CLAUDE_CODE_SIMPLE
 export HOME="$SAVE_HOME"
 rm -rf "$TMPDIR_SIMPLE1"

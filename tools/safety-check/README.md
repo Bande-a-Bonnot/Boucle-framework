@@ -31,7 +31,7 @@ Strict mode still prints the full audit, then exits `1` if verification finds a 
 
 Read the result as a repair list, not as a badge. Fix these before trusting the session:
 
-1. Bypass flags such as `IS_DEMO=1` or `CLAUDE_CODE_SIMPLE=true`.
+1. Bypass flags such as `IS_DEMO=1` or `CLAUDE_CODE_SIMPLE=true/1`.
 2. Invalid `settings.json` or JSONC comments.
 3. Missing or non-executable hook scripts.
 4. Any hook reported as `FAIL-OPEN`.
@@ -76,13 +76,9 @@ If those are clean, document the remaining platform warnings as residual risk. F
 | git-safe | 15 | Blocks force push, hard reset |
 | file-guard | 15 | Protects `.env`, keys, secrets |
 | branch-guard | 10 | Prevents commits to main/master |
-| worktree-guard | 10 | Prevents unsafe worktree exit when changes or commits are still unmerged |
 | session-log | 15 | Audit trail of all tool calls |
-| read-once | 5 | Prevents redundant file reads |
+| read-once | 10 | Prevents redundant file reads |
 | Permission rules | 5 | Allow/deny rules in settings |
-| enforce-hooks | 10 | Turns `CLAUDE.md` rules into hook checks |
-| `@enforced` rules | 5 | Marks `CLAUDE.md` rules for deterministic enforcement |
-| read-once PostCompact reset | 2 | Conditional check when read-once is installed |
 
 ## Grades
 
@@ -136,7 +132,7 @@ Hook Verification (sending test payloads)
   1/5 payload checks FAIL-OPEN
 ```
 
-The copy/paste summary at the end includes the verify result, for example `Verify: 0 FAIL-OPEN | 6 payload checks | 2 skipped`, plus the trust boundary to use when sharing an audit result.
+The copy/paste summary at the end includes setup blockers as `Issue:` lines, the verify result, for example `Verify: 0 FAIL-OPEN | 8 payload checks | 2 skipped`, plus the trust boundary to use when sharing an audit result. The summary includes hook-disabling environment flags, invalid user or project settings JSON, broken hook files, and timed-out hook payload checks so support triage can work from the summary without asking for private settings.
 If no hooks are installed yet, verify mode still prints a summary, but it will say `Verify: not run | no hooks found | 0 payload checks` and `Boundary: install hooks before trusting the hook layer.`
 Custom hook commands that are not direct script paths are skipped rather than reported as missing files. Interpreter-wrapped hook scripts such as `sh ./hook.sh`, `zsh ./hook.sh`, or `python ./hook.py` are file-checked and verified through that interpreter, so they do not need the executable bit. Lifecycle hooks such as `SessionStart` and `Stop` are also skipped because they do not receive PreToolUse tool payloads. If every hook is skipped, the summary says no payload checks ran instead of claiming the hook layer passed. In strict mode, any skipped `PreToolUse` hook check exits `1`; skipped lifecycle hooks remain informational unless no `PreToolUse` payload checks ran.
 

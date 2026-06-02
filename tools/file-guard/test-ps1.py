@@ -117,6 +117,14 @@ def main():
                        make_input("Edit", {"file_path": "config.toml",
                                            "old_string": "a", "new_string": "b"}),
                        cwd=tmpdir)
+        assert_blocked("block MultiEdit with relative path",
+                       make_input("MultiEdit", {"file_path": "config.toml",
+                                                "edits": [{"old_string": "a", "new_string": "b"}]}),
+                       cwd=tmpdir)
+        assert_blocked("block NotebookEdit with relative path",
+                       make_input("NotebookEdit", {"notebook_path": "analysis.ipynb",
+                                                   "new_source": "print(1)"}),
+                       cwd=tmpdir)
         assert_allowed("allow Write with absolute path",
                        make_input("Write", {"file_path": "/tmp/test.txt"}),
                        cwd=tmpdir)
@@ -143,6 +151,14 @@ def main():
         assert_blocked("block Edit of .env",
                        make_input("Edit", {"file_path": "/project/.env",
                                            "old_string": "a", "new_string": "b"}),
+                       env_overrides=env, cwd=tmpdir)
+        assert_blocked("block MultiEdit of .env",
+                       make_input("MultiEdit", {"file_path": "/project/.env",
+                                                "edits": [{"old_string": "a", "new_string": "b"}]}),
+                       env_overrides=env, cwd=tmpdir)
+        assert_blocked("block NotebookEdit of .env",
+                       make_input("NotebookEdit", {"notebook_path": "/project/.env",
+                                                   "new_source": "print(1)"}),
                        env_overrides=env, cwd=tmpdir)
 
         # Read should be allowed (write-protect, not deny)

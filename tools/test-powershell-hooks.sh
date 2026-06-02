@@ -77,7 +77,7 @@ if [ -f "$SCRIPT_DIR/file-guard/hook.ps1" ]; then
         fail "file-guard: missing [deny] section handling"
     fi
 
-    for tool in Write Edit Read Grep Glob Bash; do
+    for tool in Write Edit MultiEdit NotebookEdit Read Grep Glob Bash; do
         if grep -q "'$tool'" "$SCRIPT_DIR/file-guard/hook.ps1"; then
             pass "file-guard: handles $tool tool"
         else
@@ -321,6 +321,20 @@ CONF
         pass "file-guard: blocks Write to .env"
     else
         fail "file-guard: did not block Write to .env (got: $RESULT)"
+    fi
+
+    RESULT=$(cd "$TMPDIR" && run_hook "$SCRIPT_DIR/file-guard/hook.ps1" '{"tool_name":"MultiEdit","tool_input":{"file_path":"/tmp/test/.env","edits":[{"old_string":"a","new_string":"b"}]}}')
+    if echo "$RESULT" | grep -q '"block"'; then
+        pass "file-guard: blocks MultiEdit to .env"
+    else
+        fail "file-guard: did not block MultiEdit to .env (got: $RESULT)"
+    fi
+
+    RESULT=$(cd "$TMPDIR" && run_hook "$SCRIPT_DIR/file-guard/hook.ps1" '{"tool_name":"NotebookEdit","tool_input":{"notebook_path":"/tmp/test/.env","new_source":"print(1)"}}')
+    if echo "$RESULT" | grep -q '"block"'; then
+        pass "file-guard: blocks NotebookEdit to .env"
+    else
+        fail "file-guard: did not block NotebookEdit to .env (got: $RESULT)"
     fi
 
     # Test: Read .env should be allowed (write-protect only)
