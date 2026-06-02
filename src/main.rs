@@ -145,6 +145,10 @@ enum MemoryCommands {
         /// Time-to-live in days. Entry is flagged as stale after this many days.
         #[arg(long)]
         ttl: Option<u32>,
+
+        /// Date this fact should be considered fresh until (YYYYMMDD or YYYY-MM-DD)
+        #[arg(long)]
+        valid_until: Option<String>,
     },
 
     /// Search memory with relevance ranking
@@ -316,17 +320,19 @@ fn main() {
                     content,
                     tags,
                     ttl,
+                    valid_until,
                 } => {
                     let tag_list: Vec<String> = tags
                         .map(|t| t.split(',').map(|s| s.trim().to_string()).collect())
                         .unwrap_or_default();
-                    match broca::remember(
+                    match broca::remember_with_validity(
                         &memory_dir,
                         &entry_type,
                         &title,
                         &content,
                         &tag_list,
                         ttl,
+                        valid_until.as_deref(),
                     ) {
                         Ok(path) => println!("Stored: {}", path.display()),
                         Err(e) => {
@@ -355,12 +361,18 @@ fn main() {
                                     if let Some(ref sup) = entry.superseded_by {
                                         println!("   ⚠ superseded by: {sup}");
                                     }
+                                    if let Some(ttl_days) = entry.ttl_days {
+                                        println!("   ttl: {ttl_days}d");
+                                    }
+                                    if let Some(ref valid_until) = entry.valid_until {
+                                        println!("   valid until: {valid_until}");
+                                    }
                                     if entry.is_stale {
-                                        let ttl_str = entry
-                                            .ttl_days
-                                            .map(|d| format!(" (TTL: {d}d)"))
-                                            .unwrap_or_default();
-                                        println!("   ⚠ stale{ttl_str}: this fact may be outdated");
+                                        let stale_reason = entry
+                                            .stale_reason
+                                            .as_deref()
+                                            .unwrap_or("freshness marker expired");
+                                        println!("   ⚠ stale: {stale_reason}");
                                     }
                                     if !entry.tags.is_empty() {
                                         println!("   tags: {}", entry.tags.join(", "));

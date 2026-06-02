@@ -51,6 +51,22 @@ pub fn remember(
     tags: &[String],
     ttl_days: Option<u32>,
 ) -> Result<PathBuf, BrocaError> {
+    remember_with_validity(memory_dir, entry_type, title, content, tags, ttl_days, None)
+}
+
+/// Store a new memory entry with optional temporal validity.
+///
+/// `valid_until` accepts `YYYYMMDD` or `YYYY-MM-DD`. Expired entries remain
+/// recallable but are marked stale in recall output.
+pub fn remember_with_validity(
+    memory_dir: &Path,
+    entry_type: &str,
+    title: &str,
+    content: &str,
+    tags: &[String],
+    ttl_days: Option<u32>,
+    valid_until: Option<&str>,
+) -> Result<PathBuf, BrocaError> {
     let entry_type: EntryType = entry_type.parse().map_err(BrocaError::Parse)?;
 
     let knowledge_dir = memory_dir.join("knowledge");
@@ -71,12 +87,23 @@ pub fn remember(
         Some(days) => format!("ttl: {days}\n"),
         None => String::new(),
     };
+    let validity_str = if let Some(valid_until) = valid_until {
+        if entry::parse_valid_until(valid_until).is_none() {
+            return Err(BrocaError::Parse(
+                "valid_until must use YYYYMMDD or YYYY-MM-DD".to_string(),
+            ));
+        }
+        format!("valid_until: {valid_until}\n")
+    } else {
+        String::new()
+    };
 
     let frontmatter = format!(
         "---\n\
          type: {entry_type}\n\
          title: \"{title}\"\n\
          created: {timestamp}\n\
+         {validity_str}\
          confidence: 0.8\n\
          {tags_str}\
          {ttl_str}\
@@ -457,6 +484,37 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let result = remember(dir.path(), "invalid", "Test", "Content", &[], None);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_remember_with_valid_until() {
+        let dir = tempfile::tempdir().unwrap();
+        let memory_dir = dir.path();
+
+        let path = remember_with_validity(
+            memory_dir,
+            "fact",
+            "Star count",
+            "Repo has 96 stars.",
+            &["metric".to_string()],
+            None,
+            Some("2026-05-17"),
+        )
+        .unwrap();
+
+        let content = fs::read_to_string(&path).unwrap();
+        assert!(content.contains("valid_until: 2026-05-17"));
+
+        let invalid = remember_with_validity(
+            memory_dir,
+            "fact",
+            "Bad date",
+            "Invalid.",
+            &[],
+            None,
+            Some("tomorrow"),
+        );
+        assert!(invalid.is_err());
     }
 
     #[test]

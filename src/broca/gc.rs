@@ -265,6 +265,7 @@ mod tests {
             created: Utc::now().format("%Y%m%d-%H%M%S").to_string(),
             superseded_by: Some("new-fact.md".to_string()),
             ttl_days: None,
+            valid_until: None,
         };
         let config = GcConfig::default();
         let reason = check_entry(&entry, 100, &config);
@@ -283,6 +284,7 @@ mod tests {
             created: Utc::now().format("%Y%m%d-%H%M%S").to_string(),
             superseded_by: Some("new.md".to_string()),
             ttl_days: None,
+            valid_until: None,
         };
         let config = GcConfig::default();
         assert!(check_entry(&entry, 0, &config).is_none());
@@ -300,6 +302,7 @@ mod tests {
             created: Utc::now().format("%Y%m%d-%H%M%S").to_string(),
             superseded_by: None,
             ttl_days: None,
+            valid_until: None,
         };
         let config = GcConfig::default();
         let reason = check_entry(&entry, 5, &config);
@@ -318,6 +321,7 @@ mod tests {
             created: "20240101-120000".to_string(), // >1 year ago
             superseded_by: None,
             ttl_days: None,
+            valid_until: None,
         };
         let config = GcConfig::default();
         let reason = check_entry(&entry, 0, &config);
@@ -336,6 +340,7 @@ mod tests {
             created: "20240101-120000".to_string(),
             superseded_by: None,
             ttl_days: None,
+            valid_until: None,
         };
         let config = GcConfig::default();
         // Has accesses → not flagged
@@ -354,6 +359,7 @@ mod tests {
             created: "20240101-120000".to_string(),
             superseded_by: None,
             ttl_days: None,
+            valid_until: None,
         };
         let config = GcConfig::default();
         // High confidence → not flagged
@@ -372,6 +378,7 @@ mod tests {
             created: Utc::now().format("%Y%m%d-%H%M%S").to_string(),
             superseded_by: None,
             ttl_days: None,
+            valid_until: None,
         };
         let config = GcConfig::default();
         // Recent + conf > 0.2 → not flagged

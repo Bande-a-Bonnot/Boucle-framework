@@ -183,7 +183,9 @@ fn handle_tools_list(
                 "properties": {
                     "content": { "type": "string", "description": "The main content to remember" },
                     "title": { "type": "string", "description": "Optional title for the memory" },
-                    "tags": { "type": "array", "items": {"type": "string"}, "description": "Optional tags for categorization" }
+                    "tags": { "type": "array", "items": {"type": "string"}, "description": "Optional tags for categorization" },
+                    "ttl_days": { "type": "integer", "description": "Optional freshness TTL in days from creation", "minimum": 0 },
+                    "valid_until": { "type": "string", "description": "Optional freshness date, YYYYMMDD or YYYY-MM-DD. Recall warns after this date." }
                 },
                 "required": ["content"]
             }
@@ -463,9 +465,18 @@ async fn handle_broca_remember(
         .get("ttl_days")
         .and_then(|v| v.as_u64())
         .map(|v| v as u32);
+    let valid_until = arguments.get("valid_until").and_then(|v| v.as_str());
 
     let memory_dir = root.join(&config.memory.dir);
-    let entry_path = broca::remember(&memory_dir, "fact", title, content, &tags, ttl_days)?;
+    let entry_path = broca::remember_with_validity(
+        &memory_dir,
+        "fact",
+        title,
+        content,
+        &tags,
+        ttl_days,
+        valid_until,
+    )?;
 
     Ok(format!(
         "Stored memory with ID: {}",
@@ -508,6 +519,15 @@ async fn handle_broca_recall(
 
             if !entry.tags.is_empty() {
                 output.push_str(&format!("   Tags: {}\n", entry.tags.join(", ")));
+            }
+            if let Some(ttl_days) = entry.ttl_days {
+                output.push_str(&format!("   TTL: {ttl_days}d\n"));
+            }
+            if let Some(ref valid_until) = entry.valid_until {
+                output.push_str(&format!("   Valid until: {valid_until}\n"));
+            }
+            if let Some(ref stale_reason) = entry.stale_reason {
+                output.push_str(&format!("   Stale: {stale_reason}\n"));
             }
 
             let preview = if entry.content.len() > 200 {
