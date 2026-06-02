@@ -6,10 +6,19 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # Rust build and tests (must pass)
   rust:
+    timeout-minutes: 20
     strategy:
+      fail-fast: true
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
@@ -40,6 +49,7 @@ jobs:
   # Rust lint checks (required for all commits)
   rust-lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
@@ -68,7 +78,9 @@ jobs:
 
   # Legacy bash tests (kept for reference during migration)
   bash:
+    timeout-minutes: 15
     strategy:
+      fail-fast: true
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
@@ -156,6 +168,7 @@ jobs:
   # PowerShell hook tests (Windows)
   powershell:
     runs-on: windows-latest
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
