@@ -297,6 +297,9 @@ Broca is a file-based, git-native knowledge system for AI agents. Memories are M
 # Store a memory
 boucle memory remember "Python packaging" "Modern projects use pyproject.toml" --tags "python,packaging"
 
+# Store a time-sensitive fact
+boucle memory remember "Repo stars" "Boucle-framework has 96 stars" --tags "metric" --valid-until 2026-05-23
+
 # Search memories
 boucle memory recall "python packaging" --limit 5
 
@@ -330,6 +333,7 @@ with build backends like hatchling, flit, or setuptools itself.
 Broca also supports:
 - **BM25 search** — Relevance ranking normalized by document length and term rarity
 - **Temporal decay** — Recent memories score higher; access frequency tracked automatically
+- **Temporal validity** - Time-sensitive facts can carry `ttl` or `valid_until`, and recall warns when stale
 - **Garbage collection** — Archive superseded, low-confidence, or stale entries (reversible, dry-run by default)
 - **Cross-reference boost** — Related entries surface together in search results
 - **Consolidation** — Detect and merge near-duplicate memories using Jaccard similarity
@@ -499,7 +503,7 @@ boucle improve status                         # Show patterns, scores, pending a
 boucle improve init                           # Set up improve/ with example harvester
 
 # Memory (Broca)
-boucle memory remember <title> <content> [--tags <tags>] [--entry-type <type>]
+boucle memory remember <title> <content> [--tags <tags>] [--entry-type <type>] [--ttl <days>] [--valid-until <date>]
 boucle memory recall <query> [--limit <n>]
 boucle memory show <id>
 boucle memory search-tag <tag>
