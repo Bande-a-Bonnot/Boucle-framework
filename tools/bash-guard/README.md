@@ -40,7 +40,7 @@ Note: `settings.json` path deny rules [do not apply to the Bash tool](https://gi
 | Encoding bypasses | `base64 -d \| bash`, `xxd -r \| sh`, `rev \| bash` | Decoded commands bypass all pattern matching |
 | Process substitution | `bash <(curl ...)`, `sh <(wget ...)` | Downloads and executes without saving for review |
 | Language shell wrappers | `python3 -c "subprocess.run(...)"`, `ruby -e "system(...)"` | Runs shell commands through programming languages |
-| In-place file editing | `perl -i -pe`, `ruby -i -pe`, `sed -i` | Modifies files directly, bypassing file-guard ([#40408](https://github.com/anthropics/claude-code/issues/40408)) |
+| In-place file editing | `perl -i -pe`, `ruby -i -pe`, `sed -i` | Modifies files directly, bypassing file-guard ([#40408](https://github.com/anthropics/claude-code/issues/40408)); use a temp-file rewrite or explicit one-command `# bash-guard: allow inplace-edit` when Edit/Write cannot preserve needed bytes |
 | Here-string/here-doc | `bash <<< "cmd"`, `sh << EOF` | Feeds commands to shell via redirection, bypasses pipe detection |
 | eval string literals | `eval 'dangerous'`, `eval "cmd"` | Executes arbitrary code from string constants |
 | xargs to shell | `echo cmd \| xargs bash -c` | Funnels data to shell interpreter via xargs |
@@ -113,7 +113,19 @@ allow: pipe-to-shell
 
 Set `BASH_GUARD_CONFIG=/path/to/file` to load a single explicit config file instead, bypassing the three-layer hierarchy (backward-compatible single-file override). Set `BASH_GUARD_CONFIG=` (empty string) to skip all config layers and run with built-in rules only.
 
-Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `disk-util`, `system-write`, `eval`, `global-install`, `docker-destroy`, `docker-mount`, `docker-exec`, `db-destroy`, `env-dump`, `debug-trace`, `read-secrets`, `infra-destroy`, `mass-delete`, `git-clean`, `shred`, `truncate`, `file-upload`, `system-db`, `mount-delete`, `decode-exec`, `lang-exec`, `here-exec`, `pip-target`, `pip-user`, `path-traversal`.
+Available allow keys: `rm -rf`, `chmod -R`, `chown -R`, `pipe-to-shell`, `sudo`, `kill -9`, `dd`, `mkfs`, `disk-util`, `system-write`, `eval`, `global-install`, `docker-destroy`, `docker-mount`, `docker-exec`, `db-destroy`, `env-dump`, `debug-trace`, `read-secrets`, `infra-destroy`, `mass-delete`, `git-clean`, `shred`, `truncate`, `file-upload`, `system-db`, `mount-delete`, `decode-exec`, `lang-exec`, `here-exec`, `inplace-edit`, `pip-target`, `pip-user`, `path-traversal`.
+
+For a one-off in-place edit, append an exact inline exemption to the same command instead of creating a persistent config entry:
+
+```bash
+perl -i -pe 's/PATTERN/\xee\x82\xb6$&/' file # bash-guard: allow inplace-edit
+```
+
+Prefer a non-in-place temp-file rewrite when possible:
+
+```bash
+perl -pe 's/(PATTERN)/\xee\x82\xb6$1/' file > /tmp/new && cp /tmp/new file
+```
 
 ## Disable temporarily
 
@@ -173,7 +185,7 @@ For allowed commands, bash-guard stays silent and exits `0`.
 bash test.sh
 ```
 
-598 verified bash tests covering all blocked patterns, disk utility destruction, data exfiltration, programmatic env dumps, sensitive file access, workaround bypass prevention, compound command bypass, multi-line comment bypass ([#38119](https://github.com/anthropics/claude-code/issues/38119)), system database protection, mount point protection, encoding bypass detection, here-string/here-doc detection, library injection, wrapper bypass, credential file operations, macOS Keychain, scheduled tasks, system services, SSH keys, and safe variants.
+603 verified bash tests covering all blocked patterns, disk utility destruction, data exfiltration, programmatic env dumps, sensitive file access, workaround bypass prevention, compound command bypass, multi-line comment bypass ([#38119](https://github.com/anthropics/claude-code/issues/38119)), system database protection, mount point protection, encoding bypass detection, here-string/here-doc detection, library injection, wrapper bypass, credential file operations, macOS Keychain, scheduled tasks, system services, SSH keys, in-place edit exemptions, and safe variants.
 
 ## License
 
