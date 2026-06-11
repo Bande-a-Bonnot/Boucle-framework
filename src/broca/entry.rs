@@ -1,6 +1,6 @@
 //! Memory entry types and parsing.
 
-use chrono::{NaiveDateTime, Utc};
+use chrono::{NaiveDate, NaiveDateTime, Utc};
 use serde::Serialize;
 use std::path::Path;
 use std::str::FromStr;
@@ -59,20 +59,38 @@ pub struct Entry {
     /// Optional time-to-live in days. If set, the entry is considered stale
     /// after `created + ttl_days` has passed.
     pub ttl_days: Option<u32>,
+    /// Optional date after which the entry should be treated as stale.
+    pub valid_until: Option<String>,
 }
 
 impl Entry {
-    /// Returns true if this entry has a TTL and it has expired.
-    pub fn is_stale(&self) -> bool {
-        let Some(ttl) = self.ttl_days else {
-            return false;
-        };
-        // Parse created timestamp: "%Y%m%d-%H%M%S"
-        if let Ok(created_dt) = NaiveDateTime::parse_from_str(&self.created, "%Y%m%d-%H%M%S") {
-            let age_days = (Utc::now().naive_utc() - created_dt).num_days();
-            return age_days > ttl as i64;
+    /// Returns a warning when this entry's freshness marker has expired.
+    pub fn staleness_reason(&self) -> Option<String> {
+        if let Some(valid_until) = self.valid_until.as_deref() {
+            match parse_valid_until(valid_until) {
+                Some(date) if Utc::now().date_naive() > date => {
+                    return Some(format!("valid_until {valid_until} has passed"));
+                }
+                Some(_) => {}
+                None => return Some(format!("valid_until {valid_until} could not be parsed")),
+            }
         }
-        false
+
+        if let Some(ttl) = self.ttl_days {
+            if let Ok(created_dt) = NaiveDateTime::parse_from_str(&self.created, "%Y%m%d-%H%M%S") {
+                let age_days = (Utc::now().naive_utc() - created_dt).num_days();
+                if age_days > ttl as i64 {
+                    return Some(format!("ttl {ttl}d expired after {age_days}d"));
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Returns true if this entry has an expired freshness marker.
+    pub fn is_stale(&self) -> bool {
+        self.staleness_reason().is_some()
     }
 }
 
@@ -119,6 +137,11 @@ impl Entry {
         let created = extract_field(frontmatter, "created").unwrap_or_default();
         let superseded_by = extract_field(frontmatter, "superseded_by");
         let ttl_days = extract_field(frontmatter, "ttl").and_then(|v| v.parse::<u32>().ok());
+        let valid_until = extract_field(frontmatter, "valid_until")
+            .map(|d| d.trim_matches('"').to_string())
+            .or_else(|| {
+                extract_field(frontmatter, "expires").map(|d| d.trim_matches('"').to_string())
+            });
 
         Ok(Entry {
             filename: filename.to_string(),
@@ -130,6 +153,7 @@ impl Entry {
             created,
             superseded_by,
             ttl_days,
+            valid_until,
         })
     }
 }
@@ -198,6 +222,13 @@ fn extract_tags(frontmatter: &str) -> Vec<String> {
         .collect()
 }
 
+/// Parse a validity date. Supports "YYYYMMDD" and "YYYY-MM-DD".
+pub(crate) fn parse_valid_until(value: &str) -> Option<NaiveDate> {
+    NaiveDate::parse_from_str(value, "%Y%m%d")
+        .or_else(|_| NaiveDate::parse_from_str(value, "%Y-%m-%d"))
+        .ok()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -249,6 +280,7 @@ mod tests {
         assert_eq!(entry.confidence, 0.9);
         assert_eq!(entry.tags, vec!["a", "b"]);
         assert_eq!(entry.content, "Some content here.");
+        assert_eq!(entry.valid_until, None);
     }
 
     #[test]
@@ -275,6 +307,10 @@ mod tests {
         assert_eq!(entry.ttl_days, Some(30));
         // Created 2026-01-01, TTL 30 days → expired by April 2026
         assert!(entry.is_stale());
+        assert!(entry
+            .staleness_reason()
+            .unwrap()
+            .contains("ttl 30d expired"));
     }
 
     #[test]
@@ -294,5 +330,24 @@ mod tests {
         assert_eq!(entry.ttl_days, Some(3650));
         // 10 year TTL from April 2026 → not stale yet
         assert!(!entry.is_stale());
+    }
+
+    #[test]
+    fn test_parse_entry_with_valid_until() {
+        let raw = "---\ntype: fact\ntitle: \"Metric\"\nvalid_until: 20000101\ncreated: 20260101-120000\nconfidence: 0.9\n---\n\nContent.";
+        let entry = Entry::parse("test.md", raw).unwrap();
+        assert_eq!(entry.valid_until.as_deref(), Some("20000101"));
+        assert!(entry.is_stale());
+        assert!(entry
+            .staleness_reason()
+            .unwrap()
+            .contains("valid_until 20000101"));
+    }
+
+    #[test]
+    fn test_parse_valid_until_formats() {
+        assert!(parse_valid_until("20260516").is_some());
+        assert!(parse_valid_until("2026-05-16").is_some());
+        assert!(parse_valid_until("16-05-2026").is_none());
     }
 }
