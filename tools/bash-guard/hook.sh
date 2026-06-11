@@ -146,6 +146,11 @@ is_allowed() {
   return 1
 }
 
+has_inline_allow() {
+  local op="$1"
+  [[ "$COMMAND" =~ (^|[[:space:];&|])#[[:space:]]*bash-guard:[[:space:]]*allow[[:space:]]+$op([[:space:]]|$) ]]
+}
+
 block() {
   local reason="$1"
   local suggestion="${2:-}"
@@ -554,15 +559,15 @@ fi
 # In-place file editing via interpreters (bypasses file-guard, #40408)
 # perl -i, perl -pi, perl -i.bak — in-place edit like sed -i
 if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)perl\s+(-[A-Za-z]*i|-i[^\s]*)' 2>/dev/null; then
-  is_allowed "inplace-edit" || block "Perl in-place file editing (perl -i) modifies files directly, bypassing file-guard protection. Reported in claude-code#40408." "Use Edit tool instead, which respects file-guard rules. Or add 'allow: inplace-edit' to .bash-guard."
+  is_allowed "inplace-edit" || has_inline_allow "inplace-edit" || block "Perl in-place file editing (perl -i) modifies files directly, bypassing file-guard protection. Reported in claude-code#40408." "Use a non-in-place rewrite to a temporary file and move/copy it back, or add '# bash-guard: allow inplace-edit' to this one command when Edit/Write cannot preserve the bytes you need."
 fi
 # ruby -i — in-place edit
 if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)ruby\s+(-[A-Za-z]*i|-i[^\s]*)' 2>/dev/null; then
-  is_allowed "inplace-edit" || block "Ruby in-place file editing (ruby -i) modifies files directly, bypassing file-guard protection." "Use Edit tool instead, which respects file-guard rules. Or add 'allow: inplace-edit' to .bash-guard."
+  is_allowed "inplace-edit" || has_inline_allow "inplace-edit" || block "Ruby in-place file editing (ruby -i) modifies files directly, bypassing file-guard protection." "Use a non-in-place rewrite to a temporary file and move/copy it back, or add '# bash-guard: allow inplace-edit' to this one command when Edit/Write cannot preserve the bytes you need."
 fi
 # sed -i — in-place edit (most common form)
 if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)sed\s+(-[A-Za-z]*i|-i[^\s]*)' 2>/dev/null; then
-  is_allowed "inplace-edit" || block "sed in-place editing (sed -i) modifies files directly, bypassing file-guard protection." "Use Edit tool instead, which respects file-guard rules. Or add 'allow: inplace-edit' to .bash-guard."
+  is_allowed "inplace-edit" || has_inline_allow "inplace-edit" || block "sed in-place editing (sed -i) modifies files directly, bypassing file-guard protection." "Use a non-in-place rewrite to a temporary file and move/copy it back, or add '# bash-guard: allow inplace-edit' to this one command when Edit/Write cannot preserve the bytes you need."
 fi
 
 # --- Gaps identified from competitive analysis (RoaringFerrum/bash-guardian, buildatscale-tv) ---

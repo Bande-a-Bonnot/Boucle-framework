@@ -70,6 +70,22 @@ def assert_blocked(desc, json_input, **kwargs):
         print(f"  {RED}FAIL{NC}: {desc} (exception: {e})")
 
 
+def assert_blocked_contains(desc, json_input, expected, **kwargs):
+    global PASS, FAIL, TOTAL
+    TOTAL += 1
+    try:
+        stdout, stderr, rc = run_hook(json_input, **kwargs)
+        if rc == 2 and not stdout and expected in stderr:
+            PASS += 1
+            print(f"  {GREEN}PASS{NC}: {desc}")
+        else:
+            FAIL += 1
+            print(f"  {RED}FAIL{NC}: {desc} (expected rc=2 with stderr containing {expected!r}, got rc={rc} stdout={stdout!r} stderr={stderr!r})")
+    except Exception as e:
+        FAIL += 1
+        print(f"  {RED}FAIL{NC}: {desc} (exception: {e})")
+
+
 def assert_allowed(desc, json_input, **kwargs):
     global PASS, FAIL, TOTAL
     TOTAL += 1
@@ -449,6 +465,17 @@ def main():
                        make_input("Bash", "sed -i 's/foo/bar/' file.txt"))
         assert_blocked("block ruby -i file",
                        make_input("Bash", "ruby -i -pe '$_.upcase!' file.txt"))
+        assert_blocked_contains("inplace edit suggests temp rewrite",
+                                make_input("Bash", "perl -i -pe 's/foo/bar/' file.txt"),
+                                "non-in-place rewrite")
+        assert_allowed("allow perl -i with inline inplace-edit allow",
+                       make_input("Bash", "perl -i -pe 's/foo/bar/' file.txt # bash-guard: allow inplace-edit"))
+        assert_allowed("allow sed -i with inline inplace-edit allow",
+                       make_input("Bash", "sed -i 's/foo/bar/' file.txt # bash-guard: allow inplace-edit"))
+        assert_allowed("allow ruby -i with inline inplace-edit allow",
+                       make_input("Bash", "ruby -i -pe '$_.upcase!' file.txt # bash-guard: allow inplace-edit"))
+        assert_blocked("generic inline allow does not bypass inplace edit",
+                       make_input("Bash", "sed -i 's/foo/bar/' file.txt # bash-guard: allow"))
 
         # --- 50. LD_PRELOAD ---
         print("\nLD_PRELOAD:")

@@ -124,6 +124,12 @@ function Test-Allowed {
     return $false
 }
 
+function Test-InlineAllowed {
+    param([string]$Op)
+    $escapedOp = [regex]::Escape($Op)
+    return $command -match "(^|[\s;&|])#\s*bash-guard:\s*allow\s+$escapedOp(\s|$)"
+}
+
 # --- Custom deny rules (from .bash-guard config) ---
 foreach ($deniedPattern in $denied) {
     if ($command -match "(^|\s|;|&&|\|\|)${deniedPattern}") {
@@ -694,20 +700,20 @@ if ($command -match 'node\s+-e\s.*child_process') {
 # In-place file editing via interpreters (bypasses file-guard, #40408)
 # perl -i, perl -pi, perl -i.bak — in-place edit like sed -i
 if ($command -match '(^|[;&\|]\s*)perl\s+(-[A-Za-z]*i|-i[^\s]*)') {
-    if (-not (Test-Allowed 'inplace-edit')) {
-        Block-Tool 'bash-guard: Perl in-place file editing (perl -i) modifies files directly, bypassing file-guard protection. Reported in claude-code#40408. Suggestion: Use Edit tool instead, which respects file-guard rules. Or add ''allow: inplace-edit'' to .bash-guard.'
+    if ((-not (Test-Allowed 'inplace-edit')) -and (-not (Test-InlineAllowed 'inplace-edit'))) {
+        Block-Tool 'bash-guard: Perl in-place file editing (perl -i) modifies files directly, bypassing file-guard protection. Reported in claude-code#40408. Suggestion: Use a non-in-place rewrite to a temporary file and move/copy it back, or add ''# bash-guard: allow inplace-edit'' to this one command when Edit/Write cannot preserve the bytes you need.'
     }
 }
 # ruby -i — in-place edit
 if ($command -match '(^|[;&\|]\s*)ruby\s+(-[A-Za-z]*i|-i[^\s]*)') {
-    if (-not (Test-Allowed 'inplace-edit')) {
-        Block-Tool 'bash-guard: Ruby in-place file editing (ruby -i) modifies files directly, bypassing file-guard protection. Suggestion: Use Edit tool instead, which respects file-guard rules. Or add ''allow: inplace-edit'' to .bash-guard.'
+    if ((-not (Test-Allowed 'inplace-edit')) -and (-not (Test-InlineAllowed 'inplace-edit'))) {
+        Block-Tool 'bash-guard: Ruby in-place file editing (ruby -i) modifies files directly, bypassing file-guard protection. Suggestion: Use a non-in-place rewrite to a temporary file and move/copy it back, or add ''# bash-guard: allow inplace-edit'' to this one command when Edit/Write cannot preserve the bytes you need.'
     }
 }
 # sed -i — in-place edit (most common form)
 if ($command -match '(^|[;&\|]\s*)sed\s+(-[A-Za-z]*i|-i[^\s]*)') {
-    if (-not (Test-Allowed 'inplace-edit')) {
-        Block-Tool 'bash-guard: sed in-place editing (sed -i) modifies files directly, bypassing file-guard protection. Suggestion: Use Edit tool instead, which respects file-guard rules. Or add ''allow: inplace-edit'' to .bash-guard.'
+    if ((-not (Test-Allowed 'inplace-edit')) -and (-not (Test-InlineAllowed 'inplace-edit'))) {
+        Block-Tool 'bash-guard: sed in-place editing (sed -i) modifies files directly, bypassing file-guard protection. Suggestion: Use a non-in-place rewrite to a temporary file and move/copy it back, or add ''# bash-guard: allow inplace-edit'' to this one command when Edit/Write cannot preserve the bytes you need.'
     }
 }
 
