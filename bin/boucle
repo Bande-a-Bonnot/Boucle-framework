@@ -204,12 +204,17 @@ cmd_status() {
 
     # Lock status
     if [ -f "$agent_dir/.boucle.lock" ]; then
-        local pid
-        pid=$(cat "$agent_dir/.boucle.lock")
-        if kill -0 "$pid" 2>/dev/null; then
-            echo "Status: RUNNING (PID $pid)"
+        local lock_content pid stored_start current_start
+        lock_content=$(cat "$agent_dir/.boucle.lock" 2>/dev/null || true)
+        pid=$(lock_pid_from_content "$lock_content")
+        stored_start=$(lock_field "$lock_content" process_start)
+        current_start=$(process_start_fingerprint "$pid")
+        if [ -z "$pid" ]; then
+            echo "Status: RUNNING (lock present, owner unreadable)"
+        elif kill -0 "$pid" 2>/dev/null && { [ -z "$stored_start" ] || [ -z "$current_start" ] || [ "$stored_start" = "$current_start" ]; }; then
+            echo "Status: RUNNING (PID: $pid)"
         else
-            echo "Status: STALE LOCK (PID $pid is dead)"
+            echo "Status: STALE LOCK (PID: $pid)"
         fi
     else
         echo "Status: IDLE"
@@ -224,6 +229,27 @@ cmd_status() {
 
     # Git status
     echo "Uncommitted changes: $(git -C "$agent_dir" status --porcelain 2>/dev/null | wc -l | tr -d ' ')"
+}
+
+process_start_fingerprint() {
+    ps -p "${1:-}" -o lstart= 2>/dev/null | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true
+}
+
+lock_field() {
+    local content="$1"
+    local key="$2"
+    printf '%s\n' "$content" | awk -F= -v key="$key" '$1 == key {print substr($0, length($1) + 2); exit}'
+}
+
+lock_pid_from_content() {
+    local content="$1"
+    local pid
+    pid=$(lock_field "$content" pid)
+    if [ -n "$pid" ]; then
+        printf '%s\n' "$pid"
+        return
+    fi
+    printf '%s\n' "$content" | head -n 1 | sed -n '/^[0-9][0-9]*$/p'
 }
 
 cmd_log() {
