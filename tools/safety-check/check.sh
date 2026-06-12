@@ -60,6 +60,11 @@ CHECKS_PASSED=0
 CHECKS_TOTAL=0
 ISSUES=()
 FIXES=()
+SUMMARY_ISSUES=()
+
+summary_issue() {
+    SUMMARY_ISSUES+=("$1")
+}
 
 # Colors (disabled if not a terminal)
 if [ -t 1 ]; then
@@ -212,12 +217,16 @@ WARNINGS=()
 
 # IS_DEMO check (claude-code#37780: silently disables all hooks)
 if [ "${IS_DEMO:-}" = "1" ]; then
-    WARNINGS+=("IS_DEMO=1 is set in your environment. This silently disables ALL hooks by suppressing workspace trust. Unset it: unset IS_DEMO (see claude-code#37780)")
+    _WARN="IS_DEMO=1 is set in your environment. This silently disables ALL hooks by suppressing workspace trust. Unset it: unset IS_DEMO (see claude-code#37780)"
+    WARNINGS+=("$_WARN")
+    summary_issue "$_WARN"
 fi
 
 # CLAUDE_CODE_SIMPLE check: disables hooks, MCP tools, attachments, and CLAUDE.md loading entirely
-if [ "${CLAUDE_CODE_SIMPLE:-}" = "true" ] || [ "${CLAUDE_CODE_SIMPLE:-}" = "1" ]; then
-    WARNINGS+=("CLAUDE_CODE_SIMPLE is set in your environment. This disables ALL hooks, MCP tools, attachments, and CLAUDE.md file loading. No enforcement rules will fire. Unset it: unset CLAUDE_CODE_SIMPLE (see v2.1.50 changelog)")
+if [ -n "${CLAUDE_CODE_SIMPLE:-}" ]; then
+    _WARN="CLAUDE_CODE_SIMPLE is set in your environment. This disables ALL hooks, MCP tools, attachments, and CLAUDE.md file loading. No enforcement rules will fire. Unset it: unset CLAUDE_CODE_SIMPLE (see v2.1.50 changelog)"
+    WARNINGS+=("$_WARN")
+    summary_issue "$_WARN"
 fi
 
 # GIT_INDEX_FILE check (claude-code#38181: corrupts git index when Claude launched from git hooks)
@@ -226,11 +235,14 @@ if [ -n "${GIT_INDEX_FILE:-}" ]; then
 fi
 
 # JSONC check: settings.json with comments silently breaks hook loading
-if [ -f "$SETTINGS_FILE" ]; then
-    if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$SETTINGS_FILE" 2>/dev/null; then
-        WARNINGS+=("settings.json contains JSONC comments or invalid JSON. Hooks may not load. Run any hook installer to auto-fix, or remove // and /* */ comments manually (see claude-code#37540)")
+for _settings_json in "$SETTINGS_FILE" "$PROJECT_SETTINGS"; do
+    [ -f "$_settings_json" ] || continue
+    if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$_settings_json" 2>/dev/null; then
+        _WARN="$_settings_json contains JSONC comments or invalid JSON. Hooks may not load. Run any hook installer to auto-fix, or remove // and /* */ comments manually (see claude-code#37540)"
+        WARNINGS+=("$_WARN")
+        summary_issue "$_WARN"
     fi
-fi
+done
 
 # Dependency checks: jq is required by 6 of 8 hooks (bash-guard, git-safe, file-guard, branch-guard, worktree-guard, read-once)
 if ! command -v jq >/dev/null 2>&1; then
@@ -1786,6 +1798,15 @@ _sort_hook_paths() {
     fi
 }
 
+_count_nonempty_lines() {
+    local lines="$1"
+    if [ -z "$lines" ]; then
+        printf "0"
+    else
+        printf "%s\n" "$lines" | awk 'NF { count++ } END { print count + 0 }'
+    fi
+}
+
 HOOK_PATHS=$(_extract_hook_paths "$SETTINGS_FILE" 2>/dev/null)
 VERIFY_HOOK_PATHS=$(_extract_hook_paths "$SETTINGS_FILE" PreToolUse 2>/dev/null)
 if [ -f "$PROJECT_SETTINGS" ]; then
@@ -1830,7 +1851,9 @@ if [ -n "$HOOK_PATHS" ]; then
         fi
     done <<< "$HOOK_PATHS"
     if [ "$HOOK_HEALTH_ISSUES" -gt 0 ]; then
-        ISSUES+=("$HOOK_HEALTH_ISSUES hook(s) are broken (missing or not executable). Hooks that don't exist fail silently.")
+        _HOOK_HEALTH_ISSUE="$HOOK_HEALTH_ISSUES hook(s) are broken (missing or not executable). Hooks that don't exist fail silently."
+        ISSUES+=("$_HOOK_HEALTH_ISSUE")
+        summary_issue "$_HOOK_HEALTH_ISSUE"
     fi
 fi
 
@@ -1845,12 +1868,15 @@ if [ "$VERIFY_MODE" = "1" ] && [ -n "$HOOK_PATHS" ]; then
     VERIFY_SKIP=0
     VERIFY_PRETOOLUSE_SKIP=0
     VERIFY_TOTAL=0
+    VERIFY_TIMEOUT=0
 
     # Test payloads for known hooks
     BASH_GUARD_PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}'
     GIT_SAFE_PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}'
     # Use absolute path so file-guard tests config pattern matching, not the relative-path rejection
     FILE_GUARD_PAYLOAD="{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$(pwd)/.env\",\"content\":\"SECRET=exposed\"}}"
+    FILE_GUARD_MULTIEDIT_PAYLOAD="{\"tool_name\":\"MultiEdit\",\"tool_input\":{\"file_path\":\"$(pwd)/.env\",\"edits\":[{\"old_string\":\"SECRET=old\",\"new_string\":\"SECRET=exposed\"}]}}"
+    FILE_GUARD_NOTEBOOK_PAYLOAD="{\"tool_name\":\"NotebookEdit\",\"tool_input\":{\"notebook_path\":\"$(pwd)/.env\",\"new_source\":\"SECRET=exposed\"}}"
     BRANCH_GUARD_PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"git commit -m test"}}'
     NONMATCH_PAYLOAD='{"tool_name":"Read","tool_input":{"file_path":"README.md"}}'
 
@@ -1909,6 +1935,10 @@ if [ "$VERIFY_MODE" = "1" ] && [ -n "$HOOK_PATHS" ]; then
         stderr_output=$(cat "$stderr_file")
         rm -f "$stdout_file" "$stderr_file"
 
+        if [ "$exit_code" -eq 124 ]; then
+            VERIFY_TIMEOUT=$((VERIFY_TIMEOUT + 1))
+        fi
+
         if [ "$expect_block" = "true" ]; then
             # Should have blocked. Strict verification requires a JSON block/deny
             # decision on stdout; non-strict verification still accepts the
@@ -1963,6 +1993,8 @@ if [ "$VERIFY_MODE" = "1" ] && [ -n "$HOOK_PATHS" ]; then
             # file-guard requires a .file-guard config to know what to protect
             if [ -f ".file-guard" ] || [ -n "${FILE_GUARD_CONFIG:-}" ]; then
                 verify_hook "file-guard blocks .env write" "$hook_cmd" "$FILE_GUARD_PAYLOAD" "true"
+                verify_hook "file-guard blocks .env MultiEdit" "$hook_cmd" "$FILE_GUARD_MULTIEDIT_PAYLOAD" "true"
+                verify_hook "file-guard blocks .env NotebookEdit" "$hook_cmd" "$FILE_GUARD_NOTEBOOK_PAYLOAD" "true"
                 verify_hook "file-guard passes safe reads" "$hook_cmd" "$NONMATCH_PAYLOAD" "false"
             else
                 VERIFY_SKIP=$((VERIFY_SKIP + 1))
@@ -1995,6 +2027,11 @@ if [ "$VERIFY_MODE" = "1" ] && [ -n "$HOOK_PATHS" ]; then
             printf " ${DIM}(%d skipped)${NC}" "$VERIFY_SKIP"
         fi
         echo ""
+        if [ "$VERIFY_TIMEOUT" -gt 0 ]; then
+            _TIMEOUT_ISSUE="$VERIFY_TIMEOUT hook payload check(s) timed out after ${HOOK_VERIFY_TIMEOUT_SECONDS} seconds. Timed-out hooks did not prove enforcement."
+            ISSUES+=("$_TIMEOUT_ISSUE")
+            summary_issue "$_TIMEOUT_ISSUE"
+        fi
         ISSUES+=("$VERIFY_FAIL hook payload check(s) did not block when they should have. This means dangerous commands can execute unchecked.")
     elif [ "$VERIFY_TOTAL" -eq 0 ] && [ "$VERIFY_SKIP" -gt 0 ]; then
         printf "  ${YELLOW}No payload checks ran${NC} ${DIM}(%d skipped)${NC}\n" "$VERIFY_SKIP"
@@ -2109,6 +2146,11 @@ printf "[%s] bash-guard  [%s] git-safe  [%s] file-guard  [%s] read-once\n" \
     "$(_hook_mark bash-guard)" "$(_hook_mark git-safe)" "$(_hook_mark file-guard)" "$(_hook_mark read-once)"
 printf "[%s] branch-guard  [%s] session-log  [%s] enforce  [%s] worktree-guard\n" \
     "$(_hook_mark branch-guard)" "$(_hook_mark session-log)" "$(_hook_mark enforce-hooks)" "$(_hook_mark worktree-guard)"
+if [ ${#SUMMARY_ISSUES[@]} -gt 0 ]; then
+    for _summary_issue in "${SUMMARY_ISSUES[@]}"; do
+        printf "Issue: %s\n" "$_summary_issue"
+    done
+fi
 if [ "$VERIFY_RAN" = "1" ]; then
     if [ "$VERIFY_NO_HOOKS" = "1" ]; then
         printf "Verify: not run | no hooks found | 0 payload checks\n"
