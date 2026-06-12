@@ -89,6 +89,8 @@ The `.file-guard` file lists protected paths, one per line:
 |------|-----------|
 | **Write** | Checks `file_path` against protected patterns |
 | **Edit** | Checks `file_path` against protected patterns |
+| **MultiEdit** | Checks `file_path` against protected patterns |
+| **NotebookEdit** | Checks `notebook_path` against protected patterns |
 | **Bash** | Detects modifying commands (`rm`, `mv`, `>`, `>>`, etc.) targeting protected paths |
 | **Read, Grep, Glob** | Allowed (read-only operations are safe for write-protected files) |
 
@@ -99,7 +101,8 @@ The `.file-guard` file lists protected paths, one per line:
 | **Read** | Checks `file_path` against denied patterns |
 | **Grep** | Checks search `path` against denied patterns |
 | **Glob** | Checks search `path` against denied patterns |
-| **Write/Edit** | Checks `file_path` against denied patterns |
+| **Write/Edit/MultiEdit** | Checks `file_path` against denied patterns |
+| **NotebookEdit** | Checks `notebook_path` against denied patterns |
 | **Bash** | Blocks any command referencing denied paths (read or write) |
 
 ## Environment variables

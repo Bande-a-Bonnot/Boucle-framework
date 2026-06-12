@@ -65,6 +65,12 @@ assert_blocked "Write to .env is blocked" \
 assert_blocked "Edit .env is blocked" \
   '{"tool_name":"Edit","tool_input":{"file_path":"'"$(pwd)"'/.env","old_string":"a","new_string":"b"}}'
 
+assert_blocked "MultiEdit .env is blocked" \
+  '{"tool_name":"MultiEdit","tool_input":{"file_path":"'"$(pwd)"'/.env","edits":[{"old_string":"a","new_string":"b"}]}}'
+
+assert_blocked "NotebookEdit .env notebook is blocked" \
+  '{"tool_name":"NotebookEdit","tool_input":{"notebook_path":"'"$(pwd)"'/.env","new_source":"print(1)"}}'
+
 assert_allowed "Write to config.json is allowed" \
   '{"tool_name":"Write","tool_input":{"file_path":"/tmp/test/config.json","content":"{}"}}'
 
@@ -262,6 +268,12 @@ assert_blocked "Traversal with ./ prefix ./x/../secrets.json" \
 
 assert_blocked "Traversal subdir/../.env via Edit" \
   '{"tool_name":"Edit","tool_input":{"file_path":"'"$(pwd)"'/subdir/../.env"}}'
+
+assert_blocked "Traversal subdir/../.env via MultiEdit" \
+  '{"tool_name":"MultiEdit","tool_input":{"file_path":"'"$(pwd)"'/subdir/../.env","edits":[{"old_string":"a","new_string":"b"}]}}'
+
+assert_blocked "Traversal subdir/../.env via NotebookEdit" \
+  '{"tool_name":"NotebookEdit","tool_input":{"notebook_path":"'"$(pwd)"'/subdir/../.env","new_source":"print(1)"}}'
 
 assert_allowed "Non-traversal file with dots in name" \
   '{"tool_name":"Write","tool_input":{"file_path":"/tmp/test/test..backup.sql"}}'
