@@ -38,6 +38,20 @@ assert_blocked() {
   fi
 }
 
+assert_blocked_contains() {
+  local desc="$1"
+  local command="$2"
+  local expected="$3"
+  run_hook "$command" "${@:4}"
+  if [ "$HOOK_RC" -eq 2 ] && [ -z "$HOOK_STDOUT" ] && echo "$HOOK_STDERR" | grep -q "$expected"; then
+    PASS=$((PASS + 1))
+    echo "  PASS: $desc"
+  else
+    FAIL=$((FAIL + 1))
+    echo "  FAIL: $desc (expected rc=2 with stderr containing '$expected', got rc=$HOOK_RC stdout='$HOOK_STDOUT' stderr='$HOOK_STDERR')"
+  fi
+}
+
 assert_allowed() {
   local desc="$1"
   local command="$2"
@@ -810,6 +824,11 @@ assert_blocked "sed -i inplace edit" "sed -i 's/old/new/g' config.py"
 assert_blocked "sed -i.bak inplace edit" "sed -i.bak 's/foo/bar/' settings.json"
 assert_blocked "sed -ie inplace edit" "sed -ie 's/old/new/' file.txt"
 assert_blocked "chained perl -i" "echo done && perl -i -pe 's/x/y/' f.py"
+assert_blocked_contains "inplace edit suggests temp rewrite" "perl -i -pe 's/old/new/' config.py" "non-in-place rewrite"
+assert_allowed "perl -i with inline inplace-edit allow" "perl -i -pe 's/old/new/' config.py # bash-guard: allow inplace-edit"
+assert_allowed "ruby -i with inline inplace-edit allow" "ruby -i -pe 'gsub(/old/, \"new\")' config.rb # bash-guard: allow inplace-edit"
+assert_allowed "sed -i with inline inplace-edit allow" "sed -i 's/old/new/g' config.py # bash-guard: allow inplace-edit"
+assert_blocked "generic inline allow does not bypass inplace edit" "sed -i 's/old/new/g' config.py # bash-guard: allow"
 # Safe: perl/ruby/sed without -i flag (read-only or stdout)
 assert_allowed "perl -e print (no inplace)" "perl -e \"print 'hello'\""
 assert_allowed "sed without -i (stdout)" "sed 's/old/new/g' config.py"
