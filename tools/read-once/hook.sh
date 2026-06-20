@@ -337,8 +337,7 @@ if [ -n "$CACHED_MTIME" ] && [ "$CACHED_MTIME" = "$CURRENT_MTIME" ]; then
 
   if [ "$MODE" = "deny" ]; then
     # Hard block — saves tokens but breaks Edit tool and parallel reads.
-    # Use top-level decision:block so Claude reliably honors the deny path.
-    jq -cn --arg r "$REASON" '{"decision":"block","reason":$r}'
+    jq -cn --arg r "$REASON" '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":$r}}'
   else
     # Warn mode (default) — allow the read with advisory message.
     # Prevents Edit tool deadlock (Edit requires a prior Read to succeed)
@@ -378,8 +377,7 @@ if [ -n "$CACHED_MTIME" ] && [ "$DIFF_MODE" = "1" ] && [ -f "$SNAP_FILE" ]; then
     REASON=$(printf 'read-once: %s changed since last read. You already have the previous version in context. Here are only the changes (saving ~%s tokens):\n\n%s\n\nApply this diff mentally to your cached version of the file.' "$BASENAME" "$TOKENS_SAVED" "$DIFF_OUTPUT")
 
     if [ "$MODE" = "deny" ]; then
-      # Use top-level decision:block so Claude reliably honors the deny path.
-      jq -cn --arg r "$REASON" '{"decision":"block","reason":$r}'
+      jq -cn --arg r "$REASON" '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":$r}}'
     else
       jq -cn --arg r "$REASON" '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","permissionDecisionReason":$r}}'
     fi

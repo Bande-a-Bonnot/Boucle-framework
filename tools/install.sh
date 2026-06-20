@@ -323,10 +323,12 @@ for hook in all_hooks:
             if found_entry.get("matcher") != expected_matchers[hook]:
                 issues.append(f"missing matcher (fires on ALL tools instead of just {expected_matchers[hook]}; run: install.sh upgrade)")
         if hook == "read-once":
+            compact_command = os.path.expanduser("~/.claude/read-once/compact.sh")
             compact_found = False
             for entry in settings.get("hooks", {}).get("PostCompact", []):
                 for h in entry.get("hooks", []):
-                    if "read-once" in h.get("command", "") and "compact.sh" in h.get("command", ""):
+                    command = h.get("command", "")
+                    if command == compact_command or "read-once/compact.sh" in command:
                         compact_found = True
                         break
                 if compact_found:
@@ -1342,50 +1344,48 @@ except (json.JSONDecodeError, ValueError):
 if "hooks" not in settings:
     settings["hooks"] = {}
 
+def add_hook_entry(event, command, label, matcher=None):
+    entry = {"hooks": [{"type": "command", "command": command, "timeout": 5000}]}
+    if matcher is not None:
+        entry["matcher"] = matcher
+
+    if event not in settings["hooks"]:
+        settings["hooks"][event] = []
+
+    # Check existing entries in both flat and nested formats
+    existing = []
+    for h in settings["hooks"][event]:
+        if isinstance(h, dict):
+            cmd = h.get("command", "")
+            if not cmd:
+                for hk in h.get("hooks", []):
+                    c = hk.get("command", "")
+                    if c: cmd = c; break
+            existing.append(cmd)
+    if command not in existing:
+        settings["hooks"][event].append(entry)
+        print("  Added " + label + " to " + event + " hooks")
+    else:
+        print("  " + label + " already configured")
+
 for hook in hooks_to_add:
     # session-log fires after tool calls; safety hooks fire before
     event = "PostToolUse" if hook == "session-log" else "PreToolUse"
     command = os.path.expanduser("~/.claude/" + hook + "/hook.sh")
-    entry = {"hooks": [{"type": "command", "command": command, "timeout": 5000}]}
     # matchers limit which tool calls trigger the hook, improving performance
+    matcher = None
     if hook == "worktree-guard":
-        entry["matcher"] = "ExitWorktree"
+        matcher = "ExitWorktree"
     elif hook in ("bash-guard", "git-safe"):
-        entry["matcher"] = "Bash"
+        matcher = "Bash"
     elif hook == "read-once":
-        entry["matcher"] = "Read"
+        matcher = "Read"
 
-    registrations = [(event, command, entry)]
+    add_hook_entry(event, command, hook, matcher)
+
     if hook == "read-once":
         compact_command = os.path.expanduser("~/.claude/read-once/compact.sh")
-        registrations.append((
-            "PostCompact",
-            compact_command,
-            {
-                "matcher": "",
-                "hooks": [{"type": "command", "command": compact_command, "timeout": 5000}],
-            },
-        ))
-
-    for event, command, entry in registrations:
-        if event not in settings["hooks"]:
-            settings["hooks"][event] = []
-
-        # Check existing entries in both flat and nested formats
-        existing = []
-        for h in settings["hooks"][event]:
-            if isinstance(h, dict):
-                cmd = h.get("command", "")
-                if not cmd:
-                    for hk in h.get("hooks", []):
-                        c = hk.get("command", "")
-                        if c: cmd = c; break
-                existing.append(cmd)
-        if command not in existing:
-            settings["hooks"][event].append(entry)
-            print("  Added " + hook + " to " + event + " hooks")
-        else:
-            print("  " + hook + " already configured for " + event)
+        add_hook_entry("PostCompact", compact_command, "read-once PostCompact", "")
 
 with open(settings_path, "w") as f:
     json.dump(settings, f, indent=2)

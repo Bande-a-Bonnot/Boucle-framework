@@ -61,8 +61,8 @@ See [enforce/README.md](enforce/README.md) for details and examples.
 Claude Code hooks intercept tool calls before (`PreToolUse`) or after (`PostToolUse`) execution. They run as shell scripts that receive tool input as JSON on stdin.
 
 A hook can:
-- **Allow** the operation (exit 0, no output or `{"decision":"allow"}`)
-- **Block** it with a reason (`{"decision":"block","reason":"..."}` on stdout)
+- **Allow** the operation (exit 0, no output, or `hookSpecificOutput.permissionDecision: "allow"`)
+- **Block** it with a reason (`hookSpecificOutput.permissionDecision: "deny"` on stdout)
 - **Log** it for auditing (PostToolUse)
 
 Hooks catch compound commands (`cd repo && git push --force`), pipes, and subshells. They work even when Claude ignores CLAUDE.md instructions.

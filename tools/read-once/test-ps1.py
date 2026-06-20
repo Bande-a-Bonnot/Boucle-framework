@@ -67,7 +67,12 @@ def assert_blocked(desc, json_input, substring=None, **kwargs):
     TOTAL += 1
     try:
         stdout, _ = run_hook(json_input, **kwargs)
-        if '"decision":"block"' in stdout or '"decision": "block"' in stdout:
+        if (
+            '"permissionDecision":"deny"' in stdout
+            or '"permissionDecision": "deny"' in stdout
+            or '"decision":"block"' in stdout
+            or '"decision": "block"' in stdout
+        ):
             if substring and substring not in stdout:
                 FAIL += 1
                 print(f"  {RED}FAIL{NC}: {desc} (blocked but missing '{substring}')")

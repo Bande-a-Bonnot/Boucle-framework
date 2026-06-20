@@ -250,6 +250,7 @@ for extra in [
     os.path.join(TOOLS, "install.sh"),
     os.path.join(TOOLS, "enforce", "enforce-hooks.py"),
     os.path.join(TOOLS, "enforce", "install.sh"),
+    os.path.join(TOOLS, "read-once", "compact.sh"),
 ]:
     if os.path.exists(extra):
         executable_scripts.append(extra)

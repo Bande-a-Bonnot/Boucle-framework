@@ -791,7 +791,7 @@ echo "--- Upgrade read-once extras ---"
 rm -rf "$TEST_HOME/.claude"
 bash "$SCRIPT_DIR/install.sh" read-once >/dev/null 2>&1
 
-# Modify both files
+# Modify all read-once files
 echo "# outdated hook" > "$TEST_HOME/.claude/read-once/hook.sh"
 echo "# outdated cli" > "$TEST_HOME/.claude/read-once/read-once"
 echo "# outdated compact" > "$TEST_HOME/.claude/read-once/compact.sh"
