@@ -34,6 +34,100 @@ find_python_cmd() {
 
 PYTHON_CMD=$(find_python_cmd || true)
 
+sum_stat_numbers() {
+  local events="$1" field="$2"
+  if command -v python3 &>/dev/null; then
+    python3 - "$STATS_FILE" "$events" "$field" <<'PY'
+import json
+import sys
+
+path, event_csv, field = sys.argv[1], sys.argv[2], sys.argv[3]
+events = set(event_csv.split(","))
+total = 0
+try:
+    with open(path, "r", encoding="utf-8") as fh:
+        for line in fh:
+            try:
+                entry = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if entry.get("event") in events:
+                try:
+                    total += int(entry.get(field, 0))
+                except (TypeError, ValueError):
+                    pass
+except FileNotFoundError:
+    pass
+print(total)
+PY
+  else
+    grep -E "\"event\":\"($(printf '%s' "$events" | tr ',' '|'))\"" "$STATS_FILE" 2>/dev/null |
+      sed -n "s/.*\"${field}\":\([0-9][0-9]*\).*/\1/p" |
+      awk '{ total += $1 } END { print total + 0 }'
+  fi
+}
+
+count_stat_sessions() {
+  if command -v python3 &>/dev/null; then
+    python3 - "$STATS_FILE" <<'PY'
+import json
+import sys
+
+sessions = set()
+try:
+    with open(sys.argv[1], "r", encoding="utf-8") as fh:
+        for line in fh:
+            try:
+                entry = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if entry.get("event") and entry.get("session"):
+                sessions.add(str(entry["session"]))
+except FileNotFoundError:
+    pass
+print(len(sessions))
+PY
+  else
+    grep '"event"' "$STATS_FILE" 2>/dev/null |
+      sed -n 's/.*"session":"\([^"]*\)".*/\1/p' |
+      sort -u | wc -l | tr -d ' '
+  fi
+}
+
+print_top_hit_files() {
+  if command -v python3 &>/dev/null; then
+    python3 - "$STATS_FILE" <<'PY'
+import collections
+import json
+import os
+import sys
+
+hits = collections.Counter()
+try:
+    with open(sys.argv[1], "r", encoding="utf-8") as fh:
+        for line in fh:
+            try:
+                entry = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if entry.get("event") == "hit" and entry.get("path"):
+                hits[os.path.basename(str(entry["path"]))] += 1
+except FileNotFoundError:
+    pass
+for path, count in hits.most_common(5):
+    print(f"    {count}x  {path}")
+PY
+  else
+    grep '"event":"hit"' "$STATS_FILE" 2>/dev/null |
+      sed -n 's/.*"path":"\([^"]*\)".*/\1/p' |
+      while IFS= read -r path; do basename "$path"; done |
+      sort | uniq -c | sort -rn | head -5 |
+      while read -r count path; do
+        echo "    ${count}x  ${path}"
+      done
+  fi
+}
+
 cmd="${1:-help}"
 format="${2:-}"
 
@@ -64,8 +158,8 @@ case "$cmd" in
       exit 0
     fi
 
-    TOKENS_SAVED=$(grep -E '"event":"(hit|diff)"' "$STATS_FILE" 2>/dev/null | jq -r '.tokens_saved' 2>/dev/null | paste -sd+ - | bc 2>/dev/null || echo 0)
-    TOKENS_ALLOWED=$(grep -E '"event":"(miss|changed|expired)"' "$STATS_FILE" 2>/dev/null | jq -r '.tokens' 2>/dev/null | paste -sd+ - | bc 2>/dev/null || echo 0)
+    TOKENS_SAVED=$(sum_stat_numbers "hit,diff" "tokens_saved")
+    TOKENS_ALLOWED=$(sum_stat_numbers "miss,changed,expired" "tokens")
     TOKENS_TOTAL=$((TOKENS_ALLOWED + TOKENS_SAVED))
 
     if [ "$TOKENS_TOTAL" -gt 0 ]; then
@@ -76,7 +170,7 @@ case "$cmd" in
 
     TTL="${READ_ONCE_TTL:-1200}"
     TTL_MIN=$((TTL / 60))
-    SESSIONS=$(grep '"event"' "$STATS_FILE" 2>/dev/null | jq -r '.session' | sort -u | wc -l | tr -d ' ')
+    SESSIONS=$(count_stat_sessions)
 
     if [ "$format" = "--json" ]; then
       COST_SONNET="0"
@@ -129,9 +223,7 @@ print('  Est. cost saved:     \$%.4f (Sonnet) / \$%.4f (Opus)' % (s, o))
 
     if [ "$TOTAL_HITS" -gt 0 ]; then
       echo "  Top re-read files:"
-      grep '"event":"hit"' "$STATS_FILE" 2>/dev/null | jq -r '.path' | sort | uniq -c | sort -rn | head -5 | while read count path; do
-        echo "    ${count}x  $(basename "$path")"
-      done
+      print_top_hit_files
       echo ""
     fi
 

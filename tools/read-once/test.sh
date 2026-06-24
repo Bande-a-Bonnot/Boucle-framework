@@ -44,7 +44,7 @@ assert_eq() {
 assert_contains() {
   TOTAL=$((TOTAL + 1))
   local desc="$1" needle="$2" haystack="$3"
-  if echo "$haystack" | grep -q "$needle"; then
+  if [[ "$haystack" == *"$needle"* ]]; then
     PASS=$((PASS + 1))
     echo "  ✓ $desc"
   else
@@ -545,6 +545,33 @@ else
   FAIL=$((FAIL + 1))
   echo "FAIL: Stats JSON should include savings fields"
   echo "$STATS_JSON_OUTPUT"
+fi
+
+NO_JQ_PATH="${TEST_DIR}/no-jq-path"
+mkdir -p "$NO_JQ_PATH"
+for tool in grep sed awk sort uniq wc tr head basename dirname python3; do
+  tool_path=$(command -v "$tool" 2>/dev/null || true)
+  if [ -n "$tool_path" ]; then
+    ln -sf "$tool_path" "${NO_JQ_PATH}/${tool}"
+  fi
+done
+
+TOTAL=$((TOTAL + 1))
+if [ -x "${NO_JQ_PATH}/python3" ]; then
+  STATS_JSON_NO_JQ=$(PATH="$NO_JQ_PATH" "${SCRIPT_DIR}/read-once" stats --json 2>&1)
+  NORMAL_SAVED=$(printf '%s\n' "$STATS_JSON_OUTPUT" | python3 -c 'import json,sys; print(json.load(sys.stdin)["tokens_saved"])')
+  NO_JQ_SAVED=$(printf '%s\n' "$STATS_JSON_NO_JQ" | python3 -c 'import json,sys; print(json.load(sys.stdin)["tokens_saved"])' 2>/dev/null || echo "__parse_failed__")
+  if [ "$NO_JQ_SAVED" = "$NORMAL_SAVED" ]; then
+    PASS=$((PASS + 1))
+    echo "PASS: Stats JSON works without jq or bc"
+  else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: Stats JSON should work without jq or bc"
+    echo "$STATS_JSON_NO_JQ"
+  fi
+else
+  PASS=$((PASS + 1))
+  echo "SKIP: python3 not found for no-jq stats regression"
 fi
 
 # --- Group 21: Verify command ---

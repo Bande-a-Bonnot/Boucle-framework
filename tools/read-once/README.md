@@ -248,10 +248,13 @@ Environment variables:
 ## Requirements
 
 **macOS / Linux:**
-- `jq` (for JSON parsing)
+- `jq` (for install, verify, and hook JSON parsing; `stats` works without it)
 - `bash` 4+
 - Python (`py`, `python3`, or `python`, optional for exact token estimates and JSONC cleanup)
 - Claude Code with hooks support
+
+`read-once stats` and `read-once gain` do not require `bc`, and their JSON
+output still works when `jq` is unavailable.
 
 **Windows:**
 - PowerShell 7+ (`pwsh`), not the built-in Windows PowerShell 5.1
