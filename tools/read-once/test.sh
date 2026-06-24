@@ -524,6 +524,29 @@ else
 fi
 TOTAL=$((TOTAL + 1))
 
+STATS_JSON_OUTPUT=$("${SCRIPT_DIR}/read-once" stats --json 2>&1)
+TOTAL=$((TOTAL + 1))
+if printf '%s\n' "$STATS_JSON_OUTPUT" | python3 -m json.tool >/dev/null 2>&1; then
+  PASS=$((PASS + 1))
+  echo "PASS: Stats JSON parses"
+else
+  FAIL=$((FAIL + 1))
+  echo "FAIL: Stats JSON should parse"
+  echo "$STATS_JSON_OUTPUT"
+fi
+
+TOTAL=$((TOTAL + 1))
+if printf '%s\n' "$STATS_JSON_OUTPUT" | grep -q '"mode":"stats"' &&
+   printf '%s\n' "$STATS_JSON_OUTPUT" | grep -q '"tokens_saved":' &&
+   printf '%s\n' "$STATS_JSON_OUTPUT" | grep -q '"cost_saved":'; then
+  PASS=$((PASS + 1))
+  echo "PASS: Stats JSON includes savings fields"
+else
+  FAIL=$((FAIL + 1))
+  echo "FAIL: Stats JSON should include savings fields"
+  echo "$STATS_JSON_OUTPUT"
+fi
+
 # --- Group 21: Verify command ---
 echo ""
 echo "--- Group 21: Verify command ---"

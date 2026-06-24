@@ -146,7 +146,9 @@ You can also manually reset the cache:
 
 ```sh
 ./read-once stats          # macOS/Linux
+./read-once stats --json   # machine-readable summary
 pwsh read-once.ps1 stats   # Windows
+pwsh read-once.ps1 stats --json
 ```
 
 ```
@@ -177,7 +179,9 @@ read-once — file read deduplication for Claude Code
 
 ```
 read-once stats       Show token savings
+read-once stats --json  Show token savings as JSON
 read-once gain        Same as stats
+read-once gain --json   Same as stats --json
 read-once verify      Full diagnostic with dry-run test
 read-once status      Quick health check
 read-once clear       Clear session cache

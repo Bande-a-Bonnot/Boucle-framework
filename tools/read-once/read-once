@@ -2,8 +2,8 @@
 # read-once CLI — view stats, manage cache, install hook
 #
 # Usage:
-#   read-once stats         Show token savings for current/recent sessions
-#   read-once gain          RTK-style savings summary
+#   read-once stats [--json]  Show token savings for current/recent sessions
+#   read-once gain [--json]   RTK-style savings summary
 #   read-once status        Quick health check (hook installed? data?)
 #   read-once verify        Full diagnostic: deps, settings, dry-run test
 #   read-once clear         Clear session cache (start fresh)
@@ -35,10 +35,15 @@ find_python_cmd() {
 PYTHON_CMD=$(find_python_cmd || true)
 
 cmd="${1:-help}"
+format="${2:-}"
 
 case "$cmd" in
   stats|gain)
     if [ ! -f "$STATS_FILE" ]; then
+      if [ "$format" = "--json" ]; then
+        printf '{"mode":"stats","has_data":false,"total_file_reads":0,"cache_hits":0,"diff_hits":0,"first_reads":0,"changed_files":0,"ttl_expired":0,"tokens_saved":0,"read_token_total":0,"savings_pct":0,"sessions_tracked":0}\n'
+        exit 0
+      fi
       echo "No read-once data yet. Stats appear after your first Claude Code session with the hook installed."
       exit 0
     fi
@@ -51,6 +56,10 @@ case "$cmd" in
     TOTAL_READS=$((TOTAL_HITS + TOTAL_DIFFS + TOTAL_MISSES + TOTAL_CHANGED + TOTAL_EXPIRED))
 
     if [ "$TOTAL_READS" -eq 0 ]; then
+      if [ "$format" = "--json" ]; then
+        printf '{"mode":"stats","has_data":true,"total_file_reads":0,"cache_hits":0,"diff_hits":0,"first_reads":0,"changed_files":0,"ttl_expired":0,"tokens_saved":0,"read_token_total":0,"savings_pct":0,"sessions_tracked":0}\n'
+        exit 0
+      fi
       echo "No reads tracked yet."
       exit 0
     fi
@@ -67,6 +76,26 @@ case "$cmd" in
 
     TTL="${READ_ONCE_TTL:-1200}"
     TTL_MIN=$((TTL / 60))
+    SESSIONS=$(grep '"event"' "$STATS_FILE" 2>/dev/null | jq -r '.session' | sort -u | wc -l | tr -d ' ')
+
+    if [ "$format" = "--json" ]; then
+      COST_SONNET="0"
+      COST_OPUS="0"
+      if command -v python3 &>/dev/null && [ "$TOKENS_SAVED" -gt 0 ]; then
+        COSTS=$(echo "$TOKENS_SAVED" | python3 -c "
+import json
+import sys
+t=int(sys.stdin.read().strip())
+print(json.dumps({'sonnet_usd': round(t*3/1000000, 4), 'opus_usd': round(t*15/1000000, 4)}))
+" 2>/dev/null || echo '{"sonnet_usd":0,"opus_usd":0}')
+      else
+        COSTS='{"sonnet_usd":0,"opus_usd":0}'
+      fi
+      printf '{"mode":"stats","has_data":true,"total_file_reads":%s,"cache_hits":%s,"diff_hits":%s,"first_reads":%s,"changed_files":%s,"ttl_expired":%s,"tokens_saved":%s,"read_token_total":%s,"savings_pct":%s,"sessions_tracked":%s,"cache_ttl_seconds":%s,"cost_saved":%s}\n' \
+        "$TOTAL_READS" "$TOTAL_HITS" "$TOTAL_DIFFS" "$TOTAL_MISSES" "$TOTAL_CHANGED" "$TOTAL_EXPIRED" \
+        "$TOKENS_SAVED" "$TOKENS_TOTAL" "$SAVINGS_PCT" "$SESSIONS" "$TTL" "$COSTS"
+      exit 0
+    fi
 
     echo "read-once — file read deduplication for Claude Code"
     echo ""
@@ -106,8 +135,6 @@ print('  Est. cost saved:     \$%.4f (Sonnet) / \$%.4f (Opus)' % (s, o))
       echo ""
     fi
 
-    # Session count
-    SESSIONS=$(grep '"event"' "$STATS_FILE" 2>/dev/null | jq -r '.session' | sort -u | wc -l | tr -d ' ')
     echo "  Sessions tracked:    ${SESSIONS}"
     echo "  Cache TTL:           ${TTL_MIN} minutes (READ_ONCE_TTL=${TTL}s)"
     ;;
@@ -429,8 +456,8 @@ print('  Est. cost saved:     \$%.4f (Sonnet) / \$%.4f (Opus)' % (s, o))
     echo "read-once — Stop Claude Code from re-reading files it already has"
     echo ""
     echo "Usage:"
-    echo "  read-once stats       Show token savings"
-    echo "  read-once gain        Same as stats (RTK-style)"
+    echo "  read-once stats [--json]  Show token savings"
+    echo "  read-once gain [--json]   Same as stats (RTK-style)"
     echo "  read-once status      Quick health check"
     echo "  read-once verify      Full diagnostic with dry-run test"
     echo "  read-once clear       Clear session cache"
