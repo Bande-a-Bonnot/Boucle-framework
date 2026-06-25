@@ -6,6 +6,9 @@
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } file-guard git-safe"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } all"
+#   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } list"
+#   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } upgrade"
+#   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } uninstall read-once"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } help"
 
 param(
@@ -119,6 +122,10 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
     Write-Host "  recommended           Install the 3 essential hooks (bash-guard, git-safe, file-guard)"
     Write-Host "  all                   Install all 7 hooks"
     Write-Host "  <hook> [hook...]      Install specific hooks by name"
+    Write-Host "  list                  Show which hooks are currently installed"
+    Write-Host "  upgrade               Re-download all installed hooks to latest version"
+    Write-Host "  uninstall <hook>      Remove a specific hook (files + settings.json entry)"
+    Write-Host "  uninstall all         Remove all hooks"
     Write-Host "  backup                Snapshot settings.json (protects against auto-update wipes)"
     Write-Host "  backup list           Show available backups"
     Write-Host "  restore               Restore the most recent backup"
@@ -141,6 +148,16 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
     Write-Host "  install.ps1 recommended           # Start here"
     Write-Host "  install.ps1 all                    # Everything at once"
     Write-Host "  install.ps1 read-once git-safe     # Pick specific hooks"
+    Write-Host "  install.ps1 list                   # See what you have"
+    Write-Host "  install.ps1 upgrade                # Update to latest"
+    Write-Host "  install.ps1 uninstall read-once    # Remove one hook"
+    exit 0
+}
+
+# Handle list subcommand. The installer prints the hook table at startup, so
+# this command is a no-op after the status table.
+if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'list') {
+    Write-Host "Installed hook status listed above."
     exit 0
 }
 
@@ -175,6 +192,179 @@ if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'check') {
     } finally {
         Remove-Item $tmpFile -ErrorAction SilentlyContinue
     }
+    exit 0
+}
+
+# Handle upgrade subcommand - re-download installed PowerShell hook files.
+if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'upgrade') {
+    $upgraded = 0
+    $checked = 0
+    $errors = 0
+
+    foreach ($name in $AllHookNames) {
+        $hookDir = Join-Path $HOME ".claude" $name
+        $hookFile = Join-Path $hookDir "hook.ps1"
+        if (-not (Test-Path $hookFile)) {
+            continue
+        }
+
+        $checked++
+        Write-Host "Upgrading " -NoNewline
+        Write-Host "$name" -ForegroundColor Cyan -NoNewline
+        Write-Host "..."
+
+        $tmpFile = "$hookFile.new"
+        try {
+            Invoke-WebRequest -Uri "$Repo/$name/hook.ps1" -OutFile $tmpFile -UseBasicParsing -ErrorAction Stop
+            if ((Get-Item $tmpFile).Length -eq 0) {
+                Write-Host "  Warning: downloaded empty hook. Skipping." -ForegroundColor Yellow
+                Remove-Item $tmpFile -ErrorAction SilentlyContinue
+                $errors++
+                continue
+            }
+            $same = $false
+            if (Test-Path $hookFile) {
+                $same = (Get-FileHash $hookFile).Hash -eq (Get-FileHash $tmpFile).Hash
+            }
+            if ($same) {
+                Write-Host "  Already up to date" -ForegroundColor DarkGray
+                Remove-Item $tmpFile -ErrorAction SilentlyContinue
+            } else {
+                Move-Item $tmpFile $hookFile -Force
+                Write-Host "  Updated" -ForegroundColor Green
+                $upgraded++
+            }
+        } catch {
+            Write-Host "  Warning: download failed. Skipping." -ForegroundColor Yellow
+            Remove-Item $tmpFile -ErrorAction SilentlyContinue
+            $errors++
+            continue
+        }
+
+        if ($name -eq 'read-once') {
+            foreach ($sidecar in @('read-once.ps1', 'compact.ps1')) {
+                $sidecarPath = Join-Path $hookDir $sidecar
+                $sidecarTmp = "$sidecarPath.new"
+                try {
+                    Invoke-WebRequest -Uri "$Repo/read-once/$sidecar" -OutFile $sidecarTmp -UseBasicParsing -ErrorAction Stop
+                    if ((Get-Item $sidecarTmp).Length -eq 0) {
+                        Remove-Item $sidecarTmp -ErrorAction SilentlyContinue
+                        continue
+                    }
+                    $sameSidecar = $false
+                    if (Test-Path $sidecarPath) {
+                        $sameSidecar = (Get-FileHash $sidecarPath).Hash -eq (Get-FileHash $sidecarTmp).Hash
+                    }
+                    if ($sameSidecar) {
+                        Remove-Item $sidecarTmp -ErrorAction SilentlyContinue
+                    } else {
+                        Move-Item $sidecarTmp $sidecarPath -Force
+                    }
+                } catch {
+                    Remove-Item $sidecarTmp -ErrorAction SilentlyContinue
+                    Write-Host "  Warning: failed to refresh $sidecar" -ForegroundColor Yellow
+                    $errors++
+                }
+            }
+        }
+    }
+
+    if ($checked -eq 0) {
+        Write-Host "No PowerShell hooks installed. Nothing to upgrade."
+        exit 0
+    }
+
+    Write-Host ""
+    if ($errors -gt 0) {
+        Write-Host "Upgrade finished with $errors warning(s)." -ForegroundColor Yellow
+        exit 1
+    } elseif ($upgraded -gt 0) {
+        Write-Host "Done! Changes take effect in your next Claude Code session." -ForegroundColor Green
+        exit 0
+    } else {
+        Write-Host "All hooks are up to date."
+        exit 0
+    }
+}
+
+# Handle uninstall subcommand.
+if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'uninstall') {
+    if ($Hooks.Count -lt 2) {
+        Write-Host "Usage: install.ps1 uninstall <hook|all>" -ForegroundColor Yellow
+        exit 1
+    }
+
+    if ($Hooks[1] -eq 'all') {
+        $selected = $AllHookNames
+    } else {
+        $selected = $Hooks[1..($Hooks.Count - 1)]
+    }
+
+    $valid = @()
+    foreach ($name in $selected) {
+        if ($HookCatalog.Contains($name)) {
+            $valid += $name
+        } else {
+            Write-Host "Unknown hook: $name" -ForegroundColor Yellow
+        }
+    }
+
+    if ($valid.Count -eq 0) {
+        Write-Host "No valid hooks selected for uninstall."
+        exit 1
+    }
+
+    $settings = $null
+    if (Test-Path $SettingsPath) {
+        $raw = Get-Content $SettingsPath -Raw -ErrorAction SilentlyContinue
+        try {
+            $settings = $raw | ConvertFrom-Json -AsHashtable -ErrorAction Stop
+        } catch {
+            try {
+                $settings = (Strip-JsonComments $raw) | ConvertFrom-Json -AsHashtable -ErrorAction Stop
+            } catch {
+                Write-Host "Warning: settings.json is not valid JSON; removing hook files only." -ForegroundColor Yellow
+            }
+        }
+    }
+
+    foreach ($name in $valid) {
+        $hookDir = Join-Path $HOME ".claude" $name
+        if (Test-Path $hookDir) {
+            Remove-Item $hookDir -Recurse -Force
+            Write-Host "Removed files for $name" -ForegroundColor Green
+        } else {
+            Write-Host "$name was not installed" -ForegroundColor DarkGray
+        }
+    }
+
+    if ($null -ne $settings -and $settings.ContainsKey('hooks')) {
+        foreach ($event in @($settings['hooks'].Keys)) {
+            $kept = @()
+            foreach ($entry in $settings['hooks'][$event]) {
+                $entryJson = $entry | ConvertTo-Json -Depth 20 -Compress
+                $remove = $false
+                foreach ($name in $valid) {
+                    if ($entryJson -like "*$name*") {
+                        $remove = $true
+                        break
+                    }
+                }
+                if (-not $remove) {
+                    $kept += $entry
+                }
+            }
+            if ($kept.Count -gt 0) {
+                $settings['hooks'][$event] = $kept
+            } else {
+                $settings['hooks'].Remove($event)
+            }
+        }
+        $settings | ConvertTo-Json -Depth 20 | Set-Content $SettingsPath -Encoding UTF8
+        Write-Host "Updated $SettingsPath"
+    }
+
+    Write-Host "Uninstall complete."
     exit 0
 }
 
