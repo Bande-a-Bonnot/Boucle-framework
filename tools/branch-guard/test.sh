@@ -23,6 +23,11 @@ git config user.name "Test"
 git checkout -q -b main 2>/dev/null || true
 # Need at least one commit for branch operations
 git commit -q --allow-empty -m "init"
+REPO_DIR=$(pwd)
+
+hook_input() {
+  jq -cn --arg command "$1" '{"tool_name":"Bash","tool_input":{"command":$command}}'
+}
 
 assert_blocked() {
   local desc="$1"
@@ -189,6 +194,23 @@ git checkout -q main
 git checkout -q -b develop
 assert_allowed "git commit on develop branch" \
   '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"work in progress\""}}'
+git checkout -q main
+
+# --- Commands targeting another worktree should resolve that worktree branch ---
+echo ""
+echo "Target directory resolution:"
+git checkout -q main
+git branch -f feature/worktree main
+FEATURE_WORKTREE="$TMPDIR/feature-worktree"
+git worktree add -q "$FEATURE_WORKTREE" feature/worktree
+assert_allowed "leading cd to feature worktree allows commit from protected cwd" \
+  "$(hook_input "cd $FEATURE_WORKTREE && git commit -m 'worktree change'")"
+assert_allowed "git -C feature worktree allows commit from protected cwd" \
+  "$(hook_input "git -C $FEATURE_WORKTREE commit -m 'worktree change'")"
+assert_blocked "git -C protected repo blocks commit from protected cwd" \
+  "$(hook_input "git -C $REPO_DIR commit -m 'main change'")"
+assert_allowed "git -C status remains non-commit" \
+  "$(hook_input "git -C $REPO_DIR status")"
 git checkout -q main
 
 # --- Env var override ---

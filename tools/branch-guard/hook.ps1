@@ -142,6 +142,27 @@ function Test-AssignmentToken {
     return $Token -match '^[A-Za-z_][A-Za-z0-9_]*='
 }
 
+function Normalize-TargetDir {
+    param([string]$TargetDir)
+    $dir = $TargetDir.Trim()
+    if ($dir.Length -ge 2) {
+        $first = $dir.Substring(0, 1)
+        $last = $dir.Substring($dir.Length - 1, 1)
+        if (($first -eq '"' -and $last -eq '"') -or ($first -eq "'" -and $last -eq "'")) {
+            $dir = $dir.Substring(1, $dir.Length - 2)
+        }
+    }
+    return $dir
+}
+
+function Get-LeadingCdTargetDir {
+    param([string]$Command)
+    if ($Command -match '^\s*cd\s+([^&;|]+)\s*&&') {
+        return Normalize-TargetDir $Matches[1]
+    }
+    return '.'
+}
+
 function Test-NewGitCommitSegment {
     param([string]$Segment)
 
@@ -160,11 +181,20 @@ function Test-NewGitCommitSegment {
 
     if ($i -ge $words.Count -or -not (Test-GitBinaryToken $words[$i])) { return $false }
     $i++
+    $targetDir = $script:BranchGuardTargetDir
 
     while ($i -lt $words.Count) {
         $token = $words[$i]
 
-        if ($token -match '^(-C|-c|--git-dir|--work-tree|--namespace|--exec-path|--config-env)$') {
+        if ($token -eq '-C') {
+            if ($i + 1 -lt $words.Count) {
+                $targetDir = Normalize-TargetDir $words[$i + 1]
+            }
+            $i += 2
+            continue
+        }
+
+        if ($token -match '^(-c|--git-dir|--work-tree|--namespace|--exec-path|--config-env)$') {
             $i += 2
             continue
         }
@@ -193,10 +223,14 @@ function Test-NewGitCommitSegment {
     if ($i + 1 -lt $words.Count) {
         $remaining = $words[($i + 1)..($words.Count - 1)]
     }
-    return -not ($remaining -contains '--amend')
+    if ($remaining -contains '--amend') { return $false }
+
+    $script:BranchGuardTargetDir = $targetDir
+    return $true
 }
 
 $hasNewCommit = $false
+$script:BranchGuardTargetDir = Get-LeadingCdTargetDir $command
 foreach ($segment in Get-CommandSegments $command) {
     if (Test-NewGitCommitSegment $segment) {
         $hasNewCommit = $true
@@ -236,14 +270,16 @@ if ($env:BRANCH_GUARD_PROTECTED) {
     }
 }
 
-# Get current branch
+Write-Log "Target directory: $script:BranchGuardTargetDir"
+
+# Get current branch from the repository that the intercepted command targets.
 try {
-    $currentBranch = git rev-parse --abbrev-ref HEAD 2>$null
+    $currentBranch = git -C $script:BranchGuardTargetDir rev-parse --abbrev-ref HEAD 2>$null
 } catch {
     $currentBranch = ''
 }
 if (-not $currentBranch) {
-    Write-Log "SKIP: not in a git repo or detached HEAD"
+    Write-Log "SKIP: target is not in a git repo or detached HEAD"
     exit 0
 }
 

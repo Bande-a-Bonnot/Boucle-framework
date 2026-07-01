@@ -122,12 +122,34 @@ is_assignment_token() {
   [[ "$1" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]
 }
 
+normalize_target_dir() {
+  local dir="$1"
+  dir=$(printf '%s' "$dir" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+  local first="${dir:0:1}"
+  local last="${dir: -1}"
+  if { [ "$first" = '"' ] && [ "$last" = '"' ]; } || { [ "$first" = "'" ] && [ "$last" = "'" ]; }; then
+    dir="${dir:1:${#dir}-2}"
+  fi
+  printf '%s' "$dir"
+}
+
+leading_cd_target_dir() {
+  local cmd="$1"
+  local cd_pattern="^[[:space:]]*cd[[:space:]]+([^&;|]+)[[:space:]]*&&"
+  if [[ "$cmd" =~ $cd_pattern ]]; then
+    normalize_target_dir "${BASH_REMATCH[1]}"
+    return
+  fi
+  printf '.'
+}
+
 is_git_commit_segment() {
   local segment="$1"
   local words=()
   local i=0
   local token=""
   local subcommand=""
+  local target_dir="$GIT_COMMIT_TARGET_DIR"
 
   read -r -a words <<< "$segment"
   [ ${#words[@]} -gt 0 ] || return 1
@@ -152,7 +174,14 @@ is_git_commit_segment() {
   while [ $i -lt ${#words[@]} ]; do
     token="${words[$i]}"
     case "$token" in
-      -C|-c|--git-dir|--work-tree|--namespace|--exec-path|--config-env)
+      -C)
+        if [ $((i + 1)) -lt ${#words[@]} ]; then
+          target_dir=$(normalize_target_dir "${words[$((i + 1))]}")
+        fi
+        i=$((i + 2))
+        continue
+        ;;
+      -c|--git-dir|--work-tree|--namespace|--exec-path|--config-env)
         i=$((i + 2))
         continue
         ;;
@@ -184,10 +213,12 @@ is_git_commit_segment() {
     fi
   done
 
+  GIT_COMMIT_TARGET_DIR="$target_dir"
   return 0
 }
 
 HAS_NEW_COMMIT=0
+GIT_COMMIT_TARGET_DIR=$(leading_cd_target_dir "$COMMAND")
 while IFS= read -r segment; do
   set +e
   is_git_commit_segment "$segment"
@@ -245,10 +276,12 @@ else
   fi
 fi
 
-# Get current branch
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+log "Target directory: $GIT_COMMIT_TARGET_DIR"
+
+# Get current branch from the repository that the intercepted command targets.
+CURRENT_BRANCH=$(git -C "$GIT_COMMIT_TARGET_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
 if [ -z "$CURRENT_BRANCH" ]; then
-  log "SKIP: not in a git repo or detached HEAD"
+  log "SKIP: target is not in a git repo or detached HEAD"
   exit 0
 fi
 

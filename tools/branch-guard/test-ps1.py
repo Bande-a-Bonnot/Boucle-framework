@@ -232,6 +232,36 @@ def main():
             cwd=repo,
         )
 
+        # --- Target directory resolution ---
+        print("\nTarget directory resolution:")
+        subprocess.run(["git", "checkout", "-q", "main"],
+                       cwd=repo, capture_output=True)
+        subprocess.run(["git", "branch", "-f", "feature/worktree", "main"],
+                       cwd=repo, check=True, capture_output=True)
+        worktree = os.path.join(os.path.dirname(repo), "feature-worktree")
+        subprocess.run(["git", "worktree", "add", "-q", worktree, "feature/worktree"],
+                       cwd=repo, check=True, capture_output=True)
+        assert_allowed(
+            "leading cd to feature worktree allows commit from protected cwd",
+            make_hook_input("Bash", f"cd {worktree} && git commit -m 'worktree change'"),
+            cwd=repo,
+        )
+        assert_allowed(
+            "git -C feature worktree allows commit from protected cwd",
+            make_hook_input("Bash", f"git -C {worktree} commit -m 'worktree change'"),
+            cwd=repo,
+        )
+        assert_blocked(
+            "git -C protected repo blocks commit from protected cwd",
+            make_hook_input("Bash", f"git -C {repo} commit -m 'main change'"),
+            cwd=repo,
+        )
+        assert_allowed(
+            "git -C status remains non-commit",
+            make_hook_input("Bash", f"git -C {repo} status"),
+            cwd=repo,
+        )
+
         # --- Env var override ---
         print("\nEnvironment variable overrides:")
         subprocess.run(["git", "checkout", "-q", "main"],
