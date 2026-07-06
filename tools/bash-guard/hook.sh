@@ -628,7 +628,19 @@ if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)service\s+\S+\s+(start|stop|restart)'
 fi
 
 # ssh-keygen (key generation) and ssh-add (agent operations)
-if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)ssh-keygen\s' 2>/dev/null; then
+# Exempt known_hosts management given as the first flag: -R (remove host) and
+# -F (find host). These create no keys and grant no access -- they only read or
+# edit known_hosts. -R is the standard cleanup after a host key changes (e.g. a
+# cloud instance is replaced and presents a new key); blocking it forces users
+# to allow the entire ssh-keys rule -- including the far riskier ssh-add -- just
+# to delete a stale known_hosts line, a net loss for security.
+#
+# Strip each exempt invocation from a copy of the command, then block if any
+# ssh-keygen remains. Stripping per-invocation (rather than testing the whole
+# command for "contains an exempt form") prevents a safe `ssh-keygen -R` from
+# masking an unsafe one in a chain like `ssh-keygen -R host && ssh-keygen -t rsa`.
+ssh_keygen_remainder=$(echo "$COMMAND" | sed -E 's/(^|[;&|][[:space:]]*)ssh-keygen[[:space:]]+-[RF]([[:space:]]|$)/\1/g')
+if echo "$ssh_keygen_remainder" | grep -qE '(^|[;&|]\s*)ssh-keygen(\s|$)' 2>/dev/null; then
   is_allowed "ssh-keys" || block "ssh-keygen creates or modifies SSH keys which grant remote server access." "Add 'allow: ssh-keys' to .bash-guard if you need to generate SSH keys."
 fi
 if echo "$COMMAND" | grep -qE '(^|[;&|]\s*)ssh-add\s' 2>/dev/null; then
