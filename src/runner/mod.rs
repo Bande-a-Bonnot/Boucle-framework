@@ -1166,8 +1166,14 @@ fn send_failure_alert(root: &Path, state: &FailureState, log_file: &Path) -> boo
             true
         }
         Ok(o) => {
-            let stderr: String = String::from_utf8_lossy(&o.stderr).chars().take(300).collect();
-            let stdout: String = String::from_utf8_lossy(&o.stdout).chars().take(300).collect();
+            let stderr: String = String::from_utf8_lossy(&o.stderr)
+                .chars()
+                .take(300)
+                .collect();
+            let stdout: String = String::from_utf8_lossy(&o.stdout)
+                .chars()
+                .take(300)
+                .collect();
             let _ = log(
                 log_file,
                 &format!(
@@ -1180,7 +1186,10 @@ fn send_failure_alert(root: &Path, state: &FailureState, log_file: &Path) -> boo
             false
         }
         Err(e) => {
-            let _ = log(log_file, &format!("Alert email FAILED to spawn python3: {e}"));
+            let _ = log(
+                log_file,
+                &format!("Alert email FAILED to spawn python3: {e}"),
+            );
             false
         }
     }

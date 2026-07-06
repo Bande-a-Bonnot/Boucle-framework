@@ -630,13 +630,13 @@ fi
 
 # Test 23: List does not show uninstalled hooks
 if echo "$output" | grep -q "bash-guard"; then
-  pass "list shows uninstalled hooks"
+  fail "list shows non-installed hook"
 else
-  fail "list missing uninstalled hooks"
+  pass "list hides non-installed hooks"
 fi
 
 # Test 23: List shows count
-if echo "$output" | grep -Eq "2 of [0-9]+ installed"; then
+if echo "$output" | grep -q "2 hook"; then
   pass "list shows correct count"
 else
   fail "list count wrong"

@@ -254,7 +254,9 @@ fn classify(patterns: &mut HashMap<String, Pattern>, signals: &[Signal]) {
         if sig.fingerprint.is_empty() {
             continue;
         }
-        let entry = tallies.entry(sig.fingerprint.as_str()).or_insert((0, sig, sig));
+        let entry = tallies
+            .entry(sig.fingerprint.as_str())
+            .or_insert((0, sig, sig));
         entry.0 += 1;
         entry.2 = sig; // signals.jsonl is append-ordered; last wins
     }
