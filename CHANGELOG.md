@@ -4,6 +4,59 @@ All notable changes to Boucle are documented here.
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-07-06
+
+### Added
+
+- **Known Limitations database: 215 → 640 entries** -- 425 new hook/agent bugs documented since v0.12.0 (42 critical, 266 high, 237 medium, 95 low), taxonomy consolidated from 36 fragmented categories down to 17 canonical ones. Notable CRITICAL disclosures: unsolicited session injection, subagent git-staging data loss, a `FileChanged`-hook credential leak, Buddy ghost prompt injection, an infinite token-burn loop, and OAuth token revocation silently not taking effect.
+- **Recipes page** (`docs/recipes.html`) -- Maps common Claude Code pain points (rules ignored, files deleted, dangerous commands, git disasters, token waste, tool-switching bypass) to the specific hook that fixes each one, with install commands and issue references.
+- **Machine-readable JSON export of the Known Limitations database** (`tools/export-kl.py`) -- id, title, category, severity, issue URLs, and description for every entry, enabling programmatic consumption.
+- **Limitations page: stats dashboard and sharing** -- Clickable severity-breakdown pills, sort controls (number/severity/newest), and per-entry permalink buttons for sharing in GitHub discussions.
+- **SEO for the framework site** -- Open Graph/Twitter card meta tags on all pages, `sitemap.xml`, and `robots.txt`.
+- **bash-guard: layered config hierarchy** -- Global, project, and local config layers, so teams can set an org-wide baseline while projects add stricter rules (#20).
+- **bash-guard: `gh api` mutation guard** -- Blocks PUT/PATCH/DELETE against branch-protection and ruleset endpoints, plus `gh repo delete`, closing a path an agent previously used to disable repo protections and force-push unattended (#42849).
+- **broca memory: TTL-tagged facts** -- Entries can declare `ttl: N` in frontmatter; past the TTL they surface a staleness warning (⚠ stale) in recall. New `--ttl` flag on `boucle memory remember` and `ttl_days` field on the `broca_remember` MCP tool.
+- **read-once: PostCompact hook** (`compact.sh` / `compact.ps1`) -- Clears the read-once cache on context compaction so stale "already read" state can't survive a compaction and mask a fresh read requirement.
+- **Installer: missing-CLI warning** -- Warns if the `claude` CLI itself isn't on PATH before installing hooks, without blocking install for users setting up ahead of time.
+- **Loop runner: owner-checked structured lock v2** -- `.boucle.lock` now carries version/pid/token/started_at plus a process-start fingerprint; only the token-owning `LockGuard` can delete its own lock, and a crashed loop's lock is detected as stale (via `ps -o lstart=`) instead of wedging or letting another loop steal it.
+- **`loop.llm_timeout_seconds` config** (default 7200s) -- Bounds LLM subprocess runtime with a graceful-shutdown grace period before the process is killed, plus doctor/config validation.
+- **Memory-context truncation** -- Oversized STATE/HOT memory (>96KB) injected into the prompt is now truncated to a 64KB head + 16KB tail with an advisory marker instead of blowing up the prompt.
+- **file-guard: MultiEdit and NotebookEdit coverage** -- Write protection and relative-path rejection, previously only on Write/Edit, now also cover MultiEdit and NotebookEdit (including `notebook_path` extraction).
+- **enforce: token-aware bash pattern matching** -- A rule targeting `rm` no longer misfires on words like `term`; the read-only recipe was also expanded to block shell write paths (`>`, `>>`, `tee`, `touch`, `mkdir`, `sed -i`, `perl -pi`, `mv`, `cp`, `chmod`, `chown`).
+- **safety-check: hardened `--verify` mode** -- CLI version checks now run under a hard timeout (a hanging `claude --version` no longer stalls the audit), verification timeouts are tracked and surfaced, warnings gained copy-pasteable `Issue:` reference lines, and a `CLAUDE_CODE_SIMPLE` (any non-empty value) hook-disable warning was added.
+- **read-once: `stats --json`** -- machine-readable token-savings stats for scripting and dashboards.
+- **read-once: `stats` works without `jq`** -- stats parsing now uses python3 with an awk/sed fallback; `jq` is only needed for install/verify/hook paths.
+- **install.ps1: command parity with install.sh** -- `upgrade`, `uninstall`, `list`, and `verify` subcommands now work on Windows/PowerShell.
+
+### Changed
+
+- **LLM backend is now model-driven** -- models starting with `gpt-` invoke `codex exec` (system prompt prepended to stdin, project-local `.codex-home/` honored, reasoning effort set); all other models invoke `claude -p` with `--system-prompt`, `--allowed-tools`, and `--mcp-config` as before. `boucle doctor` checks whichever CLI the configured model needs.
+- **install.sh / install.ps1: non-interactive default** -- `curl | bash` with no arguments used to hang at a read prompt or exit with "Nothing selected"; non-TTY stdin now defaults to the recommended hook set. Post-install command list trimmed from 9 to 4 lines (full list via `help`).
+- **safety-check: bypass-gated warnings** -- The hallucinated `Human:` prefix warning and the unstoppable-background-agent warning used to fire for every user; they now only surface when `bypassPermissions` is active, where the risk they describe actually applies.
+- **Download flags hardened** (`-sL` → `-fsSL`) -- Standardized across 14 install scripts and docs so an HTTP error page can no longer be silently piped into `bash` on a failed download.
+
+### Fixed
+
+- **bash-guard: ssh-keygen known_hosts exemption** -- `ssh-keygen -R/-F/-l` (remove/find host, show fingerprint) create no keys and grant no remote access, but were previously blocked outright, forcing users to enable the whole `ssh-keys` allow rule (which also unblocks the far riskier `ssh-add`). These read/edit subcommands are now exempted while key generation and `ssh-add` remain blocked -- community contribution by @Dzhuneyt (#27).
+- **PreToolUse hook output schema** -- Deny payloads were missing `hookEventName` alongside `hookSpecificOutput`, causing Claude Code to reject them; now included (#21).
+- **git-safe: matcher registration** -- Completed and repaired matcher metadata across installers so the hook actually attaches to Bash calls in previously-affected legacy installs (#26).
+- **branch-guard: commit-command matching** -- Now parses git-command argument position, catching commit aliases it previously missed and no longer false-positiving on arguments that merely contain the word "commit" (#22).
+- **read-once: Windows Git Bash path handling** -- Normalized Windows-style paths; related installer tests hardened (#24).
+- **session-log: stdin and uninstall** -- Fixed unsafe stdin path handling and removed legacy session-log installer entries during uninstall (#23).
+- **installer: false WARN on working hooks** -- Post-install verification grepped for the string "block", but hooks emit `"permissionDecision":"deny"`; every `install.sh recommended` run showed false warnings for hooks that were actually working. All 4 patterns fixed and a standalone `verify` command added.
+- **installer: read-once firing on every tool call** -- A missing `Read` matcher meant read-once ran on every Bash/Write/Edit/etc. call instead of just Read, adding unnecessary latency; the fix was also ported into the `upgrade` subcommand for existing installs.
+- **installer: fragile version check** -- A variable named for "minor" actually extracted the patch field, and lacked a major.minor guard, so update-nagging could misfire on future 2.2.x/3.x Claude Code releases.
+- **installer: `list` and bash-guard matcher** -- `list` now shows only actually-installed hooks; bash-guard matcher and deny-enforcement fixes ported into the unified installer.
+- **CI: broken test workflow on main** -- Fixed broca entry/gc/search and read-once hook path handling that had been breaking the test workflow.
+- **Known Limitations metadata drift** -- Fixed `last_updated` field drift and stale count references on the framework site landing page.
+- **failure alerting: `alert_sent` no longer latches on a failed send** -- Alert-send failures are now logged with stderr instead of the alert being marked sent regardless of outcome.
+- **improve engine: classify no longer re-counts all historical signals every run** -- Fixes pattern-count inflation in `boucle improve run`.
+
+### Security
+
+- **`gh api` mutation guard in bash-guard** -- Blocks branch-protection and ruleset mutations plus `gh repo delete` by default, closing a path an agent used to strip repo protections and force-push unattended (#42849).
+- **Install script download flags hardened** (`-sL` → `-fsSL`) -- A failed download can no longer silently pipe an HTTP error page into `bash` as if it were the install script.
+
 ## [0.12.0] - 2026-04-02
 
 ### Added
