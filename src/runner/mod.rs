@@ -18,12 +18,21 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use std::{fmt, fs, io, process};
 
 /// Tracks consecutive LLM failures across loop invocations.
+///
+/// `serde(default)` per field: other writers (e.g. a shell loop's failure
+/// classifier) share this file with a different schema. A partially matching
+/// file must degrade to field defaults, not silently reset the whole state.
 #[derive(Debug, Serialize, Deserialize, Default)]
 struct FailureState {
+    #[serde(default)]
     consecutive_failures: u32,
+    #[serde(default)]
     first_failure: Option<String>,
+    #[serde(default)]
     last_failure: Option<String>,
+    #[serde(default)]
     last_error: Option<String>,
+    #[serde(default)]
     alert_sent: bool,
 }
 
@@ -648,8 +657,13 @@ pub fn run(root: &Path, dry_run: bool) -> Result<(), RunnerError> {
 
         if state.consecutive_failures >= FAILURE_THRESHOLD && !state.alert_sent {
             log(&log_file, "Failure threshold reached, sending alert...")?;
-            send_failure_alert(root, &state, &log_file);
-            state.alert_sent = true;
+            // Latch only on confirmed delivery: a failed send must retry on the
+            // next failure, not go silent forever. (Production once recorded 681
+            // consecutive failures with zero pages because the latch was set
+            // even though the email transport was broken.)
+            if send_failure_alert(root, &state, &log_file) {
+                state.alert_sent = true;
+            }
         }
 
         save_failure_state(&failure_state_path, &state);
@@ -1110,7 +1124,7 @@ fn save_failure_state(path: &Path, state: &FailureState) {
     }
 }
 
-fn send_failure_alert(root: &Path, state: &FailureState, log_file: &Path) {
+fn send_failure_alert(root: &Path, state: &FailureState, log_file: &Path) -> bool {
     let subject = format!(
         "Boucle: {} consecutive LLM failures",
         state.consecutive_failures
@@ -1128,23 +1142,46 @@ fn send_failure_alert(root: &Path, state: &FailureState, log_file: &Path) {
         state.last_error.as_deref().unwrap_or("unknown"),
     );
 
-    // Email primary — works even if Linear/Claude tokens are the broken thing
+    // Email primary — works even if Linear/Claude tokens are the broken thing.
+    // Returns true only on CONFIRMED delivery; the caller must not latch
+    // alert_sent on a failed or skipped send.
     let send_email = root.join("send-email.py");
-    if send_email.exists() {
-        let result = process::Command::new("python3")
-            .arg(&send_email)
-            .arg("thomas.leger@tlgr.io")
-            .arg(&subject)
-            .arg(&body)
-            .current_dir(root)
-            .output();
-        match result {
-            Ok(o) if o.status.success() => {
-                let _ = log(log_file, "Alert email sent.");
-            }
-            _ => {
-                let _ = log(log_file, "Alert email FAILED to send.");
-            }
+    if !send_email.exists() {
+        let _ = log(
+            log_file,
+            "Alert NOT sent: send-email.py not found in agent root — no alert transport configured.",
+        );
+        return false;
+    }
+    let result = process::Command::new("python3")
+        .arg(&send_email)
+        .arg("thomas.leger@tlgr.io")
+        .arg(&subject)
+        .arg(&body)
+        .current_dir(root)
+        .output();
+    match result {
+        Ok(o) if o.status.success() => {
+            let _ = log(log_file, "Alert email sent.");
+            true
+        }
+        Ok(o) => {
+            let stderr: String = String::from_utf8_lossy(&o.stderr).chars().take(300).collect();
+            let stdout: String = String::from_utf8_lossy(&o.stdout).chars().take(300).collect();
+            let _ = log(
+                log_file,
+                &format!(
+                    "Alert email FAILED to send (exit {:?}). stdout: {} stderr: {}",
+                    o.status.code(),
+                    stdout.trim(),
+                    stderr.trim()
+                ),
+            );
+            false
+        }
+        Err(e) => {
+            let _ = log(log_file, &format!("Alert email FAILED to spawn python3: {e}"));
+            false
         }
     }
 }
@@ -1809,6 +1846,65 @@ mod tests {
 
         let cfg = config::load(dir.path()).unwrap();
         assert_eq!(cfg.agent.name, "test-agent");
+    }
+
+    #[test]
+    fn test_alert_not_sent_without_transport() {
+        // A missing send-email.py must return false so the caller never
+        // latches alert_sent on a send that did not happen.
+        let dir = tempfile::tempdir().unwrap();
+        let log_file = dir.path().join("test.log");
+        let state = FailureState {
+            consecutive_failures: 3,
+            ..Default::default()
+        };
+        assert!(!send_failure_alert(dir.path(), &state, &log_file));
+        let logged = fs::read_to_string(&log_file).unwrap_or_default();
+        assert!(logged.contains("Alert NOT sent"));
+    }
+
+    #[test]
+    fn test_alert_failed_send_returns_false_and_logs_stderr() {
+        // A transport that exits non-zero must return false and surface stderr.
+        let dir = tempfile::tempdir().unwrap();
+        let log_file = dir.path().join("test.log");
+        fs::write(
+            dir.path().join("send-email.py"),
+            "import sys\nprint('smtp handshake', file=sys.stderr)\nsys.exit(1)\n",
+        )
+        .unwrap();
+        let state = FailureState {
+            consecutive_failures: 3,
+            ..Default::default()
+        };
+        assert!(!send_failure_alert(dir.path(), &state, &log_file));
+        let logged = fs::read_to_string(&log_file).unwrap_or_default();
+        assert!(logged.contains("FAILED to send"));
+        assert!(logged.contains("smtp handshake"));
+    }
+
+    #[test]
+    fn test_alert_successful_send_returns_true() {
+        let dir = tempfile::tempdir().unwrap();
+        let log_file = dir.path().join("test.log");
+        fs::write(dir.path().join("send-email.py"), "print('sent')\n").unwrap();
+        let state = FailureState {
+            consecutive_failures: 3,
+            ..Default::default()
+        };
+        assert!(send_failure_alert(dir.path(), &state, &log_file));
+    }
+
+    #[test]
+    fn test_failure_state_tolerates_foreign_schema() {
+        // A file written by another tool (extra/missing fields) must parse
+        // with defaults instead of silently resetting via a hard error path.
+        let parsed: FailureState = serde_json::from_str(
+            r#"{"consecutive_failures": 5, "type": "runtime", "unknown_field": 1}"#,
+        )
+        .unwrap();
+        assert_eq!(parsed.consecutive_failures, 5);
+        assert!(!parsed.alert_sent);
     }
 
     #[test]
