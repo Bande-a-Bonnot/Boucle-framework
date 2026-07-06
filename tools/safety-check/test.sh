@@ -233,7 +233,10 @@ try:
         ["bash", sys.argv[1]],
         capture_output=True,
         text=True,
-        timeout=10,
+        # Generous budget: this asserts the audit does not hang FOREVER on a
+        # hanging CLI (the fake sleeps 600s). Under a loaded machine or CI
+        # runner the audit legitimately takes tens of seconds; 10s flaked.
+        timeout=90,
         cwd=sys.argv[2],
         env={**os.environ, "HOME": sys.argv[2], "SAFETY_CHECK_SKIP_CLAUDE_VERSION": "0"},
     )
