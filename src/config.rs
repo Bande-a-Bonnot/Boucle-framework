@@ -71,6 +71,9 @@ pub struct LoopConfig {
 
     #[serde(default = "default_max_tokens")]
     pub max_tokens: usize,
+
+    #[serde(default = "default_llm_timeout_seconds")]
+    pub llm_timeout_seconds: u64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -131,6 +134,9 @@ fn default_state_file() -> String {
 fn default_max_tokens() -> usize {
     200_000
 }
+fn default_llm_timeout_seconds() -> u64 {
+    7_200
+}
 fn default_interval() -> String {
     "1h".to_string()
 }
@@ -160,6 +166,7 @@ impl Default for LoopConfig {
             hooks_dir: None,
             log_dir: None,
             max_tokens: default_max_tokens(),
+            llm_timeout_seconds: default_llm_timeout_seconds(),
         }
     }
 }
@@ -334,6 +341,7 @@ name = "minimal"
         assert_eq!(config.memory.dir, "memory");
         assert_eq!(config.memory.state_file, "STATE.md");
         assert_eq!(config.loop_config.max_tokens, 200_000);
+        assert_eq!(config.loop_config.llm_timeout_seconds, 7_200);
     }
 
     #[test]

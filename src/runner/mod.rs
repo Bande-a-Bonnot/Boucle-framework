@@ -13,15 +13,26 @@ use crate::config;
 use chrono::{FixedOffset, NaiveDateTime, Timelike, Utc};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+use std::thread;
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use std::{fmt, fs, io, process};
 
 /// Tracks consecutive LLM failures across loop invocations.
+///
+/// `serde(default)` per field: other writers (e.g. a shell loop's failure
+/// classifier) share this file with a different schema. A partially matching
+/// file must degrade to field defaults, not silently reset the whole state.
 #[derive(Debug, Serialize, Deserialize, Default)]
 struct FailureState {
+    #[serde(default)]
     consecutive_failures: u32,
+    #[serde(default)]
     first_failure: Option<String>,
+    #[serde(default)]
     last_failure: Option<String>,
+    #[serde(default)]
     last_error: Option<String>,
+    #[serde(default)]
     alert_sent: bool,
 }
 
@@ -71,6 +82,7 @@ const LOCK_FILE: &str = ".boucle.lock";
 const LOG_DIR_DEFAULT: &str = "logs";
 const FAILURE_STATE_FILE: &str = ".boucle-failures.json";
 const FAILURE_THRESHOLD: u32 = 3;
+const PROCESS_SHUTDOWN_GRACE: Duration = Duration::from_secs(5);
 
 /// Office hours: sleep from 9pm to 6am CET/CEST (UTC+1 in winter, UTC+2 in summer)
 const SLEEP_START_HOUR: u32 = 21; // 9pm
@@ -312,10 +324,13 @@ pub fn run(root: &Path, dry_run: bool) -> Result<(), RunnerError> {
 
     // Acquire lock
     let lock_path = root.join(LOCK_FILE);
-    acquire_lock(&lock_path)?;
+    let lock_info = acquire_lock(&lock_path)?;
 
     // Ensure cleanup on all exit paths
-    let _lock_guard = LockGuard(lock_path.clone());
+    let _lock_guard = LockGuard {
+        path: lock_path.clone(),
+        token: lock_info.token,
+    };
 
     let timestamp = Utc::now().format("%Y-%m-%d_%H-%M-%S").to_string();
     let log_dir = root.join(
@@ -387,111 +402,184 @@ pub fn run(root: &Path, dry_run: bool) -> Result<(), RunnerError> {
         String::new()
     };
 
-    // Check that codex CLI is available
-    if process::Command::new("codex")
-        .arg("--version")
-        .stdout(process::Stdio::null())
-        .stderr(process::Stdio::null())
-        .status()
-        .is_err()
-    {
-        return Err(RunnerError::Llm(
-            "codex CLI not found. Install it (https://github.com/openai/codex) and run \
-             'codex login', or use 'boucle run --dry-run' to preview the context without an LLM."
-                .to_string(),
-        ));
+    let use_codex = cfg.agent.model.starts_with("gpt-");
+    let llm_label = if use_codex { "codex" } else { "claude" };
+
+    let mut llm_input = assembled_context.clone();
+    if use_codex && !system_prompt.is_empty() {
+        // Codex CLI has no --system-prompt flag; prepend the prompt to stdin.
+        llm_input = format!("{system_prompt}\n\n---\n\n{assembled_context}");
     }
 
-    // Build codex command.
-    //
-    // Migration note (2026-04-09): the runner was originally built around
-    // `claude -p`. It now invokes `codex exec` instead. Some claude-specific
-    // features have no codex equivalent and are intentionally dropped:
-    //   - `--system-prompt`: codex loads instructions from AGENTS.md in the
-    //     working directory. Put your system prompt there.
-    //   - `--allowed-tools` / `allowed-tools.txt`: codex sandbox is
-    //     path-scoped, not command-scoped. Use `-s <mode>` if you need
-    //     something tighter than danger-full-access.
-    //   - `--mcp-config`: MCP servers are configured via
-    //     `$CODEX_HOME/config.toml`. A project-local `.codex-home/` is used
-    //     here so each agent has its own isolated config without touching the
-    //     user's global `~/.codex`.
-    let mut cmd = process::Command::new("codex");
-    cmd.arg("exec");
-    cmd.arg("-m");
-    cmd.arg(&cfg.agent.model);
-    cmd.arg("--dangerously-bypass-approvals-and-sandbox");
-    cmd.arg("--skip-git-repo-check");
-    cmd.arg("--ephemeral");
-    cmd.arg("-C");
-    cmd.arg(root);
+    let mut cmd = if use_codex {
+        // Check that codex CLI is available.
+        if process::Command::new("codex")
+            .arg("--version")
+            .stdout(process::Stdio::null())
+            .stderr(process::Stdio::null())
+            .status()
+            .is_err()
+        {
+            return Err(RunnerError::Llm(
+                "codex CLI not found. Install Codex CLI or use 'boucle run --dry-run' to preview the context without an LLM."
+                    .to_string(),
+            ));
+        }
 
-    // Use a project-local codex home if present. This lets the agent pin its
-    // model, reasoning effort, and MCP servers without interfering with the
-    // user's interactive `~/.codex` setup.
-    let project_codex_home = root.join(".codex-home");
-    if project_codex_home.exists() {
-        cmd.env("CODEX_HOME", &project_codex_home);
-        log(
-            &log_file,
-            &format!("CODEX_HOME set to {}", project_codex_home.display()),
-        )?;
-    }
+        let mut cmd = process::Command::new("codex");
+        cmd.current_dir(root);
+        cmd.arg("exec");
+        cmd.arg("-m");
+        cmd.arg(&cfg.agent.model);
+        cmd.arg("-c");
+        cmd.arg("model_reasoning_effort=\"high\"");
+        cmd.arg("--dangerously-bypass-approvals-and-sandbox");
+        cmd.arg("--skip-git-repo-check");
+        cmd.arg("--ephemeral");
+        cmd.arg("-C");
+        cmd.arg(root);
+        cmd.arg("-");
 
-    if !system_prompt.is_empty() {
-        // Legacy: codex has no --system-prompt flag. If agent.system_prompt
-        // points at a file that exists, we only log a warning — the user is
-        // expected to migrate its contents into AGENTS.md at the project root.
-        log(
-            &log_file,
-            "Warning: agent.system_prompt is set but codex has no --system-prompt flag. \
-             Move its contents into AGENTS.md at the project root.",
-        )?;
-    }
+        let codex_home = root.join(".codex-home");
+        if codex_home.exists() {
+            cmd.env("CODEX_HOME", codex_home);
+        }
 
-    if cfg.agent.allowed_tools.is_some() || root.join("allowed-tools.txt").exists() {
-        log(
-            &log_file,
-            "Warning: agent.allowed_tools / allowed-tools.txt is ignored under codex. \
-             Use codex sandbox modes if you need tighter restrictions.",
-        )?;
-    }
+        let tools_file = root.join("allowed-tools.txt");
+        if tools_file.exists()
+            || cfg
+                .agent
+                .allowed_tools
+                .as_deref()
+                .is_some_and(|tools| !tools.is_empty())
+        {
+            log(&log_file, "codex backend ignores allowed-tools; enforce tool policy in AGENTS.md / harness config")?;
+        }
+        if cfg.mcp.enable {
+            log(
+                &log_file,
+                "codex backend ignores mcp.enable / mcp-config.json in the runner",
+            )?;
+        }
 
-    if cfg.mcp.enable {
-        log(
-            &log_file,
-            "Note: mcp.enable is true but codex reads MCP servers from \
-             $CODEX_HOME/config.toml, not --mcp-config. Configure them there.",
-        )?;
-    }
+        cmd
+    } else {
+        // Check that claude CLI is available.
+        if process::Command::new("claude")
+            .arg("--version")
+            .stdout(process::Stdio::null())
+            .stderr(process::Stdio::null())
+            .status()
+            .is_err()
+        {
+            return Err(RunnerError::Llm(
+                "claude CLI not found. Install it from https://docs.anthropic.com/en/docs/claude-code \
+                 or use 'boucle run --dry-run' to preview the context without an LLM."
+                    .to_string(),
+            ));
+        }
 
-    // Positional `-` tells codex to read the prompt from stdin. This avoids
-    // OS argv length limits for large assembled contexts.
-    cmd.arg("-");
+        let mut cmd = process::Command::new("claude");
+        cmd.current_dir(root);
+        cmd.arg("-p"); // Non-interactive
+        cmd.arg("--model");
+        cmd.arg(&cfg.agent.model);
 
-    cmd.current_dir(root);
+        if !system_prompt.is_empty() {
+            cmd.arg("--system-prompt");
+            cmd.arg(&system_prompt);
+        }
+
+        // Load allowed tools (file takes precedence, then config)
+        let tools_file = root.join("allowed-tools.txt");
+        if tools_file.exists() {
+            let tools = fs::read_to_string(&tools_file)?;
+            let tool_list: Vec<&str> = tools
+                .lines()
+                .filter(|l| !l.trim().is_empty() && !l.starts_with('#'))
+                .collect();
+            if !tool_list.is_empty() {
+                cmd.arg("--allowed-tools");
+                cmd.arg(tool_list.join(","));
+            }
+        } else if let Some(ref tools) = cfg.agent.allowed_tools {
+            if !tools.is_empty() {
+                cmd.arg("--allowed-tools");
+                cmd.arg(tools);
+            }
+        }
+
+        // Add MCP configuration if enabled
+        if cfg.mcp.enable {
+            let mcp_config_path = root.join("mcp-config.json");
+            if mcp_config_path.exists() {
+                cmd.arg("--mcp-config");
+                cmd.arg(&mcp_config_path);
+                log(
+                    &log_file,
+                    &format!("MCP enabled: {}", mcp_config_path.display()),
+                )?;
+            } else {
+                log(
+                    &log_file,
+                    "MCP enabled but mcp-config.json not found, creating default...",
+                )?;
+                // Create default MCP config
+                let mcp_config = serde_json::json!({
+                    "mcpServers": {
+                        "boucle": {
+                            "command": "./Boucle-framework/target/release/boucle",
+                            "args": ["mcp", "--stdio"],
+                            "env": {}
+                        }
+                    }
+                });
+                fs::write(&mcp_config_path, serde_json::to_string_pretty(&mcp_config)?)?;
+                cmd.arg("--mcp-config");
+                cmd.arg(&mcp_config_path);
+            }
+        }
+
+        cmd
+    };
+
+    // Pass the assembled context via stdin (avoids OS arg length limits
+    // and ensures the CLI reads it correctly when not on a tty).
     cmd.stdin(process::Stdio::piped());
     cmd.stdout(process::Stdio::piped());
     cmd.stderr(process::Stdio::piped());
+    configure_child_process_group(&mut cmd);
 
-    log(&log_file, "Running LLM...")?;
+    log(&log_file, &format!("Running LLM via {llm_label}..."))?;
 
     let mut child = cmd.spawn()?;
 
     // Write prompt to stdin
     if let Some(mut stdin) = child.stdin.take() {
         use std::io::Write;
-        stdin.write_all(assembled_context.as_bytes())?;
+        stdin.write_all(llm_input.as_bytes())?;
         // stdin is dropped here, closing the pipe
     }
 
-    let output = child.wait_with_output()?;
+    let output = wait_with_output_timeout(
+        child,
+        Duration::from_secs(cfg.loop_config.llm_timeout_seconds),
+    )?;
     let exit_code = output.status.code().unwrap_or(-1);
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
 
     log(&log_file, &format!("LLM exit code: {exit_code}"))?;
+    if output.timed_out {
+        log(
+            &log_file,
+            &format!(
+                "LLM timed out after {} seconds; process group was terminated",
+                cfg.loop_config.llm_timeout_seconds
+            ),
+        )?;
+    }
     if !stdout.is_empty() {
         log(&log_file, &format!("--- stdout ---\n{stdout}"))?;
     }
@@ -555,7 +643,7 @@ pub fn run(root: &Path, dry_run: bool) -> Result<(), RunnerError> {
         }
         state.last_failure = Some(now);
         state.last_error = Some(format!(
-            "codex exited with code {exit_code}: {}",
+            "{llm_label} exited with code {exit_code}: {}",
             stdout.chars().take(200).collect::<String>()
         ));
 
@@ -569,14 +657,19 @@ pub fn run(root: &Path, dry_run: bool) -> Result<(), RunnerError> {
 
         if state.consecutive_failures >= FAILURE_THRESHOLD && !state.alert_sent {
             log(&log_file, "Failure threshold reached, sending alert...")?;
-            send_failure_alert(root, &state, &log_file);
-            state.alert_sent = true;
+            // Latch only on confirmed delivery: a failed send must retry on the
+            // next failure, not go silent forever. (Production once recorded 681
+            // consecutive failures with zero pages because the latch was set
+            // even though the email transport was broken.)
+            if send_failure_alert(root, &state, &log_file) {
+                state.alert_sent = true;
+            }
         }
 
         save_failure_state(&failure_state_path, &state);
 
         return Err(RunnerError::Llm(format!(
-            "codex exited with code {exit_code} (failure #{} of {FAILURE_THRESHOLD})",
+            "{llm_label} exited with code {exit_code} (failure #{} of {FAILURE_THRESHOLD})",
             state.consecutive_failures
         )));
     }
@@ -610,8 +703,10 @@ pub fn status(root: &Path) -> Result<(), RunnerError> {
     // Check lock
     let lock_path = root.join(LOCK_FILE);
     if lock_path.exists() {
-        let pid = fs::read_to_string(&lock_path).unwrap_or_default();
-        println!("Status: RUNNING (PID: {})", pid.trim());
+        let status = fs::read_to_string(&lock_path)
+            .map(|content| lock_status_label(&content))
+            .unwrap_or_else(|_| "RUNNING (lock present, owner unreadable)".to_string());
+        println!("Status: {status}");
     } else {
         println!("Status: idle");
     }
@@ -732,16 +827,22 @@ pub fn schedule(root: &Path, interval: &str) -> Result<(), RunnerError> {
 
 // --- Lock management ---
 
-fn acquire_lock(lock_path: &Path) -> Result<(), RunnerError> {
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct LockInfo {
+    pid: u32,
+    token: String,
+    started_at_unix_ms: u128,
+    process_start: Option<String>,
+}
+
+fn acquire_lock(lock_path: &Path) -> Result<LockInfo, RunnerError> {
     if lock_path.exists() {
         let content = fs::read_to_string(lock_path)?;
-        let pid: Option<u32> = content.trim().parse().ok();
-
-        // Check if the process is still running
-        if let Some(pid) = pid {
-            if is_process_running(pid) {
+        if let Some(info) = parse_lock_info(&content) {
+            if lock_matches_running_process(&info) {
                 return Err(RunnerError::Lock(format!(
-                    "Another loop is running (PID: {pid})"
+                    "Another loop is running (PID: {})",
+                    info.pid
                 )));
             }
         }
@@ -750,21 +851,252 @@ fn acquire_lock(lock_path: &Path) -> Result<(), RunnerError> {
         fs::remove_file(lock_path)?;
     }
 
-    fs::write(lock_path, format!("{}", std::process::id()))?;
-    Ok(())
+    let info = current_lock_info();
+    fs::write(lock_path, render_lock_info(&info))?;
+    Ok(info)
 }
 
-struct LockGuard(PathBuf);
+struct LockGuard {
+    path: PathBuf,
+    token: String,
+}
 
 impl Drop for LockGuard {
     fn drop(&mut self) {
-        let _ = fs::remove_file(&self.0);
+        if let Ok(content) = fs::read_to_string(&self.path) {
+            if parse_lock_info(&content).is_some_and(|info| info.token == self.token) {
+                let _ = fs::remove_file(&self.path);
+            }
+        }
     }
 }
 
 fn is_process_running(pid: u32) -> bool {
     // Use kill(pid, 0) syscall directly — no subprocess, no flakiness under load
     unsafe { libc::kill(pid as libc::pid_t, 0) == 0 }
+}
+
+fn current_lock_info() -> LockInfo {
+    let pid = std::process::id();
+    let started_at_unix_ms = current_unix_millis();
+    LockInfo {
+        pid,
+        token: format!("{pid}-{started_at_unix_ms}"),
+        started_at_unix_ms,
+        process_start: process_start_fingerprint(pid),
+    }
+}
+
+fn render_lock_info(info: &LockInfo) -> String {
+    let process_start = info.process_start.clone().unwrap_or_default();
+    format!(
+        "version=2\npid={}\ntoken={}\nstarted_at_unix_ms={}\nprocess_start={}\n",
+        info.pid, info.token, info.started_at_unix_ms, process_start
+    )
+}
+
+fn lock_status_label(content: &str) -> String {
+    if let Some(info) = parse_lock_info(content) {
+        if lock_matches_running_process(&info) {
+            return format!("RUNNING (PID: {})", info.pid);
+        }
+        return format!("STALE LOCK (PID: {})", info.pid);
+    }
+
+    "RUNNING (lock present, owner unreadable)".to_string()
+}
+
+fn parse_lock_info(content: &str) -> Option<LockInfo> {
+    let trimmed = content.trim();
+    if let Ok(pid) = trimmed.parse::<u32>() {
+        return Some(LockInfo {
+            pid,
+            token: String::new(),
+            started_at_unix_ms: 0,
+            process_start: None,
+        });
+    }
+
+    let mut pid = None;
+    let mut token = None;
+    let mut started_at_unix_ms = None;
+    let mut process_start = None;
+    for line in content.lines() {
+        let Some((key, value)) = line.split_once('=') else {
+            continue;
+        };
+        match key.trim() {
+            "pid" => pid = value.trim().parse::<u32>().ok(),
+            "token" => token = Some(value.trim().to_string()),
+            "started_at_unix_ms" => started_at_unix_ms = value.trim().parse::<u128>().ok(),
+            "process_start" => {
+                let value = value.trim();
+                if !value.is_empty() {
+                    process_start = Some(value.to_string());
+                }
+            }
+            _ => {}
+        }
+    }
+
+    Some(LockInfo {
+        pid: pid?,
+        token: token?,
+        started_at_unix_ms: started_at_unix_ms.unwrap_or_default(),
+        process_start,
+    })
+}
+
+fn lock_matches_running_process(info: &LockInfo) -> bool {
+    if !is_process_running(info.pid) {
+        return false;
+    }
+
+    if let Some(stored) = info.process_start.as_deref() {
+        if let Some(current) = process_start_fingerprint(info.pid) {
+            return current == stored;
+        }
+    }
+
+    // Be conservative for legacy locks or platforms where start time is unavailable.
+    true
+}
+
+fn current_unix_millis() -> u128 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_millis())
+        .unwrap_or_default()
+}
+
+fn process_start_fingerprint(pid: u32) -> Option<String> {
+    let output = process::Command::new("ps")
+        .args(["-p", &pid.to_string(), "-o", "lstart="])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let fingerprint = stdout.trim();
+    if fingerprint.is_empty() {
+        None
+    } else {
+        Some(fingerprint.to_string())
+    }
+}
+
+#[derive(Debug)]
+struct TimedProcessOutput {
+    status: process::ExitStatus,
+    stdout: Vec<u8>,
+    stderr: Vec<u8>,
+    timed_out: bool,
+}
+
+#[cfg(unix)]
+fn configure_child_process_group(cmd: &mut process::Command) {
+    use std::os::unix::process::CommandExt;
+    unsafe {
+        cmd.pre_exec(|| {
+            if libc::setpgid(0, 0) == 0 {
+                Ok(())
+            } else {
+                Err(io::Error::last_os_error())
+            }
+        });
+    }
+}
+
+#[cfg(not(unix))]
+fn configure_child_process_group(_cmd: &mut process::Command) {}
+
+fn wait_with_output_timeout(
+    mut child: process::Child,
+    timeout: Duration,
+) -> Result<TimedProcessOutput, RunnerError> {
+    let stdout_handle = child.stdout.take().map(spawn_reader);
+    let stderr_handle = child.stderr.take().map(spawn_reader);
+    let deadline = Instant::now() + timeout;
+    let mut timed_out = false;
+
+    let status = loop {
+        if let Some(status) = child.try_wait()? {
+            break status;
+        }
+
+        if Instant::now() >= deadline {
+            timed_out = true;
+            terminate_child_group(child.id(), false);
+
+            let grace_deadline = Instant::now() + PROCESS_SHUTDOWN_GRACE;
+            let shutdown_status = loop {
+                if let Some(status) = child.try_wait()? {
+                    break status;
+                }
+                if Instant::now() >= grace_deadline {
+                    terminate_child_group(child.id(), true);
+                    break child.wait()?;
+                }
+                thread::sleep(Duration::from_millis(100));
+            };
+            break shutdown_status;
+        }
+
+        thread::sleep(Duration::from_millis(200));
+    };
+
+    let stdout = join_reader(stdout_handle)?;
+    let stderr = join_reader(stderr_handle)?;
+    Ok(TimedProcessOutput {
+        status,
+        stdout,
+        stderr,
+        timed_out,
+    })
+}
+
+fn spawn_reader<R: io::Read + Send + 'static>(
+    mut reader: R,
+) -> thread::JoinHandle<io::Result<Vec<u8>>> {
+    thread::spawn(move || {
+        let mut buf = Vec::new();
+        reader.read_to_end(&mut buf)?;
+        Ok(buf)
+    })
+}
+
+fn join_reader(
+    handle: Option<thread::JoinHandle<io::Result<Vec<u8>>>>,
+) -> Result<Vec<u8>, RunnerError> {
+    match handle {
+        Some(handle) => handle
+            .join()
+            .map_err(|_| RunnerError::Llm("process output reader panicked".to_string()))?
+            .map_err(RunnerError::Io),
+        None => Ok(Vec::new()),
+    }
+}
+
+#[cfg(unix)]
+fn terminate_child_group(pid: u32, force: bool) {
+    let signal = if force { libc::SIGKILL } else { libc::SIGTERM };
+    unsafe {
+        let pgid = -(pid as libc::pid_t);
+        if libc::kill(pgid, signal) != 0 {
+            let _ = libc::kill(pid as libc::pid_t, signal);
+        }
+    }
+}
+
+#[cfg(not(unix))]
+fn terminate_child_group(pid: u32, force: bool) {
+    let mut cmd = process::Command::new("taskkill");
+    cmd.arg("/T");
+    if force {
+        cmd.arg("/F");
+    }
+    let _ = cmd.args(["/PID", &pid.to_string()]).output();
 }
 
 // --- Helpers ---
@@ -792,7 +1124,7 @@ fn save_failure_state(path: &Path, state: &FailureState) {
     }
 }
 
-fn send_failure_alert(root: &Path, state: &FailureState, log_file: &Path) {
+fn send_failure_alert(root: &Path, state: &FailureState, log_file: &Path) -> bool {
     let subject = format!(
         "Boucle: {} consecutive LLM failures",
         state.consecutive_failures
@@ -810,23 +1142,55 @@ fn send_failure_alert(root: &Path, state: &FailureState, log_file: &Path) {
         state.last_error.as_deref().unwrap_or("unknown"),
     );
 
-    // Email primary — works even if Linear/Claude tokens are the broken thing
+    // Email primary — works even if Linear/Claude tokens are the broken thing.
+    // Returns true only on CONFIRMED delivery; the caller must not latch
+    // alert_sent on a failed or skipped send.
     let send_email = root.join("send-email.py");
-    if send_email.exists() {
-        let result = process::Command::new("python3")
-            .arg(&send_email)
-            .arg("thomas.leger@tlgr.io")
-            .arg(&subject)
-            .arg(&body)
-            .current_dir(root)
-            .output();
-        match result {
-            Ok(o) if o.status.success() => {
-                let _ = log(log_file, "Alert email sent.");
-            }
-            _ => {
-                let _ = log(log_file, "Alert email FAILED to send.");
-            }
+    if !send_email.exists() {
+        let _ = log(
+            log_file,
+            "Alert NOT sent: send-email.py not found in agent root — no alert transport configured.",
+        );
+        return false;
+    }
+    let result = process::Command::new("python3")
+        .arg(&send_email)
+        .arg("thomas.leger@tlgr.io")
+        .arg(&subject)
+        .arg(&body)
+        .current_dir(root)
+        .output();
+    match result {
+        Ok(o) if o.status.success() => {
+            let _ = log(log_file, "Alert email sent.");
+            true
+        }
+        Ok(o) => {
+            let stderr: String = String::from_utf8_lossy(&o.stderr)
+                .chars()
+                .take(300)
+                .collect();
+            let stdout: String = String::from_utf8_lossy(&o.stdout)
+                .chars()
+                .take(300)
+                .collect();
+            let _ = log(
+                log_file,
+                &format!(
+                    "Alert email FAILED to send (exit {:?}). stdout: {} stderr: {}",
+                    o.status.code(),
+                    stdout.trim(),
+                    stderr.trim()
+                ),
+            );
+            false
+        }
+        Err(e) => {
+            let _ = log(
+                log_file,
+                &format!("Alert email FAILED to spawn python3: {e}"),
+            );
+            false
         }
     }
 }
@@ -1015,16 +1379,38 @@ pub fn doctor(root: &Path) -> Result<(), RunnerError> {
         failed += 1;
     }
 
-    // 6. Check codex CLI
-    match process::Command::new("codex").arg("--version").output() {
+    // 6. Check the configured LLM CLI
+    let model = config::load(root)
+        .map(|cfg| cfg.agent.model)
+        .unwrap_or_default();
+    let (cli_name, version_arg, install_hint) = if model.starts_with("gpt-") {
+        (
+            "codex",
+            "--version",
+            "Install Codex CLI or choose a Claude model.",
+        )
+    } else {
+        (
+            "claude",
+            "--version",
+            "Install: https://docs.anthropic.com/en/docs/claude-code",
+        )
+    };
+    match process::Command::new(cli_name).arg(version_arg).output() {
         Ok(output) if output.status.success() => {
-            let version = String::from_utf8_lossy(&output.stdout);
-            println!("[ok]  codex CLI — {}", version.trim());
+            let version_stdout = String::from_utf8_lossy(&output.stdout);
+            let version_stderr = String::from_utf8_lossy(&output.stderr);
+            let version = if version_stdout.trim().is_empty() {
+                version_stderr.trim()
+            } else {
+                version_stdout.trim()
+            };
+            println!("[ok]  {cli_name} CLI — {version}");
             passed += 1;
         }
         _ => {
-            println!("[FAIL] codex CLI — not found on PATH");
-            println!("       Install: https://github.com/openai/codex");
+            println!("[FAIL] {cli_name} CLI — not found on PATH");
+            println!("       {install_hint}");
             failed += 1;
         }
     }
@@ -1242,7 +1628,13 @@ pub fn validate(root: &Path) -> Result<(), RunnerError> {
                 "version",
             ];
             let known_memory_keys = ["dir", "state_file"];
-            let known_loop_keys = ["context_dir", "hooks_dir", "log_dir", "max_tokens"];
+            let known_loop_keys = [
+                "context_dir",
+                "hooks_dir",
+                "log_dir",
+                "max_tokens",
+                "llm_timeout_seconds",
+            ];
             let known_schedule_keys = ["interval", "method"];
             let known_git_keys = ["commit_name", "commit_email"];
             let known_mcp_keys = ["enable"];
@@ -1324,6 +1716,17 @@ pub fn validate(root: &Path) -> Result<(), RunnerError> {
         warnings.push(format!(
             "loop.max_tokens is {} — unusually high, check if this is intentional",
             cfg.loop_config.max_tokens
+        ));
+    }
+
+    if cfg.loop_config.llm_timeout_seconds == 0 {
+        errors.push(
+            "loop.llm_timeout_seconds is 0 — LLM calls would be killed immediately".to_string(),
+        );
+    } else if cfg.loop_config.llm_timeout_seconds < 60 {
+        warnings.push(format!(
+            "loop.llm_timeout_seconds is {} — very short, normal LLM calls may be killed",
+            cfg.loop_config.llm_timeout_seconds
         ));
     }
 
@@ -1455,6 +1858,65 @@ mod tests {
     }
 
     #[test]
+    fn test_alert_not_sent_without_transport() {
+        // A missing send-email.py must return false so the caller never
+        // latches alert_sent on a send that did not happen.
+        let dir = tempfile::tempdir().unwrap();
+        let log_file = dir.path().join("test.log");
+        let state = FailureState {
+            consecutive_failures: 3,
+            ..Default::default()
+        };
+        assert!(!send_failure_alert(dir.path(), &state, &log_file));
+        let logged = fs::read_to_string(&log_file).unwrap_or_default();
+        assert!(logged.contains("Alert NOT sent"));
+    }
+
+    #[test]
+    fn test_alert_failed_send_returns_false_and_logs_stderr() {
+        // A transport that exits non-zero must return false and surface stderr.
+        let dir = tempfile::tempdir().unwrap();
+        let log_file = dir.path().join("test.log");
+        fs::write(
+            dir.path().join("send-email.py"),
+            "import sys\nprint('smtp handshake', file=sys.stderr)\nsys.exit(1)\n",
+        )
+        .unwrap();
+        let state = FailureState {
+            consecutive_failures: 3,
+            ..Default::default()
+        };
+        assert!(!send_failure_alert(dir.path(), &state, &log_file));
+        let logged = fs::read_to_string(&log_file).unwrap_or_default();
+        assert!(logged.contains("FAILED to send"));
+        assert!(logged.contains("smtp handshake"));
+    }
+
+    #[test]
+    fn test_alert_successful_send_returns_true() {
+        let dir = tempfile::tempdir().unwrap();
+        let log_file = dir.path().join("test.log");
+        fs::write(dir.path().join("send-email.py"), "print('sent')\n").unwrap();
+        let state = FailureState {
+            consecutive_failures: 3,
+            ..Default::default()
+        };
+        assert!(send_failure_alert(dir.path(), &state, &log_file));
+    }
+
+    #[test]
+    fn test_failure_state_tolerates_foreign_schema() {
+        // A file written by another tool (extra/missing fields) must parse
+        // with defaults instead of silently resetting via a hard error path.
+        let parsed: FailureState = serde_json::from_str(
+            r#"{"consecutive_failures": 5, "type": "runtime", "unknown_field": 1}"#,
+        )
+        .unwrap();
+        assert_eq!(parsed.consecutive_failures, 5);
+        assert!(!parsed.alert_sent);
+    }
+
+    #[test]
     fn test_lock_acquire_release() {
         let dir = tempfile::tempdir().unwrap();
         let lock_path = dir.path().join(LOCK_FILE);
@@ -1507,12 +1969,122 @@ mod tests {
         let lock_path = dir.path().join(LOCK_FILE);
 
         {
-            fs::write(&lock_path, "12345").unwrap();
-            let _guard = LockGuard(lock_path.clone());
+            let info = LockInfo {
+                pid: std::process::id(),
+                token: "owner-token".to_string(),
+                started_at_unix_ms: 1,
+                process_start: None,
+            };
+            fs::write(&lock_path, render_lock_info(&info)).unwrap();
+            let _guard = LockGuard {
+                path: lock_path.clone(),
+                token: info.token,
+            };
             assert!(lock_path.exists());
         }
         // Guard dropped, lock should be removed
         assert!(!lock_path.exists());
+    }
+
+    #[test]
+    fn test_lock_guard_does_not_remove_new_owner() {
+        let dir = tempfile::tempdir().unwrap();
+        let lock_path = dir.path().join(LOCK_FILE);
+        let old_info = LockInfo {
+            pid: std::process::id(),
+            token: "old-token".to_string(),
+            started_at_unix_ms: 1,
+            process_start: None,
+        };
+        let new_info = LockInfo {
+            pid: std::process::id(),
+            token: "new-token".to_string(),
+            started_at_unix_ms: 2,
+            process_start: None,
+        };
+
+        {
+            fs::write(&lock_path, render_lock_info(&new_info)).unwrap();
+            let _guard = LockGuard {
+                path: lock_path.clone(),
+                token: old_info.token,
+            };
+        }
+
+        assert_eq!(
+            parse_lock_info(&fs::read_to_string(lock_path).unwrap()),
+            Some(new_info)
+        );
+    }
+
+    #[test]
+    fn test_lock_info_round_trip_and_legacy_pid() {
+        let info = LockInfo {
+            pid: 42,
+            token: "token-42".to_string(),
+            started_at_unix_ms: 123,
+            process_start: Some("Mon May 25 12:00:00 2026".to_string()),
+        };
+        assert_eq!(parse_lock_info(&render_lock_info(&info)), Some(info));
+
+        let legacy = parse_lock_info("12345\n").unwrap();
+        assert_eq!(legacy.pid, 12345);
+        assert!(legacy.token.is_empty());
+    }
+
+    #[test]
+    fn test_lock_status_label_formats_running_structured_and_legacy_locks() {
+        let info = current_lock_info();
+
+        assert_eq!(
+            lock_status_label(&render_lock_info(&info)),
+            format!("RUNNING (PID: {})", std::process::id())
+        );
+        assert_eq!(
+            lock_status_label(&format!("{}\n", std::process::id())),
+            format!("RUNNING (PID: {})", std::process::id())
+        );
+        assert_eq!(
+            lock_status_label("not a lock owner record"),
+            "RUNNING (lock present, owner unreadable)"
+        );
+    }
+
+    #[test]
+    fn test_lock_status_label_formats_stale_locks() {
+        let info = LockInfo {
+            pid: 99999999,
+            token: "token-99999999".to_string(),
+            started_at_unix_ms: 123,
+            process_start: None,
+        };
+
+        assert_eq!(
+            lock_status_label(&render_lock_info(&info)),
+            "STALE LOCK (PID: 99999999)"
+        );
+        assert_eq!(
+            lock_status_label("99999999\n"),
+            "STALE LOCK (PID: 99999999)"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_wait_with_output_timeout_kills_process_group() {
+        let mut cmd = process::Command::new("sh");
+        cmd.arg("-c")
+            .arg("trap '' TERM; sleep 10 & wait")
+            .stdout(process::Stdio::piped())
+            .stderr(process::Stdio::piped());
+        configure_child_process_group(&mut cmd);
+        let started = Instant::now();
+        let child = cmd.spawn().unwrap();
+
+        let output = wait_with_output_timeout(child, Duration::from_millis(100)).unwrap();
+
+        assert!(output.timed_out);
+        assert!(started.elapsed() < Duration::from_secs(7));
     }
 
     #[test]

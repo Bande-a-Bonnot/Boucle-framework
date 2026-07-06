@@ -14,6 +14,10 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::{fs, io, process};
 
+const MEMORY_INLINE_SOFT_LIMIT: usize = 96 * 1024;
+const MEMORY_HEAD_BYTES: usize = 64 * 1024;
+const MEMORY_TAIL_BYTES: usize = 16 * 1024;
+
 /// Assemble the full context for a loop iteration with security boundaries.
 pub fn assemble(
     root: &Path,
@@ -75,6 +79,7 @@ pub fn assemble_with_iteration(
         .join(&config.memory.state_file);
     if state_path.exists() {
         let state = fs::read_to_string(&state_path)?;
+        let state = summarize_memory_state(&state, &state_path);
         sections.push(format!("## Memory [TRUSTED SYSTEM DATA]\n\n{state}"));
     }
 
@@ -127,6 +132,45 @@ pub fn assemble_with_iteration(
     }
 
     Ok(sections.join("\n\n---\n\n"))
+}
+
+fn summarize_memory_state(state: &str, state_path: &Path) -> String {
+    if state.len() <= MEMORY_INLINE_SOFT_LIMIT {
+        return state.to_string();
+    }
+
+    let head = take_prefix_at_char_boundary(state, MEMORY_HEAD_BYTES);
+    let tail = take_suffix_at_char_boundary(state, MEMORY_TAIL_BYTES);
+    let omitted = state.len().saturating_sub(head.len() + tail.len());
+
+    format!(
+        "{head}\n\n[... truncated {omitted} bytes from {} to keep loop context under budget. Keep HOT state concise and move archival loop history to COLD.md or logs. ...]\n\n{tail}",
+        state_path.display()
+    )
+}
+
+fn take_prefix_at_char_boundary(text: &str, max_bytes: usize) -> &str {
+    if text.len() <= max_bytes {
+        return text;
+    }
+
+    let mut end = max_bytes;
+    while end > 0 && !text.is_char_boundary(end) {
+        end -= 1;
+    }
+    &text[..end]
+}
+
+fn take_suffix_at_char_boundary(text: &str, max_bytes: usize) -> &str {
+    if text.len() <= max_bytes {
+        return text;
+    }
+
+    let mut start = text.len() - max_bytes;
+    while start < text.len() && !text.is_char_boundary(start) {
+        start += 1;
+    }
+    &text[start..]
 }
 
 /// Run all plugins (both middleware and script-based) and collect their output.
@@ -546,5 +590,24 @@ mod tests {
 
         assert!(result.contains("Pending Actions"));
         assert!(result.contains("Do something"));
+    }
+
+    #[test]
+    fn test_assemble_truncates_large_memory_state() {
+        let dir = tempfile::tempdir().unwrap();
+        runner::init(dir.path(), "test-agent").unwrap();
+
+        let state_path = dir.path().join("memory/STATE.md");
+        let mut large_state = String::from("# State\n\nHEAD-MARKER\n");
+        large_state.push_str(&"a".repeat(MEMORY_INLINE_SOFT_LIMIT));
+        large_state.push_str("\nTAIL-MARKER\n");
+        fs::write(&state_path, large_state).unwrap();
+
+        let cfg = config::load(dir.path()).unwrap();
+        let result = assemble(dir.path(), &cfg, None).unwrap();
+
+        assert!(result.contains("HEAD-MARKER"));
+        assert!(result.contains("TAIL-MARKER"));
+        assert!(result.contains("truncated"));
     }
 }

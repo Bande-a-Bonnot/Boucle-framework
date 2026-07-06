@@ -221,6 +221,7 @@ Claude [ignores explicit "do not edit" instructions](https://github.com/anthropi
 ## Read-only mode @enforced
 - Never modify any files
 - Never run rm -rf
+- Never run `>`, `>>`, `tee`, `touch`, `mkdir`, `rm`, `sed -i`, `perl -pi`, `mv`, `cp`, `unlink`, `chmod`, or `chown`
 - Never run ALTER, DROP, TRUNCATE, INSERT, UPDATE, or DELETE
 - Never run docker restart, docker stop, docker build, or docker rm
 - Never run sudo
@@ -228,6 +229,7 @@ Claude [ignores explicit "do not edit" instructions](https://github.com/anthropi
 ```
 
 The hook blocks at the runtime level before the tool executes. The model cannot bypass it. See [more recipes](tools/enforce/#recipes).
+The file-modification rule covers Write, Edit, MultiEdit, and NotebookEdit. The shell-write rule blocks common Bash write paths such as redirects, `tee`, `touch`, `mkdir`, `rm`, in-place edits, moves, copies, and permission/ownership changes.
 
 ---
 
@@ -241,7 +243,7 @@ An opinionated framework for running autonomous AI agents in a loop. Wake up. Th
 
 ### Features
 
-- **Structured loop runner** — Schedule agent iterations via cron/launchd with locking and logging
+- **Structured loop runner** — Schedule agent iterations via cron/launchd with owner-checked locking, bounded LLM subprocess cleanup, and logging
 - **Persistent memory (Broca)** — File-based, git-native knowledge with BM25 search, temporal decay, garbage collection, cross-reference boost, and duplicate consolidation. No database required.
 - **Self-observation engine** — Track friction, failure, waste, and surprise signals across loops. Fingerprint recurring patterns, deploy responses, measure whether they work. The agent observing its own behavior over time.
 - **MCP server** — Expose Broca memory as a Model Context Protocol server for multi-agent collaboration
@@ -410,8 +412,8 @@ your-agent/
 
 Each loop iteration:
 
-1. **Wake** — Lock acquired, context assembled from memory + goals + pending actions
-2. **Think** — Agent reads its full state and decides what to do
+1. **Wake** — Owner-checked lock acquired, context assembled from memory + goals + pending actions
+2. **Think** — Agent reads its full state and decides what to do within the configured LLM timeout
 3. **Act** — Agent executes: writes code, does research, creates plans, requests approvals
 4. **Learn** — Agent updates its memory with what it learned
 5. **Sleep** — Changes committed to git, lock released, agent waits for next iteration
@@ -577,7 +579,7 @@ Run `claude --version` to check. Run `safety-check` with `--verify` to confirm h
 
 **IS_DEMO environment variable disables all hooks**: If `IS_DEMO=1` is set in your environment (sometimes via IDE or cloud workspace settings), Claude Code [silently skips all hook execution](https://github.com/anthropics/claude-code/issues/37780) by suppressing workspace trust without granting it. Run `echo $IS_DEMO` to check. Our `safety-check` tool detects this automatically.
 
-**CLAUDE_CODE_SIMPLE disables all hooks**: When the `CLAUDE_CODE_SIMPLE` environment variable is set (to `true` or `1`), Claude Code disables hooks, MCP tools, attachments, and CLAUDE.md file loading entirely (introduced in v2.1.50). No enforcement rules will fire. Run `echo $CLAUDE_CODE_SIMPLE` to check. Our `safety-check` tool detects this automatically.
+**CLAUDE_CODE_SIMPLE disables all hooks**: When the `CLAUDE_CODE_SIMPLE` environment variable is set to any non-empty value, Claude Code disables hooks, MCP tools, attachments, and CLAUDE.md file loading entirely (introduced in v2.1.50). No enforcement rules will fire. Run `echo $CLAUDE_CODE_SIMPLE` to check. Our `safety-check` tool detects this automatically.
 
 **`--bare` flag skips all hooks**: The `--bare` CLI flag disables hooks, LSP, plugin sync, and skill directory walks for scripted `-p` calls. If your autonomous pipeline uses `claude --bare -p`, no hooks fire. Use OS-level controls (file permissions, containerization) for enforcement in bare mode.
 

@@ -3,11 +3,11 @@
 # Protects specified files and directories from being accessed or modified.
 #
 # Two protection levels:
-#   - Write protection (default): blocks Write, Edit, and modifying Bash commands
+#   - Write protection (default): blocks Write, Edit, MultiEdit, NotebookEdit, and modifying Bash commands
 #   - Access denial ([deny] section): blocks Read, Grep, Glob, and all Bash access
 #
 # Protects against:
-#   - Write/Edit tool targeting protected paths
+#   - Write/Edit/MultiEdit/NotebookEdit tool targeting protected paths
 #   - Read tool targeting denied paths
 #   - Grep/Glob searching denied paths
 #   - Bash commands containing protected/denied paths
@@ -53,19 +53,35 @@ INPUT=$(cat)
 
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
 
-# Reject relative paths in Write/Edit (always active, no config needed)
-# Claude Code's Write/Edit tools require absolute paths. When a confused model
+# Reject relative paths in file-writing tools (always active, no config needed)
+# Claude Code's file-writing tools require absolute paths. When a confused model
 # provides a relative path, the write lands in the wrong location.
 # See: https://github.com/anthropics/claude-code/issues/38270
-if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ]; then
-  FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
-  if [ -n "$FILE_PATH" ] && [[ "$FILE_PATH" != /* ]]; then
-    ABSOLUTE_HINT="$(pwd)/$FILE_PATH"
-    jq -cn --arg p "$FILE_PATH" --arg hint "$ABSOLUTE_HINT" \
-      '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: relative path \"" + $p + "\" rejected. Write/Edit require absolute paths to prevent writing to the wrong location. Try: " + $hint)}}'
-    exit 0
-  fi
-fi
+file_write_target_path() {
+  case "$TOOL_NAME" in
+    NotebookEdit)
+      echo "$INPUT" | jq -r '.tool_input.notebook_path // .tool_input.file_path // empty'
+      ;;
+    Write|Edit|MultiEdit)
+      echo "$INPUT" | jq -r '.tool_input.file_path // empty'
+      ;;
+    *)
+      echo ""
+      ;;
+  esac
+}
+
+case "$TOOL_NAME" in
+  Write|Edit|MultiEdit|NotebookEdit)
+    FILE_PATH=$(file_write_target_path)
+    if [ -n "$FILE_PATH" ] && [[ "$FILE_PATH" != /* ]]; then
+      ABSOLUTE_HINT="$(pwd)/$FILE_PATH"
+      jq -cn --arg p "$FILE_PATH" --arg hint "$ABSOLUTE_HINT" \
+        '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: relative path \"" + $p + "\" rejected. Write/Edit/MultiEdit/NotebookEdit require absolute paths to prevent writing to the wrong location. Try: " + $hint)}}'
+      exit 0
+    fi
+    ;;
+esac
 
 # Find config file
 CONFIG="${FILE_GUARD_CONFIG:-.file-guard}"
@@ -107,7 +123,7 @@ fi
 
 # Determine which tools to intercept
 case "$TOOL_NAME" in
-  Write|Edit|Bash)
+  Write|Edit|MultiEdit|NotebookEdit|Bash)
     # Always check (write protection + deny)
     ;;
   Read|Grep|Glob)
@@ -295,8 +311,8 @@ matches_any() {
 
 # Extract target path based on tool and check against patterns
 case "$TOOL_NAME" in
-  Write|Edit)
-    RAW_TARGET=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+  Write|Edit|MultiEdit|NotebookEdit)
+    RAW_TARGET=$(file_write_target_path)
     if [ -z "$RAW_TARGET" ]; then
       exit 0
     fi

@@ -238,27 +238,43 @@ fn harvest(root: &Path, budget_secs: u64) -> Vec<Signal> {
 
 // ── PHASE 2: CLASSIFY ──────────────────────────────────────────────────────
 
-/// Update pattern counts from new signals.
+/// Recompute pattern counts from the complete signal history.
+///
+/// Counts are SET from this signal set, not incremented: run_pipeline feeds
+/// the full signals.jsonl every run, so an incrementing version re-added the
+/// entire history on each run and inflated counts by orders of magnitude
+/// (production patterns reached 336x their true counts). Recomputing is
+/// idempotent and still counts signals appended outside the pipeline
+/// (`boucle signal`, direct writes to signals.jsonl). Fingerprints absent
+/// from `signals` keep their existing pattern untouched, so rotating the
+/// signal log does not erase pattern history.
 fn classify(patterns: &mut HashMap<String, Pattern>, signals: &[Signal]) {
+    let mut tallies: HashMap<&str, (u64, &Signal, &Signal)> = HashMap::new();
     for sig in signals {
-        let fp = &sig.fingerprint;
-        if fp.is_empty() {
+        if sig.fingerprint.is_empty() {
             continue;
         }
+        let entry = tallies
+            .entry(sig.fingerprint.as_str())
+            .or_insert((0, sig, sig));
+        entry.0 += 1;
+        entry.2 = sig; // signals.jsonl is append-ordered; last wins
+    }
 
-        let entry = patterns.entry(fp.clone()).or_insert_with(|| Pattern {
+    for (fp, (count, first, last)) in tallies {
+        let entry = patterns.entry(fp.to_string()).or_insert_with(|| Pattern {
             count: 0,
-            first_seen: sig.ts.clone(),
-            last_seen: sig.ts.clone(),
+            first_seen: first.ts.clone(),
+            last_seen: last.ts.clone(),
             status: "open".to_string(),
             response_id: None,
-            summary: sig.summary.clone(),
+            summary: first.summary.clone(),
         });
 
-        entry.count += 1;
-        entry.last_seen = sig.ts.clone();
+        entry.count = count;
+        entry.last_seen = last.ts.clone();
         if entry.summary.is_empty() {
-            entry.summary = sig.summary.clone();
+            entry.summary = first.summary.clone();
         }
     }
 }
@@ -628,6 +644,65 @@ mod tests {
         assert_eq!(patterns.len(), 2);
         assert_eq!(patterns["slow-build"].count, 1);
         assert_eq!(patterns["oom-crash"].count, 1);
+    }
+
+    #[test]
+    fn test_classify_is_idempotent_over_full_history() {
+        // run_pipeline passes ALL signals every run; re-running classify over
+        // the same history must not inflate counts (the 336x production bug).
+        let signals = vec![
+            Signal {
+                ts: "2026-01-01T00:00:00Z".to_string(),
+                loop_num: 1,
+                signal_type: "friction".to_string(),
+                source: "manual".to_string(),
+                summary: "slow".to_string(),
+                fingerprint: "slow-build".to_string(),
+            },
+            Signal {
+                ts: "2026-01-01T01:00:00Z".to_string(),
+                loop_num: 2,
+                signal_type: "friction".to_string(),
+                source: "harvester".to_string(),
+                summary: "slow again".to_string(),
+                fingerprint: "slow-build".to_string(),
+            },
+        ];
+        let mut patterns = HashMap::new();
+        classify(&mut patterns, &signals);
+        classify(&mut patterns, &signals);
+        classify(&mut patterns, &signals);
+        assert_eq!(patterns["slow-build"].count, 2);
+        assert_eq!(patterns["slow-build"].last_seen, "2026-01-01T01:00:00Z");
+    }
+
+    #[test]
+    fn test_classify_preserves_patterns_absent_from_history() {
+        // Rotating signals.jsonl must not erase or zero existing patterns.
+        let mut patterns = HashMap::new();
+        patterns.insert(
+            "old-issue".to_string(),
+            Pattern {
+                count: 7,
+                first_seen: "2025-12-01T00:00:00Z".to_string(),
+                last_seen: "2025-12-20T00:00:00Z".to_string(),
+                status: "resolved".to_string(),
+                response_id: Some("gate-old-issue.py".to_string()),
+                summary: "old".to_string(),
+            },
+        );
+        let signals = vec![Signal {
+            ts: "2026-01-01T00:00:00Z".to_string(),
+            loop_num: 1,
+            signal_type: "friction".to_string(),
+            source: "manual".to_string(),
+            summary: "new".to_string(),
+            fingerprint: "new-issue".to_string(),
+        }];
+        classify(&mut patterns, &signals);
+        assert_eq!(patterns["old-issue"].count, 7);
+        assert_eq!(patterns["old-issue"].status, "resolved");
+        assert_eq!(patterns["new-issue"].count, 1);
     }
 
     #[test]

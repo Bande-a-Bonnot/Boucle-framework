@@ -1,8 +1,8 @@
 # read-once CLI (PowerShell) -- view stats, manage cache, install hook
 #
 # Usage:
-#   pwsh read-once.ps1 stats         Show token savings for current/recent sessions
-#   pwsh read-once.ps1 gain          Same as stats (RTK-style)
+#   pwsh read-once.ps1 stats [--json]  Show token savings for current/recent sessions
+#   pwsh read-once.ps1 gain [--json]   Same as stats (RTK-style)
 #   pwsh read-once.ps1 status        Quick health check
 #   pwsh read-once.ps1 verify        Full diagnostic with dry-run test
 #   pwsh read-once.ps1 clear         Clear session cache (start fresh)
@@ -13,7 +13,9 @@
 
 param(
     [Parameter(Position=0)]
-    [string]$Command = 'help'
+    [string]$Command = 'help',
+    [Parameter(Position=1)]
+    [string]$Format = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -33,13 +35,49 @@ function Quote-CommandPath {
 }
 
 function Show-Stats {
+    param([bool]$Json = $false)
+
     if (-not (Test-Path $StatsFile)) {
+        if ($Json) {
+            [ordered]@{
+                mode = 'stats'
+                has_data = $false
+                total_file_reads = 0
+                cache_hits = 0
+                diff_hits = 0
+                first_reads = 0
+                changed_files = 0
+                ttl_expired = 0
+                tokens_saved = 0
+                read_token_total = 0
+                savings_pct = 0
+                sessions_tracked = 0
+            } | ConvertTo-Json -Compress
+            return
+        }
         Write-Host "No read-once data yet. Stats appear after your first Claude Code session with the hook installed."
         return
     }
 
     $lines = Get-Content $StatsFile -ErrorAction SilentlyContinue
     if (-not $lines -or $lines.Count -eq 0) {
+        if ($Json) {
+            [ordered]@{
+                mode = 'stats'
+                has_data = $true
+                total_file_reads = 0
+                cache_hits = 0
+                diff_hits = 0
+                first_reads = 0
+                changed_files = 0
+                ttl_expired = 0
+                tokens_saved = 0
+                read_token_total = 0
+                savings_pct = 0
+                sessions_tracked = 0
+            } | ConvertTo-Json -Compress
+            return
+        }
         Write-Host "No reads tracked yet."
         return
     }
@@ -102,6 +140,29 @@ function Show-Stats {
 
     $ttl = if ($env:READ_ONCE_TTL) { [int]$env:READ_ONCE_TTL } else { 1200 }
     $ttlMin = [int]($ttl / 60)
+
+    if ($Json) {
+        [ordered]@{
+            mode = 'stats'
+            has_data = $true
+            total_file_reads = $totalReads
+            cache_hits = $totalHits
+            diff_hits = $totalDiffs
+            first_reads = $totalMisses
+            changed_files = $totalChanged
+            ttl_expired = $totalExpired
+            tokens_saved = $tokensSaved
+            read_token_total = $tokensTotal
+            savings_pct = $savingsPct
+            sessions_tracked = $sessions.Count
+            cache_ttl_seconds = $ttl
+            cost_saved = [ordered]@{
+                sonnet_usd = [math]::Round($tokensSaved * 3 / 1000000, 4)
+                opus_usd = [math]::Round($tokensSaved * 15 / 1000000, 4)
+            }
+        } | ConvertTo-Json -Compress
+        return
+    }
 
     Write-Host "read-once - file read deduplication for Claude Code"
     Write-Host ""
@@ -498,8 +559,8 @@ function Show-Help {
     Write-Host "read-once - Stop Claude Code from re-reading files it already has"
     Write-Host ""
     Write-Host "Usage:"
-    Write-Host "  pwsh read-once.ps1 stats       Show token savings"
-    Write-Host "  pwsh read-once.ps1 gain        Same as stats (RTK-style)"
+    Write-Host "  pwsh read-once.ps1 stats [--json]  Show token savings"
+    Write-Host "  pwsh read-once.ps1 gain [--json]   Same as stats (RTK-style)"
     Write-Host "  pwsh read-once.ps1 status      Quick health check"
     Write-Host "  pwsh read-once.ps1 verify      Full diagnostic with dry-run test"
     Write-Host "  pwsh read-once.ps1 clear       Clear session cache"
@@ -527,7 +588,7 @@ function Show-Help {
 
 # Dispatch
 switch ($Command.ToLower()) {
-    { $_ -in 'stats', 'gain' } { Show-Stats }
+    { $_ -in 'stats', 'gain' } { Show-Stats -Json ($Format -eq '--json') }
     'status'                    { Show-Status }
     'install'                   { Install-Hook }
     'upgrade'                   { Invoke-Upgrade }

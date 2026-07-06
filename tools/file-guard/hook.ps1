@@ -4,7 +4,7 @@
 # Protects specified files and directories from being accessed or modified.
 #
 # Two protection levels:
-#   - Write protection (default): blocks Write, Edit, and modifying Bash commands
+#   - Write protection (default): blocks Write, Edit, MultiEdit, NotebookEdit, and modifying Bash commands
 #   - Access denial ([deny] section): blocks Read, Grep, Glob, and all Bash access
 #
 # Install:
@@ -54,12 +54,24 @@ $hookInput = $rawInput | ConvertFrom-Json
 $toolName = $hookInput.tool_name
 if (-not $toolName) { exit 0 }
 
-# Reject relative paths in Write/Edit (always active, no config needed)
-if ($toolName -eq 'Write' -or $toolName -eq 'Edit') {
-    $filePath = $hookInput.tool_input.file_path
+# Return the path field for tools that modify file-like artifacts.
+function Get-FileWriteTargetPath {
+    switch ($toolName) {
+        'NotebookEdit' {
+            if ($hookInput.tool_input.notebook_path) { return $hookInput.tool_input.notebook_path }
+            return $hookInput.tool_input.file_path
+        }
+        { $_ -in 'Write', 'Edit', 'MultiEdit' } { return $hookInput.tool_input.file_path }
+        default { return $null }
+    }
+}
+
+# Reject relative paths in file-writing tools (always active, no config needed)
+if ($toolName -in 'Write', 'Edit', 'MultiEdit', 'NotebookEdit') {
+    $filePath = Get-FileWriteTargetPath
     if ($filePath -and -not ([System.IO.Path]::IsPathRooted($filePath))) {
         $absoluteHint = Join-Path (Get-Location) $filePath
-        Block-Tool "file-guard: relative path `"$filePath`" rejected. Write/Edit require absolute paths to prevent writing to the wrong location. Try: $absoluteHint"
+        Block-Tool "file-guard: relative path `"$filePath`" rejected. Write/Edit/MultiEdit/NotebookEdit require absolute paths to prevent writing to the wrong location. Try: $absoluteHint"
     }
 }
 
@@ -92,7 +104,7 @@ if ($writePatterns.Count -eq 0 -and $denyPatterns.Count -eq 0) { exit 0 }
 
 # Determine which tools to intercept
 switch ($toolName) {
-    { $_ -in 'Write', 'Edit', 'Bash' } {
+    { $_ -in 'Write', 'Edit', 'MultiEdit', 'NotebookEdit', 'Bash' } {
         # Always check (write protection + deny)
     }
     { $_ -in 'Read', 'Grep', 'Glob' } {
@@ -193,27 +205,8 @@ function Test-PathMatch {
 
 # Extract target path based on tool and check against patterns
 switch ($toolName) {
-    'Write' {
-        $target = $hookInput.tool_input.file_path
-        if (-not $target) { exit 0 }
-        $target = Normalize-TargetPath $target
-
-        if ($denyPatterns.Count -gt 0) {
-            $matched = Test-PathMatch -Target $target -Patterns $denyPatterns
-            if ($matched) {
-                Block-Tool "file-guard: access to `"$target`" is denied (matches [deny] pattern `"$matched`"). Check .file-guard config."
-            }
-        }
-        if ($writePatterns.Count -gt 0) {
-            $matched = Test-PathMatch -Target $target -Patterns $writePatterns
-            if ($matched) {
-                Block-Tool "file-guard: `"$target`" is protected (matches pattern `"$matched`"). Check .file-guard config to modify protections."
-            }
-        }
-    }
-
-    'Edit' {
-        $target = $hookInput.tool_input.file_path
+    { $_ -in 'Write', 'Edit', 'MultiEdit', 'NotebookEdit' } {
+        $target = Get-FileWriteTargetPath
         if (-not $target) { exit 0 }
         $target = Normalize-TargetPath $target
 

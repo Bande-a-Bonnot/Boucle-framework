@@ -146,7 +146,9 @@ You can also manually reset the cache:
 
 ```sh
 ./read-once stats          # macOS/Linux
+./read-once stats --json   # machine-readable summary
 pwsh read-once.ps1 stats   # Windows
+pwsh read-once.ps1 stats --json
 ```
 
 ```
@@ -177,7 +179,9 @@ read-once — file read deduplication for Claude Code
 
 ```
 read-once stats       Show token savings
+read-once stats --json  Show token savings as JSON
 read-once gain        Same as stats
+read-once gain --json   Same as stats --json
 read-once verify      Full diagnostic with dry-run test
 read-once status      Quick health check
 read-once clear       Clear session cache
@@ -244,10 +248,13 @@ Environment variables:
 ## Requirements
 
 **macOS / Linux:**
-- `jq` (for JSON parsing)
+- `jq` (for install, verify, and hook JSON parsing; `stats` works without it)
 - `bash` 4+
 - Python (`py`, `python3`, or `python`, optional for exact token estimates and JSONC cleanup)
 - Claude Code with hooks support
+
+`read-once stats` and `read-once gain` do not require `bc`, and their JSON
+output still works when `jq` is unavailable.
 
 **Windows:**
 - PowerShell 7+ (`pwsh`), not the built-in Windows PowerShell 5.1
