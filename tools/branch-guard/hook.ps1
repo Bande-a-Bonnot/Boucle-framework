@@ -186,7 +186,8 @@ function Test-NewGitCommitSegment {
     while ($i -lt $words.Count) {
         $token = $words[$i]
 
-        if ($token -eq '-C') {
+        # -ceq: case-sensitive — `-c key=val` (config) must not be consumed as `-C <dir>`
+        if ($token -ceq '-C') {
             if ($i + 1 -lt $words.Count) {
                 $targetDir = Normalize-TargetDir $words[$i + 1]
             }
