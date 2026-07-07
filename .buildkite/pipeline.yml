@@ -13,8 +13,19 @@ steps:
       echo "Buildkite Tart jobs are disabled for pull requests."
       echo "Pull request validation runs in GitHub Actions."
 
+  - label: ":fast_forward: Topic-branch push — covered by the branch's PR in GitHub Actions"
+    key: branch-github-actions
+    if: build.pull_request.id == null && build.branch != "main"
+    agents:
+      queue: "ci-linux-arm64"
+    timeout_in_minutes: 5
+    command: |
+      set -euo pipefail
+      echo "Full Buildkite validation runs on main only."
+      echo "Topic branches are validated by GitHub Actions via their pull requests."
+
   - group: "Full Buildkite validation"
-    if: build.pull_request.id == null
+    if: build.pull_request.id == null && build.branch == "main"
     steps:
       - label: ":linux: Linux ARM64"
         key: linux-arm64
@@ -22,7 +33,7 @@ steps:
         concurrency_group: "big-cabbage/tart-ci"
         concurrency_method: eager
         cancel_on_build_failing: true
-        timeout_in_minutes: 120
+        timeout_in_minutes: 30
         agents:
           queue: "ci-linux-arm64"
         plugins:
@@ -40,6 +51,19 @@ steps:
           export CARGO_HOME="$${CARGO_HOME:-$$HOME/.cargo}"
           export RUSTUP_HOME="$${RUSTUP_HOME:-/opt/rustup}"
           export PATH="/usr/local/bin:/opt/cargo/bin:$$CARGO_HOME/bin:$$PATH"
+
+          # Baked-image toolchain guard: try a cheap update, then fail fast
+          # with an actionable message instead of cryptic compile errors when
+          # the image's Rust predates the crate's requirements.
+          rustup update --no-self-update stable >/dev/null 2>&1 || true
+          MSRV="1.85.0"
+          RUSTC_VER="$$(rustc --version | awk '{print $$2}')"
+          if [ "$$(printf '%s\n%s\n' "$$MSRV" "$$RUSTC_VER" | sort -V | head -1)" != "$$MSRV" ]; then
+            echo "^^^ +++"
+            echo "Toolchain too old: rustc $$RUSTC_VER < required $$MSRV."
+            echo "Rebake the ci-linux-arm64-rust-bazel Tart image with a current toolchain."
+            exit 1
+          fi
 
           rustc --version
           cargo --version
@@ -60,7 +84,7 @@ steps:
         concurrency_group: "big-cabbage/tart-ci"
         concurrency_method: eager
         cancel_on_build_failing: true
-        timeout_in_minutes: 120
+        timeout_in_minutes: 30
         agents:
           queue: "ci-macos-apple-silicon"
         plugins:

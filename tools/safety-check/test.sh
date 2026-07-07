@@ -225,28 +225,45 @@ chmod +x "$TMPDIR_HANGING_CLAUDE/claude"
 set +e
 HANGING_CLAUDE_OUTPUT=$(PATH="$TMPDIR_HANGING_CLAUDE:$ORIGINAL_PATH" python3 - "$CHECK_SCRIPT" "$TMPDIR_HANGING_AUDIT" << 'PY'
 import os
+import signal
 import subprocess
 import sys
+import tempfile
 
-try:
-    result = subprocess.run(
+# Generous budget: this asserts the audit does not hang FOREVER on a hanging
+# CLI (the fake sleeps 600s). Under a loaded machine or CI runner the audit
+# legitimately takes tens of seconds; 10s flaked.
+#
+# HANG-PROOFING (the 4-hour Buildkite lesson): output goes to FILES, not
+# pipes — with capture_output a timed-out child is killed but the sleeping
+# fake `claude` grandchild keeps the pipe open and Python blocks draining it
+# (deadlocks the whole suite until the CI job cap). And the kill must hit the
+# PROCESS GROUP, or the grandchild survives to hold the next test hostage.
+with tempfile.TemporaryFile(mode="w+") as out_f, tempfile.TemporaryFile(mode="w+") as err_f:
+    proc = subprocess.Popen(
         ["bash", sys.argv[1]],
-        capture_output=True,
+        stdout=out_f,
+        stderr=err_f,
         text=True,
-        # Generous budget: this asserts the audit does not hang FOREVER on a
-        # hanging CLI (the fake sleeps 600s). Under a loaded machine or CI
-        # runner the audit legitimately takes tens of seconds; 10s flaked.
-        timeout=90,
         cwd=sys.argv[2],
         env={**os.environ, "HOME": sys.argv[2], "SAFETY_CHECK_SKIP_CLAUDE_VERSION": "0"},
+        start_new_session=True,
     )
-except subprocess.TimeoutExpired:
-    print("audit timed out")
-    sys.exit(124)
-
-print(result.stdout)
-print(result.stderr, file=sys.stderr)
-sys.exit(result.returncode)
+    try:
+        returncode = proc.wait(timeout=90)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except Exception:
+            pass
+        proc.wait()
+        print("audit timed out")
+        sys.exit(124)
+    out_f.seek(0)
+    err_f.seek(0)
+    print(out_f.read())
+    print(err_f.read(), file=sys.stderr)
+    sys.exit(returncode)
 PY
 )
 HANGING_CLAUDE_EXIT=$?
