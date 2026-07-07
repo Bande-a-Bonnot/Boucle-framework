@@ -372,10 +372,11 @@ pub fn run(root: &Path, dry_run: bool) -> Result<(), RunnerError> {
                     state.consecutive_failures
                 ),
             )?;
-            if state.consecutive_failures >= FAILURE_THRESHOLD && !state.alert_sent {
-                if send_failure_alert(root, &state, &log_file) {
-                    state.alert_sent = true;
-                }
+            if state.consecutive_failures >= FAILURE_THRESHOLD
+                && !state.alert_sent
+                && send_failure_alert(root, &state, &log_file)
+            {
+                state.alert_sent = true;
             }
             save_failure_state(&failure_state_path, &state);
             return Err(err);

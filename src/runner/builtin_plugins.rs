@@ -266,11 +266,16 @@ impl ContextPlugin for LinearIssuesPlugin {
 }
 
 /// System status plugin - provides basic system information.
+// Kept although unregistered (context::assemble renders System Status
+// itself); available for explicit registration and exercised by tests,
+// which plain `cargo clippy` does not compile.
+#[allow(dead_code)]
 pub struct SystemStatusPlugin {
     meta: PluginMeta,
 }
 
 impl SystemStatusPlugin {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             meta: PluginMetaBuilder::new("system-status")
@@ -396,6 +401,14 @@ mod tests {
 
         // Should not run if auth script doesn't exist
         assert!(!plugin.should_run(&context));
+    }
+
+    #[test]
+    fn test_system_status_plugin_still_constructible() {
+        // Unregistered by default (context::assemble renders System Status
+        // itself) but kept for explicit registration.
+        let plugin = SystemStatusPlugin::new();
+        assert_eq!(plugin.meta().name, "system-status");
     }
 
     #[test]
