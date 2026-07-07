@@ -340,10 +340,13 @@ impl ContextPlugin for SystemStatusPlugin {
 
 /// Create and return all built-in plugins.
 pub fn create_builtin_plugins() -> Vec<Box<dyn ContextPlugin>> {
-    vec![
-        Box::new(LinearIssuesPlugin::new()),
-        Box::new(SystemStatusPlugin::new()),
-    ]
+    // SystemStatusPlugin is deliberately NOT registered: context::assemble
+    // already renders its own "## System Status [TRUSTED SYSTEM DATA]"
+    // section, so registering the plugin duplicated the section in every
+    // prompt — and the plugin copy reported a hardcoded "Loop iteration: 0"
+    // (assemble is always called with iteration 0 in production). The plugin
+    // type stays available for explicit registration and tests.
+    vec![Box::new(LinearIssuesPlugin::new())]
 }
 
 #[cfg(test)]
@@ -398,10 +401,12 @@ mod tests {
     #[test]
     fn test_create_builtin_plugins() {
         let plugins = create_builtin_plugins();
-        assert_eq!(plugins.len(), 2);
+        assert_eq!(plugins.len(), 1);
 
         let names: Vec<&str> = plugins.iter().map(|p| p.meta().name.as_str()).collect();
         assert!(names.contains(&"linear-issues"));
-        assert!(names.contains(&"system-status"));
+        // system-status is intentionally unregistered: context::assemble
+        // renders its own System Status section (see create_builtin_plugins).
+        assert!(!names.contains(&"system-status"));
     }
 }
