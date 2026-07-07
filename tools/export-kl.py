@@ -10,8 +10,19 @@ import sys
 import os
 
 DOCS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs")
+ROOT = os.path.dirname(DOCS)
 HTML_PATH = os.path.join(DOCS, "limitations.html")
 JSON_PATH = os.path.join(DOCS, "limitations.json")
+CARGO_PATH = os.path.join(ROOT, "Cargo.toml")
+
+
+def package_version():
+    with open(CARGO_PATH) as f:
+        for line in f:
+            m = re.match(r'version\s*=\s*"([^"]+)"', line.strip())
+            if m:
+                return m.group(1)
+    raise RuntimeError("package version not found in Cargo.toml")
 
 def extract():
     with open(HTML_PATH) as f:
@@ -69,7 +80,7 @@ def main():
         severities[s] = severities.get(s, 0) + 1
 
     data = {
-        "version": "0.12.0",
+        "version": package_version(),
         "count": len(entries),
         "categories": categories,
         "severity_counts": severities,
