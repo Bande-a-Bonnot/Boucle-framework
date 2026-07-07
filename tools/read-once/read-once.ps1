@@ -167,7 +167,7 @@ function Show-Stats {
     Write-Host "read-once - file read deduplication for Claude Code"
     Write-Host ""
     Write-Host "  Total file reads:    $totalReads"
-    Write-Host "  Cache hits:          $totalHits (blocked re-reads)"
+    Write-Host "  Cache hits:          $totalHits (re-read advisories/blocks)"
     if ($totalDiffs -gt 0) {
         Write-Host "  Diff hits:           $totalDiffs (changed files - sent diff only)"
     }
@@ -571,8 +571,8 @@ function Show-Help {
     Write-Host "How it works:"
     Write-Host "  A PreToolUse hook intercepts Read calls. When Claude tries to"
     Write-Host "  re-read a file it already read this session (and the file hasn't"
-    Write-Host "  changed), the hook blocks the read and tells Claude the content"
-    Write-Host "  is already in context. Saves ~2000+ tokens per prevented re-read."
+    Write-Host "  changed), warn mode allows the read with an advisory and deny mode"
+    Write-Host "  blocks it with a reason. Saves ~2000+ tokens per prevented hard re-read."
     Write-Host ""
     Write-Host "Compaction safety:"
     Write-Host "  Cache entries expire after READ_ONCE_TTL seconds (default: 1200 = 20m)."

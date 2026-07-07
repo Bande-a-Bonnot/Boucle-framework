@@ -115,15 +115,15 @@ echo ""
 echo "3b. Second read (cache hit — deny mode, should block)"
 export READ_ONCE_MODE=deny
 OUTPUT=$(run_hook "$(make_input Read "$TEST_FILE")")
-assert_contains "Deny mode: blocks with decision:block" "block" "$OUTPUT"
+assert_contains "Deny mode: emits permission deny" "deny" "$OUTPUT"
 assert_contains "Deny mode: mentions already in context" "already in context" "$OUTPUT"
-# Verify robust response format (top-level decision, not hookSpecificOutput — see claude-code#37597)
+# Verify current Claude Code hookSpecificOutput response format.
 TOTAL=$((TOTAL + 1))
-if echo "$OUTPUT" | jq -e '.decision == "block"' >/dev/null 2>&1; then
-  echo "PASS: Deny mode uses robust top-level decision format"
+if echo "$OUTPUT" | jq -e '.hookSpecificOutput.permissionDecision == "deny"' >/dev/null 2>&1; then
+  echo "PASS: Deny mode uses hookSpecificOutput permissionDecision deny"
   PASS=$((PASS + 1))
 else
-  echo "FAIL: Deny mode should use top-level decision:block, not hookSpecificOutput"
+  echo "FAIL: Deny mode should use hookSpecificOutput.permissionDecision=deny"
   FAIL=$((FAIL + 1))
 fi
 unset READ_ONCE_MODE
@@ -148,7 +148,7 @@ OUTPUT=$(run_hook "$(make_input Read "$TEST_FILE" "different-session-2")")
 assert_contains "Deny mode: cross-session first read still allows" "allow" "$OUTPUT"
 assert_contains "Deny mode: cross-session first read avoids Edit deadlock" "Edit" "$OUTPUT"
 OUTPUT=$(run_hook "$(make_input Read "$TEST_FILE" "different-session-2")")
-assert_contains "Deny mode: second same-session read blocks" "block" "$OUTPUT"
+assert_contains "Deny mode: second same-session read denies" "deny" "$OUTPUT"
 unset READ_ONCE_MODE
 
 # --- Test 6: Nonexistent file ---
@@ -414,9 +414,9 @@ assert_empty "Large diff: falls back to full re-read" "$OUTPUT"
 
 unset READ_ONCE_DIFF_MAX
 
-# --- Test 16: Diff mode — unchanged file still blocked normally ---
+# --- Test 16: Diff mode — unchanged file still hits cache normally ---
 echo ""
-echo "16. Diff mode — unchanged file still blocked (cache hit)"
+echo "16. Diff mode — unchanged file still hits cache (warn mode)"
 
 UNCHANGED_FILE="${TEST_DIR}/unchanged-diff.txt"
 echo "stable content" > "$UNCHANGED_FILE"

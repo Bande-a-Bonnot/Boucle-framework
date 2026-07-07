@@ -98,7 +98,9 @@ Enable with:
 export READ_ONCE_DIFF=1
 ```
 
-When a re-read is blocked with a diff, Claude sees:
+In warn mode, when a changed file is re-read with diff mode enabled, Claude sees
+an advisory like this and the read is still allowed. In deny mode, the same
+message is used as the block reason:
 
 ```
 read-once: app.py changed since last read. You already have the previous
@@ -117,7 +119,8 @@ If the diff is too large (>40 lines by default), read-once falls back to allowin
 
 ### What Claude sees
 
-When a re-read is blocked, Claude receives:
+When an unchanged file is re-read, Claude receives this advisory in warn mode
+or this block reason in deny mode:
 
 ```
 read-once: schema.rb (~2,340 tokens) already in context (read 3m ago, unchanged).
@@ -155,7 +158,7 @@ pwsh read-once.ps1 stats --json
 read-once — file read deduplication for Claude Code
 
   Total file reads:    47
-  Cache hits:          19 (blocked re-reads)
+  Cache hits:          19 (re-read advisories/blocks)
   Diff hits:           3 (changed files — sent diff only)
   First reads:         22
   Changed files:       1 (full re-read after modification)
@@ -267,7 +270,7 @@ Claude Code re-reads files more than you'd think. Common patterns:
 - Re-reading config files across different parts of a task
 - Reading the same file in subagents that share a session
 
-Each blocked re-read saves the file token cost Claude Code would have returned. `read-once` estimates the first 2000 displayed lines, including line-number overhead, and returns 0 for common binary/image/archive extensions. If Python with `tiktoken` is available it uses `cl100k_base`; otherwise it falls back to a truncation-aware byte estimate. Run `./read-once stats` after a session to see your actual savings.
+In deny mode, each blocked re-read saves the file token cost Claude Code would have returned. In warn mode, cache-hit stats identify redundant reads without risking Edit deadlocks or parallel-read failures. `read-once` estimates the first 2000 displayed lines, including line-number overhead, and returns 0 for common binary/image/archive extensions. If Python with `tiktoken` is available it uses `cl100k_base`; otherwise it falls back to a truncation-aware byte estimate. Run `./read-once stats` after a session to see the actual pattern.
 
 ## FAQ
 
