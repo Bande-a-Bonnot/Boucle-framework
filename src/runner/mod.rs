@@ -466,6 +466,13 @@ pub fn run(root: &Path, dry_run: bool) -> Result<(), RunnerError> {
         cmd.arg("--ephemeral");
         cmd.arg("-C");
         cmd.arg(root);
+        // Write the final agent message to <log>.last-msg.md — the next
+        // iteration's "## Last Log Entry" prefers these concise summaries
+        // over raw event logs (context::get_last_log). The shell loop wrote
+        // them via the same codex flag; without this the newest last-msg
+        // file goes permanently stale after a runner migration.
+        cmd.arg("-o");
+        cmd.arg(log_file.with_extension("last-msg.md"));
         cmd.arg("-");
 
         let codex_home = root.join(".codex-home");
