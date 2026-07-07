@@ -2,81 +2,101 @@ env:
   CARGO_TERM_COLOR: always
 
 steps:
-  - label: ":linux: Linux ARM64"
-    key: linux-arm64
-    concurrency: 2
-    concurrency_group: "big-cabbage/tart-ci"
+  - label: ":github: PR coverage handled by GitHub Actions"
+    key: pr-github-actions
+    if: build.pull_request.id != null
     agents:
       queue: "ci-linux-arm64"
-    plugins:
-      - github.com/Bande-a-Bonnot/tart-ci#v0.1.1:
-          image: "ci-linux-arm64-rust-bazel"
-          os: "linux"
-          always_pull: false
-          headless: true
+    timeout_in_minutes: 5
     command: |
       set -euo pipefail
+      echo "Buildkite Tart jobs are disabled for pull requests."
+      echo "Pull request validation runs in GitHub Actions."
 
-      if [[ -z "$${HOME:-}" || "$$HOME" == "/" ]]; then
-        export HOME=/home/admin
-      fi
-      export CARGO_HOME="$${CARGO_HOME:-$$HOME/.cargo}"
-      export RUSTUP_HOME="$${RUSTUP_HOME:-/opt/rustup}"
-      export PATH="/usr/local/bin:/opt/cargo/bin:$$CARGO_HOME/bin:$$PATH"
+  - group: "Full Buildkite validation"
+    if: build.pull_request.id == null
+    steps:
+      - label: ":linux: Linux ARM64"
+        key: linux-arm64
+        concurrency: 2
+        concurrency_group: "big-cabbage/tart-ci"
+        concurrency_method: eager
+        cancel_on_build_failing: true
+        timeout_in_minutes: 120
+        agents:
+          queue: "ci-linux-arm64"
+        plugins:
+          - github.com/Bande-a-Bonnot/tart-ci#v0.1.1:
+              image: "ci-linux-arm64-rust-bazel"
+              os: "linux"
+              always_pull: false
+              headless: true
+        command: |
+          set -euo pipefail
 
-      rustc --version
-      cargo --version
-      rustfmt --version
-      cargo clippy --version
-      python3 --version
+          if [[ -z "$${HOME:-}" || "$$HOME" == "/" ]]; then
+            export HOME=/home/admin
+          fi
+          export CARGO_HOME="$${CARGO_HOME:-$$HOME/.cargo}"
+          export RUSTUP_HOME="$${RUSTUP_HOME:-/opt/rustup}"
+          export PATH="/usr/local/bin:/opt/cargo/bin:$$CARGO_HOME/bin:$$PATH"
 
-      cargo fmt --check
-      cargo clippy -- -D warnings
-      cargo test --verbose
-      cargo build --verbose
-      bash test/run_all.sh
-      bash tools/test-all.sh
+          rustc --version
+          cargo --version
+          rustfmt --version
+          cargo clippy --version
+          python3 --version
 
-  - label: ":mac: macOS Apple Silicon"
-    key: macos-apple-silicon
-    concurrency: 2
-    concurrency_group: "big-cabbage/tart-ci"
-    agents:
-      queue: "ci-macos-apple-silicon"
-    plugins:
-      - github.com/Bande-a-Bonnot/tart-ci#v0.1.1:
-          image: "ghcr.io/cirruslabs/macos-sequoia-base:latest"
-          os: "macos"
-          always_pull: false
-          headless: true
-    command: |
-      set -euo pipefail
+          cargo fmt --check
+          cargo clippy -- -D warnings
+          cargo test --verbose
+          cargo build --verbose
+          bash test/run_all.sh
+          bash tools/test-all.sh
 
-      if [[ -z "$${HOME:-}" ]]; then
-        export HOME=/Users/admin
-      fi
-      export CARGO_HOME="$${CARGO_HOME:-$$HOME/.cargo}"
-      export RUSTUP_HOME="$${RUSTUP_HOME:-$$HOME/.rustup}"
-      export PATH="$$CARGO_HOME/bin:/opt/homebrew/bin:/usr/local/bin:$$PATH"
+      - label: ":mac: macOS Apple Silicon"
+        key: macos-apple-silicon
+        concurrency: 2
+        concurrency_group: "big-cabbage/tart-ci"
+        concurrency_method: eager
+        cancel_on_build_failing: true
+        timeout_in_minutes: 120
+        agents:
+          queue: "ci-macos-apple-silicon"
+        plugins:
+          - github.com/Bande-a-Bonnot/tart-ci#v0.1.1:
+              image: "ghcr.io/cirruslabs/macos-sequoia-base:latest"
+              os: "macos"
+              always_pull: false
+              headless: true
+        command: |
+          set -euo pipefail
 
-      if ! command -v cargo >/dev/null 2>&1; then
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
-          | HOME="$$HOME" CARGO_HOME="$$CARGO_HOME" RUSTUP_HOME="$$RUSTUP_HOME" sh -s -- -y --profile minimal --no-modify-path
-        . "$$CARGO_HOME/env"
-      fi
+          if [[ -z "$${HOME:-}" ]]; then
+            export HOME=/Users/admin
+          fi
+          export CARGO_HOME="$${CARGO_HOME:-$$HOME/.cargo}"
+          export RUSTUP_HOME="$${RUSTUP_HOME:-$$HOME/.rustup}"
+          export PATH="$$CARGO_HOME/bin:/opt/homebrew/bin:/usr/local/bin:$$PATH"
 
-      if command -v rustup >/dev/null 2>&1; then
-        rustup component add rustfmt clippy
-      fi
-      rustc --version
-      cargo --version
-      rustfmt --version
-      cargo clippy --version
-      python3 --version
+          if ! command -v cargo >/dev/null 2>&1; then
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+              | HOME="$$HOME" CARGO_HOME="$$CARGO_HOME" RUSTUP_HOME="$$RUSTUP_HOME" sh -s -- -y --profile minimal --no-modify-path
+            . "$$CARGO_HOME/env"
+          fi
 
-      cargo fmt --check
-      cargo clippy -- -D warnings
-      cargo test --verbose
-      cargo build --verbose
-      bash test/run_all.sh
-      bash tools/test-all.sh
+          if command -v rustup >/dev/null 2>&1; then
+            rustup component add rustfmt clippy
+          fi
+          rustc --version
+          cargo --version
+          rustfmt --version
+          cargo clippy --version
+          python3 --version
+
+          cargo fmt --check
+          cargo clippy -- -D warnings
+          cargo test --verbose
+          cargo build --verbose
+          bash test/run_all.sh
+          bash tools/test-all.sh
