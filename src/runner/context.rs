@@ -378,13 +378,19 @@ fn gather_system_status(root: &Path) -> Result<String, io::Error> {
     Ok(status.join("\n"))
 }
 
-/// Get the content of the most recent log file.
+/// Get the previous iteration's outcome for the prompt.
+///
+/// Prefer the newest `*.last-msg.md` (the LLM's own concise "what I did"
+/// summary written by the loop runner) over raw event logs, and pick
+/// "newest" by modification time. Sorting all .log/.md files by NAME
+/// selected an alphabetically-last raw event log, feeding the next
+/// iteration thousands of raw event lines instead of the outcome summary.
 fn get_last_log(log_dir: &Path) -> Result<Option<String>, io::Error> {
     if !log_dir.exists() {
         return Ok(None);
     }
 
-    let mut logs: Vec<_> = fs::read_dir(log_dir)?
+    let logs: Vec<_> = fs::read_dir(log_dir)?
         .filter_map(|e| e.ok())
         .filter(|e| {
             e.path()
@@ -397,10 +403,36 @@ fn get_last_log(log_dir: &Path) -> Result<Option<String>, io::Error> {
         return Ok(None);
     }
 
-    logs.sort_by_key(|e| e.file_name());
+    fn newest_by_mtime<'a, I>(items: I) -> Option<std::path::PathBuf>
+    where
+        I: Iterator<Item = &'a fs::DirEntry>,
+    {
+        items
+            .max_by_key(|e| {
+                e.metadata()
+                    .and_then(|m| m.modified())
+                    .unwrap_or(std::time::SystemTime::UNIX_EPOCH)
+            })
+            .map(|e| e.path())
+    }
 
-    let last = logs.last().unwrap();
-    let content = fs::read_to_string(last.path())?;
+    let has_last_msg = logs
+        .iter()
+        .any(|e| e.file_name().to_string_lossy().ends_with(".last-msg.md"));
+
+    let chosen = if has_last_msg {
+        newest_by_mtime(
+            logs.iter()
+                .filter(|e| e.file_name().to_string_lossy().ends_with(".last-msg.md")),
+        )
+    } else {
+        newest_by_mtime(logs.iter())
+    };
+
+    let Some(path) = chosen else {
+        return Ok(None);
+    };
+    let content = fs::read_to_string(path)?;
 
     // Truncate to reasonable size
     let truncated: String = content.lines().take(50).collect::<Vec<_>>().join("\n");
@@ -489,6 +521,35 @@ mod tests {
     use super::*;
     use crate::config;
     use crate::runner;
+
+    #[test]
+    fn test_get_last_log_prefers_newest_last_msg() {
+        // An alphabetically-later RAW log must not beat the LLM's own
+        // last-msg summary (the old name-sort bug), and "newest" is mtime.
+        let dir = tempfile::tempdir().unwrap();
+        let logs = dir.path();
+        fs::write(logs.join("zzz-raw-event.log"), "RAW EVENT NOISE").unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        fs::write(logs.join("2026-01-01.last-msg.md"), "OLDER SUMMARY").unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        fs::write(logs.join("2026-01-02.last-msg.md"), "NEWEST SUMMARY").unwrap();
+
+        let content = get_last_log(logs).unwrap().unwrap();
+        assert_eq!(content, "NEWEST SUMMARY");
+    }
+
+    #[test]
+    fn test_get_last_log_falls_back_to_newest_by_mtime() {
+        // Without last-msg files, pick the newest log by mtime, not by name.
+        let dir = tempfile::tempdir().unwrap();
+        let logs = dir.path();
+        fs::write(logs.join("zzz-old.log"), "OLD").unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        fs::write(logs.join("aaa-new.log"), "NEW").unwrap();
+
+        let content = get_last_log(logs).unwrap().unwrap();
+        assert_eq!(content, "NEW");
+    }
 
     #[test]
     fn test_detect_interpreter_bash() {
