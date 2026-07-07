@@ -776,6 +776,38 @@ fi
 assert "strict JSON plus exit 1 is fail-open" "FAIL-OPEN" "$VCRASH_STRICT_OUTPUT"
 rm -rf "$TMPDIR_VCRASH"
 
+# Run a check.sh invocation with a hard budget, immune to child-process
+# pipe-drain hangs: output goes to a temp file, timeout kills the whole
+# process group (the 4h-Buildkite lesson; a second instance of the hang
+# appeared in this stage on the Linux Tart lane — bounded + named here so a
+# failure points at the exact test instead of the CI job cap).
+run_check_bounded() {
+    local budget="$1"; shift
+    python3 - "$budget" "$@" << 'PYEOF_BOUNDED'
+import os, signal, subprocess, sys, tempfile
+budget = float(sys.argv[1])
+cmd = sys.argv[2:]
+with tempfile.TemporaryFile(mode="w+") as out_f:
+    proc = subprocess.Popen(cmd, stdout=out_f, stderr=subprocess.STDOUT,
+                            text=True, start_new_session=True)
+    try:
+        rc = proc.wait(timeout=budget)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except Exception:
+            pass
+        proc.wait()
+        out_f.seek(0)
+        sys.stdout.write(out_f.read())
+        sys.stdout.write(f"\nrun_check_bounded: BUDGET EXCEEDED after {budget:g}s\n")
+        sys.exit(124)
+    out_f.seek(0)
+    sys.stdout.write(out_f.read())
+    sys.exit(rc)
+PYEOF_BOUNDED
+}
+
 stage "verify timeout guard"
 # === Test 26d: --verify cannot hang forever on a stuck hook ===
 TMPDIR_VHANG=$(mktemp -d)
@@ -800,7 +832,8 @@ cat > "$TMPDIR_VHANG/.claude/settings.json" << VHANGSETTINGS
 }
 VHANGSETTINGS
 set +e
-VHANG_OUTPUT=$(HOOK_VERIFY_TIMEOUT_SECONDS=1 bash "$CHECK_SCRIPT" --verify --strict 2>&1)
+echo "  [stage] test 26d: hanging-hook strict verify (budget 150s)..."
+VHANG_OUTPUT=$(run_check_bounded 150 env HOOK_VERIFY_TIMEOUT_SECONDS=1 bash "$CHECK_SCRIPT" --verify --strict)
 VHANG_EXIT=$?
 set -e
 TOTAL=$((TOTAL + 1))
@@ -840,7 +873,8 @@ cat > "$TMPDIR_VBROKEN/.claude/settings.json" << VBRKSET
   }
 }
 VBRKSET
-VBRK_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+echo "  [stage] broken-hook verify (budget 150s)..."
+VBRK_OUTPUT=$(run_check_bounded 150 bash "$CHECK_SCRIPT" --verify) || true
 assert "verify broken hook detected" "FAIL-OPEN" "$VBRK_OUTPUT"
 assert "verify broken hook shows not block" "did NOT block" "$VBRK_OUTPUT"
 rm -rf "$TMPDIR_VBROKEN"
@@ -860,7 +894,8 @@ cat > "$TMPDIR_VMISS/.claude/settings.json" << VMISSSET
   }
 }
 VMISSSET
-VMISS_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+echo "  [stage] missing-hook verify (budget 150s)..."
+VMISS_OUTPUT=$(run_check_bounded 150 bash "$CHECK_SCRIPT" --verify) || true
 assert "verify missing hook detected" "not found" "$VMISS_OUTPUT"
 rm -rf "$TMPDIR_VMISS"
 
@@ -882,7 +917,8 @@ cat > "$TMPDIR_VGS/.claude/settings.json" << VGSSET
   }
 }
 VGSSET
-VGS_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
+echo "  [stage] git-safe verify (budget 150s)..."
+VGS_OUTPUT=$(run_check_bounded 150 bash "$CHECK_SCRIPT" --verify) || true
 assert "verify git-safe blocks force push" "blocks correctly" "$VGS_OUTPUT"
 assert "verify git-safe passes safe" "passes safe" "$VGS_OUTPUT"
 rm -rf "$TMPDIR_VGS"
