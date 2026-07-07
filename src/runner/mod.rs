@@ -349,10 +349,37 @@ pub fn run(root: &Path, dry_run: bool) -> Result<(), RunnerError> {
         &format!("Max tokens: {}", cfg.loop_config.max_tokens),
     )?;
 
-    // Run pre-run hook
+    // Run pre-run hook. A hook failure must enter the same consecutive-
+    // failure tracking as LLM failures: the `?` alone would abort the
+    // iteration BEFORE the failure-tracking block, so a permanently broken
+    // hook could kill every loop forever without ever paging anyone.
     let hooks_dir = cfg.loop_config.hooks_dir.as_deref().map(|d| root.join(d));
     if let Some(ref hooks) = hooks_dir {
-        hooks::run_hook(hooks, "pre-run", root)?;
+        if let Err(err) = hooks::run_hook(hooks, "pre-run", root) {
+            let failure_state_path = root.join(FAILURE_STATE_FILE);
+            let mut state = load_failure_state(&failure_state_path);
+            state.consecutive_failures += 1;
+            let now = chrono::Utc::now().to_rfc3339();
+            if state.first_failure.is_none() {
+                state.first_failure = Some(now.clone());
+            }
+            state.last_failure = Some(now);
+            state.last_error = Some(format!("pre-run hook failed: {err}"));
+            log(
+                &log_file,
+                &format!(
+                    "pre-run hook failure #{} (threshold: {FAILURE_THRESHOLD}): {err}",
+                    state.consecutive_failures
+                ),
+            )?;
+            if state.consecutive_failures >= FAILURE_THRESHOLD && !state.alert_sent {
+                if send_failure_alert(root, &state, &log_file) {
+                    state.alert_sent = true;
+                }
+            }
+            save_failure_state(&failure_state_path, &state);
+            return Err(err);
+        }
     }
 
     // Assemble context
