@@ -442,7 +442,12 @@ PYEOF
 fi
 
 # Colon in filenames breaks permission matching (claude-code#38409: Edit/Write prompt despite allow-list)
-COLON_FILE=$(find . -maxdepth 5 -name '*:*' -not -path './.git/*' -not -path './node_modules/*' -not -path './.claude/*' -print -quit 2>/dev/null)
+COLON_FILE=$(find . -maxdepth 5 \
+    \( -path './.git' -o -path './node_modules' -o -path './.claude' \
+    -o -path './target' -o -path './dist' -o -path './build' \
+    -o -path './coverage' -o -path './vendor' -o -path './.cache' \
+    -o -path './.next' -o -path './.venv' -o -path './venv' \) -prune \
+    -o -name '*:*' -print -quit 2>/dev/null)
 if [ -n "$COLON_FILE" ]; then
     WARNINGS+=("Project contains files with colons in filenames (e.g. $(basename "$COLON_FILE")). Claude Code permission matching breaks on paths containing ':' - Edit/Write will prompt for permission even when allowed or in bypassPermissions mode. Workaround: rename to bracket notation (e.g. [id].vue instead of :id.vue) or use a PreToolUse hook to auto-approve. (see claude-code#38409)")
 fi

@@ -9,6 +9,9 @@ The audit bounds the `claude --version` probe, so a stuck Claude CLI cannot bloc
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
 ```
 
+New to the tool? Start with the [safety-check quickstart](QUICKSTART.md) for the
+short audit, install, verify, and repair loop.
+
 ## Verify it
 
 The default audit checks whether hooks are configured. Verification mode checks whether installed `PreToolUse` hooks actually block representative payloads:
