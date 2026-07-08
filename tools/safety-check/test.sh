@@ -797,7 +797,10 @@ with tempfile.TemporaryFile(mode="w+") as out_f:
             os.killpg(proc.pid, signal.SIGKILL)
         except Exception:
             pass
-        proc.wait()
+        try:
+            proc.wait(timeout=15)
+        except subprocess.TimeoutExpired:
+            pass  # D-state on a thrashed VM; report anyway, init reaps later
         out_f.seek(0)
         sys.stdout.write(out_f.read())
         sys.stdout.write(f"\nrun_check_bounded: BUDGET EXCEEDED after {budget:g}s\n")
@@ -815,7 +818,10 @@ export HOME="$TMPDIR_VHANG"
 mkdir -p "$TMPDIR_VHANG/.claude/hooks"
 cat > "$TMPDIR_VHANG/.claude/hooks/bash-guard.sh" << 'VHANGHOOK'
 #!/usr/bin/env bash
-sleep 30
+# 3s: comfortably exceeds the 1s hook timeout under test. Was 30s, which
+# multiplied across verify probes wedged the 1-CPU Linux CI VM outright
+# (build #70's log ends at this test's stage marker with no further output).
+sleep 3
 exit 0
 VHANGHOOK
 chmod +x "$TMPDIR_VHANG/.claude/hooks/bash-guard.sh"
