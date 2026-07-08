@@ -1879,7 +1879,23 @@ NOCOLON_OUTPUT=$(cd "$TMPDIR_NOCOLON" && bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no colon warning without colon files" "38409" "$NOCOLON_OUTPUT"
 rm -rf "$TMPDIR_NOCOLON"
 
-# === Test 77: Colon warning includes filename ===
+# === Test 77: Colon scan skips build output directories ===
+TMPDIR_COLON_TARGET=$(mktemp -d)
+export HOME="$TMPDIR_COLON_TARGET"
+mkdir -p "$TMPDIR_COLON_TARGET/.claude" "$TMPDIR_COLON_TARGET/target/debug/deps"
+cat > "$TMPDIR_COLON_TARGET/.claude/settings.json" << 'COLONTARGET'
+{
+  "permissions": {
+    "allow": ["Edit"]
+  }
+}
+COLONTARGET
+touch "$TMPDIR_COLON_TARGET/target/debug/deps/libfoo:bar.rlib"
+COLON_TARGET_OUTPUT=$(cd "$TMPDIR_COLON_TARGET" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "colon scan ignores target directory" "38409" "$COLON_TARGET_OUTPUT"
+rm -rf "$TMPDIR_COLON_TARGET"
+
+# === Test 78: Colon warning includes filename ===
 TMPDIR_COLNAME=$(mktemp -d)
 export HOME="$TMPDIR_COLNAME"
 mkdir -p "$TMPDIR_COLNAME/.claude" "$TMPDIR_COLNAME/routes"
