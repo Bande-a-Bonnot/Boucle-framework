@@ -153,8 +153,13 @@ fn load_patterns(root: &Path) -> HashMap<String, Pattern> {
 
 fn save_patterns(root: &Path, patterns: &HashMap<String, Pattern>) -> Result<(), String> {
     let path = patterns_path(root);
+    // Serialize in sorted key order: HashMap iteration order changes per
+    // process, so writing it directly reserialized the whole file in a new
+    // order every run — a ~2,500-line pure-noise diff in every loop commit
+    // once the engine ran per-iteration (found by the daily audit).
+    let ordered: std::collections::BTreeMap<&String, &Pattern> = patterns.iter().collect();
     let json =
-        serde_json::to_string_pretty(patterns).map_err(|e| format!("serialize patterns: {e}"))?;
+        serde_json::to_string_pretty(&ordered).map_err(|e| format!("serialize patterns: {e}"))?;
     fs::write(&path, json).map_err(|e| format!("write patterns.json: {e}"))?;
     Ok(())
 }
@@ -644,6 +649,38 @@ mod tests {
         assert_eq!(patterns.len(), 2);
         assert_eq!(patterns["slow-build"].count, 1);
         assert_eq!(patterns["oom-crash"].count, 1);
+    }
+
+    #[test]
+    fn test_save_patterns_is_deterministic() {
+        // Same content must serialize byte-identically across runs, or every
+        // loop commit carries a giant reordering diff of patterns.json.
+        let dir = tempfile::tempdir().unwrap();
+        fs::create_dir_all(improve_dir(dir.path())).unwrap();
+        let mut patterns = HashMap::new();
+        for name in ["zeta", "alpha", "mid"] {
+            patterns.insert(
+                name.to_string(),
+                Pattern {
+                    count: 1,
+                    first_seen: "2026-01-01T00:00:00Z".to_string(),
+                    last_seen: "2026-01-01T00:00:00Z".to_string(),
+                    status: "open".to_string(),
+                    response_id: None,
+                    summary: name.to_string(),
+                },
+            );
+        }
+        save_patterns(dir.path(), &patterns).unwrap();
+        let first = fs::read_to_string(patterns_path(dir.path())).unwrap();
+        // rebuild the map to randomize hash order, save again
+        let reloaded = load_patterns(dir.path());
+        save_patterns(dir.path(), &reloaded).unwrap();
+        let second = fs::read_to_string(patterns_path(dir.path())).unwrap();
+        assert_eq!(first, second);
+        let alpha = first.find("alpha").unwrap();
+        let zeta = first.find("zeta").unwrap();
+        assert!(alpha < zeta, "keys not sorted");
     }
 
     #[test]
