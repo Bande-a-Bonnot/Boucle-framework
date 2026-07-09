@@ -35,6 +35,14 @@ Scores your Claude Code safety configuration from A to F and shows one-liner fix
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
+For CI or a scripted workstation check, fail when verification finds a
+`FAIL-OPEN` hook, broken hook files, skipped `PreToolUse` checks, no hooks, or
+no payload checks:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
+```
+
 Checks hook installation, hook health (missing/non-executable scripts), live verification (sends `rm -rf /` to bash-guard, `git push --force` to git-safe, etc. and confirms they block), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings, jq/python3 dependencies, Windows hook reliability), and known CLI version regressions. Scans both user-level (`~/.claude/settings.json`) and project-level (`.claude/settings.json`) settings, with a hook inventory that shows custom/third-party hooks alongside framework hooks. Also warns when deny rules are configured without bash-guard, since deny patterns [can be bypassed](https://github.com/anthropics/claude-code/issues/38119) by compound commands and multi-line scripts. No installation required. ~260 tests.
 
 For a 10-minute path from audit to verified hooks, see the [safety-check quickstart](tools/safety-check/QUICKSTART.md).
