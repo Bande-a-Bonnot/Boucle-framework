@@ -78,6 +78,12 @@ install.sh verify                # Test installed hooks with real payloads
 install.sh upgrade               # Re-download all installed hooks to latest version
 install.sh uninstall <hook>      # Remove a specific hook (files + settings.json entry)
 install.sh uninstall all         # Remove all hooks
+install.sh check                 # Run safety audit on your Claude Code setup
+install.sh doctor                # Diagnose files, settings, permissions
+install.sh backup                # Snapshot settings.json before Claude Code updates
+install.sh backup list           # Show available backups
+install.sh restore               # Restore the most recent backup
+install.sh restore <file>        # Restore a specific backup
 ```
 
 On Windows, use the same commands through `install.ps1`, including
