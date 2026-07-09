@@ -65,6 +65,17 @@ Trust the hook layer only when the summary says there are zero `FAIL-OPEN`
 results and the hook files are healthy. If no payload checks ran, you have not
 verified enforcement yet.
 
+For a usable result, look at the copy/paste summary near the end. A verified
+baseline looks like this:
+
+```text
+Verify: 0 FAIL-OPEN | 8 payload checks | 0 skipped
+Boundary: hooks passed representative checks; document residual platform warnings.
+```
+
+If the summary says `Verify: not run`, `no hooks found`, or `no hook payload
+checks ran`, treat the hook layer as unverified even when the grade looks high.
+
 ## 4. Fix the common blockers
 
 Run these checks before reinstalling hooks repeatedly:
