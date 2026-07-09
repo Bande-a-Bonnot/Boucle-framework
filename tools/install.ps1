@@ -7,6 +7,7 @@
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } file-guard git-safe"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } all"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } list"
+#   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } upgrade"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } uninstall read-once"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } help"
@@ -114,6 +115,168 @@ foreach ($name in $AllHookNames) {
 }
 Write-Host ""
 
+function Invoke-HookVerification {
+    param(
+        [string[]]$HookNames
+    )
+
+    $verifyOk = 0
+    $verifyFail = 0
+    $verifySkip = 0
+    $verifyFound = 0
+
+    foreach ($hook in $HookNames) {
+        $hookFile = Join-Path $HOME ".claude" $hook "hook.ps1"
+        if (-not (Test-Path $hookFile)) {
+            continue
+        }
+
+        $verifyFound++
+
+        switch ($hook) {
+            'git-safe' {
+                $payload = '{"tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}'
+                try {
+                    $result = $payload | pwsh -File $hookFile 2>$null
+                    if ($result -match '"block"') {
+                        Write-Host "  OK" -ForegroundColor Green -NoNewline
+                        Write-Host ": $hook blocked test payload (git push --force)"
+                        $verifyOk++
+                    } else {
+                        Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
+                        Write-Host ": $hook did not block test payload"
+                        $verifyFail++
+                    }
+                } catch {
+                    Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
+                    Write-Host ": $hook returned an error"
+                    $verifyFail++
+                }
+            }
+            'branch-guard' {
+                try {
+                    $payload = '{"tool_name":"Bash","tool_input":{"command":"echo test"}}'
+                    $null = $payload | pwsh -File $hookFile 2>$null
+                    Write-Host "  SKIP" -ForegroundColor DarkGray -NoNewline
+                    Write-Host ": $hook (needs git repo context to verify)"
+                    $verifySkip++
+                } catch {
+                    Write-Host "  SKIP" -ForegroundColor DarkGray -NoNewline
+                    Write-Host ": $hook (needs git repo context)"
+                    $verifySkip++
+                }
+            }
+            'session-log' {
+                $payload = '{"tool_name":"Read","tool_input":{"file_path":"C:\\verify-test"}}'
+                try {
+                    $null = $payload | pwsh -File $hookFile 2>$null
+                    Write-Host "  OK" -ForegroundColor Green -NoNewline
+                    Write-Host ": $hook accepted test payload without error"
+                    $verifyOk++
+                } catch {
+                    Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
+                    Write-Host ": $hook returned an error"
+                    $verifyFail++
+                }
+            }
+            'file-guard' {
+                $payload = '{"tool_name":"Write","tool_input":{"file_path":"relative/path.txt","content":"test"}}'
+                try {
+                    $result = $payload | pwsh -File $hookFile 2>$null
+                    if ($result -match '"block"') {
+                        Write-Host "  OK" -ForegroundColor Green -NoNewline
+                        Write-Host ": $hook blocked test payload (relative path write)"
+                        $verifyOk++
+                    } else {
+                        Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
+                        Write-Host ": $hook did not block test payload"
+                        $verifyFail++
+                    }
+                } catch {
+                    Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
+                    Write-Host ": $hook returned an error"
+                    $verifyFail++
+                }
+            }
+            'read-once' {
+                $payload = '{"tool_name":"Bash","tool_input":{"command":"echo test"}}'
+                try {
+                    $null = $payload | pwsh -File $hookFile 2>$null
+                    Write-Host "  OK" -ForegroundColor Green -NoNewline
+                    Write-Host ": $hook accepted non-Read payload (ignored correctly)"
+                    $verifyOk++
+                } catch {
+                    Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
+                    Write-Host ": $hook returned an error"
+                    $verifyFail++
+                }
+                $compactFile = Join-Path $HOME ".claude" $hook "compact.ps1"
+                $compactPayload = '{"session_id":"verify-test","hook_event_name":"PostCompact"}'
+                try {
+                    if (Test-Path $compactFile) {
+                        $null = $compactPayload | pwsh -File $compactFile 2>$null
+                        Write-Host "  OK" -ForegroundColor Green -NoNewline
+                        Write-Host ": $hook PostCompact hook accepted test payload"
+                        $verifyOk++
+                    } else {
+                        Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
+                        Write-Host ": $hook PostCompact hook file not found"
+                        $verifyFail++
+                    }
+                } catch {
+                    Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
+                    Write-Host ": $hook PostCompact hook returned an error"
+                    $verifyFail++
+                }
+            }
+            'worktree-guard' {
+                $payload = '{"tool_name":"Bash","tool_input":{"command":"echo test"}}'
+                try {
+                    $null = $payload | pwsh -File $hookFile 2>$null
+                    Write-Host "  OK" -ForegroundColor Green -NoNewline
+                    Write-Host ": $hook accepted non-ExitWorktree payload (ignored correctly)"
+                    $verifyOk++
+                } catch {
+                    Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
+                    Write-Host ": $hook returned an error"
+                    $verifyFail++
+                }
+            }
+            'bash-guard' {
+                $payload = '{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}'
+                try {
+                    $result = $payload | pwsh -File $hookFile 2>$null
+                    if ($result -match '"block"') {
+                        Write-Host "  OK" -ForegroundColor Green -NoNewline
+                        Write-Host ": $hook blocked test payload (rm -rf /)"
+                        $verifyOk++
+                    } else {
+                        Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
+                        Write-Host ": $hook did not block test payload"
+                        $verifyFail++
+                    }
+                } catch {
+                    Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
+                    Write-Host ": $hook returned an error"
+                    $verifyFail++
+                }
+            }
+            default {
+                Write-Host "  SKIP" -ForegroundColor DarkGray -NoNewline
+                Write-Host ": $hook (no automated test available)"
+                $verifySkip++
+            }
+        }
+    }
+
+    return @{
+        Ok = $verifyOk
+        Fail = $verifyFail
+        Skip = $verifySkip
+        Found = $verifyFound
+    }
+}
+
 # Handle help subcommand
 if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq '--help' -or $Hooks[0] -eq '-h')) {
     Write-Host "Usage: install.ps1 <command> [args]" -ForegroundColor White
@@ -123,6 +286,7 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
     Write-Host "  all                   Install all 7 hooks"
     Write-Host "  <hook> [hook...]      Install specific hooks by name"
     Write-Host "  list                  Show which hooks are currently installed"
+    Write-Host "  verify                Test installed hooks with real payloads"
     Write-Host "  upgrade               Re-download all installed hooks to latest version"
     Write-Host "  uninstall <hook>      Remove a specific hook (files + settings.json entry)"
     Write-Host "  uninstall all         Remove all hooks"
@@ -149,6 +313,7 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
     Write-Host "  install.ps1 all                    # Everything at once"
     Write-Host "  install.ps1 read-once git-safe     # Pick specific hooks"
     Write-Host "  install.ps1 list                   # See what you have"
+    Write-Host "  install.ps1 verify                 # Test hooks with payloads"
     Write-Host "  install.ps1 upgrade                # Update to latest"
     Write-Host "  install.ps1 uninstall read-once    # Remove one hook"
     exit 0
@@ -158,6 +323,28 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
 # this command is a no-op after the status table.
 if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'list') {
     Write-Host "Installed hook status listed above."
+    exit 0
+}
+
+# Handle verify subcommand — test all installed hooks with real payloads
+if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'verify') {
+    Write-Host "Verifying installed hooks..." -ForegroundColor White
+    Write-Host ""
+
+    $result = Invoke-HookVerification -HookNames $AllHookNames
+
+    if ($result.Found -eq 0) {
+        Write-Host "  No hooks installed. Run: install.ps1 recommended"
+        exit 1
+    }
+
+    Write-Host ""
+    if ($result.Fail -gt 0) {
+        Write-Host "$($result.Ok) passed, $($result.Fail) warnings, $($result.Skip) skipped." -ForegroundColor Yellow
+        Write-Host "  Run doctor for details: install.ps1 doctor"
+    } else {
+        Write-Host "All $($result.Ok) hooks verified, $($result.Skip) skipped." -ForegroundColor Green
+    }
     exit 0
 }
 
@@ -921,167 +1108,18 @@ foreach ($hook in $installed) {
 $settings | ConvertTo-Json -Depth 10 | Set-Content $SettingsPath -Encoding UTF8
 Write-Host ""
 
-# Post-install verification
 Write-Host "Verifying hooks..." -ForegroundColor White
 Write-Host ""
 
-$verifyOk = 0
-$verifyFail = 0
-$verifySkip = 0
-
-foreach ($hook in $installed) {
-    $hookFile = Join-Path $HOME ".claude" $hook "hook.ps1"
-    if (-not (Test-Path $hookFile)) {
-        Write-Host "  WARN: $hook file not found" -ForegroundColor Yellow
-        $verifyFail++
-        continue
-    }
-
-    switch ($hook) {
-        'git-safe' {
-            $payload = '{"tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}'
-            try {
-                $result = $payload | pwsh -File $hookFile 2>$null
-                if ($result -match '"block"') {
-                    Write-Host "  OK" -ForegroundColor Green -NoNewline
-                    Write-Host ": $hook blocked test payload (git push --force)"
-                    $verifyOk++
-                } else {
-                    Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
-                    Write-Host ": $hook did not block test payload"
-                    $verifyFail++
-                }
-            } catch {
-                Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
-                Write-Host ": $hook returned an error"
-                $verifyFail++
-            }
-        }
-        'branch-guard' {
-            # branch-guard needs git context, skip if no git repo
-            try {
-                $payload = '{"tool_name":"Bash","tool_input":{"command":"echo test"}}'
-                $result = $payload | pwsh -File $hookFile 2>$null
-                Write-Host "  SKIP" -ForegroundColor DarkGray -NoNewline
-                Write-Host ": $hook (needs git repo context to verify)"
-                $verifySkip++
-            } catch {
-                Write-Host "  SKIP" -ForegroundColor DarkGray -NoNewline
-                Write-Host ": $hook (needs git repo context)"
-                $verifySkip++
-            }
-        }
-        'session-log' {
-            $payload = '{"tool_name":"Read","tool_input":{"file_path":"C:\\verify-test"}}'
-            try {
-                $null = $payload | pwsh -File $hookFile 2>$null
-                Write-Host "  OK" -ForegroundColor Green -NoNewline
-                Write-Host ": $hook accepted test payload without error"
-                $verifyOk++
-            } catch {
-                Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
-                Write-Host ": $hook returned an error"
-                $verifyFail++
-            }
-        }
-        'file-guard' {
-            # file-guard always blocks relative paths in Write/Edit (no config needed)
-            $payload = '{"tool_name":"Write","tool_input":{"file_path":"relative/path.txt","content":"test"}}'
-            try {
-                $result = $payload | pwsh -File $hookFile 2>$null
-                if ($result -match '"block"') {
-                    Write-Host "  OK" -ForegroundColor Green -NoNewline
-                    Write-Host ": $hook blocked test payload (relative path write)"
-                    $verifyOk++
-                } else {
-                    Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
-                    Write-Host ": $hook did not block test payload"
-                    $verifyFail++
-                }
-            } catch {
-                Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
-                Write-Host ": $hook returned an error"
-                $verifyFail++
-            }
-        }
-        'read-once' {
-            $payload = '{"tool_name":"Bash","tool_input":{"command":"echo test"}}'
-            try {
-                $null = $payload | pwsh -File $hookFile 2>$null
-                Write-Host "  OK" -ForegroundColor Green -NoNewline
-                Write-Host ": $hook accepted non-Read payload (ignored correctly)"
-                $verifyOk++
-            } catch {
-                Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
-                Write-Host ": $hook returned an error"
-                $verifyFail++
-            }
-            $compactFile = Join-Path $HOME ".claude" $hook "compact.ps1"
-            $compactPayload = '{"session_id":"verify-test","hook_event_name":"PostCompact"}'
-            try {
-                if (Test-Path $compactFile) {
-                    $null = $compactPayload | pwsh -File $compactFile 2>$null
-                    Write-Host "  OK" -ForegroundColor Green -NoNewline
-                    Write-Host ": $hook PostCompact hook accepted test payload"
-                    $verifyOk++
-                } else {
-                    Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
-                    Write-Host ": $hook PostCompact hook file not found"
-                    $verifyFail++
-                }
-            } catch {
-                Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
-                Write-Host ": $hook PostCompact hook returned an error"
-                $verifyFail++
-            }
-        }
-        'worktree-guard' {
-            $payload = '{"tool_name":"Bash","tool_input":{"command":"echo test"}}'
-            try {
-                $null = $payload | pwsh -File $hookFile 2>$null
-                Write-Host "  OK" -ForegroundColor Green -NoNewline
-                Write-Host ": $hook accepted non-ExitWorktree payload (ignored correctly)"
-                $verifyOk++
-            } catch {
-                Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
-                Write-Host ": $hook returned an error"
-                $verifyFail++
-            }
-        }
-        'bash-guard' {
-            $payload = '{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}'
-            try {
-                $result = $payload | pwsh -File $hookFile 2>$null
-                if ($result -match '"block"') {
-                    Write-Host "  OK" -ForegroundColor Green -NoNewline
-                    Write-Host ": $hook blocked test payload (rm -rf /)"
-                    $verifyOk++
-                } else {
-                    Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
-                    Write-Host ": $hook did not block test payload"
-                    $verifyFail++
-                }
-            } catch {
-                Write-Host "  WARN" -ForegroundColor Yellow -NoNewline
-                Write-Host ": $hook returned an error"
-                $verifyFail++
-            }
-        }
-        default {
-            Write-Host "  SKIP" -ForegroundColor DarkGray -NoNewline
-            Write-Host ": $hook (no automated test available)"
-            $verifySkip++
-        }
-    }
-}
+$verifyResult = Invoke-HookVerification -HookNames $installed
 
 Write-Host ""
-if ($verifyFail -gt 0) {
+if ($verifyResult.Fail -gt 0) {
     Write-Host "Installed with warnings." -ForegroundColor Yellow
-    Write-Host "$verifyOk passed, $verifyFail warnings, $verifySkip skipped."
+    Write-Host "$($verifyResult.Ok) passed, $($verifyResult.Fail) warnings, $($verifyResult.Skip) skipped."
 } else {
     Write-Host "Done! " -ForegroundColor Green -NoNewline
-    Write-Host "$verifyOk hooks verified, $verifySkip skipped. Active for your next Claude Code session."
+    Write-Host "$($verifyResult.Ok) hooks verified, $($verifyResult.Skip) skipped. Active for your next Claude Code session."
 }
 Write-Host ""
 Write-Host "Manage hooks:"

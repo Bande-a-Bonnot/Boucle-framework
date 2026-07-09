@@ -74,12 +74,15 @@ The installer doubles as a management CLI:
 ```bash
 install.sh help                  # Show all commands and available hooks
 install.sh list                  # See which hooks are currently installed
+install.sh verify                # Test installed hooks with real payloads
 install.sh upgrade               # Re-download all installed hooks to latest version
 install.sh uninstall <hook>      # Remove a specific hook (files + settings.json entry)
 install.sh uninstall all         # Remove all hooks
 ```
 
-Each hook also has a `verify` subcommand in its own installer that checks the installation is working correctly.
+On Windows, use the same commands through `install.ps1`, including
+`install.ps1 verify` to re-run the native PowerShell hook payload checks after
+installing or upgrading hooks.
 
 ## Common Problems & Solutions
 
