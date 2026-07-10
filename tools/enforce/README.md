@@ -228,6 +228,9 @@ The minimum for any project. Prevents the operations that cause the most damage 
 
 For sessions where Claude should analyze, test, and report without modifying anything. Addresses [#41063](https://github.com/anthropics/claude-code/issues/41063) (Claude ignores explicit read-only instructions and edits code, runs ALTER TABLE on staging, rebuilds Docker services).
 
+For a copy-paste workflow with install, audit, verify, smoke-test, and removal
+steps, see [Read-only audit mode](READ_ONLY_AUDIT.md).
+
 ```markdown
 ## Read-only mode @enforced
 - Never modify any files
