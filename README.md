@@ -5,7 +5,7 @@
 
 Claude Code hooks that actually enforce your rules. 7 installable hooks, plus enforcement and audit tooling, 1,900+ tests, [932 known Claude Code gaps documented](tools/enforce/#known-limitations) with severity ratings and workarounds.
 
-> **Quick links:** [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
+> **Quick links:** [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Read-only audits](tools/enforce/READ_ONLY_AUDIT.md) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
 
 ## Claude Code Hooks
 
@@ -242,7 +242,7 @@ Claude [ignores explicit "do not edit" instructions](https://github.com/anthropi
 - Never run git commit, git push, or git merge
 ```
 
-The hook blocks at the runtime level before the tool executes. The model cannot bypass it. See [more recipes](tools/enforce/#recipes).
+The hook blocks at the runtime level before the tool executes. The model cannot bypass it. See the [copy-paste read-only audit guide](tools/enforce/READ_ONLY_AUDIT.md) or [more recipes](tools/enforce/#recipes).
 The file-modification rule covers Write, Edit, MultiEdit, and NotebookEdit. The shell-write rule blocks common Bash write paths such as redirects, `tee`, `touch`, `mkdir`, `rm`, in-place edits, moves, copies, and permission/ownership changes.
 
 ---
