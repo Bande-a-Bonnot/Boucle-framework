@@ -19,9 +19,9 @@ missing or broken:
 - `session-log` for a local audit trail.
 - Valid `~/.claude/settings.json` and `.claude/settings.json` files.
 
-Do not paste private settings or full hook output into a public issue. The final
-copy/paste summary is designed for support triage because it avoids dumping the
-whole settings file.
+Do not paste private settings or full hook output into a public issue. If you
+need support, share only the final `--- Safety Summary (copy/paste) ---` block
+from the audit output.
 
 ## 2. Install the baseline hooks
 
@@ -105,3 +105,25 @@ If verification passes but the grade is still C, treat the remaining warnings as
 platform risk rather than a hook install failure. Document the warnings and keep
 the verified boundary: no bypass flags, valid JSON, healthy hook files, and zero
 `FAIL-OPEN` payload checks.
+
+## 6. Share safe support evidence
+
+Run verification before asking for help:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
+```
+
+Copy the block that starts with:
+
+```text
+--- Safety Summary (copy/paste) ---
+```
+
+That block includes the grade, installed hook inventory, `Issue:` lines, verify
+counts, and the current trust boundary. It does not include raw settings files
+or hook source.
+
+Do not share raw `settings.json`, hook scripts, shell history, session logs,
+private paths, tokens, `.env` contents, or proprietary `CLAUDE.md` rules in
+public threads.
