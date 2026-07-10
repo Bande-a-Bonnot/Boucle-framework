@@ -120,6 +120,24 @@ On Windows, use the same commands through `install.ps1`, including
 `install.ps1 verify` to re-run the native PowerShell hook payload checks after
 installing or upgrading hooks.
 
+## Doctor First Aid
+
+Use `verify` to prove hooks block representative payloads. Use `doctor` when
+the install looks present but the environment still looks unsafe.
+
+| `doctor` finding | What to do next |
+|------------------|-----------------|
+| Missing hook file | Re-run `install.sh upgrade` or `install.ps1 upgrade`, then `verify` again. |
+| Hook file is not executable | Run `chmod +x ~/.claude/hooks/*.sh` on macOS/Linux, then `verify` again. |
+| Invalid `settings.json` | Remove JSON comments or trailing commas, then run `doctor` before reinstalling. |
+| Hook registered but `verify` skips it | Check whether the hook is a lifecycle hook (`SessionStart`, `Stop`, `PostToolUse`) or a custom wrapper. `verify` only sends payloads to installed `PreToolUse` hooks. |
+| `IS_DEMO` or `CLAUDE_CODE_SIMPLE` is set | Unset it in the shell that starts Claude Code. Both can disable hook execution before your hooks run. |
+| Native Windows hook behavior is inconsistent | Prefer WSL for enforcement-sensitive work, or run `install.ps1 verify` from PowerShell 7 after every Claude Code update. |
+
+If `verify` passes with zero `FAIL-OPEN` checks but `doctor` still reports
+platform warnings, do not keep reinstalling hooks. Treat the hooks as one
+verified boundary and document the remaining Claude Code platform risk.
+
 ## Common Problems & Solutions
 
 See [recipes](https://framework.boucle.sh/recipes.html) for a detailed guide mapping common Claude Code problems (rules ignored, files deleted, dangerous commands, force pushes) to the specific hooks that fix them, with install commands and GitHub issue references.
