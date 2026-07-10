@@ -21,10 +21,10 @@ steps:
     timeout_in_minutes: 5
     command: |
       set -euo pipefail
-      echo "Full Buildkite validation runs on main only."
+      echo "Buildkite Tart smoke validation runs on main only."
       echo "Topic branches are validated by GitHub Actions via their pull requests."
 
-  - group: "Full Buildkite validation"
+  - group: "Buildkite Tart smoke validation"
     if: build.pull_request.id == null && build.branch == "main"
     steps:
       - label: ":linux: Linux ARM64"
@@ -72,11 +72,13 @@ steps:
           python3 --version
 
           cargo fmt --check
-          cargo clippy -- -D warnings
-          cargo test --verbose
-          cargo build --verbose
-          bash test/run_all.sh
-          bash tools/test-all.sh
+          cargo metadata --locked --format-version=1 >/tmp/boucle-cargo-metadata.json
+          bash test/test_limitations_metadata.sh
+          while IFS= read -r -d '' script; do
+            bash -n "$$script"
+          done < <(find tools -name '*.sh' -type f -print0)
+          python3 tools/test-jsonc.py
+          python3 tools/test-hook-verify.py
 
       - label: ":mac: macOS Apple Silicon"
         key: macos-apple-silicon
@@ -119,8 +121,10 @@ steps:
           python3 --version
 
           cargo fmt --check
-          cargo clippy -- -D warnings
-          cargo test --verbose
-          cargo build --verbose
-          bash test/run_all.sh
-          bash tools/test-all.sh
+          cargo metadata --locked --format-version=1 >/tmp/boucle-cargo-metadata.json
+          bash test/test_limitations_metadata.sh
+          while IFS= read -r -d '' script; do
+            bash -n "$$script"
+          done < <(find tools -name '*.sh' -type f -print0)
+          python3 tools/test-jsonc.py
+          python3 tools/test-hook-verify.py
