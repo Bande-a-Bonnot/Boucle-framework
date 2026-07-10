@@ -74,17 +74,33 @@ iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework
 
 ## Generate Hooks from CLAUDE.md
 
-The [enforce](enforce/) skill reads your CLAUDE.md, identifies rules that can be enforced at tool-call time, and generates hook scripts for each one. Tag rules with `@enforced` to activate them (run `--scan` to preview what's enforceable).
+The [enforce](enforce/) tool reads your CLAUDE.md, identifies rules that can be
+enforced at tool-call time, and generates hook scripts for each one. Tag rules
+with `@enforced` to activate them.
 
+Install the dynamic hook from any git project:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/install.sh | bash
 ```
-# Copy the skill to your project
-mkdir -p .claude/skills/enforce-hooks
-cp tools/enforce/SKILL.md .claude/skills/enforce-hooks/
 
-# Then ask Claude: "Enforce my CLAUDE.md rules"
+Inspect before installing:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/enforce-hooks.py -o /tmp/enforce-hooks.py
+python3 /tmp/enforce-hooks.py --scan
+python3 /tmp/enforce-hooks.py --install-plugin
 ```
 
-See [enforce/README.md](enforce/README.md) for details and examples.
+After installing, test the generated hook:
+
+```bash
+python3 .claude/hooks/enforce-hooks.py --smoke-test
+python3 .claude/hooks/enforce-hooks.py --audit
+```
+
+See [enforce/README.md](enforce/README.md) for examples, generated hook modes,
+and the optional Claude Code skill workflow when you have a local checkout.
 
 ## How Hooks Work
 
