@@ -13,7 +13,7 @@ steps:
       echo "Buildkite Tart jobs are disabled for pull requests."
       echo "Pull request validation runs in GitHub Actions."
 
-  - label: ":fast_forward: Topic-branch push — covered by the branch's PR in GitHub Actions"
+  - label: ":fast_forward: Topic-branch push - covered by the branch's PR in GitHub Actions"
     key: branch-github-actions
     if: build.pull_request.id == null && build.branch != "main"
     agents:
@@ -21,110 +21,19 @@ steps:
     timeout_in_minutes: 5
     command: |
       set -euo pipefail
-      echo "Buildkite Tart smoke validation runs on main only."
+      echo "Buildkite main status checks run on main only."
       echo "Topic branches are validated by GitHub Actions via their pull requests."
 
-  - group: "Buildkite Tart smoke validation"
+  - group: "Buildkite main status"
     if: build.pull_request.id == null && build.branch == "main"
     steps:
-      - label: ":linux: Linux ARM64"
-        key: linux-arm64
-        concurrency: 2
-        concurrency_group: "big-cabbage/tart-ci"
-        concurrency_method: eager
-        cancel_on_build_failing: true
-        timeout_in_minutes: 30
+      - label: ":buildkite: Main status check"
+        key: main-status-check
+        timeout_in_minutes: 5
         agents:
           queue: "ci-linux-arm64"
-        plugins:
-          - github.com/Bande-a-Bonnot/tart-ci#v0.1.1:
-              image: "ci-linux-arm64-rust-bazel"
-              os: "linux"
-              always_pull: false
-              headless: true
         command: |
           set -euo pipefail
-
-          if [[ -z "$${HOME:-}" || "$$HOME" == "/" ]]; then
-            export HOME=/home/admin
-          fi
-          export CARGO_HOME="$${CARGO_HOME:-$$HOME/.cargo}"
-          export RUSTUP_HOME="$${RUSTUP_HOME:-/opt/rustup}"
-          export PATH="/usr/local/bin:/opt/cargo/bin:$$CARGO_HOME/bin:$$PATH"
-
-          # Baked-image toolchain guard: try a cheap update, then fail fast
-          # with an actionable message instead of cryptic compile errors when
-          # the image's Rust predates the crate's requirements.
-          rustup update --no-self-update stable >/dev/null 2>&1 || true
-          MSRV="1.85.0"
-          RUSTC_VER="$$(rustc --version | awk '{print $$2}')"
-          if [ "$$(printf '%s\n%s\n' "$$MSRV" "$$RUSTC_VER" | sort -V | head -1)" != "$$MSRV" ]; then
-            echo "^^^ +++"
-            echo "Toolchain too old: rustc $$RUSTC_VER < required $$MSRV."
-            echo "Rebake the ci-linux-arm64-rust-bazel Tart image with a current toolchain."
-            exit 1
-          fi
-
-          rustc --version
-          cargo --version
-          rustfmt --version
-          cargo clippy --version
-          python3 --version
-
-          cargo fmt --check
-          cargo metadata --locked --format-version=1 >/tmp/boucle-cargo-metadata.json
-          bash test/test_limitations_metadata.sh
-          while IFS= read -r -d '' script; do
-            bash -n "$$script"
-          done < <(find tools -name '*.sh' -type f -print0)
-          python3 tools/test-jsonc.py
-          python3 tools/test-hook-verify.py
-
-      - label: ":mac: macOS Apple Silicon"
-        key: macos-apple-silicon
-        concurrency: 2
-        concurrency_group: "big-cabbage/tart-ci"
-        concurrency_method: eager
-        cancel_on_build_failing: true
-        timeout_in_minutes: 30
-        agents:
-          queue: "ci-macos-apple-silicon"
-        plugins:
-          - github.com/Bande-a-Bonnot/tart-ci#v0.1.1:
-              image: "ghcr.io/cirruslabs/macos-sequoia-base:latest"
-              os: "macos"
-              always_pull: false
-              headless: true
-        command: |
-          set -euo pipefail
-
-          if [[ -z "$${HOME:-}" ]]; then
-            export HOME=/Users/admin
-          fi
-          export CARGO_HOME="$${CARGO_HOME:-$$HOME/.cargo}"
-          export RUSTUP_HOME="$${RUSTUP_HOME:-$$HOME/.rustup}"
-          export PATH="$$CARGO_HOME/bin:/opt/homebrew/bin:/usr/local/bin:$$PATH"
-
-          if ! command -v cargo >/dev/null 2>&1; then
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
-              | HOME="$$HOME" CARGO_HOME="$$CARGO_HOME" RUSTUP_HOME="$$RUSTUP_HOME" sh -s -- -y --profile minimal --no-modify-path
-            . "$$CARGO_HOME/env"
-          fi
-
-          if command -v rustup >/dev/null 2>&1; then
-            rustup component add rustfmt clippy
-          fi
-          rustc --version
-          cargo --version
-          rustfmt --version
-          cargo clippy --version
-          python3 --version
-
-          cargo fmt --check
-          cargo metadata --locked --format-version=1 >/tmp/boucle-cargo-metadata.json
-          bash test/test_limitations_metadata.sh
-          while IFS= read -r -d '' script; do
-            bash -n "$$script"
-          done < <(find tools -name '*.sh' -type f -print0)
-          python3 tools/test-jsonc.py
-          python3 tools/test-hook-verify.py
+          echo "Buildkite main status check."
+          echo "Full Rust, Bash, PowerShell, and Pages validation runs in GitHub Actions."
+          buildkite-agent --version
