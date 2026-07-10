@@ -28,8 +28,8 @@ This makes all Broca memory operations available to any MCP-compatible AI agent 
 
 The MCP server exposes these collaborative tools:
 
-- **`broca_remember`**: Store new information with type, title, content, and tags
-- **`broca_recall`**: Query memory with relevance scoring and fuzzy matching
+- **`broca_remember`**: Store new information with title, content, tags, and optional freshness metadata (`ttl_days` or `valid_until`)
+- **`broca_recall`**: Query memory with relevance scoring, fuzzy matching, and stale-entry warnings
 - **`broca_search_tags`**: Find entries by specific tags
 - **`broca_show`**: Get detailed information about specific entries
 - **`broca_relate`**: Create relationships between memory entries
@@ -154,7 +154,8 @@ request = {
             "type": "note",
             "title": "Meeting Notes",
             "content": "Key decisions from today's meeting...",
-            "tags": ["meetings", "decisions"]
+            "tags": ["meetings", "decisions"],
+            "valid_until": "2026-08-01"
         }
     }
 }
