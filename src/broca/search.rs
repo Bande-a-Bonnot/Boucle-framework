@@ -53,12 +53,17 @@ pub struct ScoredEntry {
     pub superseded_by: Option<String>,
     /// TTL in days, if set.
     pub ttl_days: Option<u32>,
+    /// Date after which this entry should be treated as stale.
+    pub valid_until: Option<String>,
     /// True if the entry has a TTL that has expired.
     pub is_stale: bool,
+    /// Human-readable stale warning, if any.
+    pub stale_reason: Option<String>,
 }
 
 impl From<&Entry> for ScoredEntry {
     fn from(entry: &Entry) -> Self {
+        let stale_reason = entry.staleness_reason();
         ScoredEntry {
             filename: entry.filename.clone(),
             entry_type: entry.entry_type.clone(),
@@ -69,7 +74,9 @@ impl From<&Entry> for ScoredEntry {
             relevance_score: 0.0,
             superseded_by: entry.superseded_by.clone(),
             ttl_days: entry.ttl_days,
-            is_stale: entry.is_stale(),
+            valid_until: entry.valid_until.clone(),
+            is_stale: stale_reason.is_some(),
+            stale_reason,
         }
     }
 }
@@ -260,6 +267,11 @@ pub fn recall(
             // Penalize superseded entries
             if entry.superseded_by.is_some() {
                 score *= 0.3;
+            }
+
+            // Keep stale facts visible, but avoid letting old metrics dominate.
+            if entry.is_stale() {
+                score *= 0.7;
             }
 
             let mut scored_entry = ScoredEntry::from(entry);
@@ -497,6 +509,26 @@ mod tests {
         assert!(results.len() >= 2);
         // Non-superseded should rank higher
         assert!(results[0].superseded_by.is_none());
+    }
+
+    #[test]
+    fn test_recall_marks_valid_until_staleness() {
+        let dir = tempfile::tempdir().unwrap();
+        let knowledge_dir = dir.path().join("knowledge");
+        fs::create_dir_all(&knowledge_dir).unwrap();
+
+        let stale = "---\ntype: fact\ntitle: \"Old star count\"\nconfidence: 0.9\ncreated: 20260304-120000\nvalid_until: 20000101\n---\n\nproject stars are 1";
+        fs::write(knowledge_dir.join("20260304-120000-old-stars.md"), stale).unwrap();
+
+        let results = recall(dir.path(), "project stars", 5).unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].valid_until.as_deref(), Some("20000101"));
+        assert!(results[0].is_stale);
+        assert!(results[0]
+            .stale_reason
+            .as_deref()
+            .unwrap_or_default()
+            .contains("valid_until 20000101"));
     }
 
     #[test]
