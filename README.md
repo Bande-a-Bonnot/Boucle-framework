@@ -396,7 +396,9 @@ boucle mcp --stdio
 boucle mcp --port 8080
 ```
 
-**Available tools:** `broca_remember`, `broca_recall`, `broca_journal`, `broca_relate`, `broca_supersede`, `broca_stats`, `broca_gc`, `broca_consolidate`
+**Available tools:** `broca_remember`, `broca_recall`, `broca_journal`, `broca_relate`, `broca_supersede`, `broca_stats`, `broca_search_tags`, `broca_list`, `broca_show`, `broca_gc`, `broca_restore`, `broca_archived`, `broca_consolidate`
+
+`broca_remember` supports freshness metadata (`ttl_days` or `valid_until`) for time-sensitive facts. Recall keeps stale entries visible, but labels and down-ranks them so old metrics or decisions are not reused as current truth.
 
 Works with Claude Desktop, Claude Code, or any MCP-compatible client.
 
