@@ -4,13 +4,24 @@ Standalone safety and efficiency hooks for Claude Code. Each works independently
 
 ## Quick Install
 
+Start with the recommended safety set: `bash-guard`, `git-safe`, and
+`file-guard`. These block dangerous shell commands, destructive git operations,
+and writes to sensitive files. A piped macOS/Linux install with no arguments
+defaults to this set.
+
 **macOS / Linux:**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash
 ```
 
-Or pick specific hooks:
+Or be explicit:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- recommended
+```
+
+Pick specific hooks when you already know what you need:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- read-once git-safe file-guard
@@ -24,7 +35,26 @@ Requires [PowerShell 7+](https://learn.microsoft.com/en-us/powershell/scripting/
 irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1 | iex
 ```
 
+For non-interactive setup:
+
+```powershell
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"
+```
+
 All 7 hooks (read-once through session-log) ship with native `.ps1` equivalents. No bash or jq required on Windows.
+
+After installing, verify that the hooks actually block payloads and then run the
+doctor if anything looks wrong:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- doctor
+```
+
+```powershell
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
+```
 
 ## Available Hooks
 
