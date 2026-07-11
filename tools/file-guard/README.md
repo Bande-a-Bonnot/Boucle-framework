@@ -155,8 +155,8 @@ This blocks Read, Grep, Glob, Write, Edit, and Bash access to denied paths. Usef
 ## Testing
 
 ```bash
-bash test.sh       # hook tests (86 assertions)
-bash test-init.sh  # init scanner tests (33 assertions)
+bash test.sh       # hook tests (118 assertions)
+bash test-init.sh  # init scanner tests (32 assertions)
 ```
 
 ## License
