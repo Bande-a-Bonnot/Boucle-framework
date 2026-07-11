@@ -61,6 +61,13 @@ inconclusive:
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
 ```
 
+On native Windows, verify through the PowerShell installer instead of piping the
+Bash checker:
+
+```powershell
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+```
+
 Trust the hook layer only when the summary says there are zero `FAIL-OPEN`
 results and the hook files are healthy. If no payload checks ran, you have not
 verified enforcement yet.
@@ -85,6 +92,14 @@ unset IS_DEMO CLAUDE_CODE_SIMPLE
 test ! -f ~/.claude/settings.json || python3 -m json.tool ~/.claude/settings.json >/dev/null
 test ! -f .claude/settings.json || python3 -m json.tool .claude/settings.json >/dev/null
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- doctor
+```
+
+On native Windows:
+
+```powershell
+Remove-Item Env:IS_DEMO -ErrorAction SilentlyContinue
+Remove-Item Env:CLAUDE_CODE_SIMPLE -ErrorAction SilentlyContinue
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
 ```
 
 If JSON validation fails, remove comments or trailing commas from the reported
