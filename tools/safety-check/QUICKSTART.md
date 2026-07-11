@@ -106,7 +106,54 @@ If JSON validation fails, remove comments or trailing commas from the reported
 settings file. If `doctor` reports missing or non-executable hook files, repair
 those before trusting `--verify`.
 
-## 5. Recheck after risky changes
+## 5. Recheck after Claude Code updates
+
+Claude Code updates can change hook behavior or overwrite settings. Before
+updating, snapshot the user-level settings file:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup
+```
+
+On native Windows:
+
+```powershell
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup"
+```
+
+After the update, refresh installed hook files and verify the boundary:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- upgrade
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
+```
+
+On native Windows:
+
+```powershell
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } upgrade"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+```
+
+If verification fails after the update, run `doctor` before reinstalling. If
+hooks disappeared or `doctor` reports that `settings.json` was wiped, restore
+the most recent backup, then verify again:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- doctor
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
+```
+
+On native Windows:
+
+```powershell
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+```
+
+## 6. Recheck after risky changes
 
 Run `--verify` again after:
 
@@ -121,7 +168,7 @@ platform risk rather than a hook install failure. Document the warnings and keep
 the verified boundary: no bypass flags, valid JSON, healthy hook files, and zero
 `FAIL-OPEN` payload checks.
 
-## 6. Share safe support evidence
+## 7. Share safe support evidence
 
 Run verification before asking for help:
 
