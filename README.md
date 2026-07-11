@@ -151,7 +151,7 @@ Define protected files in `.file-guard` (one pattern per line). Two modes: **wri
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/git-safe/install.sh | bash
 ```
 
-Blocks `git push --force`, `git reset --hard`, `git checkout .`, `git checkout HEAD -- path`, `git restore`, `git clean -f`, `git branch -D`, `--no-verify`, and other destructive git commands. Prevents the [exact pattern](https://github.com/anthropics/claude-code/issues/37888) that destroyed 30+ files despite 100+ CLAUDE.md rules. Suggests safer alternatives. Allowlist via `.git-safe` config. ~134 tests (77 bash + 57 PowerShell).
+Blocks `git push --force`, `git reset --hard`, `git checkout .`, `git checkout HEAD -- path`, `git restore`, `git clean -f`, `git branch -D`, `--no-verify`, and other destructive git commands. Prevents the [exact pattern](https://github.com/anthropics/claude-code/issues/37888) that destroyed 30+ files despite 100+ CLAUDE.md rules. Suggests safer alternatives. Allowlist via `.git-safe` config. ~145 tests (88 bash + 57 PowerShell).
 
 ### [bash-guard](tools/bash-guard/) — Block dangerous bash commands
 
@@ -173,7 +173,7 @@ Blocks dangerous commands across these categories:
 - **Mount points** -- `rm -rf` on NFS/shared storage ([#36640](https://github.com/anthropics/claude-code/issues/36640))
 - **Git** -- `git push --force`, `git filter-branch` ([#37331](https://github.com/anthropics/claude-code/issues/37331): all files deleted via force push)
 
-Evaluates each segment of compound commands. Catches [multi-line comment bypass](https://github.com/anthropics/claude-code/issues/38119) where comment lines before a dangerous command evade deny rules. Detects encoding bypass attempts (base64/hex/octal obfuscation), here-string/here-doc redirection, eval-string injection, [workaround bypass attempts](https://github.com/anthropics/claude-code/issues/34358), library injection (LD_PRELOAD), wrapper command bypass, credential file operations, macOS Keychain access, scheduled task persistence, and service management. Allowlist via `.bash-guard` config. 590 verified bash tests, with additional PowerShell coverage when `pwsh` is available.
+Evaluates each segment of compound commands. Catches [multi-line comment bypass](https://github.com/anthropics/claude-code/issues/38119) where comment lines before a dangerous command evade deny rules. Detects encoding bypass attempts (base64/hex/octal obfuscation), here-string/here-doc redirection, eval-string injection, [workaround bypass attempts](https://github.com/anthropics/claude-code/issues/34358), library injection (LD_PRELOAD), wrapper command bypass, credential file operations, macOS Keychain access, scheduled task persistence, and service management. Allowlist via `.bash-guard` config. 612 verified bash tests, with additional PowerShell coverage when `pwsh` is available.
 
 ### [branch-guard](tools/branch-guard/) — Enforce feature-branch workflow
 

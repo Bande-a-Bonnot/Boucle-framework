@@ -185,7 +185,7 @@ For allowed commands, bash-guard stays silent and exits `0`.
 bash test.sh
 ```
 
-603 verified bash tests covering all blocked patterns, disk utility destruction, data exfiltration, programmatic env dumps, sensitive file access, workaround bypass prevention, compound command bypass, multi-line comment bypass ([#38119](https://github.com/anthropics/claude-code/issues/38119)), system database protection, mount point protection, encoding bypass detection, here-string/here-doc detection, library injection, wrapper bypass, credential file operations, macOS Keychain, scheduled tasks, system services, SSH keys, in-place edit exemptions, and safe variants.
+612 verified bash tests covering all blocked patterns, disk utility destruction, data exfiltration, programmatic env dumps, sensitive file access, workaround bypass prevention, compound command bypass, multi-line comment bypass ([#38119](https://github.com/anthropics/claude-code/issues/38119)), system database protection, mount point protection, encoding bypass detection, here-string/here-doc detection, library injection, wrapper bypass, credential file operations, macOS Keychain, scheduled tasks, system services, SSH keys, in-place edit exemptions, and safe variants.
 
 ## License
 
