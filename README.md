@@ -43,7 +43,7 @@ no payload checks:
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
 ```
 
-Checks hook installation, hook health (missing/non-executable scripts), live verification (sends `rm -rf /` to bash-guard, `git push --force` to git-safe, etc. and confirms they block), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings, jq/python3 dependencies, Windows hook reliability), and known CLI version regressions. Scans both user-level (`~/.claude/settings.json`) and project-level (`.claude/settings.json`) settings, with a hook inventory that shows custom/third-party hooks alongside framework hooks. Also warns when deny rules are configured without bash-guard, since deny patterns [can be bypassed](https://github.com/anthropics/claude-code/issues/38119) by compound commands and multi-line scripts. No installation required. ~260 tests.
+Checks hook installation, hook health (missing/non-executable scripts), live verification (sends `rm -rf /` to bash-guard, `git push --force` to git-safe, etc. and confirms they block), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings, jq/python3 dependencies, Windows hook reliability), and known CLI version regressions. Scans both user-level (`~/.claude/settings.json`) and project-level (`.claude/settings.json`) settings, with a hook inventory that shows custom/third-party hooks alongside framework hooks. Also warns when deny rules are configured without bash-guard, since deny patterns [can be bypassed](https://github.com/anthropics/claude-code/issues/38119) by compound commands and multi-line scripts. No installation required. 415 tests.
 
 For a 10-minute path from audit to verified hooks, see the [safety-check quickstart](tools/safety-check/QUICKSTART.md).
 
@@ -672,7 +672,7 @@ Or configure manually in `.claude/settings.json` with `"command": "pwsh -File /p
 ## Development
 
 ```bash
-cargo test           # Framework tests (198 passing)
+cargo test           # Framework tests (218 passing)
 cargo fmt            # Format code
 cargo clippy         # Run linter
 
@@ -690,7 +690,7 @@ bash tools/worktree-guard/test.sh
 
 ## Status
 
-**v0.13.0** — 200+ Rust tests + 1,700+ hook tests (bash + PowerShell). Zero clippy warnings. CI on Ubuntu + macOS + Windows. Docker support.
+**v0.13.0** — 218 Rust tests + 1,700+ hook tests (bash + PowerShell). Zero clippy warnings. CI on Ubuntu + macOS + Windows. Docker support.
 
 New in v0.13.0: 932 documented Claude Code gaps, recipes page, machine-readable Known Limitations export, bash-guard layered configs and `gh api` mutation guard, Broca TTL-tagged facts, read-once PostCompact cache reset, hardened safety-check verification, runner lock and timeout hardening, and Windows installer parity improvements. See [CHANGELOG](CHANGELOG.md) for details.
 
