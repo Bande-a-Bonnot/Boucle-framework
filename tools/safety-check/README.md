@@ -12,6 +12,10 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 New to the tool? Start with the [safety-check quickstart](QUICKSTART.md) for the
 short audit, install, verify, and repair loop.
 
+Updating Claude Code? Use the [update checklist](UPDATE_CHECKLIST.md) to back
+up settings, refresh hooks, verify the boundary, and restore safely if hooks
+disappear.
+
 ## Verify it
 
 The default audit checks whether hooks are configured. Verification mode checks whether installed `PreToolUse` hooks actually block representative payloads:

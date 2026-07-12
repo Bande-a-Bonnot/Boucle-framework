@@ -111,6 +111,8 @@ those before trusting `--verify`.
 Claude Code updates can change hook behavior or overwrite settings. Before
 updating, snapshot the user-level settings file:
 
+For a compact copy-paste flow, use the [Claude Code update checklist](UPDATE_CHECKLIST.md).
+
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup
 ```
