@@ -62,6 +62,9 @@ inconclusive:
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
 ```
 
+For a copy-paste GitHub Actions workflow and strict-mode exit code table, see
+the [scripted checks guide](CI.md).
+
 On native Windows, verify through the PowerShell installer instead of piping the
 Bash checker:
 

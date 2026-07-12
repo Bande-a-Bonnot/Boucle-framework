@@ -39,6 +39,9 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Strict mode still prints the full audit, then exits `1` if verification finds a `FAIL-OPEN` hook, no hooks, no payload checks, a skipped `PreToolUse` hook check, or broken hook files. It exits `0` only when every configured `PreToolUse` hook was checked or explicitly passed representative payload checks, and hook files are healthy.
 
+See [scripted checks](CI.md) for GitHub Actions, workstation scripts, exit
+codes, and the limits of what repository CI can prove.
+
 Read the result as a repair list, not as a badge. Fix these before trusting the session:
 
 1. Bypass flags such as `IS_DEMO=1` or a non-empty `CLAUDE_CODE_SIMPLE`.
