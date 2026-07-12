@@ -256,9 +256,15 @@ fn run_context_plugins(context_dir: &Path, root: &Path) -> Result<Vec<String>, i
         if !path.is_file() {
             continue;
         }
+        if entry.file_name().to_string_lossy().starts_with('.') {
+            continue;
+        }
 
         // Detect interpreter from shebang
         let interpreter = detect_interpreter(&path)?;
+        if interpreter.is_none() && !is_executable(&path)? {
+            continue;
+        }
 
         let output = match interpreter {
             Some(interp) => process::Command::new(interp)
@@ -290,6 +296,26 @@ fn run_context_plugins(context_dir: &Path, root: &Path) -> Result<Vec<String>, i
     }
 
     Ok(outputs)
+}
+
+#[cfg(unix)]
+fn is_executable(path: &Path) -> Result<bool, io::Error> {
+    use std::os::unix::fs::PermissionsExt;
+
+    Ok(fs::metadata(path)?.permissions().mode() & 0o111 != 0)
+}
+
+#[cfg(not(unix))]
+fn is_executable(path: &Path) -> Result<bool, io::Error> {
+    let executable_extensions = ["bat", "cmd", "exe", "ps1"];
+    Ok(path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .is_some_and(|ext| {
+            executable_extensions
+                .iter()
+                .any(|candidate| ext.eq_ignore_ascii_case(candidate))
+        }))
 }
 
 /// Detect interpreter from a script's shebang line.
@@ -579,6 +605,20 @@ mod tests {
 
         let interp = detect_interpreter(&script).unwrap();
         assert_eq!(interp, None);
+    }
+
+    #[test]
+    fn test_context_plugins_skip_placeholders() {
+        let dir = tempfile::tempdir().unwrap();
+        let context_dir = dir.path().join("context.d");
+        fs::create_dir_all(&context_dir).unwrap();
+        fs::write(context_dir.join(".gitkeep"), "").unwrap();
+        fs::write(context_dir.join("notes.txt"), "not a script").unwrap();
+        fs::write(context_dir.join("plugin"), "#!/bin/sh\necho plugin-output").unwrap();
+
+        let outputs = run_context_plugins(&context_dir, dir.path()).unwrap();
+
+        assert_eq!(outputs, vec!["plugin-output\n"]);
     }
 
     #[test]

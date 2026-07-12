@@ -13,8 +13,9 @@ boucle run --dry-run    # Preview context (no LLM call)
 boucle run              # Run one iteration (requires the configured LLM CLI)
 ```
 
-This example uses a Claude model in `boucle.toml`. Change `agent.model` to a
-`gpt-*` model to run it through Codex instead.
+This example uses the default `gpt-5.4` model, which runs through the Codex CLI.
+Change `agent.model` to a Claude model name to run it through `claude -p`
+instead.
 
 ### Option 2: Start from scratch
 
