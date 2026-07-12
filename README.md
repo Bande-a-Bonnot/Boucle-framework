@@ -5,7 +5,7 @@
 
 Claude Code hooks that actually enforce your rules. 7 installable hooks, plus enforcement and audit tooling, 1,900+ tests, [932 known Claude Code gaps documented](tools/enforce/#known-limitations) with severity ratings and workarounds.
 
-> **Quick links:** [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Update checklist](tools/safety-check/UPDATE_CHECKLIST.md) · [Read-only audits](tools/enforce/READ_ONLY_AUDIT.md) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
+> **Quick links:** [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Update checklist](tools/safety-check/UPDATE_CHECKLIST.md) · [Safe support evidence](tools/safety-check/SUPPORT_EVIDENCE.md) · [Read-only audits](tools/enforce/READ_ONLY_AUDIT.md) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
 
 ## Claude Code Hooks
 
@@ -46,6 +46,8 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 Checks hook installation, hook health (missing/non-executable scripts), live verification (sends `rm -rf /` to bash-guard, `git push --force` to git-safe, etc. and confirms they block), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings, jq/python3 dependencies, Windows hook reliability), and known CLI version regressions. Scans both user-level (`~/.claude/settings.json`) and project-level (`.claude/settings.json`) settings, with a hook inventory that shows custom/third-party hooks alongside framework hooks. Also warns when deny rules are configured without bash-guard, since deny patterns [can be bypassed](https://github.com/anthropics/claude-code/issues/38119) by compound commands and multi-line scripts. No installation required. 415 tests.
 
 For a 10-minute path from audit to verified hooks, see the [safety-check quickstart](tools/safety-check/QUICKSTART.md).
+If you need to ask for help, use the [safe support evidence guide](tools/safety-check/SUPPORT_EVIDENCE.md)
+to share the summary block without exposing private settings or secrets.
 
 <a id="install-hooks"></a>
 

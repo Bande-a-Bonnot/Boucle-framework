@@ -98,4 +98,5 @@ When asking for help, share only the block that starts with:
 
 Do not share raw `settings.json`, hook scripts, shell history, session logs,
 private paths, tokens, `.env` contents, or proprietary `CLAUDE.md` rules in
-public threads.
+public threads. The [safe support evidence guide](SUPPORT_EVIDENCE.md) gives a
+short public-report template and explains the common summary lines.

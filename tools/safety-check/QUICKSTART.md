@@ -21,7 +21,8 @@ missing or broken:
 
 Do not paste private settings or full hook output into a public issue. If you
 need support, share only the final `--- Safety Summary (copy/paste) ---` block
-from the audit output.
+from the audit output. The [safe support evidence guide](SUPPORT_EVIDENCE.md)
+has a short public-report template and a list of fields to redact.
 
 ## 2. Install the baseline hooks
 
@@ -190,4 +191,5 @@ or hook source.
 
 Do not share raw `settings.json`, hook scripts, shell history, session logs,
 private paths, tokens, `.env` contents, or proprietary `CLAUDE.md` rules in
-public threads.
+public threads. Use the [safe support evidence guide](SUPPORT_EVIDENCE.md)
+when you need a copy/paste report format.
