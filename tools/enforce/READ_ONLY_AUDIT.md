@@ -51,7 +51,29 @@ python3 /tmp/enforce-hooks.py CLAUDE.md --verify --strict
 `--verify --strict` checks the installed hook file, registration, executable
 bit, and common fail-open mistakes.
 
-## 4. Smoke test the runtime boundary
+## 4. Check the full Claude Code boundary
+
+Run the safety check from the same project root:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
+```
+
+This catches problems outside the read-only rule itself: hook-disabling
+environment variables, invalid user or project `settings.json`, missing hook
+files, non-executable shell hooks, and other installed hooks that fail open.
+
+For CI or a scripted workstation check, make those findings fail the command:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
+```
+
+Do not treat the boundary as verified if the summary says `Verify: not run`,
+`no hooks found`, `no payload checks ran`, or reports any `FAIL-OPEN` result.
+Fix those first, then re-run the check from the project root.
+
+## 5. Smoke test the runtime boundary
 
 Run from the project root:
 
@@ -70,7 +92,7 @@ For a direct manual probe, start Claude Code in the project and ask it to read a
 file, then ask it to create a temporary file. The read should be allowed. The
 write should be blocked by the hook before any file is created.
 
-## 5. Use the mode
+## 6. Use the mode
 
 Start sessions with a narrow prompt, for example:
 
@@ -81,7 +103,7 @@ Audit this repository. Do not edit files, do not run migrations, do not restart 
 The prompt still matters because it tells the model what work to do. The hook is
 the enforcement layer that stops tool calls when the model drifts.
 
-## 6. Remove or relax it
+## 7. Remove or relax it
 
 To leave read-only mode, remove or rename the `Read-only mode @enforced` section
 in `CLAUDE.md`. Plugin mode will stop enforcing those rules on the next tool
