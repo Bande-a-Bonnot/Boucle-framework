@@ -86,6 +86,9 @@ Boundary: hooks passed representative checks; document residual platform warning
 
 If the summary says `Verify: not run`, `no hooks found`, or `no hook payload
 checks ran`, treat the hook layer as unverified even when the grade looks high.
+The `N/8 hooks` inventory counts the 7 standalone hooks plus `enforce-hooks`;
+`install.sh all` installs the standalone suite, and `enforce-hooks` is installed
+separately when you want CLAUDE.md rules enforced at tool-call time.
 
 ## 4. Fix the common blockers
 

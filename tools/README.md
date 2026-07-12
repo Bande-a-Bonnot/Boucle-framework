@@ -41,7 +41,10 @@ For non-interactive setup:
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"
 ```
 
-All 7 hooks (read-once through session-log) ship with native `.ps1` equivalents. No bash or jq required on Windows.
+All 7 standalone hooks (read-once through session-log) ship with native `.ps1`
+equivalents. No bash or jq required on Windows. The safety-check summary has
+8 hook slots because it also counts `enforce-hooks`, which installs separately
+from the standalone hook suite.
 
 After installing, verify that the hooks actually block payloads and then run the
 doctor if anything looks wrong:
