@@ -596,16 +596,20 @@ boucle --version                 # Show version
 
 ## Recommended Claude Code Version
 
-**Use v2.1.90 or later.** Earlier versions have hook-related regressions:
+**Use the latest Claude Code release.** Claude Code changes quickly; check
+Anthropic's [release feed](https://github.com/anthropics/claude-code/releases)
+before pinning a version, then run `safety-check` with `--verify` to confirm
+hooks fire correctly in your environment. The versions below are historical
+hook-related breakpoints, not a current-release tracker:
 
 | Version | Issue |
 |---|---|
-| v2.1.90 | Current recommended. Improves exit-2 + JSON blocking behavior, fixes PostToolUse format-on-save, and fixes 4 PowerShell permission bypasses |
+| v2.1.90+ | Minimum version for the exit-2 + JSON blocking improvement, PostToolUse format-on-save fix, and 4 PowerShell permission bypass fixes |
 | v2.1.89 | [Pulled from npm](https://github.com/anthropics/claude-code/issues/41497) — custom commands broken, systemMessage display broken, source map leak |
 | v2.1.81-84 | [Permission bypass resets mid-session](https://github.com/anthropics/claude-code/issues/37745) when PreToolUse hooks are installed |
 | < v2.1.50 | No `hookSpecificOutput` format support (deprecated `decision: "block"` still works but should be migrated) |
 
-Run `claude --version` to check. Run `safety-check` with `--verify` to confirm hooks fire correctly on your version.
+Run `claude --version` to check your local install.
 
 ## Troubleshooting
 
