@@ -24,5 +24,8 @@ cargo build --release
 cp -r examples/hello-world my-agent
 cd my-agent
 boucle run --dry-run   # Preview context (no LLM call needed)
-boucle run             # Run one iteration (requires claude CLI)
+boucle run             # Run one iteration (requires the configured LLM CLI)
 ```
+
+The checked-in examples use a Claude model in `boucle.toml`. Change
+`agent.model` to a `gpt-*` model to run them through Codex instead.

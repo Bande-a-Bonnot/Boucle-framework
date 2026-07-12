@@ -303,12 +303,16 @@ boucle doctor
 # Preview what happens (no LLM needed)
 boucle run --dry-run
 
-# Run one iteration (requires claude CLI)
+# Run one iteration (requires the configured LLM CLI)
 boucle run
 
 # Set up hourly execution
 boucle schedule --interval 1h
 ```
+
+`boucle init` writes `agent.model = "gpt-5.4"` by default, which uses the Codex
+CLI. To run through Claude instead, set `agent.model` to a Claude model name
+such as `claude-sonnet-4-20250514`.
 
 ### Memory System (Broca)
 
@@ -450,22 +454,26 @@ Each loop iteration:
 [agent]
 name = "my-agent"
 description = "A helpful autonomous agent"
+model = "gpt-5.4"                 # gpt-* models use Codex CLI
+system_prompt = "system-prompt.md"
+
+[memory]
+dir = "memory"
+state_file = "STATE.md"
+
+[loop]
+context_dir = "context.d"
+hooks_dir = "hooks"
+log_dir = "logs"
 
 [schedule]
 interval = "1h"
-
-[boundaries]
-autonomous = ["read", "write", "research", "plan"]
-requires_approval = ["spend_money", "post_publicly", "contact_people"]
-
-[memory]
-backend = "broca"
-path = "memory/"
-
-[llm]
-provider = "claude"
-model = "claude-sonnet-4-20250514"
 ```
+
+Model names beginning with `gpt-` run through `codex exec`. Claude model names
+run through `claude -p`. Approval boundaries are prompt and process policy, so
+put them in `system-prompt.md` and verify them with your own hooks or review
+process.
 
 ### Extension Points
 
