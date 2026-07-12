@@ -19,6 +19,7 @@ A practical pattern for replacing one-shot AI workflows with persistent agents.
 git clone https://github.com/Bande-a-Bonnot/Boucle-framework.git
 cd Boucle-framework
 cargo build --release
+export PATH="$PWD/target/release:$PATH"
 
 # Copy an example and run it
 cp -r examples/hello-world my-agent
