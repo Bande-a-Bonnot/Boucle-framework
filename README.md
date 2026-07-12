@@ -289,11 +289,16 @@ mv boucle /usr/local/bin/
 git clone https://github.com/Bande-a-Bonnot/Boucle-framework.git
 cd Boucle-framework
 cargo build --release
+export PATH="$PWD/target/release:$PATH"
 ```
 
 #### Run your first agent
 
 ```bash
+# Create a clean agent directory
+mkdir my-agent
+cd my-agent
+
 # Initialize a new agent
 boucle init --name my-agent
 
