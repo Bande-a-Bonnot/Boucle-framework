@@ -10,8 +10,11 @@ A practical Boucle agent that reads files from a drop folder and produces a dail
 cp -r examples/daily-digest my-agent
 cd my-agent
 boucle run --dry-run    # Preview context (includes inbox/example-notes.txt)
-boucle run              # Summarize the example file (requires claude CLI)
+boucle run              # Summarize the example file (requires the configured LLM CLI)
 ```
+
+This example uses a Claude model in `boucle.toml`. Change `agent.model` to a
+`gpt-*` model to run it through Codex instead.
 
 ### Option 2: Start from scratch
 

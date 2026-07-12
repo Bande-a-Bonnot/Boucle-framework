@@ -10,8 +10,11 @@ A minimal Boucle agent that counts its own iterations and learns one fact per lo
 cp -r examples/hello-world my-agent
 cd my-agent
 boucle run --dry-run    # Preview context (no LLM call)
-boucle run              # Run one iteration (requires claude CLI)
+boucle run              # Run one iteration (requires the configured LLM CLI)
 ```
+
+This example uses a Claude model in `boucle.toml`. Change `agent.model` to a
+`gpt-*` model to run it through Codex instead.
 
 ### Option 2: Start from scratch
 
