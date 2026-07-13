@@ -7,6 +7,14 @@
   <updated>2026-07-13T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] `SessionEnd` and `Stop` hooks can fail during shutdown with `posix_spawn` ENOENT</title>
+    <id>https://framework.boucle.sh/limitations.html#sessionend-and-stop-hooks-can-fail-during-shutdown-with-posix-spawn-enoent</id>
+    <link href="https://framework.boucle.sh/limitations.html#sessionend-and-stop-hooks-can-fail-during-shutdown-with-posix-spawn-enoent"/>
+    <updated>2026-07-13T00:00:00Z</updated>
+    <summary>In Claude Code v2.1.206 on macOS, `SessionEnd` and `Stop` hooks can fail during the shutdown phase with `ENOENT: no such file or directory, posix_spawn &#x27;/bin/sh&#x27;` even though `/bin/sh` exists and the same commands run correctly from an interactive shell. In the reported regression, two independent shutdown hooks failed the same way after the update: a shell-command summarizer hook and an unrelated Node cleanup hook. The reporter&#x27;s per-session records showed the shutdown hooks firing normally before v2.1.206 and dropping to roughly zero afterward with no settings change. This means end-of-session processors, transcript summarizers, cleanup jobs, and audit exporters that depend only on shutdown hooks can silently miss completed sessions.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Windows hook payload delivery can interpret `&gt;` tokens as shell redirection</title>
     <id>https://framework.boucle.sh/limitations.html#windows-hook-payload-redirection-can-create-or-clobber-files</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-hook-payload-redirection-can-create-or-clobber-files"/>
@@ -157,13 +165,5 @@
     <updated>2026-07-13T00:00:00Z</updated>
     <summary>When `claude` is spawned programmatically from a non-shell parent (Node, Bun, Python, or similar) with `--input-format stream-json --output-format stream-json`, the session can report the correct `cwd` in the `system/init` event while every later Bash tool subprocess still runs from `/`. The same prompt, flags, and environment work correctly when an interactive shell is the direct parent, so the break appears to sit specifically in the Bash tool spawn path for the headless SDK-style execution flow. This is distinct from older worktree, realpath, and parallel-Bash cwd issues because the logical session directory is known correctly at init time and only the later Bash subprocess loses it.</summary>
     <category term="File system &amp; paths"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] `Ctrl+B` can background a running tool on single press despite a double-press UI hint</title>
-    <id>https://framework.boucle.sh/limitations.html#ctrl-b-can-background-a-running-tool-on-single-press-despite-double-press-ui-hint</id>
-    <link href="https://framework.boucle.sh/limitations.html#ctrl-b-can-background-a-running-tool-on-single-press-despite-double-press-ui-hint"/>
-    <updated>2026-07-13T00:00:00Z</updated>
-    <summary>While a tool is actively running, Claude Code can show a bottom-of-screen hint that says `Ctrl+B, Ctrl+B` is required to background the task, yet a single `Ctrl+B` immediately backgrounds it. In the reported Linux repro, the contrast with `Ctrl+F, Ctrl+F` for terminating background agents made the mismatch especially misleading: one shortcut really is double-confirmed, while the other only looks that way in the UI. This is distinct from earlier TUI freeze, auto-background, and background-agent lifecycle entries because the runtime action succeeds; the broken layer is the safety contract between the on-screen shortcut hint and the actual keybinding behavior.</summary>
-    <category term="TUI &amp; display"/>
   </entry>
 </feed>
