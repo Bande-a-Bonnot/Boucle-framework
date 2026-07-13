@@ -29,5 +29,8 @@ if missing or extra:
 if f'<span id="total-count">{len(data["entries"])}</span>' not in html:
     raise SystemExit("total-count does not match limitations.json")
 
+if 'https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>' not in html:
+    raise SystemExit("limitations page source link does not point to docs/limitations.json")
+
 print(f"HTML sync OK: {len(html_ids)} entries")
 PY
