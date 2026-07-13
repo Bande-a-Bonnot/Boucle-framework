@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">933</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-12.</span></p>
+        <p class="subtitle"><span id="total-count">934</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-13.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9936,6 +9936,18 @@
                         <!-- workaround:subdirectory-launch-can-skip-project-hooks -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Start Claude Code from the repository root when you rely on project hooks. For teams that need fail-closed behavior, add a small global PreToolUse guard on mutating tools that checks whether an ancestor repo root has `.claude/settings.json` while the active Claude project directory does not, then exits 2 with instructions to restart from the repo root. Also verify `/hooks` from both the repo root and common subdirectories after each Claude Code update.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/76441" target="_blank">#76441</a></div>
+        </div>
+        <div class="kl-entry" data-category="Tool behavior" data-issues="76654" id="windows-grep-process-flood-can-crash-host" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#934</span>
+                <span class="kl-cat">Tool behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Windows Grep process floods can leave live `rg.exe` children and crash the host</h3>
+            <p>On Windows, Claude Code&#x27;s Grep tool can spawn hundreds of `rg.exe` and `conhost.exe` children and then stop draining their stdout pipes. In the reported v2.1.207 VS Code extension repro, the children were not harmless zombies: they stayed live, blocked in `NtWriteFile` on full libuv named pipes owned by the extension host, accumulated high-frequency timer activity, and caused repeated DPC watchdog bugchecks. The report documents 11 BSODs between 2026-07-07 and 2026-07-11, process-count explosions within minutes, and kernel-dump evidence tying the crash to abandoned Grep children. This means large or repeated Grep searches on Windows can become a machine-level availability and data-loss risk rather than just a slow tool call.</p>
+                        <!-- workaround:windows-grep-process-flood-can-crash-host -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On Windows, cap concurrent Claude Code sessions that can run Grep, keep a watchdog for old or excessive `rg.exe` and orphaned `conhost.exe` during active work, and restart the VS Code extension host after any watchdog panic because the parent process may still own broken pipe and handle state. Maintainers should test both sides of the fix: child stdout must be drained or closed on abort, and timed-out or cancelled Grep calls must leave zero descendant `rg.exe` or `conhost.exe` processes.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/76654" target="_blank">#76654</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
