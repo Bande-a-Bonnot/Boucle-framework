@@ -7,6 +7,14 @@
   <updated>2026-07-13T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Quoted shell operators can defeat Bash permission allowlist matching</title>
+    <id>https://framework.boucle.sh/limitations.html#quoted-shell-operators-can-defeat-bash-permission-allowlist-matching</id>
+    <link href="https://framework.boucle.sh/limitations.html#quoted-shell-operators-can-defeat-bash-permission-allowlist-matching"/>
+    <updated>2026-07-13T00:00:00Z</updated>
+    <summary>Claude Code&#x27;s Bash permission decomposer can treat shell metacharacters inside quoted arguments as command separators before matching the command against allow rules. In the reported repro, commands allowed by `Bash(source:*)` and `Bash(python3:*)` still prompted when a double-quoted Python argument contained a semicolon or embedded newlines, suggesting the splitter was not quote-aware. A later minimal macOS repro showed the same class with a single allowed `grep`: `grep -E &quot;foo|bar&quot; file.txt` prompted under `Bash(grep:*)`, while `grep -E &quot;foobar&quot; file.txt` and `grep -e foo -e bar file.txt` auto-approved. This means common jq, grep, sed, awk, Python, and heredoc-style arguments can trigger needless prompts despite explicit wildcard allow rules. In headless or Agent SDK sessions, the prompt is not just friction: it can become an indefinite unattended hang.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Claude Desktop plugin browser can hide plugins whose `hooks.json` has unknown top-level keys</title>
     <id>https://framework.boucle.sh/limitations.html#plugin-browser-can-hide-hooks-json-with-unknown-top-level-keys</id>
     <link href="https://framework.boucle.sh/limitations.html#plugin-browser-can-hide-hooks-json-with-unknown-top-level-keys"/>
@@ -157,13 +165,5 @@
     <updated>2026-07-13T00:00:00Z</updated>
     <summary>In Cowork (Claude Desktop), the first-party Gmail connector&#x27;s `search_threads` tool can fail with the generic `Internal error encountered.` message on every call even while the same authenticated session still succeeds with `list_drafts`, `get_thread`, `list_labels`, and `create_draft`. The reported macOS repro failed 100% of the time across both interactive and scheduled Cowork sessions from April 9 through April 12, 2026, regardless of whether the query was empty or used simple filters like `is:unread` or `in:inbox`. This is distinct from older Gmail auth-entry, connector-loading, and cross-account-override bugs because the OAuth session is already valid and multiple Gmail tools prove the connector is alive; the failure is isolated specifically to the `search_threads` endpoint that many inbox-driven automations depend on.</summary>
     <category term="MCP &amp; integrations"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Cowork `Save skill` installs can silently truncate `SKILL.md` files</title>
-    <id>https://framework.boucle.sh/limitations.html#cowork-save-skill-install-can-silently-truncate-skill-md-files</id>
-    <link href="https://framework.boucle.sh/limitations.html#cowork-save-skill-install-can-silently-truncate-skill-md-files"/>
-    <updated>2026-07-13T00:00:00Z</updated>
-    <summary>Cowork&#x27;s `Save skill` install path can write a shorter `SKILL.md` into the mounted skills directory than the intact file packaged inside the `.skill` zip, with no error or warning to the user. In the reported Windows repros, the source file and the packaged zip both remained complete, but the installed copy inside `/sessions/*/mnt/.claude/skills/.../SKILL.md` lost 14-18 lines and ended mid-word on every install. This is narrower than the older Cowork skill-update truncation bug, which only clipped files that grew relative to a previous install, and narrower than the older stale virtiofs mount bug, which served outdated host content after external edits: here the break happens inside Cowork&#x27;s own `Save skill` install pipeline on fresh package writes, even when the `.skill` payload itself is already verified intact.</summary>
-    <category term="Cowork"/>
   </entry>
 </feed>
