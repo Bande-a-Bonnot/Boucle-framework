@@ -7,6 +7,14 @@
   <updated>2026-07-13T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Remote Control can ignore `SessionStart` `sessionTitle` output</title>
+    <id>https://framework.boucle.sh/limitations.html#remote-control-can-ignore-sessionstart-sessiontitle-output</id>
+    <link href="https://framework.boucle.sh/limitations.html#remote-control-can-ignore-sessionstart-sessiontitle-output"/>
+    <updated>2026-07-13T00:00:00Z</updated>
+    <summary>Remote-Control-spawned Claude Code sessions can run a `SessionStart` hook that emits the documented `sessionTitle` output field, relay the hook response through the bridge, and still keep the Remote Control UI title assigned before hooks completed. In the reported Windows 11 / Claude Code 2.1.207 server-mode repro, debug streams showed a successful hook response containing `sessionTitle` about one second after the bridge assigned an automatic or prompt-derived title, but the claude.ai / mobile display title was never reconciled afterward. The same title can be applied locally, and `/rename` does propagate to the Remote Control UI, so the narrower broken layer is the Remote Control bridge&#x27;s post-hook title update path rather than the hook script or title field itself.</summary>
+    <category term="Cowork &amp; remote"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Rapid sequential MCP generation can corrupt non-Latin output while structured fields remain correct</title>
     <id>https://framework.boucle.sh/limitations.html#rapid-sequential-mcp-generation-can-corrupt-non-latin-output</id>
     <link href="https://framework.boucle.sh/limitations.html#rapid-sequential-mcp-generation-can-corrupt-non-latin-output"/>
@@ -157,13 +165,5 @@
     <updated>2026-07-13T00:00:00Z</updated>
     <summary>When Claude Code is launched with `CLAUDE_CONFIG_DIR` pointing at an alternate profile directory, the session can still preload instructions from the default `~/.claude/CLAUDE.md` instead of isolating itself to the selected config root. In the reported macOS v2.1.104 repro, the model explicitly confirmed that `/Users/.../.claude/CLAUDE.md` had already been injected into context as startup `claudeMd` content even though `CLAUDE_CONFIG_DIR` was set to a different directory. This is distinct from the older `CLAUDE_CONFIG_DIR` MCP hierarchy and plugin-isolation bugs because the break is not limited to MCP or marketplace state: the wrong profile&#x27;s top-level instruction file itself crosses the boundary at session start, so supposedly isolated local profiles can inherit unrelated rules, tooling guidance, or secrets from the default home profile before the user does any work.</summary>
     <category term="Configuration &amp; settings"/>
-  </entry>
-  <entry>
-    <title>[HIGH] VS Code Claude process tree can lose local-network TCP access while another terminal on the same host still works</title>
-    <id>https://framework.boucle.sh/limitations.html#vscode-claude-process-tree-can-lose-local-network-tcp-access-while-terminal-on-same-host-still-works</id>
-    <link href="https://framework.boucle.sh/limitations.html#vscode-claude-process-tree-can-lose-local-network-tcp-access-while-terminal-on-same-host-still-works"/>
-    <updated>2026-07-13T00:00:00Z</updated>
-    <summary>When Claude Code is launched inside the VS Code extension on macOS, Bash and Python tool calls can fail to establish TCP connections to a local network host with `No route to host` or `errno 65` even though the same user, machine, interface, and destination work immediately from iTerm2. In the reported repro, `ssh`, `nc -z`, `ping`, and a direct Python `socket.connect()` all failed from the Claude process tree while `traceroute` still reached the target host in under a millisecond and the identical commands succeeded outside Claude. This is distinct from the older macOS silent-TCP-drop freeze entry, which starts after an existing connection disappears mid-session: here the broken layer is the initial transport access of the VS Code / Claude subprocess tree itself, apparently before any session work can reach the host.</summary>
-    <category term="Bash &amp; shell execution"/>
   </entry>
 </feed>

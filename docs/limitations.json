@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 940,
+  "count": 941,
   "categories": {
     "Hook behavior & events": 171,
     "Permission system": 111,
@@ -31,6 +31,7 @@
     "Desktop & platform bugs": 5,
     "UX & display": 5,
     "Core & session management": 4,
+    "Cowork & remote": 4,
     "Data integrity": 4,
     "MCP & plugins": 4,
     "permissions": 4,
@@ -41,7 +42,6 @@
     "Bash & shell execution": 3,
     "CLI / TUI rendering": 3,
     "cowork": 3,
-    "Cowork & remote": 3,
     "Desktop": 3,
     "Hooks": 3,
     "Memory & context": 3,
@@ -172,7 +172,7 @@
     "CRITICAL": 65,
     "HIGH": 458,
     "LOW": 97,
-    "MEDIUM": 320
+    "MEDIUM": 321
   },
   "entries": [
     {
@@ -11479,10 +11479,22 @@
       "cc_version": "2.1.207",
       "date_added": "2026-07-13",
       "workaround": "For MCP workflows that save non-Latin or otherwise high-integrity generated content, add a validation step between generation and the final save call. Compare free-text citations against structured fields such as `page_reference`, reject mismatches, and retry the item in a fresh session or after a short delay. Batch processors should also log the exact MCP request and response JSON around corrupted items so maintainers can distinguish model degradation from transport or storage bugs."
+    },
+    {
+      "id": "remote-control-can-ignore-sessionstart-sessiontitle-output",
+      "title": "Remote Control can ignore `SessionStart` `sessionTitle` output",
+      "category": "Cowork & remote",
+      "severity": "MEDIUM",
+      "status": "open",
+      "description": "Remote-Control-spawned Claude Code sessions can run a `SessionStart` hook that emits the documented `sessionTitle` output field, relay the hook response through the bridge, and still keep the Remote Control UI title assigned before hooks completed. In the reported Windows 11 / Claude Code 2.1.207 server-mode repro, debug streams showed a successful hook response containing `sessionTitle` about one second after the bridge assigned an automatic or prompt-derived title, but the claude.ai / mobile display title was never reconciled afterward. The same title can be applied locally, and `/rename` does propagate to the Remote Control UI, so the narrower broken layer is the Remote Control bridge's post-hook title update path rather than the hook script or title field itself.",
+      "cc_issue": 76812,
+      "cc_version": "2.1.207",
+      "date_added": "2026-07-13",
+      "workaround": "Do not assume `SessionStart` `sessionTitle` gives Remote Control sessions the same visible title as local CLI sessions. If remote session names are operationally important, pass an explicit Remote Control name where available, issue `/rename` after startup, or verify the title in the Remote Control UI before relying on it for dispatch, audit, or handoff workflows."
     }
   ],
   "status_summary": {
-    "open": 926,
+    "open": 927,
     "fixed": 13,
     "mitigated": 1
   },
@@ -11490,19 +11502,19 @@
     "critical": 65,
     "high": 458,
     "low": 97,
-    "medium": 320
+    "medium": 321
   },
   "lastUpdated": "2026-07-13",
   "stats": {
-    "total": 940,
+    "total": 941,
     "critical": 65,
     "high": 458,
-    "medium": 320,
+    "medium": 321,
     "low": 97,
-    "open": 926,
+    "open": 927,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-13",
-  "total": 940
+  "total": 941
 }
