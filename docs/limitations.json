@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 939,
+  "count": 940,
   "categories": {
     "Hook behavior & events": 171,
     "Permission system": 111,
     "Hook bypass & evasion": 99,
-    "MCP & plugin issues": 48,
+    "MCP & plugin issues": 49,
     "Subagent & spawned agents": 38,
     "Desktop & IDE integration": 26,
     "Platform & compatibility": 23,
@@ -172,7 +172,7 @@
     "CRITICAL": 65,
     "HIGH": 458,
     "LOW": 97,
-    "MEDIUM": 319
+    "MEDIUM": 320
   },
   "entries": [
     {
@@ -11467,10 +11467,22 @@
       "cc_version": "2.1.205-2.1.207, reported 2026-07-08 to 2026-07-12",
       "date_added": "2026-07-13",
       "workaround": "Avoid relying on Claude Code's Bash permission allowlist for unattended commands that carry `|`, `;`, `&&`, `&`, or newlines inside quoted arguments until the splitter is visibly quote-aware. Prefer equivalent argument forms without shell metacharacters where possible, such as `grep -e foo -e bar` instead of `grep -E \"foo|bar\"`, move complex scripts into reviewed files, and use PreToolUse hooks or external watchdogs to turn unexpected permission prompts into fast failures instead of silent headless hangs."
+    },
+    {
+      "id": "rapid-sequential-mcp-generation-can-corrupt-non-latin-output",
+      "title": "Rapid sequential MCP generation can corrupt non-Latin output while structured fields remain correct",
+      "category": "MCP & plugin issues",
+      "severity": "MEDIUM",
+      "status": "open",
+      "description": "When Claude Code drives a custom MCP server through a rapid claim/read/generate/save loop, repeated non-Latin generation can degrade inside the continuous tool-call sequence even though the same item is clean when generated in isolation. In the reported WSL2 / Claude Code v2.1.207 repro, five Burmese notes generated back-to-back in one session contained malformed words and hallucinated page numbers such as 499 or 4999, while the structured `page_reference` field in the same tool response remained the correct value 104. A sixth item generated after a short pause was fluent and cited page 104 correctly. The evidence rules out simple UTF-8 or database transport corruption because the saved text is valid UTF-8 and the structured field stays correct; the narrower risk is generation quality degrading across rapid sequential MCP tool turns before durable content is saved.",
+      "cc_issue": 76661,
+      "cc_version": "2.1.207",
+      "date_added": "2026-07-13",
+      "workaround": "For MCP workflows that save non-Latin or otherwise high-integrity generated content, add a validation step between generation and the final save call. Compare free-text citations against structured fields such as `page_reference`, reject mismatches, and retry the item in a fresh session or after a short delay. Batch processors should also log the exact MCP request and response JSON around corrupted items so maintainers can distinguish model degradation from transport or storage bugs."
     }
   ],
   "status_summary": {
-    "open": 925,
+    "open": 926,
     "fixed": 13,
     "mitigated": 1
   },
@@ -11478,19 +11490,19 @@
     "critical": 65,
     "high": 458,
     "low": 97,
-    "medium": 319
+    "medium": 320
   },
   "lastUpdated": "2026-07-13",
   "stats": {
-    "total": 939,
+    "total": 940,
     "critical": 65,
     "high": 458,
-    "medium": 319,
+    "medium": 320,
     "low": 97,
-    "open": 925,
+    "open": 926,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-13",
-  "total": 939
+  "total": 940
 }

@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">939</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-13.</span></p>
+        <p class="subtitle"><span id="total-count">940</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-13.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -10008,6 +10008,18 @@
                         <!-- workaround:quoted-shell-operators-can-defeat-bash-permission-allowlist-matching -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid relying on Claude Code&#x27;s Bash permission allowlist for unattended commands that carry `|`, `;`, `&amp;&amp;`, `&amp;`, or newlines inside quoted arguments until the splitter is visibly quote-aware. Prefer equivalent argument forms without shell metacharacters where possible, such as `grep -e foo -e bar` instead of `grep -E &quot;foo|bar&quot;`, move complex scripts into reviewed files, and use PreToolUse hooks or external watchdogs to turn unexpected permission prompts into fast failures instead of silent headless hangs.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/75549" target="_blank">#75549</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="76661" id="rapid-sequential-mcp-generation-can-corrupt-non-latin-output" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#940</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Rapid sequential MCP generation can corrupt non-Latin output while structured fields remain correct</h3>
+            <p>When Claude Code drives a custom MCP server through a rapid claim/read/generate/save loop, repeated non-Latin generation can degrade inside the continuous tool-call sequence even though the same item is clean when generated in isolation. In the reported WSL2 / Claude Code v2.1.207 repro, five Burmese notes generated back-to-back in one session contained malformed words and hallucinated page numbers such as 499 or 4999, while the structured `page_reference` field in the same tool response remained the correct value 104. A sixth item generated after a short pause was fluent and cited page 104 correctly. The evidence rules out simple UTF-8 or database transport corruption because the saved text is valid UTF-8 and the structured field stays correct; the narrower risk is generation quality degrading across rapid sequential MCP tool turns before durable content is saved.</p>
+                        <!-- workaround:rapid-sequential-mcp-generation-can-corrupt-non-latin-output -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For MCP workflows that save non-Latin or otherwise high-integrity generated content, add a validation step between generation and the final save call. Compare free-text citations against structured fields such as `page_reference`, reject mismatches, and retry the item in a fresh session or after a short delay. Batch processors should also log the exact MCP request and response JSON around corrupted items so maintainers can distinguish model degradation from transport or storage bugs.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/76661" target="_blank">#76661</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
