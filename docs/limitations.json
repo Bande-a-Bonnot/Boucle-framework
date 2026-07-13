@@ -11391,6 +11391,9 @@
       "severity": "CRITICAL",
       "status": "open",
       "description": "When Claude Code is launched from a subdirectory, it can treat that subdirectory as the project root and never read the repository root's `.claude/settings.json`. In the reported macOS v2.1.206 repro, a project hook configured with an absolute command path fired when Claude was started from the repo root, never ran when Claude was started from `<root>/lib`, and fired again only after a separate `lib/.claude/settings.json` was added. This means a natural `cd app && claude` workflow can silently disarm project-level PreToolUse safety rails, custody gates, secret detectors, or tenant-isolation guards before `${CLAUDE_PROJECT_DIR}` interpolation or hook runtime checks have any chance to run.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/76441"
+      ],
       "cc_issue": 76441,
       "cc_version": "2.1.206",
       "date_added": "2026-07-12",
@@ -11403,6 +11406,9 @@
       "severity": "CRITICAL",
       "status": "open",
       "description": "On Windows, Claude Code's Grep tool can spawn hundreds of `rg.exe` and `conhost.exe` children and then stop draining their stdout pipes. In the reported v2.1.207 VS Code extension repro, the children were not harmless zombies: they stayed live, blocked in `NtWriteFile` on full libuv named pipes owned by the extension host, accumulated high-frequency timer activity, and caused repeated DPC watchdog bugchecks. The report documents 11 BSODs between 2026-07-07 and 2026-07-11, process-count explosions within minutes, and kernel-dump evidence tying the crash to abandoned Grep children. This means large or repeated Grep searches on Windows can become a machine-level availability and data-loss risk rather than just a slow tool call.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/76654"
+      ],
       "cc_issue": 76654,
       "cc_version": "2.1.207",
       "date_added": "2026-07-13",
@@ -11415,6 +11421,9 @@
       "severity": "CRITICAL",
       "status": "open",
       "description": "In the Claude Code VS Code extension host on Windows, configured `PreToolUse` hooks can fail to run for matching tool calls even when the same hook script blocks reliably when invoked directly with the same JSON payload. In the reported Windows 11 / Git Bash repro, a hook configured to block `git commit` was proven correct by direct `node script.cjs < payload.json` tests, but a live Claude Code session allowed 8 of 8 matching Bash commands to reach Git, including a bare `git commit -m ...` case with no compound shell parsing. Separate probe hooks also recorded zero invocations in repeated runs. This is distinct from hook script bugs, Windows stdin corruption, or slow hook startup: the narrower broken layer is dispatch from the VS Code extension host to matching `PreToolUse` hooks, so safety-critical guards may be silently absent while the user believes they are active.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/76413"
+      ],
       "cc_issue": 76413,
       "cc_version": "VS Code extension on Windows, reported 2026-07-10",
       "date_added": "2026-07-13",
@@ -11427,6 +11436,9 @@
       "severity": "HIGH",
       "status": "open",
       "description": "On Windows, Claude Code hook payload delivery can appear to route tool input through a command interpreter when hooks are configured via `cmd /c`, causing `>` tokens inside the tool input or file content to be treated as shell redirection operators. In the reported Windows 11 repro, Write/Edit content such as Python return annotations (`def f() -> Signal: ...`) created zero-byte files in the project root named after the token following `>`, and captured hook stdout showed JSON payload text echoing at a `cmd.exe`-style prompt. This is distinct from ordinary hook script bugs because the reporter audited the hook handler as stdin-only; the narrower risk is the runtime delivery layer allowing content bytes to act like shell syntax before the hook script receives them. The observed impact is repository pollution, and the same redirection mechanism can plausibly truncate an existing file if the interpreted target name already exists.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/76774"
+      ],
       "cc_issue": 76774,
       "cc_version": "Windows 11 / Claude Code hooks, reported 2026-07-11",
       "date_added": "2026-07-13",
@@ -11439,6 +11451,9 @@
       "severity": "HIGH",
       "status": "open",
       "description": "In Claude Code v2.1.206 on macOS, `SessionEnd` and `Stop` hooks can fail during the shutdown phase with `ENOENT: no such file or directory, posix_spawn '/bin/sh'` even though `/bin/sh` exists and the same commands run correctly from an interactive shell. In the reported regression, two independent shutdown hooks failed the same way after the update: a shell-command summarizer hook and an unrelated Node cleanup hook. The reporter's per-session records showed the shutdown hooks firing normally before v2.1.206 and dropping to roughly zero afterward with no settings change. This means end-of-session processors, transcript summarizers, cleanup jobs, and audit exporters that depend only on shutdown hooks can silently miss completed sessions.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/76671"
+      ],
       "cc_issue": 76671,
       "cc_version": "2.1.206",
       "date_added": "2026-07-13",
@@ -11451,6 +11466,9 @@
       "severity": "MEDIUM",
       "status": "open",
       "description": "Claude Desktop's plugin-directory ingester can silently omit marketplace plugins when `hooks/hooks.json` contains an unknown top-level key alongside `hooks`, even though Claude Code CLI tolerates the same file. In the reported Claude Desktop 1.20186.0 macOS repro, a personal marketplace contained 14 plugins, 10 plugins carried a generated `_generated` banner in `hooks.json`, and exactly those 10 disappeared from the desktop plugin browser with no validation error or sync warning. Removing `_generated` from one plugin made it appear on the next sync, while changing an unrelated hook timeout left another plugin hidden. This means plugin publishers can ship valid CLI plugins and still lose most of their browser catalog because the desktop ingester is stricter and fails silently.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/76451"
+      ],
       "cc_issue": 76451,
       "cc_version": "Claude Desktop 1.20186.0 / Claude Code CLI plugin metadata, reported 2026-07-10",
       "date_added": "2026-07-13",
@@ -11479,6 +11497,9 @@
       "severity": "MEDIUM",
       "status": "open",
       "description": "When Claude Code drives a custom MCP server through a rapid claim/read/generate/save loop, repeated non-Latin generation can degrade inside the continuous tool-call sequence even though the same item is clean when generated in isolation. In the reported WSL2 / Claude Code v2.1.207 repro, five Burmese notes generated back-to-back in one session contained malformed words and hallucinated page numbers such as 499 or 4999, while the structured `page_reference` field in the same tool response remained the correct value 104. A sixth item generated after a short pause was fluent and cited page 104 correctly. The evidence rules out simple UTF-8 or database transport corruption because the saved text is valid UTF-8 and the structured field stays correct; the narrower risk is generation quality degrading across rapid sequential MCP tool turns before durable content is saved.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/76661"
+      ],
       "cc_issue": 76661,
       "cc_version": "2.1.207",
       "date_added": "2026-07-13",
@@ -11491,6 +11512,9 @@
       "severity": "MEDIUM",
       "status": "open",
       "description": "Remote-Control-spawned Claude Code sessions can run a `SessionStart` hook that emits the documented `sessionTitle` output field, relay the hook response through the bridge, and still keep the Remote Control UI title assigned before hooks completed. In the reported Windows 11 / Claude Code 2.1.207 server-mode repro, debug streams showed a successful hook response containing `sessionTitle` about one second after the bridge assigned an automatic or prompt-derived title, but the claude.ai / mobile display title was never reconciled afterward. The same title can be applied locally, and `/rename` does propagate to the Remote Control UI, so the narrower broken layer is the Remote Control bridge's post-hook title update path rather than the hook script or title field itself.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/76812"
+      ],
       "cc_issue": 76812,
       "cc_version": "2.1.207",
       "date_added": "2026-07-13",
@@ -11503,6 +11527,9 @@
       "severity": "HIGH",
       "status": "open",
       "description": "A plugin can appear installed and enabled, keep a cached hooks.json byte-identical to source, and still fail to register any SessionStart, Stop, PreToolUse, PostToolUse, or PreSkill hooks into Claude Code's dispatch table. In the reported macOS / Claude Code 2.1.202 repro, skills and agents from the plugin worked, but a PreToolUse Bash hook that should block --no-verify did not fire, PreSkill logging never created its output file, SessionStart primer output never appeared in raw transcripts, and Stop output was absent. A control hook defined directly in settings.local.json blocked as expected, narrowing the failure to plugin-sourced hook registration, especially for a plugin transitively installed as an auto dependency.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/75972"
+      ],
       "cc_issue": 75972,
       "cc_version": "2.1.202",
       "date_added": "2026-07-13",
