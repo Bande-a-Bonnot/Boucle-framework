@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 933,
+  "count": 934,
   "categories": {
     "Hook behavior & events": 170,
     "Permission system": 110,
@@ -12,8 +12,8 @@
     "CLI & terminal": 21,
     "Context & memory": 20,
     "Configuration behavior": 17,
+    "Tool behavior": 15,
     "TUI & display": 15,
-    "Tool behavior": 14,
     "Security & trust boundaries": 11,
     "Agents & subagents": 9,
     "File system & paths": 9,
@@ -169,7 +169,7 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 63,
+    "CRITICAL": 64,
     "HIGH": 455,
     "LOW": 97,
     "MEDIUM": 318
@@ -11395,30 +11395,42 @@
       "cc_version": "2.1.206",
       "date_added": "2026-07-12",
       "workaround": "Start Claude Code from the repository root when you rely on project hooks. For teams that need fail-closed behavior, add a small global PreToolUse guard on mutating tools that checks whether an ancestor repo root has `.claude/settings.json` while the active Claude project directory does not, then exits 2 with instructions to restart from the repo root. Also verify `/hooks` from both the repo root and common subdirectories after each Claude Code update."
+    },
+    {
+      "id": "windows-grep-process-flood-can-crash-host",
+      "title": "Windows Grep process floods can leave live `rg.exe` children and crash the host",
+      "category": "Tool behavior",
+      "severity": "CRITICAL",
+      "status": "open",
+      "description": "On Windows, Claude Code's Grep tool can spawn hundreds of `rg.exe` and `conhost.exe` children and then stop draining their stdout pipes. In the reported v2.1.207 VS Code extension repro, the children were not harmless zombies: they stayed live, blocked in `NtWriteFile` on full libuv named pipes owned by the extension host, accumulated high-frequency timer activity, and caused repeated DPC watchdog bugchecks. The report documents 11 BSODs between 2026-07-07 and 2026-07-11, process-count explosions within minutes, and kernel-dump evidence tying the crash to abandoned Grep children. This means large or repeated Grep searches on Windows can become a machine-level availability and data-loss risk rather than just a slow tool call.",
+      "cc_issue": 76654,
+      "cc_version": "2.1.207",
+      "date_added": "2026-07-13",
+      "workaround": "On Windows, cap concurrent Claude Code sessions that can run Grep, keep a watchdog for old or excessive `rg.exe` and orphaned `conhost.exe` during active work, and restart the VS Code extension host after any watchdog panic because the parent process may still own broken pipe and handle state. Maintainers should test both sides of the fix: child stdout must be drained or closed on abort, and timed-out or cancelled Grep calls must leave zero descendant `rg.exe` or `conhost.exe` processes."
     }
   ],
   "status_summary": {
-    "open": 919,
+    "open": 920,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 63,
+    "critical": 64,
     "high": 455,
     "low": 97,
     "medium": 318
   },
-  "lastUpdated": "2026-07-12",
+  "lastUpdated": "2026-07-13",
   "stats": {
-    "total": 933,
-    "critical": 63,
+    "total": 934,
+    "critical": 64,
     "high": 455,
     "medium": 318,
     "low": 97,
-    "open": 919,
+    "open": 920,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-07-12",
-  "total": 933
+  "last_updated": "2026-07-13",
+  "total": 934
 }
