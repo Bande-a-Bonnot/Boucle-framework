@@ -7,6 +7,14 @@
   <updated>2026-07-13T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[CRITICAL] VS Code on Windows can skip configured `PreToolUse` hooks entirely</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-windows-pretooluse-hooks-can-be-skipped-entirely</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-windows-pretooluse-hooks-can-be-skipped-entirely"/>
+    <updated>2026-07-13T00:00:00Z</updated>
+    <summary>In the Claude Code VS Code extension host on Windows, configured `PreToolUse` hooks can fail to run for matching tool calls even when the same hook script blocks reliably when invoked directly with the same JSON payload. In the reported Windows 11 / Git Bash repro, a hook configured to block `git commit` was proven correct by direct `node script.cjs &lt; payload.json` tests, but a live Claude Code session allowed 8 of 8 matching Bash commands to reach Git, including a bare `git commit -m ...` case with no compound shell parsing. Separate probe hooks also recorded zero invocations in repeated runs. This is distinct from hook script bugs, Windows stdin corruption, or slow hook startup: the narrower broken layer is dispatch from the VS Code extension host to matching `PreToolUse` hooks, so safety-critical guards may be silently absent while the user believes they are active.</summary>
+    <category term="Hook bypass &amp; evasion"/>
+  </entry>
+  <entry>
     <title>[CRITICAL] Windows Grep process floods can leave live `rg.exe` children and crash the host</title>
     <id>https://framework.boucle.sh/limitations.html#windows-grep-process-flood-can-crash-host</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-grep-process-flood-can-crash-host"/>
@@ -157,13 +165,5 @@
     <updated>2026-07-13T00:00:00Z</updated>
     <summary>In Claude Code v2.1.101, an MCP server loaded with `--dangerously-load-development-channels server:&lt;name&gt;` can appear fully healthy in `/mcp` while none of its tools are actually callable by the model. In the reported repro, the server declares both ordinary `tools` and experimental `claude/channel` capabilities, `/mcp` shows it as connected with the tool list present, yet the model says it has no access to those tools and `ToolSearch` cannot find them. This is distinct from the older channel-plugin entry where Rust servers fail to load unless the dangerous development-channel flag is present at all: here the same flag now becomes part of the regression, because the server does connect but its tools never enter the model-visible MCP index after the v2.1.101 config-partition refactor.</summary>
     <category term="MCP &amp; plugins"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] `Unknown skill` errors can overwrite session-meta `first_prompt` and pollute `/insights`</title>
-    <id>https://framework.boucle.sh/limitations.html#unknown-skill-errors-can-overwrite-session-meta-first-prompt-and-pollute-insights</id>
-    <link href="https://framework.boucle.sh/limitations.html#unknown-skill-errors-can-overwrite-session-meta-first-prompt-and-pollute-insights"/>
-    <updated>2026-07-13T00:00:00Z</updated>
-    <summary>When a slash command fails with `Unknown skill`, Claude Code can write the error string itself into `~/.claude/usage-data/session-meta/*.json` as the session&#x27;s `first_prompt`, even though the real user input was different. In the reported repro, the corrupted records also showed zero tokens, zero tool calls, and two identical `user_message_timestamps`, suggesting the failure path re-ingested Claude&#x27;s own error echo as if it were a second user message. This is distinct from the older Windows `session-meta` EBUSY crash and non-atomic write corruption entries: here the file write succeeds, but the telemetry content is semantically wrong and `/insights` or third-party usage tools end up showing `Unknown skill: ...` as the user&#x27;s first prompt.</summary>
-    <category term="Telemetry &amp; insights"/>
   </entry>
 </feed>

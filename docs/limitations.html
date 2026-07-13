@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">934</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-13.</span></p>
+        <p class="subtitle"><span id="total-count">935</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-13.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9948,6 +9948,18 @@
                         <!-- workaround:windows-grep-process-flood-can-crash-host -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On Windows, cap concurrent Claude Code sessions that can run Grep, keep a watchdog for old or excessive `rg.exe` and orphaned `conhost.exe` during active work, and restart the VS Code extension host after any watchdog panic because the parent process may still own broken pipe and handle state. Maintainers should test both sides of the fix: child stdout must be drained or closed on abort, and timed-out or cancelled Grep calls must leave zero descendant `rg.exe` or `conhost.exe` processes.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/76654" target="_blank">#76654</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="76413" id="vscode-windows-pretooluse-hooks-can-be-skipped-entirely" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#935</span>
+                <span class="kl-cat">Hook bypass &amp; evasion</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>VS Code on Windows can skip configured `PreToolUse` hooks entirely</h3>
+            <p>In the Claude Code VS Code extension host on Windows, configured `PreToolUse` hooks can fail to run for matching tool calls even when the same hook script blocks reliably when invoked directly with the same JSON payload. In the reported Windows 11 / Git Bash repro, a hook configured to block `git commit` was proven correct by direct `node script.cjs &lt; payload.json` tests, but a live Claude Code session allowed 8 of 8 matching Bash commands to reach Git, including a bare `git commit -m ...` case with no compound shell parsing. Separate probe hooks also recorded zero invocations in repeated runs. This is distinct from hook script bugs, Windows stdin corruption, or slow hook startup: the narrower broken layer is dispatch from the VS Code extension host to matching `PreToolUse` hooks, so safety-critical guards may be silently absent while the user believes they are active.</p>
+                        <!-- workaround:vscode-windows-pretooluse-hooks-can-be-skipped-entirely -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on a single VS Code-on-Windows `PreToolUse` hook as the only guard for destructive actions until hook dispatch is visibly verified in that exact host. Add a probe hook that logs every invocation, run `safety-check --verify` or equivalent live payload tests after startup and after extension updates, and keep independent controls such as Git hooks, branch protection, filesystem permissions, or WSL/macOS/Linux hook execution for high-risk workflows.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/76413" target="_blank">#76413</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
