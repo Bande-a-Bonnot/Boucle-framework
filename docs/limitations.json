@@ -1,10 +1,10 @@
 {
   "version": "0.13.0",
-  "count": 935,
+  "count": 936,
   "categories": {
     "Hook behavior & events": 170,
     "Permission system": 110,
-    "Hook bypass & evasion": 98,
+    "Hook bypass & evasion": 99,
     "MCP & plugin issues": 47,
     "Subagent & spawned agents": 38,
     "Desktop & IDE integration": 26,
@@ -170,7 +170,7 @@
   },
   "severity_counts": {
     "CRITICAL": 65,
-    "HIGH": 455,
+    "HIGH": 456,
     "LOW": 97,
     "MEDIUM": 318
   },
@@ -11419,30 +11419,42 @@
       "cc_version": "VS Code extension on Windows, reported 2026-07-10",
       "date_added": "2026-07-13",
       "workaround": "Do not rely on a single VS Code-on-Windows `PreToolUse` hook as the only guard for destructive actions until hook dispatch is visibly verified in that exact host. Add a probe hook that logs every invocation, run `safety-check --verify` or equivalent live payload tests after startup and after extension updates, and keep independent controls such as Git hooks, branch protection, filesystem permissions, or WSL/macOS/Linux hook execution for high-risk workflows."
+    },
+    {
+      "id": "windows-hook-payload-redirection-can-create-or-clobber-files",
+      "title": "Windows hook payload delivery can interpret `>` tokens as shell redirection",
+      "category": "Hook bypass & evasion",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "On Windows, Claude Code hook payload delivery can appear to route tool input through a command interpreter when hooks are configured via `cmd /c`, causing `>` tokens inside the tool input or file content to be treated as shell redirection operators. In the reported Windows 11 repro, Write/Edit content such as Python return annotations (`def f() -> Signal: ...`) created zero-byte files in the project root named after the token following `>`, and captured hook stdout showed JSON payload text echoing at a `cmd.exe`-style prompt. This is distinct from ordinary hook script bugs because the reporter audited the hook handler as stdin-only; the narrower risk is the runtime delivery layer allowing content bytes to act like shell syntax before the hook script receives them. The observed impact is repository pollution, and the same redirection mechanism can plausibly truncate an existing file if the interpreted target name already exists.",
+      "cc_issue": 76774,
+      "cc_version": "Windows 11 / Claude Code hooks, reported 2026-07-11",
+      "date_added": "2026-07-13",
+      "workaround": "On Windows, avoid `cmd /c` wrappers for safety-critical hooks where possible and call `node.exe`, `python.exe`, or another executable directly from settings. Add regression probes that send payloads containing `>`, `<`, `&`, `|`, and PowerShell backticks, then assert the hook receives the original JSON byte-for-byte and no sentinel file is created, truncated, or touched."
     }
   ],
   "status_summary": {
-    "open": 921,
+    "open": 922,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 65,
-    "high": 455,
+    "high": 456,
     "low": 97,
     "medium": 318
   },
   "lastUpdated": "2026-07-13",
   "stats": {
-    "total": 935,
+    "total": 936,
     "critical": 65,
-    "high": 455,
+    "high": 456,
     "medium": 318,
     "low": 97,
-    "open": 921,
+    "open": 922,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-13",
-  "total": 935
+  "total": 936
 }
