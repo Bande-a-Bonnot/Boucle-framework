@@ -7,6 +7,14 @@
   <updated>2026-07-13T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Plugin-sourced hooks.json can remain inert after auto-install</title>
+    <id>https://framework.boucle.sh/limitations.html#plugin-sourced-hooks-json-can-remain-inert-after-auto-install</id>
+    <link href="https://framework.boucle.sh/limitations.html#plugin-sourced-hooks-json-can-remain-inert-after-auto-install"/>
+    <updated>2026-07-13T00:00:00Z</updated>
+    <summary>A plugin can appear installed and enabled, keep a cached hooks.json byte-identical to source, and still fail to register any SessionStart, Stop, PreToolUse, PostToolUse, or PreSkill hooks into Claude Code&#x27;s dispatch table. In the reported macOS / Claude Code 2.1.202 repro, skills and agents from the plugin worked, but a PreToolUse Bash hook that should block --no-verify did not fire, PreSkill logging never created its output file, SessionStart primer output never appeared in raw transcripts, and Stop output was absent. A control hook defined directly in settings.local.json blocked as expected, narrowing the failure to plugin-sourced hook registration, especially for a plugin transitively installed as an auto dependency.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Remote Control can ignore `SessionStart` `sessionTitle` output</title>
     <id>https://framework.boucle.sh/limitations.html#remote-control-can-ignore-sessionstart-sessiontitle-output</id>
     <link href="https://framework.boucle.sh/limitations.html#remote-control-can-ignore-sessionstart-sessiontitle-output"/>
@@ -157,13 +165,5 @@
     <updated>2026-07-13T00:00:00Z</updated>
     <summary>On Windows, `statusLine.command` can execute external programs such as `py`, `python`, `python3`, or even a fully-qualified Python binary without ever surfacing their stdout in the Claude Code status line, leaving the HUD blank with no error message. In the reported v2.1.92 repro, the same script produced correct output when run manually and also worked immediately when wrapped in `bash -c &#x27;...&#x27;`, while Bash builtins like `echo` and `printf` rendered normally without the wrapper. This is distinct from earlier statusline regressions where the wrong JSON payload reached the command, `rate_limits` fields were missing, no-flicker mode suppressed the whole statusline, or `/compact` left stale values behind: here the narrower failure surface is the stdout-capture path for non-builtin child processes themselves on Windows.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `CLAUDE_CONFIG_DIR` profiles can still inject the global `~/.claude/CLAUDE.md`</title>
-    <id>https://framework.boucle.sh/limitations.html#claude-config-dir-profiles-can-still-inject-global-claude-md-from-home-directory</id>
-    <link href="https://framework.boucle.sh/limitations.html#claude-config-dir-profiles-can-still-inject-global-claude-md-from-home-directory"/>
-    <updated>2026-07-13T00:00:00Z</updated>
-    <summary>When Claude Code is launched with `CLAUDE_CONFIG_DIR` pointing at an alternate profile directory, the session can still preload instructions from the default `~/.claude/CLAUDE.md` instead of isolating itself to the selected config root. In the reported macOS v2.1.104 repro, the model explicitly confirmed that `/Users/.../.claude/CLAUDE.md` had already been injected into context as startup `claudeMd` content even though `CLAUDE_CONFIG_DIR` was set to a different directory. This is distinct from the older `CLAUDE_CONFIG_DIR` MCP hierarchy and plugin-isolation bugs because the break is not limited to MCP or marketplace state: the wrong profile&#x27;s top-level instruction file itself crosses the boundary at session start, so supposedly isolated local profiles can inherit unrelated rules, tooling guidance, or secrets from the default home profile before the user does any work.</summary>
-    <category term="Configuration &amp; settings"/>
   </entry>
 </feed>
