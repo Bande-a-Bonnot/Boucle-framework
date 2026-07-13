@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 936,
+  "count": 937,
   "categories": {
-    "Hook behavior & events": 170,
+    "Hook behavior & events": 171,
     "Permission system": 110,
     "Hook bypass & evasion": 99,
     "MCP & plugin issues": 47,
@@ -170,7 +170,7 @@
   },
   "severity_counts": {
     "CRITICAL": 65,
-    "HIGH": 456,
+    "HIGH": 457,
     "LOW": 97,
     "MEDIUM": 318
   },
@@ -11431,30 +11431,42 @@
       "cc_version": "Windows 11 / Claude Code hooks, reported 2026-07-11",
       "date_added": "2026-07-13",
       "workaround": "On Windows, avoid `cmd /c` wrappers for safety-critical hooks where possible and call `node.exe`, `python.exe`, or another executable directly from settings. Add regression probes that send payloads containing `>`, `<`, `&`, `|`, and PowerShell backticks, then assert the hook receives the original JSON byte-for-byte and no sentinel file is created, truncated, or touched."
+    },
+    {
+      "id": "sessionend-and-stop-hooks-can-fail-during-shutdown-with-posix-spawn-enoent",
+      "title": "`SessionEnd` and `Stop` hooks can fail during shutdown with `posix_spawn` ENOENT",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "In Claude Code v2.1.206 on macOS, `SessionEnd` and `Stop` hooks can fail during the shutdown phase with `ENOENT: no such file or directory, posix_spawn '/bin/sh'` even though `/bin/sh` exists and the same commands run correctly from an interactive shell. In the reported regression, two independent shutdown hooks failed the same way after the update: a shell-command summarizer hook and an unrelated Node cleanup hook. The reporter's per-session records showed the shutdown hooks firing normally before v2.1.206 and dropping to roughly zero afterward with no settings change. This means end-of-session processors, transcript summarizers, cleanup jobs, and audit exporters that depend only on shutdown hooks can silently miss completed sessions.",
+      "cc_issue": 76671,
+      "cc_version": "2.1.206",
+      "date_added": "2026-07-13",
+      "workaround": "Do not make durable cleanup or summarization depend only on `SessionEnd` or `Stop` until shutdown-hook execution is visibly reliable in your host. Add a next-start reconciler that scans the session or transcript directory for sessions newer than the last processed timestamp and processes any missed endings. For regression tests, register two independent shutdown hooks, one shell command and one direct Node command, and assert both append their sentinel records after a normal session exit."
     }
   ],
   "status_summary": {
-    "open": 922,
+    "open": 923,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 65,
-    "high": 456,
+    "high": 457,
     "low": 97,
     "medium": 318
   },
   "lastUpdated": "2026-07-13",
   "stats": {
-    "total": 936,
+    "total": 937,
     "critical": 65,
-    "high": 456,
+    "high": 457,
     "medium": 318,
     "low": 97,
-    "open": 922,
+    "open": 923,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-13",
-  "total": 936
+  "total": 937
 }
