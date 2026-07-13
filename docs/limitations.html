@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">932</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-04-13.</span></p>
+        <p class="subtitle"><span id="total-count">933</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-12.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9924,6 +9924,18 @@
                         <!-- workaround:btw-side-conversations-can-vanish-without-any-subagent-transcript-being-written-to-disk -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume `/btw` conversations are durable right now. If the content matters, copy it into the main session, export it immediately, or save it manually outside Claude Code before closing the side conversation until Anthropic restores disk persistence for `/btw` transcripts.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/47169" target="_blank">#47169</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="76441" id="subdirectory-launch-can-skip-project-hooks" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#933</span>
+                <span class="kl-cat">Hook bypass &amp; evasion</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Launching Claude Code from a subdirectory can skip project hooks without warning</h3>
+            <p>When Claude Code is launched from a subdirectory, it can treat that subdirectory as the project root and never read the repository root&#x27;s `.claude/settings.json`. In the reported macOS v2.1.206 repro, a project hook configured with an absolute command path fired when Claude was started from the repo root, never ran when Claude was started from `&lt;root&gt;/lib`, and fired again only after a separate `lib/.claude/settings.json` was added. This means a natural `cd app &amp;&amp; claude` workflow can silently disarm project-level PreToolUse safety rails, custody gates, secret detectors, or tenant-isolation guards before `${CLAUDE_PROJECT_DIR}` interpolation or hook runtime checks have any chance to run.</p>
+                        <!-- workaround:subdirectory-launch-can-skip-project-hooks -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Start Claude Code from the repository root when you rely on project hooks. For teams that need fail-closed behavior, add a small global PreToolUse guard on mutating tools that checks whether an ancestor repo root has `.claude/settings.json` while the active Claude project directory does not, then exits 2 with instructions to restart from the repo root. Also verify `/hooks` from both the repo root and common subdirectories after each Claude Code update.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/76441" target="_blank">#76441</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

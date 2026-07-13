@@ -559,13 +559,13 @@ No CLAUDE.md needed. Works standalone or alongside `--install-plugin`.
 
 ## Known Limitations
 
-932 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. The biggest clusters right now are:
+933 documented limitations of Claude Code's hook system, collected from GitHub issues and testing. [Searchable version](https://framework.boucle.sh/limitations.html) with filtering by category and issue number. The biggest clusters right now are:
 
 | Category | Count | Examples |
 |----------|-------|----------|
 | Hook behavior & events | 170 | Async stdin empty, exit code handling, slash command bypass, no user-prompt event, hooks stop after long sessions, PostToolUse format-on-save breaks consecutive edits, CLAUDE_ENV_FILE broken, no persistent child env, statusline receives hook stdout, no ToolStarted event between PreToolUse and PostToolUse |
 | Permission system | 110 | MCP deny ignored, path matching, self-authorization race, scope hierarchy, deny rules don't protect CLAUDE.md, 50-subcommand deny bypass, DenyRead/Write overridden by user AllowRead/Write, `git restore` without confirmation |
-| Hook bypass & evasion | 96 | @-autocomplete, pipe mode, `--bare`, subagent `omitClaudeMd`, Edit→Bash tool switch, `$()` subshell pattern-match failure, goal-directed tool switching, apiKeyHelper arbitrary code execution, `find` command injection (CVE-2026-24887) |
+| Hook bypass & evasion | 97 | @-autocomplete, pipe mode, `--bare`, subdirectory launch skipping project hooks, subagent `omitClaudeMd`, Edit→Bash tool switch, `$()` subshell pattern-match failure, goal-directed tool switching, apiKeyHelper arbitrary code execution, `find` command injection (CVE-2026-24887) |
 | MCP & plugin issues | 47 | OAuth/auth fallback bugs, missing tool injection, channel/plugin lifecycle failures, stale marketplace state, connected-but-unusable servers |
 | Subagent & spawned agents | 38 | Settings not inherited, deny rules bypassed, no CLAUDE.md loaded, teammate hooks bypass, subagent file creation bypass, worktree isolation wrong commit |
 
