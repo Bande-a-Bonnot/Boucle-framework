@@ -1,10 +1,10 @@
 {
   "version": "0.13.0",
-  "count": 932,
+  "count": 933,
   "categories": {
     "Hook behavior & events": 170,
     "Permission system": 110,
-    "Hook bypass & evasion": 96,
+    "Hook bypass & evasion": 97,
     "MCP & plugin issues": 47,
     "Subagent & spawned agents": 38,
     "Desktop & IDE integration": 26,
@@ -169,7 +169,7 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 62,
+    "CRITICAL": 63,
     "HIGH": 455,
     "LOW": 97,
     "MEDIUM": 318
@@ -11383,30 +11383,42 @@
       "cc_version": "2.1.104",
       "date_added": "2026-04-13",
       "workaround": "Do not assume `/btw` conversations are durable right now. If the content matters, copy it into the main session, export it immediately, or save it manually outside Claude Code before closing the side conversation until Anthropic restores disk persistence for `/btw` transcripts."
+    },
+    {
+      "id": "subdirectory-launch-can-skip-project-hooks",
+      "title": "Launching Claude Code from a subdirectory can skip project hooks without warning",
+      "category": "Hook bypass & evasion",
+      "severity": "CRITICAL",
+      "status": "open",
+      "description": "When Claude Code is launched from a subdirectory, it can treat that subdirectory as the project root and never read the repository root's `.claude/settings.json`. In the reported macOS v2.1.206 repro, a project hook configured with an absolute command path fired when Claude was started from the repo root, never ran when Claude was started from `<root>/lib`, and fired again only after a separate `lib/.claude/settings.json` was added. This means a natural `cd app && claude` workflow can silently disarm project-level PreToolUse safety rails, custody gates, secret detectors, or tenant-isolation guards before `${CLAUDE_PROJECT_DIR}` interpolation or hook runtime checks have any chance to run.",
+      "cc_issue": 76441,
+      "cc_version": "2.1.206",
+      "date_added": "2026-07-12",
+      "workaround": "Start Claude Code from the repository root when you rely on project hooks. For teams that need fail-closed behavior, add a small global PreToolUse guard on mutating tools that checks whether an ancestor repo root has `.claude/settings.json` while the active Claude project directory does not, then exits 2 with instructions to restart from the repo root. Also verify `/hooks` from both the repo root and common subdirectories after each Claude Code update."
     }
   ],
   "status_summary": {
-    "open": 918,
+    "open": 919,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 62,
+    "critical": 63,
     "high": 455,
     "low": 97,
     "medium": 318
   },
-  "lastUpdated": "2026-04-13",
+  "lastUpdated": "2026-07-12",
   "stats": {
-    "total": 932,
-    "critical": 62,
+    "total": 933,
+    "critical": 63,
     "high": 455,
     "medium": 318,
     "low": 97,
-    "open": 918,
+    "open": 919,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-04-13",
-  "total": 932
+  "last_updated": "2026-07-12",
+  "total": 933
 }
