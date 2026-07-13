@@ -7,6 +7,14 @@
   <updated>2026-07-13T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Rapid sequential MCP generation can corrupt non-Latin output while structured fields remain correct</title>
+    <id>https://framework.boucle.sh/limitations.html#rapid-sequential-mcp-generation-can-corrupt-non-latin-output</id>
+    <link href="https://framework.boucle.sh/limitations.html#rapid-sequential-mcp-generation-can-corrupt-non-latin-output"/>
+    <updated>2026-07-13T00:00:00Z</updated>
+    <summary>When Claude Code drives a custom MCP server through a rapid claim/read/generate/save loop, repeated non-Latin generation can degrade inside the continuous tool-call sequence even though the same item is clean when generated in isolation. In the reported WSL2 / Claude Code v2.1.207 repro, five Burmese notes generated back-to-back in one session contained malformed words and hallucinated page numbers such as 499 or 4999, while the structured `page_reference` field in the same tool response remained the correct value 104. A sixth item generated after a short pause was fluent and cited page 104 correctly. The evidence rules out simple UTF-8 or database transport corruption because the saved text is valid UTF-8 and the structured field stays correct; the narrower risk is generation quality degrading across rapid sequential MCP tool turns before durable content is saved.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[HIGH] Quoted shell operators can defeat Bash permission allowlist matching</title>
     <id>https://framework.boucle.sh/limitations.html#quoted-shell-operators-can-defeat-bash-permission-allowlist-matching</id>
     <link href="https://framework.boucle.sh/limitations.html#quoted-shell-operators-can-defeat-bash-permission-allowlist-matching"/>
@@ -157,13 +165,5 @@
     <updated>2026-07-13T00:00:00Z</updated>
     <summary>When Claude Code is launched inside the VS Code extension on macOS, Bash and Python tool calls can fail to establish TCP connections to a local network host with `No route to host` or `errno 65` even though the same user, machine, interface, and destination work immediately from iTerm2. In the reported repro, `ssh`, `nc -z`, `ping`, and a direct Python `socket.connect()` all failed from the Claude process tree while `traceroute` still reached the target host in under a millisecond and the identical commands succeeded outside Claude. This is distinct from the older macOS silent-TCP-drop freeze entry, which starts after an existing connection disappears mid-session: here the broken layer is the initial transport access of the VS Code / Claude subprocess tree itself, apparently before any session work can reach the host.</summary>
     <category term="Bash &amp; shell execution"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Cowork Gmail `search_threads` can fail with `Internal error encountered` while other Gmail tools still work</title>
-    <id>https://framework.boucle.sh/limitations.html#cowork-gmail-search-threads-can-fail-with-internal-error-while-other-gmail-tools-still-work</id>
-    <link href="https://framework.boucle.sh/limitations.html#cowork-gmail-search-threads-can-fail-with-internal-error-while-other-gmail-tools-still-work"/>
-    <updated>2026-07-13T00:00:00Z</updated>
-    <summary>In Cowork (Claude Desktop), the first-party Gmail connector&#x27;s `search_threads` tool can fail with the generic `Internal error encountered.` message on every call even while the same authenticated session still succeeds with `list_drafts`, `get_thread`, `list_labels`, and `create_draft`. The reported macOS repro failed 100% of the time across both interactive and scheduled Cowork sessions from April 9 through April 12, 2026, regardless of whether the query was empty or used simple filters like `is:unread` or `in:inbox`. This is distinct from older Gmail auth-entry, connector-loading, and cross-account-override bugs because the OAuth session is already valid and multiple Gmail tools prove the connector is alive; the failure is isolated specifically to the `search_threads` endpoint that many inbox-driven automations depend on.</summary>
-    <category term="MCP &amp; integrations"/>
   </entry>
 </feed>
