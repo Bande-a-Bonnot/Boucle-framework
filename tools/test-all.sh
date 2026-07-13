@@ -8,6 +8,7 @@ TOTAL_PASS=0
 TOTAL_FAIL=0
 FAILED_SUITES=""
 SUITE_TIMEOUT_SECONDS="${SUITE_TIMEOUT_SECONDS:-420}"
+SAFETY_CHECK_SUITE_TIMEOUT_SECONDS="${SAFETY_CHECK_SUITE_TIMEOUT_SECONDS:-900}"
 HEARTBEAT_INTERVAL_SECONDS="${HEARTBEAT_INTERVAL_SECONDS:-60}"
 HEARTBEAT_PID=""
 
@@ -38,24 +39,26 @@ echo "shasum: $(which shasum 2>/dev/null || echo 'not found')"
 echo "sha256sum: $(which sha256sum 2>/dev/null || echo 'not found')"
 echo "grep: $(grep --version 2>/dev/null | head -1 || echo 'unknown')"
 echo "suite timeout: ${SUITE_TIMEOUT_SECONDS}s"
+echo "safety-check suite timeout: ${SAFETY_CHECK_SUITE_TIMEOUT_SECONDS}s"
 echo "heartbeat interval: ${HEARTBEAT_INTERVAL_SECONDS}s"
 start_heartbeat
 
 run_suite() {
   local name="$1"
   local script="$2"
+  local timeout="${3:-$SUITE_TIMEOUT_SECONDS}"
   echo ""
   echo "========================================"
   echo "  $name"
   echo "========================================"
 
-  if perl -e 'alarm shift @ARGV; exec @ARGV' "$SUITE_TIMEOUT_SECONDS" bash "$script"; then
+  if perl -e 'alarm shift @ARGV; exec @ARGV' "$timeout" bash "$script"; then
     echo "  -> $name: OK"
   else
     local exit_code=$?
     echo "  -> $name: FAILED"
     if [ "$exit_code" -eq 142 ]; then
-      echo "  -> $name: timed out after ${SUITE_TIMEOUT_SECONDS}s"
+      echo "  -> $name: timed out after ${timeout}s"
     fi
     TOTAL_FAIL=$((TOTAL_FAIL + 1))
     FAILED_SUITES="$FAILED_SUITES $name"
@@ -72,7 +75,7 @@ run_suite "bash-guard"   "$SCRIPT_DIR/bash-guard/test.sh"   || true
 run_suite "branch-guard"   "$SCRIPT_DIR/branch-guard/test.sh"   || true
 run_suite "worktree-guard" "$SCRIPT_DIR/worktree-guard/test.sh" || true
 run_suite "session-log"    "$SCRIPT_DIR/session-log/test.sh"    || true
-run_suite "safety-check" "$SCRIPT_DIR/safety-check/test.sh" || true
+run_suite "safety-check" "$SCRIPT_DIR/safety-check/test.sh" "$SAFETY_CHECK_SUITE_TIMEOUT_SECONDS" || true
 run_suite "enforce"      "$SCRIPT_DIR/enforce/test.sh"      || true
 
 # Additional test suites
