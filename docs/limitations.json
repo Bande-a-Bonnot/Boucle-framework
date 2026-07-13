@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 937,
+  "count": 938,
   "categories": {
     "Hook behavior & events": 171,
     "Permission system": 110,
     "Hook bypass & evasion": 99,
-    "MCP & plugin issues": 47,
+    "MCP & plugin issues": 48,
     "Subagent & spawned agents": 38,
     "Desktop & IDE integration": 26,
     "Platform & compatibility": 23,
@@ -172,7 +172,7 @@
     "CRITICAL": 65,
     "HIGH": 457,
     "LOW": 97,
-    "MEDIUM": 318
+    "MEDIUM": 319
   },
   "entries": [
     {
@@ -11443,10 +11443,22 @@
       "cc_version": "2.1.206",
       "date_added": "2026-07-13",
       "workaround": "Do not make durable cleanup or summarization depend only on `SessionEnd` or `Stop` until shutdown-hook execution is visibly reliable in your host. Add a next-start reconciler that scans the session or transcript directory for sessions newer than the last processed timestamp and processes any missed endings. For regression tests, register two independent shutdown hooks, one shell command and one direct Node command, and assert both append their sentinel records after a normal session exit."
+    },
+    {
+      "id": "plugin-browser-can-hide-hooks-json-with-unknown-top-level-keys",
+      "title": "Claude Desktop plugin browser can hide plugins whose `hooks.json` has unknown top-level keys",
+      "category": "MCP & plugin issues",
+      "severity": "MEDIUM",
+      "status": "open",
+      "description": "Claude Desktop's plugin-directory ingester can silently omit marketplace plugins when `hooks/hooks.json` contains an unknown top-level key alongside `hooks`, even though Claude Code CLI tolerates the same file. In the reported Claude Desktop 1.20186.0 macOS repro, a personal marketplace contained 14 plugins, 10 plugins carried a generated `_generated` banner in `hooks.json`, and exactly those 10 disappeared from the desktop plugin browser with no validation error or sync warning. Removing `_generated` from one plugin made it appear on the next sync, while changing an unrelated hook timeout left another plugin hidden. This means plugin publishers can ship valid CLI plugins and still lose most of their browser catalog because the desktop ingester is stricter and fails silently.",
+      "cc_issue": 76451,
+      "cc_version": "Claude Desktop 1.20186.0 / Claude Code CLI plugin metadata, reported 2026-07-10",
+      "date_added": "2026-07-13",
+      "workaround": "Keep `hooks/hooks.json` schema-only for marketplace-published plugins until the desktop ingester either matches CLI tolerance or reports validation failures. Store codegen banners or metadata in `.claude-plugin/plugin.json`, a sibling metadata file, or the generator source instead. Add a publisher preflight such as `jq -e '((keys - [\"hooks\"]) | length) == 0' hooks/hooks.json >/dev/null` for plugins that must appear in the desktop browser."
     }
   ],
   "status_summary": {
-    "open": 923,
+    "open": 924,
     "fixed": 13,
     "mitigated": 1
   },
@@ -11454,19 +11466,19 @@
     "critical": 65,
     "high": 457,
     "low": 97,
-    "medium": 318
+    "medium": 319
   },
   "lastUpdated": "2026-07-13",
   "stats": {
-    "total": 937,
+    "total": 938,
     "critical": 65,
     "high": 457,
-    "medium": 318,
+    "medium": 319,
     "low": 97,
-    "open": 923,
+    "open": 924,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-13",
-  "total": 937
+  "total": 938
 }

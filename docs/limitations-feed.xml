@@ -7,6 +7,14 @@
   <updated>2026-07-13T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Claude Desktop plugin browser can hide plugins whose `hooks.json` has unknown top-level keys</title>
+    <id>https://framework.boucle.sh/limitations.html#plugin-browser-can-hide-hooks-json-with-unknown-top-level-keys</id>
+    <link href="https://framework.boucle.sh/limitations.html#plugin-browser-can-hide-hooks-json-with-unknown-top-level-keys"/>
+    <updated>2026-07-13T00:00:00Z</updated>
+    <summary>Claude Desktop&#x27;s plugin-directory ingester can silently omit marketplace plugins when `hooks/hooks.json` contains an unknown top-level key alongside `hooks`, even though Claude Code CLI tolerates the same file. In the reported Claude Desktop 1.20186.0 macOS repro, a personal marketplace contained 14 plugins, 10 plugins carried a generated `_generated` banner in `hooks.json`, and exactly those 10 disappeared from the desktop plugin browser with no validation error or sync warning. Removing `_generated` from one plugin made it appear on the next sync, while changing an unrelated hook timeout left another plugin hidden. This means plugin publishers can ship valid CLI plugins and still lose most of their browser catalog because the desktop ingester is stricter and fails silently.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[HIGH] `SessionEnd` and `Stop` hooks can fail during shutdown with `posix_spawn` ENOENT</title>
     <id>https://framework.boucle.sh/limitations.html#sessionend-and-stop-hooks-can-fail-during-shutdown-with-posix-spawn-enoent</id>
     <link href="https://framework.boucle.sh/limitations.html#sessionend-and-stop-hooks-can-fail-during-shutdown-with-posix-spawn-enoent"/>
@@ -157,13 +165,5 @@
     <updated>2026-07-13T00:00:00Z</updated>
     <summary>Cowork&#x27;s `Save skill` install path can write a shorter `SKILL.md` into the mounted skills directory than the intact file packaged inside the `.skill` zip, with no error or warning to the user. In the reported Windows repros, the source file and the packaged zip both remained complete, but the installed copy inside `/sessions/*/mnt/.claude/skills/.../SKILL.md` lost 14-18 lines and ended mid-word on every install. This is narrower than the older Cowork skill-update truncation bug, which only clipped files that grew relative to a previous install, and narrower than the older stale virtiofs mount bug, which served outdated host content after external edits: here the break happens inside Cowork&#x27;s own `Save skill` install pipeline on fresh package writes, even when the `.skill` payload itself is already verified intact.</summary>
     <category term="Cowork"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Agent SDK stream-json Bash subprocess `cwd` can collapse to `/` under non-shell parents</title>
-    <id>https://framework.boucle.sh/limitations.html#agent-sdk-stream-json-bash-subprocess-cwd-can-collapse-to-root-under-non-shell-parents</id>
-    <link href="https://framework.boucle.sh/limitations.html#agent-sdk-stream-json-bash-subprocess-cwd-can-collapse-to-root-under-non-shell-parents"/>
-    <updated>2026-07-13T00:00:00Z</updated>
-    <summary>When `claude` is spawned programmatically from a non-shell parent (Node, Bun, Python, or similar) with `--input-format stream-json --output-format stream-json`, the session can report the correct `cwd` in the `system/init` event while every later Bash tool subprocess still runs from `/`. The same prompt, flags, and environment work correctly when an interactive shell is the direct parent, so the break appears to sit specifically in the Bash tool spawn path for the headless SDK-style execution flow. This is distinct from older worktree, realpath, and parallel-Bash cwd issues because the logical session directory is known correctly at init time and only the later Bash subprocess loses it.</summary>
-    <category term="File system &amp; paths"/>
   </entry>
 </feed>

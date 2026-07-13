@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">937</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-13.</span></p>
+        <p class="subtitle"><span id="total-count">938</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-13.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9984,6 +9984,18 @@
                         <!-- workaround:sessionend-and-stop-hooks-can-fail-during-shutdown-with-posix-spawn-enoent -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not make durable cleanup or summarization depend only on `SessionEnd` or `Stop` until shutdown-hook execution is visibly reliable in your host. Add a next-start reconciler that scans the session or transcript directory for sessions newer than the last processed timestamp and processes any missed endings. For regression tests, register two independent shutdown hooks, one shell command and one direct Node command, and assert both append their sentinel records after a normal session exit.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/76671" target="_blank">#76671</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="76451" id="plugin-browser-can-hide-hooks-json-with-unknown-top-level-keys" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#938</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Claude Desktop plugin browser can hide plugins whose `hooks.json` has unknown top-level keys</h3>
+            <p>Claude Desktop&#x27;s plugin-directory ingester can silently omit marketplace plugins when `hooks/hooks.json` contains an unknown top-level key alongside `hooks`, even though Claude Code CLI tolerates the same file. In the reported Claude Desktop 1.20186.0 macOS repro, a personal marketplace contained 14 plugins, 10 plugins carried a generated `_generated` banner in `hooks.json`, and exactly those 10 disappeared from the desktop plugin browser with no validation error or sync warning. Removing `_generated` from one plugin made it appear on the next sync, while changing an unrelated hook timeout left another plugin hidden. This means plugin publishers can ship valid CLI plugins and still lose most of their browser catalog because the desktop ingester is stricter and fails silently.</p>
+                        <!-- workaround:plugin-browser-can-hide-hooks-json-with-unknown-top-level-keys -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Keep `hooks/hooks.json` schema-only for marketplace-published plugins until the desktop ingester either matches CLI tolerance or reports validation failures. Store codegen banners or metadata in `.claude-plugin/plugin.json`, a sibling metadata file, or the generator source instead. Add a publisher preflight such as `jq -e &#x27;((keys - [&quot;hooks&quot;]) | length) == 0&#x27; hooks/hooks.json &gt;/dev/null` for plugins that must appear in the desktop browser.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/76451" target="_blank">#76451</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
