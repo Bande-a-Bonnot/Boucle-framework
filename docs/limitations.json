@@ -1,10 +1,10 @@
 {
   "version": "0.13.0",
-  "count": 934,
+  "count": 935,
   "categories": {
     "Hook behavior & events": 170,
     "Permission system": 110,
-    "Hook bypass & evasion": 97,
+    "Hook bypass & evasion": 98,
     "MCP & plugin issues": 47,
     "Subagent & spawned agents": 38,
     "Desktop & IDE integration": 26,
@@ -169,7 +169,7 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 64,
+    "CRITICAL": 65,
     "HIGH": 455,
     "LOW": 97,
     "MEDIUM": 318
@@ -11407,30 +11407,42 @@
       "cc_version": "2.1.207",
       "date_added": "2026-07-13",
       "workaround": "On Windows, cap concurrent Claude Code sessions that can run Grep, keep a watchdog for old or excessive `rg.exe` and orphaned `conhost.exe` during active work, and restart the VS Code extension host after any watchdog panic because the parent process may still own broken pipe and handle state. Maintainers should test both sides of the fix: child stdout must be drained or closed on abort, and timed-out or cancelled Grep calls must leave zero descendant `rg.exe` or `conhost.exe` processes."
+    },
+    {
+      "id": "vscode-windows-pretooluse-hooks-can-be-skipped-entirely",
+      "title": "VS Code on Windows can skip configured `PreToolUse` hooks entirely",
+      "category": "Hook bypass & evasion",
+      "severity": "CRITICAL",
+      "status": "open",
+      "description": "In the Claude Code VS Code extension host on Windows, configured `PreToolUse` hooks can fail to run for matching tool calls even when the same hook script blocks reliably when invoked directly with the same JSON payload. In the reported Windows 11 / Git Bash repro, a hook configured to block `git commit` was proven correct by direct `node script.cjs < payload.json` tests, but a live Claude Code session allowed 8 of 8 matching Bash commands to reach Git, including a bare `git commit -m ...` case with no compound shell parsing. Separate probe hooks also recorded zero invocations in repeated runs. This is distinct from hook script bugs, Windows stdin corruption, or slow hook startup: the narrower broken layer is dispatch from the VS Code extension host to matching `PreToolUse` hooks, so safety-critical guards may be silently absent while the user believes they are active.",
+      "cc_issue": 76413,
+      "cc_version": "VS Code extension on Windows, reported 2026-07-10",
+      "date_added": "2026-07-13",
+      "workaround": "Do not rely on a single VS Code-on-Windows `PreToolUse` hook as the only guard for destructive actions until hook dispatch is visibly verified in that exact host. Add a probe hook that logs every invocation, run `safety-check --verify` or equivalent live payload tests after startup and after extension updates, and keep independent controls such as Git hooks, branch protection, filesystem permissions, or WSL/macOS/Linux hook execution for high-risk workflows."
     }
   ],
   "status_summary": {
-    "open": 920,
+    "open": 921,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 64,
+    "critical": 65,
     "high": 455,
     "low": 97,
     "medium": 318
   },
   "lastUpdated": "2026-07-13",
   "stats": {
-    "total": 934,
-    "critical": 64,
+    "total": 935,
+    "critical": 65,
     "high": 455,
     "medium": 318,
     "low": 97,
-    "open": 920,
+    "open": 921,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-13",
-  "total": 934
+  "total": 935
 }
