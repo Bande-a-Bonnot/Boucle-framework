@@ -7,6 +7,14 @@
   <updated>2026-07-13T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Windows hook payload delivery can interpret `&gt;` tokens as shell redirection</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-hook-payload-redirection-can-create-or-clobber-files</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-hook-payload-redirection-can-create-or-clobber-files"/>
+    <updated>2026-07-13T00:00:00Z</updated>
+    <summary>On Windows, Claude Code hook payload delivery can appear to route tool input through a command interpreter when hooks are configured via `cmd /c`, causing `&gt;` tokens inside the tool input or file content to be treated as shell redirection operators. In the reported Windows 11 repro, Write/Edit content such as Python return annotations (`def f() -&gt; Signal: ...`) created zero-byte files in the project root named after the token following `&gt;`, and captured hook stdout showed JSON payload text echoing at a `cmd.exe`-style prompt. This is distinct from ordinary hook script bugs because the reporter audited the hook handler as stdin-only; the narrower risk is the runtime delivery layer allowing content bytes to act like shell syntax before the hook script receives them. The observed impact is repository pollution, and the same redirection mechanism can plausibly truncate an existing file if the interpreted target name already exists.</summary>
+    <category term="Hook bypass &amp; evasion"/>
+  </entry>
+  <entry>
     <title>[CRITICAL] VS Code on Windows can skip configured `PreToolUse` hooks entirely</title>
     <id>https://framework.boucle.sh/limitations.html#vscode-windows-pretooluse-hooks-can-be-skipped-entirely</id>
     <link href="https://framework.boucle.sh/limitations.html#vscode-windows-pretooluse-hooks-can-be-skipped-entirely"/>
@@ -157,13 +165,5 @@
     <updated>2026-07-13T00:00:00Z</updated>
     <summary>While a tool is actively running, Claude Code can show a bottom-of-screen hint that says `Ctrl+B, Ctrl+B` is required to background the task, yet a single `Ctrl+B` immediately backgrounds it. In the reported Linux repro, the contrast with `Ctrl+F, Ctrl+F` for terminating background agents made the mismatch especially misleading: one shortcut really is double-confirmed, while the other only looks that way in the UI. This is distinct from earlier TUI freeze, auto-background, and background-agent lifecycle entries because the runtime action succeeds; the broken layer is the safety contract between the on-screen shortcut hint and the actual keybinding behavior.</summary>
     <category term="TUI &amp; display"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Development-channel MCP servers can connect without exposing tools to the model</title>
-    <id>https://framework.boucle.sh/limitations.html#development-channel-mcp-servers-can-connect-without-exposing-tools-to-the-model</id>
-    <link href="https://framework.boucle.sh/limitations.html#development-channel-mcp-servers-can-connect-without-exposing-tools-to-the-model"/>
-    <updated>2026-07-13T00:00:00Z</updated>
-    <summary>In Claude Code v2.1.101, an MCP server loaded with `--dangerously-load-development-channels server:&lt;name&gt;` can appear fully healthy in `/mcp` while none of its tools are actually callable by the model. In the reported repro, the server declares both ordinary `tools` and experimental `claude/channel` capabilities, `/mcp` shows it as connected with the tool list present, yet the model says it has no access to those tools and `ToolSearch` cannot find them. This is distinct from the older channel-plugin entry where Rust servers fail to load unless the dangerous development-channel flag is present at all: here the same flag now becomes part of the regression, because the server does connect but its tools never enter the model-visible MCP index after the v2.1.101 config-partition refactor.</summary>
-    <category term="MCP &amp; plugins"/>
   </entry>
 </feed>
