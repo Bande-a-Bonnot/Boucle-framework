@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 938,
+  "count": 939,
   "categories": {
     "Hook behavior & events": 171,
-    "Permission system": 110,
+    "Permission system": 111,
     "Hook bypass & evasion": 99,
     "MCP & plugin issues": 48,
     "Subagent & spawned agents": 38,
@@ -170,7 +170,7 @@
   },
   "severity_counts": {
     "CRITICAL": 65,
-    "HIGH": 457,
+    "HIGH": 458,
     "LOW": 97,
     "MEDIUM": 319
   },
@@ -11455,30 +11455,42 @@
       "cc_version": "Claude Desktop 1.20186.0 / Claude Code CLI plugin metadata, reported 2026-07-10",
       "date_added": "2026-07-13",
       "workaround": "Keep `hooks/hooks.json` schema-only for marketplace-published plugins until the desktop ingester either matches CLI tolerance or reports validation failures. Store codegen banners or metadata in `.claude-plugin/plugin.json`, a sibling metadata file, or the generator source instead. Add a publisher preflight such as `jq -e '((keys - [\"hooks\"]) | length) == 0' hooks/hooks.json >/dev/null` for plugins that must appear in the desktop browser."
+    },
+    {
+      "id": "quoted-shell-operators-can-defeat-bash-permission-allowlist-matching",
+      "title": "Quoted shell operators can defeat Bash permission allowlist matching",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "Claude Code's Bash permission decomposer can treat shell metacharacters inside quoted arguments as command separators before matching the command against allow rules. In the reported repro, commands allowed by `Bash(source:*)` and `Bash(python3:*)` still prompted when a double-quoted Python argument contained a semicolon or embedded newlines, suggesting the splitter was not quote-aware. A later minimal macOS repro showed the same class with a single allowed `grep`: `grep -E \"foo|bar\" file.txt` prompted under `Bash(grep:*)`, while `grep -E \"foobar\" file.txt` and `grep -e foo -e bar file.txt` auto-approved. This means common jq, grep, sed, awk, Python, and heredoc-style arguments can trigger needless prompts despite explicit wildcard allow rules. In headless or Agent SDK sessions, the prompt is not just friction: it can become an indefinite unattended hang.",
+      "cc_issue": 75549,
+      "cc_version": "2.1.205-2.1.207, reported 2026-07-08 to 2026-07-12",
+      "date_added": "2026-07-13",
+      "workaround": "Avoid relying on Claude Code's Bash permission allowlist for unattended commands that carry `|`, `;`, `&&`, `&`, or newlines inside quoted arguments until the splitter is visibly quote-aware. Prefer equivalent argument forms without shell metacharacters where possible, such as `grep -e foo -e bar` instead of `grep -E \"foo|bar\"`, move complex scripts into reviewed files, and use PreToolUse hooks or external watchdogs to turn unexpected permission prompts into fast failures instead of silent headless hangs."
     }
   ],
   "status_summary": {
-    "open": 924,
+    "open": 925,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 65,
-    "high": 457,
+    "high": 458,
     "low": 97,
     "medium": 319
   },
   "lastUpdated": "2026-07-13",
   "stats": {
-    "total": 938,
+    "total": 939,
     "critical": 65,
-    "high": 457,
+    "high": 458,
     "medium": 319,
     "low": 97,
-    "open": 924,
+    "open": 925,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-13",
-  "total": 938
+  "total": 939
 }

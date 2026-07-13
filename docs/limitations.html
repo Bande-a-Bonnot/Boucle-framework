@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">938</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-13.</span></p>
+        <p class="subtitle"><span id="total-count">939</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce#known-limitations">Source</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-13.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9996,6 +9996,18 @@
                         <!-- workaround:plugin-browser-can-hide-hooks-json-with-unknown-top-level-keys -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Keep `hooks/hooks.json` schema-only for marketplace-published plugins until the desktop ingester either matches CLI tolerance or reports validation failures. Store codegen banners or metadata in `.claude-plugin/plugin.json`, a sibling metadata file, or the generator source instead. Add a publisher preflight such as `jq -e &#x27;((keys - [&quot;hooks&quot;]) | length) == 0&#x27; hooks/hooks.json &gt;/dev/null` for plugins that must appear in the desktop browser.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/76451" target="_blank">#76451</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="75549" id="quoted-shell-operators-can-defeat-bash-permission-allowlist-matching" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#939</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Quoted shell operators can defeat Bash permission allowlist matching</h3>
+            <p>Claude Code&#x27;s Bash permission decomposer can treat shell metacharacters inside quoted arguments as command separators before matching the command against allow rules. In the reported repro, commands allowed by `Bash(source:*)` and `Bash(python3:*)` still prompted when a double-quoted Python argument contained a semicolon or embedded newlines, suggesting the splitter was not quote-aware. A later minimal macOS repro showed the same class with a single allowed `grep`: `grep -E &quot;foo|bar&quot; file.txt` prompted under `Bash(grep:*)`, while `grep -E &quot;foobar&quot; file.txt` and `grep -e foo -e bar file.txt` auto-approved. This means common jq, grep, sed, awk, Python, and heredoc-style arguments can trigger needless prompts despite explicit wildcard allow rules. In headless or Agent SDK sessions, the prompt is not just friction: it can become an indefinite unattended hang.</p>
+                        <!-- workaround:quoted-shell-operators-can-defeat-bash-permission-allowlist-matching -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid relying on Claude Code&#x27;s Bash permission allowlist for unattended commands that carry `|`, `;`, `&amp;&amp;`, `&amp;`, or newlines inside quoted arguments until the splitter is visibly quote-aware. Prefer equivalent argument forms without shell metacharacters where possible, such as `grep -e foo -e bar` instead of `grep -E &quot;foo|bar&quot;`, move complex scripts into reviewed files, and use PreToolUse hooks or external watchdogs to turn unexpected permission prompts into fast failures instead of silent headless hangs.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/75549" target="_blank">#75549</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
