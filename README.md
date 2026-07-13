@@ -3,9 +3,9 @@
 [![Tests](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml/badge.svg)](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Claude Code hooks that actually enforce your rules. 7 installable hooks, plus enforcement and audit tooling, 1,900+ tests, [942 known Claude Code gaps documented](tools/enforce/README.md#known-limitations) with severity ratings and workarounds.
+Claude Code hooks that actually enforce your rules. 7 installable hooks, plus enforcement and audit tooling, 1,900+ tests, [942 known Claude Code gaps documented](https://framework.boucle.sh/limitations.html) with severity ratings and workarounds.
 
-> **Quick links:** [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Update checklist](tools/safety-check/UPDATE_CHECKLIST.md) · [Safe support evidence](tools/safety-check/SUPPORT_EVIDENCE.md) · [Read-only audits](tools/enforce/READ_ONLY_AUDIT.md) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
+> **Quick links:** [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Known limitations](https://framework.boucle.sh/limitations.html) · [JSON export](https://framework.boucle.sh/limitations.json) · [Update checklist](tools/safety-check/UPDATE_CHECKLIST.md) · [Safe support evidence](tools/safety-check/SUPPORT_EVIDENCE.md) · [Read-only audits](tools/enforce/READ_ONLY_AUDIT.md) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
 
 ## Claude Code Hooks
 
@@ -51,6 +51,10 @@ Checks hook installation, hook health (missing/non-executable scripts), live ver
 For a 10-minute path from audit to verified hooks, see the [safety-check quickstart](tools/safety-check/QUICKSTART.md).
 If you need to ask for help, use the [safe support evidence guide](tools/safety-check/SUPPORT_EVIDENCE.md)
 to share the summary block without exposing private settings or secrets.
+For upstream Claude Code hook and permission gaps, use the
+[searchable limitations page](https://framework.boucle.sh/limitations.html),
+the [machine-readable JSON export](https://framework.boucle.sh/limitations.json),
+or the [Atom feed](https://framework.boucle.sh/limitations-feed.xml).
 
 <a id="install-hooks"></a>
 
