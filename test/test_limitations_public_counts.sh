@@ -34,6 +34,8 @@ for path in files:
     for line_no, line in enumerate(path.read_text().splitlines(), start=1):
         if "v0.13.0" in line:
             continue
+        if "| Category | Count |" in line:
+            failures.append(f"{path.relative_to(repo)}:{line_no}: move limitation category counts to limitations.json")
         for pattern in patterns:
             for match in pattern.finditer(line):
                 found = int(match.group(1))
