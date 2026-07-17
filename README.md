@@ -633,6 +633,13 @@ Run `claude --version` to check your local install.
 
 **Hooks not blocking**: Claude Code only fires hooks on tool calls, not on prompt assembly. Features like @-autocomplete inject file content before hooks can intercept. See [claude-code#32928](https://github.com/anthropics/claude-code/issues/32928).
 
+**Project hooks skipped from subdirectories**: If your repository stores hooks
+in `.claude/settings.json` at the repo root, start Claude Code and run
+`safety-check` from that same root. Launching from a subdirectory can make
+Claude treat that subdirectory as the project root and skip the ancestor
+project hooks without warning. `safety-check` reports this as an ancestor
+project settings warning.
+
 **Permission bypass resets with hooks installed**: If you use `--dangerously-skip-permissions` (common in autonomous setups), PreToolUse hooks can [cause the permission state to reset mid-session](https://github.com/anthropics/claude-code/issues/37745), reverting all tools to manual approval. This is a platform bug, not a hooks bug. If tools suddenly require approval 30-120 minutes into a session, this is why.
 
 **IS_DEMO environment variable disables all hooks**: If `IS_DEMO=1` is set in your environment (sometimes via IDE or cloud workspace settings), Claude Code [silently skips all hook execution](https://github.com/anthropics/claude-code/issues/37780) by suppressing workspace trust without granting it. Run `echo $IS_DEMO` to check. Our `safety-check` tool detects this automatically.

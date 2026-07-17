@@ -17,6 +17,8 @@ docs = {
         "safety-check uses python3",
         "most hook slots use jq",
         "**Windows (PowerShell 7+)",
+        "Project hooks skipped from subdirectories",
+        "ancestor project settings warning",
     ],
     repo / "tools" / "README.md": [
         "**macOS / Linux:** bash, python3, and jq",
@@ -28,6 +30,8 @@ docs = {
         "stderr` and exit code 2",
         'JSON `permissionDecision: "deny"`',
         "not a universal hard-block contract",
+        "Ancestor project settings warning",
+        "subdirectory launches can skip root project hooks",
     ],
 }
 

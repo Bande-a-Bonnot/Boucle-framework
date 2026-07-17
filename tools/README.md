@@ -158,6 +158,7 @@ the install looks present but the environment still looks unsafe.
 | Hook file is not executable | Run `chmod +x ~/.claude/hooks/*.sh` on macOS/Linux, then `verify` again. |
 | Invalid `settings.json` | Remove JSON comments or trailing commas, then run `doctor` before reinstalling. |
 | Hook registered but `verify` skips it | Check whether the hook is a lifecycle hook (`SessionStart`, `Stop`, `PostToolUse`) or a custom wrapper. `verify` only sends payloads to installed `PreToolUse` hooks. |
+| Ancestor project settings warning | Start Claude Code and run `safety-check` from the repo root that contains `.claude/settings.json`; subdirectory launches can skip root project hooks. |
 | `IS_DEMO` or `CLAUDE_CODE_SIMPLE` is set | Unset it in the shell that starts Claude Code. Both can disable hook execution before your hooks run. |
 | Native Windows hook behavior is inconsistent | Prefer WSL for enforcement-sensitive work, or run `install.ps1 verify` from PowerShell 7 after every Claude Code update. |
 
