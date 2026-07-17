@@ -113,8 +113,13 @@ Claude Code hooks intercept tool calls before (`PreToolUse`) or after (`PostTool
 
 A hook can:
 - **Allow** the operation (exit 0, no output, or `hookSpecificOutput.permissionDecision: "allow"`)
-- **Block** it with a reason (`hookSpecificOutput.permissionDecision: "deny"` on stdout)
+- **Block** it with a reason (`stderr` + exit 2 for hard blocks; JSON deny responses only where the current Claude Code surface honors them)
 - **Log** it for auditing (PostToolUse)
+
+For custom hooks that must stop a dangerous action, prefer a concise reason on
+`stderr` and exit code 2. JSON `permissionDecision: "deny"` is useful in some
+surfaces, but it is not a universal hard-block contract across Claude Code
+versions and tool events.
 
 Hooks catch compound commands (`cd repo && git push --force`), pipes, and subshells. They work even when Claude ignores CLAUDE.md instructions.
 

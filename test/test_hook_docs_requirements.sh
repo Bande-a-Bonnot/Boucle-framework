@@ -25,6 +25,9 @@ docs = {
         "6 of the 8 hook slots use jq",
         "**Windows:** [PowerShell 7+]",
         "Git Bash or WSL for safety-check",
+        "stderr` and exit code 2",
+        'JSON `permissionDecision: "deny"`',
+        "not a universal hard-block contract",
     ],
 }
 
