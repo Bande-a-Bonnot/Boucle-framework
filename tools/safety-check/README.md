@@ -9,6 +9,14 @@ The audit bounds the `claude --version` probe, so a stuck Claude CLI cannot bloc
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
 ```
 
+On native Windows, run the Bash checker from WSL or Git Bash. If you installed
+the native PowerShell hooks, use `install.ps1 verify` for payload checks that do
+not require bash:
+
+```powershell
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+```
+
 Run it from the same project root you use to start Claude Code. If a parent
 directory has `.claude/settings.json` and the current directory does not,
 safety-check warns because Claude Code may skip root project hooks when launched
