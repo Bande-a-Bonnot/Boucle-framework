@@ -175,7 +175,9 @@ Each safety hook supports allowlist configs so you can relax rules where needed:
 
 ## Requirements
 
-**macOS / Linux:** bash, jq
+**macOS / Linux:** bash, python3, and jq. The installers use python3 to manage
+`settings.json`, safety-check uses python3 for its audit, and 6 of the 8 hook
+slots use jq to parse Claude Code hook payloads.
 
 **Windows:** [PowerShell 7+](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (pwsh, not the built-in 5.1) for native hooks; Git Bash or WSL for safety-check
 
