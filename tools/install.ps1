@@ -8,6 +8,7 @@
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } all"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } list"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } check"
+#   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } check --verify --strict"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } upgrade"
@@ -298,7 +299,8 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
     Write-Host "  backup list           Show available backups"
     Write-Host "  restore               Restore the most recent backup"
     Write-Host "  restore <file>        Restore a specific backup"
-    Write-Host "  check                 Run safety audit on your Claude Code setup"
+    Write-Host "  check [--verify] [--strict]"
+    Write-Host "                        Run safety audit on your Claude Code setup"
     Write-Host "  doctor                Diagnose installation health (files, settings, permissions)"
     Write-Host "  help                  Show this help message"
     Write-Host ""
@@ -320,6 +322,8 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
     Write-Host "  install.ps1 verify                 # Test hooks with payloads"
     Write-Host "  install.ps1 upgrade                # Update to latest"
     Write-Host "  install.ps1 uninstall read-once    # Remove one hook"
+    Write-Host "  install.ps1 check                  # Run safety audit"
+    Write-Host "  install.ps1 check --verify --strict # Strict safety audit"
     exit 0
 }
 
@@ -354,6 +358,11 @@ if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'verify') {
 
 # Handle check subcommand — download and run safety-check audit
 if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'check') {
+    $checkArgs = @()
+    if ($Hooks.Count -gt 1) {
+        $checkArgs = $Hooks[1..($Hooks.Count - 1)]
+    }
+
     Write-Host "Running safety audit..." -ForegroundColor White
     Write-Host ""
 
@@ -371,7 +380,11 @@ if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'check') {
 
         Invoke-WebRequest -Uri $checkUrl -OutFile $tmpFile -UseBasicParsing -ErrorAction Stop
         if ((Get-Item $tmpFile).Length -gt 0) {
-            & bash $tmpFile
+            & bash $tmpFile @checkArgs
+            $checkExit = $LASTEXITCODE
+            if ($checkExit -ne 0) {
+                exit $checkExit
+            }
         } else {
             Write-Host "Warning: downloaded empty file. Check your network connection." -ForegroundColor Yellow
             exit 1
