@@ -3872,6 +3872,38 @@ assert_not "non-symlinked .claude no warning" "claude-code#41451" "$NOSYM_OUTPUT
 cd "$ORIG_DIR"
 rm -rf "$TMPDIR_NOSYM"
 
+# === Test: ancestor project settings warning ===
+TMPDIR_ANCESTOR=$(mktemp -d)
+cd "$TMPDIR_ANCESTOR"
+export HOME="$TMPDIR_ANCESTOR/home"
+mkdir -p "$HOME/.claude" "$TMPDIR_ANCESTOR/project/.claude" "$TMPDIR_ANCESTOR/project/src"
+echo '{}' > "$HOME/.claude/settings.json"
+cat > "$TMPDIR_ANCESTOR/project/.claude/settings.json" << 'ANCESTORSET'
+{
+  "hooks": {}
+}
+ANCESTORSET
+cd "$TMPDIR_ANCESTOR/project/src"
+ANCESTOR_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "ancestor project settings warning shown" "Ancestor project settings found above the current directory" "$ANCESTOR_OUTPUT"
+assert "ancestor project settings warning included in summary" "Issue: Ancestor project settings found above the current directory" "$ANCESTOR_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_ANCESTOR"
+
+# Test: current project settings should suppress ancestor warning
+TMPDIR_NOANCESTOR=$(mktemp -d)
+cd "$TMPDIR_NOANCESTOR"
+export HOME="$TMPDIR_NOANCESTOR/home"
+mkdir -p "$HOME/.claude" "$TMPDIR_NOANCESTOR/project/.claude" "$TMPDIR_NOANCESTOR/project/src/.claude"
+echo '{}' > "$HOME/.claude/settings.json"
+echo '{}' > "$TMPDIR_NOANCESTOR/project/.claude/settings.json"
+echo '{}' > "$TMPDIR_NOANCESTOR/project/src/.claude/settings.json"
+cd "$TMPDIR_NOANCESTOR/project/src"
+NOANCESTOR_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "current project settings no ancestor warning" "Ancestor project settings found above the current directory" "$NOANCESTOR_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_NOANCESTOR"
+
 stage "version warning fixtures"
 # Test: v2.1.88 version warning
 SAVE_HOME="$HOME"

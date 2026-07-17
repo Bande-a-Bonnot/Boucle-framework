@@ -110,6 +110,22 @@ PROJECT_SETTINGS=".claude/settings.json"
 ALL_HOOK_CMDS=""  # Track all hook commands for inventory
 HOOK_SOURCES=""   # Track where hooks come from
 
+find_ancestor_project_settings() {
+    local dir
+    dir="$(pwd -P 2>/dev/null || pwd)"
+    local parent
+    parent="$(dirname "$dir")"
+    while [ "$parent" != "$dir" ]; do
+        if [ -f "$parent/.claude/settings.json" ]; then
+            printf "%s/.claude/settings.json\n" "$parent"
+            return 0
+        fi
+        dir="$parent"
+        parent="$(dirname "$dir")"
+    done
+    return 1
+}
+
 detect_hooks_from() {
     local file="$1"
     local source_label="$2"
@@ -232,6 +248,17 @@ fi
 # GIT_INDEX_FILE check (claude-code#38181: corrupts git index when Claude launched from git hooks)
 if [ -n "${GIT_INDEX_FILE:-}" ]; then
     WARNINGS+=("GIT_INDEX_FILE is set ($GIT_INDEX_FILE). If Claude was launched from a git hook (post-commit, pre-push, etc.), plugin initialization can corrupt your git index by writing plugin entries into it. Unset this variable before invoking Claude, or run in a separate shell. (see claude-code#38181)")
+fi
+
+# Project-root scope check: Claude Code can treat a subdirectory as the project
+# root, which skips hooks defined in the repository root's .claude/settings.json.
+if [ ! -f "$PROJECT_SETTINGS" ]; then
+    _ANCESTOR_PROJECT_SETTINGS="$(find_ancestor_project_settings || true)"
+    if [ -n "$_ANCESTOR_PROJECT_SETTINGS" ]; then
+        _WARN="Ancestor project settings found above the current directory. Run safety-check from the project root that contains .claude/settings.json, or Claude Code may skip root project hooks when launched from this subdirectory."
+        WARNINGS+=("$_WARN")
+        summary_issue "$_WARN"
+    fi
 fi
 
 # JSONC check: settings.json with comments silently breaks hook loading

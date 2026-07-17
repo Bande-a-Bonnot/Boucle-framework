@@ -13,6 +13,10 @@ Run the checker from the project where Claude Code will work:
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
+Use the project root that contains `.claude/settings.json` when one exists. If
+the summary reports ancestor project settings, rerun from that root before
+posting the report.
+
 On native Windows, use the PowerShell installer verification path:
 
 ```powershell
@@ -66,6 +70,7 @@ Common summary lines have specific meanings:
 | `Issue: IS_DEMO is set` | The current shell may disable hook execution before hooks can run. |
 | `Issue: CLAUDE_CODE_SIMPLE is set` | Minimal Claude Code mode disables hooks and related features. |
 | `Issue: invalid settings JSON` | Fix the reported settings file before reinstalling hooks. |
+| `Issue: Ancestor project settings found above the current directory` | Rerun from the project root that owns `.claude/settings.json`. |
 | `FAIL-OPEN` | A configured hook did not block a representative dangerous payload. |
 
 If the grade is still C after `Verify: 0 FAIL-OPEN`, do not keep reinstalling
