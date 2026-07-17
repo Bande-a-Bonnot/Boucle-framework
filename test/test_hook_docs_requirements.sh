@@ -19,6 +19,8 @@ docs = {
         "**Windows (PowerShell 7+)",
         "Project hooks skipped from subdirectories",
         "ancestor project settings warning",
+        "If you use `claude -w`, also install [worktree-guard]",
+        "delete unmerged or unpushed commits",
     ],
     repo / "tools" / "README.md": [
         "**macOS / Linux:** bash, python3, and jq",
