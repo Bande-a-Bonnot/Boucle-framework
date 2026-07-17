@@ -31,6 +31,8 @@ checks = [
     (
         repo / "tools" / "safety-check" / "README.md",
         [
+            "On native Windows, run the Bash checker from WSL or Git Bash",
+            "install.ps1 verify` for payload checks that do\nnot require bash",
             "On Windows, run under WSL or Git Bash",
             "check",
             "bash-based safety-check script",
