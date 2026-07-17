@@ -55,6 +55,7 @@ paths = {
     ],
     repo / "README.md": [
         "check --verify --strict",
+        "Run `install.sh check --verify --strict` first",
         "Run strict safety audit with hook payload verification",
     ],
     repo / "tools" / "README.md": [

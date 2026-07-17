@@ -72,7 +72,7 @@ These three hooks form the safety net every Claude Code user should have: block 
 
 **If the install succeeds but hooks do not block anything:**
 
-- Run `install.sh verify` first (`install.ps1 verify` on Windows). A clean install is not proof the hooks are firing.
+- Run `install.sh check --verify --strict` first on macOS/Linux (`install.ps1 verify` on native Windows). A clean install is not proof the hooks are firing.
 - Run `install.sh doctor` next (`install.ps1 doctor` on Windows). It catches missing files, bad permissions, JSONC in `settings.json`, and other silent fail-open states.
 - On Windows, use PowerShell 7 (`pwsh`), not Windows PowerShell 5.
 - If you write custom deny hooks, prefer `stderr` + `exit 2` for hard blocks. JSON `permissionDecision: "deny"` is still inconsistent across Claude Code surfaces.
