@@ -25,6 +25,9 @@ A passing workstation check means the installed `PreToolUse` hooks blocked their
 representative payloads in the current shell environment. Re-run it from the
 same shell or terminal profile you use to start Claude Code, because environment
 flags such as `IS_DEMO` and `CLAUDE_CODE_SIMPLE` can change hook behavior.
+Run it from the project root that contains `.claude/settings.json`; a
+subdirectory run can miss project hooks that Claude Code also skips when started
+from that subdirectory.
 
 ## Repository CI check
 
@@ -79,6 +82,7 @@ blocking file writes or shell commands, keep at least one verifiable
 - Install hooks before running the strict workstation check:
   `curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- recommended`
 - Commit repo-local hook scripts when CI checks `.claude/settings.json`.
+- Run repository checks from the directory that owns `.claude/settings.json`.
 - Avoid shell snippets that cannot be mapped to a script path. Prefer
   `bash ./hooks/name.sh` or `python ./hooks/name.py`.
 - Run `install.sh doctor` locally when files are missing or non-executable.

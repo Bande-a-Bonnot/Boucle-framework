@@ -9,6 +9,11 @@ The audit bounds the `claude --version` probe, so a stuck Claude CLI cannot bloc
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
 ```
 
+Run it from the same project root you use to start Claude Code. If a parent
+directory has `.claude/settings.json` and the current directory does not,
+safety-check warns because Claude Code may skip root project hooks when launched
+from the subdirectory.
+
 New to the tool? Start with the [safety-check quickstart](QUICKSTART.md) for the
 short audit, install, verify, and repair loop.
 
@@ -48,6 +53,8 @@ Read the result as a repair list, not as a badge. Fix these before trusting the 
 2. Invalid `settings.json` or JSONC comments.
 3. Missing or non-executable hook scripts.
 4. Any hook reported as `FAIL-OPEN`.
+5. Ancestor project settings warnings. Rerun from the root that contains
+   `.claude/settings.json`.
 
 ## Repair loop
 

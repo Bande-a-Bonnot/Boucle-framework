@@ -6,6 +6,10 @@ trust boundary before you let Claude edit a real project.
 
 ## 1. Run the audit
 
+Run it from the project root you use to start Claude Code, especially when the
+repository has `.claude/settings.json`. Running from a subdirectory can miss
+project-level hooks that live at the repo root.
+
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
 ```
@@ -86,6 +90,8 @@ Boundary: hooks passed representative checks; document residual platform warning
 
 If the summary says `Verify: not run`, `no hooks found`, or `no hook payload
 checks ran`, treat the hook layer as unverified even when the grade looks high.
+If it warns about ancestor project settings, rerun from the directory that
+contains that `.claude/settings.json` before trusting the result.
 The `N/8 hooks` inventory counts the 7 standalone hooks plus `enforce-hooks`;
 `install.sh all` installs the standalone suite, and `enforce-hooks` is installed
 separately when you want CLAUDE.md rules enforced at tool-call time.
@@ -170,6 +176,7 @@ Run `--verify` again after:
 - Editing `~/.claude/settings.json` or `.claude/settings.json`.
 - Installing, removing, or moving hook scripts.
 - Switching between macOS, Linux, WSL, Git Bash, and PowerShell.
+- Starting Claude Code from a different subdirectory of the same repository.
 - Starting a long-running autonomous or semi-autonomous session.
 
 If verification passes but the grade is still C, treat the remaining warnings as
