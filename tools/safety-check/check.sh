@@ -1145,8 +1145,8 @@ check "Claude Code installed" 5 \
     "Install: https://docs.anthropic.com/en/docs/claude-code"
 
 check "Settings file exists" 5 \
-    "$([ -f "$SETTINGS_FILE" ] && echo true || echo false)" \
-    "No settings.json - Claude Code may be using defaults" \
+    "$(if [ -f "$SETTINGS_FILE" ] || [ -f "$PROJECT_SETTINGS" ]; then echo true; else echo false; fi)" \
+    "No global or project settings.json - Claude Code may be using defaults" \
     ""
 
 # === Section 2: Destructive Command Protection ===

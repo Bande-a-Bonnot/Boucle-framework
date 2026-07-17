@@ -280,6 +280,16 @@ assert "hanging claude version still prints score" "Safety Score:" "$HANGING_CLA
 rm -rf "$TMPDIR_HANGING_CLAUDE"
 rm -rf "$TMPDIR_HANGING_AUDIT"
 
+# === Test 9e: Project-only settings file counts as configured ===
+TMPDIR_PROJECT_ONLY=$(mktemp -d)
+export HOME="$TMPDIR_PROJECT_ONLY/home"
+mkdir -p "$HOME/.claude" "$TMPDIR_PROJECT_ONLY/project/.claude"
+echo '{"hooks": {}}' > "$TMPDIR_PROJECT_ONLY/project/.claude/settings.json"
+PROJECT_ONLY_OUTPUT=$(cd "$TMPDIR_PROJECT_ONLY/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "project-only settings file counts" "Settings file exists" "$PROJECT_ONLY_OUTPUT"
+assert_not "project-only settings avoids default warning" "No global or project settings.json" "$PROJECT_ONLY_OUTPUT"
+rm -rf "$TMPDIR_PROJECT_ONLY"
+
 # === Test 10: With fake settings file (mock full setup) ===
 TMPDIR_TEST=$(mktemp -d)
 export HOME="$TMPDIR_TEST"

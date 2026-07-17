@@ -91,7 +91,7 @@ If those are clean, document the remaining platform warnings as residual risk. F
 | Check | Weight | What it detects |
 |-------|--------|-----------------|
 | Claude Code installed | 5 | CLI available on PATH |
-| Settings file exists | 5 | `~/.claude/settings.json` present |
+| Settings file exists | 5 | `~/.claude/settings.json` or current `.claude/settings.json` present |
 | bash-guard | 20 | Blocks `rm -rf /`, `sudo`, `curl\|bash` |
 | git-safe | 15 | Blocks force push, hard reset |
 | file-guard | 15 | Protects `.env`, keys, secrets |
