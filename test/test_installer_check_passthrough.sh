@@ -61,6 +61,11 @@ paths = {
         "install.sh check --verify --strict",
         "Run strict safety audit with payload checks",
     ],
+    repo / "tools" / "safety-check" / "QUICKSTART.md": [
+        "run the strict audit with",
+        "install.sh | bash -s -- check --verify --strict",
+        "then run the strict audit again",
+    ],
     repo / "docs" / "index.html": [
         "check --verify --strict",
         "installer-managed strict safety audit",
