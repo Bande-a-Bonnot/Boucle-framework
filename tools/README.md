@@ -42,9 +42,11 @@ iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework
 ```
 
 All 7 standalone hooks (read-once through session-log) ship with native `.ps1`
-equivalents. No bash or jq required on Windows. The safety-check summary has
-8 hook slots because it also counts `enforce-hooks`, which installs separately
-from the standalone hook suite.
+equivalents. No bash or jq is required for the standalone Windows hooks,
+`install.ps1 verify`, or `install.ps1 doctor`. The `install.ps1 check`
+subcommand runs safety-check, which is bash-based and needs Git Bash, WSL, or
+similar. The safety-check summary has 8 hook slots because it also counts
+`enforce-hooks`, which installs separately from the standalone hook suite.
 
 After installing, verify that the hooks actually block payloads and then run the
 doctor if anything looks wrong:
@@ -175,7 +177,7 @@ Each safety hook supports allowlist configs so you can relax rules where needed:
 
 **macOS / Linux:** bash, jq
 
-**Windows:** [PowerShell 7+](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (pwsh, not the built-in 5.1)
+**Windows:** [PowerShell 7+](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (pwsh, not the built-in 5.1) for native hooks; Git Bash or WSL for safety-check
 
 All platforms need Claude Code with hooks support enabled.
 
