@@ -12,6 +12,14 @@ repo = Path(sys.argv[1])
 
 checks = [
     (
+        repo / "README.md",
+        [
+            "install.ps1 verify` and `install.ps1 doctor` use native PowerShell hooks",
+            "install.ps1 check` command runs the bash-based safety-check audit",
+            "Git Bash, WSL, or another `bash` on PATH",
+        ],
+    ),
+    (
         repo / "tools" / "README.md",
         [
             "No bash or jq is required for the standalone Windows hooks",
