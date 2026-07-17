@@ -61,6 +61,10 @@ paths = {
         "install.sh check --verify --strict",
         "Run strict safety audit with payload checks",
     ],
+    repo / "docs" / "index.html": [
+        "check --verify --strict",
+        "installer-managed strict safety audit",
+    ],
 }
 
 missing = []
