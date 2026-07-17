@@ -62,6 +62,34 @@ jobs:
 for CI runners that do not have Claude Code installed. It does not skip hook
 inventory, hook file health, or payload verification.
 
+## Native PowerShell hooks in CI
+
+The bash safety-check script can inspect interpreter-wrapped hook commands such
+as `pwsh -File ./hooks/git-safe.ps1`, but it can only execute them on runners
+where `pwsh` is available. The Ubuntu workflow above does not install
+PowerShell, so use it as-is for bash, sh, zsh, Python, or executable hook
+scripts.
+
+If your repository settings point to native `.ps1` hook scripts, either add
+PowerShell to the runner before calling `--verify --strict`, or run a Windows
+job and use the PowerShell installer verification path:
+
+```yaml
+jobs:
+  windows-hook-verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify native PowerShell hooks
+        shell: pwsh
+        run: |
+          iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+```
+
+For native Windows installs, `install.ps1 verify` tests the `.ps1` hooks without
+bash or jq. Use Git Bash, WSL, or a runner with bash when you need the full
+safety-check audit and its `--strict` exit behavior.
+
 ## Expected outcomes
 
 | Result | Meaning |
