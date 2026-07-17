@@ -36,6 +36,14 @@ checks = [
             "bash-based safety-check script",
         ],
     ),
+    (
+        repo / "tools" / "safety-check" / "QUICKSTART.md",
+        [
+            "install.ps1 verify` uses native PowerShell hook payload checks",
+            "install.ps1 check` command delegates to this bash-based safety-check script",
+            "Git Bash, WSL, or another `bash` on PATH",
+        ],
+    ),
 ]
 
 failures = []

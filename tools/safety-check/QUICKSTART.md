@@ -76,6 +76,10 @@ Bash checker:
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
 
+`install.ps1 verify` uses native PowerShell hook payload checks. The
+`install.ps1 check` command delegates to this bash-based safety-check script, so
+it needs Git Bash, WSL, or another `bash` on PATH.
+
 Trust the hook layer only when the summary says there are zero `FAIL-OPEN`
 results and the hook files are healthy. If no payload checks ran, you have not
 verified enforcement yet.
