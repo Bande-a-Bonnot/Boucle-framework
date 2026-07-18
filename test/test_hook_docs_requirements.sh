@@ -16,6 +16,7 @@ docs = {
         "installer uses python3 to manage",
         "safety-check uses python3",
         "most hook slots use jq",
+        "No hook installation required for the audit",
         "**Windows (PowerShell 7+)",
         "Project hooks skipped from subdirectories",
         "ancestor project settings warning",
@@ -35,6 +36,9 @@ docs = {
         "Ancestor project settings warning",
         "subdirectory launches can skip root project hooks",
     ],
+    repo / "tools" / "safety-check" / "README.md": [
+        "No hook installation required for the audit",
+    ],
     repo / "tools" / "safety-check" / "SUPPORT_EVIDENCE.md": [
         "Do not paste raw hook stderr from a live Claude Code session",
         "prefix hook stderr with the hook command path",
@@ -44,6 +48,10 @@ docs = {
         "Do not paste raw hook stderr from a live Claude Code session",
         "platform can prefix it with the hook command path",
         "safe support evidence guide",
+    ],
+    repo / "docs" / "index.html": [
+        "bash, python3, and jq",
+        "No hook installation required for the audit",
     ],
 }
 

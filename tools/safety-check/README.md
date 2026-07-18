@@ -1,6 +1,7 @@
 # Claude Code Safety Check
 
-Audit your Claude Code setup in 5 seconds. No installation required.
+Audit your Claude Code setup in 5 seconds. No hook installation required for
+the audit.
 The audit bounds the `claude --version` probe, so a stuck Claude CLI cannot block the safety report.
 
 ## Run it
