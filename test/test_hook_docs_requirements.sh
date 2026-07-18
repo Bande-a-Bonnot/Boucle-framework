@@ -63,6 +63,7 @@ docs = {
     repo / "docs" / "index.html": [
         "bash, python3, and jq",
         "No hook installation required for the audit",
+        "github.com/anthropics/claude-code/issues/37550",
     ],
 }
 
