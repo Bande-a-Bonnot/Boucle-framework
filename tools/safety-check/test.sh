@@ -377,7 +377,7 @@ cat > "$TMPDIR_JSONC/.claude/settings.json" << 'JSONC'
 JSONC
 JSONC_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert "JSONC warning shown" "JSONC comments" "$JSONC_OUTPUT"
-assert "JSONC warning included in copy-paste summary" "Issue: $TMPDIR_JSONC/.claude/settings.json contains JSONC comments" "$JSONC_OUTPUT"
+assert "JSONC warning included in copy-paste summary" "Issue: ~/.claude/settings.json contains JSONC comments" "$JSONC_OUTPUT"
 rm -rf "$TMPDIR_JSONC"
 
 # === Test 14: No JSONC warning for valid JSON ===
@@ -3604,6 +3604,18 @@ assert "verify boundary explains residual risk" "residual platform risk" "$BOUND
 assert "summary includes verify fail-open count" "Verify: 0 FAIL-OPEN" "$BOUNDARY_OUTPUT"
 assert "summary includes verify boundary copy" "Boundary: hooks passed representative checks" "$BOUNDARY_OUTPUT"
 rm -rf "$TMPDIR_VERIFY_BOUNDARY"
+
+# Test: public copy/paste summary redacts exact HOME paths
+TMPDIR_SUMMARY_PATHS=$(mktemp -d)
+SUMMARY_HOME="$TMPDIR_SUMMARY_PATHS/Home With Spaces"
+mkdir -p "$SUMMARY_HOME/.claude"
+printf '{ invalid json\n' > "$SUMMARY_HOME/.claude/settings.json"
+SUMMARY_PATH_OUTPUT=$(HOME="$SUMMARY_HOME" bash "$CHECK_SCRIPT" 2>&1) || true
+SUMMARY_PATH_BLOCK=$(printf "%s\n" "$SUMMARY_PATH_OUTPUT" | awk '/--- Safety Summary \(copy\/paste\) ---/{flag=1} flag')
+assert "local report keeps exact home settings path" "$SUMMARY_HOME/.claude/settings.json contains JSONC comments" "$SUMMARY_PATH_OUTPUT"
+assert "summary redacts home settings path" "~/.claude/settings.json contains JSONC comments" "$SUMMARY_PATH_BLOCK"
+assert_not "summary omits exact home path" "$SUMMARY_HOME" "$SUMMARY_PATH_BLOCK"
+rm -rf "$TMPDIR_SUMMARY_PATHS"
 
 # Test: summary with hooks installed shows + markers
 TMPDIR_SUMMARY=$(mktemp -d)

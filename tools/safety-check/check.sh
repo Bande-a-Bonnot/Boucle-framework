@@ -63,7 +63,17 @@ FIXES=()
 SUMMARY_ISSUES=()
 
 summary_issue() {
-    SUMMARY_ISSUES+=("$1")
+    local issue="$1"
+    # The full local report can include exact paths. The copy/paste summary is
+    # meant for public support, so redact the two paths most likely to identify
+    # a user or private checkout.
+    if [ -n "${PWD:-}" ] && [ "$PWD" != "/" ]; then
+        issue="${issue//"$PWD"/<project>}"
+    fi
+    if [ -n "${HOME:-}" ] && [ "$HOME" != "/" ]; then
+        issue="${issue//"$HOME"/~}"
+    fi
+    SUMMARY_ISSUES+=("$issue")
 }
 
 # Colors (disabled if not a terminal)

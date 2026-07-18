@@ -36,7 +36,9 @@ Near the end of the output, copy the block that starts with:
 ```
 
 That block is designed for public triage. It includes the grade, hook inventory,
-`Issue:` lines, verification counts, and the current trust boundary.
+`Issue:` lines, verification counts, and the current trust boundary. Path-related
+summary issues redact your home directory as `~` and the current checkout as
+`<project>`.
 
 It should not include raw `settings.json`, hook script contents, shell history,
 session logs, `.env` values, tokens, private file paths, or proprietary
