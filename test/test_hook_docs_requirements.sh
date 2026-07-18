@@ -35,6 +35,16 @@ docs = {
         "Ancestor project settings warning",
         "subdirectory launches can skip root project hooks",
     ],
+    repo / "tools" / "safety-check" / "SUPPORT_EVIDENCE.md": [
+        "Do not paste raw hook stderr from a live Claude Code session",
+        "prefix hook stderr with the hook command path",
+        "safety-check summary is the safer public artifact",
+    ],
+    repo / "tools" / "safety-check" / "QUICKSTART.md": [
+        "Do not paste raw hook stderr from a live Claude Code session",
+        "platform can prefix it with the hook command path",
+        "safe support evidence guide",
+    ],
 }
 
 missing = []
