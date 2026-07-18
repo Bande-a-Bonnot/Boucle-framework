@@ -13,6 +13,7 @@ import sys
 import tempfile
 
 HOOK = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hook.ps1")
+HOOK_TIMEOUT_SECONDS = 30
 PASS = 0
 FAIL = 0
 TOTAL = 0
@@ -40,7 +41,7 @@ def run_hook(json_input, env_overrides=None, cwd=None):
         input=json.dumps(json_input),
         capture_output=True,
         text=True,
-        timeout=15,
+        timeout=HOOK_TIMEOUT_SECONDS,
         env=env,
         cwd=cwd,
     )

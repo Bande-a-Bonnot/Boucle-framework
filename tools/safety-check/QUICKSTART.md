@@ -106,6 +106,7 @@ Run these checks before reinstalling hooks repeatedly:
 
 ```sh
 unset IS_DEMO CLAUDE_CODE_SIMPLE
+command -v python3 >/dev/null || { echo "Install python3 before validating settings.json"; exit 1; }
 test ! -f ~/.claude/settings.json || python3 -m json.tool ~/.claude/settings.json >/dev/null
 test ! -f .claude/settings.json || python3 -m json.tool .claude/settings.json >/dev/null
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- doctor
@@ -120,8 +121,10 @@ iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework
 ```
 
 If JSON validation fails, remove comments or trailing commas from the reported
-settings file. If `doctor` reports missing or non-executable hook files, repair
-those before trusting `--verify`.
+settings file. If `python3` is missing, safety-check cannot validate
+`settings.json` syntax or reliably inventory Python-backed hooks; install
+Python 3, then rerun the audit before trusting the score. If `doctor` reports
+missing or non-executable hook files, repair those before trusting `--verify`.
 
 ## 5. Recheck after Claude Code updates
 

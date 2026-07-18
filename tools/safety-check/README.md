@@ -227,3 +227,7 @@ safety-check detects hooks across all Claude Code event types: PreToolUse, PostT
 - On Windows, run under WSL or Git Bash. The PowerShell installer can install,
   verify, and diagnose native `.ps1` hooks without bash, but its `check`
   subcommand delegates to this bash-based safety-check script.
+
+If `python3` is missing, safety-check still reports the dependency warning, but
+it cannot validate `settings.json` syntax or reliably inventory Python-backed
+hooks. Install Python 3, then rerun the audit before trusting the score.
