@@ -155,6 +155,13 @@ else
     fail "PowerShell installer: git-safe missing Bash matcher"
 fi
 
+if grep -q 'install.ps1 backup.*Snapshot before updating Claude Code' "$SCRIPT_DIR/install.ps1" &&
+   grep -q 'install.ps1 restore.*Restore after a wipe' "$SCRIPT_DIR/install.ps1"; then
+    pass "PowerShell installer: help examples include backup and restore"
+else
+    fail "PowerShell installer: help examples omit backup or restore"
+fi
+
 echo ""
 
 # branch-guard.ps1
@@ -179,7 +186,7 @@ if [ -f "$SCRIPT_DIR/branch-guard/hook.ps1" ]; then
         fail "branch-guard: missing BRANCH_GUARD_PROTECTED support"
     fi
 
-    if grep -q 'git rev-parse' "$SCRIPT_DIR/branch-guard/hook.ps1"; then
+    if grep -q 'git -C .* rev-parse --abbrev-ref HEAD' "$SCRIPT_DIR/branch-guard/hook.ps1"; then
         pass "branch-guard: gets current branch"
     else
         fail "branch-guard: missing branch detection"
