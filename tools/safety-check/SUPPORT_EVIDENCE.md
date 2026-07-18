@@ -42,6 +42,11 @@ It should not include raw `settings.json`, hook script contents, shell history,
 session logs, `.env` values, tokens, private file paths, or proprietary
 `CLAUDE.md` rules.
 
+Do not paste raw hook stderr from a live Claude Code session. Claude Code can
+prefix hook stderr with the hook command path, so even a clean block message can
+expose local usernames, repository names, or private hook locations. The
+safety-check summary is the safer public artifact.
+
 ## 3. Add the minimum context
 
 Add these short details above the summary block:
@@ -83,6 +88,7 @@ Do not post:
 
 - Full `~/.claude/settings.json` or `.claude/settings.json` files.
 - Hook source from private repositories.
+- Raw hook stderr from a live Claude Code session.
 - Session logs, shell history, prompts, transcripts, or screenshots with paths.
 - Tokens, API keys, `.env` contents, OAuth files, SSH keys, or private URLs.
 - Proprietary `CLAUDE.md` rules unless you have reviewed and redacted them.
