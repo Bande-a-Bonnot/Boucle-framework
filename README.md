@@ -84,7 +84,13 @@ These three hooks form the safety net every Claude Code user should have: block 
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- all
 ```
 
-**Windows (PowerShell 7+)** — native PS1 hooks, no bash or jq required. Requires [PowerShell 7](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (`pwsh`), not the built-in Windows PowerShell 5:
+**Windows (PowerShell 7+)** — native PS1 hooks, no bash or jq required. Requires [PowerShell 7](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (`pwsh`), not the built-in Windows PowerShell 5. Start with the same recommended safety set:
+
+```powershell
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"
+```
+
+Or install all standalone hooks at once:
 
 ```powershell
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } all"
