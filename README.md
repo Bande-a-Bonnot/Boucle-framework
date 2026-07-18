@@ -724,7 +724,7 @@ Or configure manually in `.claude/settings.json` with `"command": "pwsh -File /p
 ## Development
 
 ```bash
-cargo test           # Framework tests (218 passing)
+cargo test           # Framework tests
 cargo fmt            # Format code
 cargo clippy         # Run linter
 
