@@ -9,7 +9,7 @@ Analyzes signals, patterns, and response effectiveness to detect:
 - **Response effectiveness** — Which responses actually reduce signal rates?
 - **Chronic issues** — What keeps recurring and hasn't been addressed?
 
-Built from 220+ real loops of autonomous agent operation.
+Built from real autonomous-agent loop logs.
 
 ## Install
 
