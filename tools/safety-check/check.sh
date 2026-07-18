@@ -296,7 +296,9 @@ fi
 
 # python3 check: needed by enforce-hooks, session-log, and safety-check itself
 if ! have_python3; then
-    WARNINGS+=("python3 is not installed. enforce-hooks and session-log require python3, and safety-check cannot validate settings.json syntax without it.")
+    _WARN="python3 is not installed. enforce-hooks and session-log require python3, and safety-check cannot validate settings.json syntax without it."
+    WARNINGS+=("$_WARN")
+    summary_issue "$_WARN"
 fi
 
 # Platform check: Windows hooks have known reliability issues

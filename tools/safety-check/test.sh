@@ -396,6 +396,7 @@ mkdir -p "$TMPDIR_NO_PY/.claude"
 echo '{"hooks": {}}' > "$TMPDIR_NO_PY/.claude/settings.json"
 NO_PY_OUTPUT=$(SAFETY_CHECK_TEST_NO_PYTHON3=1 bash "$CHECK_SCRIPT" 2>&1) || true
 assert "missing python warning shown" "python3 is not installed" "$NO_PY_OUTPUT"
+assert "missing python warning included in copy-paste summary" "Issue: python3 is not installed" "$NO_PY_OUTPUT"
 assert_not "missing python does not claim valid JSON is JSONC" "JSONC comments" "$NO_PY_OUTPUT"
 rm -rf "$TMPDIR_NO_PY"
 
