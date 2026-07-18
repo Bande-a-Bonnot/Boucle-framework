@@ -51,7 +51,11 @@ else
 fi
 
 usage() {
-    sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
+    awk '
+        NR == 1 { next }
+        NF == 0 { exit }
+        { sub(/^# ?/, ""); print }
+    ' "$0"
     exit "${1:-0}"
 }
 
@@ -206,10 +210,20 @@ except:
         reason=$(echo "$hso" | tail -n +2)
     fi
 
-    # Handle exit code 2 (crash) — Claude Code treats this as hook failure
+    # Claude Code treats stderr + exit 2 as the legacy hard-block path.
+    # Keep JSON deny responses authoritative when present; otherwise classify
+    # an exit-2 hook objection as deny so --expect-deny works with Boucle's
+    # bash-guard and git-safe hooks.
     if [ "$exit_code" -eq 2 ]; then
-        decision="crash"
-        reason="Exit code 2: Claude Code treats this as a crash. Edit/Write will IGNORE this hook."
+        if [ "$decision" = "deny" ]; then
+            [ -z "$reason" ] && reason="Denied with exit code 2"
+        elif [ -n "$stderr_text" ]; then
+            decision="deny"
+            reason="$stderr_text"
+        else
+            decision="deny"
+            reason="Denied with exit code 2"
+        fi
     elif [ "$exit_code" -ne 0 ] && [ "$decision" = "unknown" ]; then
         decision="error"
         reason="Exit code $exit_code"
@@ -220,7 +234,6 @@ except:
     case "$decision" in
         allow)  status_color="$GREEN"; status_icon="ALLOW" ;;
         deny)   status_color="$RED"; status_icon="DENY" ;;
-        crash)  status_color="$YELLOW"; status_icon="CRASH" ;;
         error)  status_color="$YELLOW"; status_icon="ERROR" ;;
         *)      status_color="$YELLOW"; status_icon="???" ;;
     esac
