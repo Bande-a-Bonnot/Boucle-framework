@@ -117,17 +117,23 @@ Apply this diff mentally to your cached version of the file.
 
 If the diff is too large (>40 lines by default), read-once falls back to allowing a full re-read. Configure the threshold with `READ_ONCE_DIFF_MAX`.
 
-### What Claude sees
+### What Claude Sees
 
-When an unchanged file is re-read, Claude receives this advisory in warn mode
-or this block reason in deny mode:
+When an unchanged file is re-read in the same session, read-once returns a
+Claude Code hook JSON response. In the default warn mode, the response uses
+`permissionDecision: "allow"` with an advisory reason, so the Read still runs
+and stats still record the redundant read. In deny mode, the same reason is
+returned with `permissionDecision: "deny"`, so Claude Code can suppress the
+redundant Read.
 
 ```
 read-once: schema.rb (~2,340 tokens) already in context (read 3m ago, unchanged).
 Re-read allowed after 20m. Session savings: ~4,680 tokens.
 ```
 
-Claude then proceeds without the redundant read. No loss of information — the file content is still in the context window from the first read.
+Cross-session cache hits are always allowed for the first read in the current
+session, even in deny mode, so Claude Code's Edit precondition can still be
+satisfied before same-session re-reads are deduplicated.
 
 ### Compaction safety
 
