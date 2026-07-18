@@ -219,7 +219,7 @@ Beyond the scored checks, safety-check detects platform bugs and configuration p
 
 safety-check detects hooks across all Claude Code event types: PreToolUse, PostToolUse, SessionStart, SessionEnd, Stop, SubagentStop, TaskCreated, WorktreeCreate, WorktreeRemove, UserPromptSubmit, and Notification.
 
-## No dependencies
+## Requirements
 
 - Bash 4+
 - Python 3 (for JSON parsing of settings.json)
