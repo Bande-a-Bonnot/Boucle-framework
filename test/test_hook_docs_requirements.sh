@@ -96,6 +96,7 @@ banned = {
     ],
     repo / "README.md": [
         "cargo test           # Framework tests (",
+        "218 Rust tests",
     ],
     repo / "docs" / "index.html": [
         "218 Rust tests",
