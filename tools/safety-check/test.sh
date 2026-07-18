@@ -389,6 +389,16 @@ VALID_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no JSONC warning for valid JSON" "JSONC comments" "$VALID_OUTPUT"
 rm -rf "$TMPDIR_VALID"
 
+# === Test 14a: Missing python3 does not misreport valid JSON as JSONC ===
+TMPDIR_NO_PY=$(mktemp -d)
+export HOME="$TMPDIR_NO_PY"
+mkdir -p "$TMPDIR_NO_PY/.claude"
+echo '{"hooks": {}}' > "$TMPDIR_NO_PY/.claude/settings.json"
+NO_PY_OUTPUT=$(SAFETY_CHECK_TEST_NO_PYTHON3=1 bash "$CHECK_SCRIPT" 2>&1) || true
+assert "missing python warning shown" "python3 is not installed" "$NO_PY_OUTPUT"
+assert_not "missing python does not claim valid JSON is JSONC" "JSONC comments" "$NO_PY_OUTPUT"
+rm -rf "$TMPDIR_NO_PY"
+
 # === Test 14b: JSONC warning for invalid project settings ===
 TMPDIR_PROJECT_JSONC=$(mktemp -d)
 export HOME="$TMPDIR_PROJECT_JSONC"
