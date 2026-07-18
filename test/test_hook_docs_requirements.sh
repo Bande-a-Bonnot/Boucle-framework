@@ -38,6 +38,13 @@ docs = {
     ],
     repo / "tools" / "safety-check" / "README.md": [
         "No hook installation required for the audit",
+        "## Requirements",
+        "Bash 4+",
+        "Python 3 (for JSON parsing of settings.json)",
+    ],
+    repo / "tools" / "safety-check" / "check.sh": [
+        "No hook installation required for the audit",
+        "Requires bash and python3",
     ],
     repo / "tools" / "safety-check" / "SUPPORT_EVIDENCE.md": [
         "Do not paste raw hook stderr from a live Claude Code session",
@@ -64,6 +71,25 @@ for path, snippets in docs.items():
 
 if missing:
     raise SystemExit("Hook requirements docs drifted:\n" + "\n".join(missing))
+
+banned = {
+    repo / "tools" / "safety-check" / "README.md": [
+        "## No dependencies",
+    ],
+    repo / "tools" / "safety-check" / "check.sh": [
+        "No installation, no dependencies",
+    ],
+}
+
+violations = []
+for path, snippets in banned.items():
+    text = path.read_text()
+    for snippet in snippets:
+        if snippet in text:
+            violations.append(f"{path.relative_to(repo)}: remove stale {snippet!r}")
+
+if violations:
+    raise SystemExit("Hook requirements docs contain stale wording:\n" + "\n".join(violations))
 
 print("Hook docs requirements OK")
 PY

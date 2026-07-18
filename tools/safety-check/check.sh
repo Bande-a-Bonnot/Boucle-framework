@@ -6,7 +6,7 @@
 #
 # Audits your Claude Code setup and scores it for safety.
 # --verify sends test payloads to PreToolUse hooks and checks they actually block.
-# No installation, no dependencies - just information.
+# No hook installation required for the audit. Requires bash and python3.
 
 set -euo pipefail
 
