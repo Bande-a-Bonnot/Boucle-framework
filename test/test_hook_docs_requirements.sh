@@ -18,6 +18,8 @@ docs = {
         "most standalone shell hooks use jq",
         "No hook installation required for the audit",
         "**Windows (PowerShell 7+)",
+        "tools/install.ps1) } recommended",
+        "Or install all standalone hooks at once",
         "Project hooks skipped from subdirectories",
         "ancestor project settings warning",
         "If you use `claude -w`, also install [worktree-guard]",
