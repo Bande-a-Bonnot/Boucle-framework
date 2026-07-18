@@ -97,6 +97,7 @@ banned = {
     repo / "README.md": [
         "cargo test           # Framework tests (",
         "218 Rust tests",
+        "Boucle-framework has 96 stars",
     ],
     repo / "docs" / "index.html": [
         "218 Rust tests",

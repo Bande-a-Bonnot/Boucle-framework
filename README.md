@@ -351,7 +351,7 @@ Broca is a file-based, git-native knowledge system for AI agents. Memories are M
 boucle memory remember "Python packaging" "Modern projects use pyproject.toml" --tags "python,packaging"
 
 # Store a time-sensitive fact
-boucle memory remember "Repo stars" "Boucle-framework has 96 stars" --tags "metric" --valid-until 2026-05-23
+boucle memory remember "API status" "Payment API is degraded" --tags "incident" --valid-until 2026-05-23
 
 # Search memories
 boucle memory recall "python packaging" --limit 5
