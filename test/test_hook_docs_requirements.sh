@@ -98,6 +98,11 @@ banned = {
         "cargo test           # Framework tests (",
         "218 Rust tests",
         "Boucle-framework has 96 stars",
+        "not yet in the official docs",
+    ],
+    repo / "tools" / "enforce" / "README.md": [
+        "The current docs still describe",
+        "The docs still say",
     ],
     repo / "docs" / "index.html": [
         "218 Rust tests",
