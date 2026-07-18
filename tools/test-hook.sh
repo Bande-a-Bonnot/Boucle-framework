@@ -19,7 +19,7 @@
 #   # Test a bash-guard hook against a dangerous command
 #   test-hook.sh "bash tools/bash-guard/hook.sh" --command "rm -rf /"
 #
-#   # Test file-guard write path validation
+#   # Test file-guard's always-on relative write path validation
 #   test-hook.sh "bash tools/file-guard/hook.sh" --tool Write --file ".env" --content "SECRET=x" --expect-deny
 #
 #   # Test with raw JSON input

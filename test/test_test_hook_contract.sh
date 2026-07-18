@@ -28,6 +28,30 @@ case "$help_output" in
         ;;
 esac
 
+tools_readme=$(cat "$REPO_ROOT/tools/README.md")
+file_guard_example='bash tools/test-hook.sh "bash tools/file-guard/hook.sh" --tool Write --file ".env" --content "SECRET=x" --expect-deny'
+case "$tools_readme" in
+    *"bash tools/test-hook.sh \"bash tools/bash-guard/hook.sh\" --command \"rm -rf /\""* ) ;;
+    *)
+        printf 'tools README should use copy-pasteable repository hook paths for bash-guard.\n' >&2
+        exit 1
+        ;;
+esac
+case "$tools_readme" in
+    *"$file_guard_example"* ) ;;
+    *)
+        printf 'tools README should show a write-protect file-guard example with an expected deny.\n' >&2
+        exit 1
+        ;;
+esac
+case "$tools_readme" in
+    *"tools/test-hook-bash-guard-examples.jsonl"* ) ;;
+    *)
+        printf 'tools README should name the copy-pasteable bash-guard batch fixture.\n' >&2
+        exit 1
+        ;;
+esac
+
 deny_output=$(
     cd "$REPO_ROOT"
     bash tools/test-hook.sh "bash tools/bash-guard/hook.sh" --command "rm -rf /" --expect-deny
