@@ -281,9 +281,10 @@ for _settings_json in "$SETTINGS_FILE" "$PROJECT_SETTINGS"; do
     fi
 done
 
-# Dependency checks: jq is required by 6 of 8 hooks (bash-guard, git-safe, file-guard, branch-guard, worktree-guard, read-once)
+# Dependency checks: jq is required by 6 of the 7 standalone shell hooks
+# (bash-guard, git-safe, file-guard, branch-guard, worktree-guard, read-once).
 if ! command -v jq >/dev/null 2>&1; then
-    WARNINGS+=("jq is not installed. 6 of 8 hooks require jq for JSON parsing and will silently fail without it. Install: brew install jq (macOS), apt install jq (Debian/Ubuntu), or see https://jqlang.github.io/jq/download/")
+    WARNINGS+=("jq is not installed. 6 of the 7 standalone shell hooks require jq for JSON parsing and will silently fail without it. Install: brew install jq (macOS), apt install jq (Debian/Ubuntu), or see https://jqlang.github.io/jq/download/")
 fi
 
 # python3 check: needed by enforce-hooks, session-log, and safety-check itself
