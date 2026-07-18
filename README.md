@@ -60,7 +60,8 @@ or the [Atom feed](https://framework.boucle.sh/limitations-feed.xml).
 
 **macOS / Linux requirements:** bash, python3, and jq. The installer uses
 python3 to manage Claude Code `settings.json`, safety-check uses python3 for
-its audit, and most hook slots use jq to parse Claude Code hook payloads.
+its audit, and most standalone shell hooks use jq to parse Claude Code hook
+payloads.
 
 **Start with the essentials** (bash-guard + git-safe + file-guard):
 

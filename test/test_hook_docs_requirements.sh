@@ -15,7 +15,7 @@ docs = {
         "**macOS / Linux requirements:** bash, python3, and jq",
         "installer uses python3 to manage",
         "safety-check uses python3",
-        "most hook slots use jq",
+        "most standalone shell hooks use jq",
         "No hook installation required for the audit",
         "**Windows (PowerShell 7+)",
         "Project hooks skipped from subdirectories",
@@ -27,7 +27,7 @@ docs = {
         "**macOS / Linux:** bash, python3, and jq",
         "installers use python3 to manage",
         "safety-check uses python3",
-        "6 of the 8 hook slots use jq",
+        "6 of the 7 standalone shell hooks use jq",
         "**Windows:** [PowerShell 7+]",
         "Git Bash or WSL for safety-check",
         "stderr` and exit code 2",
@@ -71,6 +71,15 @@ for path, snippets in docs.items():
 
 if missing:
     raise SystemExit("Hook requirements docs drifted:\n" + "\n".join(missing))
+
+hook_files = sorted((repo / "tools").glob("*/hook.sh"))
+jq_hooks = [path for path in hook_files if "jq" in path.read_text()]
+expected_count = f"{len(jq_hooks)} of the {len(hook_files)} standalone shell hooks use jq"
+if expected_count != "6 of the 7 standalone shell hooks use jq":
+    raise SystemExit(
+        "Hook jq dependency count changed; update requirements docs and this "
+        f"contract together (actual: {expected_count})"
+    )
 
 banned = {
     repo / "tools" / "safety-check" / "README.md": [
