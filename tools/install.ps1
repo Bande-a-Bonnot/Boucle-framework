@@ -322,6 +322,8 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
     Write-Host "  install.ps1 verify                 # Test hooks with payloads"
     Write-Host "  install.ps1 upgrade                # Update to latest"
     Write-Host "  install.ps1 uninstall read-once    # Remove one hook"
+    Write-Host "  install.ps1 backup                 # Snapshot before updating Claude Code"
+    Write-Host "  install.ps1 restore                # Restore after a wipe"
     Write-Host "  install.ps1 check                  # Run safety audit"
     Write-Host "  install.ps1 check --verify --strict # Strict safety audit"
     exit 0
