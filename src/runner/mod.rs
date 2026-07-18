@@ -221,8 +221,13 @@ Broca stores knowledge as human-readable Markdown files with YAML frontmatter fo
 
 - **Structured memories** — Each `.md` file has metadata (tags, confidence, timestamps)
 - **Git-native** — Every memory change is versioned and auditable
-- **Zero dependencies** — Just files you can read, edit, and backup anywhere
+- **No database service** — Just files you can read, edit, and backup anywhere
 - **MCP compatible** — Can be shared between multiple AI agents
+
+## Requirements
+
+- `boucle` to run the agent loop and memory commands
+- `git` if you want the audit trail and history features
 
 ## Key Directories (when created)
 
