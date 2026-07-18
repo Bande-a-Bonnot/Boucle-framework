@@ -30,6 +30,8 @@ docs = {
         "6 of the 7 standalone shell hooks use jq",
         "**Windows:** [PowerShell 7+]",
         "Git Bash or WSL for safety-check",
+        "tools/install.ps1) } recommended",
+        "To choose hooks interactively instead",
         "stderr` and exit code 2",
         'JSON `permissionDecision: "deny"`',
         "not a universal hard-block contract",
