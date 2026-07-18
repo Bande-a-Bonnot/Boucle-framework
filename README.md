@@ -742,7 +742,7 @@ bash tools/worktree-guard/test.sh
 
 ## Status
 
-**v0.13.0** — 218 Rust tests + 1,700+ hook tests (bash + PowerShell). Zero clippy warnings. CI on Ubuntu + macOS + Windows. Docker support.
+**Latest release:** v0.13.0 shipped with 200+ Rust tests + 1,700+ hook tests (bash + PowerShell). Zero clippy warnings. CI on Ubuntu + macOS + Windows. Docker support.
 
 New in v0.13.0: searchable Claude Code Known Limitations corpus, recipes page, machine-readable Known Limitations export, bash-guard layered configs and `gh api` mutation guard, Broca TTL-tagged facts, read-once PostCompact cache reset, hardened safety-check verification, runner lock and timeout hardening, and Windows installer parity improvements. See [CHANGELOG](CHANGELOG.md) for details.
 
