@@ -771,10 +771,10 @@ if has_hook_type "SubagentStop"; then
     WARNINGS+=("SubagentStop hooks are configured. These fire when a spawned subagent completes, providing the last_assistant_message field. Note: background agents may not inherit all hook configurations from the parent session. (see claude-code#40818)")
 fi
 
-# PermissionDenied hooks - new in v2.1.88 (claude-code#41261)
+# PermissionDenied hooks - available since v2.1.89 (claude-code#41261)
 # Fires after auto mode classifier denials. Return {retry: true} to tell model it can retry.
 if has_hook_type "PermissionDenied"; then
-    WARNINGS+=("PermissionDenied hooks are configured. This event fires after auto mode classifier denials (new in v2.1.88). Return {\"retry\": true} in hookSpecificOutput to tell the model it can retry the denied operation. Without this hook, denied operations are not retried. Note: this event is not yet documented in the official hooks reference. (see claude-code#41261)")
+    WARNINGS+=("PermissionDenied hooks are configured. This event fires after auto mode classifier denials (available since v2.1.89). Return {\"retry\": true} in hookSpecificOutput to tell the model it can retry the denied operation. Without retry, denied operations are not retried. (see claude-code#41261)")
 fi
 
 # SessionStart hook systemMessage not rendered in terminal (claude-code#41285)
