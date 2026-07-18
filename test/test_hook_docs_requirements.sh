@@ -64,6 +64,7 @@ docs = {
         "bash, python3, and jq",
         "No hook installation required for the audit",
         "github.com/anthropics/claude-code/issues/37550",
+        "200+ Rust tests",
     ],
 }
 
@@ -92,6 +93,12 @@ banned = {
     ],
     repo / "tools" / "safety-check" / "check.sh": [
         "No installation, no dependencies",
+    ],
+    repo / "README.md": [
+        "cargo test           # Framework tests (",
+    ],
+    repo / "docs" / "index.html": [
+        "218 Rust tests",
     ],
 }
 
