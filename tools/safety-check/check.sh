@@ -76,6 +76,11 @@ summary_issue() {
     SUMMARY_ISSUES+=("$issue")
 }
 
+have_python3() {
+    [ "${SAFETY_CHECK_TEST_NO_PYTHON3:-0}" = "1" ] && return 1
+    command -v python3 >/dev/null 2>&1
+}
+
 # Colors (disabled if not a terminal)
 if [ -t 1 ]; then
     GREEN='\033[0;32m'
@@ -272,14 +277,16 @@ if [ ! -f "$PROJECT_SETTINGS" ]; then
 fi
 
 # JSONC check: settings.json with comments silently breaks hook loading
-for _settings_json in "$SETTINGS_FILE" "$PROJECT_SETTINGS"; do
-    [ -f "$_settings_json" ] || continue
-    if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$_settings_json" 2>/dev/null; then
-        _WARN="$_settings_json contains JSONC comments or invalid JSON. Hooks may not load. Run any hook installer to auto-fix, or remove // and /* */ comments manually (see claude-code#37540)"
-        WARNINGS+=("$_WARN")
-        summary_issue "$_WARN"
-    fi
-done
+if have_python3; then
+    for _settings_json in "$SETTINGS_FILE" "$PROJECT_SETTINGS"; do
+        [ -f "$_settings_json" ] || continue
+        if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$_settings_json" 2>/dev/null; then
+            _WARN="$_settings_json contains JSONC comments or invalid JSON. Hooks may not load. Run any hook installer to auto-fix, or remove // and /* */ comments manually (see claude-code#37540)"
+            WARNINGS+=("$_WARN")
+            summary_issue "$_WARN"
+        fi
+    done
+fi
 
 # Dependency checks: jq is required by 6 of the 7 standalone shell hooks
 # (bash-guard, git-safe, file-guard, branch-guard, worktree-guard, read-once).
@@ -288,8 +295,8 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 # python3 check: needed by enforce-hooks, session-log, and safety-check itself
-if ! command -v python3 >/dev/null 2>&1; then
-    WARNINGS+=("python3 is not installed. enforce-hooks and session-log require python3. Some safety-check features may not work.")
+if ! have_python3; then
+    WARNINGS+=("python3 is not installed. enforce-hooks and session-log require python3, and safety-check cannot validate settings.json syntax without it.")
 fi
 
 # Platform check: Windows hooks have known reliability issues
@@ -300,7 +307,7 @@ fi
 
 # CLI version check: warn about known dangerous versions
 _claude_version_output() {
-    if command -v python3 >/dev/null 2>&1; then
+    if have_python3; then
         python3 - << 'PYEOF_CLAUDE_VERSION'
 import os
 import signal
