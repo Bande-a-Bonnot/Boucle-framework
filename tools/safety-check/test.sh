@@ -3441,8 +3441,10 @@ cat > "$TMPDIR_PD/.claude/settings.json" << 'PDEOF'
 PDEOF
 PD_OUTPUT=$(HOME="$TMPDIR_PD" bash "$CHECK_SCRIPT" 2>&1) || true
 assert "PermissionDenied hook type detected" "PermissionDenied hooks are configured" "$PD_OUTPUT"
-assert "PermissionDenied warning mentions v2.1.88" "v2.1.88" "$PD_OUTPUT"
+assert "PermissionDenied warning mentions v2.1.89" "v2.1.89" "$PD_OUTPUT"
 assert "PermissionDenied warning mentions retry" "retry" "$PD_OUTPUT"
+assert_not "PermissionDenied warning does not claim unresolved docs gap" "not yet documented" "$PD_OUTPUT"
+assert_not "PermissionDenied warning does not mention stale v2.1.88 version" "v2.1.88" "$PD_OUTPUT"
 rm -rf "$TMPDIR_PD"
 
 # === Test: settings.local.json with permissions warns about Edit desync (#41259) ===
