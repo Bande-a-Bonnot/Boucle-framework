@@ -1,21 +1,21 @@
 {
   "version": "0.13.0",
-  "count": 960,
+  "count": 965,
   "categories": {
     "Hook behavior & events": 174,
     "Permission system": 112,
     "Hook bypass & evasion": 99,
     "MCP & plugin issues": 52,
     "Subagent & spawned agents": 39,
-    "Desktop & IDE integration": 26,
+    "Desktop & IDE integration": 27,
     "Platform & compatibility": 23,
     "CLI & terminal": 22,
     "Context & memory": 21,
     "Configuration behavior": 18,
-    "TUI & display": 17,
-    "Tool behavior": 15,
+    "TUI & display": 18,
+    "Tool behavior": 16,
     "Security & trust boundaries": 12,
-    "Agents & subagents": 9,
+    "Agents & subagents": 10,
     "File system & paths": 9,
     "hooks": 9,
     "Performance & cost": 9,
@@ -53,6 +53,7 @@
     "Sandbox": 3,
     "Security": 3,
     "Skills / slash commands": 3,
+    "Telemetry & insights": 3,
     "Agents": 2,
     "agents": 2,
     "Auth": 2,
@@ -78,7 +79,6 @@
     "session-management": 2,
     "Skills & commands": 2,
     "Stability & crashes": 2,
-    "Telemetry & insights": 2,
     "VS Code extension": 2,
     "Worktree": 2,
     "Agent": 1,
@@ -170,9 +170,9 @@
   },
   "severity_counts": {
     "CRITICAL": 65,
-    "HIGH": 472,
-    "LOW": 97,
-    "MEDIUM": 326
+    "HIGH": 474,
+    "LOW": 98,
+    "MEDIUM": 328
   },
   "entries": [
     {
@@ -12241,30 +12241,105 @@
       "cc_version": "2.1.215",
       "date_added": "2026-07-19",
       "workaround": "Before pasting screenshot paths, expand ~ to an absolute path and verify the file exists. If the prompt gets stuck on \"Pasting...\", use Ctrl-C to recover and paste the path with a non-image extension, quote it as literal text, or attach an existing absolute file path. Avoid pasting bare .png or .jpg filenames into long-running sessions until the image-load path fails closed."
+    },
+    {
+      "id": "tui-exit-can-leave-sgr-mouse-mode-enabled",
+      "title": "TUI exit can leave SGR mouse mode enabled",
+      "category": "TUI & display",
+      "severity": "MEDIUM",
+      "status": "open",
+      "description": "Claude Code v2.1.215 on macOS can exit from claude logs <id> while leaving terminal SGR mouse reporting modes enabled. The reported Ghostty repro left modes 1000, 1002, 1003, and 1006 active after the TUI exited, causing normal shell mouse movement or clicks to print escape sequences instead of behaving like a restored terminal. A follow-up screenshot showed the shell flooded with raw mouse-report bytes, so this is not only a cosmetic close-path bug.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79015"
+      ],
+      "cc_issue": 79015,
+      "cc_version": "2.1.215",
+      "date_added": "2026-07-19",
+      "workaround": "After a Claude Code TUI exits and the shell starts printing mouse escape sequences, run reset or printf '\\033[?1000l\\033[?1002l\\033[?1003l\\033[?1006l' to disable common mouse-report modes. Avoid relying on claude logs inside terminal sessions where raw escape output would corrupt copyable logs, and wrap automated TUI invocations with terminal reset cleanup."
+    },
+    {
+      "id": "workflow-agent-idle-kill-ignores-timeout-environment",
+      "title": "Workflow agents can hit a hard-coded idle kill that ignores timeout environment",
+      "category": "Agents & subagents",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "Claude Code v2.1.215 Workflow tool worker agents can be killed and retried after roughly 180 seconds without a stream event even when documented timeout environment variables are set much higher. The reported repro raised CLAUDE_ASYNC_AGENT_STALL_TIMEOUT_MS to 1 hour, CLAUDE_STREAM_IDLE_TIMEOUT_MS to 20 minutes, API_TIMEOUT_MS to 1 hour, and CLAUDE_CODE_MAX_RETRIES to 30, yet workflow workers still hit the about-180-second no-progress wall after tool results. Agent-tool subagents in the same session reportedly honored the async-agent timeout, making the workflow DSL path a separate operational risk for high-effort or slow first-token turns.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79017"
+      ],
+      "cc_issue": 79017,
+      "cc_version": "2.1.215",
+      "date_added": "2026-07-19",
+      "workaround": "Do not assume the standard Claude Code timeout environment variables protect long-silent Workflow agent() workers. Break high-effort workflow steps into shorter checkpoints, persist partial results outside the agent before long reasoning phases, and use the Agent tool or a direct CLI process for tasks that must legally spend more than about three minutes between stream events."
+    },
+    {
+      "id": "workflow-structured-output-invalid-escapes-can-be-reported-as-missing-fields",
+      "title": "Workflow structured output invalid escapes can be reported as missing fields",
+      "category": "Tool behavior",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "Claude Code v2.1.215 Workflow StructuredOutput agents can emit invalid JSON string escapes in long free-text fields containing shell regex or sed patterns, then receive a misleading schema error claiming the corrupted field is missing. The reported Linux incidents involved backslash-dense content such as \\|, \\. and \\$ in fix-plan text; the runtime appeared to salvage parseable sibling fields and hide the real invalid-escape cause. In one worse case, repeated blind retries ended with a schema-valid placeholder output such as test root cause and a.sh, b.json, which passed validation and poisoned downstream pipeline stages.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79019"
+      ],
+      "cc_issue": 79019,
+      "cc_version": "2.1.215",
+      "date_added": "2026-07-19",
+      "workaround": "For workflow schemas with long free-text fields, either require arrays of plain tokens instead of backslash-heavy prose or post-validate outputs for placeholder content and malformed quoting before downstream use. Add retry prompts that explicitly double-escape backslashes in JSON strings, and treat repeated missing-field errors on fields that are visible in the transcript as possible invalid-escape corruption rather than true omission."
+    },
+    {
+      "id": "claude-session-trailers-can-enter-git-history-without-clear-consent",
+      "title": "Claude-Session trailers can enter git history without clear consent",
+      "category": "Telemetry & insights",
+      "severity": "MEDIUM",
+      "status": "open",
+      "description": "Claude Code v2.1.195 on Linux was reported to add Claude-Session: <session link> trailers to commits and a pull request without the user understanding or consenting to that default. The affected user described the session URL being inserted into development artifacts and cancelled their subscription over the privacy and authorship surprise. Even when the trailer is intended as traceability metadata, silently writing session links into permanent git history changes the publication surface of private coding sessions.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79020"
+      ],
+      "cc_issue": 79020,
+      "cc_version": "2.1.195",
+      "date_added": "2026-07-19",
+      "workaround": "Before letting Claude Code create commits or PR bodies, inspect commit messages for Claude-Session trailers and remove them when the repository or team has not explicitly opted in. Add a local commit-msg hook that rejects Claude-Session: lines by default, document any intentional traceability policy, and use interactive commit review for repositories where session links may reveal private workflow context."
+    },
+    {
+      "id": "desktop-reopen-can-hide-stored-thinking-blocks",
+      "title": "Desktop reopen can hide stored thinking blocks",
+      "category": "Desktop & IDE integration",
+      "severity": "LOW",
+      "status": "open",
+      "description": "Claude Code Desktop 1.22209.3 on macOS can render extended thinking blocks while a response streams, then omit those same historical thinking blocks after closing and reopening the session. The reporter verified the thinking data remained intact in the session jsonl with normal thinking fields, no redacted_thinking blocks, and no empty thinking text. A follow-up confirmed that resuming the same session in the terminal with claude --resume rendered the historical thinking correctly, isolating the defect to the desktop transcript replay renderer rather than data loss.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79021"
+      ],
+      "cc_issue": 79021,
+      "cc_version": "1.22209.3",
+      "date_added": "2026-07-19",
+      "workaround": "When desktop session replay hides historical thinking that should be visible, inspect or resume the same session through the CLI before assuming the transcript data is gone. Keep the session jsonl as the source of truth for forensic review, and avoid using desktop replay alone to decide whether verbose thinking settings were honored in a prior session."
     }
   ],
   "status_summary": {
-    "open": 946,
+    "open": 951,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 65,
-    "high": 472,
-    "low": 97,
-    "medium": 326
+    "high": 474,
+    "low": 98,
+    "medium": 328
   },
   "lastUpdated": "2026-07-19",
   "stats": {
-    "total": 960,
+    "total": 965,
     "critical": 65,
-    "high": 472,
-    "medium": 326,
-    "low": 97,
-    "open": 946,
+    "high": 474,
+    "medium": 328,
+    "low": 98,
+    "open": 951,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-19",
-  "total": 960
+  "total": 965
 }
