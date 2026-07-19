@@ -1,18 +1,18 @@
 {
   "version": "0.13.0",
-  "count": 975,
+  "count": 980,
   "categories": {
     "Hook behavior & events": 174,
     "Permission system": 112,
     "Hook bypass & evasion": 99,
     "MCP & plugin issues": 52,
     "Subagent & spawned agents": 40,
-    "Desktop & IDE integration": 29,
+    "Desktop & IDE integration": 30,
     "Platform & compatibility": 23,
     "CLI & terminal": 22,
     "Context & memory": 21,
     "TUI & display": 20,
-    "Configuration behavior": 18,
+    "Configuration behavior": 19,
     "Tool behavior": 16,
     "Security & trust boundaries": 12,
     "Performance & cost": 11,
@@ -30,9 +30,9 @@
     "Scheduling & remote triggers": 6,
     "Auth & accounts": 5,
     "Core & session management": 5,
+    "Cowork & remote": 5,
     "Desktop & platform bugs": 5,
     "UX & display": 5,
-    "Cowork & remote": 4,
     "Data integrity": 4,
     "MCP & plugins": 4,
     "permissions": 4,
@@ -55,6 +55,8 @@
     "Security": 3,
     "Skills / slash commands": 3,
     "Telemetry & insights": 3,
+    "VS Code extension": 3,
+    "Worktree": 3,
     "Agents": 2,
     "agents": 2,
     "Auth": 2,
@@ -80,8 +82,6 @@
     "security": 2,
     "session-management": 2,
     "Stability & crashes": 2,
-    "VS Code extension": 2,
-    "Worktree": 2,
     "Agent": 1,
     "Agent & multi-agent": 1,
     "agent-behavior": 1,
@@ -170,9 +170,9 @@
   },
   "severity_counts": {
     "CRITICAL": 65,
-    "HIGH": 480,
+    "HIGH": 484,
     "LOW": 99,
-    "MEDIUM": 331
+    "MEDIUM": 332
   },
   "entries": [
     {
@@ -12456,30 +12456,95 @@
       "version_reported": "2.1.215",
       "platform": "all",
       "status": "open"
+    },
+    {
+      "id": "ancestor-claude-md-imports-can-be-silently-ignored",
+      "title": "Ancestor CLAUDE.md imports can be silently ignored",
+      "category": "Configuration behavior",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79046"
+      ],
+      "description": "A CLAUDE.md file loaded from an ancestor directory can have its body injected while its @path import lines are not expanded. Workspace and monorepo setups that factor shared instructions into imported files can silently lose those rules when Claude Code is launched from a subdirectory.",
+      "workaround": "Inline shared rules into the ancestor CLAUDE.md body, or launch Claude Code from the directory that contains the CLAUDE.md file whose imports must expand. Treat imported policy files in ancestor directories as not reliably loaded until the behavior is clarified or fixed.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "desktop-session-transcripts-can-expire-while-sidebar-entries-remain",
+      "title": "Desktop session transcripts can expire while sidebar entries remain",
+      "category": "Desktop & IDE integration",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79044"
+      ],
+      "description": "Claude Code Desktop can keep older sessions visible in the recent-sessions sidebar while the underlying transcript is unavailable and marked transcriptUnavailable in session metadata. The UI presents the session like a healthy entry until click-through reports that it is not found on disk.",
+      "workaround": "Do not rely on the Desktop sidebar as durable transcript storage. Archive or export important sessions promptly, keep backups of local session files, and treat intermittently used project sessions as at risk of retention-related loss until Desktop exposes retention state clearly.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "agent-view-removal-can-stick-on-missing-worktree-paths",
+      "title": "Agent View removal can stick on missing worktree paths",
+      "category": "Worktree",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79043"
+      ],
+      "description": "A completed background agent can remain pinned in Agent View when its hook-created worktree directory or git worktree registration was removed out of band. Removal still attempts worktree teardown, fails because the path is already gone, and aborts deletion of the agent entry.",
+      "workaround": "Avoid pruning or deleting hook-created worktrees before removing finished agents. If an entry is already stuck, inspect ~/.claude/jobs/<id>/state.json and either set worktreeHookBased to false or delete the stale job directory after confirming the agent is finished.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "vscode-large-resumed-sessions-can-truncate-history-and-context",
+      "title": "VS Code large resumed sessions can truncate history and context",
+      "category": "VS Code extension",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79042"
+      ],
+      "description": "The Claude Code VS Code extension can resume very large sessions with only a later slice of scrollback visible. The reporter also observed the assistant re-asking questions already answered earlier in the same transcript, suggesting the resumed model context may be incomplete, not merely the webview rendering.",
+      "workaround": "Avoid treating very large VS Code extension sessions as reliably resumable. Split long work into smaller sessions, preserve important decisions outside the chat transcript, and verify context after resume before continuing stateful work.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "desktop-dispatch-can-stick-in-starting-state",
+      "title": "Desktop dispatch can stick in starting state",
+      "category": "Cowork & remote",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79041"
+      ],
+      "description": "Dispatching from mobile to a Windows Desktop session can repeatedly fail while the desktop app is online because backend work items remain in starting instead of QUEUED. The client retries transport reconnects and redispatch, then reports the desktop as offline even after restarting the app.",
+      "workaround": "Treat repeated Desktop offline errors with AcknowledgeWork 409 starting-state logs as a backend/session-state failure, not just local connectivity. Capture request IDs and environment IDs for support, and avoid relying on mobile dispatch for time-sensitive work until a fresh environment succeeds.",
+      "status": "open",
+      "date_added": "2026-07-19"
     }
   ],
   "status_summary": {
-    "open": 961,
+    "open": 966,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 65,
-    "high": 480,
+    "high": 484,
     "low": 99,
-    "medium": 331
+    "medium": 332
   },
   "lastUpdated": "2026-07-19",
   "stats": {
-    "total": 975,
+    "total": 980,
     "critical": 65,
-    "high": 480,
-    "medium": 331,
+    "high": 484,
+    "medium": 332,
     "low": 99,
-    "open": 961,
+    "open": 966,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-19",
-  "total": 975
+  "total": 980
 }
