@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1006,
+  "count": 1011,
   "categories": {
     "Hook behavior & events": 174,
     "Permission system": 114,
@@ -29,11 +29,12 @@
     "Sandbox & permissions": 7,
     "Auth & accounts": 6,
     "Cowork & remote": 6,
+    "Desktop & platform bugs": 6,
     "Scheduling & remote triggers": 6,
     "VS Code extension": 6,
     "Core & session management": 5,
-    "Desktop & platform bugs": 5,
     "UX & display": 5,
+    "Bash & shell execution": 4,
     "Data integrity": 4,
     "MCP & plugins": 4,
     "permissions": 4,
@@ -42,7 +43,6 @@
     "Skills & commands": 4,
     "Skills / slash commands": 4,
     "tui": 4,
-    "Bash & shell execution": 3,
     "CLI / TUI rendering": 3,
     "Context / compaction": 3,
     "cowork": 3,
@@ -70,9 +70,11 @@
     "Configuration": 2,
     "Cowork": 2,
     "Cowork / remote sessions": 2,
+    "Hooks & automation": 2,
     "IDE integration": 2,
     "IDE integrations": 2,
     "mcp": 2,
+    "MCP & tool integration": 2,
     "MCP and plugins": 2,
     "MCP integration": 2,
     "Model behavior & compliance": 2,
@@ -83,6 +85,7 @@
     "platform": 2,
     "security": 2,
     "session-management": 2,
+    "UI & display": 2,
     "Agent": 1,
     "Agent & multi-agent": 1,
     "agent-behavior": 1,
@@ -108,14 +111,12 @@
     "File system": 1,
     "filesystem": 1,
     "Hook execution & lifecycle": 1,
-    "Hooks & automation": 1,
     "Hooks / extensions": 1,
     "hooks-and-automation": 1,
     "IDE Integration": 1,
     "instruction-following": 1,
     "MCP & plugin integration": 1,
     "MCP & tool infrastructure": 1,
-    "MCP & tool integration": 1,
     "MCP servers": 1,
     "Memory & state": 1,
     "memory/performance": 1,
@@ -162,7 +163,6 @@
     "TUI & rendering": 1,
     "tui-rendering": 1,
     "ui": 1,
-    "UI & display": 1,
     "UI & TUI": 1,
     "ui/tui": 1,
     "worktree-isolation": 1,
@@ -170,9 +170,9 @@
   },
   "severity_counts": {
     "CRITICAL": 67,
-    "HIGH": 498,
+    "HIGH": 501,
     "LOW": 99,
-    "MEDIUM": 342
+    "MEDIUM": 344
   },
   "entries": [
     {
@@ -12864,30 +12864,95 @@
       "workaround": "When copying hookify examples, rename each file to include the `hookify.` prefix before the rule name, then run the actual loader or list command to confirm the rule is discovered. Treat copied hook/plugin examples as inactive until the runtime reports them loaded, especially for safety rules that are expected to block dangerous commands.",
       "status": "open",
       "date_added": "2026-07-19"
+    },
+    {
+      "id": "background-bash-stdin-reads-can-hang-forever",
+      "title": "Background Bash tasks can hang forever when a child reads stdin",
+      "category": "Bash & shell execution",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79175"
+      ],
+      "description": "A reported Claude Code Desktop v2.1.209 macOS session showed foreground Bash calls receiving `/dev/null` on stdin while background Bash calls could leave child processes such as `cat` or `grep` fallback paths blocked forever on a stdin read. The reporter saw a background task stay running for 17 h 45 m with an empty output file, no completion notification, and no timeout, even though the equivalent foreground command exited immediately. The practical risk is that later edit/build steps never start while the model and user see only a slow or still-running background task.",
+      "workaround": "Avoid commands in `run_in_background` paths that can read stdin implicitly, including bare `cat`, `grep` without a file operand, interactive prompts, or fallback no-ops that should have been `true`. Redirect stdin explicitly from `/dev/null`, write a task PID/heartbeat ledger outside Claude Code, and stop any background task that produces no expected output by its own deadline instead of waiting for Claude Code's background task UI to time out.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "permissionrequest-subagent-allows-can-be-skipped-or-ignored",
+      "title": "PermissionRequest hooks for subagents can be skipped or ignored even when PreToolUse fires",
+      "category": "Hooks & automation",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79177"
+      ],
+      "description": "A reported Claude Code v2.1.191 Linux plugin setup saw two subagent PermissionRequest failures around out-of-workspace Reads. In one mode, the PermissionRequest hook fired and returned an allow decision within about 1 ms, but the interactive prompt still appeared. In another mode, a subagent Read showed the built-in prompt while the PermissionRequest hook was not invoked at all, even though the same plugin's PreToolUse hook fired milliseconds earlier for the same tool call. This means hook plumbing can be alive while the permission-request seat is not a reliable subagent approval path.",
+      "workaround": "For subagent Read or tool access policy, prefer PreToolUse decisions and explicit settings permission rules over PermissionRequest auto-approval. Log both PreToolUse and PermissionRequest events during rollout, and treat a visible interactive prompt as evidence that the PermissionRequest policy did not apply, even if the hook service is healthy.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "mcp-elicitation-can-auto-decline-in-vscode-print-mode",
+      "title": "VS Code MCP elicitation can be declared but auto-declined as print mode",
+      "category": "MCP & tool integration",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79174"
+      ],
+      "description": "A reported interactive Claude Code VS Code extension session declared the MCP elicitation capability during initialization, but every `elicitation/create` request was auto-declined without showing UI. Permission prompts and AskUserQuestion dialogs still rendered in the same session, while MCP logs labeled the elicitation request as received in `print mode`. From the server side, capability checks returned true and the non-accept result was indistinguishable from a human explicitly declining the dialog, which can break two-phase destructive-operation confirmations.",
+      "workaround": "Do not treat MCP elicitation capability advertisement alone as proof that Claude Code will render an approval dialog in VS Code sessions. Add a startup probe that requires an accepted elicitation before enabling destructive flows, or provide a separate confirmation-token fallback that distinguishes unavailable UI from a real user decline as much as your protocol allows.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "background-task-spinner-can-survive-orphaned-monitor",
+      "title": "Background task spinner can persist after a Monitor task is orphaned",
+      "category": "UI & display",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79178"
+      ],
+      "description": "A reported Claude Code Desktop v2.1.211 macOS session started a persistent Monitor background task, then switched models. The underlying process appears to have restarted or been replaced, the task died without a completion record, the background task panel showed no tasks, and `TaskStop` returned `No task found`, but the UI continued showing an active background-task spinner indefinitely. The user could no longer tell stale UI state from real detached work without inspecting processes manually.",
+      "workaround": "After model switches or process restarts, do not rely on the background task spinner alone. Cross-check the background task panel, `TaskStop`, process listings, and any task-owned PID or heartbeat files. For long-lived Monitor tasks, write explicit start/stop markers outside Claude Code so a stale spinner is not mistaken for live work.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "desktop-auto-update-can-drop-custom-sidebar-groups",
+      "title": "Desktop auto-update can drop custom Code sidebar groups during migration",
+      "category": "Desktop & platform bugs",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79184"
+      ],
+      "description": "A reported Claude Desktop macOS 1.22209.3 auto-update with bundled Claude Code v2.1.215 removed five pre-existing custom Code sidebar groups and 13 session assignments on first launch after the update. New groups still worked, and stale collapsed-group IDs plus surviving old LevelDB records indicated that legacy group data had existed before a legacy-to-scoped-store migration completed without carrying it forward. For most users, similar pre-update organization data may be unrecoverable once local storage compacts.",
+      "workaround": "Before Desktop auto-updates or restarts, keep an external note or export of important project/session organization instead of relying on sidebar groups as durable metadata. If groups disappear immediately after an update, inspect Local Storage and older LevelDB SSTables before further use or compaction, and avoid treating newly-created groups as evidence that old assignments migrated successfully.",
+      "status": "open",
+      "date_added": "2026-07-19"
     }
   ],
   "status_summary": {
-    "open": 992,
+    "open": 997,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 67,
-    "high": 498,
+    "high": 501,
     "low": 99,
-    "medium": 342
+    "medium": 344
   },
   "lastUpdated": "2026-07-19",
   "stats": {
-    "total": 1006,
+    "total": 1011,
     "critical": 67,
-    "high": 498,
-    "medium": 342,
+    "high": 501,
+    "medium": 344,
     "low": 99,
-    "open": 992,
+    "open": 997,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-19",
-  "total": 1006
+  "total": 1011
 }

@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1006</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-19.</span></p>
+        <p class="subtitle"><span id="total-count">1011</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-19.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -10792,6 +10792,66 @@
                         <!-- workaround:hookify-example-rules-can-be-copied-with-dead-filenames -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When copying hookify examples, rename each file to include the `hookify.` prefix before the rule name, then run the actual loader or list command to confirm the rule is discovered. Treat copied hook/plugin examples as inactive until the runtime reports them loaded, especially for safety rules that are expected to block dangerous commands.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79143" target="_blank">#79143</a></div>
+        </div>
+        <div class="kl-entry" data-category="Bash &amp; shell execution" data-issues="79175" id="background-bash-stdin-reads-can-hang-forever" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1007</span>
+                <span class="kl-cat">Bash &amp; shell execution</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Background Bash tasks can hang forever when a child reads stdin</h3>
+            <p>A reported Claude Code Desktop v2.1.209 macOS session showed foreground Bash calls receiving `/dev/null` on stdin while background Bash calls could leave child processes such as `cat` or `grep` fallback paths blocked forever on a stdin read. The reporter saw a background task stay running for 17 h 45 m with an empty output file, no completion notification, and no timeout, even though the equivalent foreground command exited immediately. The practical risk is that later edit/build steps never start while the model and user see only a slow or still-running background task.</p>
+                        <!-- workaround:background-bash-stdin-reads-can-hang-forever -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid commands in `run_in_background` paths that can read stdin implicitly, including bare `cat`, `grep` without a file operand, interactive prompts, or fallback no-ops that should have been `true`. Redirect stdin explicitly from `/dev/null`, write a task PID/heartbeat ledger outside Claude Code, and stop any background task that produces no expected output by its own deadline instead of waiting for Claude Code&#x27;s background task UI to time out.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79175" target="_blank">#79175</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hooks &amp; automation" data-issues="79177" id="permissionrequest-subagent-allows-can-be-skipped-or-ignored" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1008</span>
+                <span class="kl-cat">Hooks &amp; automation</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>PermissionRequest hooks for subagents can be skipped or ignored even when PreToolUse fires</h3>
+            <p>A reported Claude Code v2.1.191 Linux plugin setup saw two subagent PermissionRequest failures around out-of-workspace Reads. In one mode, the PermissionRequest hook fired and returned an allow decision within about 1 ms, but the interactive prompt still appeared. In another mode, a subagent Read showed the built-in prompt while the PermissionRequest hook was not invoked at all, even though the same plugin&#x27;s PreToolUse hook fired milliseconds earlier for the same tool call. This means hook plumbing can be alive while the permission-request seat is not a reliable subagent approval path.</p>
+                        <!-- workaround:permissionrequest-subagent-allows-can-be-skipped-or-ignored -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For subagent Read or tool access policy, prefer PreToolUse decisions and explicit settings permission rules over PermissionRequest auto-approval. Log both PreToolUse and PermissionRequest events during rollout, and treat a visible interactive prompt as evidence that the PermissionRequest policy did not apply, even if the hook service is healthy.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79177" target="_blank">#79177</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; tool integration" data-issues="79174" id="mcp-elicitation-can-auto-decline-in-vscode-print-mode" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1009</span>
+                <span class="kl-cat">MCP &amp; tool integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>VS Code MCP elicitation can be declared but auto-declined as print mode</h3>
+            <p>A reported interactive Claude Code VS Code extension session declared the MCP elicitation capability during initialization, but every `elicitation/create` request was auto-declined without showing UI. Permission prompts and AskUserQuestion dialogs still rendered in the same session, while MCP logs labeled the elicitation request as received in `print mode`. From the server side, capability checks returned true and the non-accept result was indistinguishable from a human explicitly declining the dialog, which can break two-phase destructive-operation confirmations.</p>
+                        <!-- workaround:mcp-elicitation-can-auto-decline-in-vscode-print-mode -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat MCP elicitation capability advertisement alone as proof that Claude Code will render an approval dialog in VS Code sessions. Add a startup probe that requires an accepted elicitation before enabling destructive flows, or provide a separate confirmation-token fallback that distinguishes unavailable UI from a real user decline as much as your protocol allows.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79174" target="_blank">#79174</a></div>
+        </div>
+        <div class="kl-entry" data-category="UI &amp; display" data-issues="79178" id="background-task-spinner-can-survive-orphaned-monitor" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1010</span>
+                <span class="kl-cat">UI &amp; display</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Background task spinner can persist after a Monitor task is orphaned</h3>
+            <p>A reported Claude Code Desktop v2.1.211 macOS session started a persistent Monitor background task, then switched models. The underlying process appears to have restarted or been replaced, the task died without a completion record, the background task panel showed no tasks, and `TaskStop` returned `No task found`, but the UI continued showing an active background-task spinner indefinitely. The user could no longer tell stale UI state from real detached work without inspecting processes manually.</p>
+                        <!-- workaround:background-task-spinner-can-survive-orphaned-monitor -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> After model switches or process restarts, do not rely on the background task spinner alone. Cross-check the background task panel, `TaskStop`, process listings, and any task-owned PID or heartbeat files. For long-lived Monitor tasks, write explicit start/stop markers outside Claude Code so a stale spinner is not mistaken for live work.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79178" target="_blank">#79178</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; platform bugs" data-issues="79184" id="desktop-auto-update-can-drop-custom-sidebar-groups" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1011</span>
+                <span class="kl-cat">Desktop &amp; platform bugs</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Desktop auto-update can drop custom Code sidebar groups during migration</h3>
+            <p>A reported Claude Desktop macOS 1.22209.3 auto-update with bundled Claude Code v2.1.215 removed five pre-existing custom Code sidebar groups and 13 session assignments on first launch after the update. New groups still worked, and stale collapsed-group IDs plus surviving old LevelDB records indicated that legacy group data had existed before a legacy-to-scoped-store migration completed without carrying it forward. For most users, similar pre-update organization data may be unrecoverable once local storage compacts.</p>
+                        <!-- workaround:desktop-auto-update-can-drop-custom-sidebar-groups -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before Desktop auto-updates or restarts, keep an external note or export of important project/session organization instead of relying on sidebar groups as durable metadata. If groups disappear immediately after an update, inspect Local Storage and older LevelDB SSTables before further use or compaction, and avoid treating newly-created groups as evidence that old assignments migrated successfully.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79184" target="_blank">#79184</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
