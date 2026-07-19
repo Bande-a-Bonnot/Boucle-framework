@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">950</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-19.</span></p>
+        <p class="subtitle"><span id="total-count">954</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-19.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -10140,6 +10140,54 @@
                         <!-- workaround:insights-large-session-facets-can-cache-false-output-token-errors -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before acting on /insights findings about output-token failures or unusable large sessions, grep the referenced session transcripts for the reported marker and compare against ~/.claude/usage-data/facets. Delete or quarantine poisoned facets only after backing them up, then rerun /insights to see whether clean facets are regenerated. Treat cached facets as derived data, not ground truth.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78932" target="_blank">#78932</a>, <a href="https://github.com/anthropics/claude-code/issues/78991" target="_blank">#78991</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="78970" id="pretooluse-bash-hooks-can-be-skipped-for-regular-subagent-tool-calls" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#951</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>PreToolUse Bash hooks can be skipped for regular subagent tool calls</h3>
+            <p>Claude Code v2.1.214 can fail to dispatch a globally configured PreToolUse Bash hook when the same Bash command shape originates from an Agent-tool subagent. The reported repro used a hook that denied compound cd-and-git commands and verified that the hook blocked the exact JSON payload when called directly and in the main session. An Explore subagent then issued the same command shape, but Claude Code fell through to the built-in interactive permission prompt instead of invoking the hook. This is distinct from older subagent failures where hooks fire but deny decisions are ignored, and from bypassPermissions subagents that intentionally skip more permission plumbing.</p>
+                        <!-- workaround:pretooluse-bash-hooks-can-be-skipped-for-regular-subagent-tool-calls -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume Bash PreToolUse policy covers delegated Agent-tool work. For high-risk commands, disable or avoid subagent delegation, require subagents to run through a wrapper command that performs its own policy checks, and audit transcripts for built-in permission prompts that should have been replaced by hook decisions. Keep OS-level sandboxing or repository-level git-safe hooks as a second line of enforcement.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78970" target="_blank">#78970</a></div>
+        </div>
+        <div class="kl-entry" data-category="CLI &amp; terminal" data-issues="78966" id="headless-print-mode-can-hang-after-long-tool-execution-on-dead-keepalive" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#952</span>
+                <span class="kl-cat">CLI &amp; terminal</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Headless print mode can hang after long tool execution on a dead keep-alive connection</h3>
+            <p>In Claude Code v2.1.214, unattended claude -p runs with stream-json output can hang indefinitely after a local tool call runs longer than the network path&#x27;s idle keep-alive window. The report observed six independent headless agents stall after long tool executions, with no timeout, retry, exit, CPU activity, or new output. A separate transport probe on the same machine showed that a reused HTTPS connection closed during the idle gap fails promptly at the socket layer, so the operational bug is the headless client path failing to recover or time out. Interactive sessions on the same machine did not show the same hang.</p>
+                        <!-- workaround:headless-print-mode-can-hang-after-long-tool-execution-on-dead-keepalive -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Wrap all claude -p automation in an external watchdog that kills and retries stalled processes, especially after local tools that may run for more than 60 seconds. Prefer shorter tool batches, split long validation into smaller invocations, and record the last stream-json event so retries can resume or fail loudly. Do not treat API_TIMEOUT_MS in settings env as proven coverage for this transport failure until a smoke test shows it exits on your network path.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78966" target="_blank">#78966</a></div>
+        </div>
+        <div class="kl-entry" data-category="Sandbox &amp; permissions" data-issues="78980" id="stale-claude-worktree-directories-can-commit-to-parent-repo" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#953</span>
+                <span class="kl-cat">Sandbox &amp; permissions</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Stale Claude worktree directories can commit to the parent repository</h3>
+            <p>Claude Code v2.1.214 worktree isolation can fail silently when a directory under .claude/worktrees exists but has no .git entry. Git commands run from that stale directory walk upward and resolve to the parent repository, so an agent that believes it entered an isolated worktree can add files under the stale path and commit them to the parent&#x27;s checked-out branch. The report includes a minimal git repro where git rev-parse returns the parent top-level and the final commit lands on the parent branch with exit code 0. This is a separate hazard from path leakage out of a valid worktree because no valid worktree exists at all.</p>
+                        <!-- workaround:stale-claude-worktree-directories-can-commit-to-parent-repo -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before trusting a Claude-managed worktree, run git -C &lt;worktree&gt; rev-parse --show-toplevel and require it to equal the worktree directory. Prune stale .claude/worktrees directories, compare git worktree list against the filesystem, and make commit wrappers refuse to run when cwd is under .claude/worktrees but git resolves to a top-level outside that directory. Keep parent checkouts protected with branch rules or git hooks that reject commits touching .claude/worktrees paths.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78980" target="_blank">#78980</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="78957" id="hook-if-dir-globs-can-narrow-to-project-relative-depth" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#954</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Hook if directory globs can narrow to project-relative depth</h3>
+            <p>Claude Code v2.1.214 hook if conditions can interpret a single-segment directory glob such as Edit(src/**) as matching only the project-relative &lt;cwd&gt;/src tree, while users may expect it to match src directories at any depth because permission-rule documentation is cross-linked from the hook docs. The reported docs gap says any-depth hook matching requires an explicit pattern such as Edit(**/src/**), and that deny or ask permission rules retain their own semantics. The risk is a hook that silently fires on a narrower path set than its author intended after upgrading or copying examples from permission rules.</p>
+                        <!-- workaround:hook-if-dir-globs-can-narrow-to-project-relative-depth -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For hook if conditions, write explicit any-depth patterns such as Edit(**/src/**) when nested directories must match, and add tests that pipe representative hook payloads for project-root and nested paths through your matcher. After Claude Code upgrades, rerun hook probes for all directory-scoped policies instead of assuming permission-rule examples have identical depth behavior in hooks.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78957" target="_blank">#78957</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

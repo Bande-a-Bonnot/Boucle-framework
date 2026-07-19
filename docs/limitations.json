@@ -1,15 +1,15 @@
 {
   "version": "0.13.0",
-  "count": 950,
+  "count": 954,
   "categories": {
-    "Hook behavior & events": 172,
+    "Hook behavior & events": 174,
     "Permission system": 111,
     "Hook bypass & evasion": 99,
     "MCP & plugin issues": 51,
     "Subagent & spawned agents": 39,
     "Desktop & IDE integration": 26,
     "Platform & compatibility": 23,
-    "CLI & terminal": 21,
+    "CLI & terminal": 22,
     "Context & memory": 21,
     "Configuration behavior": 18,
     "Tool behavior": 15,
@@ -26,10 +26,10 @@
     "Permissions": 7,
     "Plugin & channel system": 6,
     "Remote & cloud": 6,
+    "Sandbox & permissions": 6,
     "Scheduling & remote triggers": 6,
     "Auth & accounts": 5,
     "Desktop & platform bugs": 5,
-    "Sandbox & permissions": 5,
     "UX & display": 5,
     "Core & session management": 4,
     "Cowork & remote": 4,
@@ -170,9 +170,9 @@
   },
   "severity_counts": {
     "CRITICAL": 65,
-    "HIGH": 466,
+    "HIGH": 469,
     "LOW": 97,
-    "MEDIUM": 322
+    "MEDIUM": 323
   },
   "entries": [
     {
@@ -12091,30 +12091,90 @@
       "cc_version": "2.1.161-2.1.214",
       "date_added": "2026-07-19",
       "workaround": "Before acting on /insights findings about output-token failures or unusable large sessions, grep the referenced session transcripts for the reported marker and compare against ~/.claude/usage-data/facets. Delete or quarantine poisoned facets only after backing them up, then rerun /insights to see whether clean facets are regenerated. Treat cached facets as derived data, not ground truth."
+    },
+    {
+      "id": "pretooluse-bash-hooks-can-be-skipped-for-regular-subagent-tool-calls",
+      "title": "PreToolUse Bash hooks can be skipped for regular subagent tool calls",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "Claude Code v2.1.214 can fail to dispatch a globally configured PreToolUse Bash hook when the same Bash command shape originates from an Agent-tool subagent. The reported repro used a hook that denied compound cd-and-git commands and verified that the hook blocked the exact JSON payload when called directly and in the main session. An Explore subagent then issued the same command shape, but Claude Code fell through to the built-in interactive permission prompt instead of invoking the hook. This is distinct from older subagent failures where hooks fire but deny decisions are ignored, and from bypassPermissions subagents that intentionally skip more permission plumbing.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/78970"
+      ],
+      "cc_issue": 78970,
+      "cc_version": "2.1.214",
+      "date_added": "2026-07-19",
+      "workaround": "Do not assume Bash PreToolUse policy covers delegated Agent-tool work. For high-risk commands, disable or avoid subagent delegation, require subagents to run through a wrapper command that performs its own policy checks, and audit transcripts for built-in permission prompts that should have been replaced by hook decisions. Keep OS-level sandboxing or repository-level git-safe hooks as a second line of enforcement."
+    },
+    {
+      "id": "headless-print-mode-can-hang-after-long-tool-execution-on-dead-keepalive",
+      "title": "Headless print mode can hang after long tool execution on a dead keep-alive connection",
+      "category": "CLI & terminal",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "In Claude Code v2.1.214, unattended claude -p runs with stream-json output can hang indefinitely after a local tool call runs longer than the network path's idle keep-alive window. The report observed six independent headless agents stall after long tool executions, with no timeout, retry, exit, CPU activity, or new output. A separate transport probe on the same machine showed that a reused HTTPS connection closed during the idle gap fails promptly at the socket layer, so the operational bug is the headless client path failing to recover or time out. Interactive sessions on the same machine did not show the same hang.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/78966"
+      ],
+      "cc_issue": 78966,
+      "cc_version": "2.1.214",
+      "date_added": "2026-07-19",
+      "workaround": "Wrap all claude -p automation in an external watchdog that kills and retries stalled processes, especially after local tools that may run for more than 60 seconds. Prefer shorter tool batches, split long validation into smaller invocations, and record the last stream-json event so retries can resume or fail loudly. Do not treat API_TIMEOUT_MS in settings env as proven coverage for this transport failure until a smoke test shows it exits on your network path."
+    },
+    {
+      "id": "stale-claude-worktree-directories-can-commit-to-parent-repo",
+      "title": "Stale Claude worktree directories can commit to the parent repository",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "Claude Code v2.1.214 worktree isolation can fail silently when a directory under .claude/worktrees exists but has no .git entry. Git commands run from that stale directory walk upward and resolve to the parent repository, so an agent that believes it entered an isolated worktree can add files under the stale path and commit them to the parent's checked-out branch. The report includes a minimal git repro where git rev-parse returns the parent top-level and the final commit lands on the parent branch with exit code 0. This is a separate hazard from path leakage out of a valid worktree because no valid worktree exists at all.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/78980"
+      ],
+      "cc_issue": 78980,
+      "cc_version": "2.1.214",
+      "date_added": "2026-07-19",
+      "workaround": "Before trusting a Claude-managed worktree, run git -C <worktree> rev-parse --show-toplevel and require it to equal the worktree directory. Prune stale .claude/worktrees directories, compare git worktree list against the filesystem, and make commit wrappers refuse to run when cwd is under .claude/worktrees but git resolves to a top-level outside that directory. Keep parent checkouts protected with branch rules or git hooks that reject commits touching .claude/worktrees paths."
+    },
+    {
+      "id": "hook-if-dir-globs-can-narrow-to-project-relative-depth",
+      "title": "Hook if directory globs can narrow to project-relative depth",
+      "category": "Hook behavior & events",
+      "severity": "MEDIUM",
+      "status": "open",
+      "description": "Claude Code v2.1.214 hook if conditions can interpret a single-segment directory glob such as Edit(src/**) as matching only the project-relative <cwd>/src tree, while users may expect it to match src directories at any depth because permission-rule documentation is cross-linked from the hook docs. The reported docs gap says any-depth hook matching requires an explicit pattern such as Edit(**/src/**), and that deny or ask permission rules retain their own semantics. The risk is a hook that silently fires on a narrower path set than its author intended after upgrading or copying examples from permission rules.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/78957"
+      ],
+      "cc_issue": 78957,
+      "cc_version": "2.1.214",
+      "date_added": "2026-07-19",
+      "workaround": "For hook if conditions, write explicit any-depth patterns such as Edit(**/src/**) when nested directories must match, and add tests that pipe representative hook payloads for project-root and nested paths through your matcher. After Claude Code upgrades, rerun hook probes for all directory-scoped policies instead of assuming permission-rule examples have identical depth behavior in hooks."
     }
   ],
   "status_summary": {
-    "open": 936,
+    "open": 940,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 65,
-    "high": 466,
+    "high": 469,
     "low": 97,
-    "medium": 322
+    "medium": 323
   },
   "lastUpdated": "2026-07-19",
   "stats": {
-    "total": 950,
+    "total": 954,
     "critical": 65,
-    "high": 466,
-    "medium": 322,
+    "high": 469,
+    "medium": 323,
     "low": 97,
-    "open": 936,
+    "open": 940,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-19",
-  "total": 950
+  "total": 954
 }

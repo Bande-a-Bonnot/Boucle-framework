@@ -7,6 +7,38 @@
   <updated>2026-07-19T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Hook if directory globs can narrow to project-relative depth</title>
+    <id>https://framework.boucle.sh/limitations.html#hook-if-dir-globs-can-narrow-to-project-relative-depth</id>
+    <link href="https://framework.boucle.sh/limitations.html#hook-if-dir-globs-can-narrow-to-project-relative-depth"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Claude Code v2.1.214 hook if conditions can interpret a single-segment directory glob such as Edit(src/**) as matching only the project-relative &lt;cwd&gt;/src tree, while users may expect it to match src directories at any depth because permission-rule documentation is cross-linked from the hook docs. The reported docs gap says any-depth hook matching requires an explicit pattern such as Edit(**/src/**), and that deny or ask permission rules retain their own semantics. The risk is a hook that silently fires on a narrower path set than its author intended after upgrading or copying examples from permission rules.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Stale Claude worktree directories can commit to the parent repository</title>
+    <id>https://framework.boucle.sh/limitations.html#stale-claude-worktree-directories-can-commit-to-parent-repo</id>
+    <link href="https://framework.boucle.sh/limitations.html#stale-claude-worktree-directories-can-commit-to-parent-repo"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Claude Code v2.1.214 worktree isolation can fail silently when a directory under .claude/worktrees exists but has no .git entry. Git commands run from that stale directory walk upward and resolve to the parent repository, so an agent that believes it entered an isolated worktree can add files under the stale path and commit them to the parent&#x27;s checked-out branch. The report includes a minimal git repro where git rev-parse returns the parent top-level and the final commit lands on the parent branch with exit code 0. This is a separate hazard from path leakage out of a valid worktree because no valid worktree exists at all.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Headless print mode can hang after long tool execution on a dead keep-alive connection</title>
+    <id>https://framework.boucle.sh/limitations.html#headless-print-mode-can-hang-after-long-tool-execution-on-dead-keepalive</id>
+    <link href="https://framework.boucle.sh/limitations.html#headless-print-mode-can-hang-after-long-tool-execution-on-dead-keepalive"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>In Claude Code v2.1.214, unattended claude -p runs with stream-json output can hang indefinitely after a local tool call runs longer than the network path&#x27;s idle keep-alive window. The report observed six independent headless agents stall after long tool executions, with no timeout, retry, exit, CPU activity, or new output. A separate transport probe on the same machine showed that a reused HTTPS connection closed during the idle gap fails promptly at the socket layer, so the operational bug is the headless client path failing to recover or time out. Interactive sessions on the same machine did not show the same hang.</summary>
+    <category term="CLI &amp; terminal"/>
+  </entry>
+  <entry>
+    <title>[HIGH] PreToolUse Bash hooks can be skipped for regular subagent tool calls</title>
+    <id>https://framework.boucle.sh/limitations.html#pretooluse-bash-hooks-can-be-skipped-for-regular-subagent-tool-calls</id>
+    <link href="https://framework.boucle.sh/limitations.html#pretooluse-bash-hooks-can-be-skipped-for-regular-subagent-tool-calls"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Claude Code v2.1.214 can fail to dispatch a globally configured PreToolUse Bash hook when the same Bash command shape originates from an Agent-tool subagent. The reported repro used a hook that denied compound cd-and-git commands and verified that the hook blocked the exact JSON payload when called directly and in the main session. An Explore subagent then issued the same command shape, but Claude Code fell through to the built-in interactive permission prompt instead of invoking the hook. This is distinct from older subagent failures where hooks fire but deny decisions are ignored, and from bypassPermissions subagents that intentionally skip more permission plumbing.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] /insights large-session facets can cache false output-token errors</title>
     <id>https://framework.boucle.sh/limitations.html#insights-large-session-facets-can-cache-false-output-token-errors</id>
     <link href="https://framework.boucle.sh/limitations.html#insights-large-session-facets-can-cache-false-output-token-errors"/>
@@ -133,37 +165,5 @@
     <updated>2026-07-19T00:00:00Z</updated>
     <summary>In the Claude Code VS Code extension host on Windows, configured `PreToolUse` hooks can fail to run for matching tool calls even when the same hook script blocks reliably when invoked directly with the same JSON payload. In the reported Windows 11 / Git Bash repro, a hook configured to block `git commit` was proven correct by direct `node script.cjs &lt; payload.json` tests, but a live Claude Code session allowed 8 of 8 matching Bash commands to reach Git, including a bare `git commit -m ...` case with no compound shell parsing. Separate probe hooks also recorded zero invocations in repeated runs. This is distinct from hook script bugs, Windows stdin corruption, or slow hook startup: the narrower broken layer is dispatch from the VS Code extension host to matching `PreToolUse` hooks, so safety-critical guards may be silently absent while the user believes they are active.</summary>
     <category term="Hook bypass &amp; evasion"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Windows Grep process floods can leave live `rg.exe` children and crash the host</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-grep-process-flood-can-crash-host</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-grep-process-flood-can-crash-host"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>On Windows, Claude Code&#x27;s Grep tool can spawn hundreds of `rg.exe` and `conhost.exe` children and then stop draining their stdout pipes. In the reported v2.1.207 VS Code extension repro, the children were not harmless zombies: they stayed live, blocked in `NtWriteFile` on full libuv named pipes owned by the extension host, accumulated high-frequency timer activity, and caused repeated DPC watchdog bugchecks. The report documents 11 BSODs between 2026-07-07 and 2026-07-11, process-count explosions within minutes, and kernel-dump evidence tying the crash to abandoned Grep children. This means large or repeated Grep searches on Windows can become a machine-level availability and data-loss risk rather than just a slow tool call.</summary>
-    <category term="Tool behavior"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Launching Claude Code from a subdirectory can skip project hooks without warning</title>
-    <id>https://framework.boucle.sh/limitations.html#subdirectory-launch-can-skip-project-hooks</id>
-    <link href="https://framework.boucle.sh/limitations.html#subdirectory-launch-can-skip-project-hooks"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>When Claude Code is launched from a subdirectory, it can treat that subdirectory as the project root and never read the repository root&#x27;s `.claude/settings.json`. In the reported macOS v2.1.206 repro, a project hook configured with an absolute command path fired when Claude was started from the repo root, never ran when Claude was started from `&lt;root&gt;/lib`, and fired again only after a separate `lib/.claude/settings.json` was added. This means a natural `cd app &amp;&amp; claude` workflow can silently disarm project-level PreToolUse safety rails, custody gates, secret detectors, or tenant-isolation guards before `${CLAUDE_PROJECT_DIR}` interpolation or hook runtime checks have any chance to run.</summary>
-    <category term="Hook bypass &amp; evasion"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `/btw` side conversations can vanish without any transcript being written to disk</title>
-    <id>https://framework.boucle.sh/limitations.html#btw-side-conversations-can-vanish-without-any-subagent-transcript-being-written-to-disk</id>
-    <link href="https://framework.boucle.sh/limitations.html#btw-side-conversations-can-vanish-without-any-subagent-transcript-being-written-to-disk"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>In Claude Code v2.1.104, `/btw` side conversations can appear to work normally in the UI, accept multiple turns, and then disappear completely when closed because no transcript is persisted anywhere on disk. In the reported macOS repro, earlier versions created `agent-aside_question-*.jsonl` files under the session&#x27;s `subagents/` directory, but v2.1.104 wrote no such files and left the main session JSONL with `isSidechain: false` on every message. This is distinct from the older `/btw` single-turn clarifying-question failure: here the model may answer, but the narrower broken layer is persistence of the side conversation itself, so users who rely on `/btw` as a scratchpad or mine those side threads into external memory lose the entire exchange the moment they close it.</summary>
-    <category term="CLI &amp; terminal"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Telegram channel dispatch can spawn broken `--print` runs and drop every incoming message</title>
-    <id>https://framework.boucle.sh/limitations.html#telegram-channel-dispatch-can-spawn-broken-print-runs-and-drop-every-incoming-message</id>
-    <link href="https://framework.boucle.sh/limitations.html#telegram-channel-dispatch-can-spawn-broken-print-runs-and-drop-every-incoming-message"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>When Claude Code is launched with `--channels plugin:telegram@claude-plugins-official`, incoming Telegram messages can fail in the channel dispatch layer even though the Telegram MCP server itself is healthy. In the reported macOS repro with `telegram@claude-plugins-official` v0.0.5, the plugin worked when started manually, successfully polled Telegram, and emitted valid `notifications/claude/channel` payloads, but Claude&#x27;s channels runner responded to every incoming message with `Error: Input must be provided either through stdin or as a prompt argument when using --print`. No `bun` child process or `bot.pid` was created under the normal `claude --channels` path, `claude-channels-error.log` filled with repeated `--print` input errors, and no Telegram message ever reached the active session. This is distinct from earlier Telegram failures where the plugin runtime never spawns, channel notifications are dropped after transport is established, tools are missing from an attached session, or `/reload-plugins` or `/compact` break a healthy connection later: here the narrower broken layer is the channels dispatch path itself, which tries to hand channel messages to a `--print` flow without actually passing the message content.</summary>
-    <category term="MCP &amp; plugin issues"/>
   </entry>
 </feed>
