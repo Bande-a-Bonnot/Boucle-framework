@@ -7,6 +7,54 @@
   <updated>2026-07-19T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Plugin-dev shell helpers can fail opaquely on macOS or uppercase frontmatter</title>
+    <id>https://framework.boucle.sh/limitations.html#plugin-dev-shell-helpers-can-fail-opaque-on-macos-or-uppercase-frontmatter</id>
+    <link href="https://framework.boucle.sh/limitations.html#plugin-dev-shell-helpers-can-fail-opaque-on-macos-or-uppercase-frontmatter"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Official plugin-development shell helpers can fail before producing useful diagnostics in common local cases. `scripts/gh.sh` expands an empty `FLAGS` array under `set -u`, which crashes flagless invocations on macOS&#x27;s stock Bash 3.2 with `FLAGS[@]: unbound variable` even though the same calls work on newer Bash. Separately, `plugin-settings/scripts/validate-settings.sh` pipes a no-match lowercase frontmatter grep through `set -euo pipefail`, so a settings file with only uppercase keys exits 1 after `Detected fields:` without reaching the later checks or final summary. Both failures make plugin authors debug the helper scripts instead of the plugin inputs.</summary>
+    <category term="Plugin &amp; channel system"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] `/ralph-loop` can remain model-invocable despite hidden frontmatter</title>
+    <id>https://framework.boucle.sh/limitations.html#ralph-loop-command-can-remain-model-invocable-despite-hidden-frontmatter</id>
+    <link href="https://framework.boucle.sh/limitations.html#ralph-loop-command-can-remain-model-invocable-despite-hidden-frontmatter"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>The official `ralph-wiggum` plugin&#x27;s loop and cancel commands can use `hide-from-slash-command-tool: &quot;true&quot;`, a key accepted silently by validation but not the documented key that blocks model invocation. In a v2.1.215 live probe with otherwise identical test commands, the command using that frontmatter remained available through the Skill tool, while `disable-model-invocation: true` hid the command from the model and still allowed direct user slash-command invocation. The concrete hazard is that a command apparently intended to stay user-only, including an infinite Ralph loop, can still be invoked by the assistant itself.</summary>
+    <category term="Skills / slash commands"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Auto mode can block safe dry-runs while broader allowlisted commands pass</title>
+    <id>https://framework.boucle.sh/limitations.html#auto-mode-classifier-can-block-safe-dry-runs-and-reward-broad-allowlists</id>
+    <link href="https://framework.boucle.sh/limitations.html#auto-mode-classifier-can-block-safe-dry-runs-and-reward-broad-allowlists"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Claude Code auto mode can classify Bash commands by surface form rather than effect, blocking benign or read-only commands while allowing broader equivalents that happen to match user allowlists. A reported Ubuntu repro from v2.1.x sessions shows `git clean -ndX` blocked even though `-n` makes it a dry-run listing, while a `find ... -exec rm -rf` cleanup with a larger deletion effect passed because `Bash(find:*)` was allowlisted. Several such denials can accumulate into the consecutive-blocks lockout, derailing autonomous or plan-mode work and pushing users toward broad allowlists that bypass the classifier entirely.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Signed thinking can reference injection payloads absent from the local transcript</title>
+    <id>https://framework.boucle.sh/limitations.html#signed-thinking-can-reference-unrecorded-injection-payloads</id>
+    <link href="https://framework.boucle.sh/limitations.html#signed-thinking-can-reference-unrecorded-injection-payloads"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>A reported Claude Code v2.1.211 macOS session produced a signed thinking block that abruptly refused an apparent prompt-injection payload involving exfiltration to a telemetry domain, while the persisted local transcript contained no matching tool result, attachment, hook output, parent-session input, local file, git diff, or proxy path. The model did not comply and no data left the machine, but the response attributed the payload to nonexistent git diff output and the earliest local occurrence was inside the model&#x27;s own signed thinking. The narrow risk is not confirmed exfiltration; it is that user-visible sessions may contain model refusals or safety reactions to context that users cannot audit from the local JSONL transcript.</summary>
+    <category term="Model behavior &amp; instructions"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Claude Code web plugins can lack `userConfig` secrets and shadow working connectors</title>
+    <id>https://framework.boucle.sh/limitations.html#web-plugin-userconfig-secrets-can-be-unavailable-and-shadow-connectors</id>
+    <link href="https://framework.boucle.sh/limitations.html#web-plugin-userconfig-secrets-can-be-unavailable-and-shadow-connectors"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Claude Code cloud sessions can auto-enable a repository-declared plugin and expose its commands while providing no supported headless path for the user to supply required sensitive `userConfig` values such as API tokens. In the reported cloud-session repro, plugin MCP servers that interpolate `${user_config.&lt;field&gt;}` start with empty credentials and return 401. If the same endpoint is also available through a working claude.ai OAuth connector, the tokenless plugin server can win precedence and hide the connector, leaving users with either plugin commands plus broken tools or working connector tools without plugin commands.</summary>
+    <category term="Remote &amp; cloud"/>
+  </entry>
+  <entry>
+    <title>[HIGH] VS Code open tabs can outlive retention-deleted transcripts</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-open-tabs-can-outlive-retention-deleted-transcripts</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-open-tabs-can-outlive-retention-deleted-transcripts"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Claude Code&#x27;s VS Code extension can keep month-old session tabs visible after the underlying transcript JSONL has been silently removed by the default 30-day retention cleanup. In the reported v2.1.215 macOS repro, tabs stayed open and appeared usable, but later interaction wrote fresh same-ID metadata-only stubs and reopening failed with `No conversation found with session ID`. A second old tab retained cached title and last-prompt metadata whose referenced leaf UUID no longer existed in any project transcript, so the real conversation content was unrecoverable while the UI gave no retention warning.</summary>
+    <category term="VS Code extension"/>
+  </entry>
+  <entry>
     <title>[HIGH] VS Code sessions can persist metadata without messages</title>
     <id>https://framework.boucle.sh/limitations.html#vscode-sessions-can-persist-metadata-without-messages</id>
     <link href="https://framework.boucle.sh/limitations.html#vscode-sessions-can-persist-metadata-without-messages"/>
@@ -117,53 +165,5 @@
     <updated>2026-07-19T00:00:00Z</updated>
     <summary>Inside an attached Agent View background session, Ctrl+B can be swallowed on the first press and then move the cursor backward two characters on the second press. Foreground claude and the Agent View session list handle the same keybinding correctly, so the failure appears scoped to the per-session background input path.</summary>
     <category term="TUI &amp; display"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Desktop Chinese dictation can duplicate interim transcripts</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-chinese-dictation-can-duplicate-interim-transcripts</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-chinese-dictation-can-duplicate-interim-transcripts"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>Claude Desktop on Windows can duplicate Mandarin dictation segments by committing an interim prefix and then appending the final segment that still contains that prefix. Longer utterances can repeat nearly every phrase, making voice input unusable even though word recognition is otherwise mostly correct.</summary>
-    <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Desktop dispatch can stick in starting state</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-dispatch-can-stick-in-starting-state</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-dispatch-can-stick-in-starting-state"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>Dispatching from mobile to a Windows Desktop session can repeatedly fail while the desktop app is online because backend work items remain in starting instead of QUEUED. The client retries transport reconnects and redispatch, then reports the desktop as offline even after restarting the app.</summary>
-    <category term="Cowork &amp; remote"/>
-  </entry>
-  <entry>
-    <title>[HIGH] VS Code large resumed sessions can truncate history and context</title>
-    <id>https://framework.boucle.sh/limitations.html#vscode-large-resumed-sessions-can-truncate-history-and-context</id>
-    <link href="https://framework.boucle.sh/limitations.html#vscode-large-resumed-sessions-can-truncate-history-and-context"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>The Claude Code VS Code extension can resume very large sessions with only a later slice of scrollback visible. The reporter also observed the assistant re-asking questions already answered earlier in the same transcript, suggesting the resumed model context may be incomplete, not merely the webview rendering.</summary>
-    <category term="VS Code extension"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Agent View removal can stick on missing worktree paths</title>
-    <id>https://framework.boucle.sh/limitations.html#agent-view-removal-can-stick-on-missing-worktree-paths</id>
-    <link href="https://framework.boucle.sh/limitations.html#agent-view-removal-can-stick-on-missing-worktree-paths"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>A completed background agent can remain pinned in Agent View when its hook-created worktree directory or git worktree registration was removed out of band. Removal still attempts worktree teardown, fails because the path is already gone, and aborts deletion of the agent entry.</summary>
-    <category term="Worktree"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Desktop session transcripts can expire while sidebar entries remain</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-session-transcripts-can-expire-while-sidebar-entries-remain</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-session-transcripts-can-expire-while-sidebar-entries-remain"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>Claude Code Desktop can keep older sessions visible in the recent-sessions sidebar while the underlying transcript is unavailable and marked transcriptUnavailable in session metadata. The UI presents the session like a healthy entry until click-through reports that it is not found on disk.</summary>
-    <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Ancestor CLAUDE.md imports can be silently ignored</title>
-    <id>https://framework.boucle.sh/limitations.html#ancestor-claude-md-imports-can-be-silently-ignored</id>
-    <link href="https://framework.boucle.sh/limitations.html#ancestor-claude-md-imports-can-be-silently-ignored"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>A CLAUDE.md file loaded from an ancestor directory can have its body injected while its @path import lines are not expanded. Workspace and monorepo setups that factor shared instructions into imported files can silently lose those rules when Claude Code is launched from a subdirectory.</summary>
-    <category term="Configuration behavior"/>
   </entry>
 </feed>
