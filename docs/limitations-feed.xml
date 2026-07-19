@@ -7,6 +7,46 @@
   <updated>2026-07-19T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[LOW] Skills docs can overstate automatic /code-review and /verify invocation</title>
+    <id>https://framework.boucle.sh/limitations.html#skills-docs-can-overstate-automatic-code-review-and-verify-invocation</id>
+    <link href="https://framework.boucle.sh/limitations.html#skills-docs-can-overstate-automatic-code-review-and-verify-invocation"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>The Claude Code skills and commands documentation can still imply that bundled skills such as /code-review and /verify may be invoked automatically when relevant, while the 2.1.215 changelog says Claude no longer runs those two skills on its own. Users relying on the generic skills wording can therefore expect review or verification to happen implicitly even though direct slash-command invocation is now required for those bundled skills.</summary>
+    <category term="Skills &amp; commands"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Bundled workflows inherit expensive session models for every subagent</title>
+    <id>https://framework.boucle.sh/limitations.html#bundled-workflows-inherit-expensive-session-models</id>
+    <link href="https://framework.boucle.sh/limitations.html#bundled-workflows-inherit-expensive-session-models"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Claude Code 2.1.214 bundled workflows such as /code-review and deep-research can launch many subagents that inherit the main session model because the sealed bundled scripts expose no model override. The report measured one high-effort review of a trivial two-file diff at about 353K subagent tokens in 60 seconds, all billed at the Fable session model rate, and found no model: pins in persisted code-review workflow scripts.</summary>
+    <category term="Performance &amp; cost"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Cowork plan downgrade can orphan session history from the UI</title>
+    <id>https://framework.boucle.sh/limitations.html#cowork-plan-downgrade-can-orphan-session-history-from-ui</id>
+    <link href="https://framework.boucle.sh/limitations.html#cowork-plan-downgrade-can-orphan-session-history-from-ui"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Claude Code Cowork on macOS reportedly hid all session history from the UI after a scheduled Max-to-Pro downgrade took effect. Filesystem inspection still found session metadata under local-agent-mode-sessions and transcripts in hidden .claude/projects folders inside per-session VM storage, but the app offered no supported restore path, export, warning, or migration flow. The report frames this as repeat data-loss risk because non-technical users would likely assume paid work disappeared.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Desktop Cowork sidebar can hide most recent sessions</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-cowork-sidebar-can-hide-most-recent-sessions</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-cowork-sidebar-can-hide-most-recent-sessions"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>After the July 2026 cloud/local unification, Claude Desktop 1.22209.0 on macOS can show only a fraction of Cowork session history while the same account on claude.ai web shows the complete live-updating list. The report describes filters set to All, sign-out and relaunch, app updates, and a full local cache rebuild of IndexedDB, Local Storage, fcache, Cache, Code Cache, and Session Storage, all leaving the desktop sidebar identically truncated.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Background panel can accumulate finished idle agents</title>
+    <id>https://framework.boucle.sh/limitations.html#background-panel-can-accumulate-finished-idle-agents</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-panel-can-accumulate-finished-idle-agents"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Claude Code v2.1.210 on macOS can leave completed Agent-tool teammates in the Background panel as idle indefinitely. One long-running session accumulated 22 agents plus one active shell, pushing the active process below the fold. Cleanup required one shutdown_request handshake per finished agent, and one agent only exited after the user sent a plain-text message spelling out the expected shutdown_response payload.</summary>
+    <category term="TUI &amp; display"/>
+  </entry>
+  <entry>
     <title>[HIGH] Diagnostic sessions can ignore Playwright and bug-report instructions</title>
     <id>https://framework.boucle.sh/limitations.html#diagnostic-sessions-can-ignore-playwright-and-bug-report-instructions</id>
     <link href="https://framework.boucle.sh/limitations.html#diagnostic-sessions-can-ignore-playwright-and-bug-report-instructions"/>
@@ -125,45 +165,5 @@
     <updated>2026-07-19T00:00:00Z</updated>
     <summary>Claude Code Workflow({name}) dispatch can execute a cached script snapshot that does not match the file on disk at call time or any committed version. The reported macOS v2.1.214 incident used the persisted per-run workflow script copy to prove that a launch at 14:29 ran an 8-second transient edit state from 14:13, even though the workflow file had been committed, the tree was clean, and the launching session verified the current commit before calling the workflow. This breaks the expected publication boundary between dirty edits, committed workflow definitions, and autonomous orchestrator runs.</summary>
     <category term="Core &amp; session management"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Inline --agent sessions with empty tools can still attempt tool use in headless mode</title>
-    <id>https://framework.boucle.sh/limitations.html#inline-agent-empty-tools-can-still-attempt-tools-in-headless-mode</id>
-    <link href="https://framework.boucle.sh/limitations.html#inline-agent-empty-tools-can-still-attempt-tools-in-headless-mode"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>Claude Code v2.1.214 headless -p sessions launched with an inline --agents definition and --agent &lt;name&gt; can behave inconsistently when the selected agent declares tools: []. A reported Linux repro expected an empty tool list to deny all tools or refuse launch, but saw a real TodoWrite round-trip in one run, NO_TOOL in another, and fabricated-looking tool-call text in others. Adding --disallowedTools &quot;*&quot; and --tools &quot;&quot; did not create a reliable deny-all contract, and an enumerated disallow list still left ToolSearch callable. The reporter&#x27;s side-effect probes did not observe actual file reads or writes, but the operational gap is still serious for dispatchers that need a contractual no-tool agent.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Hook if directory globs can narrow to project-relative depth</title>
-    <id>https://framework.boucle.sh/limitations.html#hook-if-dir-globs-can-narrow-to-project-relative-depth</id>
-    <link href="https://framework.boucle.sh/limitations.html#hook-if-dir-globs-can-narrow-to-project-relative-depth"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>Claude Code v2.1.214 hook if conditions can interpret a single-segment directory glob such as Edit(src/**) as matching only the project-relative &lt;cwd&gt;/src tree, while users may expect it to match src directories at any depth because permission-rule documentation is cross-linked from the hook docs. The reported docs gap says any-depth hook matching requires an explicit pattern such as Edit(**/src/**), and that deny or ask permission rules retain their own semantics. The risk is a hook that silently fires on a narrower path set than its author intended after upgrading or copying examples from permission rules.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Stale Claude worktree directories can commit to the parent repository</title>
-    <id>https://framework.boucle.sh/limitations.html#stale-claude-worktree-directories-can-commit-to-parent-repo</id>
-    <link href="https://framework.boucle.sh/limitations.html#stale-claude-worktree-directories-can-commit-to-parent-repo"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>Claude Code v2.1.214 worktree isolation can fail silently when a directory under .claude/worktrees exists but has no .git entry. Git commands run from that stale directory walk upward and resolve to the parent repository, so an agent that believes it entered an isolated worktree can add files under the stale path and commit them to the parent&#x27;s checked-out branch. The report includes a minimal git repro where git rev-parse returns the parent top-level and the final commit lands on the parent branch with exit code 0. This is a separate hazard from path leakage out of a valid worktree because no valid worktree exists at all.</summary>
-    <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Headless print mode can hang after long tool execution on a dead keep-alive connection</title>
-    <id>https://framework.boucle.sh/limitations.html#headless-print-mode-can-hang-after-long-tool-execution-on-dead-keepalive</id>
-    <link href="https://framework.boucle.sh/limitations.html#headless-print-mode-can-hang-after-long-tool-execution-on-dead-keepalive"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>In Claude Code v2.1.214, unattended claude -p runs with stream-json output can hang indefinitely after a local tool call runs longer than the network path&#x27;s idle keep-alive window. The report observed six independent headless agents stall after long tool executions, with no timeout, retry, exit, CPU activity, or new output. A separate transport probe on the same machine showed that a reused HTTPS connection closed during the idle gap fails promptly at the socket layer, so the operational bug is the headless client path failing to recover or time out. Interactive sessions on the same machine did not show the same hang.</summary>
-    <category term="CLI &amp; terminal"/>
-  </entry>
-  <entry>
-    <title>[HIGH] PreToolUse Bash hooks can be skipped for regular subagent tool calls</title>
-    <id>https://framework.boucle.sh/limitations.html#pretooluse-bash-hooks-can-be-skipped-for-regular-subagent-tool-calls</id>
-    <link href="https://framework.boucle.sh/limitations.html#pretooluse-bash-hooks-can-be-skipped-for-regular-subagent-tool-calls"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>Claude Code v2.1.214 can fail to dispatch a globally configured PreToolUse Bash hook when the same Bash command shape originates from an Agent-tool subagent. The reported repro used a hook that denied compound cd-and-git commands and verified that the hook blocked the exact JSON payload when called directly and in the main session. An Explore subagent then issued the same command shape, but Claude Code fell through to the built-in interactive permission prompt instead of invoking the hook. This is distinct from older subagent failures where hooks fire but deny decisions are ignored, and from bypassPermissions subagents that intentionally skip more permission plumbing.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>
