@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 958,
+  "count": 960,
   "categories": {
     "Hook behavior & events": 174,
     "Permission system": 112,
@@ -12,7 +12,7 @@
     "CLI & terminal": 22,
     "Context & memory": 21,
     "Configuration behavior": 18,
-    "TUI & display": 16,
+    "TUI & display": 17,
     "Tool behavior": 15,
     "Security & trust boundaries": 12,
     "Agents & subagents": 9,
@@ -24,9 +24,9 @@
     "MCP": 7,
     "MCP & integrations": 7,
     "Permissions": 7,
+    "Sandbox & permissions": 7,
     "Plugin & channel system": 6,
     "Remote & cloud": 6,
-    "Sandbox & permissions": 6,
     "Scheduling & remote triggers": 6,
     "Auth & accounts": 5,
     "Core & session management": 5,
@@ -170,9 +170,9 @@
   },
   "severity_counts": {
     "CRITICAL": 65,
-    "HIGH": 471,
+    "HIGH": 472,
     "LOW": 97,
-    "MEDIUM": 325
+    "MEDIUM": 326
   },
   "entries": [
     {
@@ -12211,30 +12211,60 @@
       "cc_version": "2.1.212",
       "date_added": "2026-07-19",
       "workaround": "When a Desktop MCP widget spins after a large result, inspect the referenced tool-results file directly instead of waiting for the card. For Mermaid Chart output, extract renderedSVG or renderedPNG from the persisted JSON, decode it to a file, and treat widget rendering as best-effort for oversized responses until the desktop harness handles persisted widget payloads."
+    },
+    {
+      "id": "desktop-terminal-tool-can-break-gradle-jvm-unix-socket-wakeup-on-windows",
+      "title": "Desktop terminal tool can break Gradle JVM Unix-socket wakeup on Windows",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "Claude Code Desktop 1.22209.0.0 on Windows can make terminal-tool launches of Gradle or Flutter fail inside the JVM selector wakeup path even when the same command succeeds in normal PowerShell and Android Studio. The reported repro targets a Flutter Android emulator and fails quickly with Gradle's generic \"Unable to establish loopback connection\" message, but the stack trace points to Windows AF_UNIX socket connect0 from WEPollSelectorImpl rather than a TCP loopback firewall problem. The failure reproduced with dangerouslyDisableSandbox enabled and after clearing Gradle daemons and adding Defender exclusions, so disabling Claude Code's sandbox was not sufficient mitigation.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79013"
+      ],
+      "cc_issue": 79013,
+      "cc_version": "1.22209.0.0",
+      "date_added": "2026-07-19",
+      "workaround": "Run Gradle, Flutter, and Android emulator build commands from a normal PowerShell window or Android Studio when Claude Code Desktop's terminal tool hits this failure. Capture the full Gradle --stacktrace output before changing firewall or antivirus settings, because the top-level loopback message can hide the JVM AF_UNIX wakeup failure. Treat dangerouslyDisableSandbox as unproven for this path."
+    },
+    {
+      "id": "unresolvable-image-extension-pastes-can-wedge-the-tui-input-loop",
+      "title": "Unresolvable image-extension pastes can wedge the TUI input loop",
+      "category": "TUI & display",
+      "severity": "MEDIUM",
+      "status": "open",
+      "description": "Claude Code 2.1.215 on a remote Linux host can hang indefinitely on \"Pasting...\" when pasted text ends in an image extension such as .png but does not resolve to a readable file. A reported repro showed bare filenames and tilde-prefixed paths wedging the prompt, swallowing Enter until Ctrl-C recovers, while matching .txt text inserts normally and absolute paths to real images attach successfully. The same reporter notes tilde image paths previously worked, making the regression especially risky for users who paste screenshot paths into active sessions.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79009"
+      ],
+      "cc_issue": 79009,
+      "cc_version": "2.1.215",
+      "date_added": "2026-07-19",
+      "workaround": "Before pasting screenshot paths, expand ~ to an absolute path and verify the file exists. If the prompt gets stuck on \"Pasting...\", use Ctrl-C to recover and paste the path with a non-image extension, quote it as literal text, or attach an existing absolute file path. Avoid pasting bare .png or .jpg filenames into long-running sessions until the image-load path fails closed."
     }
   ],
   "status_summary": {
-    "open": 944,
+    "open": 946,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 65,
-    "high": 471,
+    "high": 472,
     "low": 97,
-    "medium": 325
+    "medium": 326
   },
   "lastUpdated": "2026-07-19",
   "stats": {
-    "total": 958,
+    "total": 960,
     "critical": 65,
-    "high": 471,
-    "medium": 325,
+    "high": 472,
+    "medium": 326,
     "low": 97,
-    "open": 944,
+    "open": 946,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-19",
-  "total": 958
+  "total": 960
 }

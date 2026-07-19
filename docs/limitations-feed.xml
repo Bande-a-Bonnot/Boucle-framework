@@ -7,6 +7,22 @@
   <updated>2026-07-19T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Unresolvable image-extension pastes can wedge the TUI input loop</title>
+    <id>https://framework.boucle.sh/limitations.html#unresolvable-image-extension-pastes-can-wedge-the-tui-input-loop</id>
+    <link href="https://framework.boucle.sh/limitations.html#unresolvable-image-extension-pastes-can-wedge-the-tui-input-loop"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Claude Code 2.1.215 on a remote Linux host can hang indefinitely on &quot;Pasting...&quot; when pasted text ends in an image extension such as .png but does not resolve to a readable file. A reported repro showed bare filenames and tilde-prefixed paths wedging the prompt, swallowing Enter until Ctrl-C recovers, while matching .txt text inserts normally and absolute paths to real images attach successfully. The same reporter notes tilde image paths previously worked, making the regression especially risky for users who paste screenshot paths into active sessions.</summary>
+    <category term="TUI &amp; display"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Desktop terminal tool can break Gradle JVM Unix-socket wakeup on Windows</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-terminal-tool-can-break-gradle-jvm-unix-socket-wakeup-on-windows</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-terminal-tool-can-break-gradle-jvm-unix-socket-wakeup-on-windows"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Claude Code Desktop 1.22209.0.0 on Windows can make terminal-tool launches of Gradle or Flutter fail inside the JVM selector wakeup path even when the same command succeeds in normal PowerShell and Android Studio. The reported repro targets a Flutter Android emulator and fails quickly with Gradle&#x27;s generic &quot;Unable to establish loopback connection&quot; message, but the stack trace points to Windows AF_UNIX socket connect0 from WEPollSelectorImpl rather than a TCP loopback firewall problem. The failure reproduced with dangerouslyDisableSandbox enabled and after clearing Gradle daemons and adding Defender exclusions, so disabling Claude Code&#x27;s sandbox was not sufficient mitigation.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Desktop MCP widgets can spin forever after large tool results are persisted to disk</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-mcp-widgets-can-spin-forever-after-large-result-persistence</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-mcp-widgets-can-spin-forever-after-large-result-persistence"/>
@@ -149,21 +165,5 @@
     <updated>2026-07-19T00:00:00Z</updated>
     <summary>Remote-Control-spawned Claude Code sessions can run a `SessionStart` hook that emits the documented `sessionTitle` output field, relay the hook response through the bridge, and still keep the Remote Control UI title assigned before hooks completed. In the reported Windows 11 / Claude Code 2.1.207 server-mode repro, debug streams showed a successful hook response containing `sessionTitle` about one second after the bridge assigned an automatic or prompt-derived title, but the claude.ai / mobile display title was never reconciled afterward. The same title can be applied locally, and `/rename` does propagate to the Remote Control UI, so the narrower broken layer is the Remote Control bridge&#x27;s post-hook title update path rather than the hook script or title field itself.</summary>
     <category term="Cowork &amp; remote"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Rapid sequential MCP generation can corrupt non-Latin output while structured fields remain correct</title>
-    <id>https://framework.boucle.sh/limitations.html#rapid-sequential-mcp-generation-can-corrupt-non-latin-output</id>
-    <link href="https://framework.boucle.sh/limitations.html#rapid-sequential-mcp-generation-can-corrupt-non-latin-output"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>When Claude Code drives a custom MCP server through a rapid claim/read/generate/save loop, repeated non-Latin generation can degrade inside the continuous tool-call sequence even though the same item is clean when generated in isolation. In the reported WSL2 / Claude Code v2.1.207 repro, five Burmese notes generated back-to-back in one session contained malformed words and hallucinated page numbers such as 499 or 4999, while the structured `page_reference` field in the same tool response remained the correct value 104. A sixth item generated after a short pause was fluent and cited page 104 correctly. The evidence rules out simple UTF-8 or database transport corruption because the saved text is valid UTF-8 and the structured field stays correct; the narrower risk is generation quality degrading across rapid sequential MCP tool turns before durable content is saved.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Quoted shell operators can defeat Bash permission allowlist matching</title>
-    <id>https://framework.boucle.sh/limitations.html#quoted-shell-operators-can-defeat-bash-permission-allowlist-matching</id>
-    <link href="https://framework.boucle.sh/limitations.html#quoted-shell-operators-can-defeat-bash-permission-allowlist-matching"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>Claude Code&#x27;s Bash permission decomposer can treat shell metacharacters inside quoted arguments as command separators before matching the command against allow rules. In the reported repro, commands allowed by `Bash(source:*)` and `Bash(python3:*)` still prompted when a double-quoted Python argument contained a semicolon or embedded newlines, suggesting the splitter was not quote-aware. A later minimal macOS repro showed the same class with a single allowed `grep`: `grep -E &quot;foo|bar&quot; file.txt` prompted under `Bash(grep:*)`, while `grep -E &quot;foobar&quot; file.txt` and `grep -e foo -e bar file.txt` auto-approved. This means common jq, grep, sed, awk, Python, and heredoc-style arguments can trigger needless prompts despite explicit wildcard allow rules. In headless or Agent SDK sessions, the prompt is not just friction: it can become an indefinite unattended hang.</summary>
-    <category term="Permission system"/>
   </entry>
 </feed>
