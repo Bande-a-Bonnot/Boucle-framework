@@ -1,20 +1,20 @@
 {
   "version": "0.13.0",
-  "count": 945,
+  "count": 950,
   "categories": {
-    "Hook behavior & events": 171,
+    "Hook behavior & events": 172,
     "Permission system": 111,
     "Hook bypass & evasion": 99,
-    "MCP & plugin issues": 50,
+    "MCP & plugin issues": 51,
     "Subagent & spawned agents": 39,
     "Desktop & IDE integration": 26,
     "Platform & compatibility": 23,
     "CLI & terminal": 21,
     "Context & memory": 21,
-    "Configuration behavior": 17,
+    "Configuration behavior": 18,
     "Tool behavior": 15,
     "TUI & display": 15,
-    "Security & trust boundaries": 11,
+    "Security & trust boundaries": 12,
     "Agents & subagents": 9,
     "File system & paths": 9,
     "hooks": 9,
@@ -78,6 +78,7 @@
     "session-management": 2,
     "Skills & commands": 2,
     "Stability & crashes": 2,
+    "Telemetry & insights": 2,
     "VS Code extension": 2,
     "Worktree": 2,
     "Agent": 1,
@@ -154,7 +155,6 @@
     "skills": 1,
     "Skills & plugins": 1,
     "Skills & slash commands": 1,
-    "Telemetry & insights": 1,
     "Tools": 1,
     "Tools & permissions": 1,
     "Tools and execution": 1,
@@ -170,9 +170,9 @@
   },
   "severity_counts": {
     "CRITICAL": 65,
-    "HIGH": 462,
+    "HIGH": 466,
     "LOW": 97,
-    "MEDIUM": 321
+    "MEDIUM": 322
   },
   "entries": [
     {
@@ -12017,30 +12017,104 @@
       "cc_version": "2.1.211",
       "date_added": "2026-07-19",
       "workaround": "Reduce broad recursive permission patterns where policy control allows it, prune stale git worktrees, and restart the top-level Claude Code process after policy or repository cleanup because sandbox profile state can be process-cached. If the failure persists, run from a smaller checkout or outside the git repository only as a temporary diagnostic, and ask maintainers for a pre-spawn sandbox budget breakdown instead of treating E2BIG as a shell-command problem."
+    },
+    {
+      "id": "claude-config-dir-literal-tilde-can-write-config-under-project-cwd",
+      "title": "CLAUDE_CONFIG_DIR with literal ~ can write config data under the project cwd",
+      "category": "Configuration behavior",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "When CLAUDE_CONFIG_DIR reaches Claude Code with an unexpanded literal tilde, Claude Code v2.1.214 can treat the value as a cwd-relative path instead of expanding it or failing fast. The reported repro creates a literal ./~/.claude-tilde-test tree before login and places projects, sessions, backups, .claude.json, and transcripts under the current git working tree. The session can appear to work because it consistently reads and writes the same wrong location, while resume tooling and usage readers that inspect the intended home config path see no sessions. The practical hazards are silent state misplacement, private transcript leakage through a future git add, and confusion around dangerous shell paths named ~.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/78988"
+      ],
+      "cc_issue": 78988,
+      "cc_version": "2.1.214",
+      "date_added": "2026-07-19",
+      "workaround": "Set CLAUDE_CONFIG_DIR to an absolute, already-expanded path in non-shell contexts such as VS Code terminal env blocks, launchd plists, devcontainers, CI, and .env files. After changing it, run a smoke invocation from a disposable directory and verify that no literal ./~ directory appears. Add local git excludes for accidental ./~ config trees while cleaning up any misplaced transcripts."
+    },
+    {
+      "id": "interruption-context-can-appear-as-fabricated-user-turn-outside-transcript-and-hooks",
+      "title": "Interruption context can appear as a fabricated user turn outside transcript and hooks",
+      "category": "Security & trust boundaries",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "A reported Windows VS Code Claude Code session received a user-looking turn immediately after an Esc interruption even though the user did not type it. The injected block combined a system-warning-style ctx_interruption wrapper, the genuine interruption marker, and an imperative instruction in the user's voice; the assistant treated it as user input and executed a read-only command. The reporter checked the session JSONL, a UserPromptSubmit capture database, installed plugins, hook scripts, and local Claude state and found no record of the fabricated message. The narrowed risk is that interruption or request-assembly feedback can enter the model as a user-attributed instruction while bypassing normal user-prompt logging and hook capture.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/78989"
+      ],
+      "cc_issue": 78989,
+      "date_added": "2026-07-19",
+      "workaround": "Treat sessions after manual interruption as suspect if Claude responds to a prompt you did not submit. Compare assistant behavior against transcript and UserPromptSubmit logs before allowing writes or external actions. For sensitive workflows, stop the session after unexplained interruption text and resume from a clean transcript boundary with an explicit user-authored instruction."
+    },
+    {
+      "id": "plugin-hooks-can-be-silently-dropped-when-plugin-has-no-version",
+      "title": "Plugin hooks can be silently dropped when the plugin has no version",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "Claude Code v2.1.214 can silently drop hooks from a plugin whose manifest has no version. In the reported macOS repro, the hooks still appeared in the /hooks menu and validator errors were empty, but the plugin hooks did not execute. This is a dangerous failure mode for plugin-delivered safety hooks because the visible configuration surface can imply coverage while the dispatch path is inert.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/78936"
+      ],
+      "cc_issue": 78936,
+      "cc_version": "2.1.214",
+      "date_added": "2026-07-19",
+      "workaround": "Always include an explicit version in plugin manifests and run a fresh-session hook probe after install or update. Keep safety-critical PreToolUse, Stop, SessionStart, and PreSkill hooks duplicated in direct user or project settings until plugin execution has been proven from raw transcript or side-effect logs."
+    },
+    {
+      "id": "subagentstart-hook-omits-task-description-needed-for-subagent-attribution",
+      "title": "SubagentStart hook omits Task description needed for subagent attribution",
+      "category": "Hook behavior & events",
+      "severity": "MEDIUM",
+      "status": "open",
+      "description": "SubagentStart hook stdin can carry agent_id and session_id while omitting the Task tool description and subagent_type that explain why the worker was spawned. A reporter building a fleet dashboard noted that correlating SubagentStart back to the parent's PreToolUse event is structurally unsound: PreToolUse fires before the subagent id exists, and FIFO session-level pairing can misattribute descriptions when multiple subagents spawn in parallel. The result is that hook-based monitoring can know that a subagent exists without truthfully knowing what it was asked to do.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/78949"
+      ],
+      "cc_issue": 78949,
+      "date_added": "2026-07-19",
+      "workaround": "Do not treat SubagentStart-only telemetry as authoritative task attribution. If accurate dashboards or audit logs matter, serialize subagent spawns, wrap Task creation in your own logging layer, or require a first-message self-report from the subagent and mark it as model-provided rather than orchestrator-provided data."
+    },
+    {
+      "id": "insights-large-session-facets-can-cache-false-output-token-errors",
+      "title": "/insights large-session facets can cache false output-token errors",
+      "category": "Telemetry & insights",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "The /insights pipeline can write facet records for large sessions that claim the analyzed session hit a 500 output-token maximum even when the underlying transcript contains no such error. The detailed v2.1.161 report cross-checked 145 facet files against surviving transcripts and found token-error markers in facets that were absent from the referenced sessions; a later v2.1.214 report reproduced the same structural failure across about 1,000 transcripts and five reports. Because facets are cached and aggregated into future reports, the false diagnostic can persist and cause /insights to recommend workflow changes that work around its own summarizer failure instead of the user's real behavior.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/78932",
+        "https://github.com/anthropics/claude-code/issues/78991"
+      ],
+      "cc_issue": 78932,
+      "cc_version": "2.1.161-2.1.214",
+      "date_added": "2026-07-19",
+      "workaround": "Before acting on /insights findings about output-token failures or unusable large sessions, grep the referenced session transcripts for the reported marker and compare against ~/.claude/usage-data/facets. Delete or quarantine poisoned facets only after backing them up, then rerun /insights to see whether clean facets are regenerated. Treat cached facets as derived data, not ground truth."
     }
   ],
   "status_summary": {
-    "open": 931,
+    "open": 936,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 65,
-    "high": 462,
+    "high": 466,
     "low": 97,
-    "medium": 321
+    "medium": 322
   },
   "lastUpdated": "2026-07-19",
   "stats": {
-    "total": 945,
+    "total": 950,
     "critical": 65,
-    "high": 462,
-    "medium": 321,
+    "high": 466,
+    "medium": 322,
     "low": 97,
-    "open": 931,
+    "open": 936,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-19",
-  "total": 945
+  "total": 950
 }
