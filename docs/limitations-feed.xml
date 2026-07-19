@@ -7,6 +7,38 @@
   <updated>2026-07-19T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Desktop MCP widgets can spin forever after large tool results are persisted to disk</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-mcp-widgets-can-spin-forever-after-large-result-persistence</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-mcp-widgets-can-spin-forever-after-large-result-persistence"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>In Claude Code Desktop v2.1.212, an MCP tool result that is too large for inline delivery can be persisted to ~/.claude/projects/.../tool-results while the desktop transcript widget continues showing an indefinite spinner. The reported Mermaid Chart connector repro used validate_and_render_mermaid_diagram, whose result included base64 SVG and PNG data large enough to trigger result persistence. The agent could read the saved JSON file and extract rendered output, but the widget card never rendered or fell back to a normal collapsible tool result.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Background Bash tasks can be invisible and block session deletion without explanation</title>
+    <id>https://framework.boucle.sh/limitations.html#background-bash-tasks-can-be-invisible-and-block-session-deletion</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-bash-tasks-can-be-invisible-and-block-session-deletion"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Claude Code v2.1.215 background sessions can run Bash tasks with run_in_background while neither the built-in footer, agents view, nor statusline JSON exposes those live tasks. A reported macOS repro showed long CI watcher tasks running for up to about 30 minutes with no visible indicator; deleting the session from the agents view appeared to fail and the session kept reappearing until the last background task finished. The protection against tearing down live work may be reasonable, but the lack of a task count or refusal reason makes the session look broken.</summary>
+    <category term="TUI &amp; display"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Workflow by-name dispatch can execute stale mid-edit script content</title>
+    <id>https://framework.boucle.sh/limitations.html#workflow-by-name-can-execute-stale-mid-edit-script-content</id>
+    <link href="https://framework.boucle.sh/limitations.html#workflow-by-name-can-execute-stale-mid-edit-script-content"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Claude Code Workflow({name}) dispatch can execute a cached script snapshot that does not match the file on disk at call time or any committed version. The reported macOS v2.1.214 incident used the persisted per-run workflow script copy to prove that a launch at 14:29 ran an 8-second transient edit state from 14:13, even though the workflow file had been committed, the tree was clean, and the launching session verified the current commit before calling the workflow. This breaks the expected publication boundary between dirty edits, committed workflow definitions, and autonomous orchestrator runs.</summary>
+    <category term="Core &amp; session management"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Inline --agent sessions with empty tools can still attempt tool use in headless mode</title>
+    <id>https://framework.boucle.sh/limitations.html#inline-agent-empty-tools-can-still-attempt-tools-in-headless-mode</id>
+    <link href="https://framework.boucle.sh/limitations.html#inline-agent-empty-tools-can-still-attempt-tools-in-headless-mode"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Claude Code v2.1.214 headless -p sessions launched with an inline --agents definition and --agent &lt;name&gt; can behave inconsistently when the selected agent declares tools: []. A reported Linux repro expected an empty tool list to deny all tools or refuse launch, but saw a real TodoWrite round-trip in one run, NO_TOOL in another, and fabricated-looking tool-call text in others. Adding --disallowedTools &quot;*&quot; and --tools &quot;&quot; did not create a reliable deny-all contract, and an enumerated disallow list still left ToolSearch callable. The reporter&#x27;s side-effect probes did not observe actual file reads or writes, but the operational gap is still serious for dispatchers that need a contractual no-tool agent.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Hook if directory globs can narrow to project-relative depth</title>
     <id>https://framework.boucle.sh/limitations.html#hook-if-dir-globs-can-narrow-to-project-relative-depth</id>
     <link href="https://framework.boucle.sh/limitations.html#hook-if-dir-globs-can-narrow-to-project-relative-depth"/>
@@ -133,37 +165,5 @@
     <updated>2026-07-19T00:00:00Z</updated>
     <summary>Claude Code&#x27;s Bash permission decomposer can treat shell metacharacters inside quoted arguments as command separators before matching the command against allow rules. In the reported repro, commands allowed by `Bash(source:*)` and `Bash(python3:*)` still prompted when a double-quoted Python argument contained a semicolon or embedded newlines, suggesting the splitter was not quote-aware. A later minimal macOS repro showed the same class with a single allowed `grep`: `grep -E &quot;foo|bar&quot; file.txt` prompted under `Bash(grep:*)`, while `grep -E &quot;foobar&quot; file.txt` and `grep -e foo -e bar file.txt` auto-approved. This means common jq, grep, sed, awk, Python, and heredoc-style arguments can trigger needless prompts despite explicit wildcard allow rules. In headless or Agent SDK sessions, the prompt is not just friction: it can become an indefinite unattended hang.</summary>
     <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Claude Desktop plugin browser can hide plugins whose `hooks.json` has unknown top-level keys</title>
-    <id>https://framework.boucle.sh/limitations.html#plugin-browser-can-hide-hooks-json-with-unknown-top-level-keys</id>
-    <link href="https://framework.boucle.sh/limitations.html#plugin-browser-can-hide-hooks-json-with-unknown-top-level-keys"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>Claude Desktop&#x27;s plugin-directory ingester can silently omit marketplace plugins when `hooks/hooks.json` contains an unknown top-level key alongside `hooks`, even though Claude Code CLI tolerates the same file. In the reported Claude Desktop 1.20186.0 macOS repro, a personal marketplace contained 14 plugins, 10 plugins carried a generated `_generated` banner in `hooks.json`, and exactly those 10 disappeared from the desktop plugin browser with no validation error or sync warning. Removing `_generated` from one plugin made it appear on the next sync, while changing an unrelated hook timeout left another plugin hidden. This means plugin publishers can ship valid CLI plugins and still lose most of their browser catalog because the desktop ingester is stricter and fails silently.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `SessionEnd` and `Stop` hooks can fail during shutdown with `posix_spawn` ENOENT</title>
-    <id>https://framework.boucle.sh/limitations.html#sessionend-and-stop-hooks-can-fail-during-shutdown-with-posix-spawn-enoent</id>
-    <link href="https://framework.boucle.sh/limitations.html#sessionend-and-stop-hooks-can-fail-during-shutdown-with-posix-spawn-enoent"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>In Claude Code v2.1.206 on macOS, `SessionEnd` and `Stop` hooks can fail during the shutdown phase with `ENOENT: no such file or directory, posix_spawn &#x27;/bin/sh&#x27;` even though `/bin/sh` exists and the same commands run correctly from an interactive shell. In the reported regression, two independent shutdown hooks failed the same way after the update: a shell-command summarizer hook and an unrelated Node cleanup hook. The reporter&#x27;s per-session records showed the shutdown hooks firing normally before v2.1.206 and dropping to roughly zero afterward with no settings change. This means end-of-session processors, transcript summarizers, cleanup jobs, and audit exporters that depend only on shutdown hooks can silently miss completed sessions.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows hook payload delivery can interpret `&gt;` tokens as shell redirection</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-hook-payload-redirection-can-create-or-clobber-files</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-hook-payload-redirection-can-create-or-clobber-files"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>On Windows, Claude Code hook payload delivery can appear to route tool input through a command interpreter when hooks are configured via `cmd /c`, causing `&gt;` tokens inside the tool input or file content to be treated as shell redirection operators. In the reported Windows 11 repro, Write/Edit content such as Python return annotations (`def f() -&gt; Signal: ...`) created zero-byte files in the project root named after the token following `&gt;`, and captured hook stdout showed JSON payload text echoing at a `cmd.exe`-style prompt. This is distinct from ordinary hook script bugs because the reporter audited the hook handler as stdin-only; the narrower risk is the runtime delivery layer allowing content bytes to act like shell syntax before the hook script receives them. The observed impact is repository pollution, and the same redirection mechanism can plausibly truncate an existing file if the interpreted target name already exists.</summary>
-    <category term="Hook bypass &amp; evasion"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] VS Code on Windows can skip configured `PreToolUse` hooks entirely</title>
-    <id>https://framework.boucle.sh/limitations.html#vscode-windows-pretooluse-hooks-can-be-skipped-entirely</id>
-    <link href="https://framework.boucle.sh/limitations.html#vscode-windows-pretooluse-hooks-can-be-skipped-entirely"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>In the Claude Code VS Code extension host on Windows, configured `PreToolUse` hooks can fail to run for matching tool calls even when the same hook script blocks reliably when invoked directly with the same JSON payload. In the reported Windows 11 / Git Bash repro, a hook configured to block `git commit` was proven correct by direct `node script.cjs &lt; payload.json` tests, but a live Claude Code session allowed 8 of 8 matching Bash commands to reach Git, including a bare `git commit -m ...` case with no compound shell parsing. Separate probe hooks also recorded zero invocations in repeated runs. This is distinct from hook script bugs, Windows stdin corruption, or slow hook startup: the narrower broken layer is dispatch from the VS Code extension host to matching `PreToolUse` hooks, so safety-critical guards may be silently absent while the user believes they are active.</summary>
-    <category term="Hook bypass &amp; evasion"/>
   </entry>
 </feed>
