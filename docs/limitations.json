@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 989,
+  "count": 992,
   "categories": {
     "Hook behavior & events": 174,
     "Permission system": 112,
@@ -26,11 +26,11 @@
     "Permissions": 7,
     "Sandbox & permissions": 7,
     "Auth & accounts": 6,
+    "Cowork & remote": 6,
     "Plugin & channel system": 6,
     "Remote & cloud": 6,
     "Scheduling & remote triggers": 6,
     "Core & session management": 5,
-    "Cowork & remote": 5,
     "Desktop & platform bugs": 5,
     "UX & display": 5,
     "Data integrity": 4,
@@ -43,6 +43,7 @@
     "VS Code extension": 4,
     "Bash & shell execution": 3,
     "CLI / TUI rendering": 3,
+    "Context / compaction": 3,
     "cowork": 3,
     "Desktop": 3,
     "Hooks": 3,
@@ -55,6 +56,7 @@
     "Sandbox": 3,
     "Security": 3,
     "Skills / slash commands": 3,
+    "Stability & crashes": 3,
     "Telemetry & insights": 3,
     "Worktree": 3,
     "Agents": 2,
@@ -65,7 +67,6 @@
     "auth/bedrock": 2,
     "auth/oauth": 2,
     "Configuration": 2,
-    "Context / compaction": 2,
     "Cowork": 2,
     "Cowork / remote sessions": 2,
     "IDE integration": 2,
@@ -82,7 +83,6 @@
     "platform": 2,
     "security": 2,
     "session-management": 2,
-    "Stability & crashes": 2,
     "Agent": 1,
     "Agent & multi-agent": 1,
     "agent-behavior": 1,
@@ -170,7 +170,7 @@
   },
   "severity_counts": {
     "CRITICAL": 65,
-    "HIGH": 488,
+    "HIGH": 491,
     "LOW": 99,
     "MEDIUM": 337
   },
@@ -11828,12 +11828,13 @@
       "category": "Hook bypass & evasion",
       "severity": "CRITICAL",
       "status": "open",
-      "description": "When Claude Code is launched from a subdirectory, it can treat that subdirectory as the project root and never read the repository root's `.claude/settings.json`. In the reported macOS v2.1.206 repro, a project hook configured with an absolute command path fired when Claude was started from the repo root, never ran when Claude was started from `<root>/lib`, and fired again only after a separate `lib/.claude/settings.json` was added. This means a natural `cd app && claude` workflow can silently disarm project-level PreToolUse safety rails, custody gates, secret detectors, or tenant-isolation guards before `${CLAUDE_PROJECT_DIR}` interpolation or hook runtime checks have any chance to run.",
+      "description": "When Claude Code is launched from a subdirectory, it can treat that subdirectory as the project root and never read the repository root's `.claude/settings.json`. Reported macOS repros on v2.1.206 and v2.1.215 show repo-root PreToolUse and SessionStart hooks firing from the root but disappearing from nested launches. The newer repro also shows permission grants from the nested session still persisting to the repo root's `.claude/settings.local.json`, so hook loading and permission persistence can resolve different roots. This means a natural `cd app && claude` workflow can silently disarm project-level PreToolUse safety rails, custody gates, secret detectors, or tenant-isolation guards before `${CLAUDE_PROJECT_DIR}` interpolation or hook runtime checks have any chance to run.",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/76441"
+        "https://github.com/anthropics/claude-code/issues/76441",
+        "https://github.com/anthropics/claude-code/issues/79111"
       ],
       "cc_issue": 76441,
-      "cc_version": "2.1.206",
+      "cc_version": "2.1.206-2.1.215",
       "date_added": "2026-07-12",
       "workaround": "Start Claude Code from the repository root when you rely on project hooks. For teams that need fail-closed behavior, add a small global PreToolUse guard on mutating tools that checks whether an ancestor repo root has `.claude/settings.json` while the active Claude project directory does not, then exits 2 with instructions to restart from the repo root. Also verify `/hooks` from both the repo root and common subdirectories after each Claude Code update."
     },
@@ -11979,12 +11980,13 @@
       "category": "Context & memory",
       "severity": "HIGH",
       "status": "open",
-      "description": "When Claude Code discovers a CLAUDE.md in a parent directory, the parent file content can load while @import lines inside that file are skipped without an error. The reported v2.1.211 repro shows the same CLAUDE.md importing correctly from its own directory, then losing both relative and absolute imports when the session starts from nested subdirectories. This breaks common monorepo and CLAUDE.md-to-AGENTS.md projection patterns because the project appears configured while the imported rules are absent.",
+      "description": "When Claude Code discovers a CLAUDE.md in a parent directory, the parent file content can load while @import lines inside that file are skipped without an error. Reported v2.1.211 and v2.1.212 repros show the same CLAUDE.md importing correctly from its own directory, then losing both relative and absolute imports when the session starts from nested subdirectories. The newer repro uses a sentinel value to avoid false negatives from asking the model about provenance. This breaks common monorepo and CLAUDE.md-to-AGENTS.md projection patterns because the project appears configured while the imported rules are absent.",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/78216"
+        "https://github.com/anthropics/claude-code/issues/78216",
+        "https://github.com/anthropics/claude-code/issues/79046"
       ],
       "cc_issue": 78216,
-      "cc_version": "2.1.211",
+      "cc_version": "2.1.211-2.1.212",
       "date_added": "2026-07-19",
       "workaround": "Do not rely on parent-discovered CLAUDE.md imports for critical rules until this is fixed. Start Claude Code from the directory that owns the importing CLAUDE.md, inline critical imports into that file, or duplicate a small project-local CLAUDE.md in common subdirectories. Add a startup smoke test that asks for a sentinel from imported memory before trusting the session."
     },
@@ -12639,30 +12641,70 @@
       "workaround": "If thinking text is missing only on Vertex or Bedrock, capture or inspect provider request bodies and do not assume --thinking-display reached the provider. Use direct API requests or provider calls that explicitly include thinking.display when visible reasoning traces are required.",
       "status": "open",
       "date_added": "2026-07-19"
+    },
+    {
+      "id": "max-1m-context-can-collapse-to-200k-after-compaction",
+      "title": "Max 1M context sessions can collapse to 200k after compaction",
+      "category": "Context / compaction",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79092"
+      ],
+      "description": "On a Max plan using a 1M-context Opus model, Claude Code v2.1.215 can hold 400k-500k live context before manual or automatic compaction, then behave like a 200k-window session for the rest of that conversation. The reported Windows repro measured live context from JSONL token fields: one session peaked at 521k before the first compact and then auto-compacted again around 165k; another peaked at 442k before manual `/compact` and never exceeded about 142k afterwards. `/context` still advertised the 1M model while the auto-compact window reported 200k.",
+      "workaround": "If a Max 1M session compacts, verify `/context` before relying on the remaining conversation capacity. For long orchestration work, checkpoint externally before compaction and consider restarting into a fresh 1M session after a compact event rather than assuming the original window survived.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "remote-control-sessions-can-wedge-after-worker-death",
+      "title": "Remote Control sessions can wedge permanently after worker death",
+      "category": "Cowork & remote",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/76530",
+        "https://github.com/anthropics/claude-code/issues/79108"
+      ],
+      "description": "If a Remote Control worker or bridge process dies abruptly during active work, the server-side session can remain active but stop dispatching to any new worker. Reports on Windows show clients accepting new prompts or initialize events while no worker is respawned for hours; restarting the remote-control daemon can revive other sessions but leave the wedged session stuck. Some affected sessions expose stale running/disconnected worker state, while newer repros show active sessions with environment state that still cannot reattach through documented CLI routes.",
+      "workaround": "Treat Remote Control sessions as vulnerable to hard worker death during in-flight turns. Before rebooting or killing a bridge host, stop active work cleanly and verify each important session reattaches afterwards. If a session wedges, preserve the transcript and start a replacement session; do not assume daemon restart or `--resume --remote-control` will recover the original until Anthropic exposes a supported force-reattach or reset command.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "linux-bundled-bun-can-panic-in-resume-picker-and-long-sessions",
+      "title": "Linux bundled Bun can panic in resume picker and long sessions",
+      "category": "Stability & crashes",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79082"
+      ],
+      "description": "Claude Code builds that bundle Bun 1.4.0 canary can crash on Linux x64 with a Rust-style `index out of bounds: the len is 1 but the index is 1` panic. The reported Ubuntu 24.04 repro saw repeated crashes in the interactive `--resume` picker before a session could be selected, plus mid-session crashes after long uptimes around 19 and 47 hours. A separately installed system Bun 1.3.x did not crash, narrowing the issue to Claude Code's bundled runtime path.",
+      "workaround": "When the interactive `--resume` picker crashes, resume by explicit session id instead of opening the picker. For long Linux sessions on affected builds, checkpoint work outside the conversation and restart periodically until Claude Code ships a bundled Bun build without this panic signature.",
+      "status": "open",
+      "date_added": "2026-07-19"
     }
   ],
   "status_summary": {
-    "open": 975,
+    "open": 978,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 65,
-    "high": 488,
+    "high": 491,
     "low": 99,
     "medium": 337
   },
   "lastUpdated": "2026-07-19",
   "stats": {
-    "total": 989,
+    "total": 992,
     "critical": 65,
-    "high": 488,
+    "high": 491,
     "medium": 337,
     "low": 99,
-    "open": 975,
+    "open": 978,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-19",
-  "total": 989
+  "total": 992
 }
