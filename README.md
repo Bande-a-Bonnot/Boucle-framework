@@ -627,8 +627,10 @@ hook-related breakpoints, not a current-release tracker:
 
 | Version | Issue |
 |---|---|
+| v2.1.91+ | Restores bundled `rg` execute permissions, fixing project command discovery regressions from v2.1.88-89 ([#41497](https://github.com/anthropics/claude-code/issues/41497), [#41864](https://github.com/anthropics/claude-code/issues/41864)) |
 | v2.1.90+ | Minimum version for the exit-2 + JSON blocking improvement, PostToolUse format-on-save fix, and 4 PowerShell permission bypass fixes |
-| v2.1.89 | [Pulled from npm](https://github.com/anthropics/claude-code/issues/41497) — custom commands broken, systemMessage display broken, source map leak |
+| v2.1.89 | Adds `PermissionDenied`, `defer`, absolute `file_path`, and compound hook `if` matching, but still had command discovery and `SessionStart` display regressions |
+| v2.1.88 | [Deprecated/pulled from npm](https://github.com/anthropics/claude-code/issues/41497): custom commands/skills broken, source map leak |
 | v2.1.81-84 | [Permission bypass resets mid-session](https://github.com/anthropics/claude-code/issues/37745) when PreToolUse hooks are installed |
 | < v2.1.50 | No `hookSpecificOutput` format support (deprecated `decision: "block"` still works but should be migrated) |
 
@@ -683,7 +685,7 @@ project settings warning.
 
 **Bundled ripgrep missing execute permission (Linux)**: The bundled `rg` binary [can lose its execute permission](https://github.com/anthropics/claude-code/issues/41463) on Linux, silently breaking all user-defined slash commands in `~/.claude/commands/`. Fix: `chmod +x` the bundled binary.
 
-**v2.1.89 pulled from npm**: This version was [pulled due to multiple regressions](https://github.com/anthropics/claude-code/issues/41497): custom commands in `.claude/commands/` are not discovered, `SessionStart` `systemMessage` display is broken, and the `cli.js.map` file was accidentally shipped. If you are on v2.1.89, downgrade to v2.1.87 or wait for the next release.
+**v2.1.88-89 command discovery regressions**: v2.1.88 was [deprecated/pulled from npm](https://github.com/anthropics/claude-code/issues/41497) after custom commands stopped loading and `cli.js.map` shipped accidentally. v2.1.89 kept the command-discovery regression for some users ([#41864](https://github.com/anthropics/claude-code/issues/41864)), though it also added hook features such as `PermissionDenied`. Anthropic marked the bundled `rg` execute-permission fix as shipped in v2.1.91. If custom commands or skills disappear, update to the latest Claude Code release and rerun `safety-check --verify`.
 
 **Non-interactive sessions hang on usage limit**: In headless, `--print`, or remote-control mode, hitting a usage limit [shows a confirmation prompt that cannot be answered](https://github.com/anthropics/claude-code/issues/41502) because there is no stdin. The session hangs permanently. There is no programmatic workaround ([#41503](https://github.com/anthropics/claude-code/issues/41503)). If you run Claude Code in CI, cron, or autonomous loops, set session time limits and monitor for stuck processes.
 

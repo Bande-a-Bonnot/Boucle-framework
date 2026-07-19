@@ -366,9 +366,9 @@ if [ "${SAFETY_CHECK_SKIP_CLAUDE_VERSION:-}" != "1" ] && command -v claude >/dev
             if [ "$CLI_PATCH" -ge 81 ] 2>/dev/null && [ "$CLI_PATCH" -le 84 ] 2>/dev/null; then
                 WARNINGS+=("Claude CLI v$CLI_VERSION: crashes when invoked by launchd/cron (regression v2.1.81-v2.1.84, see claude-code#37878, now fixed upstream). Update CLI to resolve.")
             fi
-            # v2.1.88: pulled from npm - custom commands broken + cli.js.map accidentally shipped (claude-code#41497)
+            # v2.1.88: deprecated/pulled from npm - custom commands broken + cli.js.map accidentally shipped (claude-code#41497)
             if [ "$CLI_PATCH" -eq 88 ] 2>/dev/null; then
-                WARNINGS+=("Claude CLI v$CLI_VERSION: this version was pulled from npm. Known issues: custom commands in .claude/commands/ are not discovered (claude-code#41497), SessionStart systemMessage display broken (claude-code#41285), custom skills (.claude/skills/) completely non-functional (claude-code#41530). Downgrade to v2.1.87 or wait for the next release.")
+                WARNINGS+=("Claude CLI v$CLI_VERSION: this version was deprecated/pulled from npm. Known issues: custom commands in .claude/commands/ are not discovered (claude-code#41497), SessionStart systemMessage display broken (claude-code#41285), custom skills (.claude/skills/) completely non-functional (claude-code#41530). Update to the latest Claude Code release; v2.1.91 restored project command discovery.")
             fi
         fi
     else

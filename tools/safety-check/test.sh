@@ -3954,6 +3954,7 @@ V88_OUTPUT=$(SAFETY_CHECK_SKIP_CLAUDE_VERSION=0 PATH="$TMPDIR_V88/bin:$PATH" bas
 assert "v2.1.88 warning shown" "pulled from npm" "$V88_OUTPUT"
 assert "v2.1.88 references commands issue" "claude-code#41497" "$V88_OUTPUT"
 assert "v2.1.88 references skills regression" "claude-code#41530" "$V88_OUTPUT"
+assert "v2.1.88 warning recommends current update path" "v2.1.91 restored project command discovery" "$V88_OUTPUT"
 export HOME="$SAVE_HOME"
 rm -rf "$TMPDIR_V88"
 

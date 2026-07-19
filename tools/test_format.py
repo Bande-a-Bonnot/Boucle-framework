@@ -16,6 +16,7 @@ import os
 import json
 import re
 import sys
+import shlex
 
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 HOOKS = ["bash-guard", "git-safe", "file-guard", "branch-guard", "session-log", "read-once"]
@@ -65,11 +66,71 @@ def setup_hook_dir(test_home, hook):
         os.chmod(os.path.join(hook_dir, "compact.sh"), 0o755)
 
 
+def setup_fake_download_tool(test_home):
+    """Provide curl that serves installer downloads from the local checkout."""
+    bin_dir = os.path.join(test_home, "bin")
+    os.makedirs(bin_dir, exist_ok=True)
+    curl_path = os.path.join(bin_dir, "curl")
+    tools_dir = shlex.quote(TOOLS)
+    with open(curl_path, "w") as fh:
+        fh.write(
+            f"""#!/usr/bin/env bash
+set -euo pipefail
+
+out=""
+url=""
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -o)
+      out="$2"
+      shift 2
+      ;;
+    -*)
+      shift
+      ;;
+    *)
+      url="$1"
+      shift
+      ;;
+  esac
+done
+
+prefix="https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/"
+case "$url" in
+  "$prefix"*)
+    rel="${{url#"$prefix"}}"
+    ;;
+  *)
+    echo "fake curl: unsupported URL: $url" >&2
+    exit 22
+    ;;
+esac
+
+src={tools_dir}/"$rel"
+if [ ! -f "$src" ]; then
+  echo "fake curl: local source not found: $src" >&2
+  exit 22
+fi
+
+if [ -n "$out" ]; then
+  cp "$src" "$out"
+else
+  cat "$src"
+fi
+"""
+        )
+    os.chmod(curl_path, 0o755)
+    return bin_dir
+
+
 def run_installer(test_home, hook):
     """Run an individual hook installer with HOME overridden."""
     installer = os.path.join(TOOLS, hook, "install.sh")
     env = os.environ.copy()
     env["HOME"] = test_home
+    fake_bin = setup_fake_download_tool(test_home)
+    env["PATH"] = fake_bin + os.pathsep + env.get("PATH", "")
     return subprocess.run(
         ["bash", installer], env=env, capture_output=True, timeout=10
     )
