@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">958</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-19.</span></p>
+        <p class="subtitle"><span id="total-count">960</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-19.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -10236,6 +10236,30 @@
                         <!-- workaround:desktop-mcp-widgets-can-spin-forever-after-large-result-persistence -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When a Desktop MCP widget spins after a large result, inspect the referenced tool-results file directly instead of waiting for the card. For Mermaid Chart output, extract renderedSVG or renderedPNG from the persisted JSON, decode it to a file, and treat widget rendering as best-effort for oversized responses until the desktop harness handles persisted widget payloads.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79007" target="_blank">#79007</a></div>
+        </div>
+        <div class="kl-entry" data-category="Sandbox &amp; permissions" data-issues="79013" id="desktop-terminal-tool-can-break-gradle-jvm-unix-socket-wakeup-on-windows" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#959</span>
+                <span class="kl-cat">Sandbox &amp; permissions</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Desktop terminal tool can break Gradle JVM Unix-socket wakeup on Windows</h3>
+            <p>Claude Code Desktop 1.22209.0.0 on Windows can make terminal-tool launches of Gradle or Flutter fail inside the JVM selector wakeup path even when the same command succeeds in normal PowerShell and Android Studio. The reported repro targets a Flutter Android emulator and fails quickly with Gradle&#x27;s generic &quot;Unable to establish loopback connection&quot; message, but the stack trace points to Windows AF_UNIX socket connect0 from WEPollSelectorImpl rather than a TCP loopback firewall problem. The failure reproduced with dangerouslyDisableSandbox enabled and after clearing Gradle daemons and adding Defender exclusions, so disabling Claude Code&#x27;s sandbox was not sufficient mitigation.</p>
+                        <!-- workaround:desktop-terminal-tool-can-break-gradle-jvm-unix-socket-wakeup-on-windows -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Run Gradle, Flutter, and Android emulator build commands from a normal PowerShell window or Android Studio when Claude Code Desktop&#x27;s terminal tool hits this failure. Capture the full Gradle --stacktrace output before changing firewall or antivirus settings, because the top-level loopback message can hide the JVM AF_UNIX wakeup failure. Treat dangerouslyDisableSandbox as unproven for this path.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79013" target="_blank">#79013</a></div>
+        </div>
+        <div class="kl-entry" data-category="TUI &amp; display" data-issues="79009" id="unresolvable-image-extension-pastes-can-wedge-the-tui-input-loop" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#960</span>
+                <span class="kl-cat">TUI &amp; display</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Unresolvable image-extension pastes can wedge the TUI input loop</h3>
+            <p>Claude Code 2.1.215 on a remote Linux host can hang indefinitely on &quot;Pasting...&quot; when pasted text ends in an image extension such as .png but does not resolve to a readable file. A reported repro showed bare filenames and tilde-prefixed paths wedging the prompt, swallowing Enter until Ctrl-C recovers, while matching .txt text inserts normally and absolute paths to real images attach successfully. The same reporter notes tilde image paths previously worked, making the regression especially risky for users who paste screenshot paths into active sessions.</p>
+                        <!-- workaround:unresolvable-image-extension-pastes-can-wedge-the-tui-input-loop -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before pasting screenshot paths, expand ~ to an absolute path and verify the file exists. If the prompt gets stuck on &quot;Pasting...&quot;, use Ctrl-C to recover and paste the path with a non-image extension, quote it as literal text, or attach an existing absolute file path. Avoid pasting bare .png or .jpg filenames into long-running sessions until the image-load path fails closed.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79009" target="_blank">#79009</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
