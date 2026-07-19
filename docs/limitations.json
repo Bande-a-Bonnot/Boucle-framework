@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 986,
+  "count": 989,
   "categories": {
     "Hook behavior & events": 174,
     "Permission system": 112,
@@ -8,7 +8,7 @@
     "MCP & plugin issues": 52,
     "Subagent & spawned agents": 40,
     "Desktop & IDE integration": 32,
-    "Platform & compatibility": 24,
+    "Platform & compatibility": 25,
     "CLI & terminal": 23,
     "Context & memory": 21,
     "TUI & display": 21,
@@ -25,10 +25,10 @@
     "MCP & integrations": 7,
     "Permissions": 7,
     "Sandbox & permissions": 7,
+    "Auth & accounts": 6,
     "Plugin & channel system": 6,
     "Remote & cloud": 6,
     "Scheduling & remote triggers": 6,
-    "Auth & accounts": 5,
     "Core & session management": 5,
     "Cowork & remote": 5,
     "Desktop & platform bugs": 5,
@@ -59,6 +59,7 @@
     "Worktree": 3,
     "Agents": 2,
     "agents": 2,
+    "API & infrastructure": 2,
     "Auth": 2,
     "Auth and login": 2,
     "auth/bedrock": 2,
@@ -85,7 +86,6 @@
     "Agent": 1,
     "Agent & multi-agent": 1,
     "agent-behavior": 1,
-    "API & infrastructure": 1,
     "Auth & credential management": 1,
     "Auth and credentials": 1,
     "authentication": 1,
@@ -170,9 +170,9 @@
   },
   "severity_counts": {
     "CRITICAL": 65,
-    "HIGH": 487,
+    "HIGH": 488,
     "LOW": 99,
-    "MEDIUM": 335
+    "MEDIUM": 337
   },
   "entries": [
     {
@@ -12599,30 +12599,70 @@
       "workaround": "When using Desktop scheduled tasks across multiple machines, treat completed local task runs as host-bound transcripts. Continue work from the machine that created the task, or start a new session from the transcript rather than assuming an account-wide sidebar entry can be resumed remotely.",
       "status": "open",
       "date_added": "2026-07-19"
+    },
+    {
+      "id": "claude-code-web-github-oauth-can-lack-app-installation",
+      "title": "Claude Code web GitHub OAuth can lack repository App installation",
+      "category": "Auth & accounts",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79050"
+      ],
+      "description": "Claude Code on the web can show a repository as connected and readable while GitHub push paths still fail with 403 because the Claude GitHub App is only OAuth-authorized, not installed with repository permissions. The reported GitHub settings view shows the App under Authorized GitHub Apps but not Installed GitHub Apps, with no visible self-service install path beyond revoking OAuth authorization.",
+      "workaround": "When web sessions or GitHub MCP push_files fail with 403 despite repository read access, verify GitHub's Installed GitHub Apps list rather than only OAuth authorization. Reconnect from a flow that performs the App installation, or use a locally authenticated git/App-token route until Claude exposes a repair path.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "macos-tcc-permissions-can-reset-on-each-versioned-cli-update",
+      "title": "macOS TCC permissions can reset on each versioned CLI update",
+      "category": "Platform & compatibility",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79053"
+      ],
+      "description": "Claude Code updates can install the CLI under a new versioned path such as ~/.local/share/claude/versions/<version>, causing macOS TCC network-volume permissions to prompt again after each update. The permission dialog can identify the requester by the version folder name instead of Claude Code, and grants tied to the previous executable path do not carry forward.",
+      "workaround": "Expect network-volume access prompts after CLI updates on macOS until the executable has a stable bundle identity or install path. For workflows on SMB, NAS, or /Volumes paths, test access after each update before starting unattended work and be ready to re-grant Files and Folders permissions.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "provider-request-builders-can-drop-thinking-display",
+      "title": "Provider request builders can drop thinking display settings",
+      "category": "API & infrastructure",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79052",
+        "https://github.com/anthropics/claude-code/issues/79060"
+      ],
+      "description": "Claude Code 2.1.215 can accept --thinking-display summarized while omitting the display field from provider-specific request bodies for Vertex AI and Bedrock. For models whose default thinking display is omitted, such as Sonnet 5, streamed thinking panels can remain blank even though the CLI or SDK surface appears to request summarized thinking and thinking tokens may still be billed.",
+      "workaround": "If thinking text is missing only on Vertex or Bedrock, capture or inspect provider request bodies and do not assume --thinking-display reached the provider. Use direct API requests or provider calls that explicitly include thinking.display when visible reasoning traces are required.",
+      "status": "open",
+      "date_added": "2026-07-19"
     }
   ],
   "status_summary": {
-    "open": 972,
+    "open": 975,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 65,
-    "high": 487,
+    "high": 488,
     "low": 99,
-    "medium": 335
+    "medium": 337
   },
   "lastUpdated": "2026-07-19",
   "stats": {
-    "total": 986,
+    "total": 989,
     "critical": 65,
-    "high": 487,
-    "medium": 335,
+    "high": 488,
+    "medium": 337,
     "low": 99,
-    "open": 972,
+    "open": 975,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-19",
-  "total": 986
+  "total": 989
 }
