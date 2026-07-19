@@ -1,16 +1,16 @@
 {
   "version": "0.13.0",
-  "count": 942,
+  "count": 945,
   "categories": {
     "Hook behavior & events": 171,
     "Permission system": 111,
     "Hook bypass & evasion": 99,
     "MCP & plugin issues": 50,
-    "Subagent & spawned agents": 38,
+    "Subagent & spawned agents": 39,
     "Desktop & IDE integration": 26,
     "Platform & compatibility": 23,
     "CLI & terminal": 21,
-    "Context & memory": 20,
+    "Context & memory": 21,
     "Configuration behavior": 17,
     "Tool behavior": 15,
     "TUI & display": 15,
@@ -29,6 +29,7 @@
     "Scheduling & remote triggers": 6,
     "Auth & accounts": 5,
     "Desktop & platform bugs": 5,
+    "Sandbox & permissions": 5,
     "UX & display": 5,
     "Core & session management": 4,
     "Cowork & remote": 4,
@@ -36,7 +37,6 @@
     "MCP & plugins": 4,
     "permissions": 4,
     "sandbox": 4,
-    "Sandbox & permissions": 4,
     "Scheduled tasks": 4,
     "tui": 4,
     "Bash & shell execution": 3,
@@ -170,7 +170,7 @@
   },
   "severity_counts": {
     "CRITICAL": 65,
-    "HIGH": 459,
+    "HIGH": 462,
     "LOW": 97,
     "MEDIUM": 321
   },
@@ -11972,30 +11972,75 @@
       "cc_version": "2.1.202",
       "date_added": "2026-07-13",
       "workaround": "Treat plugin-delivered hooks as advisory until a fresh-session transcript proves they actually run. Put safety-critical SessionStart, PreToolUse, Stop, and PreSkill hooks directly in user or project settings with absolute commands, and include a simple startup or tool-use probe that confirms the hook entered the dispatch table."
+    },
+    {
+      "id": "parent-claude-md-imports-silently-ignored-from-nested-cwd",
+      "title": "Parent-directory CLAUDE.md imports can be silently ignored from nested working directories",
+      "category": "Context & memory",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "When Claude Code discovers a CLAUDE.md in a parent directory, the parent file content can load while @import lines inside that file are skipped without an error. The reported v2.1.211 repro shows the same CLAUDE.md importing correctly from its own directory, then losing both relative and absolute imports when the session starts from nested subdirectories. This breaks common monorepo and CLAUDE.md-to-AGENTS.md projection patterns because the project appears configured while the imported rules are absent.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/78216"
+      ],
+      "cc_issue": 78216,
+      "cc_version": "2.1.211",
+      "date_added": "2026-07-19",
+      "workaround": "Do not rely on parent-discovered CLAUDE.md imports for critical rules until this is fixed. Start Claude Code from the directory that owns the importing CLAUDE.md, inline critical imports into that file, or duplicate a small project-local CLAUDE.md in common subdirectories. Add a startup smoke test that asks for a sentinel from imported memory before trusting the session."
+    },
+    {
+      "id": "plugin-scoped-agent-definitions-silently-degrade-in-team-and-agent-spawns",
+      "title": "Plugin-scoped agent definitions can silently degrade in team and Agent-tool spawns",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "In Claude Code v2.1.211, plugin-scoped subagent definitions used as agent-team teammates can be resolved and then filtered out, causing the teammate to spawn as a vanilla session with no definition body, model, tool allowlist, or customAgentType metadata. A follow-up report on the same issue shows a related Agent-tool path where the plugin body loads but frontmatter tool restrictions are silently replaced by a small default toolset. The dangerous behavior is the quiet downgrade: plugin-orchestrated workers appear to launch while losing role instructions or tool boundaries.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/78234"
+      ],
+      "cc_issue": 78234,
+      "cc_version": "2.1.211",
+      "date_added": "2026-07-19",
+      "workaround": "Keep safety-critical agent definitions in project or user scope rather than plugin scope when spawning teammates or subagents. After a spawn, inspect the subagent metadata and effective tool list for customAgentType and the expected frontmatter restrictions. Treat any plugin-scoped spawn without those fields as untrusted, and fail loudly in orchestration code instead of letting the worker continue with fallback behavior."
+    },
+    {
+      "id": "macos-sandbox-profile-can-hit-e2big-in-git-repos-with-large-policy-patterns",
+      "title": "macOS sandbox profile generation can hit E2BIG in git repositories with large recursive policies",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "status": "open",
+      "description": "On macOS with sandbox mode and a centrally managed permission policy, Claude Code v2.1.210-211 can fail every Bash invocation with spawn E2BIG when the current directory is inside a non-trivial git working tree. The reported evidence points to the compiled sandbox filesystem policy becoming a roughly 1 MB argv argument, scaling with git working-tree size, recursive policy pattern count, and registered worktrees rather than with the shell command itself. Even a no-op command can fail before the shell starts.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/78253"
+      ],
+      "cc_issue": 78253,
+      "cc_version": "2.1.211",
+      "date_added": "2026-07-19",
+      "workaround": "Reduce broad recursive permission patterns where policy control allows it, prune stale git worktrees, and restart the top-level Claude Code process after policy or repository cleanup because sandbox profile state can be process-cached. If the failure persists, run from a smaller checkout or outside the git repository only as a temporary diagnostic, and ask maintainers for a pre-spawn sandbox budget breakdown instead of treating E2BIG as a shell-command problem."
     }
   ],
   "status_summary": {
-    "open": 928,
+    "open": 931,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 65,
-    "high": 459,
+    "high": 462,
     "low": 97,
     "medium": 321
   },
-  "lastUpdated": "2026-07-13",
+  "lastUpdated": "2026-07-19",
   "stats": {
-    "total": 942,
+    "total": 945,
     "critical": 65,
-    "high": 459,
+    "high": 462,
     "medium": 321,
     "low": 97,
-    "open": 928,
+    "open": 931,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-07-13",
-  "total": 942
+  "last_updated": "2026-07-19",
+  "total": 945
 }
