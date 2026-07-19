@@ -7,6 +7,46 @@
   <updated>2026-07-19T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Diagnostic sessions can ignore Playwright and bug-report instructions</title>
+    <id>https://framework.boucle.sh/limitations.html#diagnostic-sessions-can-ignore-playwright-and-bug-report-instructions</id>
+    <link href="https://framework.boucle.sh/limitations.html#diagnostic-sessions-can-ignore-playwright-and-bug-report-instructions"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>In a WebSocket debugging session, Claude Code reportedly ignored a project CLAUDE.md rule requiring headed Playwright for staging/production, repeatedly tried to re-prove an already-described bug, spammed screenshots despite a visible browser, tested the wrong UI path, and attempted to replace the requested UI test with a direct API shortcut.</summary>
+    <category term="Model behavior &amp; instructions"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Workflow progress UI can hide live agent liveness</title>
+    <id>https://framework.boucle.sh/limitations.html#workflow-progress-ui-can-hide-live-agent-liveness</id>
+    <link href="https://framework.boucle.sh/limitations.html#workflow-progress-ui-can-hide-live-agent-liveness"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Workflow progress views advance mainly on agent completion or explicit log calls, so long healthy phases can look frozen while transcripts are actively growing. A wedged agent with no transcript activity can look the same as a thinking agent unless the user manually inspects JSONL mtimes and event counts.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Windows Agent View transitions can leave stale TUI frames</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-agent-view-transitions-can-leave-stale-tui-frames</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-agent-view-transitions-can-leave-stale-tui-frames"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>On native Windows terminals, normal Agent View transitions, attaches, scrolling, or long output can leave duplicated prompts, wrapped stale text, and old UI fragments on screen. Full resize clears the display temporarily, while Ctrl+L and alternate-screen environment toggles do not reliably repair the incremental renderer corruption.</summary>
+    <category term="TUI &amp; display"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Custom skills can no longer invoke the /code-review skill</title>
+    <id>https://framework.boucle.sh/limitations.html#custom-skills-cannot-invoke-code-review-skill</id>
+    <link href="https://framework.boucle.sh/limitations.html#custom-skills-cannot-invoke-code-review-skill"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>A user reports that a custom ship-work skill can no longer trigger the built-in /code-review skill in Claude Code 2.1.215. This breaks multi-step skill workflows that expect one reviewed handoff to invoke another skill without manual intervention.</summary>
+    <category term="Skills &amp; commands"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] statusLine input omits model-scoped weekly rate-limit windows</title>
+    <id>https://framework.boucle.sh/limitations.html#statusline-omits-model-scoped-weekly-rate-limits</id>
+    <link href="https://framework.boucle.sh/limitations.html#statusline-omits-model-scoped-weekly-rate-limits"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Custom statusLine commands receive the five-hour and seven-day usage windows but not the per-model weekly limits Claude Code already computes. Users who need Opus/Sonnet-specific windows must read undocumented cachedUsageUtilization state directly, making status lines fragile across releases.</summary>
+    <category term="Performance &amp; cost"/>
+  </entry>
+  <entry>
     <title>[LOW] Desktop reopen can hide stored thinking blocks</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-reopen-can-hide-stored-thinking-blocks</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-reopen-can-hide-stored-thinking-blocks"/>
@@ -125,45 +165,5 @@
     <updated>2026-07-19T00:00:00Z</updated>
     <summary>Claude Code v2.1.214 can fail to dispatch a globally configured PreToolUse Bash hook when the same Bash command shape originates from an Agent-tool subagent. The reported repro used a hook that denied compound cd-and-git commands and verified that the hook blocked the exact JSON payload when called directly and in the main session. An Explore subagent then issued the same command shape, but Claude Code fell through to the built-in interactive permission prompt instead of invoking the hook. This is distinct from older subagent failures where hooks fire but deny decisions are ignored, and from bypassPermissions subagents that intentionally skip more permission plumbing.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] /insights large-session facets can cache false output-token errors</title>
-    <id>https://framework.boucle.sh/limitations.html#insights-large-session-facets-can-cache-false-output-token-errors</id>
-    <link href="https://framework.boucle.sh/limitations.html#insights-large-session-facets-can-cache-false-output-token-errors"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>The /insights pipeline can write facet records for large sessions that claim the analyzed session hit a 500 output-token maximum even when the underlying transcript contains no such error. The detailed v2.1.161 report cross-checked 145 facet files against surviving transcripts and found token-error markers in facets that were absent from the referenced sessions; a later v2.1.214 report reproduced the same structural failure across about 1,000 transcripts and five reports. Because facets are cached and aggregated into future reports, the false diagnostic can persist and cause /insights to recommend workflow changes that work around its own summarizer failure instead of the user&#x27;s real behavior.</summary>
-    <category term="Telemetry &amp; insights"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] SubagentStart hook omits Task description needed for subagent attribution</title>
-    <id>https://framework.boucle.sh/limitations.html#subagentstart-hook-omits-task-description-needed-for-subagent-attribution</id>
-    <link href="https://framework.boucle.sh/limitations.html#subagentstart-hook-omits-task-description-needed-for-subagent-attribution"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>SubagentStart hook stdin can carry agent_id and session_id while omitting the Task tool description and subagent_type that explain why the worker was spawned. A reporter building a fleet dashboard noted that correlating SubagentStart back to the parent&#x27;s PreToolUse event is structurally unsound: PreToolUse fires before the subagent id exists, and FIFO session-level pairing can misattribute descriptions when multiple subagents spawn in parallel. The result is that hook-based monitoring can know that a subagent exists without truthfully knowing what it was asked to do.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Plugin hooks can be silently dropped when the plugin has no version</title>
-    <id>https://framework.boucle.sh/limitations.html#plugin-hooks-can-be-silently-dropped-when-plugin-has-no-version</id>
-    <link href="https://framework.boucle.sh/limitations.html#plugin-hooks-can-be-silently-dropped-when-plugin-has-no-version"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>Claude Code v2.1.214 can silently drop hooks from a plugin whose manifest has no version. In the reported macOS repro, the hooks still appeared in the /hooks menu and validator errors were empty, but the plugin hooks did not execute. This is a dangerous failure mode for plugin-delivered safety hooks because the visible configuration surface can imply coverage while the dispatch path is inert.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Interruption context can appear as a fabricated user turn outside transcript and hooks</title>
-    <id>https://framework.boucle.sh/limitations.html#interruption-context-can-appear-as-fabricated-user-turn-outside-transcript-and-hooks</id>
-    <link href="https://framework.boucle.sh/limitations.html#interruption-context-can-appear-as-fabricated-user-turn-outside-transcript-and-hooks"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>A reported Windows VS Code Claude Code session received a user-looking turn immediately after an Esc interruption even though the user did not type it. The injected block combined a system-warning-style ctx_interruption wrapper, the genuine interruption marker, and an imperative instruction in the user&#x27;s voice; the assistant treated it as user input and executed a read-only command. The reporter checked the session JSONL, a UserPromptSubmit capture database, installed plugins, hook scripts, and local Claude state and found no record of the fabricated message. The narrowed risk is that interruption or request-assembly feedback can enter the model as a user-attributed instruction while bypassing normal user-prompt logging and hook capture.</summary>
-    <category term="Security &amp; trust boundaries"/>
-  </entry>
-  <entry>
-    <title>[HIGH] CLAUDE_CONFIG_DIR with literal ~ can write config data under the project cwd</title>
-    <id>https://framework.boucle.sh/limitations.html#claude-config-dir-literal-tilde-can-write-config-under-project-cwd</id>
-    <link href="https://framework.boucle.sh/limitations.html#claude-config-dir-literal-tilde-can-write-config-under-project-cwd"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>When CLAUDE_CONFIG_DIR reaches Claude Code with an unexpanded literal tilde, Claude Code v2.1.214 can treat the value as a cwd-relative path instead of expanding it or failing fast. The reported repro creates a literal ./~/.claude-tilde-test tree before login and places projects, sessions, backups, .claude.json, and transcripts under the current git working tree. The session can appear to work because it consistently reads and writes the same wrong location, while resume tooling and usage readers that inspect the intended home config path see no sessions. The practical hazards are silent state misplacement, private transcript leakage through a future git add, and confusion around dangerous shell paths named ~.</summary>
-    <category term="Configuration behavior"/>
   </entry>
 </feed>
