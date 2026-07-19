@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1001,
+  "count": 1006,
   "categories": {
     "Hook behavior & events": 174,
-    "Permission system": 113,
+    "Permission system": 114,
     "Hook bypass & evasion": 99,
     "MCP & plugin issues": 54,
     "Subagent & spawned agents": 40,
@@ -17,15 +17,15 @@
     "Security & trust boundaries": 12,
     "Performance & cost": 11,
     "Agents & subagents": 10,
+    "Plugin & channel system": 10,
     "File system & paths": 9,
     "hooks": 9,
     "auth": 8,
     "Configuration & settings": 8,
+    "Remote & cloud": 8,
     "MCP": 7,
     "MCP & integrations": 7,
     "Permissions": 7,
-    "Plugin & channel system": 7,
-    "Remote & cloud": 7,
     "Sandbox & permissions": 7,
     "Auth & accounts": 6,
     "Cowork & remote": 6,
@@ -169,10 +169,10 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 66,
-    "HIGH": 497,
+    "CRITICAL": 67,
+    "HIGH": 498,
     "LOW": 99,
-    "MEDIUM": 339
+    "MEDIUM": 342
   },
   "entries": [
     {
@@ -12799,30 +12799,95 @@
       "workaround": "On macOS, run plugin-dev helpers under a newer Bash or pass a harmless flag only as a temporary diagnostic workaround for the `gh.sh` wrapper. If settings validation exits immediately after `Detected fields:`, check for uppercase or non-lowercase frontmatter keys manually. Maintainers can avoid this class by guarding empty array expansions and making no-match grep pipelines explicitly non-fatal before the diagnostic summary.",
       "status": "open",
       "date_added": "2026-07-19"
+    },
+    {
+      "id": "plan-escape-manual-stop-can-leave-workers-running",
+      "title": "Plan-mode escape followed by Manual STOP can leave workers running",
+      "category": "Permission system",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79159"
+      ],
+      "description": "A reported Windows Visual Studio extension session on Claude Code v2.1.207 could continue background worker and tool execution after the operator escaped from Plan or Auto Mode, reset to Manual Mode, and sent explicit STOP prompts. The visible mode indicator changed, but running work continued, later prompts were ignored, and recovery required killing multiple Claude processes plus restarting the IDE and desktop app. The practical risk is that mode changes and natural-language STOP rules in CLAUDE.md may not be a reliable cancellation boundary once worker execution is already in flight.",
+      "workaround": "Treat Escape and STOP prompts as best-effort UI controls, not as a safety boundary for destructive or costly work. Before switching a session from planning to execution, keep the first execution step small, use explicit tool-level permission gates for risky operations, and be ready to terminate the process tree if workers keep running after cancellation. For long-running autonomous work, prefer external watchdogs or hooks that can block unsafe tool calls independently of the conversation mode.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "fired-routines-external-calls-can-hang-without-timeout",
+      "title": "Fired Claude Code Remote routines can hang indefinitely on external calls",
+      "category": "Remote & cloud",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79153"
+      ],
+      "description": "A July 2026 Claude Code Remote scheduled Routine repro reports that fired sessions can hang indefinitely with no surfaced error, timeout, or fallback execution when the prompt performs an external call. The reporter first reproduced the stall with native Gmail and Drive connector calls, then reproduced it with `web_fetch` and a separate device-bridge MCP server, which suggests the failure is not limited to MCP approval gating. The only visible signal was that the trigger's `last_fired_at` updated while the expected post-call output never appeared.",
+      "workaround": "Do not rely on fired Remote routines to complete or report failure after external calls without an independent heartbeat. Add an out-of-band success marker after each critical step and alert when it is missing, keep attended-session controls for workflows that can spend money or mutate state, and design routines so a skipped post-call fallback does not silently hide the failure. When filing evidence, include trigger ids, timestamps, the exact external tools called, and a control showing the same call works in an attended session.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "telegram-channel-photos-can-download-but-never-reach-session",
+      "title": "Telegram channel photos can download but never reach the Claude Code session",
+      "category": "Plugin & channel system",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79160"
+      ],
+      "description": "A reported Windows Claude Code v2.1.212 session with the Telegram plugin v0.0.6 received inbound photo messages, gated them, and wrote the downloaded images into the local Telegram inbox directory, but never surfaced a corresponding channel turn in the active Claude Code session. No assistant reply was sent back to Telegram, no companion hook saw a reply tool call, and repeated messages over two days were silently dropped after filesystem delivery. The gap appears to be between the plugin's background MCP notification and the client injecting that notification as a conversation turn.",
+      "workaround": "Until the channel delivery path is fixed, treat downloaded Telegram media files as unprocessed unless the active Claude Code transcript shows a matching channel turn and reply. For workflows that depend on Telegram, monitor the inbox directory and add an independent alert for files that are not acknowledged within a short window. Avoid promising end-to-end processing for inbound photos based only on successful pairing or file download.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "discord-channel-access-can-request-ungrantable-in-channel-approval",
+      "title": "Discord integration can ask for access that cannot be granted in Discord",
+      "category": "Plugin & channel system",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79165"
+      ],
+      "description": "A reported Claude Code v2.1.215 Windows Discord integration flow paired the account successfully, then asked the user in a Discord DM for permission that the system itself says cannot be granted from Discord because channel allowlisting must be approved via `/discord:access` in the trusted Claude surface. The user could recover by confirming from Claude Desktop, but the Discord-side prompt was misleading and created a dead-end approval path in the exact untrusted channel the system is trying to guard.",
+      "workaround": "When a Discord channel or DM is not allowlisted, approve it from the local Claude Code or Claude Desktop session with `/discord:access` rather than treating a Discord message confirmation as authoritative. For security-sensitive channels, keep the untrusted chat surface as request-only and document the trusted approval surface explicitly in onboarding.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "hookify-example-rules-can-be-copied-with-dead-filenames",
+      "title": "Hookify example rules can be copied with filenames the loader never matches",
+      "category": "Plugin & channel system",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79143"
+      ],
+      "description": "The official hookify plugin loader discovers rule files using the `.claude/hookify.*.local.md` filename pattern, and its writing-rules guidance says the `hookify.` prefix is mandatory. A fresh report found the plugin's own example rules ship without that prefix, while help docs point users to copy the examples with no rename instruction. Copied verbatim into `.claude/`, the rules are silently invisible to the real loader, so expected warning or block rules never fire.",
+      "workaround": "When copying hookify examples, rename each file to include the `hookify.` prefix before the rule name, then run the actual loader or list command to confirm the rule is discovered. Treat copied hook/plugin examples as inactive until the runtime reports them loaded, especially for safety rules that are expected to block dangerous commands.",
+      "status": "open",
+      "date_added": "2026-07-19"
     }
   ],
   "status_summary": {
-    "open": 987,
+    "open": 992,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 66,
-    "high": 497,
+    "critical": 67,
+    "high": 498,
     "low": 99,
-    "medium": 339
+    "medium": 342
   },
   "lastUpdated": "2026-07-19",
   "stats": {
-    "total": 1001,
-    "critical": 66,
-    "high": 497,
-    "medium": 339,
+    "total": 1006,
+    "critical": 67,
+    "high": 498,
+    "medium": 342,
     "low": 99,
-    "open": 987,
+    "open": 992,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-19",
-  "total": 1001
+  "total": 1006
 }
