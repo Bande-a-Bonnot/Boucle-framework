@@ -7,6 +7,46 @@
   <updated>2026-07-19T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Desktop auto-update can drop custom Code sidebar groups during migration</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-auto-update-can-drop-custom-sidebar-groups</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-auto-update-can-drop-custom-sidebar-groups"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>A reported Claude Desktop macOS 1.22209.3 auto-update with bundled Claude Code v2.1.215 removed five pre-existing custom Code sidebar groups and 13 session assignments on first launch after the update. New groups still worked, and stale collapsed-group IDs plus surviving old LevelDB records indicated that legacy group data had existed before a legacy-to-scoped-store migration completed without carrying it forward. For most users, similar pre-update organization data may be unrecoverable once local storage compacts.</summary>
+    <category term="Desktop &amp; platform bugs"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Background task spinner can persist after a Monitor task is orphaned</title>
+    <id>https://framework.boucle.sh/limitations.html#background-task-spinner-can-survive-orphaned-monitor</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-task-spinner-can-survive-orphaned-monitor"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>A reported Claude Code Desktop v2.1.211 macOS session started a persistent Monitor background task, then switched models. The underlying process appears to have restarted or been replaced, the task died without a completion record, the background task panel showed no tasks, and `TaskStop` returned `No task found`, but the UI continued showing an active background-task spinner indefinitely. The user could no longer tell stale UI state from real detached work without inspecting processes manually.</summary>
+    <category term="UI &amp; display"/>
+  </entry>
+  <entry>
+    <title>[HIGH] VS Code MCP elicitation can be declared but auto-declined as print mode</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-elicitation-can-auto-decline-in-vscode-print-mode</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-elicitation-can-auto-decline-in-vscode-print-mode"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>A reported interactive Claude Code VS Code extension session declared the MCP elicitation capability during initialization, but every `elicitation/create` request was auto-declined without showing UI. Permission prompts and AskUserQuestion dialogs still rendered in the same session, while MCP logs labeled the elicitation request as received in `print mode`. From the server side, capability checks returned true and the non-accept result was indistinguishable from a human explicitly declining the dialog, which can break two-phase destructive-operation confirmations.</summary>
+    <category term="MCP &amp; tool integration"/>
+  </entry>
+  <entry>
+    <title>[HIGH] PermissionRequest hooks for subagents can be skipped or ignored even when PreToolUse fires</title>
+    <id>https://framework.boucle.sh/limitations.html#permissionrequest-subagent-allows-can-be-skipped-or-ignored</id>
+    <link href="https://framework.boucle.sh/limitations.html#permissionrequest-subagent-allows-can-be-skipped-or-ignored"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>A reported Claude Code v2.1.191 Linux plugin setup saw two subagent PermissionRequest failures around out-of-workspace Reads. In one mode, the PermissionRequest hook fired and returned an allow decision within about 1 ms, but the interactive prompt still appeared. In another mode, a subagent Read showed the built-in prompt while the PermissionRequest hook was not invoked at all, even though the same plugin&#x27;s PreToolUse hook fired milliseconds earlier for the same tool call. This means hook plumbing can be alive while the permission-request seat is not a reliable subagent approval path.</summary>
+    <category term="Hooks &amp; automation"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Background Bash tasks can hang forever when a child reads stdin</title>
+    <id>https://framework.boucle.sh/limitations.html#background-bash-stdin-reads-can-hang-forever</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-bash-stdin-reads-can-hang-forever"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>A reported Claude Code Desktop v2.1.209 macOS session showed foreground Bash calls receiving `/dev/null` on stdin while background Bash calls could leave child processes such as `cat` or `grep` fallback paths blocked forever on a stdin read. The reporter saw a background task stay running for 17 h 45 m with an empty output file, no completion notification, and no timeout, even though the equivalent foreground command exited immediately. The practical risk is that later edit/build steps never start while the model and user see only a slow or still-running background task.</summary>
+    <category term="Bash &amp; shell execution"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Hookify example rules can be copied with filenames the loader never matches</title>
     <id>https://framework.boucle.sh/limitations.html#hookify-example-rules-can-be-copied-with-dead-filenames</id>
     <link href="https://framework.boucle.sh/limitations.html#hookify-example-rules-can-be-copied-with-dead-filenames"/>
@@ -125,45 +165,5 @@
     <updated>2026-07-19T00:00:00Z</updated>
     <summary>Claude Code builds that bundle Bun 1.4.0 canary can crash on Linux x64 with a Rust-style `index out of bounds: the len is 1 but the index is 1` panic. The reported Ubuntu 24.04 repro saw repeated crashes in the interactive `--resume` picker before a session could be selected, plus mid-session crashes after long uptimes around 19 and 47 hours. A separately installed system Bun 1.3.x did not crash, narrowing the issue to Claude Code&#x27;s bundled runtime path.</summary>
     <category term="Stability &amp; crashes"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Remote Control sessions can wedge permanently after worker death</title>
-    <id>https://framework.boucle.sh/limitations.html#remote-control-sessions-can-wedge-after-worker-death</id>
-    <link href="https://framework.boucle.sh/limitations.html#remote-control-sessions-can-wedge-after-worker-death"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>If a Remote Control worker or bridge process dies abruptly during active work, the server-side session can remain active but stop dispatching to any new worker. Reports on Windows show clients accepting new prompts or initialize events while no worker is respawned for hours; restarting the remote-control daemon can revive other sessions but leave the wedged session stuck. Some affected sessions expose stale running/disconnected worker state, while newer repros show active sessions with environment state that still cannot reattach through documented CLI routes.</summary>
-    <category term="Cowork &amp; remote"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Max 1M context sessions can collapse to 200k after compaction</title>
-    <id>https://framework.boucle.sh/limitations.html#max-1m-context-can-collapse-to-200k-after-compaction</id>
-    <link href="https://framework.boucle.sh/limitations.html#max-1m-context-can-collapse-to-200k-after-compaction"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>On a Max plan using a 1M-context Opus model, Claude Code v2.1.215 can hold 400k-500k live context before manual or automatic compaction, then behave like a 200k-window session for the rest of that conversation. The reported Windows repro measured live context from JSONL token fields: one session peaked at 521k before the first compact and then auto-compacted again around 165k; another peaked at 442k before manual `/compact` and never exceeded about 142k afterwards. `/context` still advertised the 1M model while the auto-compact window reported 200k.</summary>
-    <category term="Context / compaction"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Provider request builders can drop thinking display settings</title>
-    <id>https://framework.boucle.sh/limitations.html#provider-request-builders-can-drop-thinking-display</id>
-    <link href="https://framework.boucle.sh/limitations.html#provider-request-builders-can-drop-thinking-display"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>Claude Code 2.1.215 can accept --thinking-display summarized while omitting the display field from provider-specific request bodies for Vertex AI and Bedrock. For models whose default thinking display is omitted, such as Sonnet 5, streamed thinking panels can remain blank even though the CLI or SDK surface appears to request summarized thinking and thinking tokens may still be billed.</summary>
-    <category term="API &amp; infrastructure"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] macOS TCC permissions can reset on each versioned CLI update</title>
-    <id>https://framework.boucle.sh/limitations.html#macos-tcc-permissions-can-reset-on-each-versioned-cli-update</id>
-    <link href="https://framework.boucle.sh/limitations.html#macos-tcc-permissions-can-reset-on-each-versioned-cli-update"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>Claude Code updates can install the CLI under a new versioned path such as ~/.local/share/claude/versions/&lt;version&gt;, causing macOS TCC network-volume permissions to prompt again after each update. The permission dialog can identify the requester by the version folder name instead of Claude Code, and grants tied to the previous executable path do not carry forward.</summary>
-    <category term="Platform &amp; compatibility"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Claude Code web GitHub OAuth can lack repository App installation</title>
-    <id>https://framework.boucle.sh/limitations.html#claude-code-web-github-oauth-can-lack-app-installation</id>
-    <link href="https://framework.boucle.sh/limitations.html#claude-code-web-github-oauth-can-lack-app-installation"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>Claude Code on the web can show a repository as connected and readable while GitHub push paths still fail with 403 because the Claude GitHub App is only OAuth-authorized, not installed with repository permissions. The reported GitHub settings view shows the App under Authorized GitHub Apps but not Installed GitHub Apps, with no visible self-service install path beyond revoking OAuth authorization.</summary>
-    <category term="Auth &amp; accounts"/>
   </entry>
 </feed>
