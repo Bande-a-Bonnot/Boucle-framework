@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 992,
+  "count": 995,
   "categories": {
     "Hook behavior & events": 174,
     "Permission system": 112,
     "Hook bypass & evasion": 99,
-    "MCP & plugin issues": 52,
+    "MCP & plugin issues": 54,
     "Subagent & spawned agents": 40,
     "Desktop & IDE integration": 32,
     "Platform & compatibility": 25,
@@ -33,6 +33,7 @@
     "Core & session management": 5,
     "Desktop & platform bugs": 5,
     "UX & display": 5,
+    "VS Code extension": 5,
     "Data integrity": 4,
     "MCP & plugins": 4,
     "permissions": 4,
@@ -40,7 +41,6 @@
     "Scheduled tasks": 4,
     "Skills & commands": 4,
     "tui": 4,
-    "VS Code extension": 4,
     "Bash & shell execution": 3,
     "CLI / TUI rendering": 3,
     "Context / compaction": 3,
@@ -170,7 +170,7 @@
   },
   "severity_counts": {
     "CRITICAL": 65,
-    "HIGH": 491,
+    "HIGH": 494,
     "LOW": 99,
     "MEDIUM": 337
   },
@@ -12681,30 +12681,69 @@
       "workaround": "When the interactive `--resume` picker crashes, resume by explicit session id instead of opening the picker. For long Linux sessions on affected builds, checkpoint work outside the conversation and restart periodically until Claude Code ships a bundled Bun build without this panic signature.",
       "status": "open",
       "date_added": "2026-07-19"
+    },
+    {
+      "id": "tui-renderer-switch-can-kill-stdio-mcp-tools",
+      "title": "`/tui` renderer switches can kill stdio MCP tools",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79121"
+      ],
+      "description": "Switching renderers in-session with `/tui fullscreen` or `/tui default` relaunches Claude Code through `--resume` and sends SIGINT to plugin-provided stdio MCP servers. A reported v2.1.215 macOS/tmux failure killed the server, never restarted it, showed the server as failed in `/mcp`, and silently removed every tool from that plugin until manual reconnect. The reporter could not reproduce deterministically after 7 clean switches, so this appears to be an intermittent restart race rather than a guaranteed direction-specific defect.",
+      "workaround": "After switching renderers in sessions that depend on plugin stdio MCP tools, check `/mcp` before continuing unattended work. If a server is marked failed or tools disappear, use `/mcp` reconnect or restart the session. Avoid mid-session renderer switches during critical MCP-dependent work until the relaunch path reports or repairs failed restarts.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "windows-claude-code-can-run-desktop-mcp-config",
+      "title": "Windows Claude Code can run Claude Desktop MCP config",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79120"
+      ],
+      "description": "On Windows with both Claude Code and Claude Desktop installed, Claude Code can appear to use its own MCP server definition while actually spawning a same-named stdio server from Claude Desktop's `claude_desktop_config.json`. In the reported collision, `claude mcp list` showed the intended SSE server as connected, but tool calls were served by the Desktop stdio process instead, causing 401 failures after a local API key rotation while the surface-level connection state stayed green.",
+      "workaround": "On Windows machines that run both Claude Desktop and Claude Code, audit the live process tree as well as `claude mcp list` when MCP calls behave unexpectedly. Avoid reusing server names across Desktop and Code configs, and temporarily remove or rename Desktop MCP entries when Code must use a distinct remote/SSE server. Treat a green MCP list entry as insufficient proof that the expected transport is handling tool calls.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "vscode-sessions-can-persist-metadata-without-messages",
+      "title": "VS Code sessions can persist metadata without messages",
+      "category": "VS Code extension",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79118"
+      ],
+      "description": "Claude Code v2.1.215 in the VS Code native extension can create session JSONL files that contain only bookkeeping records such as title, mode, and last-prompt, while never writing the actual user or assistant messages. The sidebar still shows the tab or preview, but reopening fails with `No conversation found with session ID` and the transcript has no recovery path on disk. A second session created in the same minute showed the same metadata-only pattern, making this a persistence failure rather than a missing-file path issue.",
+      "workaround": "For important VS Code extension sessions, periodically inspect or back up the matching `~/.claude/projects/<project>/<session-id>.jsonl` and verify it contains real `user` and `assistant` message records, not only title/mode metadata. If a tab is critical, export or copy important decisions outside the session before closing or relying on sidebar reopen.",
+      "status": "open",
+      "date_added": "2026-07-19"
     }
   ],
   "status_summary": {
-    "open": 978,
+    "open": 981,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 65,
-    "high": 491,
+    "high": 494,
     "low": 99,
     "medium": 337
   },
   "lastUpdated": "2026-07-19",
   "stats": {
-    "total": 992,
+    "total": 995,
     "critical": 65,
-    "high": 491,
+    "high": 494,
     "medium": 337,
     "low": 99,
-    "open": 978,
+    "open": 981,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-19",
-  "total": 992
+  "total": 995
 }
