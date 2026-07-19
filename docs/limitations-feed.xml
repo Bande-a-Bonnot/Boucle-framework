@@ -4,13 +4,37 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-07-13T00:00:00Z</updated>
+  <updated>2026-07-19T00:00:00Z</updated>
   <author><name>Boucle</name></author>
+  <entry>
+    <title>[HIGH] macOS sandbox profile generation can hit E2BIG in git repositories with large recursive policies</title>
+    <id>https://framework.boucle.sh/limitations.html#macos-sandbox-profile-can-hit-e2big-in-git-repos-with-large-policy-patterns</id>
+    <link href="https://framework.boucle.sh/limitations.html#macos-sandbox-profile-can-hit-e2big-in-git-repos-with-large-policy-patterns"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>On macOS with sandbox mode and a centrally managed permission policy, Claude Code v2.1.210-211 can fail every Bash invocation with spawn E2BIG when the current directory is inside a non-trivial git working tree. The reported evidence points to the compiled sandbox filesystem policy becoming a roughly 1 MB argv argument, scaling with git working-tree size, recursive policy pattern count, and registered worktrees rather than with the shell command itself. Even a no-op command can fail before the shell starts.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Plugin-scoped agent definitions can silently degrade in team and Agent-tool spawns</title>
+    <id>https://framework.boucle.sh/limitations.html#plugin-scoped-agent-definitions-silently-degrade-in-team-and-agent-spawns</id>
+    <link href="https://framework.boucle.sh/limitations.html#plugin-scoped-agent-definitions-silently-degrade-in-team-and-agent-spawns"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>In Claude Code v2.1.211, plugin-scoped subagent definitions used as agent-team teammates can be resolved and then filtered out, causing the teammate to spawn as a vanilla session with no definition body, model, tool allowlist, or customAgentType metadata. A follow-up report on the same issue shows a related Agent-tool path where the plugin body loads but frontmatter tool restrictions are silently replaced by a small default toolset. The dangerous behavior is the quiet downgrade: plugin-orchestrated workers appear to launch while losing role instructions or tool boundaries.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Parent-directory CLAUDE.md imports can be silently ignored from nested working directories</title>
+    <id>https://framework.boucle.sh/limitations.html#parent-claude-md-imports-silently-ignored-from-nested-cwd</id>
+    <link href="https://framework.boucle.sh/limitations.html#parent-claude-md-imports-silently-ignored-from-nested-cwd"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>When Claude Code discovers a CLAUDE.md in a parent directory, the parent file content can load while @import lines inside that file are skipped without an error. The reported v2.1.211 repro shows the same CLAUDE.md importing correctly from its own directory, then losing both relative and absolute imports when the session starts from nested subdirectories. This breaks common monorepo and CLAUDE.md-to-AGENTS.md projection patterns because the project appears configured while the imported rules are absent.</summary>
+    <category term="Context &amp; memory"/>
+  </entry>
   <entry>
     <title>[HIGH] Plugin-sourced hooks.json can remain inert after auto-install</title>
     <id>https://framework.boucle.sh/limitations.html#plugin-sourced-hooks-json-can-remain-inert-after-auto-install</id>
     <link href="https://framework.boucle.sh/limitations.html#plugin-sourced-hooks-json-can-remain-inert-after-auto-install"/>
-    <updated>2026-07-13T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <summary>A plugin can appear installed and enabled, keep a cached hooks.json byte-identical to source, and still fail to register any SessionStart, Stop, PreToolUse, PostToolUse, or PreSkill hooks into Claude Code&#x27;s dispatch table. In the reported macOS / Claude Code 2.1.202 repro, skills and agents from the plugin worked, but a PreToolUse Bash hook that should block --no-verify did not fire, PreSkill logging never created its output file, SessionStart primer output never appeared in raw transcripts, and Stop output was absent. A control hook defined directly in settings.local.json blocked as expected, narrowing the failure to plugin-sourced hook registration, especially for a plugin transitively installed as an auto dependency.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -18,7 +42,7 @@
     <title>[MEDIUM] Remote Control can ignore `SessionStart` `sessionTitle` output</title>
     <id>https://framework.boucle.sh/limitations.html#remote-control-can-ignore-sessionstart-sessiontitle-output</id>
     <link href="https://framework.boucle.sh/limitations.html#remote-control-can-ignore-sessionstart-sessiontitle-output"/>
-    <updated>2026-07-13T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <summary>Remote-Control-spawned Claude Code sessions can run a `SessionStart` hook that emits the documented `sessionTitle` output field, relay the hook response through the bridge, and still keep the Remote Control UI title assigned before hooks completed. In the reported Windows 11 / Claude Code 2.1.207 server-mode repro, debug streams showed a successful hook response containing `sessionTitle` about one second after the bridge assigned an automatic or prompt-derived title, but the claude.ai / mobile display title was never reconciled afterward. The same title can be applied locally, and `/rename` does propagate to the Remote Control UI, so the narrower broken layer is the Remote Control bridge&#x27;s post-hook title update path rather than the hook script or title field itself.</summary>
     <category term="Cowork &amp; remote"/>
   </entry>
@@ -26,7 +50,7 @@
     <title>[MEDIUM] Rapid sequential MCP generation can corrupt non-Latin output while structured fields remain correct</title>
     <id>https://framework.boucle.sh/limitations.html#rapid-sequential-mcp-generation-can-corrupt-non-latin-output</id>
     <link href="https://framework.boucle.sh/limitations.html#rapid-sequential-mcp-generation-can-corrupt-non-latin-output"/>
-    <updated>2026-07-13T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <summary>When Claude Code drives a custom MCP server through a rapid claim/read/generate/save loop, repeated non-Latin generation can degrade inside the continuous tool-call sequence even though the same item is clean when generated in isolation. In the reported WSL2 / Claude Code v2.1.207 repro, five Burmese notes generated back-to-back in one session contained malformed words and hallucinated page numbers such as 499 or 4999, while the structured `page_reference` field in the same tool response remained the correct value 104. A sixth item generated after a short pause was fluent and cited page 104 correctly. The evidence rules out simple UTF-8 or database transport corruption because the saved text is valid UTF-8 and the structured field stays correct; the narrower risk is generation quality degrading across rapid sequential MCP tool turns before durable content is saved.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -34,7 +58,7 @@
     <title>[HIGH] Quoted shell operators can defeat Bash permission allowlist matching</title>
     <id>https://framework.boucle.sh/limitations.html#quoted-shell-operators-can-defeat-bash-permission-allowlist-matching</id>
     <link href="https://framework.boucle.sh/limitations.html#quoted-shell-operators-can-defeat-bash-permission-allowlist-matching"/>
-    <updated>2026-07-13T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <summary>Claude Code&#x27;s Bash permission decomposer can treat shell metacharacters inside quoted arguments as command separators before matching the command against allow rules. In the reported repro, commands allowed by `Bash(source:*)` and `Bash(python3:*)` still prompted when a double-quoted Python argument contained a semicolon or embedded newlines, suggesting the splitter was not quote-aware. A later minimal macOS repro showed the same class with a single allowed `grep`: `grep -E &quot;foo|bar&quot; file.txt` prompted under `Bash(grep:*)`, while `grep -E &quot;foobar&quot; file.txt` and `grep -e foo -e bar file.txt` auto-approved. This means common jq, grep, sed, awk, Python, and heredoc-style arguments can trigger needless prompts despite explicit wildcard allow rules. In headless or Agent SDK sessions, the prompt is not just friction: it can become an indefinite unattended hang.</summary>
     <category term="Permission system"/>
   </entry>
@@ -42,7 +66,7 @@
     <title>[MEDIUM] Claude Desktop plugin browser can hide plugins whose `hooks.json` has unknown top-level keys</title>
     <id>https://framework.boucle.sh/limitations.html#plugin-browser-can-hide-hooks-json-with-unknown-top-level-keys</id>
     <link href="https://framework.boucle.sh/limitations.html#plugin-browser-can-hide-hooks-json-with-unknown-top-level-keys"/>
-    <updated>2026-07-13T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <summary>Claude Desktop&#x27;s plugin-directory ingester can silently omit marketplace plugins when `hooks/hooks.json` contains an unknown top-level key alongside `hooks`, even though Claude Code CLI tolerates the same file. In the reported Claude Desktop 1.20186.0 macOS repro, a personal marketplace contained 14 plugins, 10 plugins carried a generated `_generated` banner in `hooks.json`, and exactly those 10 disappeared from the desktop plugin browser with no validation error or sync warning. Removing `_generated` from one plugin made it appear on the next sync, while changing an unrelated hook timeout left another plugin hidden. This means plugin publishers can ship valid CLI plugins and still lose most of their browser catalog because the desktop ingester is stricter and fails silently.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -50,7 +74,7 @@
     <title>[HIGH] `SessionEnd` and `Stop` hooks can fail during shutdown with `posix_spawn` ENOENT</title>
     <id>https://framework.boucle.sh/limitations.html#sessionend-and-stop-hooks-can-fail-during-shutdown-with-posix-spawn-enoent</id>
     <link href="https://framework.boucle.sh/limitations.html#sessionend-and-stop-hooks-can-fail-during-shutdown-with-posix-spawn-enoent"/>
-    <updated>2026-07-13T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <summary>In Claude Code v2.1.206 on macOS, `SessionEnd` and `Stop` hooks can fail during the shutdown phase with `ENOENT: no such file or directory, posix_spawn &#x27;/bin/sh&#x27;` even though `/bin/sh` exists and the same commands run correctly from an interactive shell. In the reported regression, two independent shutdown hooks failed the same way after the update: a shell-command summarizer hook and an unrelated Node cleanup hook. The reporter&#x27;s per-session records showed the shutdown hooks firing normally before v2.1.206 and dropping to roughly zero afterward with no settings change. This means end-of-session processors, transcript summarizers, cleanup jobs, and audit exporters that depend only on shutdown hooks can silently miss completed sessions.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -58,7 +82,7 @@
     <title>[HIGH] Windows hook payload delivery can interpret `&gt;` tokens as shell redirection</title>
     <id>https://framework.boucle.sh/limitations.html#windows-hook-payload-redirection-can-create-or-clobber-files</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-hook-payload-redirection-can-create-or-clobber-files"/>
-    <updated>2026-07-13T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <summary>On Windows, Claude Code hook payload delivery can appear to route tool input through a command interpreter when hooks are configured via `cmd /c`, causing `&gt;` tokens inside the tool input or file content to be treated as shell redirection operators. In the reported Windows 11 repro, Write/Edit content such as Python return annotations (`def f() -&gt; Signal: ...`) created zero-byte files in the project root named after the token following `&gt;`, and captured hook stdout showed JSON payload text echoing at a `cmd.exe`-style prompt. This is distinct from ordinary hook script bugs because the reporter audited the hook handler as stdin-only; the narrower risk is the runtime delivery layer allowing content bytes to act like shell syntax before the hook script receives them. The observed impact is repository pollution, and the same redirection mechanism can plausibly truncate an existing file if the interpreted target name already exists.</summary>
     <category term="Hook bypass &amp; evasion"/>
   </entry>
@@ -66,7 +90,7 @@
     <title>[CRITICAL] VS Code on Windows can skip configured `PreToolUse` hooks entirely</title>
     <id>https://framework.boucle.sh/limitations.html#vscode-windows-pretooluse-hooks-can-be-skipped-entirely</id>
     <link href="https://framework.boucle.sh/limitations.html#vscode-windows-pretooluse-hooks-can-be-skipped-entirely"/>
-    <updated>2026-07-13T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <summary>In the Claude Code VS Code extension host on Windows, configured `PreToolUse` hooks can fail to run for matching tool calls even when the same hook script blocks reliably when invoked directly with the same JSON payload. In the reported Windows 11 / Git Bash repro, a hook configured to block `git commit` was proven correct by direct `node script.cjs &lt; payload.json` tests, but a live Claude Code session allowed 8 of 8 matching Bash commands to reach Git, including a bare `git commit -m ...` case with no compound shell parsing. Separate probe hooks also recorded zero invocations in repeated runs. This is distinct from hook script bugs, Windows stdin corruption, or slow hook startup: the narrower broken layer is dispatch from the VS Code extension host to matching `PreToolUse` hooks, so safety-critical guards may be silently absent while the user believes they are active.</summary>
     <category term="Hook bypass &amp; evasion"/>
   </entry>
@@ -74,7 +98,7 @@
     <title>[CRITICAL] Windows Grep process floods can leave live `rg.exe` children and crash the host</title>
     <id>https://framework.boucle.sh/limitations.html#windows-grep-process-flood-can-crash-host</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-grep-process-flood-can-crash-host"/>
-    <updated>2026-07-13T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <summary>On Windows, Claude Code&#x27;s Grep tool can spawn hundreds of `rg.exe` and `conhost.exe` children and then stop draining their stdout pipes. In the reported v2.1.207 VS Code extension repro, the children were not harmless zombies: they stayed live, blocked in `NtWriteFile` on full libuv named pipes owned by the extension host, accumulated high-frequency timer activity, and caused repeated DPC watchdog bugchecks. The report documents 11 BSODs between 2026-07-07 and 2026-07-11, process-count explosions within minutes, and kernel-dump evidence tying the crash to abandoned Grep children. This means large or repeated Grep searches on Windows can become a machine-level availability and data-loss risk rather than just a slow tool call.</summary>
     <category term="Tool behavior"/>
   </entry>
@@ -82,7 +106,7 @@
     <title>[CRITICAL] Launching Claude Code from a subdirectory can skip project hooks without warning</title>
     <id>https://framework.boucle.sh/limitations.html#subdirectory-launch-can-skip-project-hooks</id>
     <link href="https://framework.boucle.sh/limitations.html#subdirectory-launch-can-skip-project-hooks"/>
-    <updated>2026-07-13T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <summary>When Claude Code is launched from a subdirectory, it can treat that subdirectory as the project root and never read the repository root&#x27;s `.claude/settings.json`. In the reported macOS v2.1.206 repro, a project hook configured with an absolute command path fired when Claude was started from the repo root, never ran when Claude was started from `&lt;root&gt;/lib`, and fired again only after a separate `lib/.claude/settings.json` was added. This means a natural `cd app &amp;&amp; claude` workflow can silently disarm project-level PreToolUse safety rails, custody gates, secret detectors, or tenant-isolation guards before `${CLAUDE_PROJECT_DIR}` interpolation or hook runtime checks have any chance to run.</summary>
     <category term="Hook bypass &amp; evasion"/>
   </entry>
@@ -90,7 +114,7 @@
     <title>[HIGH] `/btw` side conversations can vanish without any transcript being written to disk</title>
     <id>https://framework.boucle.sh/limitations.html#btw-side-conversations-can-vanish-without-any-subagent-transcript-being-written-to-disk</id>
     <link href="https://framework.boucle.sh/limitations.html#btw-side-conversations-can-vanish-without-any-subagent-transcript-being-written-to-disk"/>
-    <updated>2026-07-13T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <summary>In Claude Code v2.1.104, `/btw` side conversations can appear to work normally in the UI, accept multiple turns, and then disappear completely when closed because no transcript is persisted anywhere on disk. In the reported macOS repro, earlier versions created `agent-aside_question-*.jsonl` files under the session&#x27;s `subagents/` directory, but v2.1.104 wrote no such files and left the main session JSONL with `isSidechain: false` on every message. This is distinct from the older `/btw` single-turn clarifying-question failure: here the model may answer, but the narrower broken layer is persistence of the side conversation itself, so users who rely on `/btw` as a scratchpad or mine those side threads into external memory lose the entire exchange the moment they close it.</summary>
     <category term="CLI &amp; terminal"/>
   </entry>
@@ -98,7 +122,7 @@
     <title>[HIGH] Telegram channel dispatch can spawn broken `--print` runs and drop every incoming message</title>
     <id>https://framework.boucle.sh/limitations.html#telegram-channel-dispatch-can-spawn-broken-print-runs-and-drop-every-incoming-message</id>
     <link href="https://framework.boucle.sh/limitations.html#telegram-channel-dispatch-can-spawn-broken-print-runs-and-drop-every-incoming-message"/>
-    <updated>2026-07-13T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <summary>When Claude Code is launched with `--channels plugin:telegram@claude-plugins-official`, incoming Telegram messages can fail in the channel dispatch layer even though the Telegram MCP server itself is healthy. In the reported macOS repro with `telegram@claude-plugins-official` v0.0.5, the plugin worked when started manually, successfully polled Telegram, and emitted valid `notifications/claude/channel` payloads, but Claude&#x27;s channels runner responded to every incoming message with `Error: Input must be provided either through stdin or as a prompt argument when using --print`. No `bun` child process or `bot.pid` was created under the normal `claude --channels` path, `claude-channels-error.log` filled with repeated `--print` input errors, and no Telegram message ever reached the active session. This is distinct from earlier Telegram failures where the plugin runtime never spawns, channel notifications are dropped after transport is established, tools are missing from an attached session, or `/reload-plugins` or `/compact` break a healthy connection later: here the narrower broken layer is the channels dispatch path itself, which tries to hand channel messages to a `--print` flow without actually passing the message content.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -106,7 +130,7 @@
     <title>[MEDIUM] Nested slash-command chains can stop after the first sub-command and forget the parent plan</title>
     <id>https://framework.boucle.sh/limitations.html#nested-slash-command-chains-can-stop-after-the-first-sub-command-and-forget-the-parent-plan</id>
     <link href="https://framework.boucle.sh/limitations.html#nested-slash-command-chains-can-stop-after-the-first-sub-command-and-forget-the-parent-plan"/>
-    <updated>2026-07-13T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <summary>A user-defined slash command can instruct Claude Code to run several other slash commands in sequence, yet only the first nested command actually runs before Claude returns control to the user. In the reported repro, `/end-session` was supposed to execute `/update-brain`, `/update-daily`, and `/update-memory` in order, but Claude consistently completed only the first nested command and then stopped. This is distinct from older slash-command bugs around discovery, autocomplete, or SDK-side prompt expansion: the nested command is found and executed successfully, but the parent command&#x27;s remaining steps are forgotten after the first `Skill` tool return. The narrower broken layer is continuation of the parent slash-command plan after a nested slash-command invocation completes.</summary>
     <category term="Skills / slash commands"/>
   </entry>
@@ -114,7 +138,7 @@
     <title>[HIGH] `/compact` can disconnect stdio MCP plugins and kill their tools until restart</title>
     <id>https://framework.boucle.sh/limitations.html#compact-can-disconnect-stdio-mcp-plugins-and-kill-their-tools-until-restart</id>
     <link href="https://framework.boucle.sh/limitations.html#compact-can-disconnect-stdio-mcp-plugins-and-kill-their-tools-until-restart"/>
-    <updated>2026-07-13T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <summary>When Claude Code compacts context, stdio-based MCP plugins can disconnect permanently and leave all of their tools unavailable until the whole session is restarted. In the reported WSL2 Telegram plugin repro, `claude --channels plugin:telegram@claude-plugins-official` started healthy, Telegram reply tools worked normally, and the break only appeared immediately after manual `/compact` or automatic compaction near the context limit. After compaction, Claude reported `MCP server disconnected` and the plugin&#x27;s stdio transport shut down because the process treated the compact-time stdin close/reset as a real session end. This is distinct from older plugin failures where the runtime never spawns, inbound notifications degrade after hours, or `/reload-plugins` breaks an existing subscription: here the narrower broken layer is the compaction lifecycle itself, which tears down an otherwise healthy stdio MCP connection mid-session.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -122,7 +146,7 @@
     <title>[HIGH] `/resume` can lose container sessions when a PID-keyed session index overwrites bind-mounted metadata</title>
     <id>https://framework.boucle.sh/limitations.html#resume-can-lose-container-sessions-when-pid-keyed-session-index-overwrites-bind-mounted-metadata</id>
     <link href="https://framework.boucle.sh/limitations.html#resume-can-lose-container-sessions-when-pid-keyed-session-index-overwrites-bind-mounted-metadata"/>
-    <updated>2026-07-13T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <summary>When Claude Code runs inside a devcontainer or other container with `~/.claude` bind-mounted from the host, `/resume` can silently lose older sessions after the container restarts even though the underlying conversation JSONL files are still intact. In the reported WSL2 devcontainer repro, session metadata files under `~/.claude/sessions/` were keyed by PID (for example `8743.json`). After a container restart, the PID namespace reset, a new Claude process reused the same PID, and its metadata overwrote the old PID-keyed file. That destroys the mapping from PID to session UUID, so `/resume` no longer lists the older session even though the transcript remains on disk under `~/.claude/projects/`. This is distinct from earlier `/resume` failures tied to worktrees, branch filters, stale compaction boundaries, or cache/index drift in editor UIs: here the narrower broken layer is the PID-keyed metadata index itself, which is unsafe across container restarts and bind-mounted homes.</summary>
     <category term="CLI &amp; terminal"/>
   </entry>
@@ -130,7 +154,7 @@
     <title>[HIGH] Parent MCP registration blocks can leak into subagent tool output</title>
     <id>https://framework.boucle.sh/limitations.html#parent-mcp-registration-blocks-can-leak-into-subagent-tool-output</id>
     <link href="https://framework.boucle.sh/limitations.html#parent-mcp-registration-blocks-can-leak-into-subagent-tool-output"/>
-    <updated>2026-07-13T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <summary>A subagent spawned through the `Agent` tool can receive parent-scoped MCP registration content inside its own tool results even when the subagent has no MCP servers configured. In the reported macOS repro, multiple subagents saw `system-reminder` blocks describing the parent agent&#x27;s MCP server registrations (Gamma, Supabase, Vercel, and others) embedded inline with otherwise normal WebFetch, Bash, and other tool output. This is narrower than older cases where disabled MCP servers still expose tool names in the parent&#x27;s deferred tools list: here the parent&#x27;s MCP registration material crosses the agent boundary and is delivered through the subagent&#x27;s tool-output stream itself, breaking context isolation and making the leaked runtime content indistinguishable from a real prompt-injection payload.</summary>
     <category term="Agents &amp; subagents"/>
   </entry>
@@ -138,32 +162,8 @@
     <title>[HIGH] Channel notification handler can stop surfacing inbound messages after hours while the plugin and reply tools still work</title>
     <id>https://framework.boucle.sh/limitations.html#channel-notification-handler-can-stop-surfacing-inbound-messages-after-hours-while-plugin-and-reply-tools-still-work</id>
     <link href="https://framework.boucle.sh/limitations.html#channel-notification-handler-can-stop-surfacing-inbound-messages-after-hours-while-plugin-and-reply-tools-still-work"/>
-    <updated>2026-07-13T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <summary>In long-running Claude Code sessions using `--channels plugin:telegram@claude-plugins-official`, inbound `notifications/claude/channel` events can stop surfacing after roughly 2-3 hours even though the Telegram plugin process stays alive, outbound reply tools keep working, MCP stdio remains healthy, and the bot API is still reachable. In the reported Docker/Linux repro, `ss` and `strace` both showed the `bun` plugin process still connected to Telegram and actively writing notifications, while Claude Code stopped injecting any new `&lt;channel ...&gt;` messages into the conversation until the session was restarted. This is distinct from older channel regressions where inbound notifications never work on first attach, idle sessions do not wake, `/reload-plugins` breaks a previously healthy subscription, or the plugin runtime never spawns: here the session begins healthy and then degrades over time at the inbound-notification handler layer only, while outbound tools continue proving the plugin transport is still alive.</summary>
     <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] `!` shell commands can silently skip interactive stdin prompts and complete without user input</title>
-    <id>https://framework.boucle.sh/limitations.html#bang-shell-commands-can-silently-skip-interactive-stdin-prompts</id>
-    <link href="https://framework.boucle.sh/limitations.html#bang-shell-commands-can-silently-skip-interactive-stdin-prompts"/>
-    <updated>2026-07-13T00:00:00Z</updated>
-    <summary>When a user runs a direct shell command through Claude Code&#x27;s `!` prefix and that command expects an interactive stdin prompt, the prompt can fail to appear entirely and the command can return immediately with no visible interaction. In the reported Windows 11 / Git Bash repro on v2.1.104, `! gh secret set MY_SECRET` never displayed GitHub CLI&#x27;s secure value prompt, finished silently, and left the secret unset. This is distinct from older Windows hook stdin deadlocks and OAuth code-entry freezes: the broken layer is Claude Code&#x27;s direct `!` shell execution path itself, where interactive stdin prompting does not reach the user even though the command is supposed to run inside the current session.</summary>
-    <category term="Bash &amp; shell execution"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `claude -p --output-format json` can drop final text when `text` and `tool_use` share one assistant message</title>
-    <id>https://framework.boucle.sh/limitations.html#claude-p-output-format-json-can-drop-final-text-when-text-and-tool-use-share-one-assistant-message</id>
-    <link href="https://framework.boucle.sh/limitations.html#claude-p-output-format-json-can-drop-final-text-when-text-and-tool-use-share-one-assistant-message"/>
-    <updated>2026-07-13T00:00:00Z</updated>
-    <summary>In `claude -p --output-format json`, the top-level `result` field can come back as an empty string even when the model already produced visible text, if the same final assistant message also contains a `tool_use` block and the model has nothing more to say after the tool returns. The tool still executes, tokens are consumed, and the text remains visible in the saved session history when the user later resumes the session, but the JSON envelope itself silently drops that text. This is narrower than the older `result`-always-empty print-mode regressions because plain text-only responses still work on v2.1.104; the break happens specifically when one assistant turn mixes output text and a terminal `tool_use` such as `TodoWrite`.</summary>
-    <category term="CLI &amp; terminal"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Windows `statusLine.command` can drop stdout from external binaries unless wrapped in `bash -c`</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-statusline-command-can-drop-stdout-from-external-binaries-unless-wrapped-in-bash-c</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-statusline-command-can-drop-stdout-from-external-binaries-unless-wrapped-in-bash-c"/>
-    <updated>2026-07-13T00:00:00Z</updated>
-    <summary>On Windows, `statusLine.command` can execute external programs such as `py`, `python`, `python3`, or even a fully-qualified Python binary without ever surfacing their stdout in the Claude Code status line, leaving the HUD blank with no error message. In the reported v2.1.92 repro, the same script produced correct output when run manually and also worked immediately when wrapped in `bash -c &#x27;...&#x27;`, while Bash builtins like `echo` and `printf` rendered normally without the wrapper. This is distinct from earlier statusline regressions where the wrong JSON payload reached the command, `rate_limits` fields were missing, no-flicker mode suppressed the whole statusline, or `/compact` left stale values behind: here the narrower failure surface is the stdout-capture path for non-builtin child processes themselves on Windows.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>

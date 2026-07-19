@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">942</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-13.</span></p>
+        <p class="subtitle"><span id="total-count">945</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-19.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -10044,6 +10044,42 @@
                         <!-- workaround:plugin-sourced-hooks-json-can-remain-inert-after-auto-install -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat plugin-delivered hooks as advisory until a fresh-session transcript proves they actually run. Put safety-critical SessionStart, PreToolUse, Stop, and PreSkill hooks directly in user or project settings with absolute commands, and include a simple startup or tool-use probe that confirms the hook entered the dispatch table.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/75972" target="_blank">#75972</a></div>
+        </div>
+        <div class="kl-entry" data-category="Context &amp; memory" data-issues="78216" id="parent-claude-md-imports-silently-ignored-from-nested-cwd" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#943</span>
+                <span class="kl-cat">Context &amp; memory</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Parent-directory CLAUDE.md imports can be silently ignored from nested working directories</h3>
+            <p>When Claude Code discovers a CLAUDE.md in a parent directory, the parent file content can load while @import lines inside that file are skipped without an error. The reported v2.1.211 repro shows the same CLAUDE.md importing correctly from its own directory, then losing both relative and absolute imports when the session starts from nested subdirectories. This breaks common monorepo and CLAUDE.md-to-AGENTS.md projection patterns because the project appears configured while the imported rules are absent.</p>
+                        <!-- workaround:parent-claude-md-imports-silently-ignored-from-nested-cwd -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on parent-discovered CLAUDE.md imports for critical rules until this is fixed. Start Claude Code from the directory that owns the importing CLAUDE.md, inline critical imports into that file, or duplicate a small project-local CLAUDE.md in common subdirectories. Add a startup smoke test that asks for a sentinel from imported memory before trusting the session.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78216" target="_blank">#78216</a></div>
+        </div>
+        <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="78234" id="plugin-scoped-agent-definitions-silently-degrade-in-team-and-agent-spawns" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#944</span>
+                <span class="kl-cat">Subagent &amp; spawned agents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Plugin-scoped agent definitions can silently degrade in team and Agent-tool spawns</h3>
+            <p>In Claude Code v2.1.211, plugin-scoped subagent definitions used as agent-team teammates can be resolved and then filtered out, causing the teammate to spawn as a vanilla session with no definition body, model, tool allowlist, or customAgentType metadata. A follow-up report on the same issue shows a related Agent-tool path where the plugin body loads but frontmatter tool restrictions are silently replaced by a small default toolset. The dangerous behavior is the quiet downgrade: plugin-orchestrated workers appear to launch while losing role instructions or tool boundaries.</p>
+                        <!-- workaround:plugin-scoped-agent-definitions-silently-degrade-in-team-and-agent-spawns -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Keep safety-critical agent definitions in project or user scope rather than plugin scope when spawning teammates or subagents. After a spawn, inspect the subagent metadata and effective tool list for customAgentType and the expected frontmatter restrictions. Treat any plugin-scoped spawn without those fields as untrusted, and fail loudly in orchestration code instead of letting the worker continue with fallback behavior.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78234" target="_blank">#78234</a></div>
+        </div>
+        <div class="kl-entry" data-category="Sandbox &amp; permissions" data-issues="78253" id="macos-sandbox-profile-can-hit-e2big-in-git-repos-with-large-policy-patterns" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#945</span>
+                <span class="kl-cat">Sandbox &amp; permissions</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>macOS sandbox profile generation can hit E2BIG in git repositories with large recursive policies</h3>
+            <p>On macOS with sandbox mode and a centrally managed permission policy, Claude Code v2.1.210-211 can fail every Bash invocation with spawn E2BIG when the current directory is inside a non-trivial git working tree. The reported evidence points to the compiled sandbox filesystem policy becoming a roughly 1 MB argv argument, scaling with git working-tree size, recursive policy pattern count, and registered worktrees rather than with the shell command itself. Even a no-op command can fail before the shell starts.</p>
+                        <!-- workaround:macos-sandbox-profile-can-hit-e2big-in-git-repos-with-large-policy-patterns -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Reduce broad recursive permission patterns where policy control allows it, prune stale git worktrees, and restart the top-level Claude Code process after policy or repository cleanup because sandbox profile state can be process-cached. If the failure persists, run from a smaller checkout or outside the git repository only as a temporary diagnostic, and ask maintainers for a pre-spawn sandbox budget breakdown instead of treating E2BIG as a shell-command problem.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78253" target="_blank">#78253</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
