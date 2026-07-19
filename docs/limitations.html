@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">983</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-19.</span></p>
+        <p class="subtitle"><span id="total-count">986</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-19.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -10516,6 +10516,42 @@
                         <!-- workaround:vscode-assistant-output-can-be-reingested-as-user-input -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Watch for unexpected user-prefixed text inside assistant output, especially in long VS Code sessions. If it appears, stop the session or explicitly correct the transcript before allowing further tool use, and preserve screenshots or logs for support.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79035" target="_blank">#79035</a></div>
+        </div>
+        <div class="kl-entry" data-category="Platform &amp; compatibility" data-issues="79055" id="windows-updater-can-leave-git-bash-claude-symlink-stale" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#984</span>
+                <span class="kl-cat">Platform &amp; compatibility</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Windows updater can leave Git Bash claude symlink stale</h3>
+            <p>On Windows accounts without symlink creation privilege, the native Claude Code updater can refresh claude.exe while leaving the extensionless Git Bash launcher pointing at an old pruned version directory. PowerShell and cmd keep working, but Git Bash fails with command not found and the updater emits no obvious warning.</p>
+                        <!-- workaround:windows-updater-can-leave-git-bash-claude-symlink-stale -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If Git Bash suddenly cannot find claude after an update, check ~/.local/bin/claude and ~/.local/share/claude/versions. Until the updater handles non-symlink accounts reliably, add a Bash function that invokes ~/.local/bin/claude.exe directly or reinstall from an account with Developer Mode or symlink privilege enabled.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79055" target="_blank">#79055</a></div>
+        </div>
+        <div class="kl-entry" data-category="CLI &amp; terminal" data-issues="79056" id="macos-bash-commands-can-use-missing-timeout-utility" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#985</span>
+                <span class="kl-cat">CLI &amp; terminal</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>macOS Bash commands can use missing timeout utility</h3>
+            <p>On macOS systems without GNU coreutils, Claude Code can wrap Bash commands in timeout or gtimeout even though those utilities are not installed by default. The command fails before running, and in harmful cases the assistant may ignore the command-not-found error and reason as if the command succeeded.</p>
+                        <!-- workaround:macos-bash-commands-can-use-missing-timeout-utility -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat any command-not-found result for timeout or gtimeout as a failed command, not as empty successful output. Re-run the intended command without the external wrapper, use tool-specific timeout flags where available, or configure Claude Code&#x27;s built-in Bash timeout environment instead of relying on GNU timeout.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79056" target="_blank">#79056</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="79057" id="desktop-scheduled-task-sessions-can-look-resumable-from-other-hosts" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#986</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Desktop scheduled-task sessions can look resumable from other hosts</h3>
+            <p>Claude Code Desktop can show locally hosted scheduled-task sessions in the account-wide session list on another machine. Opening a completed run from the wrong host leaves the input active, waits several minutes, then reports a Remote Control disconnect instead of showing that the transcript is read-only or non-resumable.</p>
+                        <!-- workaround:desktop-scheduled-task-sessions-can-look-resumable-from-other-hosts -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When using Desktop scheduled tasks across multiple machines, treat completed local task runs as host-bound transcripts. Continue work from the machine that created the task, or start a new session from the transcript rather than assuming an account-wide sidebar entry can be resumed remotely.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79057" target="_blank">#79057</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
