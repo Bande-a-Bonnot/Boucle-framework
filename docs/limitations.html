@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">992</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-19.</span></p>
+        <p class="subtitle"><span id="total-count">995</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-19.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -10624,6 +10624,42 @@
                         <!-- workaround:linux-bundled-bun-can-panic-in-resume-picker-and-long-sessions -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When the interactive `--resume` picker crashes, resume by explicit session id instead of opening the picker. For long Linux sessions on affected builds, checkpoint work outside the conversation and restart periodically until Claude Code ships a bundled Bun build without this panic signature.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79082" target="_blank">#79082</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="79121" id="tui-renderer-switch-can-kill-stdio-mcp-tools" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#993</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>`/tui` renderer switches can kill stdio MCP tools</h3>
+            <p>Switching renderers in-session with `/tui fullscreen` or `/tui default` relaunches Claude Code through `--resume` and sends SIGINT to plugin-provided stdio MCP servers. A reported v2.1.215 macOS/tmux failure killed the server, never restarted it, showed the server as failed in `/mcp`, and silently removed every tool from that plugin until manual reconnect. The reporter could not reproduce deterministically after 7 clean switches, so this appears to be an intermittent restart race rather than a guaranteed direction-specific defect.</p>
+                        <!-- workaround:tui-renderer-switch-can-kill-stdio-mcp-tools -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> After switching renderers in sessions that depend on plugin stdio MCP tools, check `/mcp` before continuing unattended work. If a server is marked failed or tools disappear, use `/mcp` reconnect or restart the session. Avoid mid-session renderer switches during critical MCP-dependent work until the relaunch path reports or repairs failed restarts.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79121" target="_blank">#79121</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="79120" id="windows-claude-code-can-run-desktop-mcp-config" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#994</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Windows Claude Code can run Claude Desktop MCP config</h3>
+            <p>On Windows with both Claude Code and Claude Desktop installed, Claude Code can appear to use its own MCP server definition while actually spawning a same-named stdio server from Claude Desktop&#x27;s `claude_desktop_config.json`. In the reported collision, `claude mcp list` showed the intended SSE server as connected, but tool calls were served by the Desktop stdio process instead, causing 401 failures after a local API key rotation while the surface-level connection state stayed green.</p>
+                        <!-- workaround:windows-claude-code-can-run-desktop-mcp-config -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On Windows machines that run both Claude Desktop and Claude Code, audit the live process tree as well as `claude mcp list` when MCP calls behave unexpectedly. Avoid reusing server names across Desktop and Code configs, and temporarily remove or rename Desktop MCP entries when Code must use a distinct remote/SSE server. Treat a green MCP list entry as insufficient proof that the expected transport is handling tool calls.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79120" target="_blank">#79120</a></div>
+        </div>
+        <div class="kl-entry" data-category="VS Code extension" data-issues="79118" id="vscode-sessions-can-persist-metadata-without-messages" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#995</span>
+                <span class="kl-cat">VS Code extension</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>VS Code sessions can persist metadata without messages</h3>
+            <p>Claude Code v2.1.215 in the VS Code native extension can create session JSONL files that contain only bookkeeping records such as title, mode, and last-prompt, while never writing the actual user or assistant messages. The sidebar still shows the tab or preview, but reopening fails with `No conversation found with session ID` and the transcript has no recovery path on disk. A second session created in the same minute showed the same metadata-only pattern, making this a persistence failure rather than a missing-file path issue.</p>
+                        <!-- workaround:vscode-sessions-can-persist-metadata-without-messages -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For important VS Code extension sessions, periodically inspect or back up the matching `~/.claude/projects/&lt;project&gt;/&lt;session-id&gt;.jsonl` and verify it contains real `user` and `assistant` message records, not only title/mode metadata. If a tab is critical, export or copy important decisions outside the session before closing or relying on sidebar reopen.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79118" target="_blank">#79118</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

@@ -7,6 +7,30 @@
   <updated>2026-07-19T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] VS Code sessions can persist metadata without messages</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-sessions-can-persist-metadata-without-messages</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-sessions-can-persist-metadata-without-messages"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Claude Code v2.1.215 in the VS Code native extension can create session JSONL files that contain only bookkeeping records such as title, mode, and last-prompt, while never writing the actual user or assistant messages. The sidebar still shows the tab or preview, but reopening fails with `No conversation found with session ID` and the transcript has no recovery path on disk. A second session created in the same minute showed the same metadata-only pattern, making this a persistence failure rather than a missing-file path issue.</summary>
+    <category term="VS Code extension"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Windows Claude Code can run Claude Desktop MCP config</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-claude-code-can-run-desktop-mcp-config</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-claude-code-can-run-desktop-mcp-config"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>On Windows with both Claude Code and Claude Desktop installed, Claude Code can appear to use its own MCP server definition while actually spawning a same-named stdio server from Claude Desktop&#x27;s `claude_desktop_config.json`. In the reported collision, `claude mcp list` showed the intended SSE server as connected, but tool calls were served by the Desktop stdio process instead, causing 401 failures after a local API key rotation while the surface-level connection state stayed green.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[HIGH] `/tui` renderer switches can kill stdio MCP tools</title>
+    <id>https://framework.boucle.sh/limitations.html#tui-renderer-switch-can-kill-stdio-mcp-tools</id>
+    <link href="https://framework.boucle.sh/limitations.html#tui-renderer-switch-can-kill-stdio-mcp-tools"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Switching renderers in-session with `/tui fullscreen` or `/tui default` relaunches Claude Code through `--resume` and sends SIGINT to plugin-provided stdio MCP servers. A reported v2.1.215 macOS/tmux failure killed the server, never restarted it, showed the server as failed in `/mcp`, and silently removed every tool from that plugin until manual reconnect. The reporter could not reproduce deterministically after 7 clean switches, so this appears to be an intermittent restart race rather than a guaranteed direction-specific defect.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[HIGH] Linux bundled Bun can panic in resume picker and long sessions</title>
     <id>https://framework.boucle.sh/limitations.html#linux-bundled-bun-can-panic-in-resume-picker-and-long-sessions</id>
     <link href="https://framework.boucle.sh/limitations.html#linux-bundled-bun-can-panic-in-resume-picker-and-long-sessions"/>
@@ -141,29 +165,5 @@
     <updated>2026-07-19T00:00:00Z</updated>
     <summary>A CLAUDE.md file loaded from an ancestor directory can have its body injected while its @path import lines are not expanded. Workspace and monorepo setups that factor shared instructions into imported files can silently lose those rules when Claude Code is launched from a subdirectory.</summary>
     <category term="Configuration behavior"/>
-  </entry>
-  <entry>
-    <title>[LOW] Skills docs can overstate automatic /code-review and /verify invocation</title>
-    <id>https://framework.boucle.sh/limitations.html#skills-docs-can-overstate-automatic-code-review-and-verify-invocation</id>
-    <link href="https://framework.boucle.sh/limitations.html#skills-docs-can-overstate-automatic-code-review-and-verify-invocation"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>The Claude Code skills and commands documentation can still imply that bundled skills such as /code-review and /verify may be invoked automatically when relevant, while the 2.1.215 changelog says Claude no longer runs those two skills on its own. Users relying on the generic skills wording can therefore expect review or verification to happen implicitly even though direct slash-command invocation is now required for those bundled skills.</summary>
-    <category term="Skills &amp; commands"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Bundled workflows inherit expensive session models for every subagent</title>
-    <id>https://framework.boucle.sh/limitations.html#bundled-workflows-inherit-expensive-session-models</id>
-    <link href="https://framework.boucle.sh/limitations.html#bundled-workflows-inherit-expensive-session-models"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>Claude Code 2.1.214 bundled workflows such as /code-review and deep-research can launch many subagents that inherit the main session model because the sealed bundled scripts expose no model override. The report measured one high-effort review of a trivial two-file diff at about 353K subagent tokens in 60 seconds, all billed at the Fable session model rate, and found no model: pins in persisted code-review workflow scripts.</summary>
-    <category term="Performance &amp; cost"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Cowork plan downgrade can orphan session history from the UI</title>
-    <id>https://framework.boucle.sh/limitations.html#cowork-plan-downgrade-can-orphan-session-history-from-ui</id>
-    <link href="https://framework.boucle.sh/limitations.html#cowork-plan-downgrade-can-orphan-session-history-from-ui"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>Claude Code Cowork on macOS reportedly hid all session history from the UI after a scheduled Max-to-Pro downgrade took effect. Filesystem inspection still found session metadata under local-agent-mode-sessions and transcripts in hidden .claude/projects folders inside per-session VM storage, but the app offered no supported restore path, export, warning, or migration flow. The report frames this as repeat data-loss risk because non-technical users would likely assume paid work disappeared.</summary>
-    <category term="Desktop &amp; IDE integration"/>
   </entry>
 </feed>
