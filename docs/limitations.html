@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">954</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-19.</span></p>
+        <p class="subtitle"><span id="total-count">958</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-19.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -10188,6 +10188,54 @@
                         <!-- workaround:hook-if-dir-globs-can-narrow-to-project-relative-depth -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For hook if conditions, write explicit any-depth patterns such as Edit(**/src/**) when nested directories must match, and add tests that pipe representative hook payloads for project-root and nested paths through your matcher. After Claude Code upgrades, rerun hook probes for all directory-scoped policies instead of assuming permission-rule examples have identical depth behavior in hooks.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78957" target="_blank">#78957</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="79005" id="inline-agent-empty-tools-can-still-attempt-tools-in-headless-mode" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#955</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Inline --agent sessions with empty tools can still attempt tool use in headless mode</h3>
+            <p>Claude Code v2.1.214 headless -p sessions launched with an inline --agents definition and --agent &lt;name&gt; can behave inconsistently when the selected agent declares tools: []. A reported Linux repro expected an empty tool list to deny all tools or refuse launch, but saw a real TodoWrite round-trip in one run, NO_TOOL in another, and fabricated-looking tool-call text in others. Adding --disallowedTools &quot;*&quot; and --tools &quot;&quot; did not create a reliable deny-all contract, and an enumerated disallow list still left ToolSearch callable. The reporter&#x27;s side-effect probes did not observe actual file reads or writes, but the operational gap is still serious for dispatchers that need a contractual no-tool agent.</p>
+                        <!-- workaround:inline-agent-empty-tools-can-still-attempt-tools-in-headless-mode -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on inline --agent tools: [] as the only no-tool isolation boundary in headless dispatch. Run a per-session token-leak and side-effect probe before trusting the agent, avoid passing secrets or writable project paths to supposedly no-tool inline agents, and prefer externally sandboxed processes or a fresh profile with no sensitive tools until Anthropic documents and enforces the intended empty-tool semantics for this path.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79005" target="_blank">#79005</a></div>
+        </div>
+        <div class="kl-entry" data-category="Core &amp; session management" data-issues="79001" id="workflow-by-name-can-execute-stale-mid-edit-script-content" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#956</span>
+                <span class="kl-cat">Core &amp; session management</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Workflow by-name dispatch can execute stale mid-edit script content</h3>
+            <p>Claude Code Workflow({name}) dispatch can execute a cached script snapshot that does not match the file on disk at call time or any committed version. The reported macOS v2.1.214 incident used the persisted per-run workflow script copy to prove that a launch at 14:29 ran an 8-second transient edit state from 14:13, even though the workflow file had been committed, the tree was clean, and the launching session verified the current commit before calling the workflow. This breaks the expected publication boundary between dirty edits, committed workflow definitions, and autonomous orchestrator runs.</p>
+                        <!-- workaround:workflow-by-name-can-execute-stale-mid-edit-script-content -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Prefer scriptPath dispatch over name-based workflow dispatch for safety-critical or frequently edited workflows, and reconcile the persisted executed script against git show HEAD:&lt;path&gt; before accepting results. Kill or quarantine runs whose witness copy differs from the expected committed file, and avoid editing workflow definitions in one Claude Code session while another long-lived session can launch by name.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79001" target="_blank">#79001</a></div>
+        </div>
+        <div class="kl-entry" data-category="TUI &amp; display" data-issues="79006" id="background-bash-tasks-can-be-invisible-and-block-session-deletion" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#957</span>
+                <span class="kl-cat">TUI &amp; display</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Background Bash tasks can be invisible and block session deletion without explanation</h3>
+            <p>Claude Code v2.1.215 background sessions can run Bash tasks with run_in_background while neither the built-in footer, agents view, nor statusline JSON exposes those live tasks. A reported macOS repro showed long CI watcher tasks running for up to about 30 minutes with no visible indicator; deleting the session from the agents view appeared to fail and the session kept reappearing until the last background task finished. The protection against tearing down live work may be reasonable, but the lack of a task count or refusal reason makes the session look broken.</p>
+                        <!-- workaround:background-bash-tasks-can-be-invisible-and-block-session-deletion -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For workflows that use run_in_background, maintain your own task ledger outside Claude Code: log start and expected completion, write watcher PIDs to a known file, and cleanly stop or wait for those processes before deleting sessions from the agents view. Do not assume a custom statusline can show this today because the reported statusline payload lacks a background task count.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79006" target="_blank">#79006</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="79007" id="desktop-mcp-widgets-can-spin-forever-after-large-result-persistence" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#958</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Desktop MCP widgets can spin forever after large tool results are persisted to disk</h3>
+            <p>In Claude Code Desktop v2.1.212, an MCP tool result that is too large for inline delivery can be persisted to ~/.claude/projects/.../tool-results while the desktop transcript widget continues showing an indefinite spinner. The reported Mermaid Chart connector repro used validate_and_render_mermaid_diagram, whose result included base64 SVG and PNG data large enough to trigger result persistence. The agent could read the saved JSON file and extract rendered output, but the widget card never rendered or fell back to a normal collapsible tool result.</p>
+                        <!-- workaround:desktop-mcp-widgets-can-spin-forever-after-large-result-persistence -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When a Desktop MCP widget spins after a large result, inspect the referenced tool-results file directly instead of waiting for the card. For Mermaid Chart output, extract renderedSVG or renderedPNG from the persisted JSON, decode it to a file, and treat widget rendering as best-effort for oversized responses until the desktop harness handles persisted widget payloads.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79007" target="_blank">#79007</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
