@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 995,
+  "count": 1001,
   "categories": {
     "Hook behavior & events": 174,
-    "Permission system": 112,
+    "Permission system": 113,
     "Hook bypass & evasion": 99,
     "MCP & plugin issues": 54,
     "Subagent & spawned agents": 40,
@@ -24,22 +24,23 @@
     "MCP": 7,
     "MCP & integrations": 7,
     "Permissions": 7,
+    "Plugin & channel system": 7,
+    "Remote & cloud": 7,
     "Sandbox & permissions": 7,
     "Auth & accounts": 6,
     "Cowork & remote": 6,
-    "Plugin & channel system": 6,
-    "Remote & cloud": 6,
     "Scheduling & remote triggers": 6,
+    "VS Code extension": 6,
     "Core & session management": 5,
     "Desktop & platform bugs": 5,
     "UX & display": 5,
-    "VS Code extension": 5,
     "Data integrity": 4,
     "MCP & plugins": 4,
     "permissions": 4,
     "sandbox": 4,
     "Scheduled tasks": 4,
     "Skills & commands": 4,
+    "Skills / slash commands": 4,
     "tui": 4,
     "Bash & shell execution": 3,
     "CLI / TUI rendering": 3,
@@ -49,13 +50,13 @@
     "Hooks": 3,
     "Memory & context": 3,
     "Model behavior": 3,
+    "Model behavior & instructions": 3,
     "Model behavior & output": 3,
     "model-behavior": 3,
     "Permissions & safety": 3,
     "Remote": 3,
     "Sandbox": 3,
     "Security": 3,
-    "Skills / slash commands": 3,
     "Stability & crashes": 3,
     "Telemetry & insights": 3,
     "Worktree": 3,
@@ -75,7 +76,6 @@
     "MCP and plugins": 2,
     "MCP integration": 2,
     "Model behavior & compliance": 2,
-    "Model behavior & instructions": 2,
     "Multi-agent": 2,
     "Performance": 2,
     "Performance & resources": 2,
@@ -169,10 +169,10 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 65,
-    "HIGH": 494,
+    "CRITICAL": 66,
+    "HIGH": 497,
     "LOW": 99,
-    "MEDIUM": 337
+    "MEDIUM": 339
   },
   "entries": [
     {
@@ -12720,30 +12720,109 @@
       "workaround": "For important VS Code extension sessions, periodically inspect or back up the matching `~/.claude/projects/<project>/<session-id>.jsonl` and verify it contains real `user` and `assistant` message records, not only title/mode metadata. If a tab is critical, export or copy important decisions outside the session before closing or relying on sidebar reopen.",
       "status": "open",
       "date_added": "2026-07-19"
+    },
+    {
+      "id": "vscode-open-tabs-can-outlive-retention-deleted-transcripts",
+      "title": "VS Code open tabs can outlive retention-deleted transcripts",
+      "category": "VS Code extension",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79122"
+      ],
+      "description": "Claude Code's VS Code extension can keep month-old session tabs visible after the underlying transcript JSONL has been silently removed by the default 30-day retention cleanup. In the reported v2.1.215 macOS repro, tabs stayed open and appeared usable, but later interaction wrote fresh same-ID metadata-only stubs and reopening failed with `No conversation found with session ID`. A second old tab retained cached title and last-prompt metadata whose referenced leaf UUID no longer existed in any project transcript, so the real conversation content was unrecoverable while the UI gave no retention warning.",
+      "workaround": "Do not treat a still-open VS Code sidebar tab as proof that its transcript is still durable. For important sessions, either raise or disable `cleanupPeriodDays`, export/copy key content before the retention window, or periodically verify that the matching `~/.claude/projects/<project>/<session-id>.jsonl` still contains real messages. If a reopened tab reports `No conversation found`, check retention before assuming this is a fresh persistence bug.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "web-plugin-userconfig-secrets-can-be-unavailable-and-shadow-connectors",
+      "title": "Claude Code web plugins can lack `userConfig` secrets and shadow working connectors",
+      "category": "Remote & cloud",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79124"
+      ],
+      "description": "Claude Code cloud sessions can auto-enable a repository-declared plugin and expose its commands while providing no supported headless path for the user to supply required sensitive `userConfig` values such as API tokens. In the reported cloud-session repro, plugin MCP servers that interpolate `${user_config.<field>}` start with empty credentials and return 401. If the same endpoint is also available through a working claude.ai OAuth connector, the tokenless plugin server can win precedence and hide the connector, leaving users with either plugin commands plus broken tools or working connector tools without plugin commands.",
+      "workaround": "Before enabling plugins with required `userConfig` in cloud sessions, test from a fresh web session rather than a local machine with credentials already stored. Avoid committing enabled plugin MCP servers that need per-user secrets unless there is an account-scoped secret or environment injection path. If a connector stops working after enabling a plugin, disable or rename the plugin MCP server and check whether an unresolved `${user_config.*}` value is shadowing the connector.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "signed-thinking-can-reference-unrecorded-injection-payloads",
+      "title": "Signed thinking can reference injection payloads absent from the local transcript",
+      "category": "Model behavior & instructions",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79125"
+      ],
+      "description": "A reported Claude Code v2.1.211 macOS session produced a signed thinking block that abruptly refused an apparent prompt-injection payload involving exfiltration to a telemetry domain, while the persisted local transcript contained no matching tool result, attachment, hook output, parent-session input, local file, git diff, or proxy path. The model did not comply and no data left the machine, but the response attributed the payload to nonexistent git diff output and the earliest local occurrence was inside the model's own signed thinking. The narrow risk is not confirmed exfiltration; it is that user-visible sessions may contain model refusals or safety reactions to context that users cannot audit from the local JSONL transcript.",
+      "workaround": "When signed thinking or refusals mention a payload that should have come from local context, preserve the session id, request id, transcript JSONL, wrapper arguments, hook outputs, and relevant environment details before retrying. Do not assume the local transcript is complete evidence for server-side request context, and avoid building automated trust decisions on unexplained thinking-stream references until the provider can confirm whether they were injected context, eval traffic, or model confabulation.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "auto-mode-classifier-can-block-safe-dry-runs-and-reward-broad-allowlists",
+      "title": "Auto mode can block safe dry-runs while broader allowlisted commands pass",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79112"
+      ],
+      "description": "Claude Code auto mode can classify Bash commands by surface form rather than effect, blocking benign or read-only commands while allowing broader equivalents that happen to match user allowlists. A reported Ubuntu repro from v2.1.x sessions shows `git clean -ndX` blocked even though `-n` makes it a dry-run listing, while a `find ... -exec rm -rf` cleanup with a larger deletion effect passed because `Bash(find:*)` was allowlisted. Several such denials can accumulate into the consecutive-blocks lockout, derailing autonomous or plan-mode work and pushing users toward broad allowlists that bypass the classifier entirely.",
+      "workaround": "Keep allowlists as narrow as possible and do not add broad `find:*` or `bash:*` rules just to escape false positives. For cleanup tasks, prefer explicit human approval or project-specific scripts whose effects are easy to review. If a dry-run is blocked, record both the blocked command and any allowed equivalent so maintainers can compare effect-level behavior rather than only command spelling.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "ralph-loop-command-can-remain-model-invocable-despite-hidden-frontmatter",
+      "title": "`/ralph-loop` can remain model-invocable despite hidden frontmatter",
+      "category": "Skills / slash commands",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79138"
+      ],
+      "description": "The official `ralph-wiggum` plugin's loop and cancel commands can use `hide-from-slash-command-tool: \"true\"`, a key accepted silently by validation but not the documented key that blocks model invocation. In a v2.1.215 live probe with otherwise identical test commands, the command using that frontmatter remained available through the Skill tool, while `disable-model-invocation: true` hid the command from the model and still allowed direct user slash-command invocation. The concrete hazard is that a command apparently intended to stay user-only, including an infinite Ralph loop, can still be invoked by the assistant itself.",
+      "workaround": "For slash commands that must be user-only, use the documented `disable-model-invocation: true` frontmatter and test with a headless model invocation probe, not only a UI slash-command listing. Plugin authors should treat unknown or legacy-looking frontmatter keys as unsafe until validated against the model's available skill list.",
+      "status": "open",
+      "date_added": "2026-07-19"
+    },
+    {
+      "id": "plugin-dev-shell-helpers-can-fail-opaque-on-macos-or-uppercase-frontmatter",
+      "title": "Plugin-dev shell helpers can fail opaquely on macOS or uppercase frontmatter",
+      "category": "Plugin & channel system",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79128",
+        "https://github.com/anthropics/claude-code/issues/79130"
+      ],
+      "description": "Official plugin-development shell helpers can fail before producing useful diagnostics in common local cases. `scripts/gh.sh` expands an empty `FLAGS` array under `set -u`, which crashes flagless invocations on macOS's stock Bash 3.2 with `FLAGS[@]: unbound variable` even though the same calls work on newer Bash. Separately, `plugin-settings/scripts/validate-settings.sh` pipes a no-match lowercase frontmatter grep through `set -euo pipefail`, so a settings file with only uppercase keys exits 1 after `Detected fields:` without reaching the later checks or final summary. Both failures make plugin authors debug the helper scripts instead of the plugin inputs.",
+      "workaround": "On macOS, run plugin-dev helpers under a newer Bash or pass a harmless flag only as a temporary diagnostic workaround for the `gh.sh` wrapper. If settings validation exits immediately after `Detected fields:`, check for uppercase or non-lowercase frontmatter keys manually. Maintainers can avoid this class by guarding empty array expansions and making no-match grep pipelines explicitly non-fatal before the diagnostic summary.",
+      "status": "open",
+      "date_added": "2026-07-19"
     }
   ],
   "status_summary": {
-    "open": 981,
+    "open": 987,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 65,
-    "high": 494,
+    "critical": 66,
+    "high": 497,
     "low": 99,
-    "medium": 337
+    "medium": 339
   },
   "lastUpdated": "2026-07-19",
   "stats": {
-    "total": 995,
-    "critical": 65,
-    "high": 494,
-    "medium": 337,
+    "total": 1001,
+    "critical": 66,
+    "high": 497,
+    "medium": 339,
     "low": 99,
-    "open": 981,
+    "open": 987,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-19",
-  "total": 995
+  "total": 1001
 }
