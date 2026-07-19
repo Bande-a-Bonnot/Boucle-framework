@@ -7,6 +7,46 @@
   <updated>2026-07-19T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Hookify example rules can be copied with filenames the loader never matches</title>
+    <id>https://framework.boucle.sh/limitations.html#hookify-example-rules-can-be-copied-with-dead-filenames</id>
+    <link href="https://framework.boucle.sh/limitations.html#hookify-example-rules-can-be-copied-with-dead-filenames"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>The official hookify plugin loader discovers rule files using the `.claude/hookify.*.local.md` filename pattern, and its writing-rules guidance says the `hookify.` prefix is mandatory. A fresh report found the plugin&#x27;s own example rules ship without that prefix, while help docs point users to copy the examples with no rename instruction. Copied verbatim into `.claude/`, the rules are silently invisible to the real loader, so expected warning or block rules never fire.</summary>
+    <category term="Plugin &amp; channel system"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Discord integration can ask for access that cannot be granted in Discord</title>
+    <id>https://framework.boucle.sh/limitations.html#discord-channel-access-can-request-ungrantable-in-channel-approval</id>
+    <link href="https://framework.boucle.sh/limitations.html#discord-channel-access-can-request-ungrantable-in-channel-approval"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>A reported Claude Code v2.1.215 Windows Discord integration flow paired the account successfully, then asked the user in a Discord DM for permission that the system itself says cannot be granted from Discord because channel allowlisting must be approved via `/discord:access` in the trusted Claude surface. The user could recover by confirming from Claude Desktop, but the Discord-side prompt was misleading and created a dead-end approval path in the exact untrusted channel the system is trying to guard.</summary>
+    <category term="Plugin &amp; channel system"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Telegram channel photos can download but never reach the Claude Code session</title>
+    <id>https://framework.boucle.sh/limitations.html#telegram-channel-photos-can-download-but-never-reach-session</id>
+    <link href="https://framework.boucle.sh/limitations.html#telegram-channel-photos-can-download-but-never-reach-session"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code v2.1.212 session with the Telegram plugin v0.0.6 received inbound photo messages, gated them, and wrote the downloaded images into the local Telegram inbox directory, but never surfaced a corresponding channel turn in the active Claude Code session. No assistant reply was sent back to Telegram, no companion hook saw a reply tool call, and repeated messages over two days were silently dropped after filesystem delivery. The gap appears to be between the plugin&#x27;s background MCP notification and the client injecting that notification as a conversation turn.</summary>
+    <category term="Plugin &amp; channel system"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Fired Claude Code Remote routines can hang indefinitely on external calls</title>
+    <id>https://framework.boucle.sh/limitations.html#fired-routines-external-calls-can-hang-without-timeout</id>
+    <link href="https://framework.boucle.sh/limitations.html#fired-routines-external-calls-can-hang-without-timeout"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>A July 2026 Claude Code Remote scheduled Routine repro reports that fired sessions can hang indefinitely with no surfaced error, timeout, or fallback execution when the prompt performs an external call. The reporter first reproduced the stall with native Gmail and Drive connector calls, then reproduced it with `web_fetch` and a separate device-bridge MCP server, which suggests the failure is not limited to MCP approval gating. The only visible signal was that the trigger&#x27;s `last_fired_at` updated while the expected post-call output never appeared.</summary>
+    <category term="Remote &amp; cloud"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Plan-mode escape followed by Manual STOP can leave workers running</title>
+    <id>https://framework.boucle.sh/limitations.html#plan-escape-manual-stop-can-leave-workers-running</id>
+    <link href="https://framework.boucle.sh/limitations.html#plan-escape-manual-stop-can-leave-workers-running"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>A reported Windows Visual Studio extension session on Claude Code v2.1.207 could continue background worker and tool execution after the operator escaped from Plan or Auto Mode, reset to Manual Mode, and sent explicit STOP prompts. The visible mode indicator changed, but running work continued, later prompts were ignored, and recovery required killing multiple Claude processes plus restarting the IDE and desktop app. The practical risk is that mode changes and natural-language STOP rules in CLAUDE.md may not be a reliable cancellation boundary once worker execution is already in flight.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Plugin-dev shell helpers can fail opaquely on macOS or uppercase frontmatter</title>
     <id>https://framework.boucle.sh/limitations.html#plugin-dev-shell-helpers-can-fail-opaque-on-macos-or-uppercase-frontmatter</id>
     <link href="https://framework.boucle.sh/limitations.html#plugin-dev-shell-helpers-can-fail-opaque-on-macos-or-uppercase-frontmatter"/>
@@ -125,45 +165,5 @@
     <updated>2026-07-19T00:00:00Z</updated>
     <summary>Claude Code on the web can show a repository as connected and readable while GitHub push paths still fail with 403 because the Claude GitHub App is only OAuth-authorized, not installed with repository permissions. The reported GitHub settings view shows the App under Authorized GitHub Apps but not Installed GitHub Apps, with no visible self-service install path beyond revoking OAuth authorization.</summary>
     <category term="Auth &amp; accounts"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Desktop scheduled-task sessions can look resumable from other hosts</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-scheduled-task-sessions-can-look-resumable-from-other-hosts</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-scheduled-task-sessions-can-look-resumable-from-other-hosts"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>Claude Code Desktop can show locally hosted scheduled-task sessions in the account-wide session list on another machine. Opening a completed run from the wrong host leaves the input active, waits several minutes, then reports a Remote Control disconnect instead of showing that the transcript is read-only or non-resumable.</summary>
-    <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] macOS Bash commands can use missing timeout utility</title>
-    <id>https://framework.boucle.sh/limitations.html#macos-bash-commands-can-use-missing-timeout-utility</id>
-    <link href="https://framework.boucle.sh/limitations.html#macos-bash-commands-can-use-missing-timeout-utility"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>On macOS systems without GNU coreutils, Claude Code can wrap Bash commands in timeout or gtimeout even though those utilities are not installed by default. The command fails before running, and in harmful cases the assistant may ignore the command-not-found error and reason as if the command succeeded.</summary>
-    <category term="CLI &amp; terminal"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows updater can leave Git Bash claude symlink stale</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-updater-can-leave-git-bash-claude-symlink-stale</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-updater-can-leave-git-bash-claude-symlink-stale"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>On Windows accounts without symlink creation privilege, the native Claude Code updater can refresh claude.exe while leaving the extensionless Git Bash launcher pointing at an old pruned version directory. PowerShell and cmd keep working, but Git Bash fails with command not found and the updater emits no obvious warning.</summary>
-    <category term="Platform &amp; compatibility"/>
-  </entry>
-  <entry>
-    <title>[HIGH] VS Code assistant output can be reingested as user input</title>
-    <id>https://framework.boucle.sh/limitations.html#vscode-assistant-output-can-be-reingested-as-user-input</id>
-    <link href="https://framework.boucle.sh/limitations.html#vscode-assistant-output-can-be-reingested-as-user-input"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>The Claude Code VS Code extension can emit an assistant line resembling a user turn, render it inside the assistant bubble, and then feed that text back as an actual user message. The next assistant turn can therefore act on a fabricated request the user never sent.</summary>
-    <category term="VS Code extension"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Agent View session input can mishandle Ctrl+B</title>
-    <id>https://framework.boucle.sh/limitations.html#agent-view-session-input-can-mishandle-ctrl-b</id>
-    <link href="https://framework.boucle.sh/limitations.html#agent-view-session-input-can-mishandle-ctrl-b"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>Inside an attached Agent View background session, Ctrl+B can be swallowed on the first press and then move the cursor backward two characters on the second press. Foreground claude and the Agent View session list handle the same keybinding correctly, so the failure appears scoped to the per-session background input path.</summary>
-    <category term="TUI &amp; display"/>
   </entry>
 </feed>
