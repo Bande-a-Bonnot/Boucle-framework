@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">945</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-19.</span></p>
+        <p class="subtitle"><span id="total-count">950</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-19.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -10080,6 +10080,66 @@
                         <!-- workaround:macos-sandbox-profile-can-hit-e2big-in-git-repos-with-large-policy-patterns -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Reduce broad recursive permission patterns where policy control allows it, prune stale git worktrees, and restart the top-level Claude Code process after policy or repository cleanup because sandbox profile state can be process-cached. If the failure persists, run from a smaller checkout or outside the git repository only as a temporary diagnostic, and ask maintainers for a pre-spawn sandbox budget breakdown instead of treating E2BIG as a shell-command problem.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78253" target="_blank">#78253</a></div>
+        </div>
+        <div class="kl-entry" data-category="Configuration behavior" data-issues="78988" id="claude-config-dir-literal-tilde-can-write-config-under-project-cwd" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#946</span>
+                <span class="kl-cat">Configuration behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>CLAUDE_CONFIG_DIR with literal ~ can write config data under the project cwd</h3>
+            <p>When CLAUDE_CONFIG_DIR reaches Claude Code with an unexpanded literal tilde, Claude Code v2.1.214 can treat the value as a cwd-relative path instead of expanding it or failing fast. The reported repro creates a literal ./~/.claude-tilde-test tree before login and places projects, sessions, backups, .claude.json, and transcripts under the current git working tree. The session can appear to work because it consistently reads and writes the same wrong location, while resume tooling and usage readers that inspect the intended home config path see no sessions. The practical hazards are silent state misplacement, private transcript leakage through a future git add, and confusion around dangerous shell paths named ~.</p>
+                        <!-- workaround:claude-config-dir-literal-tilde-can-write-config-under-project-cwd -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Set CLAUDE_CONFIG_DIR to an absolute, already-expanded path in non-shell contexts such as VS Code terminal env blocks, launchd plists, devcontainers, CI, and .env files. After changing it, run a smoke invocation from a disposable directory and verify that no literal ./~ directory appears. Add local git excludes for accidental ./~ config trees while cleaning up any misplaced transcripts.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78988" target="_blank">#78988</a></div>
+        </div>
+        <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="78989" id="interruption-context-can-appear-as-fabricated-user-turn-outside-transcript-and-hooks" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#947</span>
+                <span class="kl-cat">Security &amp; trust boundaries</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Interruption context can appear as a fabricated user turn outside transcript and hooks</h3>
+            <p>A reported Windows VS Code Claude Code session received a user-looking turn immediately after an Esc interruption even though the user did not type it. The injected block combined a system-warning-style ctx_interruption wrapper, the genuine interruption marker, and an imperative instruction in the user&#x27;s voice; the assistant treated it as user input and executed a read-only command. The reporter checked the session JSONL, a UserPromptSubmit capture database, installed plugins, hook scripts, and local Claude state and found no record of the fabricated message. The narrowed risk is that interruption or request-assembly feedback can enter the model as a user-attributed instruction while bypassing normal user-prompt logging and hook capture.</p>
+                        <!-- workaround:interruption-context-can-appear-as-fabricated-user-turn-outside-transcript-and-hooks -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat sessions after manual interruption as suspect if Claude responds to a prompt you did not submit. Compare assistant behavior against transcript and UserPromptSubmit logs before allowing writes or external actions. For sensitive workflows, stop the session after unexplained interruption text and resume from a clean transcript boundary with an explicit user-authored instruction.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78989" target="_blank">#78989</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="78936" id="plugin-hooks-can-be-silently-dropped-when-plugin-has-no-version" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#948</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Plugin hooks can be silently dropped when the plugin has no version</h3>
+            <p>Claude Code v2.1.214 can silently drop hooks from a plugin whose manifest has no version. In the reported macOS repro, the hooks still appeared in the /hooks menu and validator errors were empty, but the plugin hooks did not execute. This is a dangerous failure mode for plugin-delivered safety hooks because the visible configuration surface can imply coverage while the dispatch path is inert.</p>
+                        <!-- workaround:plugin-hooks-can-be-silently-dropped-when-plugin-has-no-version -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Always include an explicit version in plugin manifests and run a fresh-session hook probe after install or update. Keep safety-critical PreToolUse, Stop, SessionStart, and PreSkill hooks duplicated in direct user or project settings until plugin execution has been proven from raw transcript or side-effect logs.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78936" target="_blank">#78936</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="78949" id="subagentstart-hook-omits-task-description-needed-for-subagent-attribution" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#949</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>SubagentStart hook omits Task description needed for subagent attribution</h3>
+            <p>SubagentStart hook stdin can carry agent_id and session_id while omitting the Task tool description and subagent_type that explain why the worker was spawned. A reporter building a fleet dashboard noted that correlating SubagentStart back to the parent&#x27;s PreToolUse event is structurally unsound: PreToolUse fires before the subagent id exists, and FIFO session-level pairing can misattribute descriptions when multiple subagents spawn in parallel. The result is that hook-based monitoring can know that a subagent exists without truthfully knowing what it was asked to do.</p>
+                        <!-- workaround:subagentstart-hook-omits-task-description-needed-for-subagent-attribution -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat SubagentStart-only telemetry as authoritative task attribution. If accurate dashboards or audit logs matter, serialize subagent spawns, wrap Task creation in your own logging layer, or require a first-message self-report from the subagent and mark it as model-provided rather than orchestrator-provided data.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78949" target="_blank">#78949</a></div>
+        </div>
+        <div class="kl-entry" data-category="Telemetry &amp; insights" data-issues="78932 78991" id="insights-large-session-facets-can-cache-false-output-token-errors" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#950</span>
+                <span class="kl-cat">Telemetry &amp; insights</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>/insights large-session facets can cache false output-token errors</h3>
+            <p>The /insights pipeline can write facet records for large sessions that claim the analyzed session hit a 500 output-token maximum even when the underlying transcript contains no such error. The detailed v2.1.161 report cross-checked 145 facet files against surviving transcripts and found token-error markers in facets that were absent from the referenced sessions; a later v2.1.214 report reproduced the same structural failure across about 1,000 transcripts and five reports. Because facets are cached and aggregated into future reports, the false diagnostic can persist and cause /insights to recommend workflow changes that work around its own summarizer failure instead of the user&#x27;s real behavior.</p>
+                        <!-- workaround:insights-large-session-facets-can-cache-false-output-token-errors -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before acting on /insights findings about output-token failures or unusable large sessions, grep the referenced session transcripts for the reported marker and compare against ~/.claude/usage-data/facets. Delete or quarantine poisoned facets only after backing them up, then rerun /insights to see whether clean facets are regenerated. Treat cached facets as derived data, not ground truth.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78932" target="_blank">#78932</a>, <a href="https://github.com/anthropics/claude-code/issues/78991" target="_blank">#78991</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
