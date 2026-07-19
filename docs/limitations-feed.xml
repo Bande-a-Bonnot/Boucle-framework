@@ -7,6 +7,30 @@
   <updated>2026-07-19T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Linux bundled Bun can panic in resume picker and long sessions</title>
+    <id>https://framework.boucle.sh/limitations.html#linux-bundled-bun-can-panic-in-resume-picker-and-long-sessions</id>
+    <link href="https://framework.boucle.sh/limitations.html#linux-bundled-bun-can-panic-in-resume-picker-and-long-sessions"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>Claude Code builds that bundle Bun 1.4.0 canary can crash on Linux x64 with a Rust-style `index out of bounds: the len is 1 but the index is 1` panic. The reported Ubuntu 24.04 repro saw repeated crashes in the interactive `--resume` picker before a session could be selected, plus mid-session crashes after long uptimes around 19 and 47 hours. A separately installed system Bun 1.3.x did not crash, narrowing the issue to Claude Code&#x27;s bundled runtime path.</summary>
+    <category term="Stability &amp; crashes"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Remote Control sessions can wedge permanently after worker death</title>
+    <id>https://framework.boucle.sh/limitations.html#remote-control-sessions-can-wedge-after-worker-death</id>
+    <link href="https://framework.boucle.sh/limitations.html#remote-control-sessions-can-wedge-after-worker-death"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>If a Remote Control worker or bridge process dies abruptly during active work, the server-side session can remain active but stop dispatching to any new worker. Reports on Windows show clients accepting new prompts or initialize events while no worker is respawned for hours; restarting the remote-control daemon can revive other sessions but leave the wedged session stuck. Some affected sessions expose stale running/disconnected worker state, while newer repros show active sessions with environment state that still cannot reattach through documented CLI routes.</summary>
+    <category term="Cowork &amp; remote"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Max 1M context sessions can collapse to 200k after compaction</title>
+    <id>https://framework.boucle.sh/limitations.html#max-1m-context-can-collapse-to-200k-after-compaction</id>
+    <link href="https://framework.boucle.sh/limitations.html#max-1m-context-can-collapse-to-200k-after-compaction"/>
+    <updated>2026-07-19T00:00:00Z</updated>
+    <summary>On a Max plan using a 1M-context Opus model, Claude Code v2.1.215 can hold 400k-500k live context before manual or automatic compaction, then behave like a 200k-window session for the rest of that conversation. The reported Windows repro measured live context from JSONL token fields: one session peaked at 521k before the first compact and then auto-compacted again around 165k; another peaked at 442k before manual `/compact` and never exceeded about 142k afterwards. `/context` still advertised the 1M model while the auto-compact window reported 200k.</summary>
+    <category term="Context / compaction"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Provider request builders can drop thinking display settings</title>
     <id>https://framework.boucle.sh/limitations.html#provider-request-builders-can-drop-thinking-display</id>
     <link href="https://framework.boucle.sh/limitations.html#provider-request-builders-can-drop-thinking-display"/>
@@ -141,29 +165,5 @@
     <updated>2026-07-19T00:00:00Z</updated>
     <summary>Claude Code Cowork on macOS reportedly hid all session history from the UI after a scheduled Max-to-Pro downgrade took effect. Filesystem inspection still found session metadata under local-agent-mode-sessions and transcripts in hidden .claude/projects folders inside per-session VM storage, but the app offered no supported restore path, export, warning, or migration flow. The report frames this as repeat data-loss risk because non-technical users would likely assume paid work disappeared.</summary>
     <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Desktop Cowork sidebar can hide most recent sessions</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-cowork-sidebar-can-hide-most-recent-sessions</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-cowork-sidebar-can-hide-most-recent-sessions"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>After the July 2026 cloud/local unification, Claude Desktop 1.22209.0 on macOS can show only a fraction of Cowork session history while the same account on claude.ai web shows the complete live-updating list. The report describes filters set to All, sign-out and relaunch, app updates, and a full local cache rebuild of IndexedDB, Local Storage, fcache, Cache, Code Cache, and Session Storage, all leaving the desktop sidebar identically truncated.</summary>
-    <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Background panel can accumulate finished idle agents</title>
-    <id>https://framework.boucle.sh/limitations.html#background-panel-can-accumulate-finished-idle-agents</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-panel-can-accumulate-finished-idle-agents"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>Claude Code v2.1.210 on macOS can leave completed Agent-tool teammates in the Background panel as idle indefinitely. One long-running session accumulated 22 agents plus one active shell, pushing the active process below the fold. Cleanup required one shutdown_request handshake per finished agent, and one agent only exited after the user sent a plain-text message spelling out the expected shutdown_response payload.</summary>
-    <category term="TUI &amp; display"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Diagnostic sessions can ignore Playwright and bug-report instructions</title>
-    <id>https://framework.boucle.sh/limitations.html#diagnostic-sessions-can-ignore-playwright-and-bug-report-instructions</id>
-    <link href="https://framework.boucle.sh/limitations.html#diagnostic-sessions-can-ignore-playwright-and-bug-report-instructions"/>
-    <updated>2026-07-19T00:00:00Z</updated>
-    <summary>In a WebSocket debugging session, Claude Code reportedly ignored a project CLAUDE.md rule requiring headed Playwright for staging/production, repeatedly tried to re-prove an already-described bug, spammed screenshots despite a visible browser, tested the wrong UI path, and attempted to replace the requested UI test with a direct API shortcut.</summary>
-    <category term="Model behavior &amp; instructions"/>
   </entry>
 </feed>

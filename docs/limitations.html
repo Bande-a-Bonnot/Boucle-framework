@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">989</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-19.</span></p>
+        <p class="subtitle"><span id="total-count">992</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-19.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -9925,17 +9925,17 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume `/btw` conversations are durable right now. If the content matters, copy it into the main session, export it immediately, or save it manually outside Claude Code before closing the side conversation until Anthropic restores disk persistence for `/btw` transcripts.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/47169" target="_blank">#47169</a></div>
         </div>
-        <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="76441" id="subdirectory-launch-can-skip-project-hooks" data-severity="critical" data-status="open">
+        <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="76441 79111" id="subdirectory-launch-can-skip-project-hooks" data-severity="critical" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#933</span>
                 <span class="kl-cat">Hook bypass &amp; evasion</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
             </div>
             <h3>Launching Claude Code from a subdirectory can skip project hooks without warning</h3>
-            <p>When Claude Code is launched from a subdirectory, it can treat that subdirectory as the project root and never read the repository root&#x27;s `.claude/settings.json`. In the reported macOS v2.1.206 repro, a project hook configured with an absolute command path fired when Claude was started from the repo root, never ran when Claude was started from `&lt;root&gt;/lib`, and fired again only after a separate `lib/.claude/settings.json` was added. This means a natural `cd app &amp;&amp; claude` workflow can silently disarm project-level PreToolUse safety rails, custody gates, secret detectors, or tenant-isolation guards before `${CLAUDE_PROJECT_DIR}` interpolation or hook runtime checks have any chance to run.</p>
+            <p>When Claude Code is launched from a subdirectory, it can treat that subdirectory as the project root and never read the repository root&#x27;s `.claude/settings.json`. Reported macOS repros on v2.1.206 and v2.1.215 show repo-root PreToolUse and SessionStart hooks firing from the root but disappearing from nested launches. The newer repro also shows permission grants from the nested session still persisting to the repo root&#x27;s `.claude/settings.local.json`, so hook loading and permission persistence can resolve different roots. This means a natural `cd app &amp;&amp; claude` workflow can silently disarm project-level PreToolUse safety rails, custody gates, secret detectors, or tenant-isolation guards before `${CLAUDE_PROJECT_DIR}` interpolation or hook runtime checks have any chance to run.</p>
                         <!-- workaround:subdirectory-launch-can-skip-project-hooks -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Start Claude Code from the repository root when you rely on project hooks. For teams that need fail-closed behavior, add a small global PreToolUse guard on mutating tools that checks whether an ancestor repo root has `.claude/settings.json` while the active Claude project directory does not, then exits 2 with instructions to restart from the repo root. Also verify `/hooks` from both the repo root and common subdirectories after each Claude Code update.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/76441" target="_blank">#76441</a></div>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/76441" target="_blank">#76441</a>, <a href="https://github.com/anthropics/claude-code/issues/79111" target="_blank">#79111</a></div>
         </div>
         <div class="kl-entry" data-category="Tool behavior" data-issues="76654" id="windows-grep-process-flood-can-crash-host" data-severity="critical" data-status="open">
             <div class="kl-header">
@@ -10045,17 +10045,17 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat plugin-delivered hooks as advisory until a fresh-session transcript proves they actually run. Put safety-critical SessionStart, PreToolUse, Stop, and PreSkill hooks directly in user or project settings with absolute commands, and include a simple startup or tool-use probe that confirms the hook entered the dispatch table.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/75972" target="_blank">#75972</a></div>
         </div>
-        <div class="kl-entry" data-category="Context &amp; memory" data-issues="78216" id="parent-claude-md-imports-silently-ignored-from-nested-cwd" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="Context &amp; memory" data-issues="78216 79046" id="parent-claude-md-imports-silently-ignored-from-nested-cwd" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#943</span>
                 <span class="kl-cat">Context &amp; memory</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
             <h3>Parent-directory CLAUDE.md imports can be silently ignored from nested working directories</h3>
-            <p>When Claude Code discovers a CLAUDE.md in a parent directory, the parent file content can load while @import lines inside that file are skipped without an error. The reported v2.1.211 repro shows the same CLAUDE.md importing correctly from its own directory, then losing both relative and absolute imports when the session starts from nested subdirectories. This breaks common monorepo and CLAUDE.md-to-AGENTS.md projection patterns because the project appears configured while the imported rules are absent.</p>
+            <p>When Claude Code discovers a CLAUDE.md in a parent directory, the parent file content can load while @import lines inside that file are skipped without an error. Reported v2.1.211 and v2.1.212 repros show the same CLAUDE.md importing correctly from its own directory, then losing both relative and absolute imports when the session starts from nested subdirectories. The newer repro uses a sentinel value to avoid false negatives from asking the model about provenance. This breaks common monorepo and CLAUDE.md-to-AGENTS.md projection patterns because the project appears configured while the imported rules are absent.</p>
                         <!-- workaround:parent-claude-md-imports-silently-ignored-from-nested-cwd -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on parent-discovered CLAUDE.md imports for critical rules until this is fixed. Start Claude Code from the directory that owns the importing CLAUDE.md, inline critical imports into that file, or duplicate a small project-local CLAUDE.md in common subdirectories. Add a startup smoke test that asks for a sentinel from imported memory before trusting the session.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78216" target="_blank">#78216</a></div>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78216" target="_blank">#78216</a>, <a href="https://github.com/anthropics/claude-code/issues/79046" target="_blank">#79046</a></div>
         </div>
         <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="78234" id="plugin-scoped-agent-definitions-silently-degrade-in-team-and-agent-spawns" data-severity="high" data-status="open">
             <div class="kl-header">
@@ -10588,6 +10588,42 @@
                         <!-- workaround:provider-request-builders-can-drop-thinking-display -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If thinking text is missing only on Vertex or Bedrock, capture or inspect provider request bodies and do not assume --thinking-display reached the provider. Use direct API requests or provider calls that explicitly include thinking.display when visible reasoning traces are required.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79052" target="_blank">#79052</a>, <a href="https://github.com/anthropics/claude-code/issues/79060" target="_blank">#79060</a></div>
+        </div>
+        <div class="kl-entry" data-category="Context / compaction" data-issues="79092" id="max-1m-context-can-collapse-to-200k-after-compaction" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#990</span>
+                <span class="kl-cat">Context / compaction</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Max 1M context sessions can collapse to 200k after compaction</h3>
+            <p>On a Max plan using a 1M-context Opus model, Claude Code v2.1.215 can hold 400k-500k live context before manual or automatic compaction, then behave like a 200k-window session for the rest of that conversation. The reported Windows repro measured live context from JSONL token fields: one session peaked at 521k before the first compact and then auto-compacted again around 165k; another peaked at 442k before manual `/compact` and never exceeded about 142k afterwards. `/context` still advertised the 1M model while the auto-compact window reported 200k.</p>
+                        <!-- workaround:max-1m-context-can-collapse-to-200k-after-compaction -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If a Max 1M session compacts, verify `/context` before relying on the remaining conversation capacity. For long orchestration work, checkpoint externally before compaction and consider restarting into a fresh 1M session after a compact event rather than assuming the original window survived.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79092" target="_blank">#79092</a></div>
+        </div>
+        <div class="kl-entry" data-category="Cowork &amp; remote" data-issues="76530 79108" id="remote-control-sessions-can-wedge-after-worker-death" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#991</span>
+                <span class="kl-cat">Cowork &amp; remote</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Remote Control sessions can wedge permanently after worker death</h3>
+            <p>If a Remote Control worker or bridge process dies abruptly during active work, the server-side session can remain active but stop dispatching to any new worker. Reports on Windows show clients accepting new prompts or initialize events while no worker is respawned for hours; restarting the remote-control daemon can revive other sessions but leave the wedged session stuck. Some affected sessions expose stale running/disconnected worker state, while newer repros show active sessions with environment state that still cannot reattach through documented CLI routes.</p>
+                        <!-- workaround:remote-control-sessions-can-wedge-after-worker-death -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat Remote Control sessions as vulnerable to hard worker death during in-flight turns. Before rebooting or killing a bridge host, stop active work cleanly and verify each important session reattaches afterwards. If a session wedges, preserve the transcript and start a replacement session; do not assume daemon restart or `--resume --remote-control` will recover the original until Anthropic exposes a supported force-reattach or reset command.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/76530" target="_blank">#76530</a>, <a href="https://github.com/anthropics/claude-code/issues/79108" target="_blank">#79108</a></div>
+        </div>
+        <div class="kl-entry" data-category="Stability &amp; crashes" data-issues="79082" id="linux-bundled-bun-can-panic-in-resume-picker-and-long-sessions" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#992</span>
+                <span class="kl-cat">Stability &amp; crashes</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Linux bundled Bun can panic in resume picker and long sessions</h3>
+            <p>Claude Code builds that bundle Bun 1.4.0 canary can crash on Linux x64 with a Rust-style `index out of bounds: the len is 1 but the index is 1` panic. The reported Ubuntu 24.04 repro saw repeated crashes in the interactive `--resume` picker before a session could be selected, plus mid-session crashes after long uptimes around 19 and 47 hours. A separately installed system Bun 1.3.x did not crash, narrowing the issue to Claude Code&#x27;s bundled runtime path.</p>
+                        <!-- workaround:linux-bundled-bun-can-panic-in-resume-picker-and-long-sessions -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When the interactive `--resume` picker crashes, resume by explicit session id instead of opening the picker. For long Linux sessions on affected builds, checkpoint work outside the conversation and restart periodically until Claude Code ships a bundled Bun build without this panic signature.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79082" target="_blank">#79082</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
