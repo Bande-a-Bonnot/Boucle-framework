@@ -1,13 +1,13 @@
 {
   "version": "0.13.0",
-  "count": 1052,
+  "count": 1057,
   "categories": {
-    "Hook behavior & events": 177,
+    "Hook behavior & events": 178,
     "Permission system": 118,
     "Hook bypass & evasion": 99,
     "MCP & plugin issues": 55,
     "Subagent & spawned agents": 41,
-    "Desktop & IDE integration": 33,
+    "Desktop & IDE integration": 35,
     "Platform & compatibility": 26,
     "CLI & terminal": 24,
     "TUI & display": 22,
@@ -35,6 +35,7 @@
     "VS Code extension": 6,
     "Bash & shell execution": 5,
     "Core & session management": 5,
+    "Permissions & safety": 5,
     "Skills & commands": 5,
     "UX & display": 5,
     "MCP & plugins": 4,
@@ -54,7 +55,6 @@
     "Model behavior & instructions": 3,
     "Model behavior & output": 3,
     "model-behavior": 3,
-    "Permissions & safety": 3,
     "Remote": 3,
     "Sandbox": 3,
     "Security": 3,
@@ -172,8 +172,8 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 77,
-    "HIGH": 528,
+    "CRITICAL": 78,
+    "HIGH": 532,
     "LOW": 99,
     "MEDIUM": 348
   },
@@ -13465,30 +13465,95 @@
       "workaround": "For scheduled routines that must notify a human, do not assume the final assistant message will be seen. Until a durable in-app notification target exists, explicitly write findings to an approved persistent channel and keep the signal low-noise enough that the channel remains useful. For critical monitors, include a readback check that confirms the notification artifact was created, and document the cleanup burden if using Calendar or draft email as a fallback inbox.",
       "status": "open",
       "date_added": "2026-07-20"
+    },
+    {
+      "id": "auto-mode-permission-rejections-can-be-misattributed-to-the-user",
+      "title": "Auto-mode permission rejections can be misattributed to the user",
+      "category": "Permissions & safety",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79539"
+      ],
+      "description": "A reported Claude Code auto-mode session rejected a compound Bash command after one parsed subcommand failed to match the configured allow or ask rules, but the tool result said the user did not want to proceed even though no visible prompt was shown or answered. In unattended sessions, that wording makes a policy, mode, prompt-surface, or timeout failure indistinguishable from a real human denial and can leave background workflows looking like they hung.",
+      "workaround": "For unattended or scheduled sessions, do not treat the generic user-rejected wording as proof that a person denied a prompt. Log the exact permission mode, parsed command, allow and ask rules, and whether any prompt was actually rendered. Prefer explicit allow or ask coverage for each subcommand in compound Bash calls, and add watchdog/readback logic that escalates silent permission rejection separately from human denial.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "chrome-always-allow-domain-grants-can-be-stored-as-once",
+      "title": "Chrome always-allow domain grants can be stored as once",
+      "category": "Permissions & safety",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79540"
+      ],
+      "description": "A reported Claude for Mac and Claude Code 2.1.215 Chrome-extension workflow showed repeated domain permission dialogs even after choosing Always allow for the same site. Extension storage for the tested domain recorded each grant with `duration:\"once\"`, the approved-sites list stayed empty, and the reporter linked the behavior to a suspected resume handler that discards the selected duration when granting permission.",
+      "workaround": "Do not assume Chrome extension domain prompts have become durable just because Always allow was selected. Before relying on repeated browser automation for a gated site, make a second read/navigation call and verify that no new dialog appears and that the approved-sites list contains the domain. For long-running browser tasks, plan for repeated one-time prompts or use a manually controlled session until persistent grant readback is confirmed.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "ide-loopback-websocket-can-be-routed-through-env-proxies",
+      "title": "IDE loopback websocket can be routed through env proxies",
+      "category": "Desktop & IDE integration",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79545"
+      ],
+      "description": "A reported Claude Code 2.1.215 `/ide` connection on macOS sent the local VS Code websocket to the configured HTTP or HTTPS proxy when `NODE_USE_ENV_PROXY=1` and lowercase `no_proxy` existed without loopback entries, even though uppercase `NO_PROXY` correctly listed localhost and 127.0.0.1. Depending on proxy behavior, the local IDE connection may appear to work while transiting a proxy, or fail outright in stricter corporate proxy setups.",
+      "workaround": "If `/ide` is used with proxy environment variables, include loopback hosts in lowercase `no_proxy` as well as uppercase `NO_PROXY`, or unset `NODE_USE_ENV_PROXY` for Claude Code sessions that only need local editor integration. In audited environments, verify proxy logs during `/ide` connection tests and treat any loopback CONNECT or websocket traffic to the proxy as a privacy and reliability defect.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "configchange-hook-blocking-decisions-can-be-ignored",
+      "title": "ConfigChange hook blocking decisions can be ignored",
+      "category": "Hook behavior & events",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79547"
+      ],
+      "description": "A reported Claude Code regression found that a `ConfigChange` hook fired and detected broken `settings.json`, but neither a blocking JSON decision on stdout nor exit code 2 interrupted the session. The same hook library reportedly worked in PreToolUse and other hook events, and the reporter identified 2.1.153 as the last working version and 2.1.196 as affected, making this a hook-result handling issue specific to ConfigChange.",
+      "workaround": "Do not rely on ConfigChange hooks alone as a fail-closed guard for settings validity until the event path is verified on the installed Claude Code version. Add an external settings JSON validation step in CI, shell wrappers, or pre-run scripts, and run a live smoke test that deliberately breaks a throwaway settings file and confirms the session is interrupted. Keep critical enforcement duplicated in PreToolUse or startup validation where possible.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "chrome-native-host-errors-can-break-browser-list-json-parsing",
+      "title": "Chrome native-host errors can break browser-list JSON parsing",
+      "category": "Desktop & IDE integration",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79553"
+      ],
+      "description": "A reported Claude in Chrome setup on macOS 26.5.2 with Claude Code 2.1.215 showed `/chrome` as enabled with the extension installed, but failed with `JSON Parse error: Unexpected identifier \"Browser\"` while listing connected browsers. The reporter verified the native messaging manifest, wrapper, binary, extension ID, and same-account login, and noted that the parse token appears to come from the plain-text `Browser extension is not connected` error being fed into a JSON parser.",
+      "workaround": "When `/chrome` reports a JSON parse error around `Browser`, do not keep repeating extension toggles as if setup were definitely wrong. Capture the native-host manifest, extension ID, host executable path and permissions, exact `/chrome` output, and a browser-tool error for escalation. For production browser automation, require a preflight that both `/chrome` and a simple tab-context tool call succeed before assigning work to the Chrome integration.",
+      "status": "open",
+      "date_added": "2026-07-20"
     }
   ],
   "status_summary": {
-    "open": 1038,
+    "open": 1043,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 77,
-    "high": 528,
+    "critical": 78,
+    "high": 532,
     "low": 99,
     "medium": 348
   },
   "lastUpdated": "2026-07-20",
   "stats": {
-    "total": 1052,
-    "critical": 77,
-    "high": 528,
+    "total": 1057,
+    "critical": 78,
+    "high": 532,
     "medium": 348,
     "low": 99,
-    "open": 1038,
+    "open": 1043,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-20",
-  "total": 1052
+  "total": 1057
 }

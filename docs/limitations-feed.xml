@@ -7,6 +7,46 @@
   <updated>2026-07-20T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Chrome native-host errors can break browser-list JSON parsing</title>
+    <id>https://framework.boucle.sh/limitations.html#chrome-native-host-errors-can-break-browser-list-json-parsing</id>
+    <link href="https://framework.boucle.sh/limitations.html#chrome-native-host-errors-can-break-browser-list-json-parsing"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude in Chrome setup on macOS 26.5.2 with Claude Code 2.1.215 showed `/chrome` as enabled with the extension installed, but failed with `JSON Parse error: Unexpected identifier &quot;Browser&quot;` while listing connected browsers. The reporter verified the native messaging manifest, wrapper, binary, extension ID, and same-account login, and noted that the parse token appears to come from the plain-text `Browser extension is not connected` error being fed into a JSON parser.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] ConfigChange hook blocking decisions can be ignored</title>
+    <id>https://framework.boucle.sh/limitations.html#configchange-hook-blocking-decisions-can-be-ignored</id>
+    <link href="https://framework.boucle.sh/limitations.html#configchange-hook-blocking-decisions-can-be-ignored"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code regression found that a `ConfigChange` hook fired and detected broken `settings.json`, but neither a blocking JSON decision on stdout nor exit code 2 interrupted the session. The same hook library reportedly worked in PreToolUse and other hook events, and the reporter identified 2.1.153 as the last working version and 2.1.196 as affected, making this a hook-result handling issue specific to ConfigChange.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
+    <title>[HIGH] IDE loopback websocket can be routed through env proxies</title>
+    <id>https://framework.boucle.sh/limitations.html#ide-loopback-websocket-can-be-routed-through-env-proxies</id>
+    <link href="https://framework.boucle.sh/limitations.html#ide-loopback-websocket-can-be-routed-through-env-proxies"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.215 `/ide` connection on macOS sent the local VS Code websocket to the configured HTTP or HTTPS proxy when `NODE_USE_ENV_PROXY=1` and lowercase `no_proxy` existed without loopback entries, even though uppercase `NO_PROXY` correctly listed localhost and 127.0.0.1. Depending on proxy behavior, the local IDE connection may appear to work while transiting a proxy, or fail outright in stricter corporate proxy setups.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Chrome always-allow domain grants can be stored as once</title>
+    <id>https://framework.boucle.sh/limitations.html#chrome-always-allow-domain-grants-can-be-stored-as-once</id>
+    <link href="https://framework.boucle.sh/limitations.html#chrome-always-allow-domain-grants-can-be-stored-as-once"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude for Mac and Claude Code 2.1.215 Chrome-extension workflow showed repeated domain permission dialogs even after choosing Always allow for the same site. Extension storage for the tested domain recorded each grant with `duration:&quot;once&quot;`, the approved-sites list stayed empty, and the reporter linked the behavior to a suspected resume handler that discards the selected duration when granting permission.</summary>
+    <category term="Permissions &amp; safety"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Auto-mode permission rejections can be misattributed to the user</title>
+    <id>https://framework.boucle.sh/limitations.html#auto-mode-permission-rejections-can-be-misattributed-to-the-user</id>
+    <link href="https://framework.boucle.sh/limitations.html#auto-mode-permission-rejections-can-be-misattributed-to-the-user"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code auto-mode session rejected a compound Bash command after one parsed subcommand failed to match the configured allow or ask rules, but the tool result said the user did not want to proceed even though no visible prompt was shown or answered. In unattended sessions, that wording makes a policy, mode, prompt-surface, or timeout failure indistinguishable from a real human denial and can leave background workflows looking like they hung.</summary>
+    <category term="Permissions &amp; safety"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Routines have no durable in-app notification target</title>
     <id>https://framework.boucle.sh/limitations.html#routines-have-no-durable-in-app-notification-target</id>
     <link href="https://framework.boucle.sh/limitations.html#routines-have-no-durable-in-app-notification-target"/>
@@ -124,46 +164,6 @@
     <link href="https://framework.boucle.sh/limitations.html#mcp-stdio-interactive-connect-can-fail-while-standalone-checks-pass"/>
     <updated>2026-07-20T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.215 Windows setup could connect a stdio MCP server consistently from standalone `claude mcp list` invocations, but every interactive session startup and `/mcp` reconnect failed the same server with error `-32000`. The reporter ruled out command wrapper, timeout, elevation, fresh app process, and manual reconnect changes. The same project also had multiple `~/.claude.json` project-state keys for one directory with slash and case variants, so standalone MCP health did not prove the interactive session path would connect.</summary>
-    <category term="MCP &amp; integrations"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Idle TUI animations can spin CPU indefinitely</title>
-    <id>https://framework.boucle.sh/limitations.html#idle-tui-animations-can-spin-cpu-indefinitely</id>
-    <link href="https://framework.boucle.sh/limitations.html#idle-tui-animations-can-spin-cpu-indefinitely"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.214 macOS interactive session burned 10-40% CPU while idle whenever the TUI kept a live-updating element on screen, such as a spinner, elapsed-time counter, status ticker, agents dashboard row, or session-limit banner. The same binary at a plain prompt idled at 0% CPU, and multiple idle sessions saturated a small host. The report also observed one spinning process ignoring SIGTERM.</summary>
-    <category term="Performance &amp; cost"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Background task notifications can fabricate completion events</title>
-    <id>https://framework.boucle.sh/limitations.html#background-task-notifications-can-fabricate-completion-events</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-task-notifications-can-fabricate-completion-events"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code desktop session delivered Monitor and background Bash completion notifications for long-running remote work before the watched process had actually finished. The notifications quoted plausible success lines with timestamps in the future or reported exit code 0 with an empty output file, while independent SSH checks showed the expected log lines did not exist and the loop condition was still false. The real completion arrived later, meaning the early notification channel could mark unfinished work as verified.</summary>
-    <category term="Data integrity"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Large skill marketplaces can silently drop skills from the session listing</title>
-    <id>https://framework.boucle.sh/limitations.html#large-skill-marketplaces-can-silently-drop-skills-from-session-listing</id>
-    <link href="https://framework.boucle.sh/limitations.html#large-skill-marketplaces-can-silently-drop-skills-from-session-listing"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.x Windows setup with roughly 230 marketplace skills registered only 123 skills in the session-visible listing. `claude doctor`, `/skills`, and session startup output gave no warning, and the reporter could not tell whether trimming was by plugin, order, description length, or an internal budget. The result is that agents may stop seeing installed skills and rederive workflows already present on disk.</summary>
-    <category term="Skills &amp; commands"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Workflow tool schema eager-loads despite an explicit-trigger-only contract</title>
-    <id>https://framework.boucle.sh/limitations.html#workflow-tool-schema-eager-loads-despite-explicit-trigger-only-contract</id>
-    <link href="https://framework.boucle.sh/limitations.html#workflow-tool-schema-eager-loads-despite-explicit-trigger-only-contract"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.x session loads the built-in Workflow tool&#x27;s large schema on every session even though Workflow is only supposed to be used after explicit user or skill intent. The report estimates the eager description at roughly 3.5K-4K tokens, making it a recurring context cost for users who never invoke Workflow in that session.</summary>
-    <category term="Performance &amp; cost"/>
-  </entry>
-  <entry>
-    <title>[HIGH] MCP OAuth DCR client caches can wedge server authentication</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-oauth-dcr-client-cache-can-wedge-server-auth</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-oauth-dcr-client-cache-can-wedge-server-auth"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.215 macOS remote HTTP MCP setup cached a dynamically registered OAuth `client_id` for a server whose DCR registrations were not durable across redeploys. After the server rejected the stale client, `/mcp` Authenticate kept reusing the same `client_id` and failed the same way each time. The product had no per-server clear-authentication or re-register action, so recovery required manual credential-store surgery or deleting the whole Claude Code credential item and reauthenticating every server.</summary>
     <category term="MCP &amp; integrations"/>
   </entry>
 </feed>
