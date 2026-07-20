@@ -7,6 +7,62 @@
   <updated>2026-07-20T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Switching models mid-session can hang the CLI until switching back</title>
+    <id>https://framework.boucle.sh/limitations.html#model-switching-mid-session-can-hang-cli</id>
+    <link href="https://framework.boucle.sh/limitations.html#model-switching-mid-session-can-hang-cli"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code 2.1.215 session could switch from one model to another mid-conversation, but attempting to revoke or switch the model again left the CLI unresponsive until the user selected the original model again. The affected session was long-running and had used subagents or background tasks earlier, making the failure especially risky for orchestration sessions that change model or effort settings during active work.</summary>
+    <category term="Model behavior"/>
+  </entry>
+  <entry>
+    <title>[HIGH] AskUserQuestion can hide preceding assistant output in the same turn</title>
+    <id>https://framework.boucle.sh/limitations.html#askuserquestion-can-hide-preceding-assistant-output</id>
+    <link href="https://framework.boucle.sh/limitations.html#askuserquestion-can-hide-preceding-assistant-output"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code 2.1.215 workflow found that assistant text emitted before a later tool call in the same turn, especially before AskUserQuestion, can intermittently never render to the user. The damaging shape is a report or decision table followed by a question dialog: the user may see only the choices, not the context those choices depend on, even though the model already generated it.</summary>
+    <category term="TUI &amp; display"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Nested isolation worktrees can confuse parent-root-sensitive build tools</title>
+    <id>https://framework.boucle.sh/limitations.html#nested-isolation-worktrees-can-confuse-parent-root-build-tools</id>
+    <link href="https://framework.boucle.sh/limitations.html#nested-isolation-worktrees-can-confuse-parent-root-build-tools"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Dune workflow showed Claude Code placing isolation worktrees under `.claude/worktrees/` inside the main checkout, where tools that search upward for the outermost project root can resolve to the parent checkout rather than the isolation worktree. The same class can affect other build systems that derive roots from ancestor marker files, making isolated agent edits or builds interact with the wrong project root unless extra flags are supplied.</summary>
+    <category term="Worktree"/>
+  </entry>
+  <entry>
+    <title>[LOW] Scheduled-task summaries can drop comma-separated cron days</title>
+    <id>https://framework.boucle.sh/limitations.html#scheduled-task-summary-can-drop-comma-separated-days</id>
+    <link href="https://framework.boucle.sh/limitations.html#scheduled-task-summary-can-drop-comma-separated-days"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code 2.1.215 scheduled-tasks workflow created a cron expression such as `0 8 * * 2,5` for Tuesday and Friday, but `update_scheduled_task` or `list_scheduled_tasks` rendered the human-readable `schedule` text as only Tuesday. The underlying `cronExpression` and `nextRunAt` were correct, so the break is a display formatter bug that can still mislead users auditing whether an unattended task will run on every intended day.</summary>
+    <category term="Scheduled tasks"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Ctrl-C can kill background agents when the user only meant to clear draft text</title>
+    <id>https://framework.boucle.sh/limitations.html#ctrl-c-can-kill-background-agents-while-clearing-draft-text</id>
+    <link href="https://framework.boucle.sh/limitations.html#ctrl-c-can-kill-background-agents-while-clearing-draft-text"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported TUI feature request highlights that the same Ctrl-C shortcut can clear drafted text, exit the application, and terminate subagents or background processes. When unsent composer text is present, a user may press Ctrl-C intending only to clear the draft while unintentionally triggering the more destructive background-agent cancellation path.</summary>
+    <category term="Agents &amp; subagents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Claude Code Chrome native-host wrapper can go stale and lose to Desktop host priority</title>
+    <id>https://framework.boucle.sh/limitations.html#chrome-code-native-host-wrapper-can-go-stale</id>
+    <link href="https://framework.boucle.sh/limitations.html#chrome-code-native-host-wrapper-can-go-stale"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported macOS Claude Code 2.1.216 and Microsoft Edge setup showed `/chrome` permanently reporting `Status: Disabled` even with the extension installed. The generated `~/.claude/chrome/chrome-native-host` wrapper pointed at an old pruned version directory, the extension tried the Claude Desktop native host before the Claude Code host, and forcing the CLI host to win still left the handshake/status path incomplete. This extends the older Desktop/CLI native-host collision with update-staleness and same-browser status-reporting failure modes.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
+  <entry>
+    <title>[HIGH] `/btw` input can be silently discarded before dispatch</title>
+    <id>https://framework.boucle.sh/limitations.html#btw-input-can-be-silently-discarded-before-dispatch</id>
+    <link href="https://framework.boucle.sh/limitations.html#btw-input-can-be-silently-discarded-before-dispatch"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported macOS Claude Code 2.1.216 session found that content submitted through `/btw` could enter a side context, block the main conversation, then disappear when dismissed without running, persisting, or appearing in input history, the session transcript, or disk artifacts. This is distinct from older `/btw` transcript-loss reports where a side conversation ran and then was not durably saved: here the submitted work may never start at all, while the UI gives the user no failure signal.</summary>
+    <category term="CLI &amp; terminal"/>
+  </entry>
+  <entry>
     <title>[HIGH] Auto-mode allow rules may not suppress the classifier</title>
     <id>https://framework.boucle.sh/limitations.html#auto-mode-allow-rules-may-not-suppress-classifier</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-mode-allow-rules-may-not-suppress-classifier"/>
@@ -109,61 +165,5 @@
     <updated>2026-07-20T00:00:00Z</updated>
     <summary>A reported Claude for Mac and Claude Code 2.1.215 Chrome-extension workflow showed repeated domain permission dialogs even after choosing Always allow for the same site. Extension storage for the tested domain recorded each grant with `duration:&quot;once&quot;`, the approved-sites list stayed empty, and the reporter linked the behavior to a suspected resume handler that discards the selected duration when granting permission.</summary>
     <category term="Permissions &amp; safety"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Auto-mode permission rejections can be misattributed to the user</title>
-    <id>https://framework.boucle.sh/limitations.html#auto-mode-permission-rejections-can-be-misattributed-to-the-user</id>
-    <link href="https://framework.boucle.sh/limitations.html#auto-mode-permission-rejections-can-be-misattributed-to-the-user"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code auto-mode session rejected a compound Bash command after one parsed subcommand failed to match the configured allow or ask rules, but the tool result said the user did not want to proceed even though no visible prompt was shown or answered. In unattended sessions, that wording makes a policy, mode, prompt-surface, or timeout failure indistinguishable from a real human denial and can leave background workflows looking like they hung.</summary>
-    <category term="Permissions &amp; safety"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Routines have no durable in-app notification target</title>
-    <id>https://framework.boucle.sh/limitations.html#routines-have-no-durable-in-app-notification-target</id>
-    <link href="https://framework.boucle.sh/limitations.html#routines-have-no-durable-in-app-notification-target"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Routines workflow found no first-class durable in-app place for an agent to leave a rare important finding. Routine final messages stay inside sessions the user may never open, sidebar unread dots indicate runs rather than meaningful findings, and `PushNotification` is ephemeral outside the phone push path. The reporter resorted to creating Google Calendar events and Gmail drafts as a makeshift durable notification inbox.</summary>
-    <category term="Scheduling &amp; remote triggers"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Chrome heavy-SPA screenshot timeouts can combine with classifier deadlocks</title>
-    <id>https://framework.boucle.sh/limitations.html#chrome-heavy-spa-screenshot-timeouts-can-combine-with-classifier-deadlocks</id>
-    <link href="https://framework.boucle.sh/limitations.html#chrome-heavy-spa-screenshot-timeouts-can-combine-with-classifier-deadlocks"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude in Chrome workflow against a heavy WordPress/Elementor SPA repeatedly failed screenshots with a script-injection timeout while ordinary DOM reads still worked. When visual interaction was unavailable, attempts to make a small reversible edit through either backend REST writes or the application&#x27;s own in-page command API were both denied by the auto-mode classifier, leaving no viable path to perform or visually verify the edit.</summary>
-    <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] WebFetch can fail to read same-account Claude artifacts</title>
-    <id>https://framework.boucle.sh/limitations.html#webfetch-can-fail-to-read-same-account-claude-artifacts</id>
-    <link href="https://framework.boucle.sh/limitations.html#webfetch-can-fail-to-read-same-account-claude-artifacts"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code session on Windows could not read a valid same-account `claude.ai/code/artifact/&lt;uuid&gt;` URL through `WebFetch`, returning `artifact read failed: incomplete boot response` on repeated attempts. The same tool could read public GitHub URLs, and the affected artifact was described as Anthropic-published guidance, so the failure appears specific to the Claude artifact host/read path rather than general web access.</summary>
-    <category term="Tool behavior"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Desktop 2.1.215 can produce OAuth 401 retry storms</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-2-1-215-can-produce-oauth-401-retry-storms</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-2-1-215-can-produce-oauth-401-retry-storms"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Desktop 2.1.215 regression produced sustained bursts of `401 Invalid authentication credentials` and `OAuth access token has been revoked` errors in long-lived or concurrently open Claude Code desktop sessions. The reporter compared local logs before and after the 2.1.209 to 2.1.215 update and saw a jump from zero 401s in the pre-update window to hundreds of auth-layer retry records over about 30 hours, while sessions often recovered after retry backoff.</summary>
-    <category term="Auth &amp; accounts"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Bridge-triggered sessions can die with 404 transport errors</title>
-    <id>https://framework.boucle.sh/limitations.html#bridge-triggered-sessions-can-die-with-404-transport-errors</id>
-    <link href="https://framework.boucle.sh/limitations.html#bridge-triggered-sessions-can-die-with-404-transport-errors"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported self-hosted-runner environment (`kind: bridge`) intermittently failed trigger-fired sessions with 404s during worker registration or later event/transport polling. In one run the session reached first output and Bash permission classification before `CCRClient` events returned repeated 404s and the client exited; another no-tool prompt failed with a `RemoteIO` transport-closed 404. A later similar run succeeded, so the report points to an intermittent trigger/bridge path rather than a deterministic environment failure.</summary>
-    <category term="Scheduling &amp; remote triggers"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `--agents` can ignore invalid JSON with exit zero</title>
-    <id>https://framework.boucle.sh/limitations.html#agents-flag-can-ignore-invalid-json-with-exit-zero</id>
-    <link href="https://framework.boucle.sh/limitations.html#agents-flag-can-ignore-invalid-json-with-exit-zero"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.215 CLI run accepted malformed or wrong-shaped JSON passed through `--agents`, printed no warning, and exited 0 while silently dropping the custom agent definitions. The same invalid JSON was rejected by `--settings` and `--mcp-config`, making `--agents` inconsistent with adjacent configuration flags and dangerous for CI or shell wrappers that assume exit 0 means the configured agents loaded.</summary>
-    <category term="Agents &amp; subagents"/>
   </entry>
 </feed>

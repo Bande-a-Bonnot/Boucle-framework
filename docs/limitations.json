@@ -1,20 +1,20 @@
 {
   "version": "0.13.0",
-  "count": 1066,
+  "count": 1073,
   "categories": {
     "Hook behavior & events": 178,
     "Permission system": 118,
     "Hook bypass & evasion": 99,
     "MCP & plugin issues": 55,
     "Subagent & spawned agents": 41,
-    "Desktop & IDE integration": 35,
+    "Desktop & IDE integration": 36,
     "Platform & compatibility": 26,
-    "CLI & terminal": 24,
-    "TUI & display": 22,
+    "CLI & terminal": 25,
+    "TUI & display": 23,
     "Configuration behavior": 21,
     "Context & memory": 21,
     "Tool behavior": 17,
-    "Agents & subagents": 15,
+    "Agents & subagents": 16,
     "Performance & cost": 14,
     "MCP & integrations": 12,
     "Security & trust boundaries": 12,
@@ -36,17 +36,17 @@
     "VS Code extension": 6,
     "Bash & shell execution": 5,
     "Core & session management": 5,
+    "Model behavior": 5,
+    "Scheduled tasks": 5,
     "Skills & commands": 5,
     "UX & display": 5,
+    "Worktree": 5,
     "MCP & plugins": 4,
     "MCP integration": 4,
-    "Model behavior": 4,
     "permissions": 4,
     "sandbox": 4,
-    "Scheduled tasks": 4,
     "Skills / slash commands": 4,
     "tui": 4,
-    "Worktree": 4,
     "CLI / TUI rendering": 3,
     "Context / compaction": 3,
     "cowork": 3,
@@ -173,9 +173,9 @@
   },
   "severity_counts": {
     "CRITICAL": 78,
-    "HIGH": 539,
-    "LOW": 99,
-    "MEDIUM": 350
+    "HIGH": 544,
+    "LOW": 100,
+    "MEDIUM": 351
   },
   "entries": [
     {
@@ -13648,30 +13648,121 @@
       "workaround": "Document and test the effective permission stack for each deployment instead of assuming `permissions.allow` is final. Keep sanitized transcripts of classifier denials, record whether MCP tools are covered, and add hooks or wrappers that log when the model switches tools after a denial. For sensitive workflows, design policy prose assuming it may influence both model behavior and classifier context, and use independent access controls for production MCP data rather than relying only on auto-mode classification.",
       "status": "open",
       "date_added": "2026-07-20"
+    },
+    {
+      "id": "btw-input-can-be-silently-discarded-before-dispatch",
+      "title": "`/btw` input can be silently discarded before dispatch",
+      "category": "CLI & terminal",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79593"
+      ],
+      "description": "A reported macOS Claude Code 2.1.216 session found that content submitted through `/btw` could enter a side context, block the main conversation, then disappear when dismissed without running, persisting, or appearing in input history, the session transcript, or disk artifacts. This is distinct from older `/btw` transcript-loss reports where a side conversation ran and then was not durably saved: here the submitted work may never start at all, while the UI gives the user no failure signal.",
+      "workaround": "Do not put irreplaceable instructions only in `/btw` until dispatch and persistence are verified. For important side work, paste a copy into the main session or an external note, then check that a transcript, subagent entry, or visible response exists before assuming the task is running. Treat Esc from a `/btw` context as destructive unless the content has already been saved elsewhere.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "chrome-code-native-host-wrapper-can-go-stale",
+      "title": "Claude Code Chrome native-host wrapper can go stale and lose to Desktop host priority",
+      "category": "Desktop & IDE integration",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79592"
+      ],
+      "description": "A reported macOS Claude Code 2.1.216 and Microsoft Edge setup showed `/chrome` permanently reporting `Status: Disabled` even with the extension installed. The generated `~/.claude/chrome/chrome-native-host` wrapper pointed at an old pruned version directory, the extension tried the Claude Desktop native host before the Claude Code host, and forcing the CLI host to win still left the handshake/status path incomplete. This extends the older Desktop/CLI native-host collision with update-staleness and same-browser status-reporting failure modes.",
+      "workaround": "Before relying on browser automation, inspect both native-messaging manifests and the generated wrapper target, confirm the binary path still exists, and test a real browser tool call rather than trusting extension-installed status. If Desktop is installed alongside Code, expect host-priority ambiguity; use a clean browser profile or temporarily remove the Desktop native-messaging manifest only in a controlled test, then restore it afterward.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "ctrl-c-can-kill-background-agents-while-clearing-draft-text",
+      "title": "Ctrl-C can kill background agents when the user only meant to clear draft text",
+      "category": "Agents & subagents",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79591"
+      ],
+      "description": "A reported TUI feature request highlights that the same Ctrl-C shortcut can clear drafted text, exit the application, and terminate subagents or background processes. When unsent composer text is present, a user may press Ctrl-C intending only to clear the draft while unintentionally triggering the more destructive background-agent cancellation path.",
+      "workaround": "Avoid using Ctrl-C casually in sessions with active background agents. Clear draft text with ordinary editing shortcuts where possible, checkpoint agent outputs before interrupting, and verify the background-agent list after any Ctrl-C press. For workflows that depend on background tasks, prefer explicit stop commands or a two-step confirmation wrapper where available.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "scheduled-task-summary-can-drop-comma-separated-days",
+      "title": "Scheduled-task summaries can drop comma-separated cron days",
+      "category": "Scheduled tasks",
+      "severity": "LOW",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79587"
+      ],
+      "description": "A reported Windows Claude Code 2.1.215 scheduled-tasks workflow created a cron expression such as `0 8 * * 2,5` for Tuesday and Friday, but `update_scheduled_task` or `list_scheduled_tasks` rendered the human-readable `schedule` text as only Tuesday. The underlying `cronExpression` and `nextRunAt` were correct, so the break is a display formatter bug that can still mislead users auditing whether an unattended task will run on every intended day.",
+      "workaround": "For scheduled tasks with comma-separated days or other nontrivial cron expressions, trust the stored `cronExpression` and computed next run times over the prose summary. Verify the expression with an external cron parser or a short dry-run schedule before depending on unattended execution, and include the raw cron expression in any audit log or runbook.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "nested-isolation-worktrees-can-confuse-parent-root-build-tools",
+      "title": "Nested isolation worktrees can confuse parent-root-sensitive build tools",
+      "category": "Worktree",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79586"
+      ],
+      "description": "A reported Dune workflow showed Claude Code placing isolation worktrees under `.claude/worktrees/` inside the main checkout, where tools that search upward for the outermost project root can resolve to the parent checkout rather than the isolation worktree. The same class can affect other build systems that derive roots from ancestor marker files, making isolated agent edits or builds interact with the wrong project root unless extra flags are supplied.",
+      "workaround": "Do not assume nested `.claude/worktrees/*` directories are isolated from parent-root discovery. For build systems that search upward, create worktrees outside the main checkout when possible, or add a `WorktreeCreate` hook that moves or validates the worktree location. At minimum, run the build tool's root-discovery command inside the worktree and pass explicit root flags before trusting results.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "askuserquestion-can-hide-preceding-assistant-output",
+      "title": "AskUserQuestion can hide preceding assistant output in the same turn",
+      "category": "TUI & display",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79584"
+      ],
+      "description": "A reported Windows Claude Code 2.1.215 workflow found that assistant text emitted before a later tool call in the same turn, especially before AskUserQuestion, can intermittently never render to the user. The damaging shape is a report or decision table followed by a question dialog: the user may see only the choices, not the context those choices depend on, even though the model already generated it.",
+      "workaround": "Keep human-facing deliverables and AskUserQuestion prompts in separate turns. If an agent must ask immediately after a report, write the report to a file or other durable artifact first and reference that artifact from the question. For plugin authors, treat turn-terminal text as the only display-guaranteed output and avoid text -> tool-call -> question compositions for critical decisions.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "model-switching-mid-session-can-hang-cli",
+      "title": "Switching models mid-session can hang the CLI until switching back",
+      "category": "Model behavior",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79582"
+      ],
+      "description": "A reported Windows Claude Code 2.1.215 session could switch from one model to another mid-conversation, but attempting to revoke or switch the model again left the CLI unresponsive until the user selected the original model again. The affected session was long-running and had used subagents or background tasks earlier, making the failure especially risky for orchestration sessions that change model or effort settings during active work.",
+      "workaround": "Avoid repeated mid-session model switches in long-running or background-agent-heavy sessions. Checkpoint important state before using `/model`, and if the CLI hangs after a switch, try returning to the original model before force-killing the process. For automation or evaluations, prefer fresh sessions per model and inspect transcript model fields rather than mutating model choice in place.",
+      "status": "open",
+      "date_added": "2026-07-20"
     }
   ],
   "status_summary": {
-    "open": 1052,
+    "open": 1059,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 78,
-    "high": 539,
-    "low": 99,
-    "medium": 350
+    "high": 544,
+    "low": 100,
+    "medium": 351
   },
   "lastUpdated": "2026-07-20",
   "stats": {
-    "total": 1066,
+    "total": 1073,
     "critical": 78,
-    "high": 539,
-    "medium": 350,
-    "low": 99,
-    "open": 1052,
+    "high": 544,
+    "medium": 351,
+    "low": 100,
+    "open": 1059,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-20",
-  "total": 1066
+  "total": 1073
 }
