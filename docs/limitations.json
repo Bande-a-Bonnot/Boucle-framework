@@ -1,23 +1,23 @@
 {
   "version": "0.13.0",
-  "count": 1045,
+  "count": 1052,
   "categories": {
     "Hook behavior & events": 177,
     "Permission system": 118,
     "Hook bypass & evasion": 99,
     "MCP & plugin issues": 55,
     "Subagent & spawned agents": 41,
-    "Desktop & IDE integration": 32,
+    "Desktop & IDE integration": 33,
     "Platform & compatibility": 26,
     "CLI & terminal": 24,
     "TUI & display": 22,
     "Configuration behavior": 21,
     "Context & memory": 21,
-    "Tool behavior": 16,
+    "Tool behavior": 17,
     "Performance & cost": 14,
     "MCP & integrations": 12,
     "Security & trust boundaries": 12,
-    "Agents & subagents": 10,
+    "Agents & subagents": 11,
     "Plugin & channel system": 10,
     "Data integrity": 9,
     "File system & paths": 9,
@@ -26,12 +26,12 @@
     "Configuration & settings": 8,
     "Remote & cloud": 8,
     "Sandbox & permissions": 8,
+    "Scheduling & remote triggers": 8,
+    "Auth & accounts": 7,
+    "Cowork & remote": 7,
     "MCP": 7,
     "Permissions": 7,
-    "Auth & accounts": 6,
-    "Cowork & remote": 6,
     "Desktop & platform bugs": 6,
-    "Scheduling & remote triggers": 6,
     "VS Code extension": 6,
     "Bash & shell execution": 5,
     "Core & session management": 5,
@@ -173,9 +173,9 @@
   },
   "severity_counts": {
     "CRITICAL": 77,
-    "HIGH": 523,
+    "HIGH": 528,
     "LOW": 99,
-    "MEDIUM": 346
+    "MEDIUM": 348
   },
   "entries": [
     {
@@ -13374,30 +13374,121 @@
       "workaround": "Prefer fully expanded literal values in MCP server `env` blocks for servers that may reconnect mid-session. If a server starts failing after `/mcp reconnect`, inspect the child process environment before debugging the server itself. A full Claude Code relaunch may restore initial-spawn expansion; repeated reconnects can preserve the broken literal-env path.",
       "status": "open",
       "date_added": "2026-07-20"
+    },
+    {
+      "id": "cowork-delete-permission-can-fail-on-nfd-normalized-mount-names",
+      "title": "Cowork delete permission can fail on NFD-normalized mount names",
+      "category": "Cowork & remote",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79526"
+      ],
+      "description": "A reported Claude Cowork setup on macOS failed to grant file-delete permission when the mounted workspace folder name used NFD Unicode bytes while the tool parameter used visually identical NFC text. `allow_cowork_file_delete` returned a mount-not-found error, so the delete gate never unlocked even though the path was under the mounted directory. The reporter verified that renaming the same visible folder to NFC made the permission flow work.",
+      "workaround": "Avoid workspace folder names whose on-disk bytes use decomposed Unicode forms until the mount lookup normalizes both sides. If delete permission fails with a mount-not-found error on macOS, inspect the mount name bytes and retry from an ASCII or normalization-invariant path. Renaming the workspace to NFC before selecting it in Cowork was reported to restore the delete-permission path.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "agents-flag-can-ignore-invalid-json-with-exit-zero",
+      "title": "`--agents` can ignore invalid JSON with exit zero",
+      "category": "Agents & subagents",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79527"
+      ],
+      "description": "A reported Claude Code 2.1.215 CLI run accepted malformed or wrong-shaped JSON passed through `--agents`, printed no warning, and exited 0 while silently dropping the custom agent definitions. The same invalid JSON was rejected by `--settings` and `--mcp-config`, making `--agents` inconsistent with adjacent configuration flags and dangerous for CI or shell wrappers that assume exit 0 means the configured agents loaded.",
+      "workaround": "Validate `--agents` JSON with an external parser before invoking Claude Code, and add a smoke test that asks for or inspects the expected agent availability before trusting a run. In automation, treat missing expected agent behavior as a configuration failure even if the Claude process exits 0. Prefer checked files or generated JSON over shell-quoted inline strings for agent definitions.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "bridge-triggered-sessions-can-die-with-404-transport-errors",
+      "title": "Bridge-triggered sessions can die with 404 transport errors",
+      "category": "Scheduling & remote triggers",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79529"
+      ],
+      "description": "A reported self-hosted-runner environment (`kind: bridge`) intermittently failed trigger-fired sessions with 404s during worker registration or later event/transport polling. In one run the session reached first output and Bash permission classification before `CCRClient` events returned repeated 404s and the client exited; another no-tool prompt failed with a `RemoteIO` transport-closed 404. A later similar run succeeded, so the report points to an intermittent trigger/bridge path rather than a deterministic environment failure.",
+      "workaround": "Do not assume a trigger fire against a bridge environment completed unless you read back the session result and logs. Add retries with idempotent prompts, record the target environment and session IDs, and treat registration 404s separately from event-channel 404s when diagnosing. For important jobs, compare trigger-created runs with direct runner sessions and keep enough server/client log IDs to escalate intermittent transport failures.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "desktop-2-1-215-can-produce-oauth-401-retry-storms",
+      "title": "Desktop 2.1.215 can produce OAuth 401 retry storms",
+      "category": "Auth & accounts",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79535"
+      ],
+      "description": "A reported Claude Desktop 2.1.215 regression produced sustained bursts of `401 Invalid authentication credentials` and `OAuth access token has been revoked` errors in long-lived or concurrently open Claude Code desktop sessions. The reporter compared local logs before and after the 2.1.209 to 2.1.215 update and saw a jump from zero 401s in the pre-update window to hundreds of auth-layer retry records over about 30 hours, while sessions often recovered after retry backoff.",
+      "workaround": "For desktop-hosted Claude Code sessions, monitor local session JSONL for clustered `api_error` records with status 401 instead of relying only on transient UI retry banners. Keep long-lived and concurrent sessions easy to restart, and capture version, timestamps, session IDs, retry counts, and request IDs before re-authentication clears evidence. If automation depends on uninterrupted desktop sessions, treat repeated 401 retry bursts as degraded auth state and restart or re-grant credentials before continuing critical work.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "webfetch-can-fail-to-read-same-account-claude-artifacts",
+      "title": "WebFetch can fail to read same-account Claude artifacts",
+      "category": "Tool behavior",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79536"
+      ],
+      "description": "A reported Claude Code session on Windows could not read a valid same-account `claude.ai/code/artifact/<uuid>` URL through `WebFetch`, returning `artifact read failed: incomplete boot response` on repeated attempts. The same tool could read public GitHub URLs, and the affected artifact was described as Anthropic-published guidance, so the failure appears specific to the Claude artifact host/read path rather than general web access.",
+      "workaround": "Do not use Claude artifact URLs as the only handoff channel for agent-readable instructions or evidence. Provide a plain text, Markdown, repository, or issue mirror for important artifacts, and verify that the receiving agent can fetch the content before assigning work based on it. When artifact reads fail, capture the artifact URL, account/surface, exact error, and a contrasting successful WebFetch URL to distinguish host-specific failure from general networking.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "chrome-heavy-spa-screenshot-timeouts-can-combine-with-classifier-deadlocks",
+      "title": "Chrome heavy-SPA screenshot timeouts can combine with classifier deadlocks",
+      "category": "Desktop & IDE integration",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79537"
+      ],
+      "description": "A reported Claude in Chrome workflow against a heavy WordPress/Elementor SPA repeatedly failed screenshots with a script-injection timeout while ordinary DOM reads still worked. When visual interaction was unavailable, attempts to make a small reversible edit through either backend REST writes or the application's own in-page command API were both denied by the auto-mode classifier, leaving no viable path to perform or visually verify the edit.",
+      "workaround": "Treat heavy SPA pages with continuous background activity as a separate browser-automation risk class. Before relying on Claude in Chrome for edits, verify that screenshots work on the target page and that there is an approved fallback path if visual control fails. For production pages, prepare manual rollback steps and avoid classifier-blocked direct application APIs unless there is an explicit human approval route that the tool can use instead of hard blocking.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "routines-have-no-durable-in-app-notification-target",
+      "title": "Routines have no durable in-app notification target",
+      "category": "Scheduling & remote triggers",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79538"
+      ],
+      "description": "A reported Routines workflow found no first-class durable in-app place for an agent to leave a rare important finding. Routine final messages stay inside sessions the user may never open, sidebar unread dots indicate runs rather than meaningful findings, and `PushNotification` is ephemeral outside the phone push path. The reporter resorted to creating Google Calendar events and Gmail drafts as a makeshift durable notification inbox.",
+      "workaround": "For scheduled routines that must notify a human, do not assume the final assistant message will be seen. Until a durable in-app notification target exists, explicitly write findings to an approved persistent channel and keep the signal low-noise enough that the channel remains useful. For critical monitors, include a readback check that confirms the notification artifact was created, and document the cleanup burden if using Calendar or draft email as a fallback inbox.",
+      "status": "open",
+      "date_added": "2026-07-20"
     }
   ],
   "status_summary": {
-    "open": 1031,
+    "open": 1038,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 77,
-    "high": 523,
+    "high": 528,
     "low": 99,
-    "medium": 346
+    "medium": 348
   },
   "lastUpdated": "2026-07-20",
   "stats": {
-    "total": 1045,
+    "total": 1052,
     "critical": 77,
-    "high": 523,
-    "medium": 346,
+    "high": 528,
+    "medium": 348,
     "low": 99,
-    "open": 1031,
+    "open": 1038,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-20",
-  "total": 1045
+  "total": 1052
 }
