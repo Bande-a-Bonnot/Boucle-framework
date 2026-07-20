@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1052</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-20.</span></p>
+        <p class="subtitle"><span id="total-count">1057</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-20.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -11344,6 +11344,66 @@
                         <!-- workaround:routines-have-no-durable-in-app-notification-target -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For scheduled routines that must notify a human, do not assume the final assistant message will be seen. Until a durable in-app notification target exists, explicitly write findings to an approved persistent channel and keep the signal low-noise enough that the channel remains useful. For critical monitors, include a readback check that confirms the notification artifact was created, and document the cleanup burden if using Calendar or draft email as a fallback inbox.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79538" target="_blank">#79538</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permissions &amp; safety" data-issues="79539" id="auto-mode-permission-rejections-can-be-misattributed-to-the-user" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1053</span>
+                <span class="kl-cat">Permissions &amp; safety</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Auto-mode permission rejections can be misattributed to the user</h3>
+            <p>A reported Claude Code auto-mode session rejected a compound Bash command after one parsed subcommand failed to match the configured allow or ask rules, but the tool result said the user did not want to proceed even though no visible prompt was shown or answered. In unattended sessions, that wording makes a policy, mode, prompt-surface, or timeout failure indistinguishable from a real human denial and can leave background workflows looking like they hung.</p>
+                        <!-- workaround:auto-mode-permission-rejections-can-be-misattributed-to-the-user -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For unattended or scheduled sessions, do not treat the generic user-rejected wording as proof that a person denied a prompt. Log the exact permission mode, parsed command, allow and ask rules, and whether any prompt was actually rendered. Prefer explicit allow or ask coverage for each subcommand in compound Bash calls, and add watchdog/readback logic that escalates silent permission rejection separately from human denial.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79539" target="_blank">#79539</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permissions &amp; safety" data-issues="79540" id="chrome-always-allow-domain-grants-can-be-stored-as-once" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1054</span>
+                <span class="kl-cat">Permissions &amp; safety</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Chrome always-allow domain grants can be stored as once</h3>
+            <p>A reported Claude for Mac and Claude Code 2.1.215 Chrome-extension workflow showed repeated domain permission dialogs even after choosing Always allow for the same site. Extension storage for the tested domain recorded each grant with `duration:&quot;once&quot;`, the approved-sites list stayed empty, and the reporter linked the behavior to a suspected resume handler that discards the selected duration when granting permission.</p>
+                        <!-- workaround:chrome-always-allow-domain-grants-can-be-stored-as-once -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume Chrome extension domain prompts have become durable just because Always allow was selected. Before relying on repeated browser automation for a gated site, make a second read/navigation call and verify that no new dialog appears and that the approved-sites list contains the domain. For long-running browser tasks, plan for repeated one-time prompts or use a manually controlled session until persistent grant readback is confirmed.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79540" target="_blank">#79540</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="79545" id="ide-loopback-websocket-can-be-routed-through-env-proxies" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1055</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>IDE loopback websocket can be routed through env proxies</h3>
+            <p>A reported Claude Code 2.1.215 `/ide` connection on macOS sent the local VS Code websocket to the configured HTTP or HTTPS proxy when `NODE_USE_ENV_PROXY=1` and lowercase `no_proxy` existed without loopback entries, even though uppercase `NO_PROXY` correctly listed localhost and 127.0.0.1. Depending on proxy behavior, the local IDE connection may appear to work while transiting a proxy, or fail outright in stricter corporate proxy setups.</p>
+                        <!-- workaround:ide-loopback-websocket-can-be-routed-through-env-proxies -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If `/ide` is used with proxy environment variables, include loopback hosts in lowercase `no_proxy` as well as uppercase `NO_PROXY`, or unset `NODE_USE_ENV_PROXY` for Claude Code sessions that only need local editor integration. In audited environments, verify proxy logs during `/ide` connection tests and treat any loopback CONNECT or websocket traffic to the proxy as a privacy and reliability defect.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79545" target="_blank">#79545</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="79547" id="configchange-hook-blocking-decisions-can-be-ignored" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1056</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>ConfigChange hook blocking decisions can be ignored</h3>
+            <p>A reported Claude Code regression found that a `ConfigChange` hook fired and detected broken `settings.json`, but neither a blocking JSON decision on stdout nor exit code 2 interrupted the session. The same hook library reportedly worked in PreToolUse and other hook events, and the reporter identified 2.1.153 as the last working version and 2.1.196 as affected, making this a hook-result handling issue specific to ConfigChange.</p>
+                        <!-- workaround:configchange-hook-blocking-decisions-can-be-ignored -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on ConfigChange hooks alone as a fail-closed guard for settings validity until the event path is verified on the installed Claude Code version. Add an external settings JSON validation step in CI, shell wrappers, or pre-run scripts, and run a live smoke test that deliberately breaks a throwaway settings file and confirms the session is interrupted. Keep critical enforcement duplicated in PreToolUse or startup validation where possible.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79547" target="_blank">#79547</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="79553" id="chrome-native-host-errors-can-break-browser-list-json-parsing" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1057</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Chrome native-host errors can break browser-list JSON parsing</h3>
+            <p>A reported Claude in Chrome setup on macOS 26.5.2 with Claude Code 2.1.215 showed `/chrome` as enabled with the extension installed, but failed with `JSON Parse error: Unexpected identifier &quot;Browser&quot;` while listing connected browsers. The reporter verified the native messaging manifest, wrapper, binary, extension ID, and same-account login, and noted that the parse token appears to come from the plain-text `Browser extension is not connected` error being fed into a JSON parser.</p>
+                        <!-- workaround:chrome-native-host-errors-can-break-browser-list-json-parsing -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When `/chrome` reports a JSON parse error around `Browser`, do not keep repeating extension toggles as if setup were definitely wrong. Capture the native-host manifest, extension ID, host executable path and permissions, exact `/chrome` output, and a browser-tool error for escalation. For production browser automation, require a preflight that both `/chrome` and a simple tab-context tool call succeed before assigning work to the Chrome integration.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79553" target="_blank">#79553</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
