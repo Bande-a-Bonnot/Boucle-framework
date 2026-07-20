@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1011</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-19.</span></p>
+        <p class="subtitle"><span id="total-count">1016</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-20.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -10852,6 +10852,66 @@
                         <!-- workaround:desktop-auto-update-can-drop-custom-sidebar-groups -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before Desktop auto-updates or restarts, keep an external note or export of important project/session organization instead of relying on sidebar groups as durable metadata. If groups disappear immediately after an update, inspect Local Storage and older LevelDB SSTables before further use or compaction, and avoid treating newly-created groups as evidence that old assignments migrated successfully.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79184" target="_blank">#79184</a></div>
+        </div>
+        <div class="kl-entry" data-category="Bash &amp; shell execution" data-issues="79440" id="bash-expand-aliases-can-rewrite-approved-commands" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1012</span>
+                <span class="kl-cat">Bash &amp; shell execution</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Bash aliases can rewrite commands after PreToolUse approval</h3>
+            <p>A reported Claude Code 2.1.206 Linux session showed the Bash tool shell running with `expand_aliases` enabled even though a plain non-interactive `bash -c` leaves aliases off. If an alias or function is sourced into the tool shell, the PreToolUse hook approves the literal command text while Bash can execute a different expansion, such as an alias replacing `cd`, `git`, or another whitelisted command. The reporter noted that a hook cannot faithfully inspect this state beforehand because its probe shell does not match the tool shell and shell startup files create TOCTOU gaps.</p>
+                        <!-- workaround:bash-expand-aliases-can-rewrite-approved-commands -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on PreToolUse Bash text inspection as proof that the exact command will execute on hosts where shell aliases or functions may be sourced. Keep non-interactive rc paths free of aliases for sensitive command names, avoid exporting `BASH_ENV` into Claude Code sessions, and prefer explicit wrapper binaries or OS-level controls for high-risk operations until the Bash tool shell can run with aliases disabled or a documented pristine invocation.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79440" target="_blank">#79440</a></div>
+        </div>
+        <div class="kl-entry" data-category="Authentication &amp; accounts" data-issues="79427" id="shared-daemon-can-leak-env-auth-token-across-sessions" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1013</span>
+                <span class="kl-cat">Authentication &amp; accounts</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Shared daemon can leak first-session ANTHROPIC_AUTH_TOKEN into later sessions</h3>
+            <p>A reported Claude Code 2.1.215 macOS setup showed the shared `claude daemon` inheriting `ANTHROPIC_AUTH_TOKEN` from the first session that spawned it, then reusing that environment for later sessions launched from different terminals and repositories that had no Anthropic variables. Those later sessions displayed the stored OAuth account while wire requests authenticated and billed against the inherited token account, only becoming visible when that account hit rate limits. This can silently mix account, billing, and organization context across unrelated work.</p>
+                        <!-- workaround:shared-daemon-can-leak-env-auth-token-across-sessions -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Unset Anthropic auth variables before starting Claude Code sessions that may spawn a shared daemon. If an auth mismatch appears, inspect and kill the daemon plus `bg-spare` or `bg-pty-host` workers so they respawn from a clean environment, then rotate any exposed token. For multi-account workflows, avoid relying on the startup banner alone; record the intended auth source per session and keep API-token shells isolated from normal OAuth sessions.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79427" target="_blank">#79427</a></div>
+        </div>
+        <div class="kl-entry" data-category="Settings &amp; configuration" data-issues="79403" id="vscode-model-toggle-can-corrupt-settings-json" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1014</span>
+                <span class="kl-cat">Settings &amp; configuration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>VS Code /model toggle can corrupt settings.json and drop permissions</h3>
+            <p>A reported Claude Code VS Code extension 2.1.209 Windows setup saw the in-app `/model` toggle intermittently write malformed JSON to `~/.claude/settings.json` while persisting model selection. Observed corruptions included a `model` key appended after the root closing brace and a missing comma inside an unrelated hook object. Once parsing failed, Claude Code warned that the settings file was invalid and all permission rules and hooks from that file stopped taking effect for subsequent sessions until manually repaired.</p>
+                        <!-- workaround:vscode-model-toggle-can-corrupt-settings-json -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Back up `~/.claude/settings.json` before changing models from the VS Code UI, and validate the file after model switches with a JSON parser before starting sensitive work. If the file corrupts, restore from backup rather than editing around partial writes. For hardened environments, pin the model through a wrapper or environment variable and leave the settings file model key unmanaged by the extension.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79403" target="_blank">#79403</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="79400" id="native-deny-rules-can-miss-prefixed-git-commands" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1015</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Native deny rules can miss prefixed git commands that hooks delegate back to Claude Code</h3>
+            <p>A reported Claude Code 2.1.215 macOS session executed `rtk git commit`, `rtk git cherry-pick`, and `rtk git reset --hard` despite settings deny patterns intended to block those operations. The user&#x27;s PreToolUse hook detected the deny condition through `rtk rewrite` and exited successfully to let Claude Code&#x27;s native deny rule enforce it, but the native permission engine allowed the commands to complete without a prompt. This shows that delegating back to native deny matching after a wrapper or prefix layer can leave destructive commands unblocked.</p>
+                        <!-- workaround:native-deny-rules-can-miss-prefixed-git-commands -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not have wrapper-aware hooks exit allowfully and rely on native deny rules for the final block. If a hook can classify a command as denied after rewriting or normalization, return a blocking decision directly from the hook. Add explicit tests for wrapped forms such as `tool git reset --hard`, `tool git commit`, and `git -C ...` before trusting deny patterns in unattended or auto-approval modes.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79400" target="_blank">#79400</a></div>
+        </div>
+        <div class="kl-entry" data-category="Git &amp; repository safety" data-issues="79432" id="worktree-branches-can-track-origin-main" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1016</span>
+                <span class="kl-cat">Git &amp; repository safety</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Worktree branches can track origin/main and bypass PR review on push</h3>
+            <p>A reported Claude Code 2.1.215 macOS workflow created an isolated worktree branch from `origin/main` using the Git default that makes the new branch track the remote start point. A later IDE sync pushed the feature branch commit to its configured upstream, `refs/heads/main`, bypassing a PR review gate and triggering production Continuous Delivery. The failure is not a direct hook bypass; it is a Git upstream footgun created during branch/worktree setup that becomes dangerous when later tools push to the configured upstream.</p>
+                        <!-- workaround:worktree-branches-can-track-origin-main -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When creating worktree branches from a remote-tracking ref, use `git worktree add --no-track` or create from a local branch so the feature branch does not inherit `origin/main` as its upstream. After any agent-created branch, verify `git config --get branch.&lt;name&gt;.merge` and `git config --get branch.&lt;name&gt;.remote` before committing or syncing from an IDE. Add git hooks or server-side protections that reject non-reviewed pushes to default branches even when a local branch upstream points there.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79432" target="_blank">#79432</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
