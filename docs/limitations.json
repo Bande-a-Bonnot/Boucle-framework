@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1011,
+  "count": 1016,
   "categories": {
     "Hook behavior & events": 174,
-    "Permission system": 114,
+    "Permission system": 115,
     "Hook bypass & evasion": 99,
     "MCP & plugin issues": 54,
     "Subagent & spawned agents": 40,
@@ -32,9 +32,9 @@
     "Desktop & platform bugs": 6,
     "Scheduling & remote triggers": 6,
     "VS Code extension": 6,
+    "Bash & shell execution": 5,
     "Core & session management": 5,
     "UX & display": 5,
-    "Bash & shell execution": 4,
     "Data integrity": 4,
     "MCP & plugins": 4,
     "permissions": 4,
@@ -92,6 +92,7 @@
     "Auth & credential management": 1,
     "Auth and credentials": 1,
     "authentication": 1,
+    "Authentication & accounts": 1,
     "Authentication & credentials": 1,
     "Autonomy & destructive actions": 1,
     "Autonomy / model behavior": 1,
@@ -110,6 +111,7 @@
     "Error handling & recovery": 1,
     "File system": 1,
     "filesystem": 1,
+    "Git & repository safety": 1,
     "Hook execution & lifecycle": 1,
     "Hooks / extensions": 1,
     "hooks-and-automation": 1,
@@ -151,6 +153,7 @@
     "Sandbox & security": 1,
     "Sessions & conversation management": 1,
     "settings": 1,
+    "Settings & configuration": 1,
     "setup": 1,
     "Skills": 1,
     "skills": 1,
@@ -169,8 +172,8 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 67,
-    "HIGH": 501,
+    "CRITICAL": 68,
+    "HIGH": 505,
     "LOW": 99,
     "MEDIUM": 344
   },
@@ -12929,30 +12932,95 @@
       "workaround": "Before Desktop auto-updates or restarts, keep an external note or export of important project/session organization instead of relying on sidebar groups as durable metadata. If groups disappear immediately after an update, inspect Local Storage and older LevelDB SSTables before further use or compaction, and avoid treating newly-created groups as evidence that old assignments migrated successfully.",
       "status": "open",
       "date_added": "2026-07-19"
+    },
+    {
+      "id": "bash-expand-aliases-can-rewrite-approved-commands",
+      "title": "Bash aliases can rewrite commands after PreToolUse approval",
+      "category": "Bash & shell execution",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79440"
+      ],
+      "description": "A reported Claude Code 2.1.206 Linux session showed the Bash tool shell running with `expand_aliases` enabled even though a plain non-interactive `bash -c` leaves aliases off. If an alias or function is sourced into the tool shell, the PreToolUse hook approves the literal command text while Bash can execute a different expansion, such as an alias replacing `cd`, `git`, or another whitelisted command. The reporter noted that a hook cannot faithfully inspect this state beforehand because its probe shell does not match the tool shell and shell startup files create TOCTOU gaps.",
+      "workaround": "Do not rely on PreToolUse Bash text inspection as proof that the exact command will execute on hosts where shell aliases or functions may be sourced. Keep non-interactive rc paths free of aliases for sensitive command names, avoid exporting `BASH_ENV` into Claude Code sessions, and prefer explicit wrapper binaries or OS-level controls for high-risk operations until the Bash tool shell can run with aliases disabled or a documented pristine invocation.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "shared-daemon-can-leak-env-auth-token-across-sessions",
+      "title": "Shared daemon can leak first-session ANTHROPIC_AUTH_TOKEN into later sessions",
+      "category": "Authentication & accounts",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79427"
+      ],
+      "description": "A reported Claude Code 2.1.215 macOS setup showed the shared `claude daemon` inheriting `ANTHROPIC_AUTH_TOKEN` from the first session that spawned it, then reusing that environment for later sessions launched from different terminals and repositories that had no Anthropic variables. Those later sessions displayed the stored OAuth account while wire requests authenticated and billed against the inherited token account, only becoming visible when that account hit rate limits. This can silently mix account, billing, and organization context across unrelated work.",
+      "workaround": "Unset Anthropic auth variables before starting Claude Code sessions that may spawn a shared daemon. If an auth mismatch appears, inspect and kill the daemon plus `bg-spare` or `bg-pty-host` workers so they respawn from a clean environment, then rotate any exposed token. For multi-account workflows, avoid relying on the startup banner alone; record the intended auth source per session and keep API-token shells isolated from normal OAuth sessions.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "vscode-model-toggle-can-corrupt-settings-json",
+      "title": "VS Code /model toggle can corrupt settings.json and drop permissions",
+      "category": "Settings & configuration",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79403"
+      ],
+      "description": "A reported Claude Code VS Code extension 2.1.209 Windows setup saw the in-app `/model` toggle intermittently write malformed JSON to `~/.claude/settings.json` while persisting model selection. Observed corruptions included a `model` key appended after the root closing brace and a missing comma inside an unrelated hook object. Once parsing failed, Claude Code warned that the settings file was invalid and all permission rules and hooks from that file stopped taking effect for subsequent sessions until manually repaired.",
+      "workaround": "Back up `~/.claude/settings.json` before changing models from the VS Code UI, and validate the file after model switches with a JSON parser before starting sensitive work. If the file corrupts, restore from backup rather than editing around partial writes. For hardened environments, pin the model through a wrapper or environment variable and leave the settings file model key unmanaged by the extension.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "native-deny-rules-can-miss-prefixed-git-commands",
+      "title": "Native deny rules can miss prefixed git commands that hooks delegate back to Claude Code",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79400"
+      ],
+      "description": "A reported Claude Code 2.1.215 macOS session executed `rtk git commit`, `rtk git cherry-pick`, and `rtk git reset --hard` despite settings deny patterns intended to block those operations. The user's PreToolUse hook detected the deny condition through `rtk rewrite` and exited successfully to let Claude Code's native deny rule enforce it, but the native permission engine allowed the commands to complete without a prompt. This shows that delegating back to native deny matching after a wrapper or prefix layer can leave destructive commands unblocked.",
+      "workaround": "Do not have wrapper-aware hooks exit allowfully and rely on native deny rules for the final block. If a hook can classify a command as denied after rewriting or normalization, return a blocking decision directly from the hook. Add explicit tests for wrapped forms such as `tool git reset --hard`, `tool git commit`, and `git -C ...` before trusting deny patterns in unattended or auto-approval modes.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "worktree-branches-can-track-origin-main",
+      "title": "Worktree branches can track origin/main and bypass PR review on push",
+      "category": "Git & repository safety",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79432"
+      ],
+      "description": "A reported Claude Code 2.1.215 macOS workflow created an isolated worktree branch from `origin/main` using the Git default that makes the new branch track the remote start point. A later IDE sync pushed the feature branch commit to its configured upstream, `refs/heads/main`, bypassing a PR review gate and triggering production Continuous Delivery. The failure is not a direct hook bypass; it is a Git upstream footgun created during branch/worktree setup that becomes dangerous when later tools push to the configured upstream.",
+      "workaround": "When creating worktree branches from a remote-tracking ref, use `git worktree add --no-track` or create from a local branch so the feature branch does not inherit `origin/main` as its upstream. After any agent-created branch, verify `git config --get branch.<name>.merge` and `git config --get branch.<name>.remote` before committing or syncing from an IDE. Add git hooks or server-side protections that reject non-reviewed pushes to default branches even when a local branch upstream points there.",
+      "status": "open",
+      "date_added": "2026-07-20"
     }
   ],
   "status_summary": {
-    "open": 997,
+    "open": 1002,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 67,
-    "high": 501,
+    "critical": 68,
+    "high": 505,
     "low": 99,
     "medium": 344
   },
-  "lastUpdated": "2026-07-19",
+  "lastUpdated": "2026-07-20",
   "stats": {
-    "total": 1011,
-    "critical": 67,
-    "high": 501,
+    "total": 1016,
+    "critical": 68,
+    "high": 505,
     "medium": 344,
     "low": 99,
-    "open": 997,
+    "open": 1002,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-07-19",
-  "total": 1011
+  "last_updated": "2026-07-20",
+  "total": 1016
 }
