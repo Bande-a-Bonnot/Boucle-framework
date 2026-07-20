@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1045</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-20.</span></p>
+        <p class="subtitle"><span id="total-count">1052</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-20.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -11260,6 +11260,90 @@
                         <!-- workaround:mcp-env-expansion-can-fail-on-mid-session-reconnect -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Prefer fully expanded literal values in MCP server `env` blocks for servers that may reconnect mid-session. If a server starts failing after `/mcp reconnect`, inspect the child process environment before debugging the server itself. A full Claude Code relaunch may restore initial-spawn expansion; repeated reconnects can preserve the broken literal-env path.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79498" target="_blank">#79498</a></div>
+        </div>
+        <div class="kl-entry" data-category="Cowork &amp; remote" data-issues="79526" id="cowork-delete-permission-can-fail-on-nfd-normalized-mount-names" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1046</span>
+                <span class="kl-cat">Cowork &amp; remote</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Cowork delete permission can fail on NFD-normalized mount names</h3>
+            <p>A reported Claude Cowork setup on macOS failed to grant file-delete permission when the mounted workspace folder name used NFD Unicode bytes while the tool parameter used visually identical NFC text. `allow_cowork_file_delete` returned a mount-not-found error, so the delete gate never unlocked even though the path was under the mounted directory. The reporter verified that renaming the same visible folder to NFC made the permission flow work.</p>
+                        <!-- workaround:cowork-delete-permission-can-fail-on-nfd-normalized-mount-names -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid workspace folder names whose on-disk bytes use decomposed Unicode forms until the mount lookup normalizes both sides. If delete permission fails with a mount-not-found error on macOS, inspect the mount name bytes and retry from an ASCII or normalization-invariant path. Renaming the workspace to NFC before selecting it in Cowork was reported to restore the delete-permission path.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79526" target="_blank">#79526</a></div>
+        </div>
+        <div class="kl-entry" data-category="Agents &amp; subagents" data-issues="79527" id="agents-flag-can-ignore-invalid-json-with-exit-zero" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1047</span>
+                <span class="kl-cat">Agents &amp; subagents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>`--agents` can ignore invalid JSON with exit zero</h3>
+            <p>A reported Claude Code 2.1.215 CLI run accepted malformed or wrong-shaped JSON passed through `--agents`, printed no warning, and exited 0 while silently dropping the custom agent definitions. The same invalid JSON was rejected by `--settings` and `--mcp-config`, making `--agents` inconsistent with adjacent configuration flags and dangerous for CI or shell wrappers that assume exit 0 means the configured agents loaded.</p>
+                        <!-- workaround:agents-flag-can-ignore-invalid-json-with-exit-zero -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Validate `--agents` JSON with an external parser before invoking Claude Code, and add a smoke test that asks for or inspects the expected agent availability before trusting a run. In automation, treat missing expected agent behavior as a configuration failure even if the Claude process exits 0. Prefer checked files or generated JSON over shell-quoted inline strings for agent definitions.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79527" target="_blank">#79527</a></div>
+        </div>
+        <div class="kl-entry" data-category="Scheduling &amp; remote triggers" data-issues="79529" id="bridge-triggered-sessions-can-die-with-404-transport-errors" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1048</span>
+                <span class="kl-cat">Scheduling &amp; remote triggers</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Bridge-triggered sessions can die with 404 transport errors</h3>
+            <p>A reported self-hosted-runner environment (`kind: bridge`) intermittently failed trigger-fired sessions with 404s during worker registration or later event/transport polling. In one run the session reached first output and Bash permission classification before `CCRClient` events returned repeated 404s and the client exited; another no-tool prompt failed with a `RemoteIO` transport-closed 404. A later similar run succeeded, so the report points to an intermittent trigger/bridge path rather than a deterministic environment failure.</p>
+                        <!-- workaround:bridge-triggered-sessions-can-die-with-404-transport-errors -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume a trigger fire against a bridge environment completed unless you read back the session result and logs. Add retries with idempotent prompts, record the target environment and session IDs, and treat registration 404s separately from event-channel 404s when diagnosing. For important jobs, compare trigger-created runs with direct runner sessions and keep enough server/client log IDs to escalate intermittent transport failures.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79529" target="_blank">#79529</a></div>
+        </div>
+        <div class="kl-entry" data-category="Auth &amp; accounts" data-issues="79535" id="desktop-2-1-215-can-produce-oauth-401-retry-storms" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1049</span>
+                <span class="kl-cat">Auth &amp; accounts</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Desktop 2.1.215 can produce OAuth 401 retry storms</h3>
+            <p>A reported Claude Desktop 2.1.215 regression produced sustained bursts of `401 Invalid authentication credentials` and `OAuth access token has been revoked` errors in long-lived or concurrently open Claude Code desktop sessions. The reporter compared local logs before and after the 2.1.209 to 2.1.215 update and saw a jump from zero 401s in the pre-update window to hundreds of auth-layer retry records over about 30 hours, while sessions often recovered after retry backoff.</p>
+                        <!-- workaround:desktop-2-1-215-can-produce-oauth-401-retry-storms -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For desktop-hosted Claude Code sessions, monitor local session JSONL for clustered `api_error` records with status 401 instead of relying only on transient UI retry banners. Keep long-lived and concurrent sessions easy to restart, and capture version, timestamps, session IDs, retry counts, and request IDs before re-authentication clears evidence. If automation depends on uninterrupted desktop sessions, treat repeated 401 retry bursts as degraded auth state and restart or re-grant credentials before continuing critical work.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79535" target="_blank">#79535</a></div>
+        </div>
+        <div class="kl-entry" data-category="Tool behavior" data-issues="79536" id="webfetch-can-fail-to-read-same-account-claude-artifacts" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1050</span>
+                <span class="kl-cat">Tool behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>WebFetch can fail to read same-account Claude artifacts</h3>
+            <p>A reported Claude Code session on Windows could not read a valid same-account `claude.ai/code/artifact/&lt;uuid&gt;` URL through `WebFetch`, returning `artifact read failed: incomplete boot response` on repeated attempts. The same tool could read public GitHub URLs, and the affected artifact was described as Anthropic-published guidance, so the failure appears specific to the Claude artifact host/read path rather than general web access.</p>
+                        <!-- workaround:webfetch-can-fail-to-read-same-account-claude-artifacts -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not use Claude artifact URLs as the only handoff channel for agent-readable instructions or evidence. Provide a plain text, Markdown, repository, or issue mirror for important artifacts, and verify that the receiving agent can fetch the content before assigning work based on it. When artifact reads fail, capture the artifact URL, account/surface, exact error, and a contrasting successful WebFetch URL to distinguish host-specific failure from general networking.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79536" target="_blank">#79536</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="79537" id="chrome-heavy-spa-screenshot-timeouts-can-combine-with-classifier-deadlocks" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1051</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Chrome heavy-SPA screenshot timeouts can combine with classifier deadlocks</h3>
+            <p>A reported Claude in Chrome workflow against a heavy WordPress/Elementor SPA repeatedly failed screenshots with a script-injection timeout while ordinary DOM reads still worked. When visual interaction was unavailable, attempts to make a small reversible edit through either backend REST writes or the application&#x27;s own in-page command API were both denied by the auto-mode classifier, leaving no viable path to perform or visually verify the edit.</p>
+                        <!-- workaround:chrome-heavy-spa-screenshot-timeouts-can-combine-with-classifier-deadlocks -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat heavy SPA pages with continuous background activity as a separate browser-automation risk class. Before relying on Claude in Chrome for edits, verify that screenshots work on the target page and that there is an approved fallback path if visual control fails. For production pages, prepare manual rollback steps and avoid classifier-blocked direct application APIs unless there is an explicit human approval route that the tool can use instead of hard blocking.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79537" target="_blank">#79537</a></div>
+        </div>
+        <div class="kl-entry" data-category="Scheduling &amp; remote triggers" data-issues="79538" id="routines-have-no-durable-in-app-notification-target" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1052</span>
+                <span class="kl-cat">Scheduling &amp; remote triggers</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Routines have no durable in-app notification target</h3>
+            <p>A reported Routines workflow found no first-class durable in-app place for an agent to leave a rare important finding. Routine final messages stay inside sessions the user may never open, sidebar unread dots indicate runs rather than meaningful findings, and `PushNotification` is ephemeral outside the phone push path. The reporter resorted to creating Google Calendar events and Gmail drafts as a makeshift durable notification inbox.</p>
+                        <!-- workaround:routines-have-no-durable-in-app-notification-target -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For scheduled routines that must notify a human, do not assume the final assistant message will be seen. Until a durable in-app notification target exists, explicitly write findings to an approved persistent channel and keep the signal low-noise enough that the channel remains useful. For critical monitors, include a readback check that confirms the notification artifact was created, and document the cleanup burden if using Calendar or draft email as a fallback inbox.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79538" target="_blank">#79538</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
