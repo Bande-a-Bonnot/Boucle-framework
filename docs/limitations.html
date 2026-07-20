@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1073</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-20.</span></p>
+        <p class="subtitle"><span id="total-count">1080</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-20.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -11596,6 +11596,90 @@
                         <!-- workaround:model-switching-mid-session-can-hang-cli -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid repeated mid-session model switches in long-running or background-agent-heavy sessions. Checkpoint important state before using `/model`, and if the CLI hangs after a switch, try returning to the original model before force-killing the process. For automation or evaluations, prefer fresh sessions per model and inspect transcript model fields rather than mutating model choice in place.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79582" target="_blank">#79582</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="79596" id="chrome-cowork-can-navigate-to-unrelated-sites-without-attribution" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1074</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Claude in Chrome can navigate to unrelated sites without attribution</h3>
+            <p>A reported Cowork and Claude in Chrome incident found a real Chrome profile navigated to an unrelated external site during Cowork-related activity, with supporting evidence from Chrome history and endpoint-protection logs but no visible session transcript explaining the URL argument or reasoning. The core risk is not the destination site itself; it is that browser-tool navigation can be hard to attribute after the fact, leaving users unable to connect a real tab movement to a prompt, tool call, or session.</p>
+                        <!-- workaround:chrome-cowork-can-navigate-to-unrelated-sites-without-attribution -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For browser-enabled Cowork or Claude in Chrome work, log requested domains and tool-call URL arguments outside the model transcript when possible. Keep Chrome history, endpoint logs, and session IDs long enough to reconcile unexpected navigation, and use separate browser profiles for sensitive work. Treat unexplained third-party navigation as a security incident until the originating tool call and session can be identified.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79596" target="_blank">#79596</a></div>
+        </div>
+        <div class="kl-entry" data-category="Git &amp; repository safety" data-issues="79599" id="ci-monitoring-can-misreport-missing-pr-as-gh-auth-failure" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1075</span>
+                <span class="kl-cat">Git &amp; repository safety</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>CI monitoring can misreport a missing PR as a gh auth failure</h3>
+            <p>A reported CI monitoring panel resolved PR status from the current working directory&#x27;s repository, then showed a generic `gh` authentication/install warning when the relevant PR actually lived in another nested or sibling repository. In multi-repo workspaces this sends users toward credential debugging even though `gh pr checks -R &lt;repo&gt;` succeeds and the real problem is repo/PR resolution.</p>
+                        <!-- workaround:ci-monitoring-can-misreport-missing-pr-as-gh-auth-failure -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When CI monitoring says checks are unavailable, independently run `gh pr checks &lt;number&gt; -R owner/repo` before changing authentication. In meta-repo or nested-repo layouts, launch Claude Code from the repository that owns the PR or keep an explicit PR/repo note in the task. Treat auth messages from CI panels as untrusted until you have checked whether the current directory has an associated PR.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79599" target="_blank">#79599</a></div>
+        </div>
+        <div class="kl-entry" data-category="Agents &amp; subagents" data-issues="79580" id="code-review-subagents-can-spawn-nested-subagents-and-zombie-after-quota" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1076</span>
+                <span class="kl-cat">Agents &amp; subagents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Code-review subagents can spawn nested subagents and linger after quota exhaustion</h3>
+            <p>A reported `/code-review` subagent spawned another subagent for its own review work, initially treated itself as if it were the top-level Claude Code process, then remained visible in the subagent list after token exhaustion until `Stop Task` was pressed. The stop action then errored because the task state was already completed, suggesting nested-agent identity and quota-exhaustion lifecycle paths can diverge from the visible task list.</p>
+                        <!-- workaround:code-review-subagents-can-spawn-nested-subagents-and-zombie-after-quota -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For review workflows, tell subagents explicitly not to spawn further agents unless requested, and audit the subagent list after quota, rate-limit, or cancellation events. Do not assume a completed or quota-limited worker has been removed cleanly. For unattended review automation, record subagent IDs and expected artifacts so nested reviews and stale task-list entries are visible.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79580" target="_blank">#79580</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP integration" data-issues="79557" id="browser-pane-get-page-text-tabid-schema-can-disagree-with-validator" data-severity="low" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1077</span>
+                <span class="kl-cat">MCP integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
+            </div>
+            <h3>Browser pane get_page_text schema can disagree with its validator</h3>
+            <p>A reported Claude Code Desktop Browser pane tool described `mcp__Claude_Browser__get_page_text` `tabId` as optional with a default fronted tab, but the server-side validator rejected calls where `tabId` was omitted. The result is a guaranteed failed tool call for models that trust the schema and only succeeds after retrying with an explicit `tabId` such as `main`.</p>
+                        <!-- workaround:browser-pane-get-page-text-tabid-schema-can-disagree-with-validator -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Pass `tabId` explicitly for Browser pane text extraction even if the schema says it is optional. For tool-regression checks, include schema/validator parity tests that call tools with documented defaults omitted. In long-running browser automation, treat validation failures on optional fields as promptable tool-spec drift, not necessarily model failure.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79557" target="_blank">#79557</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="79362" id="vscode-permission-prompt-ui-can-skip-notification-hooks" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1078</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>VS Code permission prompts can skip Notification hooks</h3>
+            <p>A reported VS Code extension path did not fire the `Notification` hook for `permission_prompt` when the extension&#x27;s native permission UI asked for tool approval, even though the same bundled binary run directly in a terminal fired the hook for the same approval request. The configured hook silently never executed, while other hook paths such as PreToolUse for AskUserQuestion still worked inside the extension.</p>
+                        <!-- workaround:vscode-permission-prompt-ui-can-skip-notification-hooks -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If notification hooks are part of your safety or paging path, test them separately in the terminal CLI and in the VS Code extension UI. Do not assume the extension&#x27;s native approval popup exercises the same Notification event path. Keep critical approval enforcement in PreToolUse or external wrappers, and use a smoke test that waits on a real permission prompt and verifies the hook side effect.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79362" target="_blank">#79362</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="79356" id="windows-ask-permission-decisions-can-fail-open-for-tools" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1079</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Windows ask permission decisions can fail open for tools</h3>
+            <p>A reported Windows Claude Code 2.1.215 session in default permission mode ran tool calls immediately even when `permissions.ask` listed those tools and a PreToolUse hook returned `permissionDecision: &quot;ask&quot;` for a dangerous PowerShell command. The reporter also found Windows hook commands written in PowerShell syntax can be executed through bash unless wrapped explicitly, but fixing that hook invocation issue did not restore ask enforcement.</p>
+                        <!-- workaround:windows-ask-permission-decisions-can-fail-open-for-tools -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On Windows, verify ask-mode enforcement with a disposable file before trusting `permissions.ask` or hook-returned `ask` decisions. Wrap PowerShell hooks with an explicit `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File ...` command, and make destructive guards fail closed by blocking rather than merely asking when practical. Keep OS-level backups or deny-by-default wrappers for commands that must not run without confirmation.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79356" target="_blank">#79356</a></div>
+        </div>
+        <div class="kl-entry" data-category="Sandbox &amp; permissions" data-issues="79316" id="wsl2-bash-sandbox-network-isolation-can-fail-open-despite-failifunavailable" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1080</span>
+                <span class="kl-cat">Sandbox &amp; permissions</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>WSL2 Bash sandbox network isolation can fail open despite failIfUnavailable</h3>
+            <p>A reported WSL2 Claude Code 2.1.215 setup found the built-in Bash sandbox&#x27;s filesystem isolation working while network isolation behaved nondeterministically: the proxy sometimes failed to start, sometimes allowed denied domains, and only rarely enforced the configured allowlist. `sandbox.failIfUnavailable: true` did not catch a dead or non-enforcing network proxy because it appeared to check sandbox binaries rather than runtime proxy behavior.</p>
+                        <!-- workaround:wsl2-bash-sandbox-network-isolation-can-fail-open-despite-failifunavailable -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on WSL2 network sandboxing without a live runtime probe. Before sensitive headless work, run one allowed-domain request and one denied-domain request inside the sandbox and fail closed unless both outcomes match policy. Prefer native Linux for network-isolated automation, document WSL2 as suspect until verified on the installed version, and treat untrusted-workspace degraded sandbox behavior as a hard stop rather than a warning.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79316" target="_blank">#79316</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

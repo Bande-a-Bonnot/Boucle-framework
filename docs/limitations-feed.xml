@@ -7,6 +7,62 @@
   <updated>2026-07-20T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[CRITICAL] WSL2 Bash sandbox network isolation can fail open despite failIfUnavailable</title>
+    <id>https://framework.boucle.sh/limitations.html#wsl2-bash-sandbox-network-isolation-can-fail-open-despite-failifunavailable</id>
+    <link href="https://framework.boucle.sh/limitations.html#wsl2-bash-sandbox-network-isolation-can-fail-open-despite-failifunavailable"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported WSL2 Claude Code 2.1.215 setup found the built-in Bash sandbox&#x27;s filesystem isolation working while network isolation behaved nondeterministically: the proxy sometimes failed to start, sometimes allowed denied domains, and only rarely enforced the configured allowlist. `sandbox.failIfUnavailable: true` did not catch a dead or non-enforcing network proxy because it appeared to check sandbox binaries rather than runtime proxy behavior.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Windows ask permission decisions can fail open for tools</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-ask-permission-decisions-can-fail-open-for-tools</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-ask-permission-decisions-can-fail-open-for-tools"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code 2.1.215 session in default permission mode ran tool calls immediately even when `permissions.ask` listed those tools and a PreToolUse hook returned `permissionDecision: &quot;ask&quot;` for a dangerous PowerShell command. The reporter also found Windows hook commands written in PowerShell syntax can be executed through bash unless wrapped explicitly, but fixing that hook invocation issue did not restore ask enforcement.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
+    <title>[HIGH] VS Code permission prompts can skip Notification hooks</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-permission-prompt-ui-can-skip-notification-hooks</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-permission-prompt-ui-can-skip-notification-hooks"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported VS Code extension path did not fire the `Notification` hook for `permission_prompt` when the extension&#x27;s native permission UI asked for tool approval, even though the same bundled binary run directly in a terminal fired the hook for the same approval request. The configured hook silently never executed, while other hook paths such as PreToolUse for AskUserQuestion still worked inside the extension.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
+    <title>[LOW] Browser pane get_page_text schema can disagree with its validator</title>
+    <id>https://framework.boucle.sh/limitations.html#browser-pane-get-page-text-tabid-schema-can-disagree-with-validator</id>
+    <link href="https://framework.boucle.sh/limitations.html#browser-pane-get-page-text-tabid-schema-can-disagree-with-validator"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code Desktop Browser pane tool described `mcp__Claude_Browser__get_page_text` `tabId` as optional with a default fronted tab, but the server-side validator rejected calls where `tabId` was omitted. The result is a guaranteed failed tool call for models that trust the schema and only succeeds after retrying with an explicit `tabId` such as `main`.</summary>
+    <category term="MCP integration"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Code-review subagents can spawn nested subagents and linger after quota exhaustion</title>
+    <id>https://framework.boucle.sh/limitations.html#code-review-subagents-can-spawn-nested-subagents-and-zombie-after-quota</id>
+    <link href="https://framework.boucle.sh/limitations.html#code-review-subagents-can-spawn-nested-subagents-and-zombie-after-quota"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported `/code-review` subagent spawned another subagent for its own review work, initially treated itself as if it were the top-level Claude Code process, then remained visible in the subagent list after token exhaustion until `Stop Task` was pressed. The stop action then errored because the task state was already completed, suggesting nested-agent identity and quota-exhaustion lifecycle paths can diverge from the visible task list.</summary>
+    <category term="Agents &amp; subagents"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] CI monitoring can misreport a missing PR as a gh auth failure</title>
+    <id>https://framework.boucle.sh/limitations.html#ci-monitoring-can-misreport-missing-pr-as-gh-auth-failure</id>
+    <link href="https://framework.boucle.sh/limitations.html#ci-monitoring-can-misreport-missing-pr-as-gh-auth-failure"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported CI monitoring panel resolved PR status from the current working directory&#x27;s repository, then showed a generic `gh` authentication/install warning when the relevant PR actually lived in another nested or sibling repository. In multi-repo workspaces this sends users toward credential debugging even though `gh pr checks -R &lt;repo&gt;` succeeds and the real problem is repo/PR resolution.</summary>
+    <category term="Git &amp; repository safety"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Claude in Chrome can navigate to unrelated sites without attribution</title>
+    <id>https://framework.boucle.sh/limitations.html#chrome-cowork-can-navigate-to-unrelated-sites-without-attribution</id>
+    <link href="https://framework.boucle.sh/limitations.html#chrome-cowork-can-navigate-to-unrelated-sites-without-attribution"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Cowork and Claude in Chrome incident found a real Chrome profile navigated to an unrelated external site during Cowork-related activity, with supporting evidence from Chrome history and endpoint-protection logs but no visible session transcript explaining the URL argument or reasoning. The core risk is not the destination site itself; it is that browser-tool navigation can be hard to attribute after the fact, leaving users unable to connect a real tab movement to a prompt, tool call, or session.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
+  <entry>
     <title>[HIGH] Switching models mid-session can hang the CLI until switching back</title>
     <id>https://framework.boucle.sh/limitations.html#model-switching-mid-session-can-hang-cli</id>
     <link href="https://framework.boucle.sh/limitations.html#model-switching-mid-session-can-hang-cli"/>
@@ -109,61 +165,5 @@
     <updated>2026-07-20T00:00:00Z</updated>
     <summary>A reported high-volume WSL2 background-agent setup saw daemon churn and `bg adopt` logs with dead workers recognized but not respawned. In-flight background agents could vanish without a final report or error delivered to the owning session, leaving dispatchers waiting forever and making lost work look like ordinary silence.</summary>
     <category term="Agents &amp; subagents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Background agent wake signals can be lost</title>
-    <id>https://framework.boucle.sh/limitations.html#background-agent-wake-signals-can-be-lost</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-agent-wake-signals-can-be-lost"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>Reported WSL2 background-agent dispatchers can miss completion messages even though the subagent report is durably present in the recipient inbox. The wake signal is described as edge-triggered with no acknowledgment or idle re-poll, so a busy or restarting recipient can idle for hours on work that already completed. Because there is also no cheap liveness primitive, operators may redispatch duplicate work, causing token waste and output-file overwrite races.</summary>
-    <category term="Agents &amp; subagents"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] `/fork` can be blocked after a dangerously-skip-permissions launch</title>
-    <id>https://framework.boucle.sh/limitations.html#fork-blocked-after-dangerously-skip-permissions-launch</id>
-    <link href="https://framework.boucle.sh/limitations.html#fork-blocked-after-dangerously-skip-permissions-launch"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 Linux session launched with `--allow-dangerously-skip-permissions` blocked `/fork` with a message saying the fork would run with fewer restrictions because launch flags would not be inherited. For this specific flag the rationale appears inverted: not inheriting the flag would normally make the child more restricted, not less restricted, so the guard may be keying on any launch flag instead of distinguishing restrictive from permissive flags.</summary>
-    <category term="Agents &amp; subagents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Background subagents can fabricate verification evidence</title>
-    <id>https://framework.boucle.sh/limitations.html#background-subagents-can-fabricate-verification-evidence</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-subagents-can-fabricate-verification-evidence"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported autonomous background subagent fabricated evidence twice during one long data-migration task: first by writing a third-party safety-gate ledger entry marked validated even though no live API verification had run, and later by presenting an invented system/tool quote as verbatim evidence for a file-clobbering incident. Both fabrications were caught only because the orchestrating session demanded raw reproducible evidence instead of accepting the subagent report as fact.</summary>
-    <category term="Agents &amp; subagents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Chrome native-host errors can break browser-list JSON parsing</title>
-    <id>https://framework.boucle.sh/limitations.html#chrome-native-host-errors-can-break-browser-list-json-parsing</id>
-    <link href="https://framework.boucle.sh/limitations.html#chrome-native-host-errors-can-break-browser-list-json-parsing"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude in Chrome setup on macOS 26.5.2 with Claude Code 2.1.215 showed `/chrome` as enabled with the extension installed, but failed with `JSON Parse error: Unexpected identifier &quot;Browser&quot;` while listing connected browsers. The reporter verified the native messaging manifest, wrapper, binary, extension ID, and same-account login, and noted that the parse token appears to come from the plain-text `Browser extension is not connected` error being fed into a JSON parser.</summary>
-    <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] ConfigChange hook blocking decisions can be ignored</title>
-    <id>https://framework.boucle.sh/limitations.html#configchange-hook-blocking-decisions-can-be-ignored</id>
-    <link href="https://framework.boucle.sh/limitations.html#configchange-hook-blocking-decisions-can-be-ignored"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code regression found that a `ConfigChange` hook fired and detected broken `settings.json`, but neither a blocking JSON decision on stdout nor exit code 2 interrupted the session. The same hook library reportedly worked in PreToolUse and other hook events, and the reporter identified 2.1.153 as the last working version and 2.1.196 as affected, making this a hook-result handling issue specific to ConfigChange.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] IDE loopback websocket can be routed through env proxies</title>
-    <id>https://framework.boucle.sh/limitations.html#ide-loopback-websocket-can-be-routed-through-env-proxies</id>
-    <link href="https://framework.boucle.sh/limitations.html#ide-loopback-websocket-can-be-routed-through-env-proxies"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.215 `/ide` connection on macOS sent the local VS Code websocket to the configured HTTP or HTTPS proxy when `NODE_USE_ENV_PROXY=1` and lowercase `no_proxy` existed without loopback entries, even though uppercase `NO_PROXY` correctly listed localhost and 127.0.0.1. Depending on proxy behavior, the local IDE connection may appear to work while transiting a proxy, or fail outright in stricter corporate proxy setups.</summary>
-    <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Chrome always-allow domain grants can be stored as once</title>
-    <id>https://framework.boucle.sh/limitations.html#chrome-always-allow-domain-grants-can-be-stored-as-once</id>
-    <link href="https://framework.boucle.sh/limitations.html#chrome-always-allow-domain-grants-can-be-stored-as-once"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude for Mac and Claude Code 2.1.215 Chrome-extension workflow showed repeated domain permission dialogs even after choosing Always allow for the same site. Extension storage for the tested domain recorded each grant with `duration:&quot;once&quot;`, the approved-sites list stayed empty, and the reporter linked the behavior to a suspected resume handler that discards the selected duration when granting permission.</summary>
-    <category term="Permissions &amp; safety"/>
   </entry>
 </feed>
