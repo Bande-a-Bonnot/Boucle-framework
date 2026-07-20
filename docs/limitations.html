@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1037</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-20.</span></p>
+        <p class="subtitle"><span id="total-count">1045</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-20.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -11164,6 +11164,102 @@
                         <!-- workaround:idle-tui-animations-can-spin-cpu-indefinitely -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On hosts running multiple Claude Code sessions, monitor idle CPU separately from active API or child-process work. If a session is idle but still consuming sustained CPU with no established TLS connection and no busy children, clear or exit the animated TUI state, restart the session, or kill the stuck process when graceful termination fails. Avoid leaving fleets parked on dashboards, stalled spinners, or limit banners overnight.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78969" target="_blank">#78969</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="79524" id="mcp-stdio-interactive-connect-can-fail-while-standalone-checks-pass" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1038</span>
+                <span class="kl-cat">MCP &amp; integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>MCP stdio servers can fail in interactive sessions while standalone checks pass</h3>
+            <p>A reported Claude Code 2.1.215 Windows setup could connect a stdio MCP server consistently from standalone `claude mcp list` invocations, but every interactive session startup and `/mcp` reconnect failed the same server with error `-32000`. The reporter ruled out command wrapper, timeout, elevation, fresh app process, and manual reconnect changes. The same project also had multiple `~/.claude.json` project-state keys for one directory with slash and case variants, so standalone MCP health did not prove the interactive session path would connect.</p>
+                        <!-- workaround:mcp-stdio-interactive-connect-can-fail-while-standalone-checks-pass -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat `claude mcp list` success as sufficient proof that an interactive Claude Code session can use the same stdio server. Verify the server from inside the session after startup or reconnect. On Windows, inspect project-state entries for duplicate slash, backslash, or case variants before assuming the server process or MCP binary is at fault. If the interactive path wedges, try a full Claude Code relaunch and path normalization rather than repeated `/mcp` reconnects alone.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79524" target="_blank">#79524</a></div>
+        </div>
+        <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="79522" id="bedrock-parallel-subagents-can-die-or-silently-switch-models" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1039</span>
+                <span class="kl-cat">Subagent &amp; spawned agents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Bedrock parallel subagents can die on 429s or silently switch models</h3>
+            <p>A reported Workflow run with roughly eight parallel Bedrock subagents hit token-per-minute quota pressure and split into two inconsistent failure paths. Pre-flight 429 rejections killed subagents terminally with a synthetic error turn and no backoff, forcing orchestration to respawn them and reread context. A mid-stream failure retried internally but silently continued the subagent on the model pinned in `ANTHROPIC_MODEL` instead of the session&#x27;s launched model, invalidating model-specific evaluations, cost expectations, and run comparability.</p>
+                        <!-- workaround:bedrock-parallel-subagents-can-die-or-silently-switch-models -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For Bedrock workflows with many subagents, cap parallelism below the token-per-minute limit and stagger starts. Inspect transcript JSONL model fields for every agent turn before trusting evaluation or cost results. Treat a respawned agent after a quota error as fresh work that may reread files and amplify quota pressure. If exact model identity matters, unset broad fallback model variables or add external transcript checks that fail the run on unexpected model changes.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79522" target="_blank">#79522</a></div>
+        </div>
+        <div class="kl-entry" data-category="Data integrity" data-issues="79518" id="desktop-update-can-wipe-sidebar-groups" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1040</span>
+                <span class="kl-cat">Data integrity</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Desktop app updates can wipe custom sidebar groups</h3>
+            <p>A reported Claude Code desktop app update on macOS recreated Electron Local Storage and removed all custom sidebar session groups plus every session-to-group assignment. The group metadata was not present in `~/.claude.json` or its backup, so the user had no durable fallback copy and had to recreate client/project organization manually.</p>
+                        <!-- workaround:desktop-update-can-wipe-sidebar-groups -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume desktop sidebar grouping is durable project metadata. For important client or project separation, keep an external list of session names, branch names, and group assignments outside the desktop app. Before app updates or migration work, back up the Claude desktop Local Storage directory if sidebar organization would be costly to rebuild.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79518" target="_blank">#79518</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="79509" id="sessionend-hooks-can-miss-home-environment" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1041</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Hook processes can miss the HOME environment variable</h3>
+            <p>A reported Claude Code 2.1.215 macOS regression spawned hook processes without a usable `HOME` environment variable. Hooks that wrote to paths based on `~`, Python `Path.home()`, or `os.path.expanduser(&#x27;~&#x27;)` resolved to the wrong location and silently wrote files outside the expected home directory. Explicitly adding `HOME` to the Claude Code settings `env` block restored the expected path.</p>
+                        <!-- workaround:sessionend-hooks-can-miss-home-environment -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid relying on implicit home-directory expansion inside hooks. Set `HOME` explicitly in `~/.claude/settings.json` `env`, or use absolute paths in hook commands and scripts. For audit hooks, add a startup self-check that writes and reads a known marker path so a missing home environment is detected before the hook is needed for evidence capture.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79509" target="_blank">#79509</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="79508" id="sessionend-clear-can-leave-hook-stdin-open" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1042</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>SessionEnd hooks can hang on /clear because stdin stays open</h3>
+            <p>A reported Claude Code 2.1.215 macOS regression wrote a `SessionEnd` hook payload for `reason: &#x27;clear&#x27;` but did not close the hook process stdin pipe. Hooks that read stdin until EOF, such as `json.load(sys.stdin)` or shell `cat`, blocked indefinitely until Claude Code timed them out. Other SessionEnd reasons reportedly closed stdin correctly, so cleanup and audit hooks could silently fail only when the user ran `/clear`.</p>
+                        <!-- workaround:sessionend-clear-can-leave-hook-stdin-open -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not implement SessionEnd hooks as unbounded reads from stdin without a timeout. For Python hooks, use a bounded read or non-blocking input path and log a timeout explicitly. For shell hooks, avoid plain `cat` without a timeout wrapper. Test `/clear` separately from normal session exit when validating cleanup or audit hooks.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79508" target="_blank">#79508</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="79501" id="background-auto-mode-can-silently-execute-ask-matched-bash" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1043</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Background auto-mode can silently execute ask-matched Bash commands</h3>
+            <p>A reported Claude Code 2.1.215 background session in auto permission mode executed Bash commands matching user-scope `ask` permission rules without showing a human prompt. The observed commands included `gh pr merge` and `ssh` shapes, and some also had a PreToolUse hook returning `permissionDecision: &#x27;ask&#x27;`, including an unsandboxed SSH case. Transcript evidence reportedly showed hook success attachments but no permission-request or approval records between tool use and result. A follow-up comment reported the inverse foreground issue: a hook `allow` could override an ask rule that documentation said should still prompt.</p>
+                        <!-- workaround:background-auto-mode-can-silently-execute-ask-matched-bash -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on `ask` rules as a human-confirmation boundary for background or unattended sessions until this behavior is verified in your version and session kind. Put dangerous infrastructure commands behind `deny` or external wrappers that require an out-of-band approval token. Audit transcripts for ask-rule matches and fail closed when a background session executes an ask-matched command without a recorded human approval event.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79501" target="_blank">#79501</a></div>
+        </div>
+        <div class="kl-entry" data-category="CLI &amp; terminal" data-issues="79500" id="headless-api-errors-can-report-success-and-exit-zero" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1044</span>
+                <span class="kl-cat">CLI &amp; terminal</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Headless API errors can report success and exit zero</h3>
+            <p>A reported headless `claude -p` run under Claude Code v2.1.49 returned API-level rate-limit failures as successful process outcomes. JSON output contained both `subtype: &#x27;success&#x27;` and `is_error: true`, `stop_reason: &#x27;stop_sequence&#x27;`, zero API duration, and an error string in `result`. Plain output printed the API error to stdout rather than stderr, and both modes exited with status 0. Wrappers that trust exit code, stdout, or subtype can treat an API error string as valid model output.</p>
+                        <!-- workaround:headless-api-errors-can-report-success-and-exit-zero -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For headless automation, parse JSON output and fail on `is_error: true`, zero-token API-error shapes, or result strings beginning with known `API Error:` prefixes instead of trusting exit status alone. Route plain-mode output through a wrapper that treats API-error stdout as failure. In CI and native-messaging bridges, require both a successful process status and a semantically valid model result before applying downstream changes.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79500" target="_blank">#79500</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="79498" id="mcp-env-expansion-can-fail-on-mid-session-reconnect" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1045</span>
+                <span class="kl-cat">MCP &amp; integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>MCP env variable expansion can fail on mid-session reconnect</h3>
+            <p>A reported Claude Code 2.1.215 macOS setup expanded `${VAR}` references in MCP server environment config correctly on initial startup, but passed the literal `${VAR}` strings when the same server was respawned mid-session through reconnect or auto-reconnect. The reporter observed multiple live server processes with identical config where only spawn timing determined whether variables such as `JIRA_URL` were real URLs or literal placeholders, causing downstream auth and URL failures.</p>
+                        <!-- workaround:mcp-env-expansion-can-fail-on-mid-session-reconnect -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Prefer fully expanded literal values in MCP server `env` blocks for servers that may reconnect mid-session. If a server starts failing after `/mcp reconnect`, inspect the child process environment before debugging the server itself. A full Claude Code relaunch may restore initial-spawn expansion; repeated reconnects can preserve the broken literal-env path.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79498" target="_blank">#79498</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

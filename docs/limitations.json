@@ -1,29 +1,29 @@
 {
   "version": "0.13.0",
-  "count": 1037,
+  "count": 1045,
   "categories": {
-    "Hook behavior & events": 175,
-    "Permission system": 117,
+    "Hook behavior & events": 177,
+    "Permission system": 118,
     "Hook bypass & evasion": 99,
     "MCP & plugin issues": 55,
-    "Subagent & spawned agents": 40,
+    "Subagent & spawned agents": 41,
     "Desktop & IDE integration": 32,
     "Platform & compatibility": 26,
-    "CLI & terminal": 23,
+    "CLI & terminal": 24,
     "TUI & display": 22,
     "Configuration behavior": 21,
     "Context & memory": 21,
     "Tool behavior": 16,
     "Performance & cost": 14,
+    "MCP & integrations": 12,
     "Security & trust boundaries": 12,
     "Agents & subagents": 10,
-    "MCP & integrations": 10,
     "Plugin & channel system": 10,
+    "Data integrity": 9,
     "File system & paths": 9,
     "hooks": 9,
     "auth": 8,
     "Configuration & settings": 8,
-    "Data integrity": 8,
     "Remote & cloud": 8,
     "Sandbox & permissions": 8,
     "MCP": 7,
@@ -172,8 +172,8 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 76,
-    "HIGH": 516,
+    "CRITICAL": 77,
+    "HIGH": 523,
     "LOW": 99,
     "MEDIUM": 346
   },
@@ -13270,30 +13270,134 @@
       "workaround": "On hosts running multiple Claude Code sessions, monitor idle CPU separately from active API or child-process work. If a session is idle but still consuming sustained CPU with no established TLS connection and no busy children, clear or exit the animated TUI state, restart the session, or kill the stuck process when graceful termination fails. Avoid leaving fleets parked on dashboards, stalled spinners, or limit banners overnight.",
       "status": "open",
       "date_added": "2026-07-20"
+    },
+    {
+      "id": "mcp-stdio-interactive-connect-can-fail-while-standalone-checks-pass",
+      "title": "MCP stdio servers can fail in interactive sessions while standalone checks pass",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79524"
+      ],
+      "description": "A reported Claude Code 2.1.215 Windows setup could connect a stdio MCP server consistently from standalone `claude mcp list` invocations, but every interactive session startup and `/mcp` reconnect failed the same server with error `-32000`. The reporter ruled out command wrapper, timeout, elevation, fresh app process, and manual reconnect changes. The same project also had multiple `~/.claude.json` project-state keys for one directory with slash and case variants, so standalone MCP health did not prove the interactive session path would connect.",
+      "workaround": "Do not treat `claude mcp list` success as sufficient proof that an interactive Claude Code session can use the same stdio server. Verify the server from inside the session after startup or reconnect. On Windows, inspect project-state entries for duplicate slash, backslash, or case variants before assuming the server process or MCP binary is at fault. If the interactive path wedges, try a full Claude Code relaunch and path normalization rather than repeated `/mcp` reconnects alone.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "bedrock-parallel-subagents-can-die-or-silently-switch-models",
+      "title": "Bedrock parallel subagents can die on 429s or silently switch models",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79522"
+      ],
+      "description": "A reported Workflow run with roughly eight parallel Bedrock subagents hit token-per-minute quota pressure and split into two inconsistent failure paths. Pre-flight 429 rejections killed subagents terminally with a synthetic error turn and no backoff, forcing orchestration to respawn them and reread context. A mid-stream failure retried internally but silently continued the subagent on the model pinned in `ANTHROPIC_MODEL` instead of the session's launched model, invalidating model-specific evaluations, cost expectations, and run comparability.",
+      "workaround": "For Bedrock workflows with many subagents, cap parallelism below the token-per-minute limit and stagger starts. Inspect transcript JSONL model fields for every agent turn before trusting evaluation or cost results. Treat a respawned agent after a quota error as fresh work that may reread files and amplify quota pressure. If exact model identity matters, unset broad fallback model variables or add external transcript checks that fail the run on unexpected model changes.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "desktop-update-can-wipe-sidebar-groups",
+      "title": "Desktop app updates can wipe custom sidebar groups",
+      "category": "Data integrity",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79518"
+      ],
+      "description": "A reported Claude Code desktop app update on macOS recreated Electron Local Storage and removed all custom sidebar session groups plus every session-to-group assignment. The group metadata was not present in `~/.claude.json` or its backup, so the user had no durable fallback copy and had to recreate client/project organization manually.",
+      "workaround": "Do not assume desktop sidebar grouping is durable project metadata. For important client or project separation, keep an external list of session names, branch names, and group assignments outside the desktop app. Before app updates or migration work, back up the Claude desktop Local Storage directory if sidebar organization would be costly to rebuild.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "sessionend-hooks-can-miss-home-environment",
+      "title": "Hook processes can miss the HOME environment variable",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79509"
+      ],
+      "description": "A reported Claude Code 2.1.215 macOS regression spawned hook processes without a usable `HOME` environment variable. Hooks that wrote to paths based on `~`, Python `Path.home()`, or `os.path.expanduser('~')` resolved to the wrong location and silently wrote files outside the expected home directory. Explicitly adding `HOME` to the Claude Code settings `env` block restored the expected path.",
+      "workaround": "Avoid relying on implicit home-directory expansion inside hooks. Set `HOME` explicitly in `~/.claude/settings.json` `env`, or use absolute paths in hook commands and scripts. For audit hooks, add a startup self-check that writes and reads a known marker path so a missing home environment is detected before the hook is needed for evidence capture.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "sessionend-clear-can-leave-hook-stdin-open",
+      "title": "SessionEnd hooks can hang on /clear because stdin stays open",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79508"
+      ],
+      "description": "A reported Claude Code 2.1.215 macOS regression wrote a `SessionEnd` hook payload for `reason: 'clear'` but did not close the hook process stdin pipe. Hooks that read stdin until EOF, such as `json.load(sys.stdin)` or shell `cat`, blocked indefinitely until Claude Code timed them out. Other SessionEnd reasons reportedly closed stdin correctly, so cleanup and audit hooks could silently fail only when the user ran `/clear`.",
+      "workaround": "Do not implement SessionEnd hooks as unbounded reads from stdin without a timeout. For Python hooks, use a bounded read or non-blocking input path and log a timeout explicitly. For shell hooks, avoid plain `cat` without a timeout wrapper. Test `/clear` separately from normal session exit when validating cleanup or audit hooks.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "background-auto-mode-can-silently-execute-ask-matched-bash",
+      "title": "Background auto-mode can silently execute ask-matched Bash commands",
+      "category": "Permission system",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79501"
+      ],
+      "description": "A reported Claude Code 2.1.215 background session in auto permission mode executed Bash commands matching user-scope `ask` permission rules without showing a human prompt. The observed commands included `gh pr merge` and `ssh` shapes, and some also had a PreToolUse hook returning `permissionDecision: 'ask'`, including an unsandboxed SSH case. Transcript evidence reportedly showed hook success attachments but no permission-request or approval records between tool use and result. A follow-up comment reported the inverse foreground issue: a hook `allow` could override an ask rule that documentation said should still prompt.",
+      "workaround": "Do not rely on `ask` rules as a human-confirmation boundary for background or unattended sessions until this behavior is verified in your version and session kind. Put dangerous infrastructure commands behind `deny` or external wrappers that require an out-of-band approval token. Audit transcripts for ask-rule matches and fail closed when a background session executes an ask-matched command without a recorded human approval event.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "headless-api-errors-can-report-success-and-exit-zero",
+      "title": "Headless API errors can report success and exit zero",
+      "category": "CLI & terminal",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79500"
+      ],
+      "description": "A reported headless `claude -p` run under Claude Code v2.1.49 returned API-level rate-limit failures as successful process outcomes. JSON output contained both `subtype: 'success'` and `is_error: true`, `stop_reason: 'stop_sequence'`, zero API duration, and an error string in `result`. Plain output printed the API error to stdout rather than stderr, and both modes exited with status 0. Wrappers that trust exit code, stdout, or subtype can treat an API error string as valid model output.",
+      "workaround": "For headless automation, parse JSON output and fail on `is_error: true`, zero-token API-error shapes, or result strings beginning with known `API Error:` prefixes instead of trusting exit status alone. Route plain-mode output through a wrapper that treats API-error stdout as failure. In CI and native-messaging bridges, require both a successful process status and a semantically valid model result before applying downstream changes.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "mcp-env-expansion-can-fail-on-mid-session-reconnect",
+      "title": "MCP env variable expansion can fail on mid-session reconnect",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79498"
+      ],
+      "description": "A reported Claude Code 2.1.215 macOS setup expanded `${VAR}` references in MCP server environment config correctly on initial startup, but passed the literal `${VAR}` strings when the same server was respawned mid-session through reconnect or auto-reconnect. The reporter observed multiple live server processes with identical config where only spawn timing determined whether variables such as `JIRA_URL` were real URLs or literal placeholders, causing downstream auth and URL failures.",
+      "workaround": "Prefer fully expanded literal values in MCP server `env` blocks for servers that may reconnect mid-session. If a server starts failing after `/mcp reconnect`, inspect the child process environment before debugging the server itself. A full Claude Code relaunch may restore initial-spawn expansion; repeated reconnects can preserve the broken literal-env path.",
+      "status": "open",
+      "date_added": "2026-07-20"
     }
   ],
   "status_summary": {
-    "open": 1023,
+    "open": 1031,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 76,
-    "high": 516,
+    "critical": 77,
+    "high": 523,
     "low": 99,
     "medium": 346
   },
   "lastUpdated": "2026-07-20",
   "stats": {
-    "total": 1037,
-    "critical": 76,
-    "high": 516,
+    "total": 1045,
+    "critical": 77,
+    "high": 523,
     "medium": 346,
     "low": 99,
-    "open": 1023,
+    "open": 1031,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-20",
-  "total": 1037
+  "total": 1045
 }
