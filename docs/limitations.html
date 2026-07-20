@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1066</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-20.</span></p>
+        <p class="subtitle"><span id="total-count">1073</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-20.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -11512,6 +11512,90 @@
                         <!-- workaround:auto-mode-allow-rules-may-not-suppress-classifier -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Document and test the effective permission stack for each deployment instead of assuming `permissions.allow` is final. Keep sanitized transcripts of classifier denials, record whether MCP tools are covered, and add hooks or wrappers that log when the model switches tools after a denial. For sensitive workflows, design policy prose assuming it may influence both model behavior and classifier context, and use independent access controls for production MCP data rather than relying only on auto-mode classification.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79558" target="_blank">#79558</a></div>
+        </div>
+        <div class="kl-entry" data-category="CLI &amp; terminal" data-issues="79593" id="btw-input-can-be-silently-discarded-before-dispatch" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1067</span>
+                <span class="kl-cat">CLI &amp; terminal</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>`/btw` input can be silently discarded before dispatch</h3>
+            <p>A reported macOS Claude Code 2.1.216 session found that content submitted through `/btw` could enter a side context, block the main conversation, then disappear when dismissed without running, persisting, or appearing in input history, the session transcript, or disk artifacts. This is distinct from older `/btw` transcript-loss reports where a side conversation ran and then was not durably saved: here the submitted work may never start at all, while the UI gives the user no failure signal.</p>
+                        <!-- workaround:btw-input-can-be-silently-discarded-before-dispatch -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not put irreplaceable instructions only in `/btw` until dispatch and persistence are verified. For important side work, paste a copy into the main session or an external note, then check that a transcript, subagent entry, or visible response exists before assuming the task is running. Treat Esc from a `/btw` context as destructive unless the content has already been saved elsewhere.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79593" target="_blank">#79593</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="79592" id="chrome-code-native-host-wrapper-can-go-stale" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1068</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Claude Code Chrome native-host wrapper can go stale and lose to Desktop host priority</h3>
+            <p>A reported macOS Claude Code 2.1.216 and Microsoft Edge setup showed `/chrome` permanently reporting `Status: Disabled` even with the extension installed. The generated `~/.claude/chrome/chrome-native-host` wrapper pointed at an old pruned version directory, the extension tried the Claude Desktop native host before the Claude Code host, and forcing the CLI host to win still left the handshake/status path incomplete. This extends the older Desktop/CLI native-host collision with update-staleness and same-browser status-reporting failure modes.</p>
+                        <!-- workaround:chrome-code-native-host-wrapper-can-go-stale -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before relying on browser automation, inspect both native-messaging manifests and the generated wrapper target, confirm the binary path still exists, and test a real browser tool call rather than trusting extension-installed status. If Desktop is installed alongside Code, expect host-priority ambiguity; use a clean browser profile or temporarily remove the Desktop native-messaging manifest only in a controlled test, then restore it afterward.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79592" target="_blank">#79592</a></div>
+        </div>
+        <div class="kl-entry" data-category="Agents &amp; subagents" data-issues="79591" id="ctrl-c-can-kill-background-agents-while-clearing-draft-text" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1069</span>
+                <span class="kl-cat">Agents &amp; subagents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Ctrl-C can kill background agents when the user only meant to clear draft text</h3>
+            <p>A reported TUI feature request highlights that the same Ctrl-C shortcut can clear drafted text, exit the application, and terminate subagents or background processes. When unsent composer text is present, a user may press Ctrl-C intending only to clear the draft while unintentionally triggering the more destructive background-agent cancellation path.</p>
+                        <!-- workaround:ctrl-c-can-kill-background-agents-while-clearing-draft-text -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid using Ctrl-C casually in sessions with active background agents. Clear draft text with ordinary editing shortcuts where possible, checkpoint agent outputs before interrupting, and verify the background-agent list after any Ctrl-C press. For workflows that depend on background tasks, prefer explicit stop commands or a two-step confirmation wrapper where available.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79591" target="_blank">#79591</a></div>
+        </div>
+        <div class="kl-entry" data-category="Scheduled tasks" data-issues="79587" id="scheduled-task-summary-can-drop-comma-separated-days" data-severity="low" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1070</span>
+                <span class="kl-cat">Scheduled tasks</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
+            </div>
+            <h3>Scheduled-task summaries can drop comma-separated cron days</h3>
+            <p>A reported Windows Claude Code 2.1.215 scheduled-tasks workflow created a cron expression such as `0 8 * * 2,5` for Tuesday and Friday, but `update_scheduled_task` or `list_scheduled_tasks` rendered the human-readable `schedule` text as only Tuesday. The underlying `cronExpression` and `nextRunAt` were correct, so the break is a display formatter bug that can still mislead users auditing whether an unattended task will run on every intended day.</p>
+                        <!-- workaround:scheduled-task-summary-can-drop-comma-separated-days -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For scheduled tasks with comma-separated days or other nontrivial cron expressions, trust the stored `cronExpression` and computed next run times over the prose summary. Verify the expression with an external cron parser or a short dry-run schedule before depending on unattended execution, and include the raw cron expression in any audit log or runbook.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79587" target="_blank">#79587</a></div>
+        </div>
+        <div class="kl-entry" data-category="Worktree" data-issues="79586" id="nested-isolation-worktrees-can-confuse-parent-root-build-tools" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1071</span>
+                <span class="kl-cat">Worktree</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Nested isolation worktrees can confuse parent-root-sensitive build tools</h3>
+            <p>A reported Dune workflow showed Claude Code placing isolation worktrees under `.claude/worktrees/` inside the main checkout, where tools that search upward for the outermost project root can resolve to the parent checkout rather than the isolation worktree. The same class can affect other build systems that derive roots from ancestor marker files, making isolated agent edits or builds interact with the wrong project root unless extra flags are supplied.</p>
+                        <!-- workaround:nested-isolation-worktrees-can-confuse-parent-root-build-tools -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume nested `.claude/worktrees/*` directories are isolated from parent-root discovery. For build systems that search upward, create worktrees outside the main checkout when possible, or add a `WorktreeCreate` hook that moves or validates the worktree location. At minimum, run the build tool&#x27;s root-discovery command inside the worktree and pass explicit root flags before trusting results.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79586" target="_blank">#79586</a></div>
+        </div>
+        <div class="kl-entry" data-category="TUI &amp; display" data-issues="79584" id="askuserquestion-can-hide-preceding-assistant-output" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1072</span>
+                <span class="kl-cat">TUI &amp; display</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>AskUserQuestion can hide preceding assistant output in the same turn</h3>
+            <p>A reported Windows Claude Code 2.1.215 workflow found that assistant text emitted before a later tool call in the same turn, especially before AskUserQuestion, can intermittently never render to the user. The damaging shape is a report or decision table followed by a question dialog: the user may see only the choices, not the context those choices depend on, even though the model already generated it.</p>
+                        <!-- workaround:askuserquestion-can-hide-preceding-assistant-output -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Keep human-facing deliverables and AskUserQuestion prompts in separate turns. If an agent must ask immediately after a report, write the report to a file or other durable artifact first and reference that artifact from the question. For plugin authors, treat turn-terminal text as the only display-guaranteed output and avoid text -&gt; tool-call -&gt; question compositions for critical decisions.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79584" target="_blank">#79584</a></div>
+        </div>
+        <div class="kl-entry" data-category="Model behavior" data-issues="79582" id="model-switching-mid-session-can-hang-cli" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1073</span>
+                <span class="kl-cat">Model behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Switching models mid-session can hang the CLI until switching back</h3>
+            <p>A reported Windows Claude Code 2.1.215 session could switch from one model to another mid-conversation, but attempting to revoke or switch the model again left the CLI unresponsive until the user selected the original model again. The affected session was long-running and had used subagents or background tasks earlier, making the failure especially risky for orchestration sessions that change model or effort settings during active work.</p>
+                        <!-- workaround:model-switching-mid-session-can-hang-cli -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid repeated mid-session model switches in long-running or background-agent-heavy sessions. Checkpoint important state before using `/model`, and if the CLI hangs after a switch, try returning to the original model before force-killing the process. For automation or evaluations, prefer fresh sessions per model and inspect transcript model fields rather than mutating model choice in place.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79582" target="_blank">#79582</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
