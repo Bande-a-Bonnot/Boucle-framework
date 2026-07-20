@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1032</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-20.</span></p>
+        <p class="subtitle"><span id="total-count">1037</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-20.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -11104,6 +11104,66 @@
                         <!-- workaround:fullscreen-copy-can-mojibake-non-ascii-output -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When copying non-ASCII output from fullscreen TUI sessions, verify pasted text before using it in code, docs, or issue reports. Switch to the default TUI renderer for affected sessions, or copy from the temporary `/tmp/claude-*/response.md` file with a native UTF-8 clipboard command such as `pbcopy &lt; /tmp/claude-*/response.md` on macOS. Add regression tests that compare clipboard bytes with the dump-file bytes for box-drawing plus non-ASCII samples.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79482" target="_blank">#79482</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="79505" id="mcp-oauth-dcr-client-cache-can-wedge-server-auth" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1033</span>
+                <span class="kl-cat">MCP &amp; integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>MCP OAuth DCR client caches can wedge server authentication</h3>
+            <p>A reported Claude Code 2.1.215 macOS remote HTTP MCP setup cached a dynamically registered OAuth `client_id` for a server whose DCR registrations were not durable across redeploys. After the server rejected the stale client, `/mcp` Authenticate kept reusing the same `client_id` and failed the same way each time. The product had no per-server clear-authentication or re-register action, so recovery required manual credential-store surgery or deleting the whole Claude Code credential item and reauthenticating every server.</p>
+                        <!-- workaround:mcp-oauth-dcr-client-cache-can-wedge-server-auth -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If an OAuth MCP server suddenly rejects authorization after a server restart or deploy, compare the `client_id` in repeated authorize URLs. A stable rejected `client_id` points to a stale DCR cache rather than a fresh login attempt. Reset only the affected server&#x27;s MCP OAuth credential when possible, or rotate through a controlled full credential reset and reauthenticate all MCP servers. For self-hosted MCP servers, persist dynamic client registrations across deploys until the client can re-register automatically.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79505" target="_blank">#79505</a></div>
+        </div>
+        <div class="kl-entry" data-category="Performance &amp; cost" data-issues="79504" id="workflow-tool-schema-eager-loads-despite-explicit-trigger-only-contract" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1034</span>
+                <span class="kl-cat">Performance &amp; cost</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Workflow tool schema eager-loads despite an explicit-trigger-only contract</h3>
+            <p>A reported Claude Code 2.1.x session loads the built-in Workflow tool&#x27;s large schema on every session even though Workflow is only supposed to be used after explicit user or skill intent. The report estimates the eager description at roughly 3.5K-4K tokens, making it a recurring context cost for users who never invoke Workflow in that session.</p>
+                        <!-- workaround:workflow-tool-schema-eager-loads-despite-explicit-trigger-only-contract -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Account for Workflow as part of baseline context overhead when measuring fresh-session costs. For short sessions where every token matters, avoid installing additional always-loaded tools that compound the fixed schema budget. If you maintain similar tools or MCP servers, prefer name-only deferral with on-demand ToolSearch loading for tools that cannot be selected proactively.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79504" target="_blank">#79504</a></div>
+        </div>
+        <div class="kl-entry" data-category="Skills &amp; commands" data-issues="79503" id="large-skill-marketplaces-can-silently-drop-skills-from-session-listing" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1035</span>
+                <span class="kl-cat">Skills &amp; commands</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Large skill marketplaces can silently drop skills from the session listing</h3>
+            <p>A reported Claude Code 2.1.x Windows setup with roughly 230 marketplace skills registered only 123 skills in the session-visible listing. `claude doctor`, `/skills`, and session startup output gave no warning, and the reporter could not tell whether trimming was by plugin, order, description length, or an internal budget. The result is that agents may stop seeing installed skills and rederive workflows already present on disk.</p>
+                        <!-- workaround:large-skill-marketplaces-can-silently-drop-skills-from-session-listing -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For large skill catalogs, maintain your own startup audit that counts installed `SKILL.md` files and compares them against the session-visible skill list. Keep critical workflows in small, always-visible skills or invoke known skills by exact name when supported. Marketplace maintainers should profile description length, split catalogs into enablement profiles, and document any local suppression policy until Claude Code exposes registered-vs-dropped diagnostics.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79503" target="_blank">#79503</a></div>
+        </div>
+        <div class="kl-entry" data-category="Data integrity" data-issues="79250" id="background-task-notifications-can-fabricate-completion-events" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1036</span>
+                <span class="kl-cat">Data integrity</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Background task notifications can fabricate completion events</h3>
+            <p>A reported Claude Code desktop session delivered Monitor and background Bash completion notifications for long-running remote work before the watched process had actually finished. The notifications quoted plausible success lines with timestamps in the future or reported exit code 0 with an empty output file, while independent SSH checks showed the expected log lines did not exist and the loop condition was still false. The real completion arrived later, meaning the early notification channel could mark unfinished work as verified.</p>
+                        <!-- workaround:background-task-notifications-can-fabricate-completion-events -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat background task and Monitor completion notifications as hints, not final proof, for critical work. Verify the underlying artifact, log line, process status, or remote clock before closing an operational flag. For long-running jobs, write external start, heartbeat, and done markers that the model can check directly instead of relying only on summarized task notifications.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79250" target="_blank">#79250</a></div>
+        </div>
+        <div class="kl-entry" data-category="Performance &amp; cost" data-issues="78969" id="idle-tui-animations-can-spin-cpu-indefinitely" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1037</span>
+                <span class="kl-cat">Performance &amp; cost</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Idle TUI animations can spin CPU indefinitely</h3>
+            <p>A reported Claude Code 2.1.214 macOS interactive session burned 10-40% CPU while idle whenever the TUI kept a live-updating element on screen, such as a spinner, elapsed-time counter, status ticker, agents dashboard row, or session-limit banner. The same binary at a plain prompt idled at 0% CPU, and multiple idle sessions saturated a small host. The report also observed one spinning process ignoring SIGTERM.</p>
+                        <!-- workaround:idle-tui-animations-can-spin-cpu-indefinitely -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On hosts running multiple Claude Code sessions, monitor idle CPU separately from active API or child-process work. If a session is idle but still consuming sustained CPU with no established TLS connection and no busy children, clear or exit the animated TUI state, restart the session, or kill the stuck process when graceful termination fails. Avoid leaving fleets parked on dashboards, stalled spinners, or limit banners overnight.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78969" target="_blank">#78969</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
