@@ -7,6 +7,46 @@
   <updated>2026-07-20T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Idle TUI animations can spin CPU indefinitely</title>
+    <id>https://framework.boucle.sh/limitations.html#idle-tui-animations-can-spin-cpu-indefinitely</id>
+    <link href="https://framework.boucle.sh/limitations.html#idle-tui-animations-can-spin-cpu-indefinitely"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.214 macOS interactive session burned 10-40% CPU while idle whenever the TUI kept a live-updating element on screen, such as a spinner, elapsed-time counter, status ticker, agents dashboard row, or session-limit banner. The same binary at a plain prompt idled at 0% CPU, and multiple idle sessions saturated a small host. The report also observed one spinning process ignoring SIGTERM.</summary>
+    <category term="Performance &amp; cost"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Background task notifications can fabricate completion events</title>
+    <id>https://framework.boucle.sh/limitations.html#background-task-notifications-can-fabricate-completion-events</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-task-notifications-can-fabricate-completion-events"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code desktop session delivered Monitor and background Bash completion notifications for long-running remote work before the watched process had actually finished. The notifications quoted plausible success lines with timestamps in the future or reported exit code 0 with an empty output file, while independent SSH checks showed the expected log lines did not exist and the loop condition was still false. The real completion arrived later, meaning the early notification channel could mark unfinished work as verified.</summary>
+    <category term="Data integrity"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Large skill marketplaces can silently drop skills from the session listing</title>
+    <id>https://framework.boucle.sh/limitations.html#large-skill-marketplaces-can-silently-drop-skills-from-session-listing</id>
+    <link href="https://framework.boucle.sh/limitations.html#large-skill-marketplaces-can-silently-drop-skills-from-session-listing"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.x Windows setup with roughly 230 marketplace skills registered only 123 skills in the session-visible listing. `claude doctor`, `/skills`, and session startup output gave no warning, and the reporter could not tell whether trimming was by plugin, order, description length, or an internal budget. The result is that agents may stop seeing installed skills and rederive workflows already present on disk.</summary>
+    <category term="Skills &amp; commands"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Workflow tool schema eager-loads despite an explicit-trigger-only contract</title>
+    <id>https://framework.boucle.sh/limitations.html#workflow-tool-schema-eager-loads-despite-explicit-trigger-only-contract</id>
+    <link href="https://framework.boucle.sh/limitations.html#workflow-tool-schema-eager-loads-despite-explicit-trigger-only-contract"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.x session loads the built-in Workflow tool&#x27;s large schema on every session even though Workflow is only supposed to be used after explicit user or skill intent. The report estimates the eager description at roughly 3.5K-4K tokens, making it a recurring context cost for users who never invoke Workflow in that session.</summary>
+    <category term="Performance &amp; cost"/>
+  </entry>
+  <entry>
+    <title>[HIGH] MCP OAuth DCR client caches can wedge server authentication</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-oauth-dcr-client-cache-can-wedge-server-auth</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-oauth-dcr-client-cache-can-wedge-server-auth"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.215 macOS remote HTTP MCP setup cached a dynamically registered OAuth `client_id` for a server whose DCR registrations were not durable across redeploys. After the server rejected the stale client, `/mcp` Authenticate kept reusing the same `client_id` and failed the same way each time. The product had no per-server clear-authentication or re-register action, so recovery required manual credential-store surgery or deleting the whole Claude Code credential item and reauthenticating every server.</summary>
+    <category term="MCP &amp; integrations"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Fullscreen copy can mojibake non-ASCII output through a latin-1 round trip</title>
     <id>https://framework.boucle.sh/limitations.html#fullscreen-copy-can-mojibake-non-ascii-output</id>
     <link href="https://framework.boucle.sh/limitations.html#fullscreen-copy-can-mojibake-non-ascii-output"/>
@@ -125,45 +165,5 @@
     <updated>2026-07-20T00:00:00Z</updated>
     <summary>A reported Claude Desktop Cowork staging session re-served the first staged copy of a local file after that file changed on the device. The staging layer returned stale bytes while reporting the device&#x27;s current size and mtime, including a same-byte-length content change where size checks could not detect the stale version. The reporter reproduced the behavior with grow, shrink, and same-size probes, and noted that a review session nearly rejected a correct patch because it was reading an old complete file while metadata claimed the current one.</summary>
     <category term="Data integrity"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Windows auto-update can leave an old Claude process wedging WMI</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-auto-update-old-process-can-wedge-wmi</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-auto-update-old-process-can-wedge-wmi"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Windows 11 npm-global Claude Code install left a renamed `claude.exe.old.&lt;timestamp&gt;` process running after auto-update. The leftover process spawned `taskkill.exe` about 1 to 2 times per second for hours, and each `taskkill /T` path performed WMI `Win32_Process` enumeration. The result was a `WmiPrvSE.exe` provider host pinned near 400% CPU, machine-wide WMI consumer hangs, and recovery that required killing both the old Claude process and the wedged WMI provider.</summary>
-    <category term="Platform &amp; compatibility"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Worktree branches can track origin/main and bypass PR review on push</title>
-    <id>https://framework.boucle.sh/limitations.html#worktree-branches-can-track-origin-main</id>
-    <link href="https://framework.boucle.sh/limitations.html#worktree-branches-can-track-origin-main"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.215 macOS workflow created an isolated worktree branch from `origin/main` using the Git default that makes the new branch track the remote start point. A later IDE sync pushed the feature branch commit to its configured upstream, `refs/heads/main`, bypassing a PR review gate and triggering production Continuous Delivery. The failure is not a direct hook bypass; it is a Git upstream footgun created during branch/worktree setup that becomes dangerous when later tools push to the configured upstream.</summary>
-    <category term="Git &amp; repository safety"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Native deny rules can miss prefixed git commands that hooks delegate back to Claude Code</title>
-    <id>https://framework.boucle.sh/limitations.html#native-deny-rules-can-miss-prefixed-git-commands</id>
-    <link href="https://framework.boucle.sh/limitations.html#native-deny-rules-can-miss-prefixed-git-commands"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.215 macOS session executed `rtk git commit`, `rtk git cherry-pick`, and `rtk git reset --hard` despite settings deny patterns intended to block those operations. The user&#x27;s PreToolUse hook detected the deny condition through `rtk rewrite` and exited successfully to let Claude Code&#x27;s native deny rule enforce it, but the native permission engine allowed the commands to complete without a prompt. This shows that delegating back to native deny matching after a wrapper or prefix layer can leave destructive commands unblocked.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] VS Code /model toggle can corrupt settings.json and drop permissions</title>
-    <id>https://framework.boucle.sh/limitations.html#vscode-model-toggle-can-corrupt-settings-json</id>
-    <link href="https://framework.boucle.sh/limitations.html#vscode-model-toggle-can-corrupt-settings-json"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code VS Code extension 2.1.209 Windows setup saw the in-app `/model` toggle intermittently write malformed JSON to `~/.claude/settings.json` while persisting model selection. Observed corruptions included a `model` key appended after the root closing brace and a missing comma inside an unrelated hook object. Once parsing failed, Claude Code warned that the settings file was invalid and all permission rules and hooks from that file stopped taking effect for subsequent sessions until manually repaired.</summary>
-    <category term="Settings &amp; configuration"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Shared daemon can leak first-session ANTHROPIC_AUTH_TOKEN into later sessions</title>
-    <id>https://framework.boucle.sh/limitations.html#shared-daemon-can-leak-env-auth-token-across-sessions</id>
-    <link href="https://framework.boucle.sh/limitations.html#shared-daemon-can-leak-env-auth-token-across-sessions"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.215 macOS setup showed the shared `claude daemon` inheriting `ANTHROPIC_AUTH_TOKEN` from the first session that spawned it, then reusing that environment for later sessions launched from different terminals and repositories that had no Anthropic variables. Those later sessions displayed the stored OAuth account while wire requests authenticated and billed against the inherited token account, only becoming visible when that account hit rate limits. This can silently mix account, billing, and organization context across unrelated work.</summary>
-    <category term="Authentication &amp; accounts"/>
   </entry>
 </feed>

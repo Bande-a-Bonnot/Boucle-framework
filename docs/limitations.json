@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1032,
+  "count": 1037,
   "categories": {
     "Hook behavior & events": 175,
     "Permission system": 117,
@@ -14,18 +14,18 @@
     "Configuration behavior": 21,
     "Context & memory": 21,
     "Tool behavior": 16,
-    "Performance & cost": 12,
+    "Performance & cost": 14,
     "Security & trust boundaries": 12,
     "Agents & subagents": 10,
+    "MCP & integrations": 10,
     "Plugin & channel system": 10,
     "File system & paths": 9,
     "hooks": 9,
-    "MCP & integrations": 9,
     "auth": 8,
     "Configuration & settings": 8,
+    "Data integrity": 8,
     "Remote & cloud": 8,
     "Sandbox & permissions": 8,
-    "Data integrity": 7,
     "MCP": 7,
     "Permissions": 7,
     "Auth & accounts": 6,
@@ -35,12 +35,12 @@
     "VS Code extension": 6,
     "Bash & shell execution": 5,
     "Core & session management": 5,
+    "Skills & commands": 5,
     "UX & display": 5,
     "MCP & plugins": 4,
     "permissions": 4,
     "sandbox": 4,
     "Scheduled tasks": 4,
-    "Skills & commands": 4,
     "Skills / slash commands": 4,
     "tui": 4,
     "Worktree": 4,
@@ -172,10 +172,10 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 75,
-    "HIGH": 513,
+    "CRITICAL": 76,
+    "HIGH": 516,
     "LOW": 99,
-    "MEDIUM": 345
+    "MEDIUM": 346
   },
   "entries": [
     {
@@ -13205,30 +13205,95 @@
       "workaround": "When copying non-ASCII output from fullscreen TUI sessions, verify pasted text before using it in code, docs, or issue reports. Switch to the default TUI renderer for affected sessions, or copy from the temporary `/tmp/claude-*/response.md` file with a native UTF-8 clipboard command such as `pbcopy < /tmp/claude-*/response.md` on macOS. Add regression tests that compare clipboard bytes with the dump-file bytes for box-drawing plus non-ASCII samples.",
       "status": "open",
       "date_added": "2026-07-20"
+    },
+    {
+      "id": "mcp-oauth-dcr-client-cache-can-wedge-server-auth",
+      "title": "MCP OAuth DCR client caches can wedge server authentication",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79505"
+      ],
+      "description": "A reported Claude Code 2.1.215 macOS remote HTTP MCP setup cached a dynamically registered OAuth `client_id` for a server whose DCR registrations were not durable across redeploys. After the server rejected the stale client, `/mcp` Authenticate kept reusing the same `client_id` and failed the same way each time. The product had no per-server clear-authentication or re-register action, so recovery required manual credential-store surgery or deleting the whole Claude Code credential item and reauthenticating every server.",
+      "workaround": "If an OAuth MCP server suddenly rejects authorization after a server restart or deploy, compare the `client_id` in repeated authorize URLs. A stable rejected `client_id` points to a stale DCR cache rather than a fresh login attempt. Reset only the affected server's MCP OAuth credential when possible, or rotate through a controlled full credential reset and reauthenticate all MCP servers. For self-hosted MCP servers, persist dynamic client registrations across deploys until the client can re-register automatically.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "workflow-tool-schema-eager-loads-despite-explicit-trigger-only-contract",
+      "title": "Workflow tool schema eager-loads despite an explicit-trigger-only contract",
+      "category": "Performance & cost",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79504"
+      ],
+      "description": "A reported Claude Code 2.1.x session loads the built-in Workflow tool's large schema on every session even though Workflow is only supposed to be used after explicit user or skill intent. The report estimates the eager description at roughly 3.5K-4K tokens, making it a recurring context cost for users who never invoke Workflow in that session.",
+      "workaround": "Account for Workflow as part of baseline context overhead when measuring fresh-session costs. For short sessions where every token matters, avoid installing additional always-loaded tools that compound the fixed schema budget. If you maintain similar tools or MCP servers, prefer name-only deferral with on-demand ToolSearch loading for tools that cannot be selected proactively.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "large-skill-marketplaces-can-silently-drop-skills-from-session-listing",
+      "title": "Large skill marketplaces can silently drop skills from the session listing",
+      "category": "Skills & commands",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79503"
+      ],
+      "description": "A reported Claude Code 2.1.x Windows setup with roughly 230 marketplace skills registered only 123 skills in the session-visible listing. `claude doctor`, `/skills`, and session startup output gave no warning, and the reporter could not tell whether trimming was by plugin, order, description length, or an internal budget. The result is that agents may stop seeing installed skills and rederive workflows already present on disk.",
+      "workaround": "For large skill catalogs, maintain your own startup audit that counts installed `SKILL.md` files and compares them against the session-visible skill list. Keep critical workflows in small, always-visible skills or invoke known skills by exact name when supported. Marketplace maintainers should profile description length, split catalogs into enablement profiles, and document any local suppression policy until Claude Code exposes registered-vs-dropped diagnostics.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "background-task-notifications-can-fabricate-completion-events",
+      "title": "Background task notifications can fabricate completion events",
+      "category": "Data integrity",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79250"
+      ],
+      "description": "A reported Claude Code desktop session delivered Monitor and background Bash completion notifications for long-running remote work before the watched process had actually finished. The notifications quoted plausible success lines with timestamps in the future or reported exit code 0 with an empty output file, while independent SSH checks showed the expected log lines did not exist and the loop condition was still false. The real completion arrived later, meaning the early notification channel could mark unfinished work as verified.",
+      "workaround": "Treat background task and Monitor completion notifications as hints, not final proof, for critical work. Verify the underlying artifact, log line, process status, or remote clock before closing an operational flag. For long-running jobs, write external start, heartbeat, and done markers that the model can check directly instead of relying only on summarized task notifications.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "idle-tui-animations-can-spin-cpu-indefinitely",
+      "title": "Idle TUI animations can spin CPU indefinitely",
+      "category": "Performance & cost",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/78969"
+      ],
+      "description": "A reported Claude Code 2.1.214 macOS interactive session burned 10-40% CPU while idle whenever the TUI kept a live-updating element on screen, such as a spinner, elapsed-time counter, status ticker, agents dashboard row, or session-limit banner. The same binary at a plain prompt idled at 0% CPU, and multiple idle sessions saturated a small host. The report also observed one spinning process ignoring SIGTERM.",
+      "workaround": "On hosts running multiple Claude Code sessions, monitor idle CPU separately from active API or child-process work. If a session is idle but still consuming sustained CPU with no established TLS connection and no busy children, clear or exit the animated TUI state, restart the session, or kill the stuck process when graceful termination fails. Avoid leaving fleets parked on dashboards, stalled spinners, or limit banners overnight.",
+      "status": "open",
+      "date_added": "2026-07-20"
     }
   ],
   "status_summary": {
-    "open": 1018,
+    "open": 1023,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 75,
-    "high": 513,
+    "critical": 76,
+    "high": 516,
     "low": 99,
-    "medium": 345
+    "medium": 346
   },
   "lastUpdated": "2026-07-20",
   "stats": {
-    "total": 1032,
-    "critical": 75,
-    "high": 513,
-    "medium": 345,
+    "total": 1037,
+    "critical": 76,
+    "high": 516,
+    "medium": 346,
     "low": 99,
-    "open": 1018,
+    "open": 1023,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-20",
-  "total": 1032
+  "total": 1037
 }
