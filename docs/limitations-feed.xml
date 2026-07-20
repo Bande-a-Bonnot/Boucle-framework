@@ -7,6 +7,70 @@
   <updated>2026-07-20T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] CLAUDE_CONFIG_DIR can leak default profile rules into isolated sessions</title>
+    <id>https://framework.boucle.sh/limitations.html#claude-config-dir-can-leak-default-rules</id>
+    <link href="https://framework.boucle.sh/limitations.html#claude-config-dir-can-leak-default-rules"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.215 macOS setup found that `.claude/rules/*.md` auto-attachment still loaded matching rules from the default `~/.claude/rules/` path even when `CLAUDE_CONFIG_DIR` pointed to a separate profile. When a same-relative-path rules file also existed under the configured profile, both files loaded, and the leaked default-profile file appeared in the transcript as a project attachment. This breaks profile isolation for users separating work, personal, or specialized identities by config directory.</summary>
+    <category term="Configuration behavior"/>
+  </entry>
+  <entry>
+    <title>[HIGH] spawn_task can flip the parent repo branch when worktree creation fails</title>
+    <id>https://framework.boucle.sh/limitations.html#spawn-task-can-flip-parent-repo-branch</id>
+    <link href="https://framework.boucle.sh/limitations.html#spawn-task-can-flip-parent-repo-branch"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Windows 11 Claude Code Desktop workflow created `.claude/worktrees/&lt;name&gt;` directories that were often not real git worktrees. When a spawned session ran `git checkout -b claude/&lt;name&gt;` from such a directory, Git resolved upward to the parent repository and switched the shared main checkout&#x27;s branch before the first agent instruction executed. In a multi-session setup, this silently moved all parallel sessions and the dev server onto the new branch until manual recovery.</summary>
+    <category term="Worktree"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Remote MCP connectors can share one session across conversations</title>
+    <id>https://framework.boucle.sh/limitations.html#remote-mcp-connectors-can-share-sessions-across-conversations</id>
+    <link href="https://framework.boucle.sh/limitations.html#remote-mcp-connectors-can-share-sessions-across-conversations"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported claude.ai remote MCP connector setup sent two concurrent conversations through one stateful MCP session. The server received two tool calls within 217 ms, then one conversation received the other conversation&#x27;s tool response payload while its own write also succeeded. The reporter traced one half of the problem to an MCP Python SDK in-flight response registry keyed by bare JSON-RPC request id, but the connector-side hazard is that independent conversations can share a session whose request ids and per-session state were assumed to be isolated.</summary>
+    <category term="MCP &amp; integrations"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Permission transport loss can fabricate a user denial in transcripts</title>
+    <id>https://framework.boucle.sh/limitations.html#permission-transport-loss-can-fabricate-user-denial</id>
+    <link href="https://framework.boucle.sh/limitations.html#permission-transport-loss-can-fabricate-user-denial"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported VS Code Claude Code session using `--permission-prompt-tool stdio` wrote a transcript tool result saying the user did not want to take an action after the extension host crashed while a permission prompt was outstanding. The user reports no dialog was shown and no denial was clicked. Because the session then reasoned from that fabricated denial and stopped cleanly, the failure looked like intended user instruction rather than a transport crash.</summary>
+    <category term="Data integrity"/>
+  </entry>
+  <entry>
+    <title>[HIGH] bwrap sandbox launch can race transient git lockfiles</title>
+    <id>https://framework.boucle.sh/limitations.html#bwrap-sandbox-launch-can-race-git-lockfiles</id>
+    <link href="https://framework.boucle.sh/limitations.html#bwrap-sandbox-launch-can-race-git-lockfiles"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.215 Linux sandbox failure showed `bwrap` exiting before command launch with `Can&#x27;t get type of source .../.git/config.lock` when a sandboxed child shares a repository `.git` while another git process briefly creates and removes a lockfile. The reporter reproduced the underlying bubblewrap time-of-check/time-of-use race with a standalone harness that enumerates `.git` children and then mounts them, producing about 6 to 8% launch failures under concurrent lockfile writers.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] PreToolUse ask decisions can fail open in anomalous child-session environments</title>
+    <id>https://framework.boucle.sh/limitations.html#pretooluse-ask-can-fail-open-in-child-session-env</id>
+    <link href="https://framework.boucle.sh/limitations.html#pretooluse-ask-can-fail-open-in-child-session-env"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported top-level macOS Claude Code 2.1.215 session carried `CLAUDE_CODE_CHILD_SESSION=1` even though its process tree showed no parent Claude process. In that session, a PreToolUse hook returned `permissionDecision: &quot;ask&quot;` for a Bash command targeting a protected host, but no interactive prompt surfaced and the command executed, returning a live HTTP 401. The same hook replayed manually returned the expected ask decision, which points to prompt delivery or fallback behavior rather than hook logic.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Cowork staging can serve stale file bytes with fresh metadata</title>
+    <id>https://framework.boucle.sh/limitations.html#cowork-staging-cache-can-serve-stale-file-bytes</id>
+    <link href="https://framework.boucle.sh/limitations.html#cowork-staging-cache-can-serve-stale-file-bytes"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Desktop Cowork staging session re-served the first staged copy of a local file after that file changed on the device. The staging layer returned stale bytes while reporting the device&#x27;s current size and mtime, including a same-byte-length content change where size checks could not detect the stale version. The reporter reproduced the behavior with grow, shrink, and same-size probes, and noted that a review session nearly rejected a correct patch because it was reading an old complete file while metadata claimed the current one.</summary>
+    <category term="Data integrity"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Windows auto-update can leave an old Claude process wedging WMI</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-auto-update-old-process-can-wedge-wmi</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-auto-update-old-process-can-wedge-wmi"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Windows 11 npm-global Claude Code install left a renamed `claude.exe.old.&lt;timestamp&gt;` process running after auto-update. The leftover process spawned `taskkill.exe` about 1 to 2 times per second for hours, and each `taskkill /T` path performed WMI `Win32_Process` enumeration. The result was a `WmiPrvSE.exe` provider host pinned near 400% CPU, machine-wide WMI consumer hangs, and recovery that required killing both the old Claude process and the wedged WMI provider.</summary>
+    <category term="Platform &amp; compatibility"/>
+  </entry>
+  <entry>
     <title>[HIGH] Worktree branches can track origin/main and bypass PR review on push</title>
     <id>https://framework.boucle.sh/limitations.html#worktree-branches-can-track-origin-main</id>
     <link href="https://framework.boucle.sh/limitations.html#worktree-branches-can-track-origin-main"/>
@@ -101,69 +165,5 @@
     <updated>2026-07-20T00:00:00Z</updated>
     <summary>A reported Claude Code v2.1.215 Windows Discord integration flow paired the account successfully, then asked the user in a Discord DM for permission that the system itself says cannot be granted from Discord because channel allowlisting must be approved via `/discord:access` in the trusted Claude surface. The user could recover by confirming from Claude Desktop, but the Discord-side prompt was misleading and created a dead-end approval path in the exact untrusted channel the system is trying to guard.</summary>
     <category term="Plugin &amp; channel system"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Telegram channel photos can download but never reach the Claude Code session</title>
-    <id>https://framework.boucle.sh/limitations.html#telegram-channel-photos-can-download-but-never-reach-session</id>
-    <link href="https://framework.boucle.sh/limitations.html#telegram-channel-photos-can-download-but-never-reach-session"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Windows Claude Code v2.1.212 session with the Telegram plugin v0.0.6 received inbound photo messages, gated them, and wrote the downloaded images into the local Telegram inbox directory, but never surfaced a corresponding channel turn in the active Claude Code session. No assistant reply was sent back to Telegram, no companion hook saw a reply tool call, and repeated messages over two days were silently dropped after filesystem delivery. The gap appears to be between the plugin&#x27;s background MCP notification and the client injecting that notification as a conversation turn.</summary>
-    <category term="Plugin &amp; channel system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Fired Claude Code Remote routines can hang indefinitely on external calls</title>
-    <id>https://framework.boucle.sh/limitations.html#fired-routines-external-calls-can-hang-without-timeout</id>
-    <link href="https://framework.boucle.sh/limitations.html#fired-routines-external-calls-can-hang-without-timeout"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A July 2026 Claude Code Remote scheduled Routine repro reports that fired sessions can hang indefinitely with no surfaced error, timeout, or fallback execution when the prompt performs an external call. The reporter first reproduced the stall with native Gmail and Drive connector calls, then reproduced it with `web_fetch` and a separate device-bridge MCP server, which suggests the failure is not limited to MCP approval gating. The only visible signal was that the trigger&#x27;s `last_fired_at` updated while the expected post-call output never appeared.</summary>
-    <category term="Remote &amp; cloud"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Plan-mode escape followed by Manual STOP can leave workers running</title>
-    <id>https://framework.boucle.sh/limitations.html#plan-escape-manual-stop-can-leave-workers-running</id>
-    <link href="https://framework.boucle.sh/limitations.html#plan-escape-manual-stop-can-leave-workers-running"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Windows Visual Studio extension session on Claude Code v2.1.207 could continue background worker and tool execution after the operator escaped from Plan or Auto Mode, reset to Manual Mode, and sent explicit STOP prompts. The visible mode indicator changed, but running work continued, later prompts were ignored, and recovery required killing multiple Claude processes plus restarting the IDE and desktop app. The practical risk is that mode changes and natural-language STOP rules in CLAUDE.md may not be a reliable cancellation boundary once worker execution is already in flight.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Plugin-dev shell helpers can fail opaquely on macOS or uppercase frontmatter</title>
-    <id>https://framework.boucle.sh/limitations.html#plugin-dev-shell-helpers-can-fail-opaque-on-macos-or-uppercase-frontmatter</id>
-    <link href="https://framework.boucle.sh/limitations.html#plugin-dev-shell-helpers-can-fail-opaque-on-macos-or-uppercase-frontmatter"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>Official plugin-development shell helpers can fail before producing useful diagnostics in common local cases. `scripts/gh.sh` expands an empty `FLAGS` array under `set -u`, which crashes flagless invocations on macOS&#x27;s stock Bash 3.2 with `FLAGS[@]: unbound variable` even though the same calls work on newer Bash. Separately, `plugin-settings/scripts/validate-settings.sh` pipes a no-match lowercase frontmatter grep through `set -euo pipefail`, so a settings file with only uppercase keys exits 1 after `Detected fields:` without reaching the later checks or final summary. Both failures make plugin authors debug the helper scripts instead of the plugin inputs.</summary>
-    <category term="Plugin &amp; channel system"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] `/ralph-loop` can remain model-invocable despite hidden frontmatter</title>
-    <id>https://framework.boucle.sh/limitations.html#ralph-loop-command-can-remain-model-invocable-despite-hidden-frontmatter</id>
-    <link href="https://framework.boucle.sh/limitations.html#ralph-loop-command-can-remain-model-invocable-despite-hidden-frontmatter"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>The official `ralph-wiggum` plugin&#x27;s loop and cancel commands can use `hide-from-slash-command-tool: &quot;true&quot;`, a key accepted silently by validation but not the documented key that blocks model invocation. In a v2.1.215 live probe with otherwise identical test commands, the command using that frontmatter remained available through the Skill tool, while `disable-model-invocation: true` hid the command from the model and still allowed direct user slash-command invocation. The concrete hazard is that a command apparently intended to stay user-only, including an infinite Ralph loop, can still be invoked by the assistant itself.</summary>
-    <category term="Skills / slash commands"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Auto mode can block safe dry-runs while broader allowlisted commands pass</title>
-    <id>https://framework.boucle.sh/limitations.html#auto-mode-classifier-can-block-safe-dry-runs-and-reward-broad-allowlists</id>
-    <link href="https://framework.boucle.sh/limitations.html#auto-mode-classifier-can-block-safe-dry-runs-and-reward-broad-allowlists"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>Claude Code auto mode can classify Bash commands by surface form rather than effect, blocking benign or read-only commands while allowing broader equivalents that happen to match user allowlists. A reported Ubuntu repro from v2.1.x sessions shows `git clean -ndX` blocked even though `-n` makes it a dry-run listing, while a `find ... -exec rm -rf` cleanup with a larger deletion effect passed because `Bash(find:*)` was allowlisted. Several such denials can accumulate into the consecutive-blocks lockout, derailing autonomous or plan-mode work and pushing users toward broad allowlists that bypass the classifier entirely.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Signed thinking can reference injection payloads absent from the local transcript</title>
-    <id>https://framework.boucle.sh/limitations.html#signed-thinking-can-reference-unrecorded-injection-payloads</id>
-    <link href="https://framework.boucle.sh/limitations.html#signed-thinking-can-reference-unrecorded-injection-payloads"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code v2.1.211 macOS session produced a signed thinking block that abruptly refused an apparent prompt-injection payload involving exfiltration to a telemetry domain, while the persisted local transcript contained no matching tool result, attachment, hook output, parent-session input, local file, git diff, or proxy path. The model did not comply and no data left the machine, but the response attributed the payload to nonexistent git diff output and the earliest local occurrence was inside the model&#x27;s own signed thinking. The narrow risk is not confirmed exfiltration; it is that user-visible sessions may contain model refusals or safety reactions to context that users cannot audit from the local JSONL transcript.</summary>
-    <category term="Model behavior &amp; instructions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Claude Code web plugins can lack `userConfig` secrets and shadow working connectors</title>
-    <id>https://framework.boucle.sh/limitations.html#web-plugin-userconfig-secrets-can-be-unavailable-and-shadow-connectors</id>
-    <link href="https://framework.boucle.sh/limitations.html#web-plugin-userconfig-secrets-can-be-unavailable-and-shadow-connectors"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>Claude Code cloud sessions can auto-enable a repository-declared plugin and expose its commands while providing no supported headless path for the user to supply required sensitive `userConfig` values such as API tokens. In the reported cloud-session repro, plugin MCP servers that interpolate `${user_config.&lt;field&gt;}` start with empty credentials and return 401. If the same endpoint is also available through a working claude.ai OAuth connector, the tokenless plugin server can win precedence and hide the connector, leaving users with either plugin commands plus broken tools or working connector tools without plugin commands.</summary>
-    <category term="Remote &amp; cloud"/>
   </entry>
 </feed>

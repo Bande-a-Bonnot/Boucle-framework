@@ -1,18 +1,18 @@
 {
   "version": "0.13.0",
-  "count": 1016,
+  "count": 1024,
   "categories": {
     "Hook behavior & events": 174,
-    "Permission system": 115,
+    "Permission system": 116,
     "Hook bypass & evasion": 99,
     "MCP & plugin issues": 54,
     "Subagent & spawned agents": 40,
     "Desktop & IDE integration": 32,
-    "Platform & compatibility": 25,
+    "Platform & compatibility": 26,
     "CLI & terminal": 23,
     "Context & memory": 21,
     "TUI & display": 21,
-    "Configuration behavior": 19,
+    "Configuration behavior": 20,
     "Tool behavior": 16,
     "Security & trust boundaries": 12,
     "Performance & cost": 11,
@@ -22,20 +22,20 @@
     "hooks": 9,
     "auth": 8,
     "Configuration & settings": 8,
+    "MCP & integrations": 8,
     "Remote & cloud": 8,
+    "Sandbox & permissions": 8,
     "MCP": 7,
-    "MCP & integrations": 7,
     "Permissions": 7,
-    "Sandbox & permissions": 7,
     "Auth & accounts": 6,
     "Cowork & remote": 6,
+    "Data integrity": 6,
     "Desktop & platform bugs": 6,
     "Scheduling & remote triggers": 6,
     "VS Code extension": 6,
     "Bash & shell execution": 5,
     "Core & session management": 5,
     "UX & display": 5,
-    "Data integrity": 4,
     "MCP & plugins": 4,
     "permissions": 4,
     "sandbox": 4,
@@ -43,6 +43,7 @@
     "Skills & commands": 4,
     "Skills / slash commands": 4,
     "tui": 4,
+    "Worktree": 4,
     "CLI / TUI rendering": 3,
     "Context / compaction": 3,
     "cowork": 3,
@@ -59,7 +60,6 @@
     "Security": 3,
     "Stability & crashes": 3,
     "Telemetry & insights": 3,
-    "Worktree": 3,
     "Agents": 2,
     "agents": 2,
     "API & infrastructure": 2,
@@ -172,8 +172,8 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 68,
-    "HIGH": 505,
+    "CRITICAL": 72,
+    "HIGH": 509,
     "LOW": 99,
     "MEDIUM": 344
   },
@@ -12997,30 +12997,134 @@
       "workaround": "When creating worktree branches from a remote-tracking ref, use `git worktree add --no-track` or create from a local branch so the feature branch does not inherit `origin/main` as its upstream. After any agent-created branch, verify `git config --get branch.<name>.merge` and `git config --get branch.<name>.remote` before committing or syncing from an IDE. Add git hooks or server-side protections that reject non-reviewed pushes to default branches even when a local branch upstream points there.",
       "status": "open",
       "date_added": "2026-07-20"
+    },
+    {
+      "id": "windows-auto-update-old-process-can-wedge-wmi",
+      "title": "Windows auto-update can leave an old Claude process wedging WMI",
+      "category": "Platform & compatibility",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79467"
+      ],
+      "description": "A reported Windows 11 npm-global Claude Code install left a renamed `claude.exe.old.<timestamp>` process running after auto-update. The leftover process spawned `taskkill.exe` about 1 to 2 times per second for hours, and each `taskkill /T` path performed WMI `Win32_Process` enumeration. The result was a `WmiPrvSE.exe` provider host pinned near 400% CPU, machine-wide WMI consumer hangs, and recovery that required killing both the old Claude process and the wedged WMI provider.",
+      "workaround": "On Windows, monitor for live `claude.exe.old*` processes after updates and terminate confirmed leftovers before continuing heavy work. If the machine is already wedged, stop the runaway old process first, then recycle the affected `WmiPrvSE` process if it remains pinned and you understand the local impact. Prefer native process watchdogs over WMI-backed checks for this condition, since the failure mode itself can saturate WMI.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "cowork-staging-cache-can-serve-stale-file-bytes",
+      "title": "Cowork staging can serve stale file bytes with fresh metadata",
+      "category": "Data integrity",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79464"
+      ],
+      "description": "A reported Claude Desktop Cowork staging session re-served the first staged copy of a local file after that file changed on the device. The staging layer returned stale bytes while reporting the device's current size and mtime, including a same-byte-length content change where size checks could not detect the stale version. The reporter reproduced the behavior with grow, shrink, and same-size probes, and noted that a review session nearly rejected a correct patch because it was reading an old complete file while metadata claimed the current one.",
+      "workaround": "Do not treat Cowork staging metadata as proof that delivered bytes are current for paths already staged in the same session. For critical reviews or handoffs, force a new path, restart the session, or verify through a device-native read or content hash from an out-of-band channel. When building workflows around staged files, include marker hashes in handoff files and treat a stale marker as a session-level cache failure.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "pretooluse-ask-can-fail-open-in-child-session-env",
+      "title": "PreToolUse ask decisions can fail open in anomalous child-session environments",
+      "category": "Permission system",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79449"
+      ],
+      "description": "A reported top-level macOS Claude Code 2.1.215 session carried `CLAUDE_CODE_CHILD_SESSION=1` even though its process tree showed no parent Claude process. In that session, a PreToolUse hook returned `permissionDecision: \"ask\"` for a Bash command targeting a protected host, but no interactive prompt surfaced and the command executed, returning a live HTTP 401. The same hook replayed manually returned the expected ask decision, which points to prompt delivery or fallback behavior rather than hook logic.",
+      "workaround": "Do not rely on `ask` decisions for security boundaries in sessions that may lack a reliable interactive prompt channel. For protected hosts, credentials, or infrastructure APIs, prefer hard `deny` decisions and explicit allowlist changes over ask prompts. Log `CLAUDE_CODE_CHILD_SESSION`, the process tree, and hook decisions during rollout, and treat a command that should have prompted but executed as a fail-open permission incident.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "bwrap-sandbox-launch-can-race-git-lockfiles",
+      "title": "bwrap sandbox launch can race transient git lockfiles",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79248"
+      ],
+      "description": "A reported Claude Code 2.1.215 Linux sandbox failure showed `bwrap` exiting before command launch with `Can't get type of source .../.git/config.lock` when a sandboxed child shares a repository `.git` while another git process briefly creates and removes a lockfile. The reporter reproduced the underlying bubblewrap time-of-check/time-of-use race with a standalone harness that enumerates `.git` children and then mounts them, producing about 6 to 8% launch failures under concurrent lockfile writers.",
+      "workaround": "Retry transient sandbox launch failures that name vanished `.git/*.lock` files, but treat repeated occurrences as a concurrency problem in shared repositories. Avoid running sandboxed child launches at the same time as git config writes on the shared `.git` or common dir. If implementing a wrapper or local sandbox, use bind-try semantics or skip disappeared transient lockfiles rather than passing hard bind sources to `bwrap`.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "permission-transport-loss-can-fabricate-user-denial",
+      "title": "Permission transport loss can fabricate a user denial in transcripts",
+      "category": "Data integrity",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79246"
+      ],
+      "description": "A reported VS Code Claude Code session using `--permission-prompt-tool stdio` wrote a transcript tool result saying the user did not want to take an action after the extension host crashed while a permission prompt was outstanding. The user reports no dialog was shown and no denial was clicked. Because the session then reasoned from that fabricated denial and stopped cleanly, the failure looked like intended user instruction rather than a transport crash.",
+      "workaround": "When a session stops at a permission boundary after an IDE or prompt-transport crash, inspect the transcript and surrounding extension logs before treating the recorded denial as a human decision. For audit-sensitive workflows, distinguish user-denied, prompt-timeout, and transport-closed states in external logs where possible, and do not resume from transcripts that may contain fabricated user-attributed permission results without annotating the uncertainty.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "remote-mcp-connectors-can-share-sessions-across-conversations",
+      "title": "Remote MCP connectors can share one session across conversations",
+      "category": "MCP & integrations",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79241"
+      ],
+      "description": "A reported claude.ai remote MCP connector setup sent two concurrent conversations through one stateful MCP session. The server received two tool calls within 217 ms, then one conversation received the other conversation's tool response payload while its own write also succeeded. The reporter traced one half of the problem to an MCP Python SDK in-flight response registry keyed by bare JSON-RPC request id, but the connector-side hazard is that independent conversations can share a session whose request ids and per-session state were assumed to be isolated.",
+      "workaround": "For custom remote MCP connectors, do not assume one MCP session equals one logical conversation unless the connector documents that guarantee. Prefer stateless HTTP for servers that can support it, or key any per-session in-flight state by an explicit conversation or request namespace when available. Avoid using shared stateful connector sessions for tools that can return secrets, write receipts, or user-specific data unless cross-conversation response routing has been tested under concurrency.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "spawn-task-can-flip-parent-repo-branch",
+      "title": "spawn_task can flip the parent repo branch when worktree creation fails",
+      "category": "Worktree",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79234"
+      ],
+      "description": "A reported Windows 11 Claude Code Desktop workflow created `.claude/worktrees/<name>` directories that were often not real git worktrees. When a spawned session ran `git checkout -b claude/<name>` from such a directory, Git resolved upward to the parent repository and switched the shared main checkout's branch before the first agent instruction executed. In a multi-session setup, this silently moved all parallel sessions and the dev server onto the new branch until manual recovery.",
+      "workaround": "Before starting or trusting spawned worktree sessions, assert that the created directory resolves to itself as the git top-level and has a linked worktree git dir distinct from the common dir. If either check fails, abort the spawn and never run branch operations from that directory. Add local post-checkout or pre-commit hooks that make it loud if the shared main checkout moves to an unexpected branch.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "claude-config-dir-can-leak-default-rules",
+      "title": "CLAUDE_CONFIG_DIR can leak default profile rules into isolated sessions",
+      "category": "Configuration behavior",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79233"
+      ],
+      "description": "A reported Claude Code 2.1.215 macOS setup found that `.claude/rules/*.md` auto-attachment still loaded matching rules from the default `~/.claude/rules/` path even when `CLAUDE_CONFIG_DIR` pointed to a separate profile. When a same-relative-path rules file also existed under the configured profile, both files loaded, and the leaked default-profile file appeared in the transcript as a project attachment. This breaks profile isolation for users separating work, personal, or specialized identities by config directory.",
+      "workaround": "Do not rely on `CLAUDE_CONFIG_DIR` alone to isolate auto-attached rules until the rules subsystem is verified. Inspect transcripts for `nested_memory` attachment paths after profile switches, keep sensitive or persona-specific files out of the default `~/.claude/rules/` tree, and run a marker-file test before using multiple profiles on the same machine for work that depends on strict instruction separation.",
+      "status": "open",
+      "date_added": "2026-07-20"
     }
   ],
   "status_summary": {
-    "open": 1002,
+    "open": 1010,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 68,
-    "high": 505,
+    "critical": 72,
+    "high": 509,
     "low": 99,
     "medium": 344
   },
   "lastUpdated": "2026-07-20",
   "stats": {
-    "total": 1016,
-    "critical": 68,
-    "high": 505,
+    "total": 1024,
+    "critical": 72,
+    "high": 509,
     "medium": 344,
     "low": 99,
-    "open": 1002,
+    "open": 1010,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-20",
-  "total": 1016
+  "total": 1024
 }
