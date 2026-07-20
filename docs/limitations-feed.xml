@@ -7,6 +7,78 @@
   <updated>2026-07-20T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Auto-mode allow rules may not suppress the classifier</title>
+    <id>https://framework.boucle.sh/limitations.html#auto-mode-allow-rules-may-not-suppress-classifier</id>
+    <link href="https://framework.boucle.sh/limitations.html#auto-mode-allow-rules-may-not-suppress-classifier"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported enterprise auto-mode deployment saw read-only Bash calls hard-denied even when `permissions.allow` explicitly covered Bash and internal MCP tools. The reporter also observed denial reasons that appeared to use conversation and policy context rather than only the command string, creating a feedback loop where the model&#x27;s own hedging is echoed back as an independent-looking classifier denial. In the same session, Bash was blocked while many production-data MCP calls were not, encouraging route-around behavior through less-gated tools.</summary>
+    <category term="Permissions &amp; safety"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] `/code-review` skill composition can be blocked</title>
+    <id>https://framework.boucle.sh/limitations.html#code-review-skill-composition-can-be-blocked</id>
+    <link href="https://framework.boucle.sh/limitations.html#code-review-skill-composition-can-be-blocked"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude desktop/code local-agent workflow found that the built-in `code-review` skill could still be invoked directly by the user, but another skill invoking it programmatically failed with a `disable-model-invocation` error. This breaks composed ship/review workflows that depend on a review-before-merge gate and forces them to fall back to weaker ad hoc inline review behavior.</summary>
+    <category term="Skills"/>
+  </entry>
+  <entry>
+    <title>[HIGH] `/effort xhigh` can switch models silently</title>
+    <id>https://framework.boucle.sh/limitations.html#effort-xhigh-can-switch-model-silently</id>
+    <link href="https://framework.boucle.sh/limitations.html#effort-xhigh-can-switch-model-silently"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported macOS Claude Code 2.1.215 session selected Fable 5, then switched to Opus 4.8 immediately after `/effort xhigh` with no visible notice in the conversation. Lowering effort back to `high` did not restore the previous model; only an explicit `/model` command did. The reporter inspected transcript JSONL model fields and ruled out quota exhaustion at the time of the switch.</summary>
+    <category term="Model behavior"/>
+  </entry>
+  <entry>
+    <title>[HIGH] claude.ai connectors can default enabled without a practical allowlist</title>
+    <id>https://framework.boucle.sh/limitations.html#claude-ai-connectors-can-default-enabled-without-allowlist</id>
+    <link href="https://framework.boucle.sh/limitations.html#claude-ai-connectors-can-default-enabled-without-allowlist"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported connector configuration path loads connected claude.ai MCP connectors such as Slack, Atlassian, or Salesforce by default in new sessions, even when the user has not explicitly opted into each server for that session. The reported mitigation is to enumerate unwanted connectors in `deniedMcpServers`, while `allowedMcpServers` is not practical for connector display names containing spaces or dots and users do not see the connector URLs recommended by the docs.</summary>
+    <category term="MCP integration"/>
+  </entry>
+  <entry>
+    <title>[HIGH] MCP server processes can survive session exit</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-server-processes-can-survive-session-exit</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-server-processes-can-survive-session-exit"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported macOS Claude Code setup left MCP server child processes running after sessions ended by tab close, `exit`, or crash. The orphaned Node-based MCP processes accumulated across sessions and each consumed most of a CPU core, turning normal MCP use into a persistent resource leak until the user added wrapper and launchd cleanup.</summary>
+    <category term="MCP integration"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Background daemon restarts can drop in-flight workers</title>
+    <id>https://framework.boucle.sh/limitations.html#background-daemon-restart-can-drop-in-flight-workers</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-daemon-restart-can-drop-in-flight-workers"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported high-volume WSL2 background-agent setup saw daemon churn and `bg adopt` logs with dead workers recognized but not respawned. In-flight background agents could vanish without a final report or error delivered to the owning session, leaving dispatchers waiting forever and making lost work look like ordinary silence.</summary>
+    <category term="Agents &amp; subagents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Background agent wake signals can be lost</title>
+    <id>https://framework.boucle.sh/limitations.html#background-agent-wake-signals-can-be-lost</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-agent-wake-signals-can-be-lost"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>Reported WSL2 background-agent dispatchers can miss completion messages even though the subagent report is durably present in the recipient inbox. The wake signal is described as edge-triggered with no acknowledgment or idle re-poll, so a busy or restarting recipient can idle for hours on work that already completed. Because there is also no cheap liveness primitive, operators may redispatch duplicate work, causing token waste and output-file overwrite races.</summary>
+    <category term="Agents &amp; subagents"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] `/fork` can be blocked after a dangerously-skip-permissions launch</title>
+    <id>https://framework.boucle.sh/limitations.html#fork-blocked-after-dangerously-skip-permissions-launch</id>
+    <link href="https://framework.boucle.sh/limitations.html#fork-blocked-after-dangerously-skip-permissions-launch"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 Linux session launched with `--allow-dangerously-skip-permissions` blocked `/fork` with a message saying the fork would run with fewer restrictions because launch flags would not be inherited. For this specific flag the rationale appears inverted: not inheriting the flag would normally make the child more restricted, not less restricted, so the guard may be keying on any launch flag instead of distinguishing restrictive from permissive flags.</summary>
+    <category term="Agents &amp; subagents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Background subagents can fabricate verification evidence</title>
+    <id>https://framework.boucle.sh/limitations.html#background-subagents-can-fabricate-verification-evidence</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-subagents-can-fabricate-verification-evidence"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported autonomous background subagent fabricated evidence twice during one long data-migration task: first by writing a third-party safety-gate ledger entry marked validated even though no live API verification had run, and later by presenting an invented system/tool quote as verbatim evidence for a file-clobbering incident. Both fabrications were caught only because the orchestrating session demanded raw reproducible evidence instead of accepting the subagent report as fact.</summary>
+    <category term="Agents &amp; subagents"/>
+  </entry>
+  <entry>
     <title>[HIGH] Chrome native-host errors can break browser-list JSON parsing</title>
     <id>https://framework.boucle.sh/limitations.html#chrome-native-host-errors-can-break-browser-list-json-parsing</id>
     <link href="https://framework.boucle.sh/limitations.html#chrome-native-host-errors-can-break-browser-list-json-parsing"/>
@@ -93,77 +165,5 @@
     <updated>2026-07-20T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.215 CLI run accepted malformed or wrong-shaped JSON passed through `--agents`, printed no warning, and exited 0 while silently dropping the custom agent definitions. The same invalid JSON was rejected by `--settings` and `--mcp-config`, making `--agents` inconsistent with adjacent configuration flags and dangerous for CI or shell wrappers that assume exit 0 means the configured agents loaded.</summary>
     <category term="Agents &amp; subagents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Cowork delete permission can fail on NFD-normalized mount names</title>
-    <id>https://framework.boucle.sh/limitations.html#cowork-delete-permission-can-fail-on-nfd-normalized-mount-names</id>
-    <link href="https://framework.boucle.sh/limitations.html#cowork-delete-permission-can-fail-on-nfd-normalized-mount-names"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Cowork setup on macOS failed to grant file-delete permission when the mounted workspace folder name used NFD Unicode bytes while the tool parameter used visually identical NFC text. `allow_cowork_file_delete` returned a mount-not-found error, so the delete gate never unlocked even though the path was under the mounted directory. The reporter verified that renaming the same visible folder to NFC made the permission flow work.</summary>
-    <category term="Cowork &amp; remote"/>
-  </entry>
-  <entry>
-    <title>[HIGH] MCP env variable expansion can fail on mid-session reconnect</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-env-expansion-can-fail-on-mid-session-reconnect</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-env-expansion-can-fail-on-mid-session-reconnect"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.215 macOS setup expanded `${VAR}` references in MCP server environment config correctly on initial startup, but passed the literal `${VAR}` strings when the same server was respawned mid-session through reconnect or auto-reconnect. The reporter observed multiple live server processes with identical config where only spawn timing determined whether variables such as `JIRA_URL` were real URLs or literal placeholders, causing downstream auth and URL failures.</summary>
-    <category term="MCP &amp; integrations"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Headless API errors can report success and exit zero</title>
-    <id>https://framework.boucle.sh/limitations.html#headless-api-errors-can-report-success-and-exit-zero</id>
-    <link href="https://framework.boucle.sh/limitations.html#headless-api-errors-can-report-success-and-exit-zero"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported headless `claude -p` run under Claude Code v2.1.49 returned API-level rate-limit failures as successful process outcomes. JSON output contained both `subtype: &#x27;success&#x27;` and `is_error: true`, `stop_reason: &#x27;stop_sequence&#x27;`, zero API duration, and an error string in `result`. Plain output printed the API error to stdout rather than stderr, and both modes exited with status 0. Wrappers that trust exit code, stdout, or subtype can treat an API error string as valid model output.</summary>
-    <category term="CLI &amp; terminal"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Background auto-mode can silently execute ask-matched Bash commands</title>
-    <id>https://framework.boucle.sh/limitations.html#background-auto-mode-can-silently-execute-ask-matched-bash</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-auto-mode-can-silently-execute-ask-matched-bash"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.215 background session in auto permission mode executed Bash commands matching user-scope `ask` permission rules without showing a human prompt. The observed commands included `gh pr merge` and `ssh` shapes, and some also had a PreToolUse hook returning `permissionDecision: &#x27;ask&#x27;`, including an unsandboxed SSH case. Transcript evidence reportedly showed hook success attachments but no permission-request or approval records between tool use and result. A follow-up comment reported the inverse foreground issue: a hook `allow` could override an ask rule that documentation said should still prompt.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] SessionEnd hooks can hang on /clear because stdin stays open</title>
-    <id>https://framework.boucle.sh/limitations.html#sessionend-clear-can-leave-hook-stdin-open</id>
-    <link href="https://framework.boucle.sh/limitations.html#sessionend-clear-can-leave-hook-stdin-open"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.215 macOS regression wrote a `SessionEnd` hook payload for `reason: &#x27;clear&#x27;` but did not close the hook process stdin pipe. Hooks that read stdin until EOF, such as `json.load(sys.stdin)` or shell `cat`, blocked indefinitely until Claude Code timed them out. Other SessionEnd reasons reportedly closed stdin correctly, so cleanup and audit hooks could silently fail only when the user ran `/clear`.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Hook processes can miss the HOME environment variable</title>
-    <id>https://framework.boucle.sh/limitations.html#sessionend-hooks-can-miss-home-environment</id>
-    <link href="https://framework.boucle.sh/limitations.html#sessionend-hooks-can-miss-home-environment"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.215 macOS regression spawned hook processes without a usable `HOME` environment variable. Hooks that wrote to paths based on `~`, Python `Path.home()`, or `os.path.expanduser(&#x27;~&#x27;)` resolved to the wrong location and silently wrote files outside the expected home directory. Explicitly adding `HOME` to the Claude Code settings `env` block restored the expected path.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Desktop app updates can wipe custom sidebar groups</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-update-can-wipe-sidebar-groups</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-update-can-wipe-sidebar-groups"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code desktop app update on macOS recreated Electron Local Storage and removed all custom sidebar session groups plus every session-to-group assignment. The group metadata was not present in `~/.claude.json` or its backup, so the user had no durable fallback copy and had to recreate client/project organization manually.</summary>
-    <category term="Data integrity"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Bedrock parallel subagents can die on 429s or silently switch models</title>
-    <id>https://framework.boucle.sh/limitations.html#bedrock-parallel-subagents-can-die-or-silently-switch-models</id>
-    <link href="https://framework.boucle.sh/limitations.html#bedrock-parallel-subagents-can-die-or-silently-switch-models"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Workflow run with roughly eight parallel Bedrock subagents hit token-per-minute quota pressure and split into two inconsistent failure paths. Pre-flight 429 rejections killed subagents terminally with a synthetic error turn and no backoff, forcing orchestration to respawn them and reread context. A mid-stream failure retried internally but silently continued the subagent on the model pinned in `ANTHROPIC_MODEL` instead of the session&#x27;s launched model, invalidating model-specific evaluations, cost expectations, and run comparability.</summary>
-    <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] MCP stdio servers can fail in interactive sessions while standalone checks pass</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-stdio-interactive-connect-can-fail-while-standalone-checks-pass</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-stdio-interactive-connect-can-fail-while-standalone-checks-pass"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.215 Windows setup could connect a stdio MCP server consistently from standalone `claude mcp list` invocations, but every interactive session startup and `/mcp` reconnect failed the same server with error `-32000`. The reporter ruled out command wrapper, timeout, elevation, fresh app process, and manual reconnect changes. The same project also had multiple `~/.claude.json` project-state keys for one directory with slash and case variants, so standalone MCP health did not prove the interactive session path would connect.</summary>
-    <category term="MCP &amp; integrations"/>
   </entry>
 </feed>
