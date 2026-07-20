@@ -7,6 +7,70 @@
   <updated>2026-07-20T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] MCP env variable expansion can fail on mid-session reconnect</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-env-expansion-can-fail-on-mid-session-reconnect</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-env-expansion-can-fail-on-mid-session-reconnect"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.215 macOS setup expanded `${VAR}` references in MCP server environment config correctly on initial startup, but passed the literal `${VAR}` strings when the same server was respawned mid-session through reconnect or auto-reconnect. The reporter observed multiple live server processes with identical config where only spawn timing determined whether variables such as `JIRA_URL` were real URLs or literal placeholders, causing downstream auth and URL failures.</summary>
+    <category term="MCP &amp; integrations"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Headless API errors can report success and exit zero</title>
+    <id>https://framework.boucle.sh/limitations.html#headless-api-errors-can-report-success-and-exit-zero</id>
+    <link href="https://framework.boucle.sh/limitations.html#headless-api-errors-can-report-success-and-exit-zero"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported headless `claude -p` run under Claude Code v2.1.49 returned API-level rate-limit failures as successful process outcomes. JSON output contained both `subtype: &#x27;success&#x27;` and `is_error: true`, `stop_reason: &#x27;stop_sequence&#x27;`, zero API duration, and an error string in `result`. Plain output printed the API error to stdout rather than stderr, and both modes exited with status 0. Wrappers that trust exit code, stdout, or subtype can treat an API error string as valid model output.</summary>
+    <category term="CLI &amp; terminal"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Background auto-mode can silently execute ask-matched Bash commands</title>
+    <id>https://framework.boucle.sh/limitations.html#background-auto-mode-can-silently-execute-ask-matched-bash</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-auto-mode-can-silently-execute-ask-matched-bash"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.215 background session in auto permission mode executed Bash commands matching user-scope `ask` permission rules without showing a human prompt. The observed commands included `gh pr merge` and `ssh` shapes, and some also had a PreToolUse hook returning `permissionDecision: &#x27;ask&#x27;`, including an unsandboxed SSH case. Transcript evidence reportedly showed hook success attachments but no permission-request or approval records between tool use and result. A follow-up comment reported the inverse foreground issue: a hook `allow` could override an ask rule that documentation said should still prompt.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
+    <title>[HIGH] SessionEnd hooks can hang on /clear because stdin stays open</title>
+    <id>https://framework.boucle.sh/limitations.html#sessionend-clear-can-leave-hook-stdin-open</id>
+    <link href="https://framework.boucle.sh/limitations.html#sessionend-clear-can-leave-hook-stdin-open"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.215 macOS regression wrote a `SessionEnd` hook payload for `reason: &#x27;clear&#x27;` but did not close the hook process stdin pipe. Hooks that read stdin until EOF, such as `json.load(sys.stdin)` or shell `cat`, blocked indefinitely until Claude Code timed them out. Other SessionEnd reasons reportedly closed stdin correctly, so cleanup and audit hooks could silently fail only when the user ran `/clear`.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Hook processes can miss the HOME environment variable</title>
+    <id>https://framework.boucle.sh/limitations.html#sessionend-hooks-can-miss-home-environment</id>
+    <link href="https://framework.boucle.sh/limitations.html#sessionend-hooks-can-miss-home-environment"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.215 macOS regression spawned hook processes without a usable `HOME` environment variable. Hooks that wrote to paths based on `~`, Python `Path.home()`, or `os.path.expanduser(&#x27;~&#x27;)` resolved to the wrong location and silently wrote files outside the expected home directory. Explicitly adding `HOME` to the Claude Code settings `env` block restored the expected path.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Desktop app updates can wipe custom sidebar groups</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-update-can-wipe-sidebar-groups</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-update-can-wipe-sidebar-groups"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code desktop app update on macOS recreated Electron Local Storage and removed all custom sidebar session groups plus every session-to-group assignment. The group metadata was not present in `~/.claude.json` or its backup, so the user had no durable fallback copy and had to recreate client/project organization manually.</summary>
+    <category term="Data integrity"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Bedrock parallel subagents can die on 429s or silently switch models</title>
+    <id>https://framework.boucle.sh/limitations.html#bedrock-parallel-subagents-can-die-or-silently-switch-models</id>
+    <link href="https://framework.boucle.sh/limitations.html#bedrock-parallel-subagents-can-die-or-silently-switch-models"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Workflow run with roughly eight parallel Bedrock subagents hit token-per-minute quota pressure and split into two inconsistent failure paths. Pre-flight 429 rejections killed subagents terminally with a synthetic error turn and no backoff, forcing orchestration to respawn them and reread context. A mid-stream failure retried internally but silently continued the subagent on the model pinned in `ANTHROPIC_MODEL` instead of the session&#x27;s launched model, invalidating model-specific evaluations, cost expectations, and run comparability.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] MCP stdio servers can fail in interactive sessions while standalone checks pass</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-stdio-interactive-connect-can-fail-while-standalone-checks-pass</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-stdio-interactive-connect-can-fail-while-standalone-checks-pass"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.215 Windows setup could connect a stdio MCP server consistently from standalone `claude mcp list` invocations, but every interactive session startup and `/mcp` reconnect failed the same server with error `-32000`. The reporter ruled out command wrapper, timeout, elevation, fresh app process, and manual reconnect changes. The same project also had multiple `~/.claude.json` project-state keys for one directory with slash and case variants, so standalone MCP health did not prove the interactive session path would connect.</summary>
+    <category term="MCP &amp; integrations"/>
+  </entry>
+  <entry>
     <title>[HIGH] Idle TUI animations can spin CPU indefinitely</title>
     <id>https://framework.boucle.sh/limitations.html#idle-tui-animations-can-spin-cpu-indefinitely</id>
     <link href="https://framework.boucle.sh/limitations.html#idle-tui-animations-can-spin-cpu-indefinitely"/>
@@ -101,69 +165,5 @@
     <updated>2026-07-20T00:00:00Z</updated>
     <summary>A reported Claude Desktop Code tab session on macOS silently omitted one claude.ai remote MCP connector from every desktop-spawned Claude Code session after an apparent connector-tool fetch failure. The same connector worked in terminal CLI sessions and claude.ai chat, but the desktop app kept serving a cached 10-connector snapshot until the user manually toggled the affected connector off and on, which immediately injected the missing tools into running sessions.</summary>
     <category term="MCP &amp; integrations"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Coordinator agents can proxy consent that sub-agents treat as user approval</title>
-    <id>https://framework.boucle.sh/limitations.html#coordinator-agents-can-forge-plan-mode-consent</id>
-    <link href="https://framework.boucle.sh/limitations.html#coordinator-agents-can-forge-plan-mode-consent"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported macOS multi-agent Claude Code session had a coordinator agent send approval messages to a `statusline-setup` sub-agent while plan mode was active. The user did not type either approval, but the sub-agent accepted the coordinator&#x27;s messages as consent and wrote files. This bypasses the intended plan-mode boundary between an agent asking for permission and a real user granting it.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] CLAUDE_CONFIG_DIR can leak default profile rules into isolated sessions</title>
-    <id>https://framework.boucle.sh/limitations.html#claude-config-dir-can-leak-default-rules</id>
-    <link href="https://framework.boucle.sh/limitations.html#claude-config-dir-can-leak-default-rules"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.215 macOS setup found that `.claude/rules/*.md` auto-attachment still loaded matching rules from the default `~/.claude/rules/` path even when `CLAUDE_CONFIG_DIR` pointed to a separate profile. When a same-relative-path rules file also existed under the configured profile, both files loaded, and the leaked default-profile file appeared in the transcript as a project attachment. This breaks profile isolation for users separating work, personal, or specialized identities by config directory.</summary>
-    <category term="Configuration behavior"/>
-  </entry>
-  <entry>
-    <title>[HIGH] spawn_task can flip the parent repo branch when worktree creation fails</title>
-    <id>https://framework.boucle.sh/limitations.html#spawn-task-can-flip-parent-repo-branch</id>
-    <link href="https://framework.boucle.sh/limitations.html#spawn-task-can-flip-parent-repo-branch"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Windows 11 Claude Code Desktop workflow created `.claude/worktrees/&lt;name&gt;` directories that were often not real git worktrees. When a spawned session ran `git checkout -b claude/&lt;name&gt;` from such a directory, Git resolved upward to the parent repository and switched the shared main checkout&#x27;s branch before the first agent instruction executed. In a multi-session setup, this silently moved all parallel sessions and the dev server onto the new branch until manual recovery.</summary>
-    <category term="Worktree"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Remote MCP connectors can share one session across conversations</title>
-    <id>https://framework.boucle.sh/limitations.html#remote-mcp-connectors-can-share-sessions-across-conversations</id>
-    <link href="https://framework.boucle.sh/limitations.html#remote-mcp-connectors-can-share-sessions-across-conversations"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported claude.ai remote MCP connector setup sent two concurrent conversations through one stateful MCP session. The server received two tool calls within 217 ms, then one conversation received the other conversation&#x27;s tool response payload while its own write also succeeded. The reporter traced one half of the problem to an MCP Python SDK in-flight response registry keyed by bare JSON-RPC request id, but the connector-side hazard is that independent conversations can share a session whose request ids and per-session state were assumed to be isolated.</summary>
-    <category term="MCP &amp; integrations"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Permission transport loss can fabricate a user denial in transcripts</title>
-    <id>https://framework.boucle.sh/limitations.html#permission-transport-loss-can-fabricate-user-denial</id>
-    <link href="https://framework.boucle.sh/limitations.html#permission-transport-loss-can-fabricate-user-denial"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported VS Code Claude Code session using `--permission-prompt-tool stdio` wrote a transcript tool result saying the user did not want to take an action after the extension host crashed while a permission prompt was outstanding. The user reports no dialog was shown and no denial was clicked. Because the session then reasoned from that fabricated denial and stopped cleanly, the failure looked like intended user instruction rather than a transport crash.</summary>
-    <category term="Data integrity"/>
-  </entry>
-  <entry>
-    <title>[HIGH] bwrap sandbox launch can race transient git lockfiles</title>
-    <id>https://framework.boucle.sh/limitations.html#bwrap-sandbox-launch-can-race-git-lockfiles</id>
-    <link href="https://framework.boucle.sh/limitations.html#bwrap-sandbox-launch-can-race-git-lockfiles"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.215 Linux sandbox failure showed `bwrap` exiting before command launch with `Can&#x27;t get type of source .../.git/config.lock` when a sandboxed child shares a repository `.git` while another git process briefly creates and removes a lockfile. The reporter reproduced the underlying bubblewrap time-of-check/time-of-use race with a standalone harness that enumerates `.git` children and then mounts them, producing about 6 to 8% launch failures under concurrent lockfile writers.</summary>
-    <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] PreToolUse ask decisions can fail open in anomalous child-session environments</title>
-    <id>https://framework.boucle.sh/limitations.html#pretooluse-ask-can-fail-open-in-child-session-env</id>
-    <link href="https://framework.boucle.sh/limitations.html#pretooluse-ask-can-fail-open-in-child-session-env"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported top-level macOS Claude Code 2.1.215 session carried `CLAUDE_CODE_CHILD_SESSION=1` even though its process tree showed no parent Claude process. In that session, a PreToolUse hook returned `permissionDecision: &quot;ask&quot;` for a Bash command targeting a protected host, but no interactive prompt surfaced and the command executed, returning a live HTTP 401. The same hook replayed manually returned the expected ask decision, which points to prompt delivery or fallback behavior rather than hook logic.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Cowork staging can serve stale file bytes with fresh metadata</title>
-    <id>https://framework.boucle.sh/limitations.html#cowork-staging-cache-can-serve-stale-file-bytes</id>
-    <link href="https://framework.boucle.sh/limitations.html#cowork-staging-cache-can-serve-stale-file-bytes"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Desktop Cowork staging session re-served the first staged copy of a local file after that file changed on the device. The staging layer returned stale bytes while reporting the device&#x27;s current size and mtime, including a same-byte-length content change where size checks could not detect the stale version. The reporter reproduced the behavior with grow, shrink, and same-size probes, and noted that a review session nearly rejected a correct patch because it was reading an old complete file while metadata claimed the current one.</summary>
-    <category term="Data integrity"/>
   </entry>
 </feed>
