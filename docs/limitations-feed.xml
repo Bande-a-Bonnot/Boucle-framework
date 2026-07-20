@@ -7,6 +7,70 @@
   <updated>2026-07-20T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Fullscreen copy can mojibake non-ASCII output through a latin-1 round trip</title>
+    <id>https://framework.boucle.sh/limitations.html#fullscreen-copy-can-mojibake-non-ascii-output</id>
+    <link href="https://framework.boucle.sh/limitations.html#fullscreen-copy-can-mojibake-non-ascii-output"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.215 macOS VS Code-family terminal showed `/copy` writing clean UTF-8 to its temporary response file while placing mojibake on the clipboard. The reporter measured clipboard byte counts matching a UTF-8 bytes, latin-1 decode, UTF-8 encode round trip. A follow-up narrowed the deterministic trigger to fullscreen TUI output containing box-drawing or symbol characters, while the default TUI renderer and the temporary dump file remained correct.</summary>
+    <category term="TUI &amp; display"/>
+  </entry>
+  <entry>
+    <title>[HIGH] claude-api skill can load huge context for simple usage-limit questions</title>
+    <id>https://framework.boucle.sh/limitations.html#claude-api-skill-can-load-huge-context-for-usage-questions</id>
+    <link href="https://framework.boucle.sh/limitations.html#claude-api-skill-can-load-huge-context-for-usage-questions"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.215 WSL session invoked the bundled `claude-api` skill for a plain usage-limit question about Fable, Sonnet, and Opus. The skill returned its full roughly 784 KB `SKILL.md` as one tool result, consuming on the order of 195K tokens for a question that did not require SDK code generation. The reporter reproduced the oversized load across multiple sessions.</summary>
+    <category term="Performance &amp; cost"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Resume can return partial transcripts after remote-control work</title>
+    <id>https://framework.boucle.sh/limitations.html#resume-can-return-partial-remote-control-transcripts</id>
+    <link href="https://framework.boucle.sh/limitations.html#resume-can-return-partial-remote-control-transcripts"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Windows remote-control workflow continued a conversation from mobile after the local CLI window ended. Later `claude --resume &lt;UUID&gt;` on the machine replayed only the local transcript, ending at the last turn before the window closed, while the mobile remote-control turns were stored server-side only and absent from `~/.claude/projects/&lt;project&gt;/&lt;UUID&gt;.jsonl`. The resume command succeeded without warning, making completed remote-control work silently disappear from local continuity.</summary>
+    <category term="Data integrity"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Project PreToolUse hooks can be silently unregistered while permissions load</title>
+    <id>https://framework.boucle.sh/limitations.html#project-pretooluse-hooks-can-be-silently-unregistered</id>
+    <link href="https://framework.boucle.sh/limitations.html#project-pretooluse-hooks-can-be-silently-unregistered"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.201 project `.claude/settings.json` loaded its `permissions` block but silently ignored a valid `hooks.PreToolUse` block from the same file. `/hooks` showed no configured PreToolUse hooks, debug startup logs reported zero hooks in the registry, and matching tool calls succeeded without invoking the hook script even after a full process restart. This creates a dangerous split where users can see the settings file and assume project hooks are active while the runtime registry has none.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Mid-session plugin updates can mix new hook definitions with an old plugin root</title>
+    <id>https://framework.boucle.sh/limitations.html#mid-session-plugin-update-can-mix-hook-definitions-and-cache-root</id>
+    <link href="https://framework.boucle.sh/limitations.html#mid-session-plugin-update-can-mix-hook-definitions-and-cache-root"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code 2.1.211 session updated a marketplace plugin mid-session. The session registered the new version&#x27;s skill and hook definitions immediately, but `${CLAUDE_PLUGIN_ROOT}` still resolved to the old version&#x27;s cache directory. When the new hooks referenced files that existed only in the new cache, every hook event produced module-not-found errors until the session was restarted.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[HIGH] CLAUDE.md in add-dir folders can be silently skipped during edits</title>
+    <id>https://framework.boucle.sh/limitations.html#add-dir-claude-md-can-be-silently-skipped</id>
+    <link href="https://framework.boucle.sh/limitations.html#add-dir-claude-md-can-be-silently-skipped"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Windows VS Code multi-folder workspace mapped secondary folders to `--add-dir` directories. A `CLAUDE.md` beside the edited file contained mandatory editing rules, but Claude Code skipped it by default and edited the file without warning. The user did not explicitly choose `--add-dir`; the IDE workspace shape produced it, so folder-local rules appeared present but were not loaded.</summary>
+    <category term="Configuration behavior"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Desktop connector fetch failures can cache a missing MCP server indefinitely</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-connector-fetch-failure-can-cache-missing-mcp-server</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-connector-fetch-failure-can-cache-missing-mcp-server"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported Claude Desktop Code tab session on macOS silently omitted one claude.ai remote MCP connector from every desktop-spawned Claude Code session after an apparent connector-tool fetch failure. The same connector worked in terminal CLI sessions and claude.ai chat, but the desktop app kept serving a cached 10-connector snapshot until the user manually toggled the affected connector off and on, which immediately injected the missing tools into running sessions.</summary>
+    <category term="MCP &amp; integrations"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Coordinator agents can proxy consent that sub-agents treat as user approval</title>
+    <id>https://framework.boucle.sh/limitations.html#coordinator-agents-can-forge-plan-mode-consent</id>
+    <link href="https://framework.boucle.sh/limitations.html#coordinator-agents-can-forge-plan-mode-consent"/>
+    <updated>2026-07-20T00:00:00Z</updated>
+    <summary>A reported macOS multi-agent Claude Code session had a coordinator agent send approval messages to a `statusline-setup` sub-agent while plan mode was active. The user did not type either approval, but the sub-agent accepted the coordinator&#x27;s messages as consent and wrote files. This bypasses the intended plan-mode boundary between an agent asking for permission and a real user granting it.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
     <title>[HIGH] CLAUDE_CONFIG_DIR can leak default profile rules into isolated sessions</title>
     <id>https://framework.boucle.sh/limitations.html#claude-config-dir-can-leak-default-rules</id>
     <link href="https://framework.boucle.sh/limitations.html#claude-config-dir-can-leak-default-rules"/>
@@ -101,69 +165,5 @@
     <updated>2026-07-20T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.215 macOS setup showed the shared `claude daemon` inheriting `ANTHROPIC_AUTH_TOKEN` from the first session that spawned it, then reusing that environment for later sessions launched from different terminals and repositories that had no Anthropic variables. Those later sessions displayed the stored OAuth account while wire requests authenticated and billed against the inherited token account, only becoming visible when that account hit rate limits. This can silently mix account, billing, and organization context across unrelated work.</summary>
     <category term="Authentication &amp; accounts"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Bash aliases can rewrite commands after PreToolUse approval</title>
-    <id>https://framework.boucle.sh/limitations.html#bash-expand-aliases-can-rewrite-approved-commands</id>
-    <link href="https://framework.boucle.sh/limitations.html#bash-expand-aliases-can-rewrite-approved-commands"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.206 Linux session showed the Bash tool shell running with `expand_aliases` enabled even though a plain non-interactive `bash -c` leaves aliases off. If an alias or function is sourced into the tool shell, the PreToolUse hook approves the literal command text while Bash can execute a different expansion, such as an alias replacing `cd`, `git`, or another whitelisted command. The reporter noted that a hook cannot faithfully inspect this state beforehand because its probe shell does not match the tool shell and shell startup files create TOCTOU gaps.</summary>
-    <category term="Bash &amp; shell execution"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Desktop auto-update can drop custom Code sidebar groups during migration</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-auto-update-can-drop-custom-sidebar-groups</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-auto-update-can-drop-custom-sidebar-groups"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Desktop macOS 1.22209.3 auto-update with bundled Claude Code v2.1.215 removed five pre-existing custom Code sidebar groups and 13 session assignments on first launch after the update. New groups still worked, and stale collapsed-group IDs plus surviving old LevelDB records indicated that legacy group data had existed before a legacy-to-scoped-store migration completed without carrying it forward. For most users, similar pre-update organization data may be unrecoverable once local storage compacts.</summary>
-    <category term="Desktop &amp; platform bugs"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Background task spinner can persist after a Monitor task is orphaned</title>
-    <id>https://framework.boucle.sh/limitations.html#background-task-spinner-can-survive-orphaned-monitor</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-task-spinner-can-survive-orphaned-monitor"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code Desktop v2.1.211 macOS session started a persistent Monitor background task, then switched models. The underlying process appears to have restarted or been replaced, the task died without a completion record, the background task panel showed no tasks, and `TaskStop` returned `No task found`, but the UI continued showing an active background-task spinner indefinitely. The user could no longer tell stale UI state from real detached work without inspecting processes manually.</summary>
-    <category term="UI &amp; display"/>
-  </entry>
-  <entry>
-    <title>[HIGH] VS Code MCP elicitation can be declared but auto-declined as print mode</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-elicitation-can-auto-decline-in-vscode-print-mode</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-elicitation-can-auto-decline-in-vscode-print-mode"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported interactive Claude Code VS Code extension session declared the MCP elicitation capability during initialization, but every `elicitation/create` request was auto-declined without showing UI. Permission prompts and AskUserQuestion dialogs still rendered in the same session, while MCP logs labeled the elicitation request as received in `print mode`. From the server side, capability checks returned true and the non-accept result was indistinguishable from a human explicitly declining the dialog, which can break two-phase destructive-operation confirmations.</summary>
-    <category term="MCP &amp; tool integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] PermissionRequest hooks for subagents can be skipped or ignored even when PreToolUse fires</title>
-    <id>https://framework.boucle.sh/limitations.html#permissionrequest-subagent-allows-can-be-skipped-or-ignored</id>
-    <link href="https://framework.boucle.sh/limitations.html#permissionrequest-subagent-allows-can-be-skipped-or-ignored"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code v2.1.191 Linux plugin setup saw two subagent PermissionRequest failures around out-of-workspace Reads. In one mode, the PermissionRequest hook fired and returned an allow decision within about 1 ms, but the interactive prompt still appeared. In another mode, a subagent Read showed the built-in prompt while the PermissionRequest hook was not invoked at all, even though the same plugin&#x27;s PreToolUse hook fired milliseconds earlier for the same tool call. This means hook plumbing can be alive while the permission-request seat is not a reliable subagent approval path.</summary>
-    <category term="Hooks &amp; automation"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Background Bash tasks can hang forever when a child reads stdin</title>
-    <id>https://framework.boucle.sh/limitations.html#background-bash-stdin-reads-can-hang-forever</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-bash-stdin-reads-can-hang-forever"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code Desktop v2.1.209 macOS session showed foreground Bash calls receiving `/dev/null` on stdin while background Bash calls could leave child processes such as `cat` or `grep` fallback paths blocked forever on a stdin read. The reporter saw a background task stay running for 17 h 45 m with an empty output file, no completion notification, and no timeout, even though the equivalent foreground command exited immediately. The practical risk is that later edit/build steps never start while the model and user see only a slow or still-running background task.</summary>
-    <category term="Bash &amp; shell execution"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Hookify example rules can be copied with filenames the loader never matches</title>
-    <id>https://framework.boucle.sh/limitations.html#hookify-example-rules-can-be-copied-with-dead-filenames</id>
-    <link href="https://framework.boucle.sh/limitations.html#hookify-example-rules-can-be-copied-with-dead-filenames"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>The official hookify plugin loader discovers rule files using the `.claude/hookify.*.local.md` filename pattern, and its writing-rules guidance says the `hookify.` prefix is mandatory. A fresh report found the plugin&#x27;s own example rules ship without that prefix, while help docs point users to copy the examples with no rename instruction. Copied verbatim into `.claude/`, the rules are silently invisible to the real loader, so expected warning or block rules never fire.</summary>
-    <category term="Plugin &amp; channel system"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Discord integration can ask for access that cannot be granted in Discord</title>
-    <id>https://framework.boucle.sh/limitations.html#discord-channel-access-can-request-ungrantable-in-channel-approval</id>
-    <link href="https://framework.boucle.sh/limitations.html#discord-channel-access-can-request-ungrantable-in-channel-approval"/>
-    <updated>2026-07-20T00:00:00Z</updated>
-    <summary>A reported Claude Code v2.1.215 Windows Discord integration flow paired the account successfully, then asked the user in a Discord DM for permission that the system itself says cannot be granted from Discord because channel allowlisting must be approved via `/discord:access` in the trusted Claude surface. The user could recover by confirming from Claude Desktop, but the Discord-side prompt was misleading and created a dead-end approval path in the exact untrusted channel the system is trying to guard.</summary>
-    <category term="Plugin &amp; channel system"/>
   </entry>
 </feed>

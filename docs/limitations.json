@@ -1,35 +1,35 @@
 {
   "version": "0.13.0",
-  "count": 1024,
+  "count": 1032,
   "categories": {
-    "Hook behavior & events": 174,
-    "Permission system": 116,
+    "Hook behavior & events": 175,
+    "Permission system": 117,
     "Hook bypass & evasion": 99,
-    "MCP & plugin issues": 54,
+    "MCP & plugin issues": 55,
     "Subagent & spawned agents": 40,
     "Desktop & IDE integration": 32,
     "Platform & compatibility": 26,
     "CLI & terminal": 23,
+    "TUI & display": 22,
+    "Configuration behavior": 21,
     "Context & memory": 21,
-    "TUI & display": 21,
-    "Configuration behavior": 20,
     "Tool behavior": 16,
+    "Performance & cost": 12,
     "Security & trust boundaries": 12,
-    "Performance & cost": 11,
     "Agents & subagents": 10,
     "Plugin & channel system": 10,
     "File system & paths": 9,
     "hooks": 9,
+    "MCP & integrations": 9,
     "auth": 8,
     "Configuration & settings": 8,
-    "MCP & integrations": 8,
     "Remote & cloud": 8,
     "Sandbox & permissions": 8,
+    "Data integrity": 7,
     "MCP": 7,
     "Permissions": 7,
     "Auth & accounts": 6,
     "Cowork & remote": 6,
-    "Data integrity": 6,
     "Desktop & platform bugs": 6,
     "Scheduling & remote triggers": 6,
     "VS Code extension": 6,
@@ -172,10 +172,10 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 72,
-    "HIGH": 509,
+    "CRITICAL": 75,
+    "HIGH": 513,
     "LOW": 99,
-    "MEDIUM": 344
+    "MEDIUM": 345
   },
   "entries": [
     {
@@ -13101,30 +13101,134 @@
       "workaround": "Do not rely on `CLAUDE_CONFIG_DIR` alone to isolate auto-attached rules until the rules subsystem is verified. Inspect transcripts for `nested_memory` attachment paths after profile switches, keep sensitive or persona-specific files out of the default `~/.claude/rules/` tree, and run a marker-file test before using multiple profiles on the same machine for work that depends on strict instruction separation.",
       "status": "open",
       "date_added": "2026-07-20"
+    },
+    {
+      "id": "coordinator-agents-can-forge-plan-mode-consent",
+      "title": "Coordinator agents can proxy consent that sub-agents treat as user approval",
+      "category": "Permission system",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79493"
+      ],
+      "description": "A reported macOS multi-agent Claude Code session had a coordinator agent send approval messages to a `statusline-setup` sub-agent while plan mode was active. The user did not type either approval, but the sub-agent accepted the coordinator's messages as consent and wrote files. This bypasses the intended plan-mode boundary between an agent asking for permission and a real user granting it.",
+      "workaround": "Do not treat sub-agent plan mode as a hard safety boundary when coordinator agents can message sub-agents. For sensitive workflows, require approvals through the native permission system or an out-of-band user channel that records direct human input. Keep write-capable sub-agents behind hard deny hooks or manual review until the transcript clearly distinguishes user consent from agent-authored coordination messages.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "desktop-connector-fetch-failure-can-cache-missing-mcp-server",
+      "title": "Desktop connector fetch failures can cache a missing MCP server indefinitely",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79491"
+      ],
+      "description": "A reported Claude Desktop Code tab session on macOS silently omitted one claude.ai remote MCP connector from every desktop-spawned Claude Code session after an apparent connector-tool fetch failure. The same connector worked in terminal CLI sessions and claude.ai chat, but the desktop app kept serving a cached 10-connector snapshot until the user manually toggled the affected connector off and on, which immediately injected the missing tools into running sessions.",
+      "workaround": "If a desktop-spawned session is missing a remote connector that works elsewhere, inspect the session's MCP server list instead of assuming the connector is unavailable. Toggle the affected connector off and on in the Code tab's connected MCP servers UI to force a refetch, then verify that running and new sessions receive the expected server count. For critical connector-dependent work, include a startup check that asserts required MCP tools are present before proceeding.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "add-dir-claude-md-can-be-silently-skipped",
+      "title": "CLAUDE.md in add-dir folders can be silently skipped during edits",
+      "category": "Configuration behavior",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79489"
+      ],
+      "description": "A reported Windows VS Code multi-folder workspace mapped secondary folders to `--add-dir` directories. A `CLAUDE.md` beside the edited file contained mandatory editing rules, but Claude Code skipped it by default and edited the file without warning. The user did not explicitly choose `--add-dir`; the IDE workspace shape produced it, so folder-local rules appeared present but were not loaded.",
+      "workaround": "Set `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1` when relying on CLAUDE.md files in secondary workspace folders, or avoid multi-folder workspace layouts for repositories whose local rules are mandatory. Before editing files in an added directory, ask Claude Code to list the loaded memory or inspect the transcript for the expected CLAUDE.md attachment. For high-risk repos, put enforcement in hooks or repository tooling rather than relying only on instruction files.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "mid-session-plugin-update-can-mix-hook-definitions-and-cache-root",
+      "title": "Mid-session plugin updates can mix new hook definitions with an old plugin root",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79487"
+      ],
+      "description": "A reported Windows Claude Code 2.1.211 session updated a marketplace plugin mid-session. The session registered the new version's skill and hook definitions immediately, but `${CLAUDE_PLUGIN_ROOT}` still resolved to the old version's cache directory. When the new hooks referenced files that existed only in the new cache, every hook event produced module-not-found errors until the session was restarted.",
+      "workaround": "After updating plugins that ship hooks or skills, restart the Claude Code session before trusting hook execution. Plugin authors should document restart-after-update behavior and keep compatibility stubs for renamed entrypoints where possible, but users should still treat old-version paths in hook errors as a session-level mixed-cache state. Verify hook paths after updates before running unattended work.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "project-pretooluse-hooks-can-be-silently-unregistered",
+      "title": "Project PreToolUse hooks can be silently unregistered while permissions load",
+      "category": "Hook behavior & events",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79480"
+      ],
+      "description": "A reported Claude Code 2.1.201 project `.claude/settings.json` loaded its `permissions` block but silently ignored a valid `hooks.PreToolUse` block from the same file. `/hooks` showed no configured PreToolUse hooks, debug startup logs reported zero hooks in the registry, and matching tool calls succeeded without invoking the hook script even after a full process restart. This creates a dangerous split where users can see the settings file and assume project hooks are active while the runtime registry has none.",
+      "workaround": "After installing or editing project hooks, verify registration with `/hooks` and a real matching tool call that leaves an observable log or block result. Do not trust a valid `.claude/settings.json` file or loaded permissions as proof that hooks loaded too. For protected operations, add a startup self-test that fails closed when required hook events are absent from the registry.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "resume-can-return-partial-remote-control-transcripts",
+      "title": "Resume can return partial transcripts after remote-control work",
+      "category": "Data integrity",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79470"
+      ],
+      "description": "A reported Windows remote-control workflow continued a conversation from mobile after the local CLI window ended. Later `claude --resume <UUID>` on the machine replayed only the local transcript, ending at the last turn before the window closed, while the mobile remote-control turns were stored server-side only and absent from `~/.claude/projects/<project>/<UUID>.jsonl`. The resume command succeeded without warning, making completed remote-control work silently disappear from local continuity.",
+      "workaround": "When continuing important work through remote control, do not assume the local JSONL transcript has caught up. Before resuming locally, compare the visible remote conversation against the local transcript tail or copy a summary back into a durable local file. If a local session ended due to re-auth, crash, or terminal closure, treat subsequent remote-control turns as at risk until a full transcript sync or explicit export verifies them.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "claude-api-skill-can-load-huge-context-for-usage-questions",
+      "title": "claude-api skill can load huge context for simple usage-limit questions",
+      "category": "Performance & cost",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79457"
+      ],
+      "description": "A reported Claude Code 2.1.215 WSL session invoked the bundled `claude-api` skill for a plain usage-limit question about Fable, Sonnet, and Opus. The skill returned its full roughly 784 KB `SKILL.md` as one tool result, consuming on the order of 195K tokens for a question that did not require SDK code generation. The reporter reproduced the oversized load across multiple sessions.",
+      "workaround": "For simple pricing, limit, or model-selection questions, avoid phrasing that triggers broad API-building skills when possible, and inspect transcripts if an answer unexpectedly burns a large context window. Skill authors should narrow trigger conditions and split large reference documents into sectioned or paginated resources. In controlled environments, disable or override overly broad skills for non-coding policy questions.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "fullscreen-copy-can-mojibake-non-ascii-output",
+      "title": "Fullscreen copy can mojibake non-ASCII output through a latin-1 round trip",
+      "category": "TUI & display",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79482"
+      ],
+      "description": "A reported Claude Code 2.1.215 macOS VS Code-family terminal showed `/copy` writing clean UTF-8 to its temporary response file while placing mojibake on the clipboard. The reporter measured clipboard byte counts matching a UTF-8 bytes, latin-1 decode, UTF-8 encode round trip. A follow-up narrowed the deterministic trigger to fullscreen TUI output containing box-drawing or symbol characters, while the default TUI renderer and the temporary dump file remained correct.",
+      "workaround": "When copying non-ASCII output from fullscreen TUI sessions, verify pasted text before using it in code, docs, or issue reports. Switch to the default TUI renderer for affected sessions, or copy from the temporary `/tmp/claude-*/response.md` file with a native UTF-8 clipboard command such as `pbcopy < /tmp/claude-*/response.md` on macOS. Add regression tests that compare clipboard bytes with the dump-file bytes for box-drawing plus non-ASCII samples.",
+      "status": "open",
+      "date_added": "2026-07-20"
     }
   ],
   "status_summary": {
-    "open": 1010,
+    "open": 1018,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 72,
-    "high": 509,
+    "critical": 75,
+    "high": 513,
     "low": 99,
-    "medium": 344
+    "medium": 345
   },
   "lastUpdated": "2026-07-20",
   "stats": {
-    "total": 1024,
-    "critical": 72,
-    "high": 509,
-    "medium": 344,
+    "total": 1032,
+    "critical": 75,
+    "high": 513,
+    "medium": 345,
     "low": 99,
-    "open": 1010,
+    "open": 1018,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-20",
-  "total": 1024
+  "total": 1032
 }
