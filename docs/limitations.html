@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1148</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-21.</span></p>
+        <p class="subtitle"><span id="total-count">1156</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-21.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -12496,6 +12496,102 @@
                         <!-- workaround:background-subagents-can-be-stranded-after-session-fork -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> After background-session forks, preserve both pre-fork and post-fork session directories before assuming a completed subagent transcript is gone. If resumability matters, record the parent session UUID and inspect or link the old `subagents/agent-*.jsonl` files manually until fork carry-over handles completed agents as well as running ones.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79764" target="_blank">#79764</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="79771" id="default-permission-path-can-ignore-explicit-bash-ask-rules" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1149</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Default permission path can ignore explicit Bash ask rules</h3>
+            <p>A reported Claude Code 2.1.216 macOS session in default/manual permission mode executed a command matching an explicit `permissions.ask` rule without showing any prompt, warning, or error. The same `Bash(conda run:*)` rule was visible in `/permissions` and triggered correctly after enabling sandbox regular permissions, which narrowed the fail-open behavior to the default non-sandbox approval path rather than an invalid rule.</p>
+                        <!-- workaround:default-permission-path-can-ignore-explicit-bash-ask-rules -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For high-risk Bash rules, do not assume default/manual mode enforces every explicit ask rule. Run a fresh-session permission probe for representative commands, prefer sandbox regular permissions where applicable, and keep external guards for package managers, interpreters, git push, and destructive commands until the default approval path is verified in the exact surface you use.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79771" target="_blank">#79771</a></div>
+        </div>
+        <div class="kl-entry" data-category="Remote &amp; cloud" data-issues="79772" id="cloud-routine-github-mcp-comments-can-corrupt-bot-commands" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1150</span>
+                <span class="kl-cat">Remote &amp; cloud</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Cloud routine GitHub MCP comments can corrupt bot commands</h3>
+            <p>A reported Claude Code cloud Routine posting `@dependabot rebase` through the GitHub MCP comment tool deterministically stored a body with U+00B7 middle dots inserted into both the mention and command word. GitHub API readback showed the corrupted bytes at rest, so Dependabot did not receive the exact documented command token even though the routine had supplied it in the tool call.</p>
+                        <!-- workaround:cloud-routine-github-mcp-comments-can-corrupt-bot-commands -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Read back any automation comment that is meant to trigger a bot command and verify the exact stored bytes before assuming the bot saw it. For critical Dependabot or maintainer commands, use an independently authenticated `gh`/REST path that preserves the command string, or make the workflow fail closed when readback differs from the requested body.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79772" target="_blank">#79772</a></div>
+        </div>
+        <div class="kl-entry" data-category="Performance &amp; cost" data-issues="79774" id="skill-auto-invocation-can-load-large-unrelated-reference-docs" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1151</span>
+                <span class="kl-cat">Performance &amp; cost</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Skill auto-invocation can load large unrelated reference docs</h3>
+            <p>A reported Claude Code 2.1.212 Windows session on a premium model auto-invoked a `claude-api` skill for a short pricing question apparently because of incidental keyword overlap with the model name. The skill loaded a large unrelated reference document into context, causing a rapid credit spike, then the session silently fell back to a lower model after usage pressure and quality visibly degraded.</p>
+                        <!-- workaround:skill-auto-invocation-can-load-large-unrelated-reference-docs -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When using expensive models, audit which skills/plugins can auto-load large references and keep narrowly relevant skills enabled. For billing-sensitive work, ask the model to list planned skill use before answering, monitor usage during short factual tasks, and start a fresh minimal session with optional skills disabled when a question should not require reference-heavy context.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79774" target="_blank">#79774</a></div>
+        </div>
+        <div class="kl-entry" data-category="Context &amp; memory" data-issues="79778" id="desktop-session-search-tools-can-silently-cap-results-at-20" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1152</span>
+                <span class="kl-cat">Context &amp; memory</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Desktop session search tools can silently cap results at 20</h3>
+            <p>A reported Claude Desktop session-management MCP surface returned only the 20 most recently active sessions from `list_sessions` even when `limit` was set to 100 or 300, and `search_session_transcripts` searched the same capped set rather than all transcript files on disk. Older sessions containing a distinctive string were reported as not found despite matching JSONL files being present locally.</p>
+                        <!-- workaround:desktop-session-search-tools-can-silently-cap-results-at-20 -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat desktop session MCP search as a recent-window helper, not a complete archive. For audits, incident response, or long-running projects, search `~/.claude/projects` directly with filesystem tools and preserve transcript backups. Add an explicit on-disk fallback when an MCP session search returns no matches for evidence that should exist.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79778" target="_blank">#79778</a></div>
+        </div>
+        <div class="kl-entry" data-category="Scheduled tasks" data-issues="79782" id="scheduled-tasks-can-ignore-ui-configured-permission-mode-and-model" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1153</span>
+                <span class="kl-cat">Scheduled tasks</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Scheduled tasks can ignore UI-configured permission mode and model</h3>
+            <p>A reported Windows Claude Code scheduled-task setup saved per-task UI options for bypass/skip permissions and Sonnet, but actual scheduled executions ran with manual permission prompts and Opus instead. The reporter saw the behavior consistently across multiple recurring tasks, while the same fixed commands were allowlisted and worked as expected when run manually.</p>
+                        <!-- workaround:scheduled-tasks-can-ignore-ui-configured-permission-mode-and-model -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume the scheduled-task UI settings are the settings used at execution time. For each recurring task, run a supervised scheduled fire and record the effective model and permission mode from the actual run. Keep prompts and commands idempotent, and avoid relying on unattended scheduled tasks until execution-time settings are confirmed by readback.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79782" target="_blank">#79782</a></div>
+        </div>
+        <div class="kl-entry" data-category="Model behavior" data-issues="79786" id="model-consent-fallback-can-switch-models-without-visible-consent" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1154</span>
+                <span class="kl-cat">Model behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Model consent fallback can switch models without visible consent</h3>
+            <p>A reported Claude Code Windows session silently switched from Fable 5 to Opus 4.8 mid-session even though the user&#x27;s weekly Fable quota was not exhausted. The only evidence was a transcript `model_consent_fallback` system event with `choice: cancelled`; no prompt or warning appeared in the conversation UI, and settings still looked unchanged afterward.</p>
+                        <!-- workaround:model-consent-fallback-can-switch-models-without-visible-consent -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For model-sensitive work, periodically check `/model` and inspect transcripts for fallback events instead of trusting settings files alone. Record the intended model in task logs, stop and restart if the active model changes unexpectedly, and treat invisible fallback as a quality and cost boundary until the UI reliably displays consent prompts and warnings.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79786" target="_blank">#79786</a></div>
+        </div>
+        <div class="kl-entry" data-category="VS Code extension" data-issues="79787" id="vscode-manual-edit-confirmation-can-reject-valid-non-ascii-crlf-matches" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1155</span>
+                <span class="kl-cat">VS Code extension</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>VS Code manual edit confirmation can reject valid non-ASCII CRLF matches</h3>
+            <p>A reported Claude Code VS Code extension regression on Windows made Edit and MultiEdit fail with `String not found in file` only after manual confirmation in the new diff window. The same old string was present byte-for-byte in UTF-8 CRLF Markdown containing non-ASCII characters, and the identical edit succeeded in accept-edits mode, pointing to a manual-confirmation path with different file normalization or encoding handling.</p>
+                        <!-- workaround:vscode-manual-edit-confirmation-can-reject-valid-non-ascii-crlf-matches -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When manual edit confirmation fails on Windows for CRLF or non-ASCII files, verify the target string on disk before letting the agent rewrite larger regions. Use accept-edits mode only when the patch is low risk and independently review the resulting diff, or normalize line endings/encoding in a disposable branch before retrying manual-confirmed edits.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79787" target="_blank">#79787</a></div>
+        </div>
+        <div class="kl-entry" data-category="Core &amp; session management" data-issues="79789" id="transient-daemons-can-resurrect-killed-bypasspermissions-sessions" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1156</span>
+                <span class="kl-cat">Core &amp; session management</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Transient daemons can resurrect killed bypassPermissions sessions</h3>
+            <p>A reported Linux multi-session automation setup found transient Claude daemons re-resuming killed background PTY sessions within about a minute, including sessions launched with `--permission-mode bypassPermissions`. The reporter observed weeks-stale or replaced sessions waking unattended, running shell commands, and in one case committing and pushing while racing a live successor, with no clear resurrection audit log beyond sparse daemon auth-refresh lines.</p>
+                        <!-- workaround:transient-daemons-can-resurrect-killed-bypasspermissions-sessions -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When terminating daemon-backed Claude sessions, kill the transient daemon and PTY host before killing resumed child sessions, then monitor the process table for re-spawns. Avoid bypassPermissions for long-lived unattended fleets unless an external supervisor records lifecycle events, enforces a single live successor, and blocks git/network side effects from resurrected stale sessions.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79789" target="_blank">#79789</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
