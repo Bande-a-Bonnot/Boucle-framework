@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1096,
+  "count": 1100,
   "categories": {
     "Hook behavior & events": 180,
     "Permission system": 119,
@@ -19,19 +19,19 @@
     "Security & trust boundaries": 13,
     "MCP & integrations": 12,
     "Sandbox & permissions": 12,
+    "Plugin & channel system": 11,
     "Data integrity": 10,
-    "Plugin & channel system": 10,
     "File system & paths": 9,
     "hooks": 9,
     "auth": 8,
     "Auth & accounts": 8,
     "Configuration & settings": 8,
+    "MCP integration": 8,
     "Remote & cloud": 8,
     "Scheduling & remote triggers": 8,
     "Core & session management": 7,
     "Cowork & remote": 7,
     "MCP": 7,
-    "MCP integration": 7,
     "Permissions": 7,
     "Permissions & safety": 7,
     "Bash & shell execution": 6,
@@ -40,12 +40,12 @@
     "Model behavior": 5,
     "Scheduled tasks": 5,
     "Skills & commands": 5,
+    "Skills / slash commands": 5,
     "UX & display": 5,
     "Worktree": 5,
     "MCP & plugins": 4,
     "permissions": 4,
     "sandbox": 4,
-    "Skills / slash commands": 4,
     "tui": 4,
     "CLI / TUI rendering": 3,
     "Context / compaction": 3,
@@ -125,6 +125,7 @@
     "memory/performance": 1,
     "Model Behavior": 1,
     "model behavior": 1,
+    "Model routing & identity": 1,
     "Multi-agent / subagents": 1,
     "performance": 1,
     "Performance & resource usage": 1,
@@ -173,9 +174,9 @@
   },
   "severity_counts": {
     "CRITICAL": 85,
-    "HIGH": 554,
+    "HIGH": 557,
     "LOW": 101,
-    "MEDIUM": 356
+    "MEDIUM": 357
   },
   "entries": [
     {
@@ -13837,7 +13838,8 @@
       "category": "Core & session management",
       "severity": "CRITICAL",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/79609"
+        "https://github.com/anthropics/claude-code/issues/79609",
+        "https://github.com/anthropics/claude-code/issues/79656"
       ],
       "description": "A reported Claude Code 2.1.216 Linux session repeatedly failed to deliver user messages sent mid-turn while the model was running many sequential tool calls, background Bash tasks, and AskUserQuestion calls. The user was trying to stop or redirect an in-flight VM and documentation operation, but the model saw none of those messages until after completing the work. Earlier mid-turn messages in the same session sometimes surfaced, so delivery appears nondeterministic rather than completely disabled.",
       "workaround": "For long-running or remote-control turns, do not rely on mid-turn chat as the only stop channel. Use short bounded tasks, explicit checkpoints before mutating infrastructure, and an out-of-band kill or pause mechanism for background processes. When a stop message matters, verify the model acknowledged it before allowing further destructive or hard-to-revert actions.",
@@ -14038,30 +14040,82 @@
       "workaround": "For Docker-backed MCP server registration, avoid bare `-p` in `claude mcp add` passthrough args and use `--publish` instead. If other short flags are required by the subprocess command, smoke-test the saved MCP config with `claude mcp get` and a real `/mcp` connection check before documenting the command for teammates.",
       "status": "open",
       "date_added": "2026-07-21"
+    },
+    {
+      "id": "mcp-stdio-reconnect-can-skip-env-expansion-for-command-path",
+      "title": "MCP stdio reconnect can skip env expansion for command paths",
+      "category": "MCP integration",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79650"
+      ],
+      "description": "A reported Claude Code 2.1.215 macOS session successfully started stdio MCP servers whose `command` used `${HOME}`, but the mid-session reconnect path later tried to spawn the literal string `${HOME}/...` and failed immediately with ENOENT. The same config still appeared healthy through `claude mcp list`, because the list path expanded the variable correctly, while the live session permanently lost those MCP tools after reconnect.",
+      "workaround": "Register stdio MCP servers with absolute command paths rather than `${HOME}` or other environment-variable placeholders when tool availability matters across a long session. After adding or editing an MCP server, verify both initial connection and a forced reconnect path, and treat `claude mcp list` as insufficient proof that the live session can recover the server after transport loss.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "system-prompt-model-identity-can-disagree-with-status",
+      "title": "System-prompt model identity can disagree with /status",
+      "category": "Model routing & identity",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79652"
+      ],
+      "description": "A reported Claude Code 2.1.207 macOS terminal session showed Fable 5 selected in `/model`, `/status`, and the statusline, while the environment block injected into the model context said the assistant was powered by Opus 4.8 with the `claude-opus-4-8` model ID. The model then trusted that injected identity text over the user's visible status output and wrote incorrect model attribution into external-facing text.",
+      "workaround": "Do not rely on the assistant's self-reported model identity when model attribution, cost analysis, or benchmark labeling matters. Check client status surfaces and, where available, persisted transcript metadata or API response fields. For public comments, benchmark reports, and audit logs, verify the model name outside the conversation before publishing it.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "github-plugin-mcp-oauth-handshake-can-fail-with-unrecognized-client",
+      "title": "GitHub plugin MCP OAuth handshake can fail with unrecognized client",
+      "category": "Plugin & channel system",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79653"
+      ],
+      "description": "A reported macOS Claude Code plugin setup consistently failed to reconnect `plugin:github:github` with HTTP 400 from the GitHub Copilot MCP endpoint, and direct inspection surfaced an `Unrecognized client_id` response from the OAuth handshake. Updating, uninstalling, reinstalling, and reloading the GitHub plugin did not resolve the failure, while ordinary `gh auth login` continued to work, indicating the break was isolated to the plugin's own MCP authentication path rather than the user's GitHub credentials.",
+      "workaround": "Keep a non-plugin fallback for GitHub operations, such as the GitHub CLI or a repository-scoped app token, and do not treat `gh auth status` as proof that Claude Code's GitHub plugin MCP server can connect. After plugin updates or reinstalls, verify `/mcp` reconnect succeeds before assigning work that depends on plugin-provided GitHub tools.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "skill-frontmatter-model-overrides-can-be-ignored-on-model-invocation",
+      "title": "Skill frontmatter model overrides can be ignored on model invocation",
+      "category": "Skills / slash commands",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79661"
+      ],
+      "description": "A reported Claude Code 2.1.153 and 2.1.215 repro found a skill's frontmatter `model:` override applied when the user typed the slash command directly, but not when Claude invoked the same skill through the Skill tool mid-turn. Transcript metadata showed the override was registered in the tool result and command-permissions attachment, yet subsequent assistant messages kept sampling on the session model. The failure breaks cost-control and routing assumptions for model-invocable skills.",
+      "workaround": "Do not rely on inline Skill-tool invocation to enforce a cheaper or safer model tier until the transcript proves the override took effect. For critical routing, prefer user-typed slash-command paths, `context: fork` skill designs that have been verified on the target version, or an external transcript check that fails the run when assistant message model fields do not match the expected override.",
+      "status": "open",
+      "date_added": "2026-07-21"
     }
   ],
   "status_summary": {
-    "open": 1082,
+    "open": 1086,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 85,
-    "high": 554,
+    "high": 557,
     "low": 101,
-    "medium": 356
+    "medium": 357
   },
   "lastUpdated": "2026-07-21",
   "stats": {
-    "total": 1096,
+    "total": 1100,
     "critical": 85,
-    "high": 554,
-    "medium": 356,
+    "high": 557,
+    "medium": 357,
     "low": 101,
-    "open": 1082,
+    "open": 1086,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-21",
-  "total": 1096
+  "total": 1100
 }
