@@ -1,10 +1,10 @@
 {
   "version": "0.13.0",
-  "count": 1104,
+  "count": 1108,
   "categories": {
     "Hook behavior & events": 180,
     "Permission system": 119,
-    "Hook bypass & evasion": 99,
+    "Hook bypass & evasion": 100,
     "MCP & plugin issues": 55,
     "Subagent & spawned agents": 43,
     "Desktop & IDE integration": 37,
@@ -47,6 +47,7 @@
     "permissions": 4,
     "sandbox": 4,
     "tui": 4,
+    "Authentication & accounts": 3,
     "CLI / TUI rendering": 3,
     "Context / compaction": 3,
     "cowork": 3,
@@ -68,7 +69,6 @@
     "Auth and login": 2,
     "auth/bedrock": 2,
     "auth/oauth": 2,
-    "Authentication & accounts": 2,
     "Configuration": 2,
     "Cowork": 2,
     "Cowork / remote sessions": 2,
@@ -155,6 +155,7 @@
     "safety": 1,
     "safety-and-permissions": 1,
     "Sandbox & security": 1,
+    "SDK & automation": 1,
     "Sessions & conversation management": 1,
     "settings": 1,
     "Settings & configuration": 1,
@@ -162,6 +163,7 @@
     "skills": 1,
     "Skills & plugins": 1,
     "Skills & slash commands": 1,
+    "Startup & environment": 1,
     "Tools": 1,
     "Tools & permissions": 1,
     "Tools and execution": 1,
@@ -177,9 +179,9 @@
   },
   "severity_counts": {
     "CRITICAL": 85,
-    "HIGH": 559,
+    "HIGH": 562,
     "LOW": 102,
-    "MEDIUM": 358
+    "MEDIUM": 359
   },
   "entries": [
     {
@@ -14147,30 +14149,82 @@
       "workaround": "Do not treat manual edits to `~/.claude.json` as durable for org-seat entitlement problems; they can be overwritten by CLI, daemon, or desktop app sync. Capture the affected flags, CLI version, account type, and feedback ID before reauth attempts, keep a fallback model/account route for critical work, and verify entitlement from a fresh CLI session after any auth refresh rather than assuming desktop-app access proves CLI readiness.",
       "status": "open",
       "date_added": "2026-07-21"
+    },
+    {
+      "id": "pretooluse-if-matcher-can-fail-open-on-bash-for-loops",
+      "title": "PreToolUse `if` matcher can fail open on unrelated Bash `for` loops",
+      "category": "Hook bypass & evasion",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79675"
+      ],
+      "description": "A reported Claude Code 2.1.216 setup found that a PreToolUse hook with matcher `Bash` and an `if` pattern such as `Bash(git commit *)` fired on an unrelated Bash `for ... do ... done` loop. The same isolated hook did not fire on `while`, `if`, or plain `do`/`done` text, suggesting the Bash-command parser fails on the `for` construct and then follows the documented fail-open path for `if`-gated hooks. The failure is silent: the only visible signal is the hook's own output or block message on a command that should have been outside scope.",
+      "workaround": "Do not rely on Claude Code's `if` matcher as the only scope boundary for safety-critical Bash hooks. Put the pattern check inside the hook command itself by parsing `tool_input.command`, fail closed only for the exact operation you mean to guard, and add regression fixtures that include unrelated `for` loops so noisy fail-open behavior is caught before users see spurious blocks or prompts.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "sdk-background-task-bash-denial-can-poison-parent-session",
+      "title": "SDK background Task Bash denial can poison parent-session Bash access",
+      "category": "SDK & automation",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79680"
+      ],
+      "description": "A reported `claude-agent-sdk` Python setup using `permission_mode: default`, `allowed_tools` including Bash, and a `canUseTool` callback that allowed Bash still saw background Task subagents receive hard Bash denials. After the background denial, the parent agent in the same `session_id` began receiving the same fabricated refusal for every Bash command, including `git status --short` and `true`, while non-Bash tools continued to work. Resuming the same session preserved the poisoned Bash state; starting a force-fresh session temporarily restored Bash until another background Task used it.",
+      "workaround": "For unattended SDK agents, keep background-subagent Bash disabled by default and route shell work through the parent agent or a fresh isolated session until Anthropic clarifies the permission flow. Treat repeated Bash denials on no-op commands as session contamination, not user refusal; fail fast, stop resuming that `session_id`, and alert with the transcript denial count plus the last background Task activity.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "headless-claude-p-can-fail-oauth-refresh-while-interactive-session-works",
+      "title": "Headless `claude -p` can fail OAuth refresh while an interactive session still works",
+      "category": "Authentication & accounts",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79685"
+      ],
+      "description": "A reported macOS Claude Code 2.1.216 setup had unattended `claude -p` invocations fail immediately with `Failed to authenticate: OAuth session expired and could not be refreshed`, even while a concurrent interactive Claude Code session on the same machine continued to make successful requests. A clean-environment manual repro using only `HOME` and a minimal `PATH` also failed, leaving launchd, cron, webhook, and supervisor patterns without a headless recovery path once the stored OAuth state reaches this condition.",
+      "workaround": "Supervisors that spawn `claude -p` should classify this exact auth message as a hard stop, not a retryable model error. Emit a human-facing alert with the CLI version, credential mode, and whether an interactive session is still healthy; avoid repeated wake attempts until a human reauths or switches to a supported headless credential. Keep a direct provider-CLI smoke test in the loop gate so auth drift is detected before useful work depends on it.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "desktop-shell-environment-extraction-can-block-linux-startup",
+      "title": "Desktop shell-environment extraction can block Linux startup for 25 seconds",
+      "category": "Startup & environment",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79686"
+      ],
+      "description": "A reported Claude Desktop Linux setup saw the embedded Claude Code Desktop component regress from sub-second startup extraction on 2.1.205 to about 25 seconds of main-process blocking after auto-update to 2.1.209. The app logs showed `[event-loop-stall] main process blocked for ~25000ms` followed by shell environment extraction timeout warnings, even though reproducing the shell command manually in the same stripped environment completed in about 0.1 seconds. The delay blocks window creation and can break window-management automation waiting for the app to appear.",
+      "workaround": "When diagnosing slow Desktop startup on Linux, inspect `~/.config/Claude/logs/main.log` for CCD shell-environment extraction timeouts and compare the embedded CCD version against the last known fast version. Measure the equivalent shell startup outside the app before blaming user shell rc files, and keep automation timeouts tolerant of the 25-second stall until there is a documented opt-out or async extraction path.",
+      "status": "open",
+      "date_added": "2026-07-21"
     }
   ],
   "status_summary": {
-    "open": 1090,
+    "open": 1094,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 85,
-    "high": 559,
+    "high": 562,
     "low": 102,
-    "medium": 358
+    "medium": 359
   },
   "lastUpdated": "2026-07-21",
   "stats": {
-    "total": 1104,
+    "total": 1108,
     "critical": 85,
-    "high": 559,
-    "medium": 358,
+    "high": 562,
+    "medium": 359,
     "low": 102,
-    "open": 1090,
+    "open": 1094,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-21",
-  "total": 1104
+  "total": 1108
 }

@@ -7,6 +7,38 @@
   <updated>2026-07-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Desktop shell-environment extraction can block Linux startup for 25 seconds</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-shell-environment-extraction-can-block-linux-startup</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-shell-environment-extraction-can-block-linux-startup"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Desktop Linux setup saw the embedded Claude Code Desktop component regress from sub-second startup extraction on 2.1.205 to about 25 seconds of main-process blocking after auto-update to 2.1.209. The app logs showed `[event-loop-stall] main process blocked for ~25000ms` followed by shell environment extraction timeout warnings, even though reproducing the shell command manually in the same stripped environment completed in about 0.1 seconds. The delay blocks window creation and can break window-management automation waiting for the app to appear.</summary>
+    <category term="Startup &amp; environment"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Headless `claude -p` can fail OAuth refresh while an interactive session still works</title>
+    <id>https://framework.boucle.sh/limitations.html#headless-claude-p-can-fail-oauth-refresh-while-interactive-session-works</id>
+    <link href="https://framework.boucle.sh/limitations.html#headless-claude-p-can-fail-oauth-refresh-while-interactive-session-works"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported macOS Claude Code 2.1.216 setup had unattended `claude -p` invocations fail immediately with `Failed to authenticate: OAuth session expired and could not be refreshed`, even while a concurrent interactive Claude Code session on the same machine continued to make successful requests. A clean-environment manual repro using only `HOME` and a minimal `PATH` also failed, leaving launchd, cron, webhook, and supervisor patterns without a headless recovery path once the stored OAuth state reaches this condition.</summary>
+    <category term="Authentication &amp; accounts"/>
+  </entry>
+  <entry>
+    <title>[HIGH] SDK background Task Bash denial can poison parent-session Bash access</title>
+    <id>https://framework.boucle.sh/limitations.html#sdk-background-task-bash-denial-can-poison-parent-session</id>
+    <link href="https://framework.boucle.sh/limitations.html#sdk-background-task-bash-denial-can-poison-parent-session"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported `claude-agent-sdk` Python setup using `permission_mode: default`, `allowed_tools` including Bash, and a `canUseTool` callback that allowed Bash still saw background Task subagents receive hard Bash denials. After the background denial, the parent agent in the same `session_id` began receiving the same fabricated refusal for every Bash command, including `git status --short` and `true`, while non-Bash tools continued to work. Resuming the same session preserved the poisoned Bash state; starting a force-fresh session temporarily restored Bash until another background Task used it.</summary>
+    <category term="SDK &amp; automation"/>
+  </entry>
+  <entry>
+    <title>[HIGH] PreToolUse `if` matcher can fail open on unrelated Bash `for` loops</title>
+    <id>https://framework.boucle.sh/limitations.html#pretooluse-if-matcher-can-fail-open-on-bash-for-loops</id>
+    <link href="https://framework.boucle.sh/limitations.html#pretooluse-if-matcher-can-fail-open-on-bash-for-loops"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 setup found that a PreToolUse hook with matcher `Bash` and an `if` pattern such as `Bash(git commit *)` fired on an unrelated Bash `for ... do ... done` loop. The same isolated hook did not fire on `while`, `if`, or plain `do`/`done` text, suggesting the Bash-command parser fails on the `for` construct and then follows the documented fail-open path for `if`-gated hooks. The failure is silent: the only visible signal is the hook&#x27;s own output or block message on a command that should have been outside scope.</summary>
+    <category term="Hook bypass &amp; evasion"/>
+  </entry>
+  <entry>
     <title>[HIGH] Org Team seat entitlement can be misread as a pay-as-you-go credit requirement</title>
     <id>https://framework.boucle.sh/limitations.html#org-team-seat-entitlement-can-be-misread-as-payg-credit-requirement</id>
     <link href="https://framework.boucle.sh/limitations.html#org-team-seat-entitlement-can-be-misread-as-payg-credit-requirement"/>
@@ -133,37 +165,5 @@
     <updated>2026-07-21T00:00:00Z</updated>
     <summary>A reported macOS Sequoia setup on a 2011 Intel iMac failed during `curl -fsSL https://claude.ai/install.sh | bash` with `Illegal instruction: 4` and exit code 132 while running the installer binary. The failure message said installation was killed before it could finish but did not clearly state whether the hardware or CPU instruction set is unsupported.</summary>
     <category term="Platform &amp; compatibility"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Cowork local history can be lost after renewal or update state changes</title>
-    <id>https://framework.boucle.sh/limitations.html#cowork-local-history-can-be-lost-after-renewal-or-update-state-change</id>
-    <link href="https://framework.boucle.sh/limitations.html#cowork-local-history-can-be-lost-after-renewal-or-update-state-change"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Windows Claude Desktop Cowork installation lost roughly seven days of local chat transcripts immediately after an auto-renewal failure, and resubscribing did not restore them. The reporter found Cowork transcripts stored under an MSIX `AppData\Local\Packages\Claude_*\LocalCache` path despite installing from a browser download, found no server-side or alternate local copy, and observed an inverted loss pattern where older transcripts survived while the newest week was missing.</summary>
-    <category term="Data integrity"/>
-  </entry>
-  <entry>
-    <title>[HIGH] VS Code PostToolUse additionalContext can be silently dropped</title>
-    <id>https://framework.boucle.sh/limitations.html#vscode-posttooluse-additionalcontext-can-be-silently-dropped</id>
-    <link href="https://framework.boucle.sh/limitations.html#vscode-posttooluse-additionalcontext-can-be-silently-dropped"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code VS Code extension session on macOS ran a matcher-scoped PostToolUse hook for Bash commands, and the hook script returned valid JSON containing `additionalContext`, but Claude never received the reminder across five real `git commit` tool calls. Manual synthetic input proved the script output was correct, and a separate logging hook found no `additionalContext` field in the tool responses, suggesting the extension path can silently drop PostToolUse context delivery.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Parent-directory trust can dead-end committed .mcp.json approval</title>
-    <id>https://framework.boucle.sh/limitations.html#parent-directory-trust-can-dead-end-committed-mcp-json-approval</id>
-    <link href="https://framework.boucle.sh/limitations.html#parent-directory-trust-can-dead-end-committed-mcp-json-approval"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported WSL Claude Code 2.1.197 setup skipped the trust dialog for a new project because its parent directory was already trusted, but still refused to honor committed `enabledMcpjsonServers` from `.claude/settings.json` because the exact project path had not accepted the trust dialog. The result is a dead end: the prompt needed to grant exact-path trust is suppressed, while the `.mcp.json` pre-approval remains pending.</summary>
-    <category term="MCP integration"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Headless claude -p can hang forever on CLOSED API sockets</title>
-    <id>https://framework.boucle.sh/limitations.html#headless-claude-p-can-hang-forever-on-closed-api-sockets</id>
-    <link href="https://framework.boucle.sh/limitations.html#headless-claude-p-can-hang-forever-on-closed-api-sockets"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported macOS headless automation path using `claude -p` in scheduled jobs sometimes hung before any assistant output, then later also hung mid-run, while the process sat at 0% CPU holding multiple TCP connections to the Anthropic API that the OS marked CLOSED. The CLI emitted no stderr or debug output, did not retry, and ignored SIGTERM in at least one hung sonnet job, requiring wrapper timeouts or SIGKILL to recover.</summary>
-    <category term="Core &amp; session management"/>
   </entry>
 </feed>
