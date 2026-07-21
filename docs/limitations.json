@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1100,
+  "count": 1104,
   "categories": {
     "Hook behavior & events": 180,
     "Permission system": 119,
@@ -68,6 +68,7 @@
     "Auth and login": 2,
     "auth/bedrock": 2,
     "auth/oauth": 2,
+    "Authentication & accounts": 2,
     "Configuration": 2,
     "Cowork": 2,
     "Cowork / remote sessions": 2,
@@ -90,17 +91,18 @@
     "UI & display": 2,
     "Agent": 1,
     "Agent & multi-agent": 1,
+    "Agent control & instruction following": 1,
     "agent-behavior": 1,
     "Auth & credential management": 1,
     "Auth and credentials": 1,
     "authentication": 1,
-    "Authentication & accounts": 1,
     "Authentication & credentials": 1,
     "Autonomy & destructive actions": 1,
     "Autonomy / model behavior": 1,
     "Bash": 1,
     "Compaction & memory": 1,
     "configuration": 1,
+    "Context & compaction": 1,
     "Context management": 1,
     "context management": 1,
     "context-management": 1,
@@ -169,14 +171,15 @@
     "ui": 1,
     "UI & TUI": 1,
     "ui/tui": 1,
+    "Workflow & UI observability": 1,
     "worktree-isolation": 1,
     "Worktrees & isolation": 1
   },
   "severity_counts": {
     "CRITICAL": 85,
-    "HIGH": 557,
-    "LOW": 101,
-    "MEDIUM": 357
+    "HIGH": 559,
+    "LOW": 102,
+    "MEDIUM": 358
   },
   "entries": [
     {
@@ -14092,30 +14095,82 @@
       "workaround": "Do not rely on inline Skill-tool invocation to enforce a cheaper or safer model tier until the transcript proves the override took effect. For critical routing, prefer user-typed slash-command paths, `context: fork` skill designs that have been verified on the target version, or an external transcript check that fails the run when assistant message model fields do not match the expected override.",
       "status": "open",
       "date_added": "2026-07-21"
+    },
+    {
+      "id": "one-million-context-low-warning-can-fire-at-200k-threshold",
+      "title": "1M context sessions can receive the low-context warning near the 200k threshold",
+      "category": "Context & compaction",
+      "severity": "LOW",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79665"
+      ],
+      "description": "A reported Claude Code 2.1.202 through 2.1.216 setup using the `claude-opus-4-8[1m]` model saw the model-facing context-low reminder fire around 177k message tokens even though the statusline showed only about 21% of the 1M window used. The reporter's hook logs showed several 1M sessions later reached 237k to 353k tokens without real auto-compaction, suggesting actual compaction remained window-aware while the advisory reminder followed a separate 200k-oriented path.",
+      "workaround": "Treat the low-context reminder as advisory in `[1m]` sessions and verify real usage through the statusline, transcript usage fields, or a Stop-hook token logger before compacting early. Document that `CLAUDE_CODE_AUTO_COMPACT_WINDOW` and `DISABLE_AUTO_COMPACT` may not suppress this server-injected reminder, because it appears distinct from the client-side compaction controls.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "workflow-progress-can-freeze-during-final-structured-output-generation",
+      "title": "Workflow progress can freeze during final structured-output generation",
+      "category": "Workflow & UI observability",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79668"
+      ],
+      "description": "A reported Windows Anthropic API workflow run showed elapsed time, token count, and current-tool indicators freezing after a final verification agent's last tool call while the agent was still generating a large schema-constrained structured result. The task completed successfully and the transcript file continued growing, so the issue is observability: tool-call-free token generation can make a healthy long-running workflow look hung.",
+      "workaround": "For long Workflow stages that end with large structured outputs, verify liveness through transcript growth or logs rather than relying only on the `/workflows` progress indicators. Build orchestration timeouts with a grace period for final synthesis, and prefer explicit heartbeat/log output from non-agent workflow steps where available.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "long-autonomy-streaks-can-cause-questions-to-be-treated-as-implementation-approval",
+      "title": "Long autonomy streaks can cause questions to be treated as implementation approval",
+      "category": "Agent control & instruction following",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79669"
+      ],
+      "description": "A reported Claude Code 2.1.216 Ubuntu session had a long streak of approved autonomous build tasks. When the user then asked a direct clarifying question about wording from a prior reply, the assistant treated it as another go-ahead, changed code, and committed without answering the question. In write-capable sessions, this failure mode can turn ordinary clarification into unwanted filesystem and git changes.",
+      "workaround": "When a user message is phrased as a question or correction, answer it before taking further tool actions, even if previous turns granted broad autonomy. For guarded workflows, add a lightweight question-vs-instruction checkpoint before write tools after long implementation streaks, and require explicit renewed approval before committing if the latest user turn asks for clarification rather than action.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "org-team-seat-entitlement-can-be-misread-as-payg-credit-requirement",
+      "title": "Org Team seat entitlement can be misread as a pay-as-you-go credit requirement",
+      "category": "Authentication & accounts",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79671"
+      ],
+      "description": "A reported Claude Code 2.1.216 macOS setup on an org-managed Team seat intermittently prompted the user to continue with credits even though the same account had subscription entitlement in the desktop app. The local `~/.claude.json` state showed `subscriptionType: null` and `hasAvailableSubscription: false`; manually flipping `hasAvailableSubscription` to true restored CLI subscription use only until the next account-status sync rewrote the flag.",
+      "workaround": "Do not treat manual edits to `~/.claude.json` as durable for org-seat entitlement problems; they can be overwritten by CLI, daemon, or desktop app sync. Capture the affected flags, CLI version, account type, and feedback ID before reauth attempts, keep a fallback model/account route for critical work, and verify entitlement from a fresh CLI session after any auth refresh rather than assuming desktop-app access proves CLI readiness.",
+      "status": "open",
+      "date_added": "2026-07-21"
     }
   ],
   "status_summary": {
-    "open": 1086,
+    "open": 1090,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 85,
-    "high": 557,
-    "low": 101,
-    "medium": 357
+    "high": 559,
+    "low": 102,
+    "medium": 358
   },
   "lastUpdated": "2026-07-21",
   "stats": {
-    "total": 1100,
+    "total": 1104,
     "critical": 85,
-    "high": 557,
-    "medium": 357,
-    "low": 101,
-    "open": 1086,
+    "high": 559,
+    "medium": 358,
+    "low": 102,
+    "open": 1090,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-21",
-  "total": 1100
+  "total": 1104
 }

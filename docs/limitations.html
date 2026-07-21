@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1100</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-21.</span></p>
+        <p class="subtitle"><span id="total-count">1104</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-21.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -11920,6 +11920,54 @@
                         <!-- workaround:skill-frontmatter-model-overrides-can-be-ignored-on-model-invocation -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on inline Skill-tool invocation to enforce a cheaper or safer model tier until the transcript proves the override took effect. For critical routing, prefer user-typed slash-command paths, `context: fork` skill designs that have been verified on the target version, or an external transcript check that fails the run when assistant message model fields do not match the expected override.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79661" target="_blank">#79661</a></div>
+        </div>
+        <div class="kl-entry" data-category="Context &amp; compaction" data-issues="79665" id="one-million-context-low-warning-can-fire-at-200k-threshold" data-severity="low" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1101</span>
+                <span class="kl-cat">Context &amp; compaction</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
+            </div>
+            <h3>1M context sessions can receive the low-context warning near the 200k threshold</h3>
+            <p>A reported Claude Code 2.1.202 through 2.1.216 setup using the `claude-opus-4-8[1m]` model saw the model-facing context-low reminder fire around 177k message tokens even though the statusline showed only about 21% of the 1M window used. The reporter&#x27;s hook logs showed several 1M sessions later reached 237k to 353k tokens without real auto-compaction, suggesting actual compaction remained window-aware while the advisory reminder followed a separate 200k-oriented path.</p>
+                        <!-- workaround:one-million-context-low-warning-can-fire-at-200k-threshold -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat the low-context reminder as advisory in `[1m]` sessions and verify real usage through the statusline, transcript usage fields, or a Stop-hook token logger before compacting early. Document that `CLAUDE_CODE_AUTO_COMPACT_WINDOW` and `DISABLE_AUTO_COMPACT` may not suppress this server-injected reminder, because it appears distinct from the client-side compaction controls.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79665" target="_blank">#79665</a></div>
+        </div>
+        <div class="kl-entry" data-category="Workflow &amp; UI observability" data-issues="79668" id="workflow-progress-can-freeze-during-final-structured-output-generation" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1102</span>
+                <span class="kl-cat">Workflow &amp; UI observability</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Workflow progress can freeze during final structured-output generation</h3>
+            <p>A reported Windows Anthropic API workflow run showed elapsed time, token count, and current-tool indicators freezing after a final verification agent&#x27;s last tool call while the agent was still generating a large schema-constrained structured result. The task completed successfully and the transcript file continued growing, so the issue is observability: tool-call-free token generation can make a healthy long-running workflow look hung.</p>
+                        <!-- workaround:workflow-progress-can-freeze-during-final-structured-output-generation -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For long Workflow stages that end with large structured outputs, verify liveness through transcript growth or logs rather than relying only on the `/workflows` progress indicators. Build orchestration timeouts with a grace period for final synthesis, and prefer explicit heartbeat/log output from non-agent workflow steps where available.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79668" target="_blank">#79668</a></div>
+        </div>
+        <div class="kl-entry" data-category="Agent control &amp; instruction following" data-issues="79669" id="long-autonomy-streaks-can-cause-questions-to-be-treated-as-implementation-approval" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1103</span>
+                <span class="kl-cat">Agent control &amp; instruction following</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Long autonomy streaks can cause questions to be treated as implementation approval</h3>
+            <p>A reported Claude Code 2.1.216 Ubuntu session had a long streak of approved autonomous build tasks. When the user then asked a direct clarifying question about wording from a prior reply, the assistant treated it as another go-ahead, changed code, and committed without answering the question. In write-capable sessions, this failure mode can turn ordinary clarification into unwanted filesystem and git changes.</p>
+                        <!-- workaround:long-autonomy-streaks-can-cause-questions-to-be-treated-as-implementation-approval -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When a user message is phrased as a question or correction, answer it before taking further tool actions, even if previous turns granted broad autonomy. For guarded workflows, add a lightweight question-vs-instruction checkpoint before write tools after long implementation streaks, and require explicit renewed approval before committing if the latest user turn asks for clarification rather than action.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79669" target="_blank">#79669</a></div>
+        </div>
+        <div class="kl-entry" data-category="Authentication &amp; accounts" data-issues="79671" id="org-team-seat-entitlement-can-be-misread-as-payg-credit-requirement" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1104</span>
+                <span class="kl-cat">Authentication &amp; accounts</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Org Team seat entitlement can be misread as a pay-as-you-go credit requirement</h3>
+            <p>A reported Claude Code 2.1.216 macOS setup on an org-managed Team seat intermittently prompted the user to continue with credits even though the same account had subscription entitlement in the desktop app. The local `~/.claude.json` state showed `subscriptionType: null` and `hasAvailableSubscription: false`; manually flipping `hasAvailableSubscription` to true restored CLI subscription use only until the next account-status sync rewrote the flag.</p>
+                        <!-- workaround:org-team-seat-entitlement-can-be-misread-as-payg-credit-requirement -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat manual edits to `~/.claude.json` as durable for org-seat entitlement problems; they can be overwritten by CLI, daemon, or desktop app sync. Capture the affected flags, CLI version, account type, and feedback ID before reauth attempts, keep a fallback model/account route for critical work, and verify entitlement from a fresh CLI session after any auth refresh rather than assuming desktop-app access proves CLI readiness.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79671" target="_blank">#79671</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
