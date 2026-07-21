@@ -7,6 +7,38 @@
   <updated>2026-07-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Safety classifier can block workflow receipt persistence</title>
+    <id>https://framework.boucle.sh/limitations.html#safety-classifier-can-block-workflow-receipt-persistence</id>
+    <link href="https://framework.boucle.sh/limitations.html#safety-classifier-can-block-workflow-receipt-persistence"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.215 Workflow-based commit gate used isolated reviewer agents and deterministic workflow logic to decide whether a run passed, but the final agent step that persisted a small receipt JSON was blocked as self-approval, CI bypass, or audit tampering. The reporter also tried storing only raw measurements for a downstream hook to interpret, and even a fail-closed marker was blocked, leaving no in-workflow way to persist the gate result because Workflow scripts could not write files directly.</summary>
+    <category term="Permissions &amp; safety"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Shell tool can ignore PATH updates made mid-session</title>
+    <id>https://framework.boucle.sh/limitations.html#shell-tool-can-ignore-path-updates-made-mid-session</id>
+    <link href="https://framework.boucle.sh/limitations.html#shell-tool-can-ignore-path-updates-made-mid-session"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 Windows session did not pick up PATH changes made after the session started. A CLI installed mid-session became available in a fresh terminal, but Claude Code&#x27;s Bash and PowerShell tools continued to report it as missing until the whole Claude Code session restarted. This is distinct from startup PATH snapshot bugs because the change happens after the tool session is already running.</summary>
+    <category term="Bash &amp; shell execution"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] sandbox.filesystem.disabled setting can be missing from docs</title>
+    <id>https://framework.boucle.sh/limitations.html#sandbox-filesystem-disabled-setting-can-be-missing-from-docs</id>
+    <link href="https://framework.boucle.sh/limitations.html#sandbox-filesystem-disabled-setting-can-be-missing-from-docs"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 documentation gap says the new `sandbox.filesystem.disabled` setting is announced in the changelog but absent from the settings reference and sandboxing guide. Users who want network egress restrictions without filesystem isolation have no documented syntax, scope, interaction with other filesystem allow or deny rules, or warning that the mode intentionally removes the filesystem boundary.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Background general-purpose subagents can lose ToolSearch access to MCP tools</title>
+    <id>https://framework.boucle.sh/limitations.html#background-general-purpose-subagents-can-lose-toolsearch-access-to-mcp-tools</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-general-purpose-subagents-can-lose-toolsearch-access-to-mcp-tools"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 macOS session could resolve and call a deferred MCP server from the parent conversation, but background-dispatched `general-purpose` subagents spawned from a Skill could not resolve the same MCP tools through `ToolSearch`, even with exact fully-qualified tool names. The parent session made successful MCP calls in the same run, while the background subagents repeatedly saw an empty or unusable deferred-tool registry and silently reported the MCP server as unavailable.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Installer can crash with illegal instruction on older Intel Macs</title>
     <id>https://framework.boucle.sh/limitations.html#installer-can-crash-with-illegal-instruction-on-older-intel-macs</id>
     <link href="https://framework.boucle.sh/limitations.html#installer-can-crash-with-illegal-instruction-on-older-intel-macs"/>
@@ -133,37 +165,5 @@
     <updated>2026-07-21T00:00:00Z</updated>
     <summary>A reported Cowork and Claude in Chrome incident found a real Chrome profile navigated to an unrelated external site during Cowork-related activity, with supporting evidence from Chrome history and endpoint-protection logs but no visible session transcript explaining the URL argument or reasoning. The core risk is not the destination site itself; it is that browser-tool navigation can be hard to attribute after the fact, leaving users unable to connect a real tab movement to a prompt, tool call, or session.</summary>
     <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Switching models mid-session can hang the CLI until switching back</title>
-    <id>https://framework.boucle.sh/limitations.html#model-switching-mid-session-can-hang-cli</id>
-    <link href="https://framework.boucle.sh/limitations.html#model-switching-mid-session-can-hang-cli"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Windows Claude Code 2.1.215 session could switch from one model to another mid-conversation, but attempting to revoke or switch the model again left the CLI unresponsive until the user selected the original model again. The affected session was long-running and had used subagents or background tasks earlier, making the failure especially risky for orchestration sessions that change model or effort settings during active work.</summary>
-    <category term="Model behavior"/>
-  </entry>
-  <entry>
-    <title>[HIGH] AskUserQuestion can hide preceding assistant output in the same turn</title>
-    <id>https://framework.boucle.sh/limitations.html#askuserquestion-can-hide-preceding-assistant-output</id>
-    <link href="https://framework.boucle.sh/limitations.html#askuserquestion-can-hide-preceding-assistant-output"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Windows Claude Code 2.1.215 workflow found that assistant text emitted before a later tool call in the same turn, especially before AskUserQuestion, can intermittently never render to the user. The damaging shape is a report or decision table followed by a question dialog: the user may see only the choices, not the context those choices depend on, even though the model already generated it.</summary>
-    <category term="TUI &amp; display"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Nested isolation worktrees can confuse parent-root-sensitive build tools</title>
-    <id>https://framework.boucle.sh/limitations.html#nested-isolation-worktrees-can-confuse-parent-root-build-tools</id>
-    <link href="https://framework.boucle.sh/limitations.html#nested-isolation-worktrees-can-confuse-parent-root-build-tools"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Dune workflow showed Claude Code placing isolation worktrees under `.claude/worktrees/` inside the main checkout, where tools that search upward for the outermost project root can resolve to the parent checkout rather than the isolation worktree. The same class can affect other build systems that derive roots from ancestor marker files, making isolated agent edits or builds interact with the wrong project root unless extra flags are supplied.</summary>
-    <category term="Worktree"/>
-  </entry>
-  <entry>
-    <title>[LOW] Scheduled-task summaries can drop comma-separated cron days</title>
-    <id>https://framework.boucle.sh/limitations.html#scheduled-task-summary-can-drop-comma-separated-days</id>
-    <link href="https://framework.boucle.sh/limitations.html#scheduled-task-summary-can-drop-comma-separated-days"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Windows Claude Code 2.1.215 scheduled-tasks workflow created a cron expression such as `0 8 * * 2,5` for Tuesday and Friday, but `update_scheduled_task` or `list_scheduled_tasks` rendered the human-readable `schedule` text as only Tuesday. The underlying `cronExpression` and `nextRunAt` were correct, so the break is a display formatter bug that can still mislead users auditing whether an unattended task will run on every intended day.</summary>
-    <category term="Scheduled tasks"/>
   </entry>
 </feed>

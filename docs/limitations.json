@@ -1,12 +1,12 @@
 {
   "version": "0.13.0",
-  "count": 1089,
+  "count": 1093,
   "categories": {
     "Hook behavior & events": 180,
     "Permission system": 119,
     "Hook bypass & evasion": 99,
     "MCP & plugin issues": 55,
-    "Subagent & spawned agents": 41,
+    "Subagent & spawned agents": 42,
     "Desktop & IDE integration": 37,
     "Platform & compatibility": 27,
     "CLI & terminal": 25,
@@ -18,9 +18,9 @@
     "Performance & cost": 14,
     "Security & trust boundaries": 13,
     "MCP & integrations": 12,
+    "Sandbox & permissions": 11,
     "Data integrity": 10,
     "Plugin & channel system": 10,
-    "Sandbox & permissions": 10,
     "File system & paths": 9,
     "hooks": 9,
     "auth": 8,
@@ -32,11 +32,11 @@
     "Cowork & remote": 7,
     "MCP": 7,
     "Permissions": 7,
+    "Permissions & safety": 7,
+    "Bash & shell execution": 6,
     "Desktop & platform bugs": 6,
     "MCP integration": 6,
-    "Permissions & safety": 6,
     "VS Code extension": 6,
-    "Bash & shell execution": 5,
     "Model behavior": 5,
     "Scheduled tasks": 5,
     "Skills & commands": 5,
@@ -173,9 +173,9 @@
   },
   "severity_counts": {
     "CRITICAL": 84,
-    "HIGH": 551,
+    "HIGH": 553,
     "LOW": 101,
-    "MEDIUM": 353
+    "MEDIUM": 355
   },
   "entries": [
     {
@@ -13947,30 +13947,82 @@
       "workaround": "On older Intel Macs, treat exit code 132 during install as a possible CPU-instruction compatibility failure rather than a normal transient install error. Capture the exact hardware model, macOS version, and installer output before retrying. If the hardware is unsupported, avoid repeated curl-pipe installs and use a supported machine or a documented compatibility path once available.",
       "status": "open",
       "date_added": "2026-07-21"
+    },
+    {
+      "id": "background-general-purpose-subagents-can-lose-toolsearch-access-to-mcp-tools",
+      "title": "Background general-purpose subagents can lose ToolSearch access to MCP tools",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79621"
+      ],
+      "description": "A reported Claude Code 2.1.216 macOS session could resolve and call a deferred MCP server from the parent conversation, but background-dispatched `general-purpose` subagents spawned from a Skill could not resolve the same MCP tools through `ToolSearch`, even with exact fully-qualified tool names. The parent session made successful MCP calls in the same run, while the background subagents repeatedly saw an empty or unusable deferred-tool registry and silently reported the MCP server as unavailable.",
+      "workaround": "Do not assume background subagents inherit deferred MCP tools just because the parent session can use them. For MCP-dependent fan-out workflows, run a small ToolSearch smoke test inside each subagent, make the subagent report failure explicitly, and keep MCP writes in the parent orchestrator until background inheritance is verified. If parallelism is required, test whether foreground `Agent` dispatch behaves differently before relying on background jobs.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "sandbox-filesystem-disabled-setting-can-be-missing-from-docs",
+      "title": "sandbox.filesystem.disabled setting can be missing from docs",
+      "category": "Sandbox & permissions",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79622"
+      ],
+      "description": "A reported Claude Code 2.1.216 documentation gap says the new `sandbox.filesystem.disabled` setting is announced in the changelog but absent from the settings reference and sandboxing guide. Users who want network egress restrictions without filesystem isolation have no documented syntax, scope, interaction with other filesystem allow or deny rules, or warning that the mode intentionally removes the filesystem boundary.",
+      "workaround": "Treat `sandbox.filesystem.disabled` as an advanced, version-sensitive knob until the official docs describe it. If using it, document the exact Claude Code version, keep `sandbox.enabled` and network rules explicit in project settings, and add a local note that filesystem isolation is intentionally disabled. Re-test after updates because undocumented settings can change shape or behavior without a migration guide.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "shell-tool-can-ignore-path-updates-made-mid-session",
+      "title": "Shell tool can ignore PATH updates made mid-session",
+      "category": "Bash & shell execution",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79627"
+      ],
+      "description": "A reported Claude Code 2.1.216 Windows session did not pick up PATH changes made after the session started. A CLI installed mid-session became available in a fresh terminal, but Claude Code's Bash and PowerShell tools continued to report it as missing until the whole Claude Code session restarted. This is distinct from startup PATH snapshot bugs because the change happens after the tool session is already running.",
+      "workaround": "After installing or updating command-line tools during a Claude Code session, verify availability with the shell tool itself, not only in a separate terminal. If the shell tool still cannot find the command, use an absolute path, refresh the environment in the command explicitly, or restart Claude Code before continuing automation. For installer workflows, include a post-install shell-tool check and a clear restart instruction on failure.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "safety-classifier-can-block-workflow-receipt-persistence",
+      "title": "Safety classifier can block workflow receipt persistence",
+      "category": "Permissions & safety",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79631"
+      ],
+      "description": "A reported Claude Code 2.1.215 Workflow-based commit gate used isolated reviewer agents and deterministic workflow logic to decide whether a run passed, but the final agent step that persisted a small receipt JSON was blocked as self-approval, CI bypass, or audit tampering. The reporter also tried storing only raw measurements for a downstream hook to interpret, and even a fail-closed marker was blocked, leaving no in-workflow way to persist the gate result because Workflow scripts could not write files directly.",
+      "workaround": "Design commit gates so the trusted decision and receipt write can happen outside the LLM agent path when possible. If a Workflow must use an agent to persist a receipt, test both pass and fail-closed paths on the exact Claude Code version before relying on the gate. Keep a documented manual override or non-agent helper for writing defensive failure receipts, and make downstream hooks reject missing, stale, or unverifiable receipts by default.",
+      "status": "open",
+      "date_added": "2026-07-21"
     }
   ],
   "status_summary": {
-    "open": 1075,
+    "open": 1079,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 84,
-    "high": 551,
+    "high": 553,
     "low": 101,
-    "medium": 353
+    "medium": 355
   },
   "lastUpdated": "2026-07-21",
   "stats": {
-    "total": 1089,
+    "total": 1093,
     "critical": 84,
-    "high": 551,
-    "medium": 353,
+    "high": 553,
+    "medium": 355,
     "low": 101,
-    "open": 1075,
+    "open": 1079,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-21",
-  "total": 1089
+  "total": 1093
 }
