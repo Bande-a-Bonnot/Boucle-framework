@@ -1,12 +1,12 @@
 {
   "version": "0.13.0",
-  "count": 1156,
+  "count": 1166,
   "categories": {
     "Hook behavior & events": 181,
-    "Permission system": 122,
+    "Permission system": 123,
     "Hook bypass & evasion": 100,
     "MCP & plugin issues": 56,
-    "Subagent & spawned agents": 47,
+    "Subagent & spawned agents": 50,
     "Desktop & IDE integration": 38,
     "Platform & compatibility": 27,
     "CLI & terminal": 25,
@@ -15,7 +15,7 @@
     "Configuration behavior": 21,
     "Tool behavior": 18,
     "Agents & subagents": 17,
-    "Performance & cost": 16,
+    "Performance & cost": 17,
     "Security & trust boundaries": 13,
     "MCP & integrations": 12,
     "Sandbox & permissions": 12,
@@ -23,11 +23,12 @@
     "Data integrity": 11,
     "MCP integration": 11,
     "Plugin & channel system": 11,
+    "File system & paths": 10,
+    "Remote & cloud": 10,
     "Scheduling & remote triggers": 10,
     "Core & session management": 9,
-    "File system & paths": 9,
     "hooks": 9,
-    "Remote & cloud": 9,
+    "Model behavior": 9,
     "VS Code extension": 9,
     "auth": 8,
     "Auth & accounts": 8,
@@ -40,7 +41,6 @@
     "Authentication & accounts": 6,
     "Desktop & platform bugs": 6,
     "Git & repository safety": 6,
-    "Model behavior": 6,
     "Model behavior & output": 5,
     "Skills & commands": 5,
     "Skills / slash commands": 5,
@@ -178,8 +178,8 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 88,
-    "HIGH": 593,
+    "CRITICAL": 91,
+    "HIGH": 600,
     "LOW": 104,
     "MEDIUM": 371
   },
@@ -14825,30 +14825,160 @@
       "workaround": "When terminating daemon-backed Claude sessions, kill the transient daemon and PTY host before killing resumed child sessions, then monitor the process table for re-spawns. Avoid bypassPermissions for long-lived unattended fleets unless an external supervisor records lifecycle events, enforces a single live successor, and blocks git/network side effects from resurrected stale sessions.",
       "status": "open",
       "date_added": "2026-07-21"
+    },
+    {
+      "id": "opus-output-can-degenerate-into-billed-single-token-repetition",
+      "title": "Opus output can degenerate into billed single-token repetition",
+      "category": "Model behavior",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79817"
+      ],
+      "description": "A reported Windows Claude Code orchestration session switched from Fable 5 to Opus 4.8, then repeatedly emitted thousands of copies of one token until manually interrupted. The reporter tied the failure to a long repetitive turn history and noted that `/compact` cleared the contaminated context, but the useless stream still consumed paid usage credits before interruption.",
+      "workaround": "For long repetitive orchestration sessions, monitor streaming output for low-entropy loops and interrupt quickly rather than waiting for natural completion. Compact or restart after any degenerate output appears in history, and keep an external usage guard for premium-model sessions because the client may not stop pathological repetition before billing occurs.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "native-memory-leaks-can-crash-desktop-sessions",
+      "title": "Native memory leaks can crash desktop sessions",
+      "category": "Performance & cost",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79815"
+      ],
+      "description": "A reported macOS Claude Desktop/Claude Code session saw memory spike from normal usage toward 150 GB during a git rebase, with `/heapdump` showing most growth outside the JavaScript heap and a calculated growth rate above 2,000,000 MB/hour. The reporter described the crash as intermittent and project-specific, suggesting file watching, indexing, or native modules can trigger runaway native allocation.",
+      "workaround": "For large projects or long desktop sessions, keep OS-level memory monitoring visible and restart Claude Code after major repository operations such as rebases if memory begins climbing. Capture `/heapdump` diagnostics when possible, but do not rely on the JavaScript heap alone to rule out native leaks; protect unsaved work and long-running tasks with external checkpoints.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "background-task-agents-can-drop-read-only-final-reports",
+      "title": "Background Task agents can drop read-only final reports",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79814"
+      ],
+      "description": "A reported Windows Claude Code session ran a controlled A/B where foreground Task agents returned normally, but the same direct `run_in_background: true` agent signalled idle twice and never delivered its final conversational report. Because the task was read-only and wrote no files, the result was silently lost, and sending a follow-up message only produced another idle signal.",
+      "workaround": "Do not use background Task agents when the inline final response is the only deliverable. Have background agents write durable output to a known file and verify it exists, or keep critical audits and searches in foreground mode until background conversational returns are proven reliable in your platform and agent type.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "env-scrub-can-silently-disable-auto-mode-at-session-start",
+      "title": "Environment scrubbing can silently disable auto mode at session start",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79813"
+      ],
+      "description": "A reported Windows Claude Code 2.1.216 and Desktop setup found that `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` in `settings.json` silently made auto mode unavailable at session start. The interactive and Desktop surfaces only showed a generic fallback-to-permissions banner, while the explanatory warning appeared only in headless `-p` runs, and switching to auto mid-session still worked.",
+      "workaround": "If auto mode unexpectedly falls back to manual permissions, inspect `settings.json` and process environment for `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` before assuming an account, model, or provider issue. Decide explicitly whether env hygiene or startup auto mode matters more for that session, and verify effective permission mode after launch rather than relying on UI defaults.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "mid-turn-user-input-can-route-into-live-subagents",
+      "title": "Mid-turn user input can route into live subagents",
+      "category": "Subagent & spawned agents",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79812"
+      ],
+      "description": "A reported macOS Claude Code session spawned a long-running subagent, then user messages typed into the terminal during the parent turn appeared as user turns inside the subagent transcript instead of queuing for the parent. The subagent acted on design directions outside its brief, the parent later treated the result as rogue, and the user's input was effectively lost from the visible parent session.",
+      "workaround": "Avoid sending important instructions while a subagent is actively running unless the UI explicitly confirms where they will be queued. Keep write-capable subagents tightly scoped, and after any long subagent run, inspect the child transcript before accepting its result if you typed mid-turn messages that the parent did not visibly acknowledge.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "plan-mode-read-only-guarantee-can-fail-for-subagents",
+      "title": "Plan mode read-only guarantee can fail for subagents",
+      "category": "Subagent & spawned agents",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79811"
+      ],
+      "description": "A reported Windows Claude Code Desktop session in plan mode dispatched a subagent for a read-only task, yet the subagent executed a destructive Bash command without a prompt, block, or error. The report linked the behavior to prior stale-closed issues, including a production-data-loss incident, and argued plan mode is not enforced as a session-wide tool-layer state for Agent-spawned children.",
+      "workaround": "Do not treat plan mode as a hard sandbox for subagents. When planning must be read-only, disable or deny write-capable tools at the hook or shell layer, avoid dispatching agents with Bash access, and review subagent transcripts for executed commands before trusting a plan-mode session summary.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "project-path-resolution-fallback-can-scope-tools-to-home-directory",
+      "title": "Project path resolution fallback can scope tools to the home directory",
+      "category": "File system & paths",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79804"
+      ],
+      "description": "A reported Windows Desktop setup logged hundreds of sessions whose resolved project directory was the bare user home directory rather than a project folder. Follow-up testing found the failure can also occur after explicit folder selection when path resolution fails, falling back to an unbounded home-directory scope where ordinary Read, Grep, Glob, and Bash calls can traverse unrelated files without a separate directory-consent prompt.",
+      "workaround": "Before broad filesystem operations, verify the effective working directory from inside the session with `pwd`, process arguments, or a small scoped file listing. Avoid launching tool-enabled sessions without a clearly selected project, and add external guards that fail closed when the cwd resolves to a home directory or another broad parent path.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "remote-control-can-kill-background-bash-tasks-mid-session",
+      "title": "Remote-control mode can kill background Bash tasks mid-session",
+      "category": "Remote & cloud",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79801"
+      ],
+      "description": "A reported Linux `--remote-control` session repeatedly sent SIGTERM from its own `claude` process to Bash-tool background tasks about 30 to 90 seconds after launch, while the session was still active. A signal-traced canary identified the session process as the sender, and long-running Playwright runs, watchers, and canaries died with empty output files.",
+      "workaround": "Do not assume `run_in_background: true` tasks survive remote-control idle, reconnect, or compaction events. For long tests or watchers, detach outside the Claude task tracker with a supervised process manager or `setsid nohup`, write logs to disk, and have the agent poll durable artifacts instead of relying on tracked background tasks.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "ambient-anthropic-model-can-lock-claude-code-model-selection",
+      "title": "Ambient ANTHROPIC_MODEL can lock Claude Code model selection",
+      "category": "Model behavior",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79805"
+      ],
+      "description": "A reported WSL2/Docker Claude Code 2.1.216 setup started every new session on the model named by an ambient `ANTHROPIC_MODEL` variable, ignored `settings.json`, and let `/model` appear to accept a switch while the session stayed pinned. The variable had been exported for another tool, and the reporter said 2.1.215 allowed `/model` to switch away from it.",
+      "workaround": "Scope `ANTHROPIC_MODEL` to the specific tool that needs it instead of exporting it globally in shell startup files. When Claude Code opens on an unexpected model, inspect the process environment before debugging settings files, and confirm `/model` changes by checking actual responses or transcript metadata rather than trusting the menu alone.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "always-thinking-can-be-ignored-for-opus-48-requests",
+      "title": "alwaysThinkingEnabled can be ignored for Opus 4.8 requests",
+      "category": "Model behavior",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79798"
+      ],
+      "description": "A reported Windows Desktop runtime failed to translate `alwaysThinkingEnabled: true` into adaptive thinking on Opus 4.8 requests. At normal effort the session could silently run without extended thinking despite user settings, while xhigh/max effort surfaced the bug only when a WebSearch call returned a 400 saying that the effort level was unsupported with thinking disabled.",
+      "workaround": "For Opus 4.8 work that depends on extended thinking, verify the effective request behavior with a supervised WebSearch or another path that fails visibly when thinking is disabled. Keep effort at high or below if xhigh tool calls are failing, and treat `alwaysThinkingEnabled` as a preference that needs runtime verification on each client/runtime version.",
+      "status": "open",
+      "date_added": "2026-07-21"
     }
   ],
   "status_summary": {
-    "open": 1142,
+    "open": 1152,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 88,
-    "high": 593,
+    "critical": 91,
+    "high": 600,
     "low": 104,
     "medium": 371
   },
   "lastUpdated": "2026-07-21",
   "stats": {
-    "total": 1156,
-    "critical": 88,
-    "high": 593,
+    "total": 1166,
+    "critical": 91,
+    "high": 600,
     "medium": 371,
     "low": 104,
-    "open": 1142,
+    "open": 1152,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-21",
-  "total": 1156
+  "total": 1166
 }
