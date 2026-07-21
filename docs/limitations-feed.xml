@@ -7,6 +7,54 @@
   <updated>2026-07-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] VS Code extension ignores `remoteControlAtStartup`</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-extension-ignores-remote-control-at-startup</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-extension-ignores-remote-control-at-startup"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 setup found that `remoteControlAtStartup: true` in `~/.claude/settings.json` automatically connected terminal CLI sessions, but VS Code extension panel sessions ignored the same setting despite documentation saying extension support exists. The extension also lacked a clean workaround because relevant hooks and commands cannot invoke `/remote-control` from the panel at session initialization.</summary>
+    <category term="Cowork &amp; remote"/>
+  </entry>
+  <entry>
+    <title>[LOW] Windows Desktop Enter can stick as newline instead of submit</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-desktop-enter-can-stick-as-newline-instead-of-submit</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-desktop-enter-can-stick-as-newline-instead-of-submit"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Windows Desktop app setup repeatedly treated Enter in the prompt composer as insert-newline rather than submit, with Shift+Enter behaving the same way. The reporter had default keybindings, no vim or editor-mode overrides, and a Claude Code version that already included prior Windows keyboard fixes. Restarting sometimes cleared the state temporarily, while Ctrl+Enter still submitted.</summary>
+    <category term="TUI &amp; display"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Safeguard model switches can pause unattended sessions after downgrade</title>
+    <id>https://framework.boucle.sh/limitations.html#safeguard-model-switch-can-pause-unattended-sessions</id>
+    <link href="https://framework.boucle.sh/limitations.html#safeguard-model-switch-can-pause-unattended-sessions"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Fable 5 Claude Code session was downgraded to Opus 4.8 after a broad safeguard flag, but the turn then paused and waited for user re-engagement instead of continuing on the downgraded model. In an autonomous workflow this stalled work for about six hours; heartbeat monitors noticed the idle state but could not resume it because no setting, CLI flag, or hook event allowed automatic continuation after the safeguard switch.</summary>
+    <category term="Model routing &amp; identity"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Bundled JDT.LS cannot load the Lombok javaagent or custom VM args</title>
+    <id>https://framework.boucle.sh/limitations.html#bundled-jdt-ls-cannot-load-lombok-javaagent</id>
+    <link href="https://framework.boucle.sh/limitations.html#bundled-jdt-ls-cannot-load-lombok-javaagent"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code Java/Spring project using Lombok saw the bundled JDT.LS instance report false diagnostics for generated members such as `log`, final-field constructors, getters, and data accessors even though Gradle or Maven builds were clean. The root cause is that JDT.LS needs Lombok as a `-javaagent` VM arg, but Claude Code&#x27;s spawned language server does not expose custom VM args or honor the VS Code Java setting.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Routines multi-hour cron schedules can display UTC hours as local time</title>
+    <id>https://framework.boucle.sh/limitations.html#routines-multi-hour-crons-can-display-utc-hours-as-local</id>
+    <link href="https://framework.boucle.sh/limitations.html#routines-multi-hour-crons-can-display-utc-hours-as-local"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported `claude.ai/code/routines` setup showed single-hour cron schedules converted from UTC to the viewer&#x27;s local timezone, but multi-hour expressions such as `0 0,6,12,18 * * *` rendered the raw UTC hours as if they were local. API readback confirmed the routine fired at the UTC-derived time, not the UI-rendered local time, so users outside UTC can be misled about when automation will run.</summary>
+    <category term="Scheduling &amp; remote triggers"/>
+  </entry>
+  <entry>
+    <title>[HIGH] VS Code org verification can run before OAuth refresh on first launch</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-org-verification-can-run-before-oauth-refresh</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-org-verification-can-run-before-oauth-refresh"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code VS Code extension setup on an organization-bound Team machine failed on the first launch of the day because startup fetched policy limits, fetched the OAuth profile, and validated organization membership with an expired access token before any refresh attempt. All checks returned 401 and org verification was fatal, so the process exited with code 1. The credentials file still contained the expired timestamp after the crash, while opening a new window immediately refreshed successfully.</summary>
+    <category term="Authentication &amp; accounts"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Desktop shell-environment extraction can block Linux startup for 25 seconds</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-shell-environment-extraction-can-block-linux-startup</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-shell-environment-extraction-can-block-linux-startup"/>
@@ -117,53 +165,5 @@
     <updated>2026-07-21T00:00:00Z</updated>
     <summary>A reported macOS fleet of long-running headless Claude Code sessions began receiving synchronized `EPERM` errors on `open`, `write`, and `xattr` for a directory tree they had been writing to moments earlier, while `ls` and `stat` still succeeded. The onset affected one account across multiple process uptimes, did not correlate with local file permissions or TCC logs, and was not reversed by changing sandbox settings in the live config until the affected processes were killed and restarted.</summary>
     <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Native system reminders can render inline with subagent tool results</title>
-    <id>https://framework.boucle.sh/limitations.html#native-system-reminders-can-render-inline-with-subagent-tool-results</id>
-    <link href="https://framework.boucle.sh/limitations.html#native-system-reminders-can-render-inline-with-subagent-tool-results"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.202 macOS workflow saw native `system-reminder` blocks, including Auto Mode and date-rollover notices, appear directly after subagent Bash tool-result text even though the persisted transcript `tool_result.content` and redirected command output were clean. Security-conscious subagents repeatedly classified the first-party reminder text as prompt injection because it was rendered in the same shape as untrusted tool output.</summary>
-    <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Safety classifier can block workflow receipt persistence</title>
-    <id>https://framework.boucle.sh/limitations.html#safety-classifier-can-block-workflow-receipt-persistence</id>
-    <link href="https://framework.boucle.sh/limitations.html#safety-classifier-can-block-workflow-receipt-persistence"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.215 Workflow-based commit gate used isolated reviewer agents and deterministic workflow logic to decide whether a run passed, but the final agent step that persisted a small receipt JSON was blocked as self-approval, CI bypass, or audit tampering. The reporter also tried storing only raw measurements for a downstream hook to interpret, and even a fail-closed marker was blocked, leaving no in-workflow way to persist the gate result because Workflow scripts could not write files directly.</summary>
-    <category term="Permissions &amp; safety"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Shell tool can ignore PATH updates made mid-session</title>
-    <id>https://framework.boucle.sh/limitations.html#shell-tool-can-ignore-path-updates-made-mid-session</id>
-    <link href="https://framework.boucle.sh/limitations.html#shell-tool-can-ignore-path-updates-made-mid-session"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 Windows session did not pick up PATH changes made after the session started. A CLI installed mid-session became available in a fresh terminal, but Claude Code&#x27;s Bash and PowerShell tools continued to report it as missing until the whole Claude Code session restarted. This is distinct from startup PATH snapshot bugs because the change happens after the tool session is already running.</summary>
-    <category term="Bash &amp; shell execution"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] sandbox.filesystem.disabled setting can be missing from docs</title>
-    <id>https://framework.boucle.sh/limitations.html#sandbox-filesystem-disabled-setting-can-be-missing-from-docs</id>
-    <link href="https://framework.boucle.sh/limitations.html#sandbox-filesystem-disabled-setting-can-be-missing-from-docs"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 documentation gap says the new `sandbox.filesystem.disabled` setting is announced in the changelog but absent from the settings reference and sandboxing guide. Users who want network egress restrictions without filesystem isolation have no documented syntax, scope, interaction with other filesystem allow or deny rules, or warning that the mode intentionally removes the filesystem boundary.</summary>
-    <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Background general-purpose subagents can lose ToolSearch access to MCP tools</title>
-    <id>https://framework.boucle.sh/limitations.html#background-general-purpose-subagents-can-lose-toolsearch-access-to-mcp-tools</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-general-purpose-subagents-can-lose-toolsearch-access-to-mcp-tools"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 macOS session could resolve and call a deferred MCP server from the parent conversation, but background-dispatched `general-purpose` subagents spawned from a Skill could not resolve the same MCP tools through `ToolSearch`, even with exact fully-qualified tool names. The parent session made successful MCP calls in the same run, while the background subagents repeatedly saw an empty or unusable deferred-tool registry and silently reported the MCP server as unavailable.</summary>
-    <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Installer can crash with illegal instruction on older Intel Macs</title>
-    <id>https://framework.boucle.sh/limitations.html#installer-can-crash-with-illegal-instruction-on-older-intel-macs</id>
-    <link href="https://framework.boucle.sh/limitations.html#installer-can-crash-with-illegal-instruction-on-older-intel-macs"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported macOS Sequoia setup on a 2011 Intel iMac failed during `curl -fsSL https://claude.ai/install.sh | bash` with `Illegal instruction: 4` and exit code 132 while running the installer binary. The failure message said installation was killed before it could finish but did not clearly state whether the hardware or CPU instruction set is unsupported.</summary>
-    <category term="Platform &amp; compatibility"/>
   </entry>
 </feed>

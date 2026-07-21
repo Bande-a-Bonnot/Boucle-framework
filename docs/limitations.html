@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1108</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-21.</span></p>
+        <p class="subtitle"><span id="total-count">1114</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-21.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -12016,6 +12016,78 @@
                         <!-- workaround:desktop-shell-environment-extraction-can-block-linux-startup -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When diagnosing slow Desktop startup on Linux, inspect `~/.config/Claude/logs/main.log` for CCD shell-environment extraction timeouts and compare the embedded CCD version against the last known fast version. Measure the equivalent shell startup outside the app before blaming user shell rc files, and keep automation timeouts tolerant of the 25-second stall until there is a documented opt-out or async extraction path.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79686" target="_blank">#79686</a></div>
+        </div>
+        <div class="kl-entry" data-category="Authentication &amp; accounts" data-issues="79688" id="vscode-org-verification-can-run-before-oauth-refresh" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1109</span>
+                <span class="kl-cat">Authentication &amp; accounts</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>VS Code org verification can run before OAuth refresh on first launch</h3>
+            <p>A reported Claude Code VS Code extension setup on an organization-bound Team machine failed on the first launch of the day because startup fetched policy limits, fetched the OAuth profile, and validated organization membership with an expired access token before any refresh attempt. All checks returned 401 and org verification was fatal, so the process exited with code 1. The credentials file still contained the expired timestamp after the crash, while opening a new window immediately refreshed successfully.</p>
+                        <!-- workaround:vscode-org-verification-can-run-before-oauth-refresh -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For org-bound VS Code extension users, classify first-launch 401 org-verification exits as a likely refresh-ordering problem rather than immediate account removal. Try a fresh window or a minimal `claude -p &quot;ok&quot;` to force credential refresh before starting the extension session, and preserve the debug log plus credential expiry timestamp for support instead of repeatedly relaunching the same failed resume path.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79688" target="_blank">#79688</a></div>
+        </div>
+        <div class="kl-entry" data-category="Scheduling &amp; remote triggers" data-issues="79689" id="routines-multi-hour-crons-can-display-utc-hours-as-local" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1110</span>
+                <span class="kl-cat">Scheduling &amp; remote triggers</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Routines multi-hour cron schedules can display UTC hours as local time</h3>
+            <p>A reported `claude.ai/code/routines` setup showed single-hour cron schedules converted from UTC to the viewer&#x27;s local timezone, but multi-hour expressions such as `0 0,6,12,18 * * *` rendered the raw UTC hours as if they were local. API readback confirmed the routine fired at the UTC-derived time, not the UI-rendered local time, so users outside UTC can be misled about when automation will run.</p>
+                        <!-- workaround:routines-multi-hour-crons-can-display-utc-hours-as-local -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For multi-hour Routines, compute the local fire times from the cron expression and API timestamps yourself until the UI conversion is fixed. When scheduling operational work across time zones, record the UTC cron alongside the intended local times and verify `last_fired_at` after creation instead of trusting the list or calendar display.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79689" target="_blank">#79689</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="79690" id="bundled-jdt-ls-cannot-load-lombok-javaagent" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1111</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Bundled JDT.LS cannot load the Lombok javaagent or custom VM args</h3>
+            <p>A reported Claude Code Java/Spring project using Lombok saw the bundled JDT.LS instance report false diagnostics for generated members such as `log`, final-field constructors, getters, and data accessors even though Gradle or Maven builds were clean. The root cause is that JDT.LS needs Lombok as a `-javaagent` VM arg, but Claude Code&#x27;s spawned language server does not expose custom VM args or honor the VS Code Java setting.</p>
+                        <!-- workaround:bundled-jdt-ls-cannot-load-lombok-javaagent -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For Lombok-heavy Java projects, treat Claude Code JDT.LS diagnostics as advisory unless they are confirmed by the build. Keep `./gradlew test`, Maven, or the IDE&#x27;s configured JDT.LS as the source of truth, and document the false-positive class in project guidance so agents do not chase generated-member diagnostics that a proper Lombok-enabled language server would suppress.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79690" target="_blank">#79690</a></div>
+        </div>
+        <div class="kl-entry" data-category="Model routing &amp; identity" data-issues="79694" id="safeguard-model-switch-can-pause-unattended-sessions" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1112</span>
+                <span class="kl-cat">Model routing &amp; identity</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Safeguard model switches can pause unattended sessions after downgrade</h3>
+            <p>A reported Fable 5 Claude Code session was downgraded to Opus 4.8 after a broad safeguard flag, but the turn then paused and waited for user re-engagement instead of continuing on the downgraded model. In an autonomous workflow this stalled work for about six hours; heartbeat monitors noticed the idle state but could not resume it because no setting, CLI flag, or hook event allowed automatic continuation after the safeguard switch.</p>
+                        <!-- workaround:safeguard-model-switch-can-pause-unattended-sessions -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Unattended runners should treat safeguard downgrade prompts as a manual-intervention state, not as ordinary model latency. Add outer watchdogs that alert when output stops after a model-switch notice, keep critical unattended jobs on the model tier least likely to hit the pause, and avoid assuming Stop hooks can recover the session because they may not fire until after the blocked turn is released.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79694" target="_blank">#79694</a></div>
+        </div>
+        <div class="kl-entry" data-category="TUI &amp; display" data-issues="79696" id="windows-desktop-enter-can-stick-as-newline-instead-of-submit" data-severity="low" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1113</span>
+                <span class="kl-cat">TUI &amp; display</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
+            </div>
+            <h3>Windows Desktop Enter can stick as newline instead of submit</h3>
+            <p>A reported Windows Desktop app setup repeatedly treated Enter in the prompt composer as insert-newline rather than submit, with Shift+Enter behaving the same way. The reporter had default keybindings, no vim or editor-mode overrides, and a Claude Code version that already included prior Windows keyboard fixes. Restarting sometimes cleared the state temporarily, while Ctrl+Enter still submitted.</p>
+                        <!-- workaround:windows-desktop-enter-can-stick-as-newline-instead-of-submit -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If Enter stops submitting in the Windows Desktop prompt composer, use Ctrl+Enter as the immediate submit path and capture the Desktop app version, Claude Code version, Windows build, and keybinding state before restarting. Do not assume the issue is a custom keybinding problem when other apps and Claude&#x27;s default settings handle the keyboard normally.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79696" target="_blank">#79696</a></div>
+        </div>
+        <div class="kl-entry" data-category="Cowork &amp; remote" data-issues="79699" id="vscode-extension-ignores-remote-control-at-startup" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1114</span>
+                <span class="kl-cat">Cowork &amp; remote</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>VS Code extension ignores `remoteControlAtStartup`</h3>
+            <p>A reported Claude Code 2.1.216 setup found that `remoteControlAtStartup: true` in `~/.claude/settings.json` automatically connected terminal CLI sessions, but VS Code extension panel sessions ignored the same setting despite documentation saying extension support exists. The extension also lacked a clean workaround because relevant hooks and commands cannot invoke `/remote-control` from the panel at session initialization.</p>
+                        <!-- workaround:vscode-extension-ignores-remote-control-at-startup -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For always-on remote-control workflows in VS Code, assume extension panel sessions require a manual `/remote-control` step until startup support is verified on your target version. Prefer terminal CLI sessions for unattended remote-control startup, and include an explicit remote-control connectivity check in any wrapper that depends on the VS Code panel being drivable from mobile or desktop control surfaces.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79699" target="_blank">#79699</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

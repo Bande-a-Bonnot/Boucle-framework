@@ -1,16 +1,16 @@
 {
   "version": "0.13.0",
-  "count": 1108,
+  "count": 1114,
   "categories": {
     "Hook behavior & events": 180,
     "Permission system": 119,
     "Hook bypass & evasion": 100,
     "MCP & plugin issues": 55,
     "Subagent & spawned agents": 43,
-    "Desktop & IDE integration": 37,
+    "Desktop & IDE integration": 38,
     "Platform & compatibility": 27,
     "CLI & terminal": 25,
-    "TUI & display": 23,
+    "TUI & display": 24,
     "Configuration behavior": 21,
     "Context & memory": 21,
     "Agents & subagents": 17,
@@ -23,14 +23,14 @@
     "Data integrity": 10,
     "File system & paths": 9,
     "hooks": 9,
+    "Scheduling & remote triggers": 9,
     "auth": 8,
     "Auth & accounts": 8,
     "Configuration & settings": 8,
+    "Cowork & remote": 8,
     "MCP integration": 8,
     "Remote & cloud": 8,
-    "Scheduling & remote triggers": 8,
     "Core & session management": 7,
-    "Cowork & remote": 7,
     "MCP": 7,
     "Permissions": 7,
     "Permissions & safety": 7,
@@ -43,11 +43,11 @@
     "Skills / slash commands": 5,
     "UX & display": 5,
     "Worktree": 5,
+    "Authentication & accounts": 4,
     "MCP & plugins": 4,
     "permissions": 4,
     "sandbox": 4,
     "tui": 4,
-    "Authentication & accounts": 3,
     "CLI / TUI rendering": 3,
     "Context / compaction": 3,
     "cowork": 3,
@@ -80,6 +80,7 @@
     "MCP & tool integration": 2,
     "MCP and plugins": 2,
     "Model behavior & compliance": 2,
+    "Model routing & identity": 2,
     "Multi-agent": 2,
     "Performance": 2,
     "Performance & resources": 2,
@@ -127,7 +128,6 @@
     "memory/performance": 1,
     "Model Behavior": 1,
     "model behavior": 1,
-    "Model routing & identity": 1,
     "Multi-agent / subagents": 1,
     "performance": 1,
     "Performance & resource usage": 1,
@@ -179,9 +179,9 @@
   },
   "severity_counts": {
     "CRITICAL": 85,
-    "HIGH": 562,
-    "LOW": 102,
-    "MEDIUM": 359
+    "HIGH": 564,
+    "LOW": 103,
+    "MEDIUM": 362
   },
   "entries": [
     {
@@ -14201,30 +14201,108 @@
       "workaround": "When diagnosing slow Desktop startup on Linux, inspect `~/.config/Claude/logs/main.log` for CCD shell-environment extraction timeouts and compare the embedded CCD version against the last known fast version. Measure the equivalent shell startup outside the app before blaming user shell rc files, and keep automation timeouts tolerant of the 25-second stall until there is a documented opt-out or async extraction path.",
       "status": "open",
       "date_added": "2026-07-21"
+    },
+    {
+      "id": "vscode-org-verification-can-run-before-oauth-refresh",
+      "title": "VS Code org verification can run before OAuth refresh on first launch",
+      "category": "Authentication & accounts",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79688"
+      ],
+      "description": "A reported Claude Code VS Code extension setup on an organization-bound Team machine failed on the first launch of the day because startup fetched policy limits, fetched the OAuth profile, and validated organization membership with an expired access token before any refresh attempt. All checks returned 401 and org verification was fatal, so the process exited with code 1. The credentials file still contained the expired timestamp after the crash, while opening a new window immediately refreshed successfully.",
+      "workaround": "For org-bound VS Code extension users, classify first-launch 401 org-verification exits as a likely refresh-ordering problem rather than immediate account removal. Try a fresh window or a minimal `claude -p \"ok\"` to force credential refresh before starting the extension session, and preserve the debug log plus credential expiry timestamp for support instead of repeatedly relaunching the same failed resume path.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "routines-multi-hour-crons-can-display-utc-hours-as-local",
+      "title": "Routines multi-hour cron schedules can display UTC hours as local time",
+      "category": "Scheduling & remote triggers",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79689"
+      ],
+      "description": "A reported `claude.ai/code/routines` setup showed single-hour cron schedules converted from UTC to the viewer's local timezone, but multi-hour expressions such as `0 0,6,12,18 * * *` rendered the raw UTC hours as if they were local. API readback confirmed the routine fired at the UTC-derived time, not the UI-rendered local time, so users outside UTC can be misled about when automation will run.",
+      "workaround": "For multi-hour Routines, compute the local fire times from the cron expression and API timestamps yourself until the UI conversion is fixed. When scheduling operational work across time zones, record the UTC cron alongside the intended local times and verify `last_fired_at` after creation instead of trusting the list or calendar display.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "bundled-jdt-ls-cannot-load-lombok-javaagent",
+      "title": "Bundled JDT.LS cannot load the Lombok javaagent or custom VM args",
+      "category": "Desktop & IDE integration",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79690"
+      ],
+      "description": "A reported Claude Code Java/Spring project using Lombok saw the bundled JDT.LS instance report false diagnostics for generated members such as `log`, final-field constructors, getters, and data accessors even though Gradle or Maven builds were clean. The root cause is that JDT.LS needs Lombok as a `-javaagent` VM arg, but Claude Code's spawned language server does not expose custom VM args or honor the VS Code Java setting.",
+      "workaround": "For Lombok-heavy Java projects, treat Claude Code JDT.LS diagnostics as advisory unless they are confirmed by the build. Keep `./gradlew test`, Maven, or the IDE's configured JDT.LS as the source of truth, and document the false-positive class in project guidance so agents do not chase generated-member diagnostics that a proper Lombok-enabled language server would suppress.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "safeguard-model-switch-can-pause-unattended-sessions",
+      "title": "Safeguard model switches can pause unattended sessions after downgrade",
+      "category": "Model routing & identity",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79694"
+      ],
+      "description": "A reported Fable 5 Claude Code session was downgraded to Opus 4.8 after a broad safeguard flag, but the turn then paused and waited for user re-engagement instead of continuing on the downgraded model. In an autonomous workflow this stalled work for about six hours; heartbeat monitors noticed the idle state but could not resume it because no setting, CLI flag, or hook event allowed automatic continuation after the safeguard switch.",
+      "workaround": "Unattended runners should treat safeguard downgrade prompts as a manual-intervention state, not as ordinary model latency. Add outer watchdogs that alert when output stops after a model-switch notice, keep critical unattended jobs on the model tier least likely to hit the pause, and avoid assuming Stop hooks can recover the session because they may not fire until after the blocked turn is released.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "windows-desktop-enter-can-stick-as-newline-instead-of-submit",
+      "title": "Windows Desktop Enter can stick as newline instead of submit",
+      "category": "TUI & display",
+      "severity": "LOW",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79696"
+      ],
+      "description": "A reported Windows Desktop app setup repeatedly treated Enter in the prompt composer as insert-newline rather than submit, with Shift+Enter behaving the same way. The reporter had default keybindings, no vim or editor-mode overrides, and a Claude Code version that already included prior Windows keyboard fixes. Restarting sometimes cleared the state temporarily, while Ctrl+Enter still submitted.",
+      "workaround": "If Enter stops submitting in the Windows Desktop prompt composer, use Ctrl+Enter as the immediate submit path and capture the Desktop app version, Claude Code version, Windows build, and keybinding state before restarting. Do not assume the issue is a custom keybinding problem when other apps and Claude's default settings handle the keyboard normally.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "vscode-extension-ignores-remote-control-at-startup",
+      "title": "VS Code extension ignores `remoteControlAtStartup`",
+      "category": "Cowork & remote",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79699"
+      ],
+      "description": "A reported Claude Code 2.1.216 setup found that `remoteControlAtStartup: true` in `~/.claude/settings.json` automatically connected terminal CLI sessions, but VS Code extension panel sessions ignored the same setting despite documentation saying extension support exists. The extension also lacked a clean workaround because relevant hooks and commands cannot invoke `/remote-control` from the panel at session initialization.",
+      "workaround": "For always-on remote-control workflows in VS Code, assume extension panel sessions require a manual `/remote-control` step until startup support is verified on your target version. Prefer terminal CLI sessions for unattended remote-control startup, and include an explicit remote-control connectivity check in any wrapper that depends on the VS Code panel being drivable from mobile or desktop control surfaces.",
+      "status": "open",
+      "date_added": "2026-07-21"
     }
   ],
   "status_summary": {
-    "open": 1094,
+    "open": 1100,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 85,
-    "high": 562,
-    "low": 102,
-    "medium": 359
+    "high": 564,
+    "low": 103,
+    "medium": 362
   },
   "lastUpdated": "2026-07-21",
   "stats": {
-    "total": 1108,
+    "total": 1114,
     "critical": 85,
-    "high": 562,
-    "medium": 359,
-    "low": 102,
-    "open": 1094,
+    "high": 564,
+    "medium": 362,
+    "low": 103,
+    "open": 1100,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-21",
-  "total": 1108
+  "total": 1114
 }
