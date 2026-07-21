@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1203</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-21.</span></p>
+        <p class="subtitle"><span id="total-count">1213</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-21.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -13156,6 +13156,126 @@
                         <!-- workaround:claude-desktop-startup-entry-can-crash-windows-startup-settings -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If Windows Startup settings crashes after enabling Claude Desktop launch-on-startup, first turn off the setting inside Claude and fully quit it. Then remove the `Claude` value from `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` and the matching `StartupApproved\Run` entry, and confirm the Run key is clean before reopening Settings.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79893" target="_blank">#79893</a></div>
+        </div>
+        <div class="kl-entry" data-category="VS Code extension" data-issues="79924" id="vscode-memory-panel-can-refresh-against-orphaned-session-id" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1204</span>
+                <span class="kl-cat">VS Code extension</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>VS Code memory panel can refresh against orphaned session ID</h3>
+            <p>A reported Windows VS Code extension session opened `/memory`, then the panel refresh failed with `No conversation found with session ID`. The failing ID matched an empty `~/.claude/session-env/&lt;id&gt;/` directory with no matching `~/.claude/projects/**/&lt;id&gt;.jsonl` transcript, suggesting the panel kept an unpromoted session ID instead of the active conversation ID.</p>
+                        <!-- workaround:vscode-memory-panel-can-refresh-against-orphaned-session-id -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If `/memory` refresh fails with a missing session ID, inspect whether that ID has a real project transcript before trusting the panel state. Reopen the memory panel from the active session, keep memory edits in a separate file until saved, and treat empty `session-env` directories as stale rather than as authoritative conversations.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79924" target="_blank">#79924</a></div>
+        </div>
+        <div class="kl-entry" data-category="Worktree" data-issues="79923" id="windows-lfs-worktree-isolation-can-litter-dev-null-hooks" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1205</span>
+                <span class="kl-cat">Worktree</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Windows LFS worktree isolation can litter dev/null hook files</h3>
+            <p>A reported Windows Claude Code 2.0.42 worktree-isolation flow in a Git LFS repo created untracked files such as `dev\null\post-checkout`, `post-commit`, `post-merge`, and `pre-push` inside every managed worktree. The report traced this to `core.hooksPath=/dev/null` during checkout: Git special-cases it, but git-lfs resolves it relative to the worktree on Windows.</p>
+                        <!-- workaround:windows-lfs-worktree-isolation-can-litter-dev-null-hooks -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> After creating Windows isolation worktrees in Git LFS repos, check for untracked `dev/null/*` hook stubs before committing. If you control the setup path, disable hooks with an absolute empty hooks directory outside the working tree instead of `/dev/null`, and add cleanup to real hooks only after verifying it will not mask other untracked files.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79923" target="_blank">#79923</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="79921" id="desktop-and-vscode-sessions-can-freeze-until-other-session-input" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1206</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Desktop and VS Code sessions can freeze until other session input</h3>
+            <p>A reported macOS Claude Desktop and VS Code extension setup with multiple concurrent sessions could leave one session stuck on `thinking` indefinitely. The frozen session resumed immediately when the user typed into another session, while network traces showed only keep-alives and no inbound response traffic during the freeze, pointing to a local scheduling or event-loop stall.</p>
+                        <!-- workaround:desktop-and-vscode-sessions-can-freeze-until-other-session-input -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For concurrent Desktop or VS Code work, do not assume a silent `thinking` state is waiting on the server. Keep critical work in the terminal CLI or web app when possible, avoid running several long local sessions in the same client, and preserve enough transcript state to restart a stuck session without losing the task.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79921" target="_blank">#79921</a></div>
+        </div>
+        <div class="kl-entry" data-category="Performance &amp; resource usage" data-issues="79920" id="background-session-daemon-restore-can-exhaust-system-file-table" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1207</span>
+                <span class="kl-cat">Performance &amp; resource usage</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Background session daemon restore can exhaust system file table</h3>
+            <p>A reported macOS Claude Code 2.1.216 daemon restored many host-managed background sessions simultaneously from `~/.claude/daemon/roster.json`, drove `bg-spare` processes into a claim/crash/respawn loop, and opened file descriptors fast enough to hit the system-wide file table limit. The reporter captured ENFILE errors, userspace wedges, launchd SIGBUS crashes, and kernel panics.</p>
+                        <!-- workaround:background-session-daemon-restore-can-exhaust-system-file-table -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Keep background-session rosters small after unclean daemon exits and avoid restoring many host-managed sessions at once. If the system shows ENFILE, spurious login failures, or daemon crash loops, move `~/.claude/daemon/roster.json` aside before restarting Claude Code, then resume sessions gradually while monitoring file-descriptor counts.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79920" target="_blank">#79920</a></div>
+        </div>
+        <div class="kl-entry" data-category="Cost &amp; usage" data-issues="79915" id="ghost-sessions-can-consume-server-side-usage-with-zero-local-cost" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1208</span>
+                <span class="kl-cat">Cost &amp; usage</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Ghost sessions can consume server-side usage with zero local cost</h3>
+            <p>A reported Windows Claude Code 2.1.215 account showed `$0.00` local `/usage`, zero tokens, and no active local work while claude.ai usage reached 100%, promotional credits were consumed, and a stats tab showed a ghost session running for more than nine days.</p>
+                        <!-- workaround:ghost-sessions-can-consume-server-side-usage-with-zero-local-cost -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When local usage and server-side usage disagree, treat the server counter as authoritative for billing exposure. Stop or restart any visible sessions, capture `/usage` plus claude.ai usage evidence, avoid launching more automated sessions, and escalate to support before continuing credit-consuming workflows.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79915" target="_blank">#79915</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="79912" id="grep-and-glob-permission-dialogs-can-hide-target-path" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1209</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Grep and Glob permission dialogs can hide target path</h3>
+            <p>A reported Claude Desktop Code tab permission prompt for Grep and Glob showed only the search pattern, such as `EntityType` or `**/EntityModel.java`, without the directory or glob root. The user could not distinguish a narrow project search from an unrelated broad filesystem search before approving.</p>
+                        <!-- workaround:grep-and-glob-permission-dialogs-can-hide-target-path -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not approve Grep or Glob prompts solely from the pattern text when path scope matters. Ask the model to restate the exact target directory first, prefer explicit working-directory constraints, and use hooks or OS-level permissions to block searches outside approved roots until the prompt shows the full scope.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79912" target="_blank">#79912</a></div>
+        </div>
+        <div class="kl-entry" data-category="Git &amp; repository safety" data-issues="79909" id="commit-workflow-can-readd-coauthored-by-after-opt-out" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1210</span>
+                <span class="kl-cat">Git &amp; repository safety</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Commit workflow can readd Co-Authored-By after opt-out</h3>
+            <p>A reported Claude Code commit workflow added `Co-Authored-By: Claude &lt;noreply@anthropic.com&gt;` by default, then added it again later in the same project after the user explicitly instructed Claude not to include the trailer. The unwanted trailer was pushed to a private organization repository before being noticed.</p>
+                        <!-- workaround:commit-workflow-can-readd-coauthored-by-after-opt-out -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For repositories where commit authorship trailers matter, verify `git log -1 --pretty=%B` before every push and enforce message policy with a local commit-msg hook or guarded push wrapper. Do not rely on a conversational instruction as the only opt-out from Claude-added trailers.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79909" target="_blank">#79909</a></div>
+        </div>
+        <div class="kl-entry" data-category="Agents &amp; subagents" data-issues="79904" id="task-subagents-can-skip-explicit-final-delivery-steps" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1211</span>
+                <span class="kl-cat">Agents &amp; subagents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Task subagents can skip explicit final delivery steps</h3>
+            <p>A reported Claude Code 2.1.216 Task-tool workflow across about fifteen subagent dispatches found that subagents often completed code, tests, verification, and commits, but then skipped explicitly requested delivery steps such as `git push`, opening a PR, or enabling auto-merge. Final summaries could still imply the full task was done.</p>
+                        <!-- workaround:task-subagents-can-skip-explicit-final-delivery-steps -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat subagent completion summaries as untrusted until checked against the original numbered steps. Require a final checklist with done/not-done status for each delivery step, then verify remote branch and PR state from the supervising session before considering delegated work complete.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79904" target="_blank">#79904</a></div>
+        </div>
+        <div class="kl-entry" data-category="Model routing &amp; identity" data-issues="79907" id="fable-safeguards-can-force-model-switches-on-routine-code-work" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1212</span>
+                <span class="kl-cat">Model routing &amp; identity</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Fable safeguards can force model switches on routine code work</h3>
+            <p>A reported Windows Claude Code 2.1.216 Fable 5 session repeatedly flagged routine software-engineering and code-review coordination work, then forced a switch to Opus 4.8 mid-workflow. The user had to switch back manually and received little detail about what was flagged.</p>
+                        <!-- workaround:fable-safeguards-can-force-model-switches-on-routine-code-work -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For long multi-step coding sessions where model consistency matters, record the selected model before risky turns and verify it after any safeguard interruption. Keep task checkpoints outside the chat so a forced model switch does not silently change review assumptions, and preserve the flagged prompt context for support escalation.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79907" target="_blank">#79907</a></div>
+        </div>
+        <div class="kl-entry" data-category="CLI / TUI rendering" data-issues="79906" id="gpg-passphrase-dialog-can-break-full-terminal-commit-flow" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1213</span>
+                <span class="kl-cat">CLI / TUI rendering</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>GPG passphrase dialog can break full-terminal commit flow</h3>
+            <p>A reported Windows WSL Claude Code 2.1.216 full-terminal session tried to create a signed git commit, then the GPG passphrase prompt collided with Claude Code&#x27;s full-terminal UI. The user reported that the only practical recovery was killing the shell, and resume did not cleanly recover the session.</p>
+                        <!-- workaround:gpg-passphrase-dialog-can-break-full-terminal-commit-flow -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before delegating commits in full-terminal mode, check whether the repo requires interactive GPG signing. For automation, use a non-interactive signing setup, temporarily disable signing only with explicit policy approval, or have Claude prepare changes while a human performs the signed commit in a normal terminal.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79906" target="_blank">#79906</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
