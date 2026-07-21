@@ -7,6 +7,38 @@
   <updated>2026-07-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Workflow worktree isolation can rename worker branches and leave the root on a run branch</title>
+    <id>https://framework.boucle.sh/limitations.html#workflow-worktree-isolation-can-rename-worker-branches-and-leave-root-on-run-branch</id>
+    <link href="https://framework.boucle.sh/limitations.html#workflow-worktree-isolation-can-rename-worker-branches-and-leave-root-on-run-branch"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Agent SDK / Workflow setup using `isolation: &#x27;worktree&#x27;` saw worker branch names replaced with harness-generated `worktree-&lt;workflowId&gt;-&lt;N&gt;` names instead of the requested `run/&lt;runId&gt;/&lt;id&gt;-&lt;slug&gt;` pattern, across five consecutive runs. The reporter also observed the primary worktree sometimes left checked out on a run or worktree branch after isolated agents finished, and `branch: null` audit-only tasks still left empty branch and worktree artifacts.</summary>
+    <category term="Git &amp; repository safety"/>
+  </entry>
+  <entry>
+    <title>[HIGH] VS Code extension UI can wedge while the agent keeps running headless</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-extension-ui-can-wedge-while-agent-keeps-running-headless</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-extension-ui-can-wedge-while-agent-keeps-running-headless"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Cursor / VS Code extension session wedged after a settings.json permission-rule reconciliation: `/usage`, Show Logs, new input, and extension logging stopped responding, but the CLI transcript showed the agent kept processing a background task completion and continued running tools several minutes later. The user could only recover by cycling the window, and the extension&#x27;s own log was inaccessible through the wedged UI.</summary>
+    <category term="VS Code extension"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Scheduled cloud routines can expose only a partial connector toolset</title>
+    <id>https://framework.boucle.sh/limitations.html#scheduled-cloud-routines-can-expose-only-a-partial-connector-toolset</id>
+    <link href="https://framework.boucle.sh/limitations.html#scheduled-cloud-routines-can-expose-only-a-partial-connector-toolset"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported scheduled cloud routine with an attached claude.ai MCP connector showed the connector as connected but registered only a fixed small subset of tools. Tools required for the job, such as reading channel history, search, and posting, were absent even though the same connector and account exposed the full toolset in interactive Claude Code, web, and desktop sessions. An explicit connector tool allowlist in routine config reportedly did not restore the missing tools.</summary>
+    <category term="Scheduling &amp; remote triggers"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Interactive LSP client can serve stale file buffers after edits</title>
+    <id>https://framework.boucle.sh/limitations.html#interactive-lsp-client-can-serve-stale-file-buffers-after-edits</id>
+    <link href="https://framework.boucle.sh/limitations.html#interactive-lsp-client-can-serve-stale-file-buffers-after-edits"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 interactive session using a plugin-registered `.lsp.json` server sent `textDocument/didOpen` for a file, then failed to send `didChange` or `didSave` after Claude&#x27;s own Edit tool rewrote that file. Subsequent hover, documentSymbol, and reference queries used the server&#x27;s frozen first-query buffer, while the same scenario through headless `claude -p` sent a full-text didChange and returned fresh answers.</summary>
+    <category term="IDE integration"/>
+  </entry>
+  <entry>
     <title>[HIGH] WorktreePool deregistered directories can mutate the parent repo</title>
     <id>https://framework.boucle.sh/limitations.html#worktreepool-deregistered-directories-can-mutate-parent-repo</id>
     <link href="https://framework.boucle.sh/limitations.html#worktreepool-deregistered-directories-can-mutate-parent-repo"/>
@@ -133,37 +165,5 @@
     <updated>2026-07-21T00:00:00Z</updated>
     <summary>A reported Windows 11 Claude Code 2.1.90 scheduled-session setup saw git mutations in the user&#x27;s home clone at session-spawn times, outside any transcripted agent command. Empty-message branch reflog entries moved `refs/heads/main` while `main` was checked out, manufacturing a large staged diff, and separate bare `git checkout HEAD` reflog entries detached the home tree. The report attributes the pattern to harness worktree setup because the timestamps align with session spawn and the commands are absent from transcripts.</summary>
     <category term="Git &amp; repository safety"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Preview MCP dev servers can die silently after idle time</title>
-    <id>https://framework.boucle.sh/limitations.html#preview-mcp-dev-servers-can-die-silently-after-idle-time</id>
-    <link href="https://framework.boucle.sh/limitations.html#preview-mcp-dev-servers-can-die-silently-after-idle-time"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Desktop Windows setup launched a Vite dev server through the Preview MCP `preview_start` tool and saw it stop after about one hour of idle time with no terminal, Preview pane, or harness log explaining why. The next navigation returned connection refused, and `preview_list` showed the server stopped. The same launch configuration reportedly ran for weeks on an earlier Desktop version.</summary>
-    <category term="MCP integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Mobile web MCP approvals can still return -32003 after Allow</title>
-    <id>https://framework.boucle.sh/limitations.html#mobile-web-mcp-approvals-can-return-32003-after-allow</id>
-    <link href="https://framework.boucle.sh/limitations.html#mobile-web-mcp-approvals-can-return-32003-after-allow"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code mobile web session on iOS Safari showed approval prompts for built-in `claude-code-remote` MCP tools such as `create_trigger`, `send_later`, and `list_triggers`, but every tool call still failed with `MCP error -32003: MCP tool call requires approval` after the user tapped Allow. The issue persisted across sessions and days, affected MCP tools only, and was not fixed by adding permissions to `settings.local.json` while built-in tools continued to work.</summary>
-    <category term="MCP integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Headless workspaces lack a supported non-interactive trust path</title>
-    <id>https://framework.boucle.sh/limitations.html#headless-workspaces-lack-supported-noninteractive-trust-path</id>
-    <link href="https://framework.boucle.sh/limitations.html#headless-workspaces-lack-supported-noninteractive-trust-path"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 macOS unattended runner provisioned `.claude/settings.json` permissions in a fresh per-session workdir, then started `claude -p`. Claude Code ignored the permission allowlist because the workspace had not passed the interactive trust dialog, surfaced the trust warning only in CLI output, and left the model seeing ordinary permission denials. The documented workaround was an internal `~/.claude.json` trust flag edit, which is not a supported concurrent runner API.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Cowork Scheduled panel can disappear for a valid running task</title>
-    <id>https://framework.boucle.sh/limitations.html#cowork-scheduled-panel-can-disappear-for-valid-running-task</id>
-    <link href="https://framework.boucle.sh/limitations.html#cowork-scheduled-panel-can-disappear-for-valid-running-task"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Windows Cowork project successfully created and ran a recurring scheduled task, with task metadata stored under the user&#x27;s Claude Scheduled directory, but the project&#x27;s sidebar omitted the Scheduled section entirely. A sibling project in the same account showed its Scheduled panel correctly. This leaves users without the expected project-level UI for viewing or editing an existing running task.</summary>
-    <category term="Cowork &amp; remote"/>
   </entry>
 </feed>
