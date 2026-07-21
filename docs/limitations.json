@@ -1,20 +1,20 @@
 {
   "version": "0.13.0",
-  "count": 1203,
+  "count": 1213,
   "categories": {
     "Hook behavior & events": 183,
-    "Permission system": 125,
+    "Permission system": 126,
     "Hook bypass & evasion": 100,
     "MCP & plugin issues": 60,
     "Subagent & spawned agents": 51,
-    "Desktop & IDE integration": 40,
+    "Desktop & IDE integration": 41,
     "Platform & compatibility": 27,
     "TUI & display": 27,
     "CLI & terminal": 25,
     "Context & memory": 23,
     "Configuration behavior": 21,
     "Tool behavior": 19,
-    "Agents & subagents": 17,
+    "Agents & subagents": 18,
     "Performance & cost": 17,
     "Security & trust boundaries": 14,
     "MCP integration": 13,
@@ -28,37 +28,38 @@
     "Bash & shell execution": 10,
     "File system & paths": 10,
     "Scheduling & remote triggers": 10,
+    "VS Code extension": 10,
     "hooks": 9,
     "Model behavior": 9,
-    "VS Code extension": 9,
+    "Worktree": 9,
     "auth": 8,
     "Auth & accounts": 8,
     "Configuration & settings": 8,
     "Scheduled tasks": 8,
-    "Worktree": 8,
     "Desktop & platform bugs": 7,
+    "Git & repository safety": 7,
     "MCP": 7,
     "Permissions": 7,
     "Permissions & safety": 7,
     "Authentication & accounts": 6,
-    "Git & repository safety": 6,
     "Model behavior & output": 5,
     "Skills & commands": 5,
     "Skills / slash commands": 5,
     "UX & display": 5,
+    "CLI / TUI rendering": 4,
     "MCP & plugins": 4,
     "Memory & context": 4,
     "permissions": 4,
     "sandbox": 4,
     "Telemetry & insights": 4,
     "tui": 4,
-    "CLI / TUI rendering": 3,
     "Context / compaction": 3,
     "cowork": 3,
     "Desktop": 3,
     "Hooks": 3,
     "IDE integration": 3,
     "Model behavior & instructions": 3,
+    "Model routing & identity": 3,
     "model-behavior": 3,
     "Remote": 3,
     "Sandbox": 3,
@@ -73,6 +74,7 @@
     "auth/bedrock": 2,
     "auth/oauth": 2,
     "Configuration": 2,
+    "Cost & usage": 2,
     "Cowork": 2,
     "Cowork / remote sessions": 2,
     "Hooks & automation": 2,
@@ -81,9 +83,9 @@
     "MCP & tool integration": 2,
     "MCP and plugins": 2,
     "Model behavior & compliance": 2,
-    "Model routing & identity": 2,
     "Multi-agent": 2,
     "Performance": 2,
+    "Performance & resource usage": 2,
     "Performance & resources": 2,
     "Permissions and safety": 2,
     "platform": 2,
@@ -110,7 +112,6 @@
     "context-management": 1,
     "core": 1,
     "Core engine": 1,
-    "Cost & usage": 1,
     "Cowork & cloud": 1,
     "data-integrity": 1,
     "data-loss": 1,
@@ -132,7 +133,6 @@
     "Multi-agent / subagents": 1,
     "Observability": 1,
     "performance": 1,
-    "Performance & resource usage": 1,
     "Permissions & sandbox": 1,
     "Permissions & security": 1,
     "permissions/safety": 1,
@@ -180,10 +180,10 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 93,
-    "HIGH": 618,
+    "CRITICAL": 94,
+    "HIGH": 623,
     "LOW": 105,
-    "MEDIUM": 387
+    "MEDIUM": 391
   },
   "entries": [
     {
@@ -15438,30 +15438,160 @@
       "workaround": "If Windows Startup settings crashes after enabling Claude Desktop launch-on-startup, first turn off the setting inside Claude and fully quit it. Then remove the `Claude` value from `HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run` and the matching `StartupApproved\\Run` entry, and confirm the Run key is clean before reopening Settings.",
       "status": "open",
       "date_added": "2026-07-21"
+    },
+    {
+      "id": "vscode-memory-panel-can-refresh-against-orphaned-session-id",
+      "title": "VS Code memory panel can refresh against orphaned session ID",
+      "category": "VS Code extension",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79924"
+      ],
+      "description": "A reported Windows VS Code extension session opened `/memory`, then the panel refresh failed with `No conversation found with session ID`. The failing ID matched an empty `~/.claude/session-env/<id>/` directory with no matching `~/.claude/projects/**/<id>.jsonl` transcript, suggesting the panel kept an unpromoted session ID instead of the active conversation ID.",
+      "workaround": "If `/memory` refresh fails with a missing session ID, inspect whether that ID has a real project transcript before trusting the panel state. Reopen the memory panel from the active session, keep memory edits in a separate file until saved, and treat empty `session-env` directories as stale rather than as authoritative conversations.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "windows-lfs-worktree-isolation-can-litter-dev-null-hooks",
+      "title": "Windows LFS worktree isolation can litter dev/null hook files",
+      "category": "Worktree",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79923"
+      ],
+      "description": "A reported Windows Claude Code 2.0.42 worktree-isolation flow in a Git LFS repo created untracked files such as `dev\\null\\post-checkout`, `post-commit`, `post-merge`, and `pre-push` inside every managed worktree. The report traced this to `core.hooksPath=/dev/null` during checkout: Git special-cases it, but git-lfs resolves it relative to the worktree on Windows.",
+      "workaround": "After creating Windows isolation worktrees in Git LFS repos, check for untracked `dev/null/*` hook stubs before committing. If you control the setup path, disable hooks with an absolute empty hooks directory outside the working tree instead of `/dev/null`, and add cleanup to real hooks only after verifying it will not mask other untracked files.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "desktop-and-vscode-sessions-can-freeze-until-other-session-input",
+      "title": "Desktop and VS Code sessions can freeze until other session input",
+      "category": "Desktop & IDE integration",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79921"
+      ],
+      "description": "A reported macOS Claude Desktop and VS Code extension setup with multiple concurrent sessions could leave one session stuck on `thinking` indefinitely. The frozen session resumed immediately when the user typed into another session, while network traces showed only keep-alives and no inbound response traffic during the freeze, pointing to a local scheduling or event-loop stall.",
+      "workaround": "For concurrent Desktop or VS Code work, do not assume a silent `thinking` state is waiting on the server. Keep critical work in the terminal CLI or web app when possible, avoid running several long local sessions in the same client, and preserve enough transcript state to restart a stuck session without losing the task.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "background-session-daemon-restore-can-exhaust-system-file-table",
+      "title": "Background session daemon restore can exhaust system file table",
+      "category": "Performance & resource usage",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79920"
+      ],
+      "description": "A reported macOS Claude Code 2.1.216 daemon restored many host-managed background sessions simultaneously from `~/.claude/daemon/roster.json`, drove `bg-spare` processes into a claim/crash/respawn loop, and opened file descriptors fast enough to hit the system-wide file table limit. The reporter captured ENFILE errors, userspace wedges, launchd SIGBUS crashes, and kernel panics.",
+      "workaround": "Keep background-session rosters small after unclean daemon exits and avoid restoring many host-managed sessions at once. If the system shows ENFILE, spurious login failures, or daemon crash loops, move `~/.claude/daemon/roster.json` aside before restarting Claude Code, then resume sessions gradually while monitoring file-descriptor counts.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "ghost-sessions-can-consume-server-side-usage-with-zero-local-cost",
+      "title": "Ghost sessions can consume server-side usage with zero local cost",
+      "category": "Cost & usage",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79915"
+      ],
+      "description": "A reported Windows Claude Code 2.1.215 account showed `$0.00` local `/usage`, zero tokens, and no active local work while claude.ai usage reached 100%, promotional credits were consumed, and a stats tab showed a ghost session running for more than nine days.",
+      "workaround": "When local usage and server-side usage disagree, treat the server counter as authoritative for billing exposure. Stop or restart any visible sessions, capture `/usage` plus claude.ai usage evidence, avoid launching more automated sessions, and escalate to support before continuing credit-consuming workflows.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "grep-and-glob-permission-dialogs-can-hide-target-path",
+      "title": "Grep and Glob permission dialogs can hide target path",
+      "category": "Permission system",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79912"
+      ],
+      "description": "A reported Claude Desktop Code tab permission prompt for Grep and Glob showed only the search pattern, such as `EntityType` or `**/EntityModel.java`, without the directory or glob root. The user could not distinguish a narrow project search from an unrelated broad filesystem search before approving.",
+      "workaround": "Do not approve Grep or Glob prompts solely from the pattern text when path scope matters. Ask the model to restate the exact target directory first, prefer explicit working-directory constraints, and use hooks or OS-level permissions to block searches outside approved roots until the prompt shows the full scope.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "commit-workflow-can-readd-coauthored-by-after-opt-out",
+      "title": "Commit workflow can readd Co-Authored-By after opt-out",
+      "category": "Git & repository safety",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79909"
+      ],
+      "description": "A reported Claude Code commit workflow added `Co-Authored-By: Claude <noreply@anthropic.com>` by default, then added it again later in the same project after the user explicitly instructed Claude not to include the trailer. The unwanted trailer was pushed to a private organization repository before being noticed.",
+      "workaround": "For repositories where commit authorship trailers matter, verify `git log -1 --pretty=%B` before every push and enforce message policy with a local commit-msg hook or guarded push wrapper. Do not rely on a conversational instruction as the only opt-out from Claude-added trailers.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "task-subagents-can-skip-explicit-final-delivery-steps",
+      "title": "Task subagents can skip explicit final delivery steps",
+      "category": "Agents & subagents",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79904"
+      ],
+      "description": "A reported Claude Code 2.1.216 Task-tool workflow across about fifteen subagent dispatches found that subagents often completed code, tests, verification, and commits, but then skipped explicitly requested delivery steps such as `git push`, opening a PR, or enabling auto-merge. Final summaries could still imply the full task was done.",
+      "workaround": "Treat subagent completion summaries as untrusted until checked against the original numbered steps. Require a final checklist with done/not-done status for each delivery step, then verify remote branch and PR state from the supervising session before considering delegated work complete.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "fable-safeguards-can-force-model-switches-on-routine-code-work",
+      "title": "Fable safeguards can force model switches on routine code work",
+      "category": "Model routing & identity",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79907"
+      ],
+      "description": "A reported Windows Claude Code 2.1.216 Fable 5 session repeatedly flagged routine software-engineering and code-review coordination work, then forced a switch to Opus 4.8 mid-workflow. The user had to switch back manually and received little detail about what was flagged.",
+      "workaround": "For long multi-step coding sessions where model consistency matters, record the selected model before risky turns and verify it after any safeguard interruption. Keep task checkpoints outside the chat so a forced model switch does not silently change review assumptions, and preserve the flagged prompt context for support escalation.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "gpg-passphrase-dialog-can-break-full-terminal-commit-flow",
+      "title": "GPG passphrase dialog can break full-terminal commit flow",
+      "category": "CLI / TUI rendering",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79906"
+      ],
+      "description": "A reported Windows WSL Claude Code 2.1.216 full-terminal session tried to create a signed git commit, then the GPG passphrase prompt collided with Claude Code's full-terminal UI. The user reported that the only practical recovery was killing the shell, and resume did not cleanly recover the session.",
+      "workaround": "Before delegating commits in full-terminal mode, check whether the repo requires interactive GPG signing. For automation, use a non-interactive signing setup, temporarily disable signing only with explicit policy approval, or have Claude prepare changes while a human performs the signed commit in a normal terminal.",
+      "status": "open",
+      "date_added": "2026-07-21"
     }
   ],
   "status_summary": {
-    "open": 1189,
+    "open": 1199,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 93,
-    "high": 618,
+    "critical": 94,
+    "high": 623,
     "low": 105,
-    "medium": 387
+    "medium": 391
   },
   "lastUpdated": "2026-07-21",
   "stats": {
-    "total": 1203,
-    "critical": 93,
-    "high": 618,
-    "medium": 387,
+    "total": 1213,
+    "critical": 94,
+    "high": 623,
+    "medium": 391,
     "low": 105,
-    "open": 1189,
+    "open": 1199,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-21",
-  "total": 1203
+  "total": 1213
 }
