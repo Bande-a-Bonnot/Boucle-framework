@@ -1,20 +1,20 @@
 {
   "version": "0.13.0",
-  "count": 1073,
+  "count": 1080,
   "categories": {
-    "Hook behavior & events": 178,
-    "Permission system": 118,
+    "Hook behavior & events": 179,
+    "Permission system": 119,
     "Hook bypass & evasion": 99,
     "MCP & plugin issues": 55,
     "Subagent & spawned agents": 41,
-    "Desktop & IDE integration": 36,
+    "Desktop & IDE integration": 37,
     "Platform & compatibility": 26,
     "CLI & terminal": 25,
     "TUI & display": 23,
     "Configuration behavior": 21,
     "Context & memory": 21,
+    "Agents & subagents": 17,
     "Tool behavior": 17,
-    "Agents & subagents": 16,
     "Performance & cost": 14,
     "MCP & integrations": 12,
     "Security & trust boundaries": 12,
@@ -22,10 +22,10 @@
     "Data integrity": 9,
     "File system & paths": 9,
     "hooks": 9,
+    "Sandbox & permissions": 9,
     "auth": 8,
     "Configuration & settings": 8,
     "Remote & cloud": 8,
-    "Sandbox & permissions": 8,
     "Scheduling & remote triggers": 8,
     "Auth & accounts": 7,
     "Cowork & remote": 7,
@@ -36,13 +36,13 @@
     "VS Code extension": 6,
     "Bash & shell execution": 5,
     "Core & session management": 5,
+    "MCP integration": 5,
     "Model behavior": 5,
     "Scheduled tasks": 5,
     "Skills & commands": 5,
     "UX & display": 5,
     "Worktree": 5,
     "MCP & plugins": 4,
-    "MCP integration": 4,
     "permissions": 4,
     "sandbox": 4,
     "Skills / slash commands": 4,
@@ -71,6 +71,7 @@
     "Configuration": 2,
     "Cowork": 2,
     "Cowork / remote sessions": 2,
+    "Git & repository safety": 2,
     "Hooks & automation": 2,
     "IDE integration": 2,
     "IDE integrations": 2,
@@ -112,7 +113,6 @@
     "Error handling & recovery": 1,
     "File system": 1,
     "filesystem": 1,
-    "Git & repository safety": 1,
     "Hook execution & lifecycle": 1,
     "Hooks / extensions": 1,
     "hooks-and-automation": 1,
@@ -172,10 +172,10 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 78,
-    "HIGH": 544,
-    "LOW": 100,
-    "MEDIUM": 351
+    "CRITICAL": 81,
+    "HIGH": 546,
+    "LOW": 101,
+    "MEDIUM": 352
   },
   "entries": [
     {
@@ -13739,30 +13739,121 @@
       "workaround": "Avoid repeated mid-session model switches in long-running or background-agent-heavy sessions. Checkpoint important state before using `/model`, and if the CLI hangs after a switch, try returning to the original model before force-killing the process. For automation or evaluations, prefer fresh sessions per model and inspect transcript model fields rather than mutating model choice in place.",
       "status": "open",
       "date_added": "2026-07-20"
+    },
+    {
+      "id": "chrome-cowork-can-navigate-to-unrelated-sites-without-attribution",
+      "title": "Claude in Chrome can navigate to unrelated sites without attribution",
+      "category": "Desktop & IDE integration",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79596"
+      ],
+      "description": "A reported Cowork and Claude in Chrome incident found a real Chrome profile navigated to an unrelated external site during Cowork-related activity, with supporting evidence from Chrome history and endpoint-protection logs but no visible session transcript explaining the URL argument or reasoning. The core risk is not the destination site itself; it is that browser-tool navigation can be hard to attribute after the fact, leaving users unable to connect a real tab movement to a prompt, tool call, or session.",
+      "workaround": "For browser-enabled Cowork or Claude in Chrome work, log requested domains and tool-call URL arguments outside the model transcript when possible. Keep Chrome history, endpoint logs, and session IDs long enough to reconcile unexpected navigation, and use separate browser profiles for sensitive work. Treat unexplained third-party navigation as a security incident until the originating tool call and session can be identified.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "ci-monitoring-can-misreport-missing-pr-as-gh-auth-failure",
+      "title": "CI monitoring can misreport a missing PR as a gh auth failure",
+      "category": "Git & repository safety",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79599"
+      ],
+      "description": "A reported CI monitoring panel resolved PR status from the current working directory's repository, then showed a generic `gh` authentication/install warning when the relevant PR actually lived in another nested or sibling repository. In multi-repo workspaces this sends users toward credential debugging even though `gh pr checks -R <repo>` succeeds and the real problem is repo/PR resolution.",
+      "workaround": "When CI monitoring says checks are unavailable, independently run `gh pr checks <number> -R owner/repo` before changing authentication. In meta-repo or nested-repo layouts, launch Claude Code from the repository that owns the PR or keep an explicit PR/repo note in the task. Treat auth messages from CI panels as untrusted until you have checked whether the current directory has an associated PR.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "code-review-subagents-can-spawn-nested-subagents-and-zombie-after-quota",
+      "title": "Code-review subagents can spawn nested subagents and linger after quota exhaustion",
+      "category": "Agents & subagents",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79580"
+      ],
+      "description": "A reported `/code-review` subagent spawned another subagent for its own review work, initially treated itself as if it were the top-level Claude Code process, then remained visible in the subagent list after token exhaustion until `Stop Task` was pressed. The stop action then errored because the task state was already completed, suggesting nested-agent identity and quota-exhaustion lifecycle paths can diverge from the visible task list.",
+      "workaround": "For review workflows, tell subagents explicitly not to spawn further agents unless requested, and audit the subagent list after quota, rate-limit, or cancellation events. Do not assume a completed or quota-limited worker has been removed cleanly. For unattended review automation, record subagent IDs and expected artifacts so nested reviews and stale task-list entries are visible.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "browser-pane-get-page-text-tabid-schema-can-disagree-with-validator",
+      "title": "Browser pane get_page_text schema can disagree with its validator",
+      "category": "MCP integration",
+      "severity": "LOW",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79557"
+      ],
+      "description": "A reported Claude Code Desktop Browser pane tool described `mcp__Claude_Browser__get_page_text` `tabId` as optional with a default fronted tab, but the server-side validator rejected calls where `tabId` was omitted. The result is a guaranteed failed tool call for models that trust the schema and only succeeds after retrying with an explicit `tabId` such as `main`.",
+      "workaround": "Pass `tabId` explicitly for Browser pane text extraction even if the schema says it is optional. For tool-regression checks, include schema/validator parity tests that call tools with documented defaults omitted. In long-running browser automation, treat validation failures on optional fields as promptable tool-spec drift, not necessarily model failure.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "vscode-permission-prompt-ui-can-skip-notification-hooks",
+      "title": "VS Code permission prompts can skip Notification hooks",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79362"
+      ],
+      "description": "A reported VS Code extension path did not fire the `Notification` hook for `permission_prompt` when the extension's native permission UI asked for tool approval, even though the same bundled binary run directly in a terminal fired the hook for the same approval request. The configured hook silently never executed, while other hook paths such as PreToolUse for AskUserQuestion still worked inside the extension.",
+      "workaround": "If notification hooks are part of your safety or paging path, test them separately in the terminal CLI and in the VS Code extension UI. Do not assume the extension's native approval popup exercises the same Notification event path. Keep critical approval enforcement in PreToolUse or external wrappers, and use a smoke test that waits on a real permission prompt and verifies the hook side effect.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "windows-ask-permission-decisions-can-fail-open-for-tools",
+      "title": "Windows ask permission decisions can fail open for tools",
+      "category": "Permission system",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79356"
+      ],
+      "description": "A reported Windows Claude Code 2.1.215 session in default permission mode ran tool calls immediately even when `permissions.ask` listed those tools and a PreToolUse hook returned `permissionDecision: \"ask\"` for a dangerous PowerShell command. The reporter also found Windows hook commands written in PowerShell syntax can be executed through bash unless wrapped explicitly, but fixing that hook invocation issue did not restore ask enforcement.",
+      "workaround": "On Windows, verify ask-mode enforcement with a disposable file before trusting `permissions.ask` or hook-returned `ask` decisions. Wrap PowerShell hooks with an explicit `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File ...` command, and make destructive guards fail closed by blocking rather than merely asking when practical. Keep OS-level backups or deny-by-default wrappers for commands that must not run without confirmation.",
+      "status": "open",
+      "date_added": "2026-07-20"
+    },
+    {
+      "id": "wsl2-bash-sandbox-network-isolation-can-fail-open-despite-failifunavailable",
+      "title": "WSL2 Bash sandbox network isolation can fail open despite failIfUnavailable",
+      "category": "Sandbox & permissions",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79316"
+      ],
+      "description": "A reported WSL2 Claude Code 2.1.215 setup found the built-in Bash sandbox's filesystem isolation working while network isolation behaved nondeterministically: the proxy sometimes failed to start, sometimes allowed denied domains, and only rarely enforced the configured allowlist. `sandbox.failIfUnavailable: true` did not catch a dead or non-enforcing network proxy because it appeared to check sandbox binaries rather than runtime proxy behavior.",
+      "workaround": "Do not rely on WSL2 network sandboxing without a live runtime probe. Before sensitive headless work, run one allowed-domain request and one denied-domain request inside the sandbox and fail closed unless both outcomes match policy. Prefer native Linux for network-isolated automation, document WSL2 as suspect until verified on the installed version, and treat untrusted-workspace degraded sandbox behavior as a hard stop rather than a warning.",
+      "status": "open",
+      "date_added": "2026-07-20"
     }
   ],
   "status_summary": {
-    "open": 1059,
+    "open": 1066,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 78,
-    "high": 544,
-    "low": 100,
-    "medium": 351
+    "critical": 81,
+    "high": 546,
+    "low": 101,
+    "medium": 352
   },
   "lastUpdated": "2026-07-20",
   "stats": {
-    "total": 1073,
-    "critical": 78,
-    "high": 544,
-    "medium": 351,
-    "low": 100,
-    "open": 1059,
+    "total": 1080,
+    "critical": 81,
+    "high": 546,
+    "medium": 352,
+    "low": 101,
+    "open": 1066,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-20",
-  "total": 1073
+  "total": 1080
 }
