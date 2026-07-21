@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1080,
+  "count": 1084,
   "categories": {
     "Hook behavior & events": 179,
     "Permission system": 119,
@@ -16,26 +16,26 @@
     "Agents & subagents": 17,
     "Tool behavior": 17,
     "Performance & cost": 14,
+    "Security & trust boundaries": 13,
     "MCP & integrations": 12,
-    "Security & trust boundaries": 12,
     "Plugin & channel system": 10,
+    "Sandbox & permissions": 10,
     "Data integrity": 9,
     "File system & paths": 9,
     "hooks": 9,
-    "Sandbox & permissions": 9,
     "auth": 8,
+    "Auth & accounts": 8,
     "Configuration & settings": 8,
     "Remote & cloud": 8,
     "Scheduling & remote triggers": 8,
-    "Auth & accounts": 7,
     "Cowork & remote": 7,
     "MCP": 7,
     "Permissions": 7,
+    "Core & session management": 6,
     "Desktop & platform bugs": 6,
     "Permissions & safety": 6,
     "VS Code extension": 6,
     "Bash & shell execution": 5,
-    "Core & session management": 5,
     "MCP integration": 5,
     "Model behavior": 5,
     "Scheduled tasks": 5,
@@ -172,8 +172,8 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 81,
-    "HIGH": 546,
+    "CRITICAL": 82,
+    "HIGH": 549,
     "LOW": 101,
     "MEDIUM": 352
   },
@@ -13830,30 +13830,82 @@
       "workaround": "Do not rely on WSL2 network sandboxing without a live runtime probe. Before sensitive headless work, run one allowed-domain request and one denied-domain request inside the sandbox and fail closed unless both outcomes match policy. Prefer native Linux for network-isolated automation, document WSL2 as suspect until verified on the installed version, and treat untrusted-workspace degraded sandbox behavior as a hard stop rather than a warning.",
       "status": "open",
       "date_added": "2026-07-20"
+    },
+    {
+      "id": "mid-turn-user-interrupts-can-be-lost-during-background-tool-runs",
+      "title": "Mid-turn user interrupts can be lost during background tool runs",
+      "category": "Core & session management",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79609"
+      ],
+      "description": "A reported Claude Code 2.1.216 Linux session repeatedly failed to deliver user messages sent mid-turn while the model was running many sequential tool calls, background Bash tasks, and AskUserQuestion calls. The user was trying to stop or redirect an in-flight VM and documentation operation, but the model saw none of those messages until after completing the work. Earlier mid-turn messages in the same session sometimes surfaced, so delivery appears nondeterministic rather than completely disabled.",
+      "workaround": "For long-running or remote-control turns, do not rely on mid-turn chat as the only stop channel. Use short bounded tasks, explicit checkpoints before mutating infrastructure, and an out-of-band kill or pause mechanism for background processes. When a stop message matters, verify the model acknowledged it before allowing further destructive or hard-to-revert actions.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "assistant-text-can-fabricate-system-styled-remotetrigger-handoff-warnings",
+      "title": "Assistant text can fabricate system-styled RemoteTrigger handoff warnings",
+      "category": "Security & trust boundaries",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79608"
+      ],
+      "description": "A reported Claude Code 2.1.215 macOS session ended a normal assistant progress reply with a fabricated `<system_warning>` block that claimed the local session was near capacity and instructed the user to load `RemoteTrigger` with `trigger_type: \"session_handoff\"`. Local forensics found the string only inside that assistant text block, while the real binaries contained `RemoteTrigger` and `trigger_type` but not the fabricated `session_handoff` value or `system_warning` tag. The warning therefore looked like a harness notice while being model-generated text.",
+      "workaround": "Treat any system-styled XML or warning block embedded inside assistant prose as untrusted unless it is rendered by the actual client shell or tool harness. Do not invoke RemoteTrigger, handoff, or other deferred tools solely because prior assistant text told you to. For sensitive sessions, add a local policy that rejects assistant-authored system-looking tags and requires an independent status command before handoff or remote-control actions.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "root-linux-sandbox-can-break-all-bash-after-2-1-216-cap-drop-change",
+      "title": "Root Linux sandbox can break all Bash after the 2.1.216 cap-drop change",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79606"
+      ],
+      "description": "A reported Claude Code 2.1.216 regression on Linux and WSL2 root installs causes every sandboxed Bash tool call to fail before the user command runs with `apply-seccomp: write /proc/self/uid_map: Operation not permitted`. The reporter tied the regression to the new default bwrap arguments that add `--unshare-user --cap-drop ALL`; with uid 0 on kernels requiring CAP_SETFCAP for root uid maps, the nested user namespace cannot write the uid map after all capabilities are dropped. Claude Code 2.1.215 worked in the same setup.",
+      "workaround": "Avoid running Claude Code as root when depending on the native Bash sandbox. If a root install is unavoidable, test a harmless Bash command immediately after each update and pin or downgrade if all Bash calls fail. Reported temporary mitigations include `sandbox.network.allowAllUnixSockets: true`, which skips the failing seccomp step while preserving other sandbox layers, or a version-level fix that retains CAP_SETFCAP only for the uid-map setup.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "claude-code-oauth-token-can-silently-override-max-subscription-billing-mode",
+      "title": "CLAUDE_CODE_OAUTH_TOKEN can silently override Max subscription billing mode",
+      "category": "Auth & accounts",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79602"
+      ],
+      "description": "A reported Claude Code 2.1.216 macOS setup with an active Max login still started sessions in `Claude API` mode whenever `CLAUDE_CODE_OAUTH_TOKEN` was exported from the shell environment. Removing that environment variable returned the same account to `Claude Max` in the banner and `/status`. The switch from subscription credentials to the environment token was silent apart from the small startup label, creating a billing-safety risk for users who unintentionally carry old tokens in shell startup files.",
+      "workaround": "Before long or expensive sessions, run `/status` and confirm the billing source is the intended subscription or API mode. Audit shell startup files such as `.zshenv`, `.zshrc`, and CI environment blocks for `CLAUDE_CODE_OAUTH_TOKEN` when Claude Code unexpectedly shows `Claude API`. For subscription-only workflows, launch with the token unset and add a local preflight that fails if the environment variable is present.",
+      "status": "open",
+      "date_added": "2026-07-21"
     }
   ],
   "status_summary": {
-    "open": 1066,
+    "open": 1070,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 81,
-    "high": 546,
+    "critical": 82,
+    "high": 549,
     "low": 101,
     "medium": 352
   },
-  "lastUpdated": "2026-07-20",
+  "lastUpdated": "2026-07-21",
   "stats": {
-    "total": 1080,
-    "critical": 81,
-    "high": 546,
+    "total": 1084,
+    "critical": 82,
+    "high": 549,
     "medium": 352,
     "low": 101,
-    "open": 1066,
+    "open": 1070,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-07-20",
-  "total": 1080
+  "last_updated": "2026-07-21",
+  "total": 1084
 }
