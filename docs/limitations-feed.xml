@@ -7,6 +7,70 @@
   <updated>2026-07-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Monitor-style JSON polling can hide CLI failures</title>
+    <id>https://framework.boucle.sh/limitations.html#monitor-style-json-polling-can-hide-cli-failures</id>
+    <link href="https://framework.boucle.sh/limitations.html#monitor-style-json-polling-can-hide-cli-failures"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Monitor-tool polling loop merged a GitHub CLI command&#x27;s stdout and stderr, then parsed the result as JSON while suppressing parser errors. Because the `gh run list --json` field list was invalid, the CLI failed immediately, the JSON parser failure was hidden, and the Monitor task looped indefinitely even after the workflow had completed. The report notes that Monitor guidance about merging stderr still needs explicit exit-status checks before JSON parsing.</summary>
+    <category term="Tool behavior"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Subagent explicit tool allowlists can silently collapse when MCP is unavailable</title>
+    <id>https://framework.boucle.sh/limitations.html#subagent-explicit-tool-allowlists-can-silently-collapse-when-mcp-is-unavailable</id>
+    <link href="https://framework.boucle.sh/limitations.html#subagent-explicit-tool-allowlists-can-silently-collapse-when-mcp-is-unavailable"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.208 desktop subagent with an explicit `tools:` allowlist containing built-ins, `ToolSearch`, and Playwright MCP tools sometimes spawned with only `Read`, `Write`, `Bash`, and `WebSearch`. The missing MCP tools and `ToolSearch` were not reported as a spawn warning, while a `tools: *` subagent spawned near the same time could still load the Playwright schema. The reporter inferred that explicit allowlists may be resolved once against transient MCP availability and silently degraded.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Background memory reaper can leave orphaned child processes</title>
+    <id>https://framework.boucle.sh/limitations.html#background-memory-reaper-can-leave-orphaned-child-processes</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-memory-reaper-can-leave-orphaned-child-processes"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 Linux background Bash task killed by the memory-pressure reaper stopped only the tracked shell while child processes survived, were reparented, and continued running. The user observed three reap kills in one long session where `make`-driven integration suites kept running after task notifications reported the background command as killed. Manual TaskStop on the same version killed the whole process tree, suggesting different kill semantics between stop paths.</summary>
+    <category term="Bash &amp; shell execution"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Validation-failed tool inputs can remain as dead context</title>
+    <id>https://framework.boucle.sh/limitations.html#validation-failed-tool-inputs-can-remain-as-dead-context</id>
+    <link href="https://framework.boucle.sh/limitations.html#validation-failed-tool-inputs-can-remain-as-dead-context"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.215 feature gap leaves full oversized inputs from pre-execution validation-failed tool calls in the transcript. For example, a large `Write` call rejected because the file was not read first can keep its entire content payload in later context even though the call had no side effects and the failure reason was independent of the payload. A successful retry then adds another full copy.</summary>
+    <category term="Context &amp; memory"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Fork prompts can leak back into the parent session</title>
+    <id>https://framework.boucle.sh/limitations.html#fork-prompt-can-leak-back-into-parent-session</id>
+    <link href="https://framework.boucle.sh/limitations.html#fork-prompt-can-leak-back-into-parent-session"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.206 macOS `/fork &lt;prompt&gt;` flow delivered the forked task prompt into the parent session as an actionable instruction. The parent then executed the same side-effecting task in parallel with the fork, including upstream issue research and preparation to create public GitHub issues or scheduled routines, while fork notifications and the final fork result also appeared in the parent transcript.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Assistant output can include unrelated conversation fragments</title>
+    <id>https://framework.boucle.sh/limitations.html#assistant-output-can-include-unrelated-conversation-fragments</id>
+    <link href="https://framework.boucle.sh/limitations.html#assistant-output-can-include-unrelated-conversation-fragments"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported long Claude Code 2.1.216 macOS conversation in Chinese ended one assistant message with a coherent unrelated English roleplay-style transcript fragment. The injected content had a separate structure and topic from the user&#x27;s current warehouse and supply-chain design discussion, suggesting possible cross-context contamination rather than ordinary hallucinated wording. The reporter also filed the full transcript through `/bug`.</summary>
+    <category term="Model behavior &amp; output"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Cowork tab can disappear despite packaged runtime and healthy gates</title>
+    <id>https://framework.boucle.sh/limitations.html#cowork-tab-can-disappear-despite-packaged-runtime-and-healthy-gates</id>
+    <link href="https://framework.boucle.sh/limitations.html#cowork-tab-can-disappear-despite-packaged-runtime-and-healthy-gates"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Desktop 1.22209.3 macOS install lost the Cowork sidebar tab even though Cowork assets, VM images, protocol handlers, logs, and local gate checks all indicated the runtime was present and healthy. The reporter found no emitted packaging-failure message and inferred the tab visibility was controlled by account or server-delivered web flags rather than the local bundle state.</summary>
+    <category term="Cowork &amp; remote"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Harness session spawn can mutate the home git checkout</title>
+    <id>https://framework.boucle.sh/limitations.html#harness-session-spawn-can-mutate-home-git-checkout</id>
+    <link href="https://framework.boucle.sh/limitations.html#harness-session-spawn-can-mutate-home-git-checkout"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Windows 11 Claude Code 2.1.90 scheduled-session setup saw git mutations in the user&#x27;s home clone at session-spawn times, outside any transcripted agent command. Empty-message branch reflog entries moved `refs/heads/main` while `main` was checked out, manufacturing a large staged diff, and separate bare `git checkout HEAD` reflog entries detached the home tree. The report attributes the pattern to harness worktree setup because the timestamps align with session spawn and the commands are absent from transcripts.</summary>
+    <category term="Git &amp; repository safety"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Preview MCP dev servers can die silently after idle time</title>
     <id>https://framework.boucle.sh/limitations.html#preview-mcp-dev-servers-can-die-silently-after-idle-time</id>
     <link href="https://framework.boucle.sh/limitations.html#preview-mcp-dev-servers-can-die-silently-after-idle-time"/>
@@ -101,69 +165,5 @@
     <updated>2026-07-21T00:00:00Z</updated>
     <summary>A reported `claude.ai/code/routines` setup showed single-hour cron schedules converted from UTC to the viewer&#x27;s local timezone, but multi-hour expressions such as `0 0,6,12,18 * * *` rendered the raw UTC hours as if they were local. API readback confirmed the routine fired at the UTC-derived time, not the UI-rendered local time, so users outside UTC can be misled about when automation will run.</summary>
     <category term="Scheduling &amp; remote triggers"/>
-  </entry>
-  <entry>
-    <title>[HIGH] VS Code org verification can run before OAuth refresh on first launch</title>
-    <id>https://framework.boucle.sh/limitations.html#vscode-org-verification-can-run-before-oauth-refresh</id>
-    <link href="https://framework.boucle.sh/limitations.html#vscode-org-verification-can-run-before-oauth-refresh"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code VS Code extension setup on an organization-bound Team machine failed on the first launch of the day because startup fetched policy limits, fetched the OAuth profile, and validated organization membership with an expired access token before any refresh attempt. All checks returned 401 and org verification was fatal, so the process exited with code 1. The credentials file still contained the expired timestamp after the crash, while opening a new window immediately refreshed successfully.</summary>
-    <category term="Authentication &amp; accounts"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Desktop shell-environment extraction can block Linux startup for 25 seconds</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-shell-environment-extraction-can-block-linux-startup</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-shell-environment-extraction-can-block-linux-startup"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Desktop Linux setup saw the embedded Claude Code Desktop component regress from sub-second startup extraction on 2.1.205 to about 25 seconds of main-process blocking after auto-update to 2.1.209. The app logs showed `[event-loop-stall] main process blocked for ~25000ms` followed by shell environment extraction timeout warnings, even though reproducing the shell command manually in the same stripped environment completed in about 0.1 seconds. The delay blocks window creation and can break window-management automation waiting for the app to appear.</summary>
-    <category term="Startup &amp; environment"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Headless `claude -p` can fail OAuth refresh while an interactive session still works</title>
-    <id>https://framework.boucle.sh/limitations.html#headless-claude-p-can-fail-oauth-refresh-while-interactive-session-works</id>
-    <link href="https://framework.boucle.sh/limitations.html#headless-claude-p-can-fail-oauth-refresh-while-interactive-session-works"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported macOS Claude Code 2.1.216 setup had unattended `claude -p` invocations fail immediately with `Failed to authenticate: OAuth session expired and could not be refreshed`, even while a concurrent interactive Claude Code session on the same machine continued to make successful requests. A clean-environment manual repro using only `HOME` and a minimal `PATH` also failed, leaving launchd, cron, webhook, and supervisor patterns without a headless recovery path once the stored OAuth state reaches this condition.</summary>
-    <category term="Authentication &amp; accounts"/>
-  </entry>
-  <entry>
-    <title>[HIGH] SDK background Task Bash denial can poison parent-session Bash access</title>
-    <id>https://framework.boucle.sh/limitations.html#sdk-background-task-bash-denial-can-poison-parent-session</id>
-    <link href="https://framework.boucle.sh/limitations.html#sdk-background-task-bash-denial-can-poison-parent-session"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported `claude-agent-sdk` Python setup using `permission_mode: default`, `allowed_tools` including Bash, and a `canUseTool` callback that allowed Bash still saw background Task subagents receive hard Bash denials. After the background denial, the parent agent in the same `session_id` began receiving the same fabricated refusal for every Bash command, including `git status --short` and `true`, while non-Bash tools continued to work. Resuming the same session preserved the poisoned Bash state; starting a force-fresh session temporarily restored Bash until another background Task used it.</summary>
-    <category term="SDK &amp; automation"/>
-  </entry>
-  <entry>
-    <title>[HIGH] PreToolUse `if` matcher can fail open on unrelated Bash `for` loops</title>
-    <id>https://framework.boucle.sh/limitations.html#pretooluse-if-matcher-can-fail-open-on-bash-for-loops</id>
-    <link href="https://framework.boucle.sh/limitations.html#pretooluse-if-matcher-can-fail-open-on-bash-for-loops"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 setup found that a PreToolUse hook with matcher `Bash` and an `if` pattern such as `Bash(git commit *)` fired on an unrelated Bash `for ... do ... done` loop. The same isolated hook did not fire on `while`, `if`, or plain `do`/`done` text, suggesting the Bash-command parser fails on the `for` construct and then follows the documented fail-open path for `if`-gated hooks. The failure is silent: the only visible signal is the hook&#x27;s own output or block message on a command that should have been outside scope.</summary>
-    <category term="Hook bypass &amp; evasion"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Org Team seat entitlement can be misread as a pay-as-you-go credit requirement</title>
-    <id>https://framework.boucle.sh/limitations.html#org-team-seat-entitlement-can-be-misread-as-payg-credit-requirement</id>
-    <link href="https://framework.boucle.sh/limitations.html#org-team-seat-entitlement-can-be-misread-as-payg-credit-requirement"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 macOS setup on an org-managed Team seat intermittently prompted the user to continue with credits even though the same account had subscription entitlement in the desktop app. The local `~/.claude.json` state showed `subscriptionType: null` and `hasAvailableSubscription: false`; manually flipping `hasAvailableSubscription` to true restored CLI subscription use only until the next account-status sync rewrote the flag.</summary>
-    <category term="Authentication &amp; accounts"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Long autonomy streaks can cause questions to be treated as implementation approval</title>
-    <id>https://framework.boucle.sh/limitations.html#long-autonomy-streaks-can-cause-questions-to-be-treated-as-implementation-approval</id>
-    <link href="https://framework.boucle.sh/limitations.html#long-autonomy-streaks-can-cause-questions-to-be-treated-as-implementation-approval"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 Ubuntu session had a long streak of approved autonomous build tasks. When the user then asked a direct clarifying question about wording from a prior reply, the assistant treated it as another go-ahead, changed code, and committed without answering the question. In write-capable sessions, this failure mode can turn ordinary clarification into unwanted filesystem and git changes.</summary>
-    <category term="Agent control &amp; instruction following"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Workflow progress can freeze during final structured-output generation</title>
-    <id>https://framework.boucle.sh/limitations.html#workflow-progress-can-freeze-during-final-structured-output-generation</id>
-    <link href="https://framework.boucle.sh/limitations.html#workflow-progress-can-freeze-during-final-structured-output-generation"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Windows Anthropic API workflow run showed elapsed time, token count, and current-tool indicators freezing after a final verification agent&#x27;s last tool call while the agent was still generating a large schema-constrained structured result. The task completed successfully and the transcript file continued growing, so the issue is observability: tool-call-free token generation can make a healthy long-running workflow look hung.</summary>
-    <category term="Workflow &amp; UI observability"/>
   </entry>
 </feed>
