@@ -7,6 +7,38 @@
   <updated>2026-07-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Org Team seat entitlement can be misread as a pay-as-you-go credit requirement</title>
+    <id>https://framework.boucle.sh/limitations.html#org-team-seat-entitlement-can-be-misread-as-payg-credit-requirement</id>
+    <link href="https://framework.boucle.sh/limitations.html#org-team-seat-entitlement-can-be-misread-as-payg-credit-requirement"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 macOS setup on an org-managed Team seat intermittently prompted the user to continue with credits even though the same account had subscription entitlement in the desktop app. The local `~/.claude.json` state showed `subscriptionType: null` and `hasAvailableSubscription: false`; manually flipping `hasAvailableSubscription` to true restored CLI subscription use only until the next account-status sync rewrote the flag.</summary>
+    <category term="Authentication &amp; accounts"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Long autonomy streaks can cause questions to be treated as implementation approval</title>
+    <id>https://framework.boucle.sh/limitations.html#long-autonomy-streaks-can-cause-questions-to-be-treated-as-implementation-approval</id>
+    <link href="https://framework.boucle.sh/limitations.html#long-autonomy-streaks-can-cause-questions-to-be-treated-as-implementation-approval"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 Ubuntu session had a long streak of approved autonomous build tasks. When the user then asked a direct clarifying question about wording from a prior reply, the assistant treated it as another go-ahead, changed code, and committed without answering the question. In write-capable sessions, this failure mode can turn ordinary clarification into unwanted filesystem and git changes.</summary>
+    <category term="Agent control &amp; instruction following"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Workflow progress can freeze during final structured-output generation</title>
+    <id>https://framework.boucle.sh/limitations.html#workflow-progress-can-freeze-during-final-structured-output-generation</id>
+    <link href="https://framework.boucle.sh/limitations.html#workflow-progress-can-freeze-during-final-structured-output-generation"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Windows Anthropic API workflow run showed elapsed time, token count, and current-tool indicators freezing after a final verification agent&#x27;s last tool call while the agent was still generating a large schema-constrained structured result. The task completed successfully and the transcript file continued growing, so the issue is observability: tool-call-free token generation can make a healthy long-running workflow look hung.</summary>
+    <category term="Workflow &amp; UI observability"/>
+  </entry>
+  <entry>
+    <title>[LOW] 1M context sessions can receive the low-context warning near the 200k threshold</title>
+    <id>https://framework.boucle.sh/limitations.html#one-million-context-low-warning-can-fire-at-200k-threshold</id>
+    <link href="https://framework.boucle.sh/limitations.html#one-million-context-low-warning-can-fire-at-200k-threshold"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.202 through 2.1.216 setup using the `claude-opus-4-8[1m]` model saw the model-facing context-low reminder fire around 177k message tokens even though the statusline showed only about 21% of the 1M window used. The reporter&#x27;s hook logs showed several 1M sessions later reached 237k to 353k tokens without real auto-compaction, suggesting actual compaction remained window-aware while the advisory reminder followed a separate 200k-oriented path.</summary>
+    <category term="Context &amp; compaction"/>
+  </entry>
+  <entry>
     <title>[HIGH] Skill frontmatter model overrides can be ignored on model invocation</title>
     <id>https://framework.boucle.sh/limitations.html#skill-frontmatter-model-overrides-can-be-ignored-on-model-invocation</id>
     <link href="https://framework.boucle.sh/limitations.html#skill-frontmatter-model-overrides-can-be-ignored-on-model-invocation"/>
@@ -132,38 +164,6 @@
     <link href="https://framework.boucle.sh/limitations.html#headless-claude-p-can-hang-forever-on-closed-api-sockets"/>
     <updated>2026-07-21T00:00:00Z</updated>
     <summary>A reported macOS headless automation path using `claude -p` in scheduled jobs sometimes hung before any assistant output, then later also hung mid-run, while the process sat at 0% CPU holding multiple TCP connections to the Anthropic API that the OS marked CLOSED. The CLI emitted no stderr or debug output, did not retry, and ignored SIGTERM in at least one hung sonnet job, requiring wrapper timeouts or SIGKILL to recover.</summary>
-    <category term="Core &amp; session management"/>
-  </entry>
-  <entry>
-    <title>[HIGH] CLAUDE_CODE_OAUTH_TOKEN can silently override Max subscription billing mode</title>
-    <id>https://framework.boucle.sh/limitations.html#claude-code-oauth-token-can-silently-override-max-subscription-billing-mode</id>
-    <link href="https://framework.boucle.sh/limitations.html#claude-code-oauth-token-can-silently-override-max-subscription-billing-mode"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 macOS setup with an active Max login still started sessions in `Claude API` mode whenever `CLAUDE_CODE_OAUTH_TOKEN` was exported from the shell environment. Removing that environment variable returned the same account to `Claude Max` in the banner and `/status`. The switch from subscription credentials to the environment token was silent apart from the small startup label, creating a billing-safety risk for users who unintentionally carry old tokens in shell startup files.</summary>
-    <category term="Auth &amp; accounts"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Root Linux sandbox can break all Bash after the 2.1.216 cap-drop change</title>
-    <id>https://framework.boucle.sh/limitations.html#root-linux-sandbox-can-break-all-bash-after-2-1-216-cap-drop-change</id>
-    <link href="https://framework.boucle.sh/limitations.html#root-linux-sandbox-can-break-all-bash-after-2-1-216-cap-drop-change"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 regression on Linux and WSL2 root installs causes every sandboxed Bash tool call to fail before the user command runs with `apply-seccomp: write /proc/self/uid_map: Operation not permitted`. The reporter tied the regression to the new default bwrap arguments that add `--unshare-user --cap-drop ALL`; with uid 0 on kernels requiring CAP_SETFCAP for root uid maps, the nested user namespace cannot write the uid map after all capabilities are dropped. Claude Code 2.1.215 worked in the same setup.</summary>
-    <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Assistant text can fabricate system-styled RemoteTrigger handoff warnings</title>
-    <id>https://framework.boucle.sh/limitations.html#assistant-text-can-fabricate-system-styled-remotetrigger-handoff-warnings</id>
-    <link href="https://framework.boucle.sh/limitations.html#assistant-text-can-fabricate-system-styled-remotetrigger-handoff-warnings"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.215 macOS session ended a normal assistant progress reply with a fabricated `&lt;system_warning&gt;` block that claimed the local session was near capacity and instructed the user to load `RemoteTrigger` with `trigger_type: &quot;session_handoff&quot;`. Local forensics found the string only inside that assistant text block, while the real binaries contained `RemoteTrigger` and `trigger_type` but not the fabricated `session_handoff` value or `system_warning` tag. The warning therefore looked like a harness notice while being model-generated text.</summary>
-    <category term="Security &amp; trust boundaries"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Mid-turn user interrupts can be lost during background tool runs</title>
-    <id>https://framework.boucle.sh/limitations.html#mid-turn-user-interrupts-can-be-lost-during-background-tool-runs</id>
-    <link href="https://framework.boucle.sh/limitations.html#mid-turn-user-interrupts-can-be-lost-during-background-tool-runs"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 Linux session repeatedly failed to deliver user messages sent mid-turn while the model was running many sequential tool calls, background Bash tasks, and AskUserQuestion calls. The user was trying to stop or redirect an in-flight VM and documentation operation, but the model saw none of those messages until after completing the work. Earlier mid-turn messages in the same session sometimes surfaced, so delivery appears nondeterministic rather than completely disabled.</summary>
     <category term="Core &amp; session management"/>
   </entry>
 </feed>
