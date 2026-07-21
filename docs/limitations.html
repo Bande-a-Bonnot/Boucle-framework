@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1084</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-21.</span></p>
+        <p class="subtitle"><span id="total-count">1089</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-21.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -11728,6 +11728,66 @@
                         <!-- workaround:claude-code-oauth-token-can-silently-override-max-subscription-billing-mode -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before long or expensive sessions, run `/status` and confirm the billing source is the intended subscription or API mode. Audit shell startup files such as `.zshenv`, `.zshrc`, and CI environment blocks for `CLAUDE_CODE_OAUTH_TOKEN` when Claude Code unexpectedly shows `Claude API`. For subscription-only workflows, launch with the token unset and add a local preflight that fails if the environment variable is present.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79602" target="_blank">#79602</a></div>
+        </div>
+        <div class="kl-entry" data-category="Core &amp; session management" data-issues="79610" id="headless-claude-p-can-hang-forever-on-closed-api-sockets" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1085</span>
+                <span class="kl-cat">Core &amp; session management</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Headless claude -p can hang forever on CLOSED API sockets</h3>
+            <p>A reported macOS headless automation path using `claude -p` in scheduled jobs sometimes hung before any assistant output, then later also hung mid-run, while the process sat at 0% CPU holding multiple TCP connections to the Anthropic API that the OS marked CLOSED. The CLI emitted no stderr or debug output, did not retry, and ignored SIGTERM in at least one hung sonnet job, requiring wrapper timeouts or SIGKILL to recover.</p>
+                        <!-- workaround:headless-claude-p-can-hang-forever-on-closed-api-sockets -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not run unattended `claude -p` jobs without an external wall-clock timeout, process-tree cleanup, and transcript/output heartbeat checks. Treat zero debug output plus long idle time as a stuck transport state rather than model thinking. For scheduled work, record session IDs, socket state, and child-process state before killing so failures can be correlated with server-side logs.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79610" target="_blank">#79610</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP integration" data-issues="79612" id="parent-directory-trust-can-dead-end-committed-mcp-json-approval" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1086</span>
+                <span class="kl-cat">MCP integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Parent-directory trust can dead-end committed .mcp.json approval</h3>
+            <p>A reported WSL Claude Code 2.1.197 setup skipped the trust dialog for a new project because its parent directory was already trusted, but still refused to honor committed `enabledMcpjsonServers` from `.claude/settings.json` because the exact project path had not accepted the trust dialog. The result is a dead end: the prompt needed to grant exact-path trust is suppressed, while the `.mcp.json` pre-approval remains pending.</p>
+                        <!-- workaround:parent-directory-trust-can-dead-end-committed-mcp-json-approval -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For team projects with committed `.mcp.json` approvals, verify exact-path trust rather than relying on a trusted parent directory. Run Claude Code interactively in the project and confirm the server reaches `Connected`, or explicitly inspect/update the project trust entry in `~/.claude.json` when a parent trust suppresses the dialog. Keep onboarding docs clear that parent trust and committed MCP approval may not be evaluated the same way.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79612" target="_blank">#79612</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="79616" id="vscode-posttooluse-additionalcontext-can-be-silently-dropped" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1087</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>VS Code PostToolUse additionalContext can be silently dropped</h3>
+            <p>A reported Claude Code VS Code extension session on macOS ran a matcher-scoped PostToolUse hook for Bash commands, and the hook script returned valid JSON containing `additionalContext`, but Claude never received the reminder across five real `git commit` tool calls. Manual synthetic input proved the script output was correct, and a separate logging hook found no `additionalContext` field in the tool responses, suggesting the extension path can silently drop PostToolUse context delivery.</p>
+                        <!-- workaround:vscode-posttooluse-additionalcontext-can-be-silently-dropped -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If PostToolUse `additionalContext` is part of a memory, audit, or policy workflow, test it separately in the terminal CLI and the VS Code extension before relying on it. For critical reminders, use a side-channel artifact such as a file, log, or blocking PreToolUse rule rather than assuming the model will see PostToolUse context in VS Code. Add a smoke test that triggers the hook with a real tool call and verifies the reminder appears in the subsequent conversation.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79616" target="_blank">#79616</a></div>
+        </div>
+        <div class="kl-entry" data-category="Data integrity" data-issues="79618" id="cowork-local-history-can-be-lost-after-renewal-or-update-state-change" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1088</span>
+                <span class="kl-cat">Data integrity</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Cowork local history can be lost after renewal or update state changes</h3>
+            <p>A reported Windows Claude Desktop Cowork installation lost roughly seven days of local chat transcripts immediately after an auto-renewal failure, and resubscribing did not restore them. The reporter found Cowork transcripts stored under an MSIX `AppData\Local\Packages\Claude_*\LocalCache` path despite installing from a browser download, found no server-side or alternate local copy, and observed an inverted loss pattern where older transcripts survived while the newest week was missing.</p>
+                        <!-- workaround:cowork-local-history-can-be-lost-after-renewal-or-update-state-change -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat Cowork history as local-only and fragile until export and backup behavior is explicit. Before desktop updates, account renewal changes, reinstall, or app reset, export or copy the local session directory and verify recent transcripts are present. For important sessions, keep independent notes or persistent memory files outside the app container, and prefer storage locations that survive Windows app cleanup rather than `LocalCache`.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79618" target="_blank">#79618</a></div>
+        </div>
+        <div class="kl-entry" data-category="Platform &amp; compatibility" data-issues="79619" id="installer-can-crash-with-illegal-instruction-on-older-intel-macs" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1089</span>
+                <span class="kl-cat">Platform &amp; compatibility</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Installer can crash with illegal instruction on older Intel Macs</h3>
+            <p>A reported macOS Sequoia setup on a 2011 Intel iMac failed during `curl -fsSL https://claude.ai/install.sh | bash` with `Illegal instruction: 4` and exit code 132 while running the installer binary. The failure message said installation was killed before it could finish but did not clearly state whether the hardware or CPU instruction set is unsupported.</p>
+                        <!-- workaround:installer-can-crash-with-illegal-instruction-on-older-intel-macs -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On older Intel Macs, treat exit code 132 during install as a possible CPU-instruction compatibility failure rather than a normal transient install error. Capture the exact hardware model, macOS version, and installer output before retrying. If the hardware is unsupported, avoid repeated curl-pipe installs and use a supported machine or a documented compatibility path once available.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79619" target="_blank">#79619</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
