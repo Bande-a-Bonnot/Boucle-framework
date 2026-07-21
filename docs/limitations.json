@@ -1,28 +1,28 @@
 {
   "version": "0.13.0",
-  "count": 1121,
+  "count": 1129,
   "categories": {
     "Hook behavior & events": 181,
     "Permission system": 120,
     "Hook bypass & evasion": 100,
     "MCP & plugin issues": 55,
-    "Subagent & spawned agents": 44,
+    "Subagent & spawned agents": 46,
     "Desktop & IDE integration": 38,
     "Platform & compatibility": 27,
     "CLI & terminal": 25,
     "TUI & display": 24,
+    "Context & memory": 22,
     "Configuration behavior": 21,
-    "Context & memory": 21,
+    "Tool behavior": 18,
     "Agents & subagents": 17,
-    "Tool behavior": 17,
     "Performance & cost": 14,
     "Security & trust boundaries": 13,
     "MCP & integrations": 12,
     "Sandbox & permissions": 12,
     "Plugin & channel system": 11,
+    "Cowork & remote": 10,
     "Data integrity": 10,
     "MCP integration": 10,
-    "Cowork & remote": 9,
     "File system & paths": 9,
     "hooks": 9,
     "Scheduling & remote triggers": 9,
@@ -30,11 +30,11 @@
     "Auth & accounts": 8,
     "Configuration & settings": 8,
     "Remote & cloud": 8,
+    "Bash & shell execution": 7,
     "Core & session management": 7,
     "MCP": 7,
     "Permissions": 7,
     "Permissions & safety": 7,
-    "Bash & shell execution": 6,
     "Desktop & platform bugs": 6,
     "VS Code extension": 6,
     "Authentication & accounts": 5,
@@ -45,6 +45,7 @@
     "UX & display": 5,
     "Worktree": 5,
     "MCP & plugins": 4,
+    "Model behavior & output": 4,
     "permissions": 4,
     "sandbox": 4,
     "tui": 4,
@@ -52,10 +53,10 @@
     "Context / compaction": 3,
     "cowork": 3,
     "Desktop": 3,
+    "Git & repository safety": 3,
     "Hooks": 3,
     "Memory & context": 3,
     "Model behavior & instructions": 3,
-    "Model behavior & output": 3,
     "model-behavior": 3,
     "Remote": 3,
     "Sandbox": 3,
@@ -72,7 +73,6 @@
     "Configuration": 2,
     "Cowork": 2,
     "Cowork / remote sessions": 2,
-    "Git & repository safety": 2,
     "Hooks & automation": 2,
     "IDE integration": 2,
     "IDE integrations": 2,
@@ -179,9 +179,9 @@
   },
   "severity_counts": {
     "CRITICAL": 85,
-    "HIGH": 568,
+    "HIGH": 573,
     "LOW": 103,
-    "MEDIUM": 365
+    "MEDIUM": 368
   },
   "entries": [
     {
@@ -14370,30 +14370,134 @@
       "workaround": "For long-lived Preview MCP sessions, add an external liveness check for the served port and do not rely on the Preview pane to surface idle reaping or silent process death. Keep the dev server command runnable outside Preview MCP, capture `preview_list` state when it stops, and restart intentionally before demos or unattended visual checks that need the server alive after idle time.",
       "status": "open",
       "date_added": "2026-07-21"
+    },
+    {
+      "id": "harness-session-spawn-can-mutate-home-git-checkout",
+      "title": "Harness session spawn can mutate the home git checkout",
+      "category": "Git & repository safety",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79713"
+      ],
+      "description": "A reported Windows 11 Claude Code 2.1.90 scheduled-session setup saw git mutations in the user's home clone at session-spawn times, outside any transcripted agent command. Empty-message branch reflog entries moved `refs/heads/main` while `main` was checked out, manufacturing a large staged diff, and separate bare `git checkout HEAD` reflog entries detached the home tree. The report attributes the pattern to harness worktree setup because the timestamps align with session spawn and the commands are absent from transcripts.",
+      "workaround": "For scheduled or harness-created worktree sessions, monitor both `git reflog show <branch>` and `git reflog` for unprompted branch moves or `checkout: moving from <branch> to HEAD` entries near spawn times. Keep branch protection enabled, avoid committing unexpected staged piles before comparing reflogs, and recover by stashing any phantom index state and switching the home clone back to the intended branch. Run unattended agents from disposable clones when repository integrity matters.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "cowork-tab-can-disappear-despite-packaged-runtime-and-healthy-gates",
+      "title": "Cowork tab can disappear despite packaged runtime and healthy gates",
+      "category": "Cowork & remote",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79717"
+      ],
+      "description": "A reported Claude Desktop 1.22209.3 macOS install lost the Cowork sidebar tab even though Cowork assets, VM images, protocol handlers, logs, and local gate checks all indicated the runtime was present and healthy. The reporter found no emitted packaging-failure message and inferred the tab visibility was controlled by account or server-delivered web flags rather than the local bundle state.",
+      "workaround": "When Cowork disappears from the Desktop sidebar, do not rely only on bundle-file checks or reinstall attempts to diagnose availability. Capture Desktop version, account, logs, Cowork VM presence, and local gate state, then treat a missing tab with healthy local runtime as a surface-flag or account-gating problem. Keep alternate access paths for active remote work until the UI flag is restored.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "assistant-output-can-include-unrelated-conversation-fragments",
+      "title": "Assistant output can include unrelated conversation fragments",
+      "category": "Model behavior & output",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79718"
+      ],
+      "description": "A reported long Claude Code 2.1.216 macOS conversation in Chinese ended one assistant message with a coherent unrelated English roleplay-style transcript fragment. The injected content had a separate structure and topic from the user's current warehouse and supply-chain design discussion, suggesting possible cross-context contamination rather than ordinary hallucinated wording. The reporter also filed the full transcript through `/bug`.",
+      "workaround": "For long sessions, treat sudden unrelated structured content as a possible context-integrity incident. Stop using the affected answer as authoritative, preserve the transcript and session metadata, and resume sensitive work in a fresh session. For compliance-sensitive workflows, add a review step that flags abrupt language, speaker, or task-boundary changes before copying model output into deliverables.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "fork-prompt-can-leak-back-into-parent-session",
+      "title": "Fork prompts can leak back into the parent session",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79722"
+      ],
+      "description": "A reported Claude Code 2.1.206 macOS `/fork <prompt>` flow delivered the forked task prompt into the parent session as an actionable instruction. The parent then executed the same side-effecting task in parallel with the fork, including upstream issue research and preparation to create public GitHub issues or scheduled routines, while fork notifications and the final fork result also appeared in the parent transcript.",
+      "workaround": "Do not use `/fork` for side-effecting prompts unless the parent session is explicitly held from acting on the same prompt. Phrase forked work as read-only where possible, add idempotency checks before public writes or scheduled routine creation, and use separate worktrees or locks for forked tasks that can commit, push, or mutate shared state. Audit the parent transcript after spawning a fork to confirm it did not begin executing the fork's instructions.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "validation-failed-tool-inputs-can-remain-as-dead-context",
+      "title": "Validation-failed tool inputs can remain as dead context",
+      "category": "Context & memory",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79725"
+      ],
+      "description": "A reported Claude Code 2.1.215 feature gap leaves full oversized inputs from pre-execution validation-failed tool calls in the transcript. For example, a large `Write` call rejected because the file was not read first can keep its entire content payload in later context even though the call had no side effects and the failure reason was independent of the payload. A successful retry then adds another full copy.",
+      "workaround": "Before generating large writes or edits, satisfy known tool preconditions such as reading existing files first so validation does not reject a huge payload. If a large call fails validation, compact or restart sooner than usual, and avoid suppressing the failure as a harmless retry because the failed input may continue consuming context until compaction removes it.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "background-memory-reaper-can-leave-orphaned-child-processes",
+      "title": "Background memory reaper can leave orphaned child processes",
+      "category": "Bash & shell execution",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79727"
+      ],
+      "description": "A reported Claude Code 2.1.216 Linux background Bash task killed by the memory-pressure reaper stopped only the tracked shell while child processes survived, were reparented, and continued running. The user observed three reap kills in one long session where `make`-driven integration suites kept running after task notifications reported the background command as killed. Manual TaskStop on the same version killed the whole process tree, suggesting different kill semantics between stop paths.",
+      "workaround": "After any unexplained background task `killed` notification, check for surviving descendant processes before dispatching a replacement job, especially for non-idempotent test suites or shared-state mutations. Consider disabling the background-shell pressure reaper where appropriate, run long jobs under an external process supervisor with its own process-group cleanup, and make rerun wrappers refuse to start while matching child processes remain alive.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "subagent-explicit-tool-allowlists-can-silently-collapse-when-mcp-is-unavailable",
+      "title": "Subagent explicit tool allowlists can silently collapse when MCP is unavailable",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79728"
+      ],
+      "description": "A reported Claude Code 2.1.208 desktop subagent with an explicit `tools:` allowlist containing built-ins, `ToolSearch`, and Playwright MCP tools sometimes spawned with only `Read`, `Write`, `Bash`, and `WebSearch`. The missing MCP tools and `ToolSearch` were not reported as a spawn warning, while a `tools: *` subagent spawned near the same time could still load the Playwright schema. The reporter inferred that explicit allowlists may be resolved once against transient MCP availability and silently degraded.",
+      "workaround": "Have specialized subagents self-report their effective toolset at the start of a task and fail closed when required tools such as browser MCP or `ToolSearch` are absent. Prefer `tools: *` for agents that must tolerate transient MCP startup or profile contention, or add a parent-side spawn check that retries after MCP servers are healthy. Do not treat the frontmatter allowlist alone as proof of the actual granted tools.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "monitor-style-json-polling-can-hide-cli-failures",
+      "title": "Monitor-style JSON polling can hide CLI failures",
+      "category": "Tool behavior",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79729"
+      ],
+      "description": "A reported Monitor-tool polling loop merged a GitHub CLI command's stdout and stderr, then parsed the result as JSON while suppressing parser errors. Because the `gh run list --json` field list was invalid, the CLI failed immediately, the JSON parser failure was hidden, and the Monitor task looped indefinitely even after the workflow had completed. The report notes that Monitor guidance about merging stderr still needs explicit exit-status checks before JSON parsing.",
+      "workaround": "In Monitor or polling scripts, check the exit status of any CLI command before parsing its captured output as JSON. Keep parser stderr visible in loops, break loudly on invalid JSON or unsupported fields, and reserve `2>&1` merging for diagnostics that still branch on command failure rather than treating an empty parsed status as pending work.",
+      "status": "open",
+      "date_added": "2026-07-21"
     }
   ],
   "status_summary": {
-    "open": 1107,
+    "open": 1115,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 85,
-    "high": 568,
+    "high": 573,
     "low": 103,
-    "medium": 365
+    "medium": 368
   },
   "lastUpdated": "2026-07-21",
   "stats": {
-    "total": 1121,
+    "total": 1129,
     "critical": 85,
-    "high": 568,
-    "medium": 365,
+    "high": 573,
+    "medium": 368,
     "low": 103,
-    "open": 1107,
+    "open": 1115,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-21",
-  "total": 1121
+  "total": 1129
 }
