@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1114</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-21.</span></p>
+        <p class="subtitle"><span id="total-count">1121</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-21.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -12088,6 +12088,90 @@
                         <!-- workaround:vscode-extension-ignores-remote-control-at-startup -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For always-on remote-control workflows in VS Code, assume extension panel sessions require a manual `/remote-control` step until startup support is verified on your target version. Prefer terminal CLI sessions for unattended remote-control startup, and include an explicit remote-control connectivity check in any wrapper that depends on the VS Code panel being drivable from mobile or desktop control surfaces.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79699" target="_blank">#79699</a></div>
+        </div>
+        <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="79701" id="ide-ambient-context-can-displace-subagent-first-turn" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1115</span>
+                <span class="kl-cat">Subagent &amp; spawned agents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>IDE ambient context can displace a subagent&#x27;s first turn</h3>
+            <p>A reported Windows Claude Code IDE-integration session spawned plugin subagents in isolated worktrees, but the first Opus subagent turns ended with zero tool calls and returned ambient host-IDE context instead of acting on the spawn prompt. One failed turn echoed an IDE diagnostics reminder, and another returned the system prompt from a third-party app file that happened to be open in the IDE. Resuming with an explicit nudge caused the same agents to complete, so the prompt itself was not the blocker.</p>
+                        <!-- workaround:ide-ambient-context-can-displace-subagent-first-turn -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For background subagent workflows, treat a completed subagent with zero tool calls and ambient reminder text as a contaminated first turn. Resume or restart with an explicit instruction that IDE reminders and open-file context are background, verify worktree changes before trusting the result, and avoid keeping sensitive third-party internals open in the IDE when spawning agents until ambient context isolation is verified.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79701" target="_blank">#79701</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="79702" id="sessionend-hooks-can-skip-normal-print-mode-exit" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1116</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>SessionEnd hooks can skip normal `claude -p` exit</h3>
+            <p>A reported Claude Code 2.1.216 macOS repro created project-scoped SessionStart, Stop, and SessionEnd hooks, then ran `claude -p` to a normal exit. SessionStart and Stop marker files were created, but SessionEnd never ran despite the process exiting with code 0. Print-mode automation that relies on SessionEnd for teardown can therefore leak helper daemons or other per-session resources.</p>
+                        <!-- workaround:sessionend-hooks-can-skip-normal-print-mode-exit -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on SessionEnd as the only cleanup path for headless `claude -p` jobs until the hook fires reliably in your target version. Wrap print-mode invocations in an outer supervisor that owns child process groups and temporary resources, and add post-exit cleanup checks for marker files or daemon PIDs rather than assuming the Claude Code hook lifecycle closed them.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79702" target="_blank">#79702</a></div>
+        </div>
+        <div class="kl-entry" data-category="Authentication &amp; accounts" data-issues="79703" id="oauth-login-code-can-be-rejected-after-restarted-login-attempts" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1117</span>
+                <span class="kl-cat">Authentication &amp; accounts</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>OAuth login codes can be rejected after restarted login attempts</h3>
+            <p>A reported Windows 11 Claude Code `/login` flow repeatedly rejected freshly copied email verification codes with `OAuth error: Invalid code. Please make sure the full code was copied`. The user reproduced the failure across PowerShell and Git Bash, retried with manual typing and plain-text paste, and noted that multiple interrupted `/login` attempts had occurred earlier in the same session, suggesting stale auth state can make otherwise correct codes fail.</p>
+                        <!-- workaround:oauth-login-code-can-be-rejected-after-restarted-login-attempts -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When OAuth code entry fails despite careful copying, restart from a clean login attempt rather than repeatedly submitting codes in the same interrupted session. Capture the shell, Windows build, and whether prior `/login` flows were interrupted, then clear or isolate the active auth session before retrying. For unattended work, keep a separate auth smoke test so failed login state is detected before the next job needs Claude Code.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79703" target="_blank">#79703</a></div>
+        </div>
+        <div class="kl-entry" data-category="Cowork &amp; remote" data-issues="79705" id="cowork-scheduled-panel-can-disappear-for-valid-running-task" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1118</span>
+                <span class="kl-cat">Cowork &amp; remote</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Cowork Scheduled panel can disappear for a valid running task</h3>
+            <p>A reported Windows Cowork project successfully created and ran a recurring scheduled task, with task metadata stored under the user&#x27;s Claude Scheduled directory, but the project&#x27;s sidebar omitted the Scheduled section entirely. A sibling project in the same account showed its Scheduled panel correctly. This leaves users without the expected project-level UI for viewing or editing an existing running task.</p>
+                        <!-- workaround:cowork-scheduled-panel-can-disappear-for-valid-running-task -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> After creating Cowork scheduled tasks, verify both the underlying scheduled-task list and the project sidebar. If the sidebar omits the Scheduled panel, manage the task through the lower-level scheduled task location or another project UI that still renders it, and record the project name, task ID, cron, and storage path before restarting so support can distinguish render failure from task creation failure.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79705" target="_blank">#79705</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="79707" id="headless-workspaces-lack-supported-noninteractive-trust-path" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1119</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Headless workspaces lack a supported non-interactive trust path</h3>
+            <p>A reported Claude Code 2.1.216 macOS unattended runner provisioned `.claude/settings.json` permissions in a fresh per-session workdir, then started `claude -p`. Claude Code ignored the permission allowlist because the workspace had not passed the interactive trust dialog, surfaced the trust warning only in CLI output, and left the model seeing ordinary permission denials. The documented workaround was an internal `~/.claude.json` trust flag edit, which is not a supported concurrent runner API.</p>
+                        <!-- workaround:headless-workspaces-lack-supported-noninteractive-trust-path -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For headless runners, do not assume a provisioned `.claude/settings.json` allowlist is active in a fresh workdir. Pre-trust workspaces through an interactive setup step where possible, fail fast when stdout contains the untrusted-workspace warning, and avoid racing direct `~/.claude.json` edits across concurrent sessions unless a wrapper serializes access and verifies the effective trust state before starting `claude -p`.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79707" target="_blank">#79707</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP integration" data-issues="79711" id="mobile-web-mcp-approvals-can-return-32003-after-allow" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1120</span>
+                <span class="kl-cat">MCP integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Mobile web MCP approvals can still return -32003 after Allow</h3>
+            <p>A reported Claude Code mobile web session on iOS Safari showed approval prompts for built-in `claude-code-remote` MCP tools such as `create_trigger`, `send_later`, and `list_triggers`, but every tool call still failed with `MCP error -32003: MCP tool call requires approval` after the user tapped Allow. The issue persisted across sessions and days, affected MCP tools only, and was not fixed by adding permissions to `settings.local.json` while built-in tools continued to work.</p>
+                        <!-- workaround:mobile-web-mcp-approvals-can-return-32003-after-allow -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For mobile remote-control workflows, verify MCP tool execution after tapping Allow before assuming the approval stuck. Keep a built-in-tool fallback for urgent scheduling or wakeup actions, and document the affected MCP server/tool names plus client platform when reporting failures. Do not treat `settings.local.json` allowlists as sufficient proof that mobile web can execute MCP tools.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79711" target="_blank">#79711</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP integration" data-issues="79712" id="preview-mcp-dev-servers-can-die-silently-after-idle-time" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1121</span>
+                <span class="kl-cat">MCP integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Preview MCP dev servers can die silently after idle time</h3>
+            <p>A reported Claude Desktop Windows setup launched a Vite dev server through the Preview MCP `preview_start` tool and saw it stop after about one hour of idle time with no terminal, Preview pane, or harness log explaining why. The next navigation returned connection refused, and `preview_list` showed the server stopped. The same launch configuration reportedly ran for weeks on an earlier Desktop version.</p>
+                        <!-- workaround:preview-mcp-dev-servers-can-die-silently-after-idle-time -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For long-lived Preview MCP sessions, add an external liveness check for the served port and do not rely on the Preview pane to surface idle reaping or silent process death. Keep the dev server command runnable outside Preview MCP, capture `preview_list` state when it stops, and restart intentionally before demos or unattended visual checks that need the server alive after idle time.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79712" target="_blank">#79712</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
