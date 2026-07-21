@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1193,
+  "count": 1203,
   "categories": {
     "Hook behavior & events": 183,
     "Permission system": 125,
     "Hook bypass & evasion": 100,
-    "MCP & plugin issues": 57,
+    "MCP & plugin issues": 60,
     "Subagent & spawned agents": 51,
     "Desktop & IDE integration": 40,
     "Platform & compatibility": 27,
@@ -13,7 +13,7 @@
     "CLI & terminal": 25,
     "Context & memory": 23,
     "Configuration behavior": 21,
-    "Tool behavior": 18,
+    "Tool behavior": 19,
     "Agents & subagents": 17,
     "Performance & cost": 17,
     "Security & trust boundaries": 14,
@@ -25,6 +25,7 @@
     "Sandbox & permissions": 12,
     "Data integrity": 11,
     "Plugin & channel system": 11,
+    "Bash & shell execution": 10,
     "File system & paths": 10,
     "Scheduling & remote triggers": 10,
     "hooks": 9,
@@ -32,16 +33,15 @@
     "VS Code extension": 9,
     "auth": 8,
     "Auth & accounts": 8,
-    "Bash & shell execution": 8,
     "Configuration & settings": 8,
     "Scheduled tasks": 8,
+    "Worktree": 8,
+    "Desktop & platform bugs": 7,
     "MCP": 7,
     "Permissions": 7,
     "Permissions & safety": 7,
     "Authentication & accounts": 6,
-    "Desktop & platform bugs": 6,
     "Git & repository safety": 6,
-    "Worktree": 6,
     "Model behavior & output": 5,
     "Skills & commands": 5,
     "Skills / slash commands": 5,
@@ -89,6 +89,7 @@
     "platform": 2,
     "security": 2,
     "session-management": 2,
+    "Tool availability": 2,
     "UI & display": 2,
     "Agent": 1,
     "Agent & multi-agent": 1,
@@ -165,7 +166,6 @@
     "Skills & plugins": 1,
     "Skills & slash commands": 1,
     "Startup & environment": 1,
-    "Tool availability": 1,
     "Tools": 1,
     "Tools & permissions": 1,
     "Tools and execution": 1,
@@ -180,10 +180,10 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 92,
-    "HIGH": 612,
+    "CRITICAL": 93,
+    "HIGH": 618,
     "LOW": 105,
-    "MEDIUM": 384
+    "MEDIUM": 387
   },
   "entries": [
     {
@@ -15308,30 +15308,160 @@
       "workaround": "For embedded, NAS, or BusyBox remotes, verify `printenv HOME` works in a non-interactive SSH command before using Claude Desktop Remote SSH. If necessary, add a temporary `printenv` shim in a system PATH directory or choose a remote with GNU coreutils available until the probe uses shell builtins such as `printf '%s\\n' \"$HOME\"`.",
       "status": "open",
       "date_added": "2026-07-21"
+    },
+    {
+      "id": "bash-timeout-can-leak-pipeline-children",
+      "title": "Bash timeout can leak pipeline children",
+      "category": "Bash & shell execution",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79902"
+      ],
+      "description": "A reported Linux Claude Code 2.1.216 subagent command timed out while running a root-scoped grep pipeline. Claude Code killed the shell, but the first pipeline stage kept running as a Claude-bundled `ugrep` process, was reparented to `systemd --user`, and consumed about 136 CPU-hours before the user found and killed it manually.",
+      "workaround": "For commands that may run long or traverse broad filesystem scopes, prefer explicit background management and external process supervision rather than relying on Bash tool timeout cleanup. After a timeout, inspect the process tree for orphaned descendants, especially pipeline stages and commands spawned by subagents.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "fresh-sessions-can-miss-todo-tools",
+      "title": "Fresh sessions can miss todo tools",
+      "category": "Tool availability",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79900"
+      ],
+      "description": "A reported macOS Claude Code 2.1.216 fresh session had no task or todo tools in the tool list, no `/todos` slash command, and no deferred-tool match for `TaskCreate` or `TodoWrite`, even though the installed binary still contained those tool names and no local settings disabled them.",
+      "workaround": "At session start, probe for `TaskCreate`, `TaskUpdate`, `TodoWrite`, and `/todos` before storing workflow state only inside Claude Code. If they are absent, keep an external task list and start a fresh terminal or downgraded session before relying on todo-driven automation.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "exit-worktree-cleanup-can-delete-unpushed-commits",
+      "title": "Exit worktree cleanup can delete unpushed commits",
+      "category": "Worktree",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79899"
+      ],
+      "description": "A reported Claude Code 2.1.216 session entered one worktree, removed it, compacted, then entered a second worktree where five commits were created but never pushed. On session exit, cleanup printed `no pending changes` and deleted the second worktree and branch without prompting, leaving the commits reachable only as dangling objects until garbage collection.",
+      "workaround": "Before exiting sessions that used managed worktrees, run `git status` and compare local branch tips against their upstreams from outside the managed cleanup path. Push or create a durable backup ref for any unpushed commits, and recover immediately with `git fsck --unreachable` if a branch disappears.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "browser-batch-can-ignore-explicit-tab-ids",
+      "title": "Browser batch can ignore explicit tab IDs",
+      "category": "MCP & plugin issues",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79897"
+      ],
+      "description": "A reported macOS Claude Code 2.1.216 browser integration returned `No tab available` for every `browser_batch` call, including a single-action batch whose `tabId` matched a tab that worked with the individual `computer` and `navigate` tools immediately before and after the batch call.",
+      "workaround": "When browser automation depends on explicit tabs, verify `browser_batch` separately from single-action tools. Fall back to individual browser tool calls when batches report no available tab despite a known-good `tabId`, and keep tab selection state observable in logs.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "tool-calls-can-suppress-preceding-assistant-text",
+      "title": "Tool calls can suppress preceding assistant text",
+      "category": "Tool behavior",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79894"
+      ],
+      "description": "A reported macOS Claude Code 2.1.212 session repeatedly had agents refer to a plan or review as already printed, then invoke a question or memory tool, while the expected text never appeared in the user-visible chat. The failure makes the model believe it communicated context that the user never received.",
+      "workaround": "For approval, review, or decision prompts, put the actionable text in the same visible message path that the user can inspect before the tool call. If a tool-triggered question references prior text, verify the prior text is actually visible and restate the key points when in doubt.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "plugin-registry-chimera-records-can-wedge-updates",
+      "title": "Plugin registry chimera records can wedge updates",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79892"
+      ],
+      "description": "A reported Windows Claude Code 2.1.216 plugin registry wrote or retained a user-scope plugin record carrying a `projectPath`. That malformed record caused `claude plugin update` to report success while the stale plugin continued loading, and `uninstall` plus `install --scope user` appended a healthy duplicate after the stale first-match record instead of replacing it.",
+      "workaround": "When plugin updates appear successful but old code still runs, inspect `~/.claude/plugins/installed_plugins.json` for user-scope records that also carry `projectPath`. Back up the registry before cleanup, remove stale malformed duplicates only when a healthy replacement exists, and verify the loaded plugin version in a fresh session.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "failed-cd-commands-can-silently-discard-cwd-changes",
+      "title": "Failed cd commands can silently discard cwd changes",
+      "category": "Bash & shell execution",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79891"
+      ],
+      "description": "A reported Claude Code 2.1.215 Bash harness adopted `cd` changes only when the overall command exited zero. Commands like `cd /tmp/somedir && false` left the next Bash call in the old tracked directory without notice, despite real shell semantics and the model-facing contract that cwd persists between calls.",
+      "workaround": "After any `cd <dir> && <command>` shape that may fail, run an explicit `pwd` or include a successful final sentinel that records the intended cwd. For critical repo or worktree operations, prefer command-local `git -C` and absolute paths instead of relying on persisted cwd after a non-zero exit.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "desktop-filesystem-extension-can-drop-tools-call",
+      "title": "Desktop Filesystem extension can drop tools/call",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79890"
+      ],
+      "description": "A reported Claude Desktop 1.22209.3 Filesystem extension on Windows initialized successfully and listed tools, but actual file tool calls failed in the UI and never reached the extension server log. The evidence points to the Desktop client or extension routing layer dropping `tools/call` after successful `initialize` and `tools/list` traffic.",
+      "workaround": "When a Desktop extension appears connected but every call fails, inspect the extension server log to distinguish server failure from client-side routing loss. Reconnect or reinstall the extension before trusting allowed-directory access, and keep a non-extension file access path available for urgent recovery work.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "background-agent-worktree-locks-can-outlive-sessions",
+      "title": "Background agent worktree locks can outlive sessions",
+      "category": "Worktree",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79888"
+      ],
+      "description": "A reported macOS Claude Code 2.1.216 Agents view could not remove finished background-session worktrees because their git lock files named live `claude bg-spare` daemon PIDs rather than the completed sessions. The cleanup liveness check treated those long-lived spare daemons as owners, so ctrl+x reported every finished worktree as locked.",
+      "workaround": "For background-agent worktrees, audit `.git/worktrees/*/locked` before assuming the Agents view can clean them up. If the owning session is gone but the lock points to a long-lived spare daemon, unlock and remove the worktree manually only after checking for unpushed commits and required cleanup hooks.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "claude-desktop-startup-entry-can-crash-windows-startup-settings",
+      "title": "Claude Desktop startup entry can crash Windows Startup settings",
+      "category": "Desktop & platform bugs",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79893"
+      ],
+      "description": "A reported Windows Claude Desktop 1.22209.3 setup wrote a malformed Run-key startup command with an extra layer of escaped quotes around `claude.exe --startup`. Windows Settings crashed when opening Apps > Startup because the Startup settings handler parsed the malformed Claude entry, and disabling the entry in Task Manager left the malformed value in place.",
+      "workaround": "If Windows Startup settings crashes after enabling Claude Desktop launch-on-startup, first turn off the setting inside Claude and fully quit it. Then remove the `Claude` value from `HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run` and the matching `StartupApproved\\Run` entry, and confirm the Run key is clean before reopening Settings.",
+      "status": "open",
+      "date_added": "2026-07-21"
     }
   ],
   "status_summary": {
-    "open": 1179,
+    "open": 1189,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 92,
-    "high": 612,
+    "critical": 93,
+    "high": 618,
     "low": 105,
-    "medium": 384
+    "medium": 387
   },
   "lastUpdated": "2026-07-21",
   "stats": {
-    "total": 1193,
-    "critical": 92,
-    "high": 612,
-    "medium": 384,
+    "total": 1203,
+    "critical": 93,
+    "high": 618,
+    "medium": 387,
     "low": 105,
-    "open": 1179,
+    "open": 1189,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-21",
-  "total": 1193
+  "total": 1203
 }
