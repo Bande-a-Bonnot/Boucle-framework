@@ -7,6 +7,62 @@
   <updated>2026-07-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Background subagents can be stranded after session fork</title>
+    <id>https://framework.boucle.sh/limitations.html#background-subagents-can-be-stranded-after-session-fork</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-subagents-can-be-stranded-after-session-fork"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 background session fork carried running subagent transcripts into the new session directory, but left completed pre-fork subagent transcripts stranded under the old session. Later `SendMessage` calls to the completed agent failed with `No transcript found for agent ID` even though the JSONL still existed on disk.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] VS Code extension restored tabs can drop messages after host restart</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-extension-restored-tabs-can-drop-messages-after-host-restart</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-extension-restored-tabs-can-drop-messages-after-host-restart"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code VS Code extension host restart on Windows visually restored multiple chat tabs without re-binding them to their sessions. Messages typed into unbound tabs were silently dropped inside the webview, no CLI process was spawned, transcripts were not updated, and the UI showed an infinite spinner with a dead stop button.</summary>
+    <category term="VS Code extension"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Session transcript retention can hard-delete recent history</title>
+    <id>https://framework.boucle.sh/limitations.html#session-transcript-retention-can-hard-delete-recent-history</id>
+    <link href="https://framework.boucle.sh/limitations.html#session-transcript-retention-can-hard-delete-recent-history"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.x retention sweep hard-unlinked old session JSONL files without console output, durable log entry, trash, or cleanup of sibling `tool-results`, `subagents`, and `session-env` directories. The same report also described many transcripts disappearing while only 3 to 9 days old, apparently tied to long-lived TUI sessions that were context-cleared and killed without clean shutdown.</summary>
+    <category term="Data integrity"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Background jobs can dangle transcript session pointers</title>
+    <id>https://framework.boucle.sh/limitations.html#background-jobs-can-dangle-transcript-session-pointers</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-jobs-can-dangle-transcript-session-pointers"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported daemon-backed `/bg` job recorded a `sessionId` whose transcript file contained only title stubs, while the real conversation stayed under the source session UUID. Fleet or job-list resume paths resolved through the dangling job record and showed the session as missing even though manually resuming the source transcript worked.</summary>
+    <category term="Core &amp; session management"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Worktree provisioning can overwrite tracked config files</title>
+    <id>https://framework.boucle.sh/limitations.html#worktree-provisioning-can-overwrite-tracked-config-files</id>
+    <link href="https://framework.boucle.sh/limitations.html#worktree-provisioning-can-overwrite-tracked-config-files"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code-managed worktree copied git-tracked files under `.claude/commands/` and `.claude/hooks/` from the primary checkout into a newly created worktree, leaving tracked files different from that worktree&#x27;s own `HEAD` immediately after session start. A plain `git worktree add` control was clean, so the overwrite appears to happen during Claude Code&#x27;s worktree provisioning step rather than in Git itself.</summary>
+    <category term="Git &amp; repository safety"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Plugin MCP tools can be connected but unregistered</title>
+    <id>https://framework.boucle.sh/limitations.html#plugin-mcp-tools-can-be-connected-but-unregistered</id>
+    <link href="https://framework.boucle.sh/limitations.html#plugin-mcp-tools-can-be-connected-but-unregistered"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 macOS plugin setup showed two plugin MCP servers as connected in `claude mcp list`, while none of their tools were discoverable or callable in live sessions. Manual raw MCP `initialize` and `tools/list` calls against the same server commands returned valid tool lists, narrowing the failure to Claude Code&#x27;s client-side registration path.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Scheduled one-shot permission prompts can vanish</title>
+    <id>https://framework.boucle.sh/limitations.html#scheduled-one-shot-permission-prompts-can-vanish</id>
+    <link href="https://framework.boucle.sh/limitations.html#scheduled-one-shot-permission-prompts-can-vanish"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code desktop routine using a one-time `fireAt` schedule disappeared from the Routines sidebar while it was blocked on a shell permission prompt. The prompt became invisible and unanswerable, the task died without a failure record, and the only evidence was whatever side effects had happened before the prompt.</summary>
+    <category term="Scheduled tasks"/>
+  </entry>
+  <entry>
     <title>[HIGH] Workflow worktree isolation can rename worker branches and leave the root on a run branch</title>
     <id>https://framework.boucle.sh/limitations.html#workflow-worktree-isolation-can-rename-worker-branches-and-leave-root-on-run-branch</id>
     <link href="https://framework.boucle.sh/limitations.html#workflow-worktree-isolation-can-rename-worker-branches-and-leave-root-on-run-branch"/>
@@ -109,61 +165,5 @@
     <updated>2026-07-21T00:00:00Z</updated>
     <summary>A reported Monitor-tool polling loop merged a GitHub CLI command&#x27;s stdout and stderr, then parsed the result as JSON while suppressing parser errors. Because the `gh run list --json` field list was invalid, the CLI failed immediately, the JSON parser failure was hidden, and the Monitor task looped indefinitely even after the workflow had completed. The report notes that Monitor guidance about merging stderr still needs explicit exit-status checks before JSON parsing.</summary>
     <category term="Tool behavior"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Subagent explicit tool allowlists can silently collapse when MCP is unavailable</title>
-    <id>https://framework.boucle.sh/limitations.html#subagent-explicit-tool-allowlists-can-silently-collapse-when-mcp-is-unavailable</id>
-    <link href="https://framework.boucle.sh/limitations.html#subagent-explicit-tool-allowlists-can-silently-collapse-when-mcp-is-unavailable"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.208 desktop subagent with an explicit `tools:` allowlist containing built-ins, `ToolSearch`, and Playwright MCP tools sometimes spawned with only `Read`, `Write`, `Bash`, and `WebSearch`. The missing MCP tools and `ToolSearch` were not reported as a spawn warning, while a `tools: *` subagent spawned near the same time could still load the Playwright schema. The reporter inferred that explicit allowlists may be resolved once against transient MCP availability and silently degraded.</summary>
-    <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Background memory reaper can leave orphaned child processes</title>
-    <id>https://framework.boucle.sh/limitations.html#background-memory-reaper-can-leave-orphaned-child-processes</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-memory-reaper-can-leave-orphaned-child-processes"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 Linux background Bash task killed by the memory-pressure reaper stopped only the tracked shell while child processes survived, were reparented, and continued running. The user observed three reap kills in one long session where `make`-driven integration suites kept running after task notifications reported the background command as killed. Manual TaskStop on the same version killed the whole process tree, suggesting different kill semantics between stop paths.</summary>
-    <category term="Bash &amp; shell execution"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Validation-failed tool inputs can remain as dead context</title>
-    <id>https://framework.boucle.sh/limitations.html#validation-failed-tool-inputs-can-remain-as-dead-context</id>
-    <link href="https://framework.boucle.sh/limitations.html#validation-failed-tool-inputs-can-remain-as-dead-context"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.215 feature gap leaves full oversized inputs from pre-execution validation-failed tool calls in the transcript. For example, a large `Write` call rejected because the file was not read first can keep its entire content payload in later context even though the call had no side effects and the failure reason was independent of the payload. A successful retry then adds another full copy.</summary>
-    <category term="Context &amp; memory"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Fork prompts can leak back into the parent session</title>
-    <id>https://framework.boucle.sh/limitations.html#fork-prompt-can-leak-back-into-parent-session</id>
-    <link href="https://framework.boucle.sh/limitations.html#fork-prompt-can-leak-back-into-parent-session"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.206 macOS `/fork &lt;prompt&gt;` flow delivered the forked task prompt into the parent session as an actionable instruction. The parent then executed the same side-effecting task in parallel with the fork, including upstream issue research and preparation to create public GitHub issues or scheduled routines, while fork notifications and the final fork result also appeared in the parent transcript.</summary>
-    <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Assistant output can include unrelated conversation fragments</title>
-    <id>https://framework.boucle.sh/limitations.html#assistant-output-can-include-unrelated-conversation-fragments</id>
-    <link href="https://framework.boucle.sh/limitations.html#assistant-output-can-include-unrelated-conversation-fragments"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported long Claude Code 2.1.216 macOS conversation in Chinese ended one assistant message with a coherent unrelated English roleplay-style transcript fragment. The injected content had a separate structure and topic from the user&#x27;s current warehouse and supply-chain design discussion, suggesting possible cross-context contamination rather than ordinary hallucinated wording. The reporter also filed the full transcript through `/bug`.</summary>
-    <category term="Model behavior &amp; output"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Cowork tab can disappear despite packaged runtime and healthy gates</title>
-    <id>https://framework.boucle.sh/limitations.html#cowork-tab-can-disappear-despite-packaged-runtime-and-healthy-gates</id>
-    <link href="https://framework.boucle.sh/limitations.html#cowork-tab-can-disappear-despite-packaged-runtime-and-healthy-gates"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Desktop 1.22209.3 macOS install lost the Cowork sidebar tab even though Cowork assets, VM images, protocol handlers, logs, and local gate checks all indicated the runtime was present and healthy. The reporter found no emitted packaging-failure message and inferred the tab visibility was controlled by account or server-delivered web flags rather than the local bundle state.</summary>
-    <category term="Cowork &amp; remote"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Harness session spawn can mutate the home git checkout</title>
-    <id>https://framework.boucle.sh/limitations.html#harness-session-spawn-can-mutate-home-git-checkout</id>
-    <link href="https://framework.boucle.sh/limitations.html#harness-session-spawn-can-mutate-home-git-checkout"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Windows 11 Claude Code 2.1.90 scheduled-session setup saw git mutations in the user&#x27;s home clone at session-spawn times, outside any transcripted agent command. Empty-message branch reflog entries moved `refs/heads/main` while `main` was checked out, manufacturing a large staged diff, and separate bare `git checkout HEAD` reflog entries detached the home tree. The report attributes the pattern to harness worktree setup because the timestamps align with session spawn and the commands are absent from transcripts.</summary>
-    <category term="Git &amp; repository safety"/>
   </entry>
 </feed>
