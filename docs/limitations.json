@@ -1,32 +1,32 @@
 {
   "version": "0.13.0",
-  "count": 1166,
+  "count": 1174,
   "categories": {
     "Hook behavior & events": 181,
     "Permission system": 123,
     "Hook bypass & evasion": 100,
     "MCP & plugin issues": 56,
     "Subagent & spawned agents": 50,
-    "Desktop & IDE integration": 38,
+    "Desktop & IDE integration": 39,
     "Platform & compatibility": 27,
+    "TUI & display": 26,
     "CLI & terminal": 25,
-    "TUI & display": 24,
     "Context & memory": 23,
     "Configuration behavior": 21,
     "Tool behavior": 18,
     "Agents & subagents": 17,
     "Performance & cost": 17,
     "Security & trust boundaries": 13,
+    "Cowork & remote": 12,
     "MCP & integrations": 12,
+    "MCP integration": 12,
     "Sandbox & permissions": 12,
-    "Cowork & remote": 11,
+    "Core & session management": 11,
     "Data integrity": 11,
-    "MCP integration": 11,
     "Plugin & channel system": 11,
+    "Remote & cloud": 11,
     "File system & paths": 10,
-    "Remote & cloud": 10,
     "Scheduling & remote triggers": 10,
-    "Core & session management": 9,
     "hooks": 9,
     "Model behavior": 9,
     "VS Code extension": 9,
@@ -178,10 +178,10 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 91,
-    "HIGH": 600,
+    "CRITICAL": 92,
+    "HIGH": 603,
     "LOW": 104,
-    "MEDIUM": 371
+    "MEDIUM": 375
   },
   "entries": [
     {
@@ -14955,30 +14955,134 @@
       "workaround": "For Opus 4.8 work that depends on extended thinking, verify the effective request behavior with a supervised WebSearch or another path that fails visibly when thinking is disabled. Keep effort at high or below if xhigh tool calls are failing, and treat `alwaysThinkingEnabled` as a preference that needs runtime verification on each client/runtime version.",
       "status": "open",
       "date_added": "2026-07-21"
+    },
+    {
+      "id": "browser-automation-can-leave-persistent-saved-tab-groups",
+      "title": "Browser automation can leave persistent saved tab groups",
+      "category": "Desktop & IDE integration",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79833"
+      ],
+      "description": "A reported Claude Code 2.1.216 and Claude-in-Chrome 1.0.81 setup created a Chrome saved tab group named `Claude` for each browser-automation session. Because the groups were saved, they survived browser restarts and accumulated as duplicate bookmarks-bar chips, while the available MCP tools could not inspect or delete the browser chrome state they had left behind.",
+      "workaround": "Periodically inspect Chrome's saved tab groups after browser-automation sessions and manually delete stale `Claude` groups. For repeat automation, use a disposable browser profile where possible, and do not assume closing or killing the browser cleans up persisted automation state.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "compact-fork-resume-can-retire-session-ids-without-lifecycle-signal",
+      "title": "Compact fork-resume can retire session ids without lifecycle signal",
+      "category": "Core & session management",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79830"
+      ],
+      "description": "A reported Linux Claude Code 2.1.216 auto-compact daemon path relaunched a conversation through fork-resume with a new session id, while the terminal client, pre-compact MCP servers, and external session-id tooling kept the old `CLAUDE_CODE_SESSION_ID`. The statusline showed the new id, both JSONL files remained present, and no `SessionEnd` or fork lifecycle event announced that the ancestor id had become stale.",
+      "workaround": "Treat compaction and fork-resume as possible session-id boundaries. Session-id keyed tools should compare hook payloads, statusline data, process environments, and transcript activity rather than trusting one inherited environment variable, and should mark ancestor JSONL files stale after a detected fork.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "cowork-recents-can-open-sessions-under-the-wrong-project",
+      "title": "Cowork Recents can open sessions under the wrong project",
+      "category": "Cowork & remote",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79829"
+      ],
+      "description": "A reported Windows Claude Desktop Cowork setup after the Chat/Cowork merge showed sessions from other projects in a project's Recents list. Opening one from Project A loaded a session under a different project, mounted that other project's working folder and `CLAUDE.md`, and ignored Project A's configured context, making the failure an execution and data-integrity risk rather than only a display bug.",
+      "workaround": "Avoid launching or resuming Cowork work from Recents when multiple projects or pre-merge Chat/Cowork twins exist. Before allowing writes, ask the session to report its working folder and loaded `CLAUDE.md` identity, and terminate the session if either differs from the intended project.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "mcp-tool-lists-can-stay-stale-after-list-changed-notifications",
+      "title": "MCP tool lists can stay stale after list_changed notifications",
+      "category": "MCP integration",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79826"
+      ],
+      "description": "A reported Claude Code 2.1.215 Windows session connected to an MCP gateway that advertised `tools.listChanged: true`, then ignored delivered `notifications/tools/list_changed` events when new backend tools were registered. Direct JSON-RPC probes confirmed the gateway sent notifications and could call the new tools, but Claude Code kept the original cached tool list until a new chat was started.",
+      "workaround": "After changing tools behind an MCP gateway, restart Claude Code sessions before relying on the new tool set. Gateways and supervisors should expose an out-of-band health check that compares the live server `tools/list` response with what the client can actually call, especially before database or production-tool work.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "large-tool-output-can-destroy-terminal-scrollback",
+      "title": "Large tool output can destroy terminal scrollback",
+      "category": "TUI & display",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79823"
+      ],
+      "description": "A reported macOS iTerm2 Claude Code workflow found that large rendered tool-output blocks such as big diffs or long system reminders could overwrite preceding conversational text in the terminal. The user could not recover the assistant's actual response from native scrollback, making important guidance disappear after the display rendered less important diff output.",
+      "workaround": "For long sessions with frequent edits or large diffs, capture transcripts to disk and ask for critical answers to be written to a durable file before large tool output is displayed. Prefer compact diff summaries where possible, and do not rely on terminal scrollback as the only record of important conversational content.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "prompt-history-navigation-can-clear-in-progress-input",
+      "title": "Prompt history navigation can clear in-progress input",
+      "category": "TUI & display",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79822"
+      ],
+      "description": "A reported macOS Apple Terminal Claude Code 2.1.212 session cleared a long in-progress prompt when the user accidentally pressed the up-arrow history key. The draft prompt was not recoverable from the input UI, turning a common terminal-navigation mistake into local prompt data loss.",
+      "workaround": "For long or high-value prompts, compose in an external editor or save a draft before using terminal history keys. If the input line clears unexpectedly, avoid sending a replacement that assumes the old prompt is still queued, and check shell or terminal logging only if you have explicitly enabled it beforehand.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "session-auto-titles-can-overwrite-user-set-names",
+      "title": "Session auto-titles can overwrite user-set names",
+      "category": "Core & session management",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79820"
+      ],
+      "description": "A reported macOS Claude Code 2.1.215 session renamed with `/rename` was later overwritten by an auto-generated title, and the CLI's local session record diverged from the remote/mobile session title. The report tied the behavior to separate local and remote title stores and to an apparent anti-overwrite guard that existed for background-job naming but not for interactive sessions.",
+      "workaround": "For workflows that depend on stable session names, record the session id and intended name outside Claude Code and verify both local CLI and remote/mobile surfaces after renaming. Do not treat a terminal tab title as authoritative if mobile, remote-control, or statusline surfaces are involved.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "remote-control-can-duplicate-active-devices-for-one-machine",
+      "title": "Remote Control can duplicate active devices for one machine",
+      "category": "Remote & cloud",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79827"
+      ],
+      "description": "A reported macOS Claude Code 2.1.212 remote-control setup showed the same Mac as multiple active devices in the Claude mobile app, with sessions split between entries. The reporter found one consistent local name and a stable re-registered environment, suggesting stale server-side environment records and name de-duplication can make active sessions appear missing under the selected device.",
+      "workaround": "When using mobile Remote Control, check the `Sessions -> All` view before assuming a session disappeared. Keep local remote-control names stable, document environment ids when possible, and avoid creating multiple test environments from different directories on the same machine unless you can distinguish stale entries later.",
+      "status": "open",
+      "date_added": "2026-07-21"
     }
   ],
   "status_summary": {
-    "open": 1152,
+    "open": 1160,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 91,
-    "high": 600,
+    "critical": 92,
+    "high": 603,
     "low": 104,
-    "medium": 371
+    "medium": 375
   },
   "lastUpdated": "2026-07-21",
   "stats": {
-    "total": 1166,
-    "critical": 91,
-    "high": 600,
-    "medium": 371,
+    "total": 1174,
+    "critical": 92,
+    "high": 603,
+    "medium": 375,
     "low": 104,
-    "open": 1152,
+    "open": 1160,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-21",
-  "total": 1166
+  "total": 1174
 }
