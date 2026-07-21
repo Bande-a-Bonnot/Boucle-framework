@@ -1,12 +1,12 @@
 {
   "version": "0.13.0",
-  "count": 1183,
+  "count": 1193,
   "categories": {
-    "Hook behavior & events": 182,
-    "Permission system": 124,
+    "Hook behavior & events": 183,
+    "Permission system": 125,
     "Hook bypass & evasion": 100,
-    "MCP & plugin issues": 56,
-    "Subagent & spawned agents": 50,
+    "MCP & plugin issues": 57,
+    "Subagent & spawned agents": 51,
     "Desktop & IDE integration": 40,
     "Platform & compatibility": 27,
     "TUI & display": 27,
@@ -16,15 +16,15 @@
     "Tool behavior": 18,
     "Agents & subagents": 17,
     "Performance & cost": 17,
+    "Security & trust boundaries": 14,
     "MCP integration": 13,
-    "Security & trust boundaries": 13,
     "Core & session management": 12,
     "Cowork & remote": 12,
     "MCP & integrations": 12,
+    "Remote & cloud": 12,
     "Sandbox & permissions": 12,
     "Data integrity": 11,
     "Plugin & channel system": 11,
-    "Remote & cloud": 11,
     "File system & paths": 10,
     "Scheduling & remote triggers": 10,
     "hooks": 9,
@@ -32,23 +32,25 @@
     "VS Code extension": 9,
     "auth": 8,
     "Auth & accounts": 8,
+    "Bash & shell execution": 8,
     "Configuration & settings": 8,
     "Scheduled tasks": 8,
-    "Bash & shell execution": 7,
     "MCP": 7,
     "Permissions": 7,
     "Permissions & safety": 7,
     "Authentication & accounts": 6,
     "Desktop & platform bugs": 6,
     "Git & repository safety": 6,
+    "Worktree": 6,
     "Model behavior & output": 5,
     "Skills & commands": 5,
     "Skills / slash commands": 5,
     "UX & display": 5,
-    "Worktree": 5,
     "MCP & plugins": 4,
+    "Memory & context": 4,
     "permissions": 4,
     "sandbox": 4,
+    "Telemetry & insights": 4,
     "tui": 4,
     "CLI / TUI rendering": 3,
     "Context / compaction": 3,
@@ -56,7 +58,6 @@
     "Desktop": 3,
     "Hooks": 3,
     "IDE integration": 3,
-    "Memory & context": 3,
     "Model behavior & instructions": 3,
     "model-behavior": 3,
     "Remote": 3,
@@ -64,7 +65,6 @@
     "Security": 3,
     "Skills": 3,
     "Stability & crashes": 3,
-    "Telemetry & insights": 3,
     "Agents": 2,
     "agents": 2,
     "API & infrastructure": 2,
@@ -181,9 +181,9 @@
   },
   "severity_counts": {
     "CRITICAL": 92,
-    "HIGH": 608,
+    "HIGH": 612,
     "LOW": 105,
-    "MEDIUM": 378
+    "MEDIUM": 384
   },
   "entries": [
     {
@@ -15178,30 +15178,160 @@
       "workaround": "At the start of long or resumed sessions, probe for required built-in tools such as task and todo tools before relying on them for workflow state. If a tool reports that it exists but is not enabled, start a fresh session or check task-related environment and TTY gates, and keep an external task list when the Ctrl-T surface cannot be populated.",
       "status": "open",
       "date_added": "2026-07-21"
+    },
+    {
+      "id": "vscode-multiroot-can-ignore-bash-allow-rules-for-git",
+      "title": "VS Code multi-root sessions can ignore Bash allow rules for git",
+      "category": "Permission system",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79885"
+      ],
+      "description": "A reported Ubuntu VS Code extension session opened from a multi-root `.code-workspace` loaded a project `permissions.allow` entry for bare `Bash`, and honored it for non-git commands including writes. In the same session, git commands without explicit `Bash(git ...)` rules still prompted, while opening the same repo directly with `code .` let the blanket Bash rule apply to git too.",
+      "workaround": "When using VS Code multi-root workspaces, do not assume a tool-level `Bash` allow rule covers git. Add explicit read-only and write git patterns for the exact commands automation needs, run a permission preflight inside the workspace launch mode, or open the repo as a single folder for unattended git workflows.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "first-party-memory-directory-can-be-blocked-by-claude-guardrail",
+      "title": "First-party memory directory can be blocked by the .claude guardrail",
+      "category": "Memory & context",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79883"
+      ],
+      "description": "A reported Claude Code 2.1.215-2.1.216 setup found that the first-party memory feature writes under `~/.claude/projects/<project-id>/memory/`, but that path is protected by the `.claude` sensitive-file guardrail. User allow rules, project-local allow rules, `--allowedTools`, and a PreToolUse hook returning allow were all overruled, so every memory write required interactive approval and session always-allow choices did not persist.",
+      "workaround": "Plan for interactive approval on Claude Code memory writes until the memory directory has a first-party exemption or opt-in policy. Avoid workarounds that write memory files through Bash unless you separately guard against prompt-injection persistence, because Bash can bypass the file-tool protection that caused the prompt.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "vscode-extension-can-skip-notification-hooks",
+      "title": "VS Code extension can skip Notification hooks",
+      "category": "Hook behavior & events",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79881"
+      ],
+      "description": "A reported macOS Claude Code VS Code extension 2.1.216 session never fired `Notification` hooks for permission prompts or idle prompts, although the same hook command fired reliably in a standalone terminal and `Stop` hooks fired in both environments. The report suggests the extension panel may surface permission or idle prompts without emitting the documented Notification hook event.",
+      "workaround": "For VS Code extension workflows, verify each hook event type in the extension itself before relying on terminal behavior. Keep secondary alerting for permission prompts, and treat `Stop` hook success as insufficient evidence that `Notification` hooks are active.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "bash-timeout-auto-background-can-silently-switch-to-sigterm",
+      "title": "Bash timeout auto-background can silently switch to SIGTERM",
+      "category": "Bash & shell execution",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79879"
+      ],
+      "description": "A reported Linux Claude Code 2.1.216 investigation found that foreground Bash commands reaching `timeout` are either moved to the background or killed with exit 143 based on undocumented static analysis. Commands with variable redirect targets, heredoc plus redirect shapes, any `git` subcommand, or an initial `sleep` can take the kill path, while visually similar literal-redirect commands auto-background.",
+      "workaround": "For long-running commands, set `run_in_background: true` explicitly instead of depending on timeout auto-backgrounding. Hook authors that rewrite `timeout` should treat complex shell strings, git commands, heredocs, and variable redirects as kill-prone unless they can reproduce Claude Code's own eligibility check.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "wsl-rooted-sessions-can-hide-marketplace-connectors",
+      "title": "WSL-rooted sessions can hide marketplace connectors",
+      "category": "MCP & plugin issues",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79878"
+      ],
+      "description": "A reported Windows Claude Code integration showed marketplace plugins and connectors available when the session root was a native Windows path, but unavailable when the working directory was a WSL project path. The inverse also happened: WSL-rooted sessions discovered project `.claude/agents` and skills, while Windows-rooted sessions exposed connectors but missed those project-level assets.",
+      "workaround": "On Windows/WSL, test connector availability and project agent discovery in the exact root mode you plan to use. If both are needed, keep separate sessions for connector-heavy work and WSL project-agent work, and document which side owns writes to avoid assuming account-level connectors are root-independent.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "insights-reports-can-render-incomplete-usage-aggregations",
+      "title": "/insights reports can render incomplete usage aggregations",
+      "category": "Telemetry & insights",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79876"
+      ],
+      "description": "A reported macOS Claude Code 2.1.216 `/insights` run generated two HTML reports 74 seconds apart from the same on-disk usage data, with the earlier report undercounting active hours, commits, and header messages by roughly 30%. The later report matched a direct `session-meta` sum more closely, while the displayed session denominators did not reconcile with the local file counts or analyzed counts.",
+      "workaround": "Treat `/insights` output as advisory until report completeness is visible. Before quoting usage totals, rerun the report, compare against direct sums from `~/.claude/usage-data/session-meta`, and preserve generation timestamps so incomplete snapshots are not mistaken for final aggregates.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "agents-delete-can-skip-plugin-worktree-remove-hooks",
+      "title": "Agents deletion can skip plugin WorktreeRemove hooks",
+      "category": "Worktree",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79872"
+      ],
+      "description": "A reported Claude Code 2.1.215-2.1.216 plugin shipped paired WorktreeCreate and WorktreeRemove hooks. Worktree removal worked on in-session paths, but deleting the session from `claude agents` dispatched settings-level remove hooks only, omitted plugin-provided hooks and `CLAUDE_PLUGIN_ROOT`, then reported `WorktreeRemove hook failed` even when no plugin hook ran.",
+      "workaround": "If a plugin creates worktrees, test removal through every lifecycle path, including `claude agents` deletion. Until plugin WorktreeRemove hooks run there, duplicate critical cleanup as a settings-level hook or resume stuck sessions and clear their worktree state manually before deletion.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "macos-tcc-prompts-can-identify-claude-code-as-version-number",
+      "title": "macOS TCC prompts can identify Claude Code as a version number",
+      "category": "Security & trust boundaries",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79867"
+      ],
+      "description": "A reported macOS native Claude Code auto-update showed a Documents-folder TCC prompt naming the requester as only `2.1.216`. The user had to decide whether to grant broad file access to an unidentifiable version string, and the prompt can recur on each versioned binary update because the TCC identity is not stable or human-readable.",
+      "workaround": "On macOS, treat post-update file-access prompts with bare version-number names as Claude Code only after verifying the active binary path and update provenance. Keep projects outside protected folders such as Documents when practical, and document expected TCC prompts for less technical users before asking them to approve access.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "concurrent-subagents-can-wedge-without-transcript-error-markers",
+      "title": "Concurrent subagents can wedge without transcript error markers",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79865"
+      ],
+      "description": "A reported macOS Claude Code 2.1.216 fan-out with seven live subagent contexts and nested verifier lanes saw three sibling agents stop receiving model tokens at the same wall-clock instant after tool results. Two were killed by the stream watchdog after long silence with no `isApiErrorMessage` transcript record, and UI silence from a healthy parent waiting on a child looked similar to a real wedge.",
+      "workaround": "For high-concurrency subagent work, instrument per-agent last-event timestamps, tool-result boundaries, and watchdog exits instead of relying only on transcript error markers. Keep fan-out widths conservative for critical work, and distinguish parent-waiting silence from child model-token stalls before killing sessions.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "remote-ssh-home-probe-can-require-non-posix-printenv",
+      "title": "Remote SSH home probe can require non-POSIX printenv",
+      "category": "Remote & cloud",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79862"
+      ],
+      "description": "A reported Claude Desktop Remote SSH connection to a QNAP/BusyBox-style host authenticated successfully, then failed host inspection with `NO_HOME` because the probe used `printenv HOME`. The remote shell had `$HOME`, `uname`, and `id`, but no `printenv` command on the non-interactive PATH, so the parsed home directory was empty.",
+      "workaround": "For embedded, NAS, or BusyBox remotes, verify `printenv HOME` works in a non-interactive SSH command before using Claude Desktop Remote SSH. If necessary, add a temporary `printenv` shim in a system PATH directory or choose a remote with GNU coreutils available until the probe uses shell builtins such as `printf '%s\\n' \"$HOME\"`.",
+      "status": "open",
+      "date_added": "2026-07-21"
     }
   ],
   "status_summary": {
-    "open": 1169,
+    "open": 1179,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 92,
-    "high": 608,
+    "high": 612,
     "low": 105,
-    "medium": 378
+    "medium": 384
   },
   "lastUpdated": "2026-07-21",
   "stats": {
-    "total": 1183,
+    "total": 1193,
     "critical": 92,
-    "high": 608,
-    "medium": 378,
+    "high": 612,
+    "medium": 384,
     "low": 105,
-    "open": 1169,
+    "open": 1179,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-21",
-  "total": 1183
+  "total": 1193
 }
