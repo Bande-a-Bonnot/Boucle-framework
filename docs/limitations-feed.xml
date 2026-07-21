@@ -7,6 +7,86 @@
   <updated>2026-07-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] alwaysThinkingEnabled can be ignored for Opus 4.8 requests</title>
+    <id>https://framework.boucle.sh/limitations.html#always-thinking-can-be-ignored-for-opus-48-requests</id>
+    <link href="https://framework.boucle.sh/limitations.html#always-thinking-can-be-ignored-for-opus-48-requests"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Windows Desktop runtime failed to translate `alwaysThinkingEnabled: true` into adaptive thinking on Opus 4.8 requests. At normal effort the session could silently run without extended thinking despite user settings, while xhigh/max effort surfaced the bug only when a WebSearch call returned a 400 saying that the effort level was unsupported with thinking disabled.</summary>
+    <category term="Model behavior"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Ambient ANTHROPIC_MODEL can lock Claude Code model selection</title>
+    <id>https://framework.boucle.sh/limitations.html#ambient-anthropic-model-can-lock-claude-code-model-selection</id>
+    <link href="https://framework.boucle.sh/limitations.html#ambient-anthropic-model-can-lock-claude-code-model-selection"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported WSL2/Docker Claude Code 2.1.216 setup started every new session on the model named by an ambient `ANTHROPIC_MODEL` variable, ignored `settings.json`, and let `/model` appear to accept a switch while the session stayed pinned. The variable had been exported for another tool, and the reporter said 2.1.215 allowed `/model` to switch away from it.</summary>
+    <category term="Model behavior"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Remote-control mode can kill background Bash tasks mid-session</title>
+    <id>https://framework.boucle.sh/limitations.html#remote-control-can-kill-background-bash-tasks-mid-session</id>
+    <link href="https://framework.boucle.sh/limitations.html#remote-control-can-kill-background-bash-tasks-mid-session"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Linux `--remote-control` session repeatedly sent SIGTERM from its own `claude` process to Bash-tool background tasks about 30 to 90 seconds after launch, while the session was still active. A signal-traced canary identified the session process as the sender, and long-running Playwright runs, watchers, and canaries died with empty output files.</summary>
+    <category term="Remote &amp; cloud"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Project path resolution fallback can scope tools to the home directory</title>
+    <id>https://framework.boucle.sh/limitations.html#project-path-resolution-fallback-can-scope-tools-to-home-directory</id>
+    <link href="https://framework.boucle.sh/limitations.html#project-path-resolution-fallback-can-scope-tools-to-home-directory"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Windows Desktop setup logged hundreds of sessions whose resolved project directory was the bare user home directory rather than a project folder. Follow-up testing found the failure can also occur after explicit folder selection when path resolution fails, falling back to an unbounded home-directory scope where ordinary Read, Grep, Glob, and Bash calls can traverse unrelated files without a separate directory-consent prompt.</summary>
+    <category term="File system &amp; paths"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Plan mode read-only guarantee can fail for subagents</title>
+    <id>https://framework.boucle.sh/limitations.html#plan-mode-read-only-guarantee-can-fail-for-subagents</id>
+    <link href="https://framework.boucle.sh/limitations.html#plan-mode-read-only-guarantee-can-fail-for-subagents"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code Desktop session in plan mode dispatched a subagent for a read-only task, yet the subagent executed a destructive Bash command without a prompt, block, or error. The report linked the behavior to prior stale-closed issues, including a production-data-loss incident, and argued plan mode is not enforced as a session-wide tool-layer state for Agent-spawned children.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Mid-turn user input can route into live subagents</title>
+    <id>https://framework.boucle.sh/limitations.html#mid-turn-user-input-can-route-into-live-subagents</id>
+    <link href="https://framework.boucle.sh/limitations.html#mid-turn-user-input-can-route-into-live-subagents"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported macOS Claude Code session spawned a long-running subagent, then user messages typed into the terminal during the parent turn appeared as user turns inside the subagent transcript instead of queuing for the parent. The subagent acted on design directions outside its brief, the parent later treated the result as rogue, and the user&#x27;s input was effectively lost from the visible parent session.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Environment scrubbing can silently disable auto mode at session start</title>
+    <id>https://framework.boucle.sh/limitations.html#env-scrub-can-silently-disable-auto-mode-at-session-start</id>
+    <link href="https://framework.boucle.sh/limitations.html#env-scrub-can-silently-disable-auto-mode-at-session-start"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code 2.1.216 and Desktop setup found that `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` in `settings.json` silently made auto mode unavailable at session start. The interactive and Desktop surfaces only showed a generic fallback-to-permissions banner, while the explanatory warning appeared only in headless `-p` runs, and switching to auto mid-session still worked.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Background Task agents can drop read-only final reports</title>
+    <id>https://framework.boucle.sh/limitations.html#background-task-agents-can-drop-read-only-final-reports</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-task-agents-can-drop-read-only-final-reports"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code session ran a controlled A/B where foreground Task agents returned normally, but the same direct `run_in_background: true` agent signalled idle twice and never delivered its final conversational report. Because the task was read-only and wrote no files, the result was silently lost, and sending a follow-up message only produced another idle signal.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Native memory leaks can crash desktop sessions</title>
+    <id>https://framework.boucle.sh/limitations.html#native-memory-leaks-can-crash-desktop-sessions</id>
+    <link href="https://framework.boucle.sh/limitations.html#native-memory-leaks-can-crash-desktop-sessions"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported macOS Claude Desktop/Claude Code session saw memory spike from normal usage toward 150 GB during a git rebase, with `/heapdump` showing most growth outside the JavaScript heap and a calculated growth rate above 2,000,000 MB/hour. The reporter described the crash as intermittent and project-specific, suggesting file watching, indexing, or native modules can trigger runaway native allocation.</summary>
+    <category term="Performance &amp; cost"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Opus output can degenerate into billed single-token repetition</title>
+    <id>https://framework.boucle.sh/limitations.html#opus-output-can-degenerate-into-billed-single-token-repetition</id>
+    <link href="https://framework.boucle.sh/limitations.html#opus-output-can-degenerate-into-billed-single-token-repetition"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code orchestration session switched from Fable 5 to Opus 4.8, then repeatedly emitted thousands of copies of one token until manually interrupted. The reporter tied the failure to a long repetitive turn history and noted that `/compact` cleared the contaminated context, but the useless stream still consumed paid usage credits before interruption.</summary>
+    <category term="Model behavior"/>
+  </entry>
+  <entry>
     <title>[CRITICAL] Transient daemons can resurrect killed bypassPermissions sessions</title>
     <id>https://framework.boucle.sh/limitations.html#transient-daemons-can-resurrect-killed-bypasspermissions-sessions</id>
     <link href="https://framework.boucle.sh/limitations.html#transient-daemons-can-resurrect-killed-bypasspermissions-sessions"/>
@@ -85,85 +165,5 @@
     <updated>2026-07-21T00:00:00Z</updated>
     <summary>A reported Claude Code VS Code extension host restart on Windows visually restored multiple chat tabs without re-binding them to their sessions. Messages typed into unbound tabs were silently dropped inside the webview, no CLI process was spawned, transcripts were not updated, and the UI showed an infinite spinner with a dead stop button.</summary>
     <category term="VS Code extension"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Session transcript retention can hard-delete recent history</title>
-    <id>https://framework.boucle.sh/limitations.html#session-transcript-retention-can-hard-delete-recent-history</id>
-    <link href="https://framework.boucle.sh/limitations.html#session-transcript-retention-can-hard-delete-recent-history"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.x retention sweep hard-unlinked old session JSONL files without console output, durable log entry, trash, or cleanup of sibling `tool-results`, `subagents`, and `session-env` directories. The same report also described many transcripts disappearing while only 3 to 9 days old, apparently tied to long-lived TUI sessions that were context-cleared and killed without clean shutdown.</summary>
-    <category term="Data integrity"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Background jobs can dangle transcript session pointers</title>
-    <id>https://framework.boucle.sh/limitations.html#background-jobs-can-dangle-transcript-session-pointers</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-jobs-can-dangle-transcript-session-pointers"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported daemon-backed `/bg` job recorded a `sessionId` whose transcript file contained only title stubs, while the real conversation stayed under the source session UUID. Fleet or job-list resume paths resolved through the dangling job record and showed the session as missing even though manually resuming the source transcript worked.</summary>
-    <category term="Core &amp; session management"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Worktree provisioning can overwrite tracked config files</title>
-    <id>https://framework.boucle.sh/limitations.html#worktree-provisioning-can-overwrite-tracked-config-files</id>
-    <link href="https://framework.boucle.sh/limitations.html#worktree-provisioning-can-overwrite-tracked-config-files"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code-managed worktree copied git-tracked files under `.claude/commands/` and `.claude/hooks/` from the primary checkout into a newly created worktree, leaving tracked files different from that worktree&#x27;s own `HEAD` immediately after session start. A plain `git worktree add` control was clean, so the overwrite appears to happen during Claude Code&#x27;s worktree provisioning step rather than in Git itself.</summary>
-    <category term="Git &amp; repository safety"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Plugin MCP tools can be connected but unregistered</title>
-    <id>https://framework.boucle.sh/limitations.html#plugin-mcp-tools-can-be-connected-but-unregistered</id>
-    <link href="https://framework.boucle.sh/limitations.html#plugin-mcp-tools-can-be-connected-but-unregistered"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 macOS plugin setup showed two plugin MCP servers as connected in `claude mcp list`, while none of their tools were discoverable or callable in live sessions. Manual raw MCP `initialize` and `tools/list` calls against the same server commands returned valid tool lists, narrowing the failure to Claude Code&#x27;s client-side registration path.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Scheduled one-shot permission prompts can vanish</title>
-    <id>https://framework.boucle.sh/limitations.html#scheduled-one-shot-permission-prompts-can-vanish</id>
-    <link href="https://framework.boucle.sh/limitations.html#scheduled-one-shot-permission-prompts-can-vanish"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Windows Claude Code desktop routine using a one-time `fireAt` schedule disappeared from the Routines sidebar while it was blocked on a shell permission prompt. The prompt became invisible and unanswerable, the task died without a failure record, and the only evidence was whatever side effects had happened before the prompt.</summary>
-    <category term="Scheduled tasks"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Workflow worktree isolation can rename worker branches and leave the root on a run branch</title>
-    <id>https://framework.boucle.sh/limitations.html#workflow-worktree-isolation-can-rename-worker-branches-and-leave-root-on-run-branch</id>
-    <link href="https://framework.boucle.sh/limitations.html#workflow-worktree-isolation-can-rename-worker-branches-and-leave-root-on-run-branch"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Agent SDK / Workflow setup using `isolation: &#x27;worktree&#x27;` saw worker branch names replaced with harness-generated `worktree-&lt;workflowId&gt;-&lt;N&gt;` names instead of the requested `run/&lt;runId&gt;/&lt;id&gt;-&lt;slug&gt;` pattern, across five consecutive runs. The reporter also observed the primary worktree sometimes left checked out on a run or worktree branch after isolated agents finished, and `branch: null` audit-only tasks still left empty branch and worktree artifacts.</summary>
-    <category term="Git &amp; repository safety"/>
-  </entry>
-  <entry>
-    <title>[HIGH] VS Code extension UI can wedge while the agent keeps running headless</title>
-    <id>https://framework.boucle.sh/limitations.html#vscode-extension-ui-can-wedge-while-agent-keeps-running-headless</id>
-    <link href="https://framework.boucle.sh/limitations.html#vscode-extension-ui-can-wedge-while-agent-keeps-running-headless"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Cursor / VS Code extension session wedged after a settings.json permission-rule reconciliation: `/usage`, Show Logs, new input, and extension logging stopped responding, but the CLI transcript showed the agent kept processing a background task completion and continued running tools several minutes later. The user could only recover by cycling the window, and the extension&#x27;s own log was inaccessible through the wedged UI.</summary>
-    <category term="VS Code extension"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Scheduled cloud routines can expose only a partial connector toolset</title>
-    <id>https://framework.boucle.sh/limitations.html#scheduled-cloud-routines-can-expose-only-a-partial-connector-toolset</id>
-    <link href="https://framework.boucle.sh/limitations.html#scheduled-cloud-routines-can-expose-only-a-partial-connector-toolset"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported scheduled cloud routine with an attached claude.ai MCP connector showed the connector as connected but registered only a fixed small subset of tools. Tools required for the job, such as reading channel history, search, and posting, were absent even though the same connector and account exposed the full toolset in interactive Claude Code, web, and desktop sessions. An explicit connector tool allowlist in routine config reportedly did not restore the missing tools.</summary>
-    <category term="Scheduling &amp; remote triggers"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Interactive LSP client can serve stale file buffers after edits</title>
-    <id>https://framework.boucle.sh/limitations.html#interactive-lsp-client-can-serve-stale-file-buffers-after-edits</id>
-    <link href="https://framework.boucle.sh/limitations.html#interactive-lsp-client-can-serve-stale-file-buffers-after-edits"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 interactive session using a plugin-registered `.lsp.json` server sent `textDocument/didOpen` for a file, then failed to send `didChange` or `didSave` after Claude&#x27;s own Edit tool rewrote that file. Subsequent hover, documentSymbol, and reference queries used the server&#x27;s frozen first-query buffer, while the same scenario through headless `claude -p` sent a full-text didChange and returned fresh answers.</summary>
-    <category term="IDE integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] WorktreePool deregistered directories can mutate the parent repo</title>
-    <id>https://framework.boucle.sh/limitations.html#worktreepool-deregistered-directories-can-mutate-parent-repo</id>
-    <link href="https://framework.boucle.sh/limitations.html#worktreepool-deregistered-directories-can-mutate-parent-repo"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Desktop Windows WorktreePool bug ran git checkout commands in leftover `.claude/worktrees` directories that were no longer registered worktrees and no longer contained a `.git` file. Because those shell directories were nested under the main repository, git repository discovery walked upward and the pool&#x27;s release or lease checkout mutated the user&#x27;s parent checkout, detaching HEAD or moving it onto a `claude/*` session branch.</summary>
-    <category term="Git &amp; repository safety"/>
   </entry>
 </feed>
