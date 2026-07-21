@@ -7,6 +7,78 @@
   <updated>2026-07-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Desktop session index can zero-fill after unclean shutdown</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-session-index-can-zero-fill-after-unclean-shutdown</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-session-index-can-zero-fill-after-unclean-shutdown"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Windows Claude Desktop session-state JSON under `claude-code-sessions` became entirely NUL bytes after hard power-off events while the app was open. The conversation disappeared from the Desktop sidebar even though the underlying CLI transcript remained intact, making recoverable metadata corruption look like permanent chat loss to the user.</summary>
+    <category term="Data integrity"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Auto-updater can download once per running session</title>
+    <id>https://framework.boucle.sh/limitations.html#auto-updater-can-download-once-per-running-session</id>
+    <link href="https://framework.boucle.sh/limitations.html#auto-updater-can-download-once-per-running-session"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Linux native-install setup with six concurrent Claude Code sessions saw each running session independently download the same roughly 265 MB point release into separate staging directories. Several downloads ran simultaneously, failed attempts left empty or partial staging artifacts, and one 0-byte version file triggered an auto-update failure banner.</summary>
+    <category term="Performance &amp; cost"/>
+  </entry>
+  <entry>
+    <title>[HIGH] MCP text content can be dropped when structuredContent is present</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-text-content-can-be-dropped-when-structuredcontent-present</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-text-content-can-be-dropped-when-structuredcontent-present"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code CLI MCP call to an HTTP server returned only the structuredContent metadata block from a tool response and silently omitted the separate text content block containing the actual document body. The same server and tool call returned both metadata and text correctly in Cursor, isolating the loss to Claude Code&#x27;s MCP response handling.</summary>
+    <category term="MCP &amp; integrations"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Sandboxed .cc-writes can block worktree removal</title>
+    <id>https://framework.boucle.sh/limitations.html#sandboxed-cc-writes-can-block-worktree-removal</id>
+    <link href="https://framework.boucle.sh/limitations.html#sandboxed-cc-writes-can-block-worktree-removal"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported macOS sandboxed Claude Code worktree session created `&lt;worktree&gt;/.claude/.cc-writes/` while editing inside an entered linked worktree. That harness-owned path remained write-denied after ExitWorktree, causing both sandboxed `git worktree remove --force` and Claude Code&#x27;s own `ExitWorktree({action: &quot;remove&quot;})` cleanup path to fail with operation-permitted errors and leave an orphaned stub.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Plan mode workflow can override project CLAUDE.md process</title>
+    <id>https://framework.boucle.sh/limitations.html#plan-mode-workflow-can-override-project-claude-md-process</id>
+    <link href="https://framework.boucle.sh/limitations.html#plan-mode-workflow-can-override-project-claude-md-process"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.217 plan-mode session loaded project CLAUDE.md under an override-precedence wrapper, then plan-mode&#x27;s injected workflow still directed the model into an incompatible chat-side planning process and unapproved Explore-agent fan-out. The more proximate plan-mode instructions overrode the repository&#x27;s reviewed plan-document and code-search conventions, producing wasted token spend and work the project process rejected.</summary>
+    <category term="Model behavior &amp; instructions"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Plugin update can miss source drift with unchanged version</title>
+    <id>https://framework.boucle.sh/limitations.html#plugin-update-can-miss-source-drift-with-unchanged-version</id>
+    <link href="https://framework.boucle.sh/limitations.html#plugin-update-can-miss-source-drift-with-unchanged-version"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported git-backed marketplace plugin gained real upstream commits while its `plugin.json` version stayed unchanged. `claude plugin update` and `/reload-plugins` compared only the declared version string, reported the plugin was already latest, left the runtime cache byte-identical, and did not update the recorded `gitCommitSha` even though the marketplace clone itself had fetched the newer source.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Config editing can ignore CLAUDE_CONFIG_DIR</title>
+    <id>https://framework.boucle.sh/limitations.html#config-editing-can-ignore-claude-config-dir</id>
+    <link href="https://framework.boucle.sh/limitations.html#config-editing-can-ignore-claude-config-dir"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported macOS setup with `CLAUDE_CONFIG_DIR` pointing at `~/.config/claude` found that Claude Code&#x27;s config-editing path, including update-config skill or agent-driven settings edits, wrote `~/.claude/settings.json` instead. The main CLI read path honored the alternate config directory, so the edit appeared to succeed but landed in a file that the running profile did not load.</summary>
+    <category term="Configuration behavior"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Workflow-internal agents can bypass blocking Agent hooks</title>
+    <id>https://framework.boucle.sh/limitations.html#workflow-internal-agents-can-bypass-blocking-agent-hooks</id>
+    <link href="https://framework.boucle.sh/limitations.html#workflow-internal-agents-can-bypass-blocking-agent-hooks"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 Workflow run on Linux/WSL2 triggered a blocking PreToolUse hook for the outer Workflow call, but the Workflow runtime&#x27;s internal `agent()` calls did not emit additional blocking Agent PreToolUse events before allocation. Non-blocking SubagentStart events and transcript counts could only observe the fan-out after agents had already started, so a single admitted Workflow could exceed local agent, cost, or concurrency caps.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Desktop CronCreate jobs can never fire</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-croncreate-jobs-can-never-fire</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-croncreate-jobs-can-never-fire"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Windows Claude Desktop Code-tab session created session-scoped recurring and one-shot CronCreate jobs that stayed visible in CronList as alive or pending but never fired, across multiple sessions and idle periods. The same schedules fired normally from Claude Code CLI, and a missed exact-time one-shot job rolled forward to the same date the next year instead of surfacing as expired or failed.</summary>
+    <category term="Scheduled tasks"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Auto mode allow rules can miss compound shell segments</title>
     <id>https://framework.boucle.sh/limitations.html#auto-mode-allow-rules-can-miss-compound-shell-segments</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-mode-allow-rules-can-miss-compound-shell-segments"/>
@@ -93,77 +165,5 @@
     <updated>2026-07-21T00:00:00Z</updated>
     <summary>A reported Claude Desktop Code tab permission prompt for Grep and Glob showed only the search pattern, such as `EntityType` or `**/EntityModel.java`, without the directory or glob root. The user could not distinguish a narrow project search from an unrelated broad filesystem search before approving.</summary>
     <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Ghost sessions can consume server-side usage with zero local cost</title>
-    <id>https://framework.boucle.sh/limitations.html#ghost-sessions-can-consume-server-side-usage-with-zero-local-cost</id>
-    <link href="https://framework.boucle.sh/limitations.html#ghost-sessions-can-consume-server-side-usage-with-zero-local-cost"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Windows Claude Code 2.1.215 account showed `$0.00` local `/usage`, zero tokens, and no active local work while claude.ai usage reached 100%, promotional credits were consumed, and a stats tab showed a ghost session running for more than nine days.</summary>
-    <category term="Cost &amp; usage"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Background session daemon restore can exhaust system file table</title>
-    <id>https://framework.boucle.sh/limitations.html#background-session-daemon-restore-can-exhaust-system-file-table</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-session-daemon-restore-can-exhaust-system-file-table"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported macOS Claude Code 2.1.216 daemon restored many host-managed background sessions simultaneously from `~/.claude/daemon/roster.json`, drove `bg-spare` processes into a claim/crash/respawn loop, and opened file descriptors fast enough to hit the system-wide file table limit. The reporter captured ENFILE errors, userspace wedges, launchd SIGBUS crashes, and kernel panics.</summary>
-    <category term="Performance &amp; resource usage"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Desktop and VS Code sessions can freeze until other session input</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-and-vscode-sessions-can-freeze-until-other-session-input</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-and-vscode-sessions-can-freeze-until-other-session-input"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported macOS Claude Desktop and VS Code extension setup with multiple concurrent sessions could leave one session stuck on `thinking` indefinitely. The frozen session resumed immediately when the user typed into another session, while network traces showed only keep-alives and no inbound response traffic during the freeze, pointing to a local scheduling or event-loop stall.</summary>
-    <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Windows LFS worktree isolation can litter dev/null hook files</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-lfs-worktree-isolation-can-litter-dev-null-hooks</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-lfs-worktree-isolation-can-litter-dev-null-hooks"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Windows Claude Code 2.0.42 worktree-isolation flow in a Git LFS repo created untracked files such as `dev\null\post-checkout`, `post-commit`, `post-merge`, and `pre-push` inside every managed worktree. The report traced this to `core.hooksPath=/dev/null` during checkout: Git special-cases it, but git-lfs resolves it relative to the worktree on Windows.</summary>
-    <category term="Worktree"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] VS Code memory panel can refresh against orphaned session ID</title>
-    <id>https://framework.boucle.sh/limitations.html#vscode-memory-panel-can-refresh-against-orphaned-session-id</id>
-    <link href="https://framework.boucle.sh/limitations.html#vscode-memory-panel-can-refresh-against-orphaned-session-id"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Windows VS Code extension session opened `/memory`, then the panel refresh failed with `No conversation found with session ID`. The failing ID matched an empty `~/.claude/session-env/&lt;id&gt;/` directory with no matching `~/.claude/projects/**/&lt;id&gt;.jsonl` transcript, suggesting the panel kept an unpromoted session ID instead of the active conversation ID.</summary>
-    <category term="VS Code extension"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Claude Desktop startup entry can crash Windows Startup settings</title>
-    <id>https://framework.boucle.sh/limitations.html#claude-desktop-startup-entry-can-crash-windows-startup-settings</id>
-    <link href="https://framework.boucle.sh/limitations.html#claude-desktop-startup-entry-can-crash-windows-startup-settings"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Windows Claude Desktop 1.22209.3 setup wrote a malformed Run-key startup command with an extra layer of escaped quotes around `claude.exe --startup`. Windows Settings crashed when opening Apps &gt; Startup because the Startup settings handler parsed the malformed Claude entry, and disabling the entry in Task Manager left the malformed value in place.</summary>
-    <category term="Desktop &amp; platform bugs"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Background agent worktree locks can outlive sessions</title>
-    <id>https://framework.boucle.sh/limitations.html#background-agent-worktree-locks-can-outlive-sessions</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-agent-worktree-locks-can-outlive-sessions"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported macOS Claude Code 2.1.216 Agents view could not remove finished background-session worktrees because their git lock files named live `claude bg-spare` daemon PIDs rather than the completed sessions. The cleanup liveness check treated those long-lived spare daemons as owners, so ctrl+x reported every finished worktree as locked.</summary>
-    <category term="Worktree"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Desktop Filesystem extension can drop tools/call</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-filesystem-extension-can-drop-tools-call</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-filesystem-extension-can-drop-tools-call"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Desktop 1.22209.3 Filesystem extension on Windows initialized successfully and listed tools, but actual file tool calls failed in the UI and never reached the extension server log. The evidence points to the Desktop client or extension routing layer dropping `tools/call` after successful `initialize` and `tools/list` traffic.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Failed cd commands can silently discard cwd changes</title>
-    <id>https://framework.boucle.sh/limitations.html#failed-cd-commands-can-silently-discard-cwd-changes</id>
-    <link href="https://framework.boucle.sh/limitations.html#failed-cd-commands-can-silently-discard-cwd-changes"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.215 Bash harness adopted `cd` changes only when the overall command exited zero. Commands like `cd /tmp/somedir &amp;&amp; false` left the next Bash call in the old tracked directory without notice, despite real shell semantics and the model-facing contract that cwd persists between calls.</summary>
-    <category term="Bash &amp; shell execution"/>
   </entry>
 </feed>

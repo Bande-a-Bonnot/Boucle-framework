@@ -1,29 +1,29 @@
 {
   "version": "0.13.0",
-  "count": 1219,
+  "count": 1228,
   "categories": {
-    "Hook behavior & events": 183,
+    "Hook behavior & events": 184,
     "Permission system": 127,
     "Hook bypass & evasion": 100,
-    "MCP & plugin issues": 60,
+    "MCP & plugin issues": 61,
     "Subagent & spawned agents": 51,
     "Desktop & IDE integration": 41,
     "Platform & compatibility": 27,
     "TUI & display": 27,
     "CLI & terminal": 25,
     "Context & memory": 23,
-    "Configuration behavior": 21,
+    "Configuration behavior": 22,
     "Tool behavior": 20,
     "Agents & subagents": 19,
-    "Performance & cost": 17,
+    "Performance & cost": 18,
+    "MCP & integrations": 14,
     "Security & trust boundaries": 14,
-    "MCP & integrations": 13,
+    "Data integrity": 13,
     "MCP integration": 13,
+    "Sandbox & permissions": 13,
     "Core & session management": 12,
     "Cowork & remote": 12,
-    "Data integrity": 12,
     "Remote & cloud": 12,
-    "Sandbox & permissions": 12,
     "Plugin & channel system": 11,
     "Bash & shell execution": 10,
     "File system & paths": 10,
@@ -31,11 +31,11 @@
     "VS Code extension": 10,
     "hooks": 9,
     "Model behavior": 9,
+    "Scheduled tasks": 9,
     "Worktree": 9,
     "auth": 8,
     "Auth & accounts": 8,
     "Configuration & settings": 8,
-    "Scheduled tasks": 8,
     "Desktop & platform bugs": 7,
     "Git & repository safety": 7,
     "MCP": 7,
@@ -49,6 +49,7 @@
     "CLI / TUI rendering": 4,
     "MCP & plugins": 4,
     "Memory & context": 4,
+    "Model behavior & instructions": 4,
     "permissions": 4,
     "sandbox": 4,
     "Telemetry & insights": 4,
@@ -58,7 +59,6 @@
     "Desktop": 3,
     "Hooks": 3,
     "IDE integration": 3,
-    "Model behavior & instructions": 3,
     "Model routing & identity": 3,
     "model-behavior": 3,
     "Performance & resource usage": 3,
@@ -180,10 +180,10 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 95,
-    "HIGH": 627,
+    "CRITICAL": 96,
+    "HIGH": 634,
     "LOW": 105,
-    "MEDIUM": 392
+    "MEDIUM": 393
   },
   "entries": [
     {
@@ -15647,30 +15647,147 @@
       "workaround": "For auto-mode workflows, prefer command forms that begin with the allowed executable when possible, or add explicit rules for the exact `cd ... && command` shapes you use frequently. Keep broad `Bash(cd:*)`-style allowances out of shared settings unless the path and following command are separately constrained by hooks or review.",
       "status": "open",
       "date_added": "2026-07-21"
+    },
+    {
+      "id": "desktop-croncreate-jobs-can-never-fire",
+      "title": "Desktop CronCreate jobs can never fire",
+      "category": "Scheduled tasks",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79955"
+      ],
+      "description": "A reported Windows Claude Desktop Code-tab session created session-scoped recurring and one-shot CronCreate jobs that stayed visible in CronList as alive or pending but never fired, across multiple sessions and idle periods. The same schedules fired normally from Claude Code CLI, and a missed exact-time one-shot job rolled forward to the same date the next year instead of surfacing as expired or failed.",
+      "workaround": "Do not rely on Desktop CronCreate for critical reminders, watchdogs, or follow-up automation until you have observed the job fire in that surface. For time-sensitive jobs, run the schedule from Claude Code CLI or an external scheduler, and verify CronList state against an independent timestamped side effect rather than treating pending status as proof the timer is healthy.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "workflow-internal-agents-can-bypass-blocking-agent-hooks",
+      "title": "Workflow-internal agents can bypass blocking Agent hooks",
+      "category": "Hook behavior & events",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79953"
+      ],
+      "description": "A reported Claude Code 2.1.216 Workflow run on Linux/WSL2 triggered a blocking PreToolUse hook for the outer Workflow call, but the Workflow runtime's internal `agent()` calls did not emit additional blocking Agent PreToolUse events before allocation. Non-blocking SubagentStart events and transcript counts could only observe the fan-out after agents had already started, so a single admitted Workflow could exceed local agent, cost, or concurrency caps.",
+      "workaround": "Treat arbitrary Workflows as capable of hidden agent fan-out. Deny or ask on unknown Workflow scripts, allow only hash-registered scripts whose worst-case agent budget is reserved before launch, and require trusted scripts to route every `agent()` call through their own budget wrapper until Claude Code exposes a runtime-enforced maxAgents or blocking pre-spawn hook.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "config-editing-can-ignore-claude-config-dir",
+      "title": "Config editing can ignore CLAUDE_CONFIG_DIR",
+      "category": "Configuration behavior",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79952"
+      ],
+      "description": "A reported macOS setup with `CLAUDE_CONFIG_DIR` pointing at `~/.config/claude` found that Claude Code's config-editing path, including update-config skill or agent-driven settings edits, wrote `~/.claude/settings.json` instead. The main CLI read path honored the alternate config directory, so the edit appeared to succeed but landed in a file that the running profile did not load.",
+      "workaround": "After asking Claude Code to change settings under a non-default `CLAUDE_CONFIG_DIR`, inspect the actual configured `settings.json` path and the default `~/.claude/settings.json` before trusting the change. Prefer explicit file edits to `$CLAUDE_CONFIG_DIR/settings.json`, and run a fresh session smoke test that proves the intended setting is active.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "plugin-update-can-miss-source-drift-with-unchanged-version",
+      "title": "Plugin update can miss source drift with unchanged version",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79950"
+      ],
+      "description": "A reported git-backed marketplace plugin gained real upstream commits while its `plugin.json` version stayed unchanged. `claude plugin update` and `/reload-plugins` compared only the declared version string, reported the plugin was already latest, left the runtime cache byte-identical, and did not update the recorded `gitCommitSha` even though the marketplace clone itself had fetched the newer source.",
+      "workaround": "When relying on marketplace plugin fixes, compare the installed cache and `installed_plugins.json` commit against the marketplace source, not only the plugin version string. If source moved without a version bump, uninstall and reinstall the plugin, then verify loaded file contents or behavior in a fresh session before assuming the fix is active.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "plan-mode-workflow-can-override-project-claude-md-process",
+      "title": "Plan mode workflow can override project CLAUDE.md process",
+      "category": "Model behavior & instructions",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79947"
+      ],
+      "description": "A reported Claude Code 2.1.217 plan-mode session loaded project CLAUDE.md under an override-precedence wrapper, then plan-mode's injected workflow still directed the model into an incompatible chat-side planning process and unapproved Explore-agent fan-out. The more proximate plan-mode instructions overrode the repository's reviewed plan-document and code-search conventions, producing wasted token spend and work the project process rejected.",
+      "workaround": "If a repository has a strict planning or search process, block or ask on EnterPlanMode with a PreToolUse hook and require Agent or Workflow launches to ask for explicit approval. Keep the canonical plan in a checked-in document or issue, and treat chat-side plan-mode output as advisory unless it follows the project's documented review artifact.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "sandboxed-cc-writes-can-block-worktree-removal",
+      "title": "Sandboxed .cc-writes can block worktree removal",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79945"
+      ],
+      "description": "A reported macOS sandboxed Claude Code worktree session created `<worktree>/.claude/.cc-writes/` while editing inside an entered linked worktree. That harness-owned path remained write-denied after ExitWorktree, causing both sandboxed `git worktree remove --force` and Claude Code's own `ExitWorktree({action: \"remove\"})` cleanup path to fail with operation-permitted errors and leave an orphaned stub.",
+      "workaround": "Before entering disposable worktrees with the sandbox enabled, plan for cleanup outside the sandbox if edits create `.claude/.cc-writes`. Prefer keeping harness staging outside disposable worktrees where possible, and after ExitWorktree verify `git worktree list` plus filesystem cleanup rather than assuming the native remove action fully deleted the worktree.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "mcp-text-content-can-be-dropped-when-structuredcontent-present",
+      "title": "MCP text content can be dropped when structuredContent is present",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79944"
+      ],
+      "description": "A reported Claude Code CLI MCP call to an HTTP server returned only the structuredContent metadata block from a tool response and silently omitted the separate text content block containing the actual document body. The same server and tool call returned both metadata and text correctly in Cursor, isolating the loss to Claude Code's MCP response handling.",
+      "workaround": "For MCP tools that return both metadata and a body, verify Claude Code receives the body through server logs or a second client before acting on missing content. Until fixed, expose the critical body in a response shape Claude Code preserves, such as a text-only fallback tool or a single structured field, and treat metadata-only output as a possible client truncation.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "auto-updater-can-download-once-per-running-session",
+      "title": "Auto-updater can download once per running session",
+      "category": "Performance & cost",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79942"
+      ],
+      "description": "A reported Linux native-install setup with six concurrent Claude Code sessions saw each running session independently download the same roughly 265 MB point release into separate staging directories. Several downloads ran simultaneously, failed attempts left empty or partial staging artifacts, and one 0-byte version file triggered an auto-update failure banner.",
+      "workaround": "On machines with multiple concurrent sessions or metered bandwidth, set `DISABLE_AUTOUPDATER=1` and update from one controlled session or maintenance window. After update failures, inspect `~/.cache/claude/staging/` and the shared `versions/` directory for 0-byte or partial artifacts before resuming automated work.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "desktop-session-index-can-zero-fill-after-unclean-shutdown",
+      "title": "Desktop session index can zero-fill after unclean shutdown",
+      "category": "Data integrity",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79941"
+      ],
+      "description": "A reported Windows Claude Desktop session-state JSON under `claude-code-sessions` became entirely NUL bytes after hard power-off events while the app was open. The conversation disappeared from the Desktop sidebar even though the underlying CLI transcript remained intact, making recoverable metadata corruption look like permanent chat loss to the user.",
+      "workaround": "After an unclean shutdown, check the underlying `~/.claude/projects/**/*.jsonl` transcripts before assuming a missing Desktop sidebar entry is lost. Back up transcripts for important work, and if local session-state files are zero-filled or unparseable, preserve them with event logs for support while reconstructing task state from the transcript.",
+      "status": "open",
+      "date_added": "2026-07-21"
     }
   ],
   "status_summary": {
-    "open": 1205,
+    "open": 1214,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 95,
-    "high": 627,
+    "critical": 96,
+    "high": 634,
     "low": 105,
-    "medium": 392
+    "medium": 393
   },
   "lastUpdated": "2026-07-21",
   "stats": {
-    "total": 1219,
-    "critical": 95,
-    "high": 627,
-    "medium": 392,
+    "total": 1228,
+    "critical": 96,
+    "high": 634,
+    "medium": 393,
     "low": 105,
-    "open": 1205,
+    "open": 1214,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-21",
-  "total": 1219
+  "total": 1228
 }
