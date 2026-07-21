@@ -1,12 +1,12 @@
 {
   "version": "0.13.0",
-  "count": 1141,
+  "count": 1148,
   "categories": {
     "Hook behavior & events": 181,
     "Permission system": 121,
     "Hook bypass & evasion": 100,
-    "MCP & plugin issues": 55,
-    "Subagent & spawned agents": 46,
+    "MCP & plugin issues": 56,
+    "Subagent & spawned agents": 47,
     "Desktop & IDE integration": 38,
     "Platform & compatibility": 27,
     "CLI & terminal": 25,
@@ -20,26 +20,26 @@
     "MCP & integrations": 12,
     "Sandbox & permissions": 12,
     "Cowork & remote": 11,
+    "Data integrity": 11,
     "MCP integration": 11,
     "Plugin & channel system": 11,
-    "Data integrity": 10,
     "Scheduling & remote triggers": 10,
     "File system & paths": 9,
     "hooks": 9,
     "auth": 8,
     "Auth & accounts": 8,
     "Configuration & settings": 8,
+    "Core & session management": 8,
     "Remote & cloud": 8,
+    "VS Code extension": 8,
     "Bash & shell execution": 7,
-    "Core & session management": 7,
     "MCP": 7,
     "Permissions": 7,
     "Permissions & safety": 7,
-    "VS Code extension": 7,
+    "Scheduled tasks": 7,
     "Authentication & accounts": 6,
     "Desktop & platform bugs": 6,
-    "Scheduled tasks": 6,
-    "Git & repository safety": 5,
+    "Git & repository safety": 6,
     "Model behavior": 5,
     "Model behavior & output": 5,
     "Skills & commands": 5,
@@ -178,8 +178,8 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 85,
-    "HIGH": 582,
+    "CRITICAL": 86,
+    "HIGH": 588,
     "LOW": 104,
     "MEDIUM": 370
   },
@@ -14630,30 +14630,121 @@
       "workaround": "After workflow-isolated agents complete, explicitly check `git branch --show-current`, `git worktree list`, and both expected and harness-generated branch prefixes before writing journals, commits, or cleanup state. Make cleanup routines understand the actual `worktree-*` names as well as requested `run/*` names, and restore the primary checkout to the captured base branch before any side-effecting follow-up.",
       "status": "open",
       "date_added": "2026-07-21"
+    },
+    {
+      "id": "scheduled-one-shot-permission-prompts-can-vanish",
+      "title": "Scheduled one-shot permission prompts can vanish",
+      "category": "Scheduled tasks",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79751"
+      ],
+      "description": "A reported Windows Claude Code desktop routine using a one-time `fireAt` schedule disappeared from the Routines sidebar while it was blocked on a shell permission prompt. The prompt became invisible and unanswerable, the task died without a failure record, and the only evidence was whatever side effects had happened before the prompt.",
+      "workaround": "Do not rely on unattended one-shot routines for commands that may need new approvals. Pre-approve required commands in a manual dry run, keep a visible supervision window for the first scheduled fire, and record external heartbeat or completion evidence so a silent disappearance is not mistaken for a successful quiet run.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "plugin-mcp-tools-can-be-connected-but-unregistered",
+      "title": "Plugin MCP tools can be connected but unregistered",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79753"
+      ],
+      "description": "A reported Claude Code 2.1.216 macOS plugin setup showed two plugin MCP servers as connected in `claude mcp list`, while none of their tools were discoverable or callable in live sessions. Manual raw MCP `initialize` and `tools/list` calls against the same server commands returned valid tool lists, narrowing the failure to Claude Code's client-side registration path.",
+      "workaround": "Treat `claude mcp list` as a transport-health check, not proof that a plugin's tools are available to the model. Add a startup probe that searches for or calls one required tool from each critical server, fail closed when a server is connected but toolless, and keep a manual MCP `tools/list` check for plugin debugging.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "worktree-provisioning-can-overwrite-tracked-config-files",
+      "title": "Worktree provisioning can overwrite tracked config files",
+      "category": "Git & repository safety",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79755"
+      ],
+      "description": "A reported Claude Code-managed worktree copied git-tracked files under `.claude/commands/` and `.claude/hooks/` from the primary checkout into a newly created worktree, leaving tracked files different from that worktree's own `HEAD` immediately after session start. A plain `git worktree add` control was clean, so the overwrite appears to happen during Claude Code's worktree provisioning step rather than in Git itself.",
+      "workaround": "After opening Claude-managed worktrees, run `git status --short` and `git diff HEAD -- .claude` before trusting review or automation output. Keep tracked Claude config files aligned between the primary checkout and target branch where possible, and treat fresh worktree diffs in tracked config paths as provisioning noise until verified against `HEAD`.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "background-jobs-can-dangle-transcript-session-pointers",
+      "title": "Background jobs can dangle transcript session pointers",
+      "category": "Core & session management",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79757"
+      ],
+      "description": "A reported daemon-backed `/bg` job recorded a `sessionId` whose transcript file contained only title stubs, while the real conversation stayed under the source session UUID. Fleet or job-list resume paths resolved through the dangling job record and showed the session as missing even though manually resuming the source transcript worked.",
+      "workaround": "When a background job appears to have vanished, inspect the project transcript directory for the source session UUID before assuming data loss. Preserve job `state.json`, daemon logs, and nearby JSONL files, and build recovery tooling that can search by title, result text, or creation time instead of trusting the job's recorded `sessionId` alone.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "session-transcript-retention-can-hard-delete-recent-history",
+      "title": "Session transcript retention can hard-delete recent history",
+      "category": "Data integrity",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79758"
+      ],
+      "description": "A reported Claude Code 2.1.x retention sweep hard-unlinked old session JSONL files without console output, durable log entry, trash, or cleanup of sibling `tool-results`, `subagents`, and `session-env` directories. The same report also described many transcripts disappearing while only 3 to 9 days old, apparently tied to long-lived TUI sessions that were context-cleared and killed without clean shutdown.",
+      "workaround": "Back up `~/.claude/projects` and related session directories before relying on transcripts as operational records. Keep external archives for important sessions, avoid using the Claude Code transcript store as the only copy of decisions or audit evidence, and investigate orphaned side directories when recent JSONL files vanish.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "vscode-extension-restored-tabs-can-drop-messages-after-host-restart",
+      "title": "VS Code extension restored tabs can drop messages after host restart",
+      "category": "VS Code extension",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79760"
+      ],
+      "description": "A reported Claude Code VS Code extension host restart on Windows visually restored multiple chat tabs without re-binding them to their sessions. Messages typed into unbound tabs were silently dropped inside the webview, no CLI process was spawned, transcripts were not updated, and the UI showed an infinite spinner with a dead stop button.",
+      "workaround": "After any VS Code extension host restart or webview reload, verify each restored Claude tab by checking that a new message reaches the transcript or that a backing `claude` process exists. Avoid sending side-effecting requests into restored tabs until re-binding is confirmed, and reconnect or reload stale tabs instead of retrying work in parallel.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "background-subagents-can-be-stranded-after-session-fork",
+      "title": "Background subagents can be stranded after session fork",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79764"
+      ],
+      "description": "A reported Claude Code 2.1.216 background session fork carried running subagent transcripts into the new session directory, but left completed pre-fork subagent transcripts stranded under the old session. Later `SendMessage` calls to the completed agent failed with `No transcript found for agent ID` even though the JSONL still existed on disk.",
+      "workaround": "After background-session forks, preserve both pre-fork and post-fork session directories before assuming a completed subagent transcript is gone. If resumability matters, record the parent session UUID and inspect or link the old `subagents/agent-*.jsonl` files manually until fork carry-over handles completed agents as well as running ones.",
+      "status": "open",
+      "date_added": "2026-07-21"
     }
   ],
   "status_summary": {
-    "open": 1127,
+    "open": 1134,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 85,
-    "high": 582,
+    "critical": 86,
+    "high": 588,
     "low": 104,
     "medium": 370
   },
   "lastUpdated": "2026-07-21",
   "stats": {
-    "total": 1141,
-    "critical": 85,
-    "high": 582,
+    "total": 1148,
+    "critical": 86,
+    "high": 588,
     "medium": 370,
     "low": 104,
-    "open": 1127,
+    "open": 1134,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-21",
-  "total": 1141
+  "total": 1148
 }
