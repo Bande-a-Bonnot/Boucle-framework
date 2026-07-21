@@ -7,6 +7,70 @@
   <updated>2026-07-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[CRITICAL] Transient daemons can resurrect killed bypassPermissions sessions</title>
+    <id>https://framework.boucle.sh/limitations.html#transient-daemons-can-resurrect-killed-bypasspermissions-sessions</id>
+    <link href="https://framework.boucle.sh/limitations.html#transient-daemons-can-resurrect-killed-bypasspermissions-sessions"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Linux multi-session automation setup found transient Claude daemons re-resuming killed background PTY sessions within about a minute, including sessions launched with `--permission-mode bypassPermissions`. The reporter observed weeks-stale or replaced sessions waking unattended, running shell commands, and in one case committing and pushing while racing a live successor, with no clear resurrection audit log beyond sparse daemon auth-refresh lines.</summary>
+    <category term="Core &amp; session management"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] VS Code manual edit confirmation can reject valid non-ASCII CRLF matches</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-manual-edit-confirmation-can-reject-valid-non-ascii-crlf-matches</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-manual-edit-confirmation-can-reject-valid-non-ascii-crlf-matches"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code VS Code extension regression on Windows made Edit and MultiEdit fail with `String not found in file` only after manual confirmation in the new diff window. The same old string was present byte-for-byte in UTF-8 CRLF Markdown containing non-ASCII characters, and the identical edit succeeded in accept-edits mode, pointing to a manual-confirmation path with different file normalization or encoding handling.</summary>
+    <category term="VS Code extension"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Model consent fallback can switch models without visible consent</title>
+    <id>https://framework.boucle.sh/limitations.html#model-consent-fallback-can-switch-models-without-visible-consent</id>
+    <link href="https://framework.boucle.sh/limitations.html#model-consent-fallback-can-switch-models-without-visible-consent"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code Windows session silently switched from Fable 5 to Opus 4.8 mid-session even though the user&#x27;s weekly Fable quota was not exhausted. The only evidence was a transcript `model_consent_fallback` system event with `choice: cancelled`; no prompt or warning appeared in the conversation UI, and settings still looked unchanged afterward.</summary>
+    <category term="Model behavior"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Scheduled tasks can ignore UI-configured permission mode and model</title>
+    <id>https://framework.boucle.sh/limitations.html#scheduled-tasks-can-ignore-ui-configured-permission-mode-and-model</id>
+    <link href="https://framework.boucle.sh/limitations.html#scheduled-tasks-can-ignore-ui-configured-permission-mode-and-model"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code scheduled-task setup saved per-task UI options for bypass/skip permissions and Sonnet, but actual scheduled executions ran with manual permission prompts and Opus instead. The reporter saw the behavior consistently across multiple recurring tasks, while the same fixed commands were allowlisted and worked as expected when run manually.</summary>
+    <category term="Scheduled tasks"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Desktop session search tools can silently cap results at 20</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-session-search-tools-can-silently-cap-results-at-20</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-session-search-tools-can-silently-cap-results-at-20"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Desktop session-management MCP surface returned only the 20 most recently active sessions from `list_sessions` even when `limit` was set to 100 or 300, and `search_session_transcripts` searched the same capped set rather than all transcript files on disk. Older sessions containing a distinctive string were reported as not found despite matching JSONL files being present locally.</summary>
+    <category term="Context &amp; memory"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Skill auto-invocation can load large unrelated reference docs</title>
+    <id>https://framework.boucle.sh/limitations.html#skill-auto-invocation-can-load-large-unrelated-reference-docs</id>
+    <link href="https://framework.boucle.sh/limitations.html#skill-auto-invocation-can-load-large-unrelated-reference-docs"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.212 Windows session on a premium model auto-invoked a `claude-api` skill for a short pricing question apparently because of incidental keyword overlap with the model name. The skill loaded a large unrelated reference document into context, causing a rapid credit spike, then the session silently fell back to a lower model after usage pressure and quality visibly degraded.</summary>
+    <category term="Performance &amp; cost"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Cloud routine GitHub MCP comments can corrupt bot commands</title>
+    <id>https://framework.boucle.sh/limitations.html#cloud-routine-github-mcp-comments-can-corrupt-bot-commands</id>
+    <link href="https://framework.boucle.sh/limitations.html#cloud-routine-github-mcp-comments-can-corrupt-bot-commands"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code cloud Routine posting `@dependabot rebase` through the GitHub MCP comment tool deterministically stored a body with U+00B7 middle dots inserted into both the mention and command word. GitHub API readback showed the corrupted bytes at rest, so Dependabot did not receive the exact documented command token even though the routine had supplied it in the tool call.</summary>
+    <category term="Remote &amp; cloud"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Default permission path can ignore explicit Bash ask rules</title>
+    <id>https://framework.boucle.sh/limitations.html#default-permission-path-can-ignore-explicit-bash-ask-rules</id>
+    <link href="https://framework.boucle.sh/limitations.html#default-permission-path-can-ignore-explicit-bash-ask-rules"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 macOS session in default/manual permission mode executed a command matching an explicit `permissions.ask` rule without showing any prompt, warning, or error. The same `Bash(conda run:*)` rule was visible in `/permissions` and triggered correctly after enabling sandbox regular permissions, which narrowed the fail-open behavior to the default non-sandbox approval path rather than an invalid rule.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
     <title>[HIGH] Background subagents can be stranded after session fork</title>
     <id>https://framework.boucle.sh/limitations.html#background-subagents-can-be-stranded-after-session-fork</id>
     <link href="https://framework.boucle.sh/limitations.html#background-subagents-can-be-stranded-after-session-fork"/>
@@ -101,69 +165,5 @@
     <updated>2026-07-21T00:00:00Z</updated>
     <summary>A reported Claude Desktop Windows WorktreePool bug ran git checkout commands in leftover `.claude/worktrees` directories that were no longer registered worktrees and no longer contained a `.git` file. Because those shell directories were nested under the main repository, git repository discovery walked upward and the pool&#x27;s release or lease checkout mutated the user&#x27;s parent checkout, detaching HEAD or moving it onto a `claude/*` session branch.</summary>
     <category term="Git &amp; repository safety"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Remote control workers can supersede each other after token refresh</title>
-    <id>https://framework.boucle.sh/limitations.html#remote-control-workers-can-supersede-each-other-after-token-refresh</id>
-    <link href="https://framework.boucle.sh/limitations.html#remote-control-workers-can-supersede-each-other-after-token-refresh"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Desktop Windows regression after the 2026-07-17 update produced repeated remote-control failures with `this connection is no longer the active worker for the session (code 4090)`. The report correlates bursts with session token refresh and suggests desktop bridge and remote-control workers can claim the same cloud session slot, after which the remote-control toggle can fail with a missing `session_url` error.</summary>
-    <category term="Cowork &amp; remote"/>
-  </entry>
-  <entry>
-    <title>[HIGH] MCP reconnect after config edit can orphan stdio server</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-reconnect-after-config-edit-can-orphan-stdio-server</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-reconnect-after-config-edit-can-orphan-stdio-server"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 Windows repro showed `/mcp` reconnect closing stdin and waiting for exit when an MCP server config is unchanged, but abandoning the old stdio server process tree when `.mcp.json` has been edited. The old server receives no EOF or kill signal and can keep exclusive sockets or build-output locks until the whole Claude Code session exits.</summary>
-    <category term="MCP integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Bare mode can break OAuth login</title>
-    <id>https://framework.boucle.sh/limitations.html#bare-mode-can-break-oauth-login</id>
-    <link href="https://framework.boucle.sh/limitations.html#bare-mode-can-break-oauth-login"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 macOS regression made `claude --bare -p` fail with `Not logged in` while the identical `claude -p` invocation succeeded using the same on-disk OAuth credentials and shell session. OAuth or subscription users depending on bare-mode automation can therefore be blocked even though ordinary print mode still appears authenticated.</summary>
-    <category term="Authentication &amp; accounts"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Scheduled tasks can miss trusted project state</title>
-    <id>https://framework.boucle.sh/limitations.html#scheduled-tasks-can-miss-trusted-project-state</id>
-    <link href="https://framework.boucle.sh/limitations.html#scheduled-tasks-can-miss-trusted-project-state"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Windows scheduled task was skipped as `folder is not trusted` even though the same project had accepted trust in `.claude.json` and an interactive session in that directory did not prompt again. The report found multiple normalized path keys for the same directory and inferred that the scheduled-task runner may use yet another path form, causing a trust lookup miss and silently dropping scheduled work.</summary>
-    <category term="Scheduled tasks"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Agent auto-spawned subagent forks can consume quota</title>
-    <id>https://framework.boucle.sh/limitations.html#agent-auto-spawned-subagent-forks-can-consume-quota</id>
-    <link href="https://framework.boucle.sh/limitations.html#agent-auto-spawned-subagent-forks-can-consume-quota"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 macOS session saw the agent self-select multiple forked subagents, with four parallel agents each consuming about 710,000 tokens and materially increasing weekly quota usage. The reporter asked for client notice or confirmation before the agent starts this kind of high-cost parallel work.</summary>
-    <category term="Performance &amp; cost"/>
-  </entry>
-  <entry>
-    <title>[LOW] Permission prompt always approval has no user-scope choice</title>
-    <id>https://framework.boucle.sh/limitations.html#permission-prompt-always-approval-has-no-user-scope-choice</id>
-    <link href="https://framework.boucle.sh/limitations.html#permission-prompt-always-approval-has-no-user-scope-choice"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported permission UX gap leaves the popup with `Yes`, `Yes, always`, and `No`, where `Yes, always` writes the allow rule to project-local settings. Users who intended a user-wide approval must hand-edit settings afterward, which is easy to get wrong and can hide whether an automation permission applies only to the current project or across all workspaces.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Relative-time phrases can be fabricated from turn distance</title>
-    <id>https://framework.boucle.sh/limitations.html#relative-time-phrases-can-be-fabricated-from-turn-distance</id>
-    <link href="https://framework.boucle.sh/limitations.html#relative-time-phrases-can-be-fabricated-from-turn-distance"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code session referred to a same-session proposal as `yesterday` even though the conversation had started about 30 minutes earlier and the injected system date was correct. The reporter describes a recurring model pattern where conversation-turn distance is converted into fluent but unsupported relative-time language such as `yesterday`, `earlier today`, or `last week`.</summary>
-    <category term="Model behavior &amp; output"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Monitor-style JSON polling can hide CLI failures</title>
-    <id>https://framework.boucle.sh/limitations.html#monitor-style-json-polling-can-hide-cli-failures</id>
-    <link href="https://framework.boucle.sh/limitations.html#monitor-style-json-polling-can-hide-cli-failures"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Monitor-tool polling loop merged a GitHub CLI command&#x27;s stdout and stderr, then parsed the result as JSON while suppressing parser errors. Because the `gh run list --json` field list was invalid, the CLI failed immediately, the JSON parser failure was hidden, and the Monitor task looped indefinitely even after the workflow had completed. The report notes that Monitor guidance about merging stderr still needs explicit exit-status checks before JSON parsing.</summary>
-    <category term="Tool behavior"/>
   </entry>
 </feed>

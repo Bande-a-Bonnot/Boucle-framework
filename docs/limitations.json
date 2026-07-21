@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1148,
+  "count": 1156,
   "categories": {
     "Hook behavior & events": 181,
-    "Permission system": 121,
+    "Permission system": 122,
     "Hook bypass & evasion": 100,
     "MCP & plugin issues": 56,
     "Subagent & spawned agents": 47,
@@ -11,11 +11,11 @@
     "Platform & compatibility": 27,
     "CLI & terminal": 25,
     "TUI & display": 24,
-    "Context & memory": 22,
+    "Context & memory": 23,
     "Configuration behavior": 21,
     "Tool behavior": 18,
     "Agents & subagents": 17,
-    "Performance & cost": 15,
+    "Performance & cost": 16,
     "Security & trust boundaries": 13,
     "MCP & integrations": 12,
     "Sandbox & permissions": 12,
@@ -24,23 +24,23 @@
     "MCP integration": 11,
     "Plugin & channel system": 11,
     "Scheduling & remote triggers": 10,
+    "Core & session management": 9,
     "File system & paths": 9,
     "hooks": 9,
+    "Remote & cloud": 9,
+    "VS Code extension": 9,
     "auth": 8,
     "Auth & accounts": 8,
     "Configuration & settings": 8,
-    "Core & session management": 8,
-    "Remote & cloud": 8,
-    "VS Code extension": 8,
+    "Scheduled tasks": 8,
     "Bash & shell execution": 7,
     "MCP": 7,
     "Permissions": 7,
     "Permissions & safety": 7,
-    "Scheduled tasks": 7,
     "Authentication & accounts": 6,
     "Desktop & platform bugs": 6,
     "Git & repository safety": 6,
-    "Model behavior": 5,
+    "Model behavior": 6,
     "Model behavior & output": 5,
     "Skills & commands": 5,
     "Skills / slash commands": 5,
@@ -178,10 +178,10 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 86,
-    "HIGH": 588,
+    "CRITICAL": 88,
+    "HIGH": 593,
     "LOW": 104,
-    "MEDIUM": 370
+    "MEDIUM": 371
   },
   "entries": [
     {
@@ -14721,30 +14721,134 @@
       "workaround": "After background-session forks, preserve both pre-fork and post-fork session directories before assuming a completed subagent transcript is gone. If resumability matters, record the parent session UUID and inspect or link the old `subagents/agent-*.jsonl` files manually until fork carry-over handles completed agents as well as running ones.",
       "status": "open",
       "date_added": "2026-07-21"
+    },
+    {
+      "id": "default-permission-path-can-ignore-explicit-bash-ask-rules",
+      "title": "Default permission path can ignore explicit Bash ask rules",
+      "category": "Permission system",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79771"
+      ],
+      "description": "A reported Claude Code 2.1.216 macOS session in default/manual permission mode executed a command matching an explicit `permissions.ask` rule without showing any prompt, warning, or error. The same `Bash(conda run:*)` rule was visible in `/permissions` and triggered correctly after enabling sandbox regular permissions, which narrowed the fail-open behavior to the default non-sandbox approval path rather than an invalid rule.",
+      "workaround": "For high-risk Bash rules, do not assume default/manual mode enforces every explicit ask rule. Run a fresh-session permission probe for representative commands, prefer sandbox regular permissions where applicable, and keep external guards for package managers, interpreters, git push, and destructive commands until the default approval path is verified in the exact surface you use.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "cloud-routine-github-mcp-comments-can-corrupt-bot-commands",
+      "title": "Cloud routine GitHub MCP comments can corrupt bot commands",
+      "category": "Remote & cloud",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79772"
+      ],
+      "description": "A reported Claude Code cloud Routine posting `@dependabot rebase` through the GitHub MCP comment tool deterministically stored a body with U+00B7 middle dots inserted into both the mention and command word. GitHub API readback showed the corrupted bytes at rest, so Dependabot did not receive the exact documented command token even though the routine had supplied it in the tool call.",
+      "workaround": "Read back any automation comment that is meant to trigger a bot command and verify the exact stored bytes before assuming the bot saw it. For critical Dependabot or maintainer commands, use an independently authenticated `gh`/REST path that preserves the command string, or make the workflow fail closed when readback differs from the requested body.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "skill-auto-invocation-can-load-large-unrelated-reference-docs",
+      "title": "Skill auto-invocation can load large unrelated reference docs",
+      "category": "Performance & cost",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79774"
+      ],
+      "description": "A reported Claude Code 2.1.212 Windows session on a premium model auto-invoked a `claude-api` skill for a short pricing question apparently because of incidental keyword overlap with the model name. The skill loaded a large unrelated reference document into context, causing a rapid credit spike, then the session silently fell back to a lower model after usage pressure and quality visibly degraded.",
+      "workaround": "When using expensive models, audit which skills/plugins can auto-load large references and keep narrowly relevant skills enabled. For billing-sensitive work, ask the model to list planned skill use before answering, monitor usage during short factual tasks, and start a fresh minimal session with optional skills disabled when a question should not require reference-heavy context.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "desktop-session-search-tools-can-silently-cap-results-at-20",
+      "title": "Desktop session search tools can silently cap results at 20",
+      "category": "Context & memory",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79778"
+      ],
+      "description": "A reported Claude Desktop session-management MCP surface returned only the 20 most recently active sessions from `list_sessions` even when `limit` was set to 100 or 300, and `search_session_transcripts` searched the same capped set rather than all transcript files on disk. Older sessions containing a distinctive string were reported as not found despite matching JSONL files being present locally.",
+      "workaround": "Treat desktop session MCP search as a recent-window helper, not a complete archive. For audits, incident response, or long-running projects, search `~/.claude/projects` directly with filesystem tools and preserve transcript backups. Add an explicit on-disk fallback when an MCP session search returns no matches for evidence that should exist.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "scheduled-tasks-can-ignore-ui-configured-permission-mode-and-model",
+      "title": "Scheduled tasks can ignore UI-configured permission mode and model",
+      "category": "Scheduled tasks",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79782"
+      ],
+      "description": "A reported Windows Claude Code scheduled-task setup saved per-task UI options for bypass/skip permissions and Sonnet, but actual scheduled executions ran with manual permission prompts and Opus instead. The reporter saw the behavior consistently across multiple recurring tasks, while the same fixed commands were allowlisted and worked as expected when run manually.",
+      "workaround": "Do not assume the scheduled-task UI settings are the settings used at execution time. For each recurring task, run a supervised scheduled fire and record the effective model and permission mode from the actual run. Keep prompts and commands idempotent, and avoid relying on unattended scheduled tasks until execution-time settings are confirmed by readback.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "model-consent-fallback-can-switch-models-without-visible-consent",
+      "title": "Model consent fallback can switch models without visible consent",
+      "category": "Model behavior",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79786"
+      ],
+      "description": "A reported Claude Code Windows session silently switched from Fable 5 to Opus 4.8 mid-session even though the user's weekly Fable quota was not exhausted. The only evidence was a transcript `model_consent_fallback` system event with `choice: cancelled`; no prompt or warning appeared in the conversation UI, and settings still looked unchanged afterward.",
+      "workaround": "For model-sensitive work, periodically check `/model` and inspect transcripts for fallback events instead of trusting settings files alone. Record the intended model in task logs, stop and restart if the active model changes unexpectedly, and treat invisible fallback as a quality and cost boundary until the UI reliably displays consent prompts and warnings.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "vscode-manual-edit-confirmation-can-reject-valid-non-ascii-crlf-matches",
+      "title": "VS Code manual edit confirmation can reject valid non-ASCII CRLF matches",
+      "category": "VS Code extension",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79787"
+      ],
+      "description": "A reported Claude Code VS Code extension regression on Windows made Edit and MultiEdit fail with `String not found in file` only after manual confirmation in the new diff window. The same old string was present byte-for-byte in UTF-8 CRLF Markdown containing non-ASCII characters, and the identical edit succeeded in accept-edits mode, pointing to a manual-confirmation path with different file normalization or encoding handling.",
+      "workaround": "When manual edit confirmation fails on Windows for CRLF or non-ASCII files, verify the target string on disk before letting the agent rewrite larger regions. Use accept-edits mode only when the patch is low risk and independently review the resulting diff, or normalize line endings/encoding in a disposable branch before retrying manual-confirmed edits.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "transient-daemons-can-resurrect-killed-bypasspermissions-sessions",
+      "title": "Transient daemons can resurrect killed bypassPermissions sessions",
+      "category": "Core & session management",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79789"
+      ],
+      "description": "A reported Linux multi-session automation setup found transient Claude daemons re-resuming killed background PTY sessions within about a minute, including sessions launched with `--permission-mode bypassPermissions`. The reporter observed weeks-stale or replaced sessions waking unattended, running shell commands, and in one case committing and pushing while racing a live successor, with no clear resurrection audit log beyond sparse daemon auth-refresh lines.",
+      "workaround": "When terminating daemon-backed Claude sessions, kill the transient daemon and PTY host before killing resumed child sessions, then monitor the process table for re-spawns. Avoid bypassPermissions for long-lived unattended fleets unless an external supervisor records lifecycle events, enforces a single live successor, and blocks git/network side effects from resurrected stale sessions.",
+      "status": "open",
+      "date_added": "2026-07-21"
     }
   ],
   "status_summary": {
-    "open": 1134,
+    "open": 1142,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 86,
-    "high": 588,
+    "critical": 88,
+    "high": 593,
     "low": 104,
-    "medium": 370
+    "medium": 371
   },
   "lastUpdated": "2026-07-21",
   "stats": {
-    "total": 1148,
-    "critical": 86,
-    "high": 588,
-    "medium": 370,
+    "total": 1156,
+    "critical": 88,
+    "high": 593,
+    "medium": 371,
     "low": 104,
-    "open": 1134,
+    "open": 1142,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-21",
-  "total": 1148
+  "total": 1156
 }
