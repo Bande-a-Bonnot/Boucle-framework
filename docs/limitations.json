@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1213,
+  "count": 1219,
   "categories": {
     "Hook behavior & events": 183,
-    "Permission system": 126,
+    "Permission system": 127,
     "Hook bypass & evasion": 100,
     "MCP & plugin issues": 60,
     "Subagent & spawned agents": 51,
@@ -13,17 +13,17 @@
     "CLI & terminal": 25,
     "Context & memory": 23,
     "Configuration behavior": 21,
-    "Tool behavior": 19,
-    "Agents & subagents": 18,
+    "Tool behavior": 20,
+    "Agents & subagents": 19,
     "Performance & cost": 17,
     "Security & trust boundaries": 14,
+    "MCP & integrations": 13,
     "MCP integration": 13,
     "Core & session management": 12,
     "Cowork & remote": 12,
-    "MCP & integrations": 12,
+    "Data integrity": 12,
     "Remote & cloud": 12,
     "Sandbox & permissions": 12,
-    "Data integrity": 11,
     "Plugin & channel system": 11,
     "Bash & shell execution": 10,
     "File system & paths": 10,
@@ -61,6 +61,7 @@
     "Model behavior & instructions": 3,
     "Model routing & identity": 3,
     "model-behavior": 3,
+    "Performance & resource usage": 3,
     "Remote": 3,
     "Sandbox": 3,
     "Security": 3,
@@ -85,7 +86,6 @@
     "Model behavior & compliance": 2,
     "Multi-agent": 2,
     "Performance": 2,
-    "Performance & resource usage": 2,
     "Performance & resources": 2,
     "Permissions and safety": 2,
     "platform": 2,
@@ -180,10 +180,10 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 94,
-    "HIGH": 623,
+    "CRITICAL": 95,
+    "HIGH": 627,
     "LOW": 105,
-    "MEDIUM": 391
+    "MEDIUM": 392
   },
   "entries": [
     {
@@ -15568,30 +15568,109 @@
       "workaround": "Before delegating commits in full-terminal mode, check whether the repo requires interactive GPG signing. For automation, use a non-interactive signing setup, temporarily disable signing only with explicit policy approval, or have Claude prepare changes while a human performs the signed commit in a normal terminal.",
       "status": "open",
       "date_added": "2026-07-21"
+    },
+    {
+      "id": "desktop-code-session-transcripts-can-be-permanently-unavailable",
+      "title": "Desktop Code session transcripts can be permanently unavailable",
+      "category": "Data integrity",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79940"
+      ],
+      "description": "A reported Claude Desktop Code-tab session kept local metadata with `completedTurns: 12` and `transcriptUnavailable: true`, while the UI showed the generic `Session not found on disk` message. The reporter found that the broken state had persisted for more than a month, with no retry, cleanup, or clear recovery path, and the conversation content appeared permanently lost.",
+      "workaround": "Treat `transcriptUnavailable: true` as a possible data-loss state, not a temporary display issue. Keep important task notes and decisions outside Desktop transcripts, export or summarize long-running investigations before closing them, and inspect the local session metadata before spending time trying repeated reloads.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "bundled-ugrep-can-memory-bomb-on-bounded-regex",
+      "title": "Bundled ugrep can memory-bomb on bounded regex",
+      "category": "Performance & resource usage",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79935"
+      ],
+      "description": "A reported Claude Code shell snapshot injected a `grep` shell function that routed ordinary `grep` commands into the bundled native binary running as `ugrep`. A regex with two wide bounded quantifiers, such as `.{0,120}xyzzy.{0,120}`, could allocate without bound during regex compilation on an 18-byte file, consuming RAM and swap until the Linux desktop livelocked.",
+      "workaround": "Use `/usr/bin/grep` by absolute path when running bounded-quantifier patterns inside Claude Code shells, and add a command hook that blocks two-sided wide `{0,N}` regexes before execution. For shared machines, consider memory limits or an early OOM daemon so a runaway search fails quickly instead of exhausting system memory.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "nested-sendmessage-main-can-bypass-spawning-agent",
+      "title": "Nested SendMessage to main can bypass the spawning agent",
+      "category": "Agents & subagents",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79934"
+      ],
+      "description": "A reported nested-subagent workflow showed that when agent B was spawned by agent A, `SendMessage({to: \"main\"})` delivered B's result to the root session rather than to A. The spawning orchestrator could finalize without the findings, including a case where a defect found by a review leg had to be relayed manually to avoid a bad approval.",
+      "workaround": "Do not rely on `to: \"main\"` for nested subagent return paths. Pass an explicit parent recipient into each spawned leg when possible, require a parent-side checklist that confirms every leg reported back, and use a SubagentStop or equivalent hook to block finalization when delivery evidence is missing.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "desktop-mcp-tool-results-can-fail-after-server-success",
+      "title": "Desktop MCP tool results can fail after server success",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79933",
+        "https://github.com/anthropics/claude-code/issues/79926"
+      ],
+      "description": "Multiple reported Claude Desktop sessions on macOS and Windows showed local stdio MCP tools failing with bare `Failed to call tool` messages even when the server was initialized and healthy. In one macOS report, the server received `tools/call` and returned results in under a second, but Desktop failed to submit the result to `/tool_result` with `side_channel_waiting_key_absent`; in Windows reports, calls stopped reaching stdin after a shared onset window.",
+      "workaround": "Before debugging or rewriting an MCP server, verify whether the server actually received and answered `tools/call` through its own logs or direct stdio JSON-RPC. If the server works but Desktop still fails, preserve request IDs and client logs, try Claude Code CLI as a control, and avoid assuming a bare `Failed to call tool` message proves a server-side bug.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "grep-and-glob-can-disappear-from-default-tool-roster",
+      "title": "Grep and Glob can disappear from the default tool roster",
+      "category": "Tool behavior",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79931"
+      ],
+      "description": "A reported Claude Code 2.1.216 session had Grep and Glob absent from both the primary tool list and the deferred-tool catalog. The reporter traced the behavior to the `tengu_deferred_stub_tool` GrowthBook flag with an empty non-deferrable builtins set; local edits were refetched and reverted, while `--tools` could restore Grep and Glob only by dropping newer ToolSearch-backed capabilities.",
+      "workaround": "When a session stops finding files normally, inspect the actual tool roster instead of assuming Grep and Glob are deferred. For urgent work, start a session with explicit `--tools` only if you can tolerate losing ToolSearch-backed tools, or use Bash-native search commands while recording the affected feature flags for escalation.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "auto-mode-allow-rules-can-miss-compound-shell-segments",
+      "title": "Auto mode allow rules can miss compound shell segments",
+      "category": "Permission system",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79930"
+      ],
+      "description": "A reported auto-mode configuration with allow rules such as `Bash(npm install:*)` still prompted for commands like `cd /some/worktree/frontend && npm install --silent`. The matcher appeared to compare the allow list only against the full compound command, so worktree workflows that require `cd /path && <command>` could not reuse narrow allow rules for the actual subcommand.",
+      "workaround": "For auto-mode workflows, prefer command forms that begin with the allowed executable when possible, or add explicit rules for the exact `cd ... && command` shapes you use frequently. Keep broad `Bash(cd:*)`-style allowances out of shared settings unless the path and following command are separately constrained by hooks or review.",
+      "status": "open",
+      "date_added": "2026-07-21"
     }
   ],
   "status_summary": {
-    "open": 1199,
+    "open": 1205,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 94,
-    "high": 623,
+    "critical": 95,
+    "high": 627,
     "low": 105,
-    "medium": 391
+    "medium": 392
   },
   "lastUpdated": "2026-07-21",
   "stats": {
-    "total": 1213,
-    "critical": 94,
-    "high": 623,
-    "medium": 391,
+    "total": 1219,
+    "critical": 95,
+    "high": 627,
+    "medium": 392,
     "low": 105,
-    "open": 1199,
+    "open": 1205,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-21",
-  "total": 1213
+  "total": 1219
 }

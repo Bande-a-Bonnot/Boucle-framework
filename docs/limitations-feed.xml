@@ -7,6 +7,54 @@
   <updated>2026-07-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Auto mode allow rules can miss compound shell segments</title>
+    <id>https://framework.boucle.sh/limitations.html#auto-mode-allow-rules-can-miss-compound-shell-segments</id>
+    <link href="https://framework.boucle.sh/limitations.html#auto-mode-allow-rules-can-miss-compound-shell-segments"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported auto-mode configuration with allow rules such as `Bash(npm install:*)` still prompted for commands like `cd /some/worktree/frontend &amp;&amp; npm install --silent`. The matcher appeared to compare the allow list only against the full compound command, so worktree workflows that require `cd /path &amp;&amp; &lt;command&gt;` could not reuse narrow allow rules for the actual subcommand.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Grep and Glob can disappear from the default tool roster</title>
+    <id>https://framework.boucle.sh/limitations.html#grep-and-glob-can-disappear-from-default-tool-roster</id>
+    <link href="https://framework.boucle.sh/limitations.html#grep-and-glob-can-disappear-from-default-tool-roster"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 session had Grep and Glob absent from both the primary tool list and the deferred-tool catalog. The reporter traced the behavior to the `tengu_deferred_stub_tool` GrowthBook flag with an empty non-deferrable builtins set; local edits were refetched and reverted, while `--tools` could restore Grep and Glob only by dropping newer ToolSearch-backed capabilities.</summary>
+    <category term="Tool behavior"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Desktop MCP tool results can fail after server success</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-mcp-tool-results-can-fail-after-server-success</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-mcp-tool-results-can-fail-after-server-success"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>Multiple reported Claude Desktop sessions on macOS and Windows showed local stdio MCP tools failing with bare `Failed to call tool` messages even when the server was initialized and healthy. In one macOS report, the server received `tools/call` and returned results in under a second, but Desktop failed to submit the result to `/tool_result` with `side_channel_waiting_key_absent`; in Windows reports, calls stopped reaching stdin after a shared onset window.</summary>
+    <category term="MCP &amp; integrations"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Nested SendMessage to main can bypass the spawning agent</title>
+    <id>https://framework.boucle.sh/limitations.html#nested-sendmessage-main-can-bypass-spawning-agent</id>
+    <link href="https://framework.boucle.sh/limitations.html#nested-sendmessage-main-can-bypass-spawning-agent"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported nested-subagent workflow showed that when agent B was spawned by agent A, `SendMessage({to: &quot;main&quot;})` delivered B&#x27;s result to the root session rather than to A. The spawning orchestrator could finalize without the findings, including a case where a defect found by a review leg had to be relayed manually to avoid a bad approval.</summary>
+    <category term="Agents &amp; subagents"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Bundled ugrep can memory-bomb on bounded regex</title>
+    <id>https://framework.boucle.sh/limitations.html#bundled-ugrep-can-memory-bomb-on-bounded-regex</id>
+    <link href="https://framework.boucle.sh/limitations.html#bundled-ugrep-can-memory-bomb-on-bounded-regex"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code shell snapshot injected a `grep` shell function that routed ordinary `grep` commands into the bundled native binary running as `ugrep`. A regex with two wide bounded quantifiers, such as `.{0,120}xyzzy.{0,120}`, could allocate without bound during regex compilation on an 18-byte file, consuming RAM and swap until the Linux desktop livelocked.</summary>
+    <category term="Performance &amp; resource usage"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Desktop Code session transcripts can be permanently unavailable</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-code-session-transcripts-can-be-permanently-unavailable</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-code-session-transcripts-can-be-permanently-unavailable"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Desktop Code-tab session kept local metadata with `completedTurns: 12` and `transcriptUnavailable: true`, while the UI showed the generic `Session not found on disk` message. The reporter found that the broken state had persisted for more than a month, with no retry, cleanup, or clear recovery path, and the conversation content appeared permanently lost.</summary>
+    <category term="Data integrity"/>
+  </entry>
+  <entry>
     <title>[HIGH] GPG passphrase dialog can break full-terminal commit flow</title>
     <id>https://framework.boucle.sh/limitations.html#gpg-passphrase-dialog-can-break-full-terminal-commit-flow</id>
     <link href="https://framework.boucle.sh/limitations.html#gpg-passphrase-dialog-can-break-full-terminal-commit-flow"/>
@@ -116,54 +164,6 @@
     <link href="https://framework.boucle.sh/limitations.html#failed-cd-commands-can-silently-discard-cwd-changes"/>
     <updated>2026-07-21T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.215 Bash harness adopted `cd` changes only when the overall command exited zero. Commands like `cd /tmp/somedir &amp;&amp; false` left the next Bash call in the old tracked directory without notice, despite real shell semantics and the model-facing contract that cwd persists between calls.</summary>
-    <category term="Bash &amp; shell execution"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Plugin registry chimera records can wedge updates</title>
-    <id>https://framework.boucle.sh/limitations.html#plugin-registry-chimera-records-can-wedge-updates</id>
-    <link href="https://framework.boucle.sh/limitations.html#plugin-registry-chimera-records-can-wedge-updates"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Windows Claude Code 2.1.216 plugin registry wrote or retained a user-scope plugin record carrying a `projectPath`. That malformed record caused `claude plugin update` to report success while the stale plugin continued loading, and `uninstall` plus `install --scope user` appended a healthy duplicate after the stale first-match record instead of replacing it.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Tool calls can suppress preceding assistant text</title>
-    <id>https://framework.boucle.sh/limitations.html#tool-calls-can-suppress-preceding-assistant-text</id>
-    <link href="https://framework.boucle.sh/limitations.html#tool-calls-can-suppress-preceding-assistant-text"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported macOS Claude Code 2.1.212 session repeatedly had agents refer to a plan or review as already printed, then invoke a question or memory tool, while the expected text never appeared in the user-visible chat. The failure makes the model believe it communicated context that the user never received.</summary>
-    <category term="Tool behavior"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Browser batch can ignore explicit tab IDs</title>
-    <id>https://framework.boucle.sh/limitations.html#browser-batch-can-ignore-explicit-tab-ids</id>
-    <link href="https://framework.boucle.sh/limitations.html#browser-batch-can-ignore-explicit-tab-ids"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported macOS Claude Code 2.1.216 browser integration returned `No tab available` for every `browser_batch` call, including a single-action batch whose `tabId` matched a tab that worked with the individual `computer` and `navigate` tools immediately before and after the batch call.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Exit worktree cleanup can delete unpushed commits</title>
-    <id>https://framework.boucle.sh/limitations.html#exit-worktree-cleanup-can-delete-unpushed-commits</id>
-    <link href="https://framework.boucle.sh/limitations.html#exit-worktree-cleanup-can-delete-unpushed-commits"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 session entered one worktree, removed it, compacted, then entered a second worktree where five commits were created but never pushed. On session exit, cleanup printed `no pending changes` and deleted the second worktree and branch without prompting, leaving the commits reachable only as dangling objects until garbage collection.</summary>
-    <category term="Worktree"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Fresh sessions can miss todo tools</title>
-    <id>https://framework.boucle.sh/limitations.html#fresh-sessions-can-miss-todo-tools</id>
-    <link href="https://framework.boucle.sh/limitations.html#fresh-sessions-can-miss-todo-tools"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported macOS Claude Code 2.1.216 fresh session had no task or todo tools in the tool list, no `/todos` slash command, and no deferred-tool match for `TaskCreate` or `TodoWrite`, even though the installed binary still contained those tool names and no local settings disabled them.</summary>
-    <category term="Tool availability"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Bash timeout can leak pipeline children</title>
-    <id>https://framework.boucle.sh/limitations.html#bash-timeout-can-leak-pipeline-children</id>
-    <link href="https://framework.boucle.sh/limitations.html#bash-timeout-can-leak-pipeline-children"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Linux Claude Code 2.1.216 subagent command timed out while running a root-scoped grep pipeline. Claude Code killed the shell, but the first pipeline stage kept running as a Claude-bundled `ugrep` process, was reparented to `systemd --user`, and consumed about 136 CPU-hours before the user found and killed it manually.</summary>
     <category term="Bash &amp; shell execution"/>
   </entry>
 </feed>
