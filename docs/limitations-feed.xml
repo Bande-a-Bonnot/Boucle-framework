@@ -7,6 +7,70 @@
   <updated>2026-07-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] WorktreePool deregistered directories can mutate the parent repo</title>
+    <id>https://framework.boucle.sh/limitations.html#worktreepool-deregistered-directories-can-mutate-parent-repo</id>
+    <link href="https://framework.boucle.sh/limitations.html#worktreepool-deregistered-directories-can-mutate-parent-repo"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Desktop Windows WorktreePool bug ran git checkout commands in leftover `.claude/worktrees` directories that were no longer registered worktrees and no longer contained a `.git` file. Because those shell directories were nested under the main repository, git repository discovery walked upward and the pool&#x27;s release or lease checkout mutated the user&#x27;s parent checkout, detaching HEAD or moving it onto a `claude/*` session branch.</summary>
+    <category term="Git &amp; repository safety"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Remote control workers can supersede each other after token refresh</title>
+    <id>https://framework.boucle.sh/limitations.html#remote-control-workers-can-supersede-each-other-after-token-refresh</id>
+    <link href="https://framework.boucle.sh/limitations.html#remote-control-workers-can-supersede-each-other-after-token-refresh"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Desktop Windows regression after the 2026-07-17 update produced repeated remote-control failures with `this connection is no longer the active worker for the session (code 4090)`. The report correlates bursts with session token refresh and suggests desktop bridge and remote-control workers can claim the same cloud session slot, after which the remote-control toggle can fail with a missing `session_url` error.</summary>
+    <category term="Cowork &amp; remote"/>
+  </entry>
+  <entry>
+    <title>[HIGH] MCP reconnect after config edit can orphan stdio server</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-reconnect-after-config-edit-can-orphan-stdio-server</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-reconnect-after-config-edit-can-orphan-stdio-server"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 Windows repro showed `/mcp` reconnect closing stdin and waiting for exit when an MCP server config is unchanged, but abandoning the old stdio server process tree when `.mcp.json` has been edited. The old server receives no EOF or kill signal and can keep exclusive sockets or build-output locks until the whole Claude Code session exits.</summary>
+    <category term="MCP integration"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Bare mode can break OAuth login</title>
+    <id>https://framework.boucle.sh/limitations.html#bare-mode-can-break-oauth-login</id>
+    <link href="https://framework.boucle.sh/limitations.html#bare-mode-can-break-oauth-login"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 macOS regression made `claude --bare -p` fail with `Not logged in` while the identical `claude -p` invocation succeeded using the same on-disk OAuth credentials and shell session. OAuth or subscription users depending on bare-mode automation can therefore be blocked even though ordinary print mode still appears authenticated.</summary>
+    <category term="Authentication &amp; accounts"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Scheduled tasks can miss trusted project state</title>
+    <id>https://framework.boucle.sh/limitations.html#scheduled-tasks-can-miss-trusted-project-state</id>
+    <link href="https://framework.boucle.sh/limitations.html#scheduled-tasks-can-miss-trusted-project-state"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Windows scheduled task was skipped as `folder is not trusted` even though the same project had accepted trust in `.claude.json` and an interactive session in that directory did not prompt again. The report found multiple normalized path keys for the same directory and inferred that the scheduled-task runner may use yet another path form, causing a trust lookup miss and silently dropping scheduled work.</summary>
+    <category term="Scheduled tasks"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Agent auto-spawned subagent forks can consume quota</title>
+    <id>https://framework.boucle.sh/limitations.html#agent-auto-spawned-subagent-forks-can-consume-quota</id>
+    <link href="https://framework.boucle.sh/limitations.html#agent-auto-spawned-subagent-forks-can-consume-quota"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 macOS session saw the agent self-select multiple forked subagents, with four parallel agents each consuming about 710,000 tokens and materially increasing weekly quota usage. The reporter asked for client notice or confirmation before the agent starts this kind of high-cost parallel work.</summary>
+    <category term="Performance &amp; cost"/>
+  </entry>
+  <entry>
+    <title>[LOW] Permission prompt always approval has no user-scope choice</title>
+    <id>https://framework.boucle.sh/limitations.html#permission-prompt-always-approval-has-no-user-scope-choice</id>
+    <link href="https://framework.boucle.sh/limitations.html#permission-prompt-always-approval-has-no-user-scope-choice"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported permission UX gap leaves the popup with `Yes`, `Yes, always`, and `No`, where `Yes, always` writes the allow rule to project-local settings. Users who intended a user-wide approval must hand-edit settings afterward, which is easy to get wrong and can hide whether an automation permission applies only to the current project or across all workspaces.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Relative-time phrases can be fabricated from turn distance</title>
+    <id>https://framework.boucle.sh/limitations.html#relative-time-phrases-can-be-fabricated-from-turn-distance</id>
+    <link href="https://framework.boucle.sh/limitations.html#relative-time-phrases-can-be-fabricated-from-turn-distance"/>
+    <updated>2026-07-21T00:00:00Z</updated>
+    <summary>A reported Claude Code session referred to a same-session proposal as `yesterday` even though the conversation had started about 30 minutes earlier and the injected system date was correct. The reporter describes a recurring model pattern where conversation-turn distance is converted into fluent but unsupported relative-time language such as `yesterday`, `earlier today`, or `last week`.</summary>
+    <category term="Model behavior &amp; output"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Monitor-style JSON polling can hide CLI failures</title>
     <id>https://framework.boucle.sh/limitations.html#monitor-style-json-polling-can-hide-cli-failures</id>
     <link href="https://framework.boucle.sh/limitations.html#monitor-style-json-polling-can-hide-cli-failures"/>
@@ -101,69 +165,5 @@
     <updated>2026-07-21T00:00:00Z</updated>
     <summary>A reported Windows Cowork project successfully created and ran a recurring scheduled task, with task metadata stored under the user&#x27;s Claude Scheduled directory, but the project&#x27;s sidebar omitted the Scheduled section entirely. A sibling project in the same account showed its Scheduled panel correctly. This leaves users without the expected project-level UI for viewing or editing an existing running task.</summary>
     <category term="Cowork &amp; remote"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] OAuth login codes can be rejected after restarted login attempts</title>
-    <id>https://framework.boucle.sh/limitations.html#oauth-login-code-can-be-rejected-after-restarted-login-attempts</id>
-    <link href="https://framework.boucle.sh/limitations.html#oauth-login-code-can-be-rejected-after-restarted-login-attempts"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Windows 11 Claude Code `/login` flow repeatedly rejected freshly copied email verification codes with `OAuth error: Invalid code. Please make sure the full code was copied`. The user reproduced the failure across PowerShell and Git Bash, retried with manual typing and plain-text paste, and noted that multiple interrupted `/login` attempts had occurred earlier in the same session, suggesting stale auth state can make otherwise correct codes fail.</summary>
-    <category term="Authentication &amp; accounts"/>
-  </entry>
-  <entry>
-    <title>[HIGH] SessionEnd hooks can skip normal `claude -p` exit</title>
-    <id>https://framework.boucle.sh/limitations.html#sessionend-hooks-can-skip-normal-print-mode-exit</id>
-    <link href="https://framework.boucle.sh/limitations.html#sessionend-hooks-can-skip-normal-print-mode-exit"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 macOS repro created project-scoped SessionStart, Stop, and SessionEnd hooks, then ran `claude -p` to a normal exit. SessionStart and Stop marker files were created, but SessionEnd never ran despite the process exiting with code 0. Print-mode automation that relies on SessionEnd for teardown can therefore leak helper daemons or other per-session resources.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] IDE ambient context can displace a subagent&#x27;s first turn</title>
-    <id>https://framework.boucle.sh/limitations.html#ide-ambient-context-can-displace-subagent-first-turn</id>
-    <link href="https://framework.boucle.sh/limitations.html#ide-ambient-context-can-displace-subagent-first-turn"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Windows Claude Code IDE-integration session spawned plugin subagents in isolated worktrees, but the first Opus subagent turns ended with zero tool calls and returned ambient host-IDE context instead of acting on the spawn prompt. One failed turn echoed an IDE diagnostics reminder, and another returned the system prompt from a third-party app file that happened to be open in the IDE. Resuming with an explicit nudge caused the same agents to complete, so the prompt itself was not the blocker.</summary>
-    <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] VS Code extension ignores `remoteControlAtStartup`</title>
-    <id>https://framework.boucle.sh/limitations.html#vscode-extension-ignores-remote-control-at-startup</id>
-    <link href="https://framework.boucle.sh/limitations.html#vscode-extension-ignores-remote-control-at-startup"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 setup found that `remoteControlAtStartup: true` in `~/.claude/settings.json` automatically connected terminal CLI sessions, but VS Code extension panel sessions ignored the same setting despite documentation saying extension support exists. The extension also lacked a clean workaround because relevant hooks and commands cannot invoke `/remote-control` from the panel at session initialization.</summary>
-    <category term="Cowork &amp; remote"/>
-  </entry>
-  <entry>
-    <title>[LOW] Windows Desktop Enter can stick as newline instead of submit</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-desktop-enter-can-stick-as-newline-instead-of-submit</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-desktop-enter-can-stick-as-newline-instead-of-submit"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Windows Desktop app setup repeatedly treated Enter in the prompt composer as insert-newline rather than submit, with Shift+Enter behaving the same way. The reporter had default keybindings, no vim or editor-mode overrides, and a Claude Code version that already included prior Windows keyboard fixes. Restarting sometimes cleared the state temporarily, while Ctrl+Enter still submitted.</summary>
-    <category term="TUI &amp; display"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Safeguard model switches can pause unattended sessions after downgrade</title>
-    <id>https://framework.boucle.sh/limitations.html#safeguard-model-switch-can-pause-unattended-sessions</id>
-    <link href="https://framework.boucle.sh/limitations.html#safeguard-model-switch-can-pause-unattended-sessions"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Fable 5 Claude Code session was downgraded to Opus 4.8 after a broad safeguard flag, but the turn then paused and waited for user re-engagement instead of continuing on the downgraded model. In an autonomous workflow this stalled work for about six hours; heartbeat monitors noticed the idle state but could not resume it because no setting, CLI flag, or hook event allowed automatic continuation after the safeguard switch.</summary>
-    <category term="Model routing &amp; identity"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Bundled JDT.LS cannot load the Lombok javaagent or custom VM args</title>
-    <id>https://framework.boucle.sh/limitations.html#bundled-jdt-ls-cannot-load-lombok-javaagent</id>
-    <link href="https://framework.boucle.sh/limitations.html#bundled-jdt-ls-cannot-load-lombok-javaagent"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported Claude Code Java/Spring project using Lombok saw the bundled JDT.LS instance report false diagnostics for generated members such as `log`, final-field constructors, getters, and data accessors even though Gradle or Maven builds were clean. The root cause is that JDT.LS needs Lombok as a `-javaagent` VM arg, but Claude Code&#x27;s spawned language server does not expose custom VM args or honor the VS Code Java setting.</summary>
-    <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Routines multi-hour cron schedules can display UTC hours as local time</title>
-    <id>https://framework.boucle.sh/limitations.html#routines-multi-hour-crons-can-display-utc-hours-as-local</id>
-    <link href="https://framework.boucle.sh/limitations.html#routines-multi-hour-crons-can-display-utc-hours-as-local"/>
-    <updated>2026-07-21T00:00:00Z</updated>
-    <summary>A reported `claude.ai/code/routines` setup showed single-hour cron schedules converted from UTC to the viewer&#x27;s local timezone, but multi-hour expressions such as `0 0,6,12,18 * * *` rendered the raw UTC hours as if they were local. API readback confirmed the routine fired at the UTC-derived time, not the UI-rendered local time, so users outside UTC can be misled about when automation will run.</summary>
-    <category term="Scheduling &amp; remote triggers"/>
   </entry>
 </feed>

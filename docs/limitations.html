@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1129</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-21.</span></p>
+        <p class="subtitle"><span id="total-count">1137</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-21.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -12268,6 +12268,102 @@
                         <!-- workaround:monitor-style-json-polling-can-hide-cli-failures -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> In Monitor or polling scripts, check the exit status of any CLI command before parsing its captured output as JSON. Keep parser stderr visible in loops, break loudly on invalid JSON or unsupported fields, and reserve `2&gt;&amp;1` merging for diagnostics that still branch on command failure rather than treating an empty parsed status as pending work.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79729" target="_blank">#79729</a></div>
+        </div>
+        <div class="kl-entry" data-category="Model behavior &amp; output" data-issues="79731" id="relative-time-phrases-can-be-fabricated-from-turn-distance" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1130</span>
+                <span class="kl-cat">Model behavior &amp; output</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Relative-time phrases can be fabricated from turn distance</h3>
+            <p>A reported Claude Code session referred to a same-session proposal as `yesterday` even though the conversation had started about 30 minutes earlier and the injected system date was correct. The reporter describes a recurring model pattern where conversation-turn distance is converted into fluent but unsupported relative-time language such as `yesterday`, `earlier today`, or `last week`.</p>
+                        <!-- workaround:relative-time-phrases-can-be-fabricated-from-turn-distance -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For time-sensitive summaries, prefer absolute dates or session-relative phrasing such as `earlier in this session` unless a timestamp source has been checked. Add a prompt or hook reminder that relative-time claims must be grounded in message, tool, or system timestamps, and review generated summaries for unverified temporal language before using them as operational memory.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79731" target="_blank">#79731</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="79732" id="permission-prompt-always-approval-has-no-user-scope-choice" data-severity="low" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1131</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
+            </div>
+            <h3>Permission prompt always approval has no user-scope choice</h3>
+            <p>A reported permission UX gap leaves the popup with `Yes`, `Yes, always`, and `No`, where `Yes, always` writes the allow rule to project-local settings. Users who intended a user-wide approval must hand-edit settings afterward, which is easy to get wrong and can hide whether an automation permission applies only to the current project or across all workspaces.</p>
+                        <!-- workaround:permission-prompt-always-approval-has-no-user-scope-choice -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> After approving a command permanently, inspect whether the rule landed in project-local or user-level settings before relying on it in another workspace. Keep project and user allowlists intentionally separate in documentation and scripts, and avoid assuming a successful `Yes, always` click grants a reusable global permission.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79732" target="_blank">#79732</a></div>
+        </div>
+        <div class="kl-entry" data-category="Performance &amp; cost" data-issues="79735" id="agent-auto-spawned-subagent-forks-can-consume-quota" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1132</span>
+                <span class="kl-cat">Performance &amp; cost</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Agent auto-spawned subagent forks can consume quota</h3>
+            <p>A reported Claude Code 2.1.216 macOS session saw the agent self-select multiple forked subagents, with four parallel agents each consuming about 710,000 tokens and materially increasing weekly quota usage. The reporter asked for client notice or confirmation before the agent starts this kind of high-cost parallel work.</p>
+                        <!-- workaround:agent-auto-spawned-subagent-forks-can-consume-quota -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before allowing autonomous or fork-heavy workflows, set explicit instructions and wrapper checks for when subagents may be spawned and how many can run concurrently. Monitor token usage during long investigations, require confirmation for multi-agent expansion in cost-sensitive sessions, and stop duplicate low-value branches before they consume the same context repeatedly.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79735" target="_blank">#79735</a></div>
+        </div>
+        <div class="kl-entry" data-category="Scheduled tasks" data-issues="79737" id="scheduled-tasks-can-miss-trusted-project-state" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1133</span>
+                <span class="kl-cat">Scheduled tasks</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Scheduled tasks can miss trusted project state</h3>
+            <p>A reported Windows scheduled task was skipped as `folder is not trusted` even though the same project had accepted trust in `.claude.json` and an interactive session in that directory did not prompt again. The report found multiple normalized path keys for the same directory and inferred that the scheduled-task runner may use yet another path form, causing a trust lookup miss and silently dropping scheduled work.</p>
+                        <!-- workaround:scheduled-tasks-can-miss-trusted-project-state -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For recurring scheduled tasks, verify the task actually fires after trust setup instead of trusting stored project flags alone. Watch for skipped-task notifications, capture the exact path forms present in `.claude.json`, and avoid relying on manual config edits as a durable workaround when the desktop app autosaves its own in-memory state over the file.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79737" target="_blank">#79737</a></div>
+        </div>
+        <div class="kl-entry" data-category="Authentication &amp; accounts" data-issues="79738" id="bare-mode-can-break-oauth-login" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1134</span>
+                <span class="kl-cat">Authentication &amp; accounts</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Bare mode can break OAuth login</h3>
+            <p>A reported Claude Code 2.1.216 macOS regression made `claude --bare -p` fail with `Not logged in` while the identical `claude -p` invocation succeeded using the same on-disk OAuth credentials and shell session. OAuth or subscription users depending on bare-mode automation can therefore be blocked even though ordinary print mode still appears authenticated.</p>
+                        <!-- workaround:bare-mode-can-break-oauth-login -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not use `--bare` as the only authentication smoke test for OAuth-backed automation. After Claude Code upgrades, test both bare and non-bare print mode, and fall back to non-bare output parsing or an API-key-backed path where appropriate until bare mode reads the same credential state reliably.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79738" target="_blank">#79738</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP integration" data-issues="79740" id="mcp-reconnect-after-config-edit-can-orphan-stdio-server" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1135</span>
+                <span class="kl-cat">MCP integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>MCP reconnect after config edit can orphan stdio server</h3>
+            <p>A reported Claude Code 2.1.216 Windows repro showed `/mcp` reconnect closing stdin and waiting for exit when an MCP server config is unchanged, but abandoning the old stdio server process tree when `.mcp.json` has been edited. The old server receives no EOF or kill signal and can keep exclusive sockets or build-output locks until the whole Claude Code session exits.</p>
+                        <!-- workaround:mcp-reconnect-after-config-edit-can-orphan-stdio-server -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When developing stdio MCP servers, check for old server processes after every config edit plus reconnect, especially for servers that hold exclusive ports, debugger sockets, or build artifacts. Make server startup detect existing instances, expose a manual cleanup command, and restart Claude Code or kill the orphaned process tree before interpreting reconnect build failures as code defects.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79740" target="_blank">#79740</a></div>
+        </div>
+        <div class="kl-entry" data-category="Cowork &amp; remote" data-issues="79741" id="remote-control-workers-can-supersede-each-other-after-token-refresh" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1136</span>
+                <span class="kl-cat">Cowork &amp; remote</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Remote control workers can supersede each other after token refresh</h3>
+            <p>A reported Claude Desktop Windows regression after the 2026-07-17 update produced repeated remote-control failures with `this connection is no longer the active worker for the session (code 4090)`. The report correlates bursts with session token refresh and suggests desktop bridge and remote-control workers can claim the same cloud session slot, after which the remote-control toggle can fail with a missing `session_url` error.</p>
+                        <!-- workaround:remote-control-workers-can-supersede-each-other-after-token-refresh -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For remote-controlled sessions, treat 4090 storms as a session-control integrity problem rather than an ordinary transient disconnect. Preserve Desktop logs around token refreshes, avoid assuming the disabled toggle has taken effect after an error, and restart from a clean session when remote control remains superseded after reconnect attempts.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79741" target="_blank">#79741</a></div>
+        </div>
+        <div class="kl-entry" data-category="Git &amp; repository safety" data-issues="79743" id="worktreepool-deregistered-directories-can-mutate-parent-repo" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1137</span>
+                <span class="kl-cat">Git &amp; repository safety</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>WorktreePool deregistered directories can mutate the parent repo</h3>
+            <p>A reported Claude Desktop Windows WorktreePool bug ran git checkout commands in leftover `.claude/worktrees` directories that were no longer registered worktrees and no longer contained a `.git` file. Because those shell directories were nested under the main repository, git repository discovery walked upward and the pool&#x27;s release or lease checkout mutated the user&#x27;s parent checkout, detaching HEAD or moving it onto a `claude/*` session branch.</p>
+                        <!-- workaround:worktreepool-deregistered-directories-can-mutate-parent-repo -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before trusting desktop worktree isolation, delete leftover `.claude/worktrees` directories that lack a `.git` file and do not appear in `git worktree list`. Monitor the parent repo reflog for unexplained checkouts near WorktreePool lease or release times, and run unattended desktop sessions from disposable clones until pool git commands validate registered worktrees or prevent upward discovery.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79743" target="_blank">#79743</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

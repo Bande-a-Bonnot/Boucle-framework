@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1129,
+  "count": 1137,
   "categories": {
     "Hook behavior & events": 181,
-    "Permission system": 120,
+    "Permission system": 121,
     "Hook bypass & evasion": 100,
     "MCP & plugin issues": 55,
     "Subagent & spawned agents": 46,
@@ -15,14 +15,14 @@
     "Configuration behavior": 21,
     "Tool behavior": 18,
     "Agents & subagents": 17,
-    "Performance & cost": 14,
+    "Performance & cost": 15,
     "Security & trust boundaries": 13,
     "MCP & integrations": 12,
     "Sandbox & permissions": 12,
+    "Cowork & remote": 11,
+    "MCP integration": 11,
     "Plugin & channel system": 11,
-    "Cowork & remote": 10,
     "Data integrity": 10,
-    "MCP integration": 10,
     "File system & paths": 9,
     "hooks": 9,
     "Scheduling & remote triggers": 9,
@@ -35,17 +35,18 @@
     "MCP": 7,
     "Permissions": 7,
     "Permissions & safety": 7,
+    "Authentication & accounts": 6,
     "Desktop & platform bugs": 6,
+    "Scheduled tasks": 6,
     "VS Code extension": 6,
-    "Authentication & accounts": 5,
     "Model behavior": 5,
-    "Scheduled tasks": 5,
+    "Model behavior & output": 5,
     "Skills & commands": 5,
     "Skills / slash commands": 5,
     "UX & display": 5,
     "Worktree": 5,
+    "Git & repository safety": 4,
     "MCP & plugins": 4,
-    "Model behavior & output": 4,
     "permissions": 4,
     "sandbox": 4,
     "tui": 4,
@@ -53,7 +54,6 @@
     "Context / compaction": 3,
     "cowork": 3,
     "Desktop": 3,
-    "Git & repository safety": 3,
     "Hooks": 3,
     "Memory & context": 3,
     "Model behavior & instructions": 3,
@@ -179,9 +179,9 @@
   },
   "severity_counts": {
     "CRITICAL": 85,
-    "HIGH": 573,
-    "LOW": 103,
-    "MEDIUM": 368
+    "HIGH": 578,
+    "LOW": 104,
+    "MEDIUM": 370
   },
   "entries": [
     {
@@ -14474,30 +14474,134 @@
       "workaround": "In Monitor or polling scripts, check the exit status of any CLI command before parsing its captured output as JSON. Keep parser stderr visible in loops, break loudly on invalid JSON or unsupported fields, and reserve `2>&1` merging for diagnostics that still branch on command failure rather than treating an empty parsed status as pending work.",
       "status": "open",
       "date_added": "2026-07-21"
+    },
+    {
+      "id": "relative-time-phrases-can-be-fabricated-from-turn-distance",
+      "title": "Relative-time phrases can be fabricated from turn distance",
+      "category": "Model behavior & output",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79731"
+      ],
+      "description": "A reported Claude Code session referred to a same-session proposal as `yesterday` even though the conversation had started about 30 minutes earlier and the injected system date was correct. The reporter describes a recurring model pattern where conversation-turn distance is converted into fluent but unsupported relative-time language such as `yesterday`, `earlier today`, or `last week`.",
+      "workaround": "For time-sensitive summaries, prefer absolute dates or session-relative phrasing such as `earlier in this session` unless a timestamp source has been checked. Add a prompt or hook reminder that relative-time claims must be grounded in message, tool, or system timestamps, and review generated summaries for unverified temporal language before using them as operational memory.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "permission-prompt-always-approval-has-no-user-scope-choice",
+      "title": "Permission prompt always approval has no user-scope choice",
+      "category": "Permission system",
+      "severity": "LOW",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79732"
+      ],
+      "description": "A reported permission UX gap leaves the popup with `Yes`, `Yes, always`, and `No`, where `Yes, always` writes the allow rule to project-local settings. Users who intended a user-wide approval must hand-edit settings afterward, which is easy to get wrong and can hide whether an automation permission applies only to the current project or across all workspaces.",
+      "workaround": "After approving a command permanently, inspect whether the rule landed in project-local or user-level settings before relying on it in another workspace. Keep project and user allowlists intentionally separate in documentation and scripts, and avoid assuming a successful `Yes, always` click grants a reusable global permission.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "agent-auto-spawned-subagent-forks-can-consume-quota",
+      "title": "Agent auto-spawned subagent forks can consume quota",
+      "category": "Performance & cost",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79735"
+      ],
+      "description": "A reported Claude Code 2.1.216 macOS session saw the agent self-select multiple forked subagents, with four parallel agents each consuming about 710,000 tokens and materially increasing weekly quota usage. The reporter asked for client notice or confirmation before the agent starts this kind of high-cost parallel work.",
+      "workaround": "Before allowing autonomous or fork-heavy workflows, set explicit instructions and wrapper checks for when subagents may be spawned and how many can run concurrently. Monitor token usage during long investigations, require confirmation for multi-agent expansion in cost-sensitive sessions, and stop duplicate low-value branches before they consume the same context repeatedly.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "scheduled-tasks-can-miss-trusted-project-state",
+      "title": "Scheduled tasks can miss trusted project state",
+      "category": "Scheduled tasks",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79737"
+      ],
+      "description": "A reported Windows scheduled task was skipped as `folder is not trusted` even though the same project had accepted trust in `.claude.json` and an interactive session in that directory did not prompt again. The report found multiple normalized path keys for the same directory and inferred that the scheduled-task runner may use yet another path form, causing a trust lookup miss and silently dropping scheduled work.",
+      "workaround": "For recurring scheduled tasks, verify the task actually fires after trust setup instead of trusting stored project flags alone. Watch for skipped-task notifications, capture the exact path forms present in `.claude.json`, and avoid relying on manual config edits as a durable workaround when the desktop app autosaves its own in-memory state over the file.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "bare-mode-can-break-oauth-login",
+      "title": "Bare mode can break OAuth login",
+      "category": "Authentication & accounts",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79738"
+      ],
+      "description": "A reported Claude Code 2.1.216 macOS regression made `claude --bare -p` fail with `Not logged in` while the identical `claude -p` invocation succeeded using the same on-disk OAuth credentials and shell session. OAuth or subscription users depending on bare-mode automation can therefore be blocked even though ordinary print mode still appears authenticated.",
+      "workaround": "Do not use `--bare` as the only authentication smoke test for OAuth-backed automation. After Claude Code upgrades, test both bare and non-bare print mode, and fall back to non-bare output parsing or an API-key-backed path where appropriate until bare mode reads the same credential state reliably.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "mcp-reconnect-after-config-edit-can-orphan-stdio-server",
+      "title": "MCP reconnect after config edit can orphan stdio server",
+      "category": "MCP integration",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79740"
+      ],
+      "description": "A reported Claude Code 2.1.216 Windows repro showed `/mcp` reconnect closing stdin and waiting for exit when an MCP server config is unchanged, but abandoning the old stdio server process tree when `.mcp.json` has been edited. The old server receives no EOF or kill signal and can keep exclusive sockets or build-output locks until the whole Claude Code session exits.",
+      "workaround": "When developing stdio MCP servers, check for old server processes after every config edit plus reconnect, especially for servers that hold exclusive ports, debugger sockets, or build artifacts. Make server startup detect existing instances, expose a manual cleanup command, and restart Claude Code or kill the orphaned process tree before interpreting reconnect build failures as code defects.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "remote-control-workers-can-supersede-each-other-after-token-refresh",
+      "title": "Remote control workers can supersede each other after token refresh",
+      "category": "Cowork & remote",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79741"
+      ],
+      "description": "A reported Claude Desktop Windows regression after the 2026-07-17 update produced repeated remote-control failures with `this connection is no longer the active worker for the session (code 4090)`. The report correlates bursts with session token refresh and suggests desktop bridge and remote-control workers can claim the same cloud session slot, after which the remote-control toggle can fail with a missing `session_url` error.",
+      "workaround": "For remote-controlled sessions, treat 4090 storms as a session-control integrity problem rather than an ordinary transient disconnect. Preserve Desktop logs around token refreshes, avoid assuming the disabled toggle has taken effect after an error, and restart from a clean session when remote control remains superseded after reconnect attempts.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "worktreepool-deregistered-directories-can-mutate-parent-repo",
+      "title": "WorktreePool deregistered directories can mutate the parent repo",
+      "category": "Git & repository safety",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79743"
+      ],
+      "description": "A reported Claude Desktop Windows WorktreePool bug ran git checkout commands in leftover `.claude/worktrees` directories that were no longer registered worktrees and no longer contained a `.git` file. Because those shell directories were nested under the main repository, git repository discovery walked upward and the pool's release or lease checkout mutated the user's parent checkout, detaching HEAD or moving it onto a `claude/*` session branch.",
+      "workaround": "Before trusting desktop worktree isolation, delete leftover `.claude/worktrees` directories that lack a `.git` file and do not appear in `git worktree list`. Monitor the parent repo reflog for unexplained checkouts near WorktreePool lease or release times, and run unattended desktop sessions from disposable clones until pool git commands validate registered worktrees or prevent upward discovery.",
+      "status": "open",
+      "date_added": "2026-07-21"
     }
   ],
   "status_summary": {
-    "open": 1115,
+    "open": 1123,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 85,
-    "high": 573,
-    "low": 103,
-    "medium": 368
+    "high": 578,
+    "low": 104,
+    "medium": 370
   },
   "lastUpdated": "2026-07-21",
   "stats": {
-    "total": 1129,
+    "total": 1137,
     "critical": 85,
-    "high": 573,
-    "medium": 368,
-    "low": 103,
-    "open": 1115,
+    "high": 578,
+    "medium": 370,
+    "low": 104,
+    "open": 1123,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-21",
-  "total": 1129
+  "total": 1137
 }
