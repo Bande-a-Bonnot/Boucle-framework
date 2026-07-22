@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1253</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-22.</span></p>
+        <p class="subtitle"><span id="total-count">1257</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-22.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -13733,9 +13733,57 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Have subagents inventory their effective toolset before starting workflows that depend on nested fan-out, and fail closed when the launch tool is absent. Keep multi-reviewer or orchestration fan-out at the parent level unless a probe proves the child can spawn nested agents, and document whether a workflow requires `fork` semantics or single-level execution.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80036" target="_blank">#80036</a></div>
         </div>
-        <div class="kl-entry" data-category="Data integrity" data-issues="80069" id="tool-results-can-return-fabricated-file-and-command-output" data-severity="critical" data-status="open">
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="80065" id="hyphenated-http-mcp-server-names-can-register-uncallable-tools" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1252</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Hyphenated HTTP MCP server names can register uncallable tools</h3>
+            <p>A reported Windows Claude Code 2.1.217 setup connected an HTTP MCP server whose config key contained a hyphen and showed the expected hyphenated tool names in `/mcp`, but injected underscore-normalized names into the model function schema. The model could only call the underscore form while the router was registered under the hyphen form, so every attempted tool call failed with `No such tool available`. A stdio MCP server without a hyphenated key worked in the same configuration, narrowing the failure to inconsistent MCP server-name normalization.</p>
+                        <!-- workaround:hyphenated-http-mcp-server-names-can-register-uncallable-tools -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid hyphens in MCP server keys, especially for HTTP transport servers, until your installed Claude Code version proves the injected function names and `/mcp` routing names match exactly. Rename keys such as `unreal-mcp` to `unreal_mcp`, restart the session, run `/mcp`, and ask the model to call one harmless tool before relying on the server in an agent workflow.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80065" target="_blank">#80065</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; platform bugs" data-issues="80072" id="macos-local-network-deny-can-break-daemon-spawned-sessions" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1253</span>
+                <span class="kl-cat">Desktop &amp; platform bugs</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>macOS Local Network deny can break daemon-spawned sessions</h3>
+            <p>A reported macOS Claude Code 2.1.217 setup minted a silent Local Network default-deny record for `com.anthropic.claude-code` when background daemon workers first touched the network without a visible permission prompt. Foreground terminal sessions could still reach the API, but daemon-spawned sessions from FleetView, pre-warmed spares, and background handoffs failed every API call with ENOTFOUND. Attaching to an old session from the agent overview also handed the originally working terminal session to the daemon, causing later sessions in that terminal to fail until restart.</p>
+                        <!-- workaround:macos-local-network-deny-can-break-daemon-spawned-sessions -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If only daemon-spawned or fleet-resumed sessions fail with ENOTFOUND, compare a foreground `claude` DNS probe with a daemon-hosted session before assuming an Anthropic outage. Check macOS Local Network records for `com.anthropic.claude-code` when possible, avoid opening the agent overview on affected machines until fixed, and keep critical unattended work checkpointed outside the conversation. A hosts-file pin for `api.anthropic.com` may bypass the policy path temporarily, but it is brittle and should be monitored for stale IPs.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80072" target="_blank">#80072</a></div>
+        </div>
+        <div class="kl-entry" data-category="Auth &amp; accounts" data-issues="80075" id="headless-claude-p-can-401-despite-valid-oauth-status" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1254</span>
+                <span class="kl-cat">Auth &amp; accounts</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Headless claude -p can 401 despite valid OAuth status</h3>
+            <p>A reported macOS Claude Code CLI 2.1.179 setup using claude.ai OAuth credentials succeeded from an attended Terminal.app session but returned 401 authentication errors from LaunchAgents, non-TTY subprocesses, and bare pseudo-TTY wrappers. In the same failing context, `claude auth status --json` still reported a logged-in Pro subscription, so the local auth check and real API call disagreed. The reporter also observed repeated macOS TCC prompts on each non-Terminal process launch.</p>
+                        <!-- workaround:headless-claude-p-can-401-despite-valid-oauth-status -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat `claude auth status` alone as proof that unattended `claude -p` automation can make model calls. Run a minimal headless smoke prompt from the same launch context that will execute production work, capture the JSON result, and classify 401s as auth-context failures rather than prompt failures. For unattended automation that cannot tolerate manual reauth, prefer API-key based paths where allowed or run inside a host surface that has already proven stable in the target context.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80075" target="_blank">#80075</a></div>
+        </div>
+        <div class="kl-entry" data-category="Auth &amp; accounts" data-issues="80085" id="concurrent-macos-oauth-instances-can-cascade-logouts" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1255</span>
+                <span class="kl-cat">Auth &amp; accounts</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Concurrent macOS OAuth instances can cascade logouts</h3>
+            <p>A reported macOS Claude Code 2.1.216 setup with many concurrent Claude Code processes sharing one Keychain OAuth credential saw repeated mid-session logouts. The failure matches an existing refresh-token rotation race pattern: one process rotates the token chain, another process refreshes with an already-consumed token, receives a 401, and may overwrite shared credentials with a logged-out state that kills the interactive session too. The report extends the risk from Linux file-based credentials to macOS Keychain-backed credentials.</p>
+                        <!-- workaround:concurrent-macos-oauth-instances-can-cascade-logouts -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid running many long-lived Claude Code OAuth sessions under one macOS user when reliable continuity matters. Reduce concurrent instances around token-expiry windows, keep durable work checkpoints outside the session, and treat unexpected `/login` prompts during parallel work as a possible shared-credential race. If automation needs concurrency, isolate credentials per user or environment where possible, and verify that failed refreshes do not overwrite newer stored credentials before resuming unattended work.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80085" target="_blank">#80085</a></div>
+        </div>
+        <div class="kl-entry" data-category="Data integrity" data-issues="80069" id="tool-results-can-return-fabricated-file-and-command-output" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1256</span>
                 <span class="kl-cat">Data integrity</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
             </div>
@@ -13747,7 +13795,7 @@
         </div>
         <div class="kl-entry" data-category="UX &amp; display" data-issues="80070" id="askuserquestion-preview-layout-can-hide-custom-other-input" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1253</span>
+                <span class="kl-num">#1257</span>
                 <span class="kl-cat">UX &amp; display</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
