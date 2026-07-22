@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1228</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-21.</span></p>
+        <p class="subtitle"><span id="total-count">1232</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-21.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -13456,6 +13456,54 @@
                         <!-- workaround:desktop-session-index-can-zero-fill-after-unclean-shutdown -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> After an unclean shutdown, check the underlying `~/.claude/projects/**/*.jsonl` transcripts before assuming a missing Desktop sidebar entry is lost. Back up transcripts for important work, and if local session-state files are zero-filled or unparseable, preserve them with event logs for support while reconstructing task state from the transcript.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79941" target="_blank">#79941</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="79973" id="project-trust-state-can-silently-block-project-plugins" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1229</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Project trust state can silently block project plugins</h3>
+            <p>A reported Claude Code project entry reached the contradictory state `hasCompletedProjectOnboarding: true`, `projectOnboardingSeenCount: 0`, and `hasTrustDialogAccepted: false` in `~/.claude.json`. Because the trust dialog was never shown again, project-scope plugins under `./.claude/skills/*` silently failed to load and `.mcp.json` approvals were re-prompted on every launch despite being written to project settings.</p>
+                        <!-- workaround:project-trust-state-can-silently-block-project-plugins -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When project plugins or MCP approvals appear to ignore saved state, inspect the project&#x27;s trust fields in `~/.claude.json`. Quit all Claude sessions before editing because clients can rewrite the file on exit, then reset the contradictory onboarding state or explicitly mark the trusted project only after confirming the path is expected.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79973" target="_blank">#79973</a></div>
+        </div>
+        <div class="kl-entry" data-category="Plan mode" data-issues="79972" id="plan-review-widget-can-show-stale-plan-content" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1230</span>
+                <span class="kl-cat">Plan mode</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Plan-review widget can show stale plan content</h3>
+            <p>A reported ExitPlanMode flow wrote and verified the current plan file on disk, but the user-facing plan-review widget displayed older unrelated plan content. Repeating ExitPlanMode showed a different stale plan, and a full application restart did not clear the bad UI state, so the user could not trust that the reviewed plan matched the actual work plan.</p>
+                        <!-- workaround:plan-review-widget-can-show-stale-plan-content -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For high-stakes plan approvals, have the assistant paste the current plan text directly in chat and confirm that it matches the plan file before approval. Treat the plan-review widget as advisory if multiple plan files exist in the session directory or if the displayed title does not match the freshly written plan.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79972" target="_blank">#79972</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="79970" id="transient-mcp-startup-tools-can-poison-session-history" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1231</span>
+                <span class="kl-cat">MCP &amp; integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Transient MCP startup tools can poison session history</h3>
+            <p>A reported MCP-heavy Claude Code session became permanently unusable after an early deferred-tool search captured the transient startup tool `WaitForMcpServers` inside a persisted `tool_search_tool_result`. Once MCP startup finished and that tool was no longer advertised, every later request revalidated the transcript, found the dangling tool reference, and failed with `400 Tool reference &#x27;WaitForMcpServers&#x27; not found in available tools`.</p>
+                        <!-- workaround:transient-mcp-startup-tools-can-poison-session-history -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid triggering broad tool searches during MCP startup when servers are still connecting. If a session is already poisoned, close it and remove only the stale `WaitForMcpServers` tool_reference from the affected transcript JSONL before resuming, or use `/clear` if losing context is acceptable.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79970" target="_blank">#79970</a></div>
+        </div>
+        <div class="kl-entry" data-category="Performance &amp; cost" data-issues="79958" id="deep-research-can-lose-progress-at-spend-limit" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1232</span>
+                <span class="kl-cat">Performance &amp; cost</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Deep research can lose progress at spend limit</h3>
+            <p>A reported deep-research Workflow fanned out to many search and verification subagents, hit the monthly spend limit, and produced no final deliverable. After the limit reset, rerunning the same research started from zero rather than resuming, because useful verified claims were only left in the session transcript and the resume cache did not survive as durable checkpointed run state.</p>
+                        <!-- workaround:deep-research-can-lose-progress-at-spend-limit -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before launching broad deep-research runs, set a narrow scope and ask for incremental notes or files after each verified batch. If a run is cut off by quota, mine the transcript for partial findings before restarting, and prefer smaller staged research tasks until cross-session resume and durable checkpoints are available.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79958" target="_blank">#79958</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
