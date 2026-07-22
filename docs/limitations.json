@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1257,
+  "count": 1259,
   "categories": {
     "Hook behavior & events": 184,
     "Permission system": 127,
@@ -22,15 +22,15 @@
     "Security & trust boundaries": 14,
     "MCP integration": 13,
     "Remote & cloud": 13,
+    "Auth & accounts": 12,
     "Core & session management": 12,
     "Cowork & remote": 12,
-    "Auth & accounts": 11,
     "Plugin & channel system": 11,
+    "VS Code extension": 11,
     "Worktree": 11,
     "Bash & shell execution": 10,
     "File system & paths": 10,
     "Scheduling & remote triggers": 10,
-    "VS Code extension": 10,
     "hooks": 9,
     "Model behavior": 9,
     "Scheduled tasks": 9,
@@ -183,7 +183,7 @@
   },
   "severity_counts": {
     "CRITICAL": 101,
-    "HIGH": 655,
+    "HIGH": 657,
     "LOW": 105,
     "MEDIUM": 396
   },
@@ -16124,6 +16124,32 @@
       "date_added": "2026-07-22"
     },
     {
+      "id": "channel-host-mode-can-ignore-valid-oauth-env-token",
+      "title": "Channel host mode can ignore a valid OAuth env token",
+      "category": "Auth & accounts",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80091"
+      ],
+      "description": "A reported macOS Claude Code 2.1.216 and 2.1.217 setup running `claude --channels` as a long-lived headless channel host under launchd used the stored Keychain OAuth session even when `CLAUDE_CODE_OAUTH_TOKEN` was present and independently verified as valid. Interactive mode and `claude -p` honored the env token in the same environment, but channel-host mode sent the expired Keychain access token and every command failed with 401 while the process, socket, and gateway remained healthy. Deleting the `Claude Code-credentials` Keychain entry made the host use the env token again.",
+      "workaround": "For unattended channel hosts, do not assume documented OAuth precedence matches interactive or `-p` behavior. Run a same-mode smoke command after startup and after token refresh windows, and treat 401s from an otherwise healthy channel host as possible stored-credential precedence failures. If a valid `CLAUDE_CODE_OAUTH_TOKEN` is being ignored, remove or isolate stale stored OAuth credentials before restarting the host, and be aware that `claude setup-token` may rewrite the Keychain entry while minting an env token.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "vscode-terminal-launch-can-miss-cli-with-non-ascii-windows-profile",
+      "title": "VS Code terminal launch can miss the CLI with non-ASCII Windows profiles",
+      "category": "VS Code extension",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80087"
+      ],
+      "description": "A reported Windows 11 Claude Code for VS Code regression began in extension v2.1.214 and persisted through v2.1.217: with `claudeCode.useTerminal: true`, the extension reported `Could not locate the Claude CLI on PATH` even though `Get-Command claude` and `where.exe claude` resolved the standalone installer binary correctly. The affected account used a non-ASCII profile path, and the CLI binary itself continued to work, narrowing the issue to the extension's terminal-launch CLI detection path rather than the Claude CLI installation. The latest webview panel path with `claudeCode.useTerminal: false` still worked.",
+      "workaround": "If the VS Code extension reports a PATH false positive on Windows while the CLI works from terminals, first disable `claudeCode.useTerminal` and use the default webview panel mode. If terminal launch is required, pin the extension to v2.1.212 until the detection regression is fixed. Keep PATH validation separate from the extension error by checking `Get-Command claude`, `where.exe claude`, and the extension mode that is actually failing.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
       "id": "tool-results-can-return-fabricated-file-and-command-output",
       "title": "Tool results can return fabricated file and command output",
       "category": "Data integrity",
@@ -16151,27 +16177,27 @@
     }
   ],
   "status_summary": {
-    "open": 1243,
+    "open": 1245,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 101,
-    "high": 655,
+    "high": 657,
     "low": 105,
     "medium": 396
   },
   "lastUpdated": "2026-07-22",
   "stats": {
-    "total": 1257,
+    "total": 1259,
     "critical": 101,
-    "high": 655,
+    "high": 657,
     "medium": 396,
     "low": 105,
-    "open": 1243,
+    "open": 1245,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-22",
-  "total": 1257
+  "total": 1259
 }
