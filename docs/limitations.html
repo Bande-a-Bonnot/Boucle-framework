@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1266</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-22.</span></p>
+        <p class="subtitle"><span id="total-count">1270</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-22.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -13912,6 +13912,54 @@
                         <!-- workaround:vscode-mcp-subprocess-can-fail-credentials-that-work-standalone -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When an MCP server returns credential errors only through Claude Code, reproduce the same server command and tool call outside Claude Code before rotating credentials or developer tokens. Compare the extension-spawned environment and file access with a standalone stdio client, and keep a manual or direct-client fallback for write-sensitive integrations until the Claude Code MCP subprocess path is verified.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80118" target="_blank">#80118</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="80110" id="vscode-permission-prompts-can-bypass-notification-hooks" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1267</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>VS Code permission prompts can bypass Notification hooks</h3>
+            <p>A reported macOS Claude Code VS Code native-extension setup launches the CLI with `--permission-prompt-tool stdio` and displays permission approvals in the extension&#x27;s graphical panel instead of the terminal prompt path. The reporter verified that the `Notification` hook fires for terminal-run `claude` permission prompts, and that `PreToolUse` still fires in the extension, but a real VS Code graphical permission dialog produces no `Notification` hook invocation. Hook-based desktop notifiers and prompt monitors therefore miss extension-routed approval dialogs.</p>
+                        <!-- workaround:vscode-permission-prompts-can-bypass-notification-hooks -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If a workflow depends on `Notification` hooks for permission prompts, set `claudeCode.useTerminal: true` in VS Code settings and verify a harmless permission prompt emits the expected hook payload before relying on notifications. Otherwise treat VS Code graphical approval prompts as a separate channel, and do not assume CLI prompt hooks cover extension UI decisions.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80110" target="_blank">#80110</a></div>
+        </div>
+        <div class="kl-entry" data-category="VS Code extension" data-issues="80126" id="vscode-chat-links-can-ignore-secondary-workspace-roots" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1268</span>
+                <span class="kl-cat">VS Code extension</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>VS Code chat links can ignore secondary workspace roots</h3>
+            <p>A reported Windows Claude Code for VS Code 2.1.216 multi-root workspace resolved chat-panel markdown file links only against the primary workspace folder. Links to files in sibling workspace roots failed whether written as paths relative to that root, workspace-folder-prefixed paths, absolute Windows paths, or `file:///` URIs, while a path relative to the primary root worked. This makes assistant-produced navigation unreliable in multi-root projects and can hide valid files outside the first root.</p>
+                        <!-- workaround:vscode-chat-links-can-ignore-secondary-workspace-roots -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> In multi-root VS Code workspaces, verify assistant file links before treating them as proof that a file exists or was edited. Open files from the Explorer, command palette, or terminal paths when a link targets a non-primary root, and ask the assistant to include the workspace root name plus a shell-verifiable absolute path for cross-root references.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80126" target="_blank">#80126</a></div>
+        </div>
+        <div class="kl-entry" data-category="TUI &amp; display" data-issues="80066" id="tabby-terminal-can-render-thai-ime-composition-incompletely" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1269</span>
+                <span class="kl-cat">TUI &amp; display</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Tabby terminal can render Thai IME composition incompletely</h3>
+            <p>A reported Windows 11 Claude Code 2.1.217 setup running inside Tabby 1.0.234 rendered Thai Kedmanee live composition text incorrectly while typing, dropping visible characters from examples such as `เส้า` and `เลือก`. Pressing Enter submitted the correct Unicode text, and pasting Thai text worked. The same terminal handled normal PowerShell input correctly, and Claude Code inside the VS Code terminal did not reproduce, narrowing the failure to Claude Code&#x27;s live input rendering path in Tabby rather than the submitted text.</p>
+                        <!-- workaround:tabby-terminal-can-render-thai-ime-composition-incompletely -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For Thai or other IME-heavy input, avoid Tabby-hosted Claude Code sessions until the live composition preview is verified in the installed version. Use VS Code&#x27;s terminal or paste precomposed text as a temporary workaround, and confirm the submitted prompt after Enter when the live preview looks incomplete.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80066" target="_blank">#80066</a></div>
+        </div>
+        <div class="kl-entry" data-category="VS Code extension" data-issues="80127" id="vscode-compact-summary-can-be-non-copyable" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1270</span>
+                <span class="kl-cat">VS Code extension</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>VS Code compact summaries can be non-copyable</h3>
+            <p>A reported Windows 11 Claude Code VS Code native-extension session rendered `/compact` output in a format that could not be selected or copied, even though ordinary assistant text remained copyable. This blocks users from extracting the compacted summary for handoff, archival notes, or manual recovery outside the current extension session.</p>
+                        <!-- workaround:vscode-compact-summary-can-be-non-copyable -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If you need a portable handoff summary in the VS Code extension, ask Claude to restate the `/compact` summary as normal chat text before leaving the session, or run the same workflow in a surface where compact output is selectable. Store important continuity notes in a file under version control instead of depending on copying a rendered compact panel.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80127" target="_blank">#80127</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

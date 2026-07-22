@@ -1,14 +1,14 @@
 {
   "version": "0.13.0",
-  "count": 1266,
+  "count": 1270,
   "categories": {
-    "Hook behavior & events": 184,
+    "Hook behavior & events": 185,
     "Permission system": 127,
     "Hook bypass & evasion": 101,
     "MCP & plugin issues": 65,
     "Subagent & spawned agents": 55,
     "Desktop & IDE integration": 42,
-    "TUI & display": 28,
+    "TUI & display": 29,
     "Platform & compatibility": 27,
     "CLI & terminal": 25,
     "Context & memory": 24,
@@ -22,11 +22,11 @@
     "Security & trust boundaries": 14,
     "MCP integration": 13,
     "Remote & cloud": 13,
+    "VS Code extension": 13,
     "Auth & accounts": 12,
     "Core & session management": 12,
     "Cowork & remote": 12,
     "Plugin & channel system": 11,
-    "VS Code extension": 11,
     "Worktree": 11,
     "Bash & shell execution": 10,
     "File system & paths": 10,
@@ -183,9 +183,9 @@
   },
   "severity_counts": {
     "CRITICAL": 101,
-    "HIGH": 661,
+    "HIGH": 662,
     "LOW": 105,
-    "MEDIUM": 399
+    "MEDIUM": 402
   },
   "entries": [
     {
@@ -16266,30 +16266,82 @@
       "workaround": "When an MCP server returns credential errors only through Claude Code, reproduce the same server command and tool call outside Claude Code before rotating credentials or developer tokens. Compare the extension-spawned environment and file access with a standalone stdio client, and keep a manual or direct-client fallback for write-sensitive integrations until the Claude Code MCP subprocess path is verified.",
       "status": "open",
       "date_added": "2026-07-22"
+    },
+    {
+      "id": "vscode-permission-prompts-can-bypass-notification-hooks",
+      "title": "VS Code permission prompts can bypass Notification hooks",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80110"
+      ],
+      "description": "A reported macOS Claude Code VS Code native-extension setup launches the CLI with `--permission-prompt-tool stdio` and displays permission approvals in the extension's graphical panel instead of the terminal prompt path. The reporter verified that the `Notification` hook fires for terminal-run `claude` permission prompts, and that `PreToolUse` still fires in the extension, but a real VS Code graphical permission dialog produces no `Notification` hook invocation. Hook-based desktop notifiers and prompt monitors therefore miss extension-routed approval dialogs.",
+      "workaround": "If a workflow depends on `Notification` hooks for permission prompts, set `claudeCode.useTerminal: true` in VS Code settings and verify a harmless permission prompt emits the expected hook payload before relying on notifications. Otherwise treat VS Code graphical approval prompts as a separate channel, and do not assume CLI prompt hooks cover extension UI decisions.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "vscode-chat-links-can-ignore-secondary-workspace-roots",
+      "title": "VS Code chat links can ignore secondary workspace roots",
+      "category": "VS Code extension",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80126"
+      ],
+      "description": "A reported Windows Claude Code for VS Code 2.1.216 multi-root workspace resolved chat-panel markdown file links only against the primary workspace folder. Links to files in sibling workspace roots failed whether written as paths relative to that root, workspace-folder-prefixed paths, absolute Windows paths, or `file:///` URIs, while a path relative to the primary root worked. This makes assistant-produced navigation unreliable in multi-root projects and can hide valid files outside the first root.",
+      "workaround": "In multi-root VS Code workspaces, verify assistant file links before treating them as proof that a file exists or was edited. Open files from the Explorer, command palette, or terminal paths when a link targets a non-primary root, and ask the assistant to include the workspace root name plus a shell-verifiable absolute path for cross-root references.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "tabby-terminal-can-render-thai-ime-composition-incompletely",
+      "title": "Tabby terminal can render Thai IME composition incompletely",
+      "category": "TUI & display",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80066"
+      ],
+      "description": "A reported Windows 11 Claude Code 2.1.217 setup running inside Tabby 1.0.234 rendered Thai Kedmanee live composition text incorrectly while typing, dropping visible characters from examples such as `\u0e40\u0e2a\u0e49\u0e32` and `\u0e40\u0e25\u0e37\u0e2d\u0e01`. Pressing Enter submitted the correct Unicode text, and pasting Thai text worked. The same terminal handled normal PowerShell input correctly, and Claude Code inside the VS Code terminal did not reproduce, narrowing the failure to Claude Code's live input rendering path in Tabby rather than the submitted text.",
+      "workaround": "For Thai or other IME-heavy input, avoid Tabby-hosted Claude Code sessions until the live composition preview is verified in the installed version. Use VS Code's terminal or paste precomposed text as a temporary workaround, and confirm the submitted prompt after Enter when the live preview looks incomplete.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "vscode-compact-summary-can-be-non-copyable",
+      "title": "VS Code compact summaries can be non-copyable",
+      "category": "VS Code extension",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80127"
+      ],
+      "description": "A reported Windows 11 Claude Code VS Code native-extension session rendered `/compact` output in a format that could not be selected or copied, even though ordinary assistant text remained copyable. This blocks users from extracting the compacted summary for handoff, archival notes, or manual recovery outside the current extension session.",
+      "workaround": "If you need a portable handoff summary in the VS Code extension, ask Claude to restate the `/compact` summary as normal chat text before leaving the session, or run the same workflow in a surface where compact output is selectable. Store important continuity notes in a file under version control instead of depending on copying a rendered compact panel.",
+      "status": "open",
+      "date_added": "2026-07-22"
     }
   ],
   "status_summary": {
-    "open": 1252,
+    "open": 1256,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 101,
-    "high": 661,
+    "high": 662,
     "low": 105,
-    "medium": 399
+    "medium": 402
   },
   "lastUpdated": "2026-07-22",
   "stats": {
-    "total": 1266,
+    "total": 1270,
     "critical": 101,
-    "high": 661,
-    "medium": 399,
+    "high": 662,
+    "medium": 402,
     "low": 105,
-    "open": 1252,
+    "open": 1256,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-22",
-  "total": 1266
+  "total": 1270
 }
