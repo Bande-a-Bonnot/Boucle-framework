@@ -28,6 +28,8 @@ short audit, install, verify, and repair loop.
 
 Need help with a result? Use the [safe support evidence guide](SUPPORT_EVIDENCE.md)
 to share the copy/paste summary without exposing private settings or secrets.
+To interpret the summary and choose the first repair, use the
+[safety summary triage guide](TRIAGE.md).
 
 Updating Claude Code? Use the [update checklist](UPDATE_CHECKLIST.md) to back
 up settings, refresh hooks, verify the boundary, and restore safely if hooks

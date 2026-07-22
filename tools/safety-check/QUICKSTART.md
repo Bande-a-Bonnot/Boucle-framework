@@ -68,6 +68,8 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 For a copy-paste GitHub Actions workflow and strict-mode exit code table, see
 the [scripted checks guide](CI.md).
+For help choosing what to repair first from the copy/paste summary, use the
+[safety summary triage guide](TRIAGE.md).
 
 On native Windows, verify through the PowerShell installer instead of piping the
 Bash checker:
@@ -191,6 +193,8 @@ If verification passes but the grade is still C, treat the remaining warnings as
 platform risk rather than a hook install failure. Document the warnings and keep
 the verified boundary: no bypass flags, valid JSON, healthy hook files, and zero
 `FAIL-OPEN` payload checks.
+Use the [safety summary triage guide](TRIAGE.md) when the summary has multiple
+issues and you need a repair order.
 
 ## 7. Share safe support evidence
 
