@@ -1,21 +1,21 @@
 {
   "version": "0.13.0",
-  "count": 1259,
+  "count": 1262,
   "categories": {
     "Hook behavior & events": 184,
     "Permission system": 127,
     "Hook bypass & evasion": 101,
     "MCP & plugin issues": 65,
-    "Subagent & spawned agents": 53,
+    "Subagent & spawned agents": 55,
     "Desktop & IDE integration": 41,
     "Platform & compatibility": 27,
     "TUI & display": 27,
     "CLI & terminal": 25,
     "Context & memory": 24,
     "Configuration behavior": 22,
+    "Performance & cost": 20,
     "Tool behavior": 20,
     "Agents & subagents": 19,
-    "Performance & cost": 19,
     "MCP & integrations": 17,
     "Sandbox & permissions": 15,
     "Data integrity": 14,
@@ -183,9 +183,9 @@
   },
   "severity_counts": {
     "CRITICAL": 101,
-    "HIGH": 657,
+    "HIGH": 658,
     "LOW": 105,
-    "MEDIUM": 396
+    "MEDIUM": 398
   },
   "entries": [
     {
@@ -16174,30 +16174,69 @@
       "workaround": "Do not attach `preview` fields to AskUserQuestion options when free-form user input matters. Put examples or mockups in the assistant text before the question, keep the options preview-free, and explicitly include a manual `Other` option that asks the user to type a follow-up if the built-in custom input is absent in the rendered UI.",
       "status": "open",
       "date_added": "2026-07-22"
+    },
+    {
+      "id": "idle-cli-sessions-can-increase-usage-without-prompts",
+      "title": "Idle CLI sessions can increase usage without prompts",
+      "category": "Performance & cost",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80117"
+      ],
+      "description": "A reported Ubuntu Claude Code 2.1.217 terminal-login session showed the usage percentage increasing every few minutes while the CLI was idle, with no prompts sent and no user action. The reporter ruled out other active devices, scheduled routines, running background tasks, dashboard catch-up, and non-essential model calls by checking the relevant Claude Code surfaces and setting `DISABLE_NON_ESSENTIAL_MODEL_CALLS=1`. The behavior did not reproduce when staying idle in the web app, narrowing the report to the terminal login path.",
+      "workaround": "Do not leave newly updated terminal-login sessions idle under scarce usage budget until a same-version observation proves they are quiet. If usage rises without prompts, capture `claude --version`, check `/schedule` and `/tasks`, verify active authorization tokens, set `DISABLE_NON_ESSENTIAL_MODEL_CALLS=1`, then log out or revoke the token before continuing unattended work. For budget-sensitive automation, monitor usage before and after an idle soak test in the exact CLI login mode that will run production sessions.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "subagent-docs-omit-concurrent-running-cap",
+      "title": "Subagent docs omit the concurrent-running cap",
+      "category": "Subagent & spawned agents",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80082"
+      ],
+      "description": "A Claude Code 2.1.217 documentation report says the subagent docs describe the cumulative per-session spawn limit and `CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION`, but omit a separate concurrently running subagent cap with default 20 and override `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`. Without that distinction, users can misread a fan-out pause or denial as reaching the 200-subagent lifetime limit, even when the actual blocker is the lower concurrent-running limit.",
+      "workaround": "When debugging fan-out or background-agent stalls, track both total spawned subagents and currently running subagents. Treat `CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION`, `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`, and general tool-use concurrency as separate controls until the docs and installed version agree. If you raise concurrency for a workflow, record the installed Claude Code version and validate with a small fan-out test before relying on large parallel jobs.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "nested-subagent-docs-can-overstate-default-availability",
+      "title": "Nested-subagent docs can overstate default availability",
+      "category": "Subagent & spawned agents",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80083"
+      ],
+      "description": "A Claude Code 2.1.217 documentation report says the subagent docs still describe nested subagent spawning as generally available with a fixed, non-configurable depth limit, while the current release disables nested spawning by default and introduces `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` to configure it. The mismatch can lead users to design workflows that expect subagents to receive the Agent tool by default, only to find nested fan-out unavailable at runtime.",
+      "workaround": "Before depending on nested subagents, probe whether the child agent actually receives the Agent tool in the target session and record the installed version. Set and document `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` explicitly for workflows that require nesting, and keep fallback orchestration at the parent level when the child tool inventory does not expose nested spawning.",
+      "status": "open",
+      "date_added": "2026-07-22"
     }
   ],
   "status_summary": {
-    "open": 1245,
+    "open": 1248,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 101,
-    "high": 657,
+    "high": 658,
     "low": 105,
-    "medium": 396
+    "medium": 398
   },
   "lastUpdated": "2026-07-22",
   "stats": {
-    "total": 1259,
+    "total": 1262,
     "critical": 101,
-    "high": 657,
-    "medium": 396,
+    "high": 658,
+    "medium": 398,
     "low": 105,
-    "open": 1245,
+    "open": 1248,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-22",
-  "total": 1259
+  "total": 1262
 }
