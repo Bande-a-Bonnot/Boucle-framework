@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1248</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-22.</span></p>
+        <p class="subtitle"><span id="total-count">1251</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-22.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -13696,6 +13696,42 @@
                         <!-- workaround:usage-limits-can-silently-kill-background-and-scheduled-work -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume usage-limit resets preserve unattended background agents or scheduled tasks. For overnight work, keep durable checkpoints outside the conversation, reconcile scheduled fire times against transcript or output artifacts, and add a watchdog that records usage-limit banners or missing completion records before resuming. For critical schedules, prefer idempotent tasks that can be requeued explicitly after the limit reset.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80037" target="_blank">#80037</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="80045" id="mcp-config-env-secrets-can-leak-through-process-argv" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1249</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>MCP config env secrets can leak through process argv</h3>
+            <p>A reported VS Code extension launch path passed resolved MCP server `env` values inline inside the `--mcp-config` command-line argument. Token-bearing MCP settings could therefore be read from ordinary process listings such as `ps`, `/proc/&lt;pid&gt;/cmdline`, macOS process inspectors, endpoint telemetry, or even the agent&#x27;s own Bash output during routine process diagnostics.</p>
+                        <!-- workaround:mcp-config-env-secrets-can-leak-through-process-argv -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not put long-lived secrets in MCP configs that may be forwarded through `--mcp-config` argv. Prefer launch paths that pass secret-bearing MCP configuration through a permission-restricted temp file or child-process environment only, rotate any token observed in process listings or transcripts, and avoid broad `ps` output in agent transcripts on hosts with sensitive MCP servers.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80045" target="_blank">#80045</a></div>
+        </div>
+        <div class="kl-entry" data-category="Sandbox &amp; permissions" data-issues="80031" id="local-broad-allow-can-bypass-more-specific-ask-rules" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1250</span>
+                <span class="kl-cat">Sandbox &amp; permissions</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Local broad allow can bypass more specific ask rules</h3>
+            <p>A reported Claude Code 2.1.205 permission setup put a specific `ask` rule in project settings and a broader overlapping `allow` rule in `settings.local.json`. A command matching both rules executed immediately without a confirmation prompt, contrary to the documented deny-then-ask-then-allow ordering and making prompt gates for operations such as PR merges or pushes fail open when broad local allowlists overlap them.</p>
+                        <!-- workaround:local-broad-allow-can-bypass-more-specific-ask-rules -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Audit all permission scopes for overlapping `allow` and `ask` patterns, especially broad local rules such as `Bash(gh pr *)`, `Bash(git *)`, or publish commands. Until precedence is verified in your installed version, treat `ask` rules as advisory when any broader allow might match, replace high-risk asks with hard denies or narrower allows, and run real prompt-rendering smoke tests before trusting a policy.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80031" target="_blank">#80031</a></div>
+        </div>
+        <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="80036" id="fresh-subagents-can-lose-their-nested-agent-launch-tool" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1251</span>
+                <span class="kl-cat">Subagent &amp; spawned agents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Fresh subagents can lose their nested agent launch tool</h3>
+            <p>A reported Claude Code 2.1.217 setup found that freshly spawned `general-purpose` and `claude` subagents did not receive the documented `Agent` or `Task` launch tool, so they could not create nested subagents despite the documented nesting cap. The behavior was inconsistent because `fork` subagents retained the launch tool, which means fan-out workflows inside ordinary subagents can silently degrade to a single inline pass.</p>
+                        <!-- workaround:fresh-subagents-can-lose-their-nested-agent-launch-tool -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Have subagents inventory their effective toolset before starting workflows that depend on nested fan-out, and fail closed when the launch tool is absent. Keep multi-reviewer or orchestration fan-out at the parent level unless a probe proves the child can spawn nested agents, and document whether a workflow requires `fork` semantics or single-level execution.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80036" target="_blank">#80036</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

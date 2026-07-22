@@ -7,6 +7,30 @@
   <updated>2026-07-22T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Fresh subagents can lose their nested agent launch tool</title>
+    <id>https://framework.boucle.sh/limitations.html#fresh-subagents-can-lose-their-nested-agent-launch-tool</id>
+    <link href="https://framework.boucle.sh/limitations.html#fresh-subagents-can-lose-their-nested-agent-launch-tool"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.217 setup found that freshly spawned `general-purpose` and `claude` subagents did not receive the documented `Agent` or `Task` launch tool, so they could not create nested subagents despite the documented nesting cap. The behavior was inconsistent because `fork` subagents retained the launch tool, which means fan-out workflows inside ordinary subagents can silently degrade to a single inline pass.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Local broad allow can bypass more specific ask rules</title>
+    <id>https://framework.boucle.sh/limitations.html#local-broad-allow-can-bypass-more-specific-ask-rules</id>
+    <link href="https://framework.boucle.sh/limitations.html#local-broad-allow-can-bypass-more-specific-ask-rules"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.205 permission setup put a specific `ask` rule in project settings and a broader overlapping `allow` rule in `settings.local.json`. A command matching both rules executed immediately without a confirmation prompt, contrary to the documented deny-then-ask-then-allow ordering and making prompt gates for operations such as PR merges or pushes fail open when broad local allowlists overlap them.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] MCP config env secrets can leak through process argv</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-config-env-secrets-can-leak-through-process-argv</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-config-env-secrets-can-leak-through-process-argv"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported VS Code extension launch path passed resolved MCP server `env` values inline inside the `--mcp-config` command-line argument. Token-bearing MCP settings could therefore be read from ordinary process listings such as `ps`, `/proc/&lt;pid&gt;/cmdline`, macOS process inspectors, endpoint telemetry, or even the agent&#x27;s own Bash output during routine process diagnostics.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[HIGH] Usage limits can silently kill background and scheduled work</title>
     <id>https://framework.boucle.sh/limitations.html#usage-limits-can-silently-kill-background-and-scheduled-work</id>
     <link href="https://framework.boucle.sh/limitations.html#usage-limits-can-silently-kill-background-and-scheduled-work"/>
@@ -141,29 +165,5 @@
     <updated>2026-07-22T00:00:00Z</updated>
     <summary>A reported deep-research Workflow fanned out to many search and verification subagents, hit the monthly spend limit, and produced no final deliverable. After the limit reset, rerunning the same research started from zero rather than resuming, because useful verified claims were only left in the session transcript and the resume cache did not survive as durable checkpointed run state.</summary>
     <category term="Performance &amp; cost"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Transient MCP startup tools can poison session history</title>
-    <id>https://framework.boucle.sh/limitations.html#transient-mcp-startup-tools-can-poison-session-history</id>
-    <link href="https://framework.boucle.sh/limitations.html#transient-mcp-startup-tools-can-poison-session-history"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported MCP-heavy Claude Code session became permanently unusable after an early deferred-tool search captured the transient startup tool `WaitForMcpServers` inside a persisted `tool_search_tool_result`. Once MCP startup finished and that tool was no longer advertised, every later request revalidated the transcript, found the dangling tool reference, and failed with `400 Tool reference &#x27;WaitForMcpServers&#x27; not found in available tools`.</summary>
-    <category term="MCP &amp; integrations"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Plan-review widget can show stale plan content</title>
-    <id>https://framework.boucle.sh/limitations.html#plan-review-widget-can-show-stale-plan-content</id>
-    <link href="https://framework.boucle.sh/limitations.html#plan-review-widget-can-show-stale-plan-content"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported ExitPlanMode flow wrote and verified the current plan file on disk, but the user-facing plan-review widget displayed older unrelated plan content. Repeating ExitPlanMode showed a different stale plan, and a full application restart did not clear the bad UI state, so the user could not trust that the reviewed plan matched the actual work plan.</summary>
-    <category term="Plan mode"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Project trust state can silently block project plugins</title>
-    <id>https://framework.boucle.sh/limitations.html#project-trust-state-can-silently-block-project-plugins</id>
-    <link href="https://framework.boucle.sh/limitations.html#project-trust-state-can-silently-block-project-plugins"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported Claude Code project entry reached the contradictory state `hasCompletedProjectOnboarding: true`, `projectOnboardingSeenCount: 0`, and `hasTrustDialogAccepted: false` in `~/.claude.json`. Because the trust dialog was never shown again, project-scope plugins under `./.claude/skills/*` silently failed to load and `.mcp.json` approvals were re-prompted on every launch despite being written to project settings.</summary>
-    <category term="MCP &amp; plugin issues"/>
   </entry>
 </feed>
