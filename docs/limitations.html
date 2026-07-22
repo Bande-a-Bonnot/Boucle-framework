@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1257</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-22.</span></p>
+        <p class="subtitle"><span id="total-count">1259</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-22.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -13781,9 +13781,33 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid running many long-lived Claude Code OAuth sessions under one macOS user when reliable continuity matters. Reduce concurrent instances around token-expiry windows, keep durable work checkpoints outside the session, and treat unexpected `/login` prompts during parallel work as a possible shared-credential race. If automation needs concurrency, isolate credentials per user or environment where possible, and verify that failed refreshes do not overwrite newer stored credentials before resuming unattended work.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80085" target="_blank">#80085</a></div>
         </div>
-        <div class="kl-entry" data-category="Data integrity" data-issues="80069" id="tool-results-can-return-fabricated-file-and-command-output" data-severity="critical" data-status="open">
+        <div class="kl-entry" data-category="Auth &amp; accounts" data-issues="80091" id="channel-host-mode-can-ignore-valid-oauth-env-token" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1256</span>
+                <span class="kl-cat">Auth &amp; accounts</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Channel host mode can ignore a valid OAuth env token</h3>
+            <p>A reported macOS Claude Code 2.1.216 and 2.1.217 setup running `claude --channels` as a long-lived headless channel host under launchd used the stored Keychain OAuth session even when `CLAUDE_CODE_OAUTH_TOKEN` was present and independently verified as valid. Interactive mode and `claude -p` honored the env token in the same environment, but channel-host mode sent the expired Keychain access token and every command failed with 401 while the process, socket, and gateway remained healthy. Deleting the `Claude Code-credentials` Keychain entry made the host use the env token again.</p>
+                        <!-- workaround:channel-host-mode-can-ignore-valid-oauth-env-token -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For unattended channel hosts, do not assume documented OAuth precedence matches interactive or `-p` behavior. Run a same-mode smoke command after startup and after token refresh windows, and treat 401s from an otherwise healthy channel host as possible stored-credential precedence failures. If a valid `CLAUDE_CODE_OAUTH_TOKEN` is being ignored, remove or isolate stale stored OAuth credentials before restarting the host, and be aware that `claude setup-token` may rewrite the Keychain entry while minting an env token.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80091" target="_blank">#80091</a></div>
+        </div>
+        <div class="kl-entry" data-category="VS Code extension" data-issues="80087" id="vscode-terminal-launch-can-miss-cli-with-non-ascii-windows-profile" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1257</span>
+                <span class="kl-cat">VS Code extension</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>VS Code terminal launch can miss the CLI with non-ASCII Windows profiles</h3>
+            <p>A reported Windows 11 Claude Code for VS Code regression began in extension v2.1.214 and persisted through v2.1.217: with `claudeCode.useTerminal: true`, the extension reported `Could not locate the Claude CLI on PATH` even though `Get-Command claude` and `where.exe claude` resolved the standalone installer binary correctly. The affected account used a non-ASCII profile path, and the CLI binary itself continued to work, narrowing the issue to the extension&#x27;s terminal-launch CLI detection path rather than the Claude CLI installation. The latest webview panel path with `claudeCode.useTerminal: false` still worked.</p>
+                        <!-- workaround:vscode-terminal-launch-can-miss-cli-with-non-ascii-windows-profile -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If the VS Code extension reports a PATH false positive on Windows while the CLI works from terminals, first disable `claudeCode.useTerminal` and use the default webview panel mode. If terminal launch is required, pin the extension to v2.1.212 until the detection regression is fixed. Keep PATH validation separate from the extension error by checking `Get-Command claude`, `where.exe claude`, and the extension mode that is actually failing.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80087" target="_blank">#80087</a></div>
+        </div>
+        <div class="kl-entry" data-category="Data integrity" data-issues="80069" id="tool-results-can-return-fabricated-file-and-command-output" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1258</span>
                 <span class="kl-cat">Data integrity</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
             </div>
@@ -13795,7 +13819,7 @@
         </div>
         <div class="kl-entry" data-category="UX &amp; display" data-issues="80070" id="askuserquestion-preview-layout-can-hide-custom-other-input" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1257</span>
+                <span class="kl-num">#1259</span>
                 <span class="kl-cat">UX &amp; display</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
