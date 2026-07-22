@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1228,
+  "count": 1232,
   "categories": {
     "Hook behavior & events": 184,
     "Permission system": 127,
     "Hook bypass & evasion": 100,
-    "MCP & plugin issues": 61,
+    "MCP & plugin issues": 62,
     "Subagent & spawned agents": 51,
     "Desktop & IDE integration": 41,
     "Platform & compatibility": 27,
@@ -15,8 +15,8 @@
     "Configuration behavior": 22,
     "Tool behavior": 20,
     "Agents & subagents": 19,
-    "Performance & cost": 18,
-    "MCP & integrations": 14,
+    "Performance & cost": 19,
+    "MCP & integrations": 15,
     "Security & trust boundaries": 14,
     "Data integrity": 13,
     "MCP integration": 13,
@@ -136,6 +136,7 @@
     "Permissions & sandbox": 1,
     "Permissions & security": 1,
     "permissions/safety": 1,
+    "Plan mode": 1,
     "platform-macos": 1,
     "Platform-specific": 1,
     "platform-windows": 1,
@@ -180,8 +181,8 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 96,
-    "HIGH": 634,
+    "CRITICAL": 97,
+    "HIGH": 637,
     "LOW": 105,
     "MEDIUM": 393
   },
@@ -15764,30 +15765,82 @@
       "workaround": "After an unclean shutdown, check the underlying `~/.claude/projects/**/*.jsonl` transcripts before assuming a missing Desktop sidebar entry is lost. Back up transcripts for important work, and if local session-state files are zero-filled or unparseable, preserve them with event logs for support while reconstructing task state from the transcript.",
       "status": "open",
       "date_added": "2026-07-21"
+    },
+    {
+      "id": "project-trust-state-can-silently-block-project-plugins",
+      "title": "Project trust state can silently block project plugins",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79973"
+      ],
+      "description": "A reported Claude Code project entry reached the contradictory state `hasCompletedProjectOnboarding: true`, `projectOnboardingSeenCount: 0`, and `hasTrustDialogAccepted: false` in `~/.claude.json`. Because the trust dialog was never shown again, project-scope plugins under `./.claude/skills/*` silently failed to load and `.mcp.json` approvals were re-prompted on every launch despite being written to project settings.",
+      "workaround": "When project plugins or MCP approvals appear to ignore saved state, inspect the project's trust fields in `~/.claude.json`. Quit all Claude sessions before editing because clients can rewrite the file on exit, then reset the contradictory onboarding state or explicitly mark the trusted project only after confirming the path is expected.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "plan-review-widget-can-show-stale-plan-content",
+      "title": "Plan-review widget can show stale plan content",
+      "category": "Plan mode",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79972"
+      ],
+      "description": "A reported ExitPlanMode flow wrote and verified the current plan file on disk, but the user-facing plan-review widget displayed older unrelated plan content. Repeating ExitPlanMode showed a different stale plan, and a full application restart did not clear the bad UI state, so the user could not trust that the reviewed plan matched the actual work plan.",
+      "workaround": "For high-stakes plan approvals, have the assistant paste the current plan text directly in chat and confirm that it matches the plan file before approval. Treat the plan-review widget as advisory if multiple plan files exist in the session directory or if the displayed title does not match the freshly written plan.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "transient-mcp-startup-tools-can-poison-session-history",
+      "title": "Transient MCP startup tools can poison session history",
+      "category": "MCP & integrations",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79970"
+      ],
+      "description": "A reported MCP-heavy Claude Code session became permanently unusable after an early deferred-tool search captured the transient startup tool `WaitForMcpServers` inside a persisted `tool_search_tool_result`. Once MCP startup finished and that tool was no longer advertised, every later request revalidated the transcript, found the dangling tool reference, and failed with `400 Tool reference 'WaitForMcpServers' not found in available tools`.",
+      "workaround": "Avoid triggering broad tool searches during MCP startup when servers are still connecting. If a session is already poisoned, close it and remove only the stale `WaitForMcpServers` tool_reference from the affected transcript JSONL before resuming, or use `/clear` if losing context is acceptable.",
+      "status": "open",
+      "date_added": "2026-07-21"
+    },
+    {
+      "id": "deep-research-can-lose-progress-at-spend-limit",
+      "title": "Deep research can lose progress at spend limit",
+      "category": "Performance & cost",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79958"
+      ],
+      "description": "A reported deep-research Workflow fanned out to many search and verification subagents, hit the monthly spend limit, and produced no final deliverable. After the limit reset, rerunning the same research started from zero rather than resuming, because useful verified claims were only left in the session transcript and the resume cache did not survive as durable checkpointed run state.",
+      "workaround": "Before launching broad deep-research runs, set a narrow scope and ask for incremental notes or files after each verified batch. If a run is cut off by quota, mine the transcript for partial findings before restarting, and prefer smaller staged research tasks until cross-session resume and durable checkpoints are available.",
+      "status": "open",
+      "date_added": "2026-07-21"
     }
   ],
   "status_summary": {
-    "open": 1214,
+    "open": 1218,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 96,
-    "high": 634,
+    "critical": 97,
+    "high": 637,
     "low": 105,
     "medium": 393
   },
   "lastUpdated": "2026-07-21",
   "stats": {
-    "total": 1228,
-    "critical": 96,
-    "high": 634,
+    "total": 1232,
+    "critical": 97,
+    "high": 637,
     "medium": 393,
     "low": 105,
-    "open": 1214,
+    "open": 1218,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-21",
-  "total": 1228
+  "total": 1232
 }
