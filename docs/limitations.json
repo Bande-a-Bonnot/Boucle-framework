@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1274,
+  "count": 1276,
   "categories": {
     "Hook behavior & events": 185,
     "Permission system": 127,
@@ -17,7 +17,7 @@
     "Tool behavior": 20,
     "Agents & subagents": 19,
     "MCP & integrations": 18,
-    "Sandbox & permissions": 15,
+    "Sandbox & permissions": 17,
     "Security & trust boundaries": 15,
     "Data integrity": 14,
     "VS Code extension": 14,
@@ -183,7 +183,7 @@
   },
   "severity_counts": {
     "CRITICAL": 101,
-    "HIGH": 663,
+    "HIGH": 665,
     "LOW": 105,
     "MEDIUM": 405
   },
@@ -16281,6 +16281,32 @@
       "date_added": "2026-07-22"
     },
     {
+      "id": "wsl-env-scrub-can-force-broken-bwrap-managed-settings-bind",
+      "title": "WSL env scrub can force a broken bwrap managed-settings bind",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80212"
+      ],
+      "description": "A reported WSL2 Claude Code 2.1.187 through 2.1.217 setup found that setting `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` forced the bubblewrap filesystem sandbox on for every Bash call even though no user, project, or managed setting enabled sandboxing. The sandbox then tried to protect the Windows managed-settings path under `/mnt/c/Program Files/ClaudeCode`, which did not exist because Claude Code was installed only inside WSL. Bubblewrap attempted to create the missing Windows-side directory and every Bash call failed before execution with a permission error.",
+      "workaround": "On WSL, test one harmless Bash command after enabling `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` before relying on credential scrubbing in a real workflow. If every Bash call fails with a `/mnt/c/Program Files/ClaudeCode` bwrap mkdir error, either unset the scrub variable and accept the reduced credential protection, or create `C:\\Program Files\\ClaudeCode` from an elevated Windows shell so the sandbox setup no longer tries to make it from WSL. Re-check that Bash still runs after Claude Code updates because the failure is in launch-time sandbox assembly.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "sandbox-allowread-directory-can-be-shadowed-by-later-parent-tmpfs",
+      "title": "Sandbox allowRead directories can be shadowed by later parent tmpfs mounts",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80214"
+      ],
+      "description": "A reported Linux Claude Code 2.1.209 sandbox configuration used `denyRead` on a parent directory and `allowRead` on a more specific child directory, matching the documented expectation that the more specific path should win. The generated bubblewrap arguments bound the allowed child directory first, then mounted a tmpfs over the denied parent path later, shadowing the child bind. Only a few individually re-bound files survived, so most files under the allowed directory appeared missing inside sandboxed Bash despite existing on the real filesystem.",
+      "workaround": "Do not assume an overlapping `allowRead` directory has restored the full tree until a sandboxed Bash probe lists files below it. Avoid broad parent `denyRead` rules that require child directory reopenings for critical work, or grant access at a boundary that does not need a later parent tmpfs overlay. For controlled environments, inspect the generated bwrap mount order during a short command and treat missing allowed directories as a sandbox assembly failure rather than a missing-file condition.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
       "id": "vscode-chat-links-can-ignore-secondary-workspace-roots",
       "title": "VS Code chat links can ignore secondary workspace roots",
       "category": "VS Code extension",
@@ -16373,27 +16399,27 @@
     }
   ],
   "status_summary": {
-    "open": 1260,
+    "open": 1262,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 101,
-    "high": 663,
+    "high": 665,
     "low": 105,
     "medium": 405
   },
   "lastUpdated": "2026-07-22",
   "stats": {
-    "total": 1274,
+    "total": 1276,
     "critical": 101,
-    "high": 663,
+    "high": 665,
     "medium": 405,
     "low": 105,
-    "open": 1260,
+    "open": 1262,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-22",
-  "total": 1274
+  "total": 1276
 }
