@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1272</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-22.</span></p>
+        <p class="subtitle"><span id="total-count">1274</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-22.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -13984,6 +13984,30 @@
                         <!-- workaround:session-docs-can-omit-transcript-persistence-warning-recovery -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat transcript-persistence warnings as session-continuity risks, not cosmetic output. Check disk space and write permissions for the transcript directory, inspect inherited persistence-related environment variables such as `CLAUDE_CODE_SKIP_PROMPT_HISTORY` and `CLAUDE_CODE_CHILD_SESSION`, and only rely on resume or prompt history after confirming transcript writes have resumed.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80079" target="_blank">#80079</a></div>
+        </div>
+        <div class="kl-entry" data-category="Context &amp; memory" data-issues="80190" id="skill-shared-docs-can-load-large-unrelated-context" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1273</span>
+                <span class="kl-cat">Context &amp; memory</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Skill shared docs can load large unrelated context</h3>
+            <p>A reported Claude Code 2.1.212 `claude-api` skill invocation correctly applied language-specific progressive disclosure for a Python project, but then unconditionally loaded all files under the skill&#x27;s `shared/` directory. For a narrow Bedrock-client question, the reporter saw roughly 84 KB of Python docs plus about 468 KB of shared docs, including model-migration and managed-agents references unrelated to the query, where the apparently relevant AWS-specific shared docs were closer to 8 KB.</p>
+                        <!-- workaround:skill-shared-docs-can-load-large-unrelated-context -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat skill auto-loading as a context-budget risk even when language-specific disclosure works. For narrow API questions, ask the assistant which skill references it loaded, restart with optional skills disabled if unrelated shared docs dominate context, and split large shared skill references behind topic-specific routing when authoring internal skills.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80190" target="_blank">#80190</a></div>
+        </div>
+        <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="80191" id="connection-probes-can-use-unidentified-user-agents" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1274</span>
+                <span class="kl-cat">Security &amp; trust boundaries</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Connection probes can use unidentified user agents</h3>
+            <p>A reported enterprise gateway setup saw Claude Code 2.1.217 launch-time probing or pre-flight traffic with user-agent strings such as `Dmi/JS 0.94.0`, `MTi/JS 0.94.0`, and `NNi/JS 0.94.0` instead of the ordinary `claude-cli/...` identifier. The reporter had to correlate the traffic manually with Claude Code startup, which makes proxy logs, client allowlists, and traffic attribution harder to interpret.</p>
+                        <!-- workaround:connection-probes-can-use-unidentified-user-agents -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When enforcing enterprise proxy or gateway policy for Claude Code, do not assume every Claude-originated request uses the normal `claude-cli` user agent. Capture a startup trace through the same proxy path, document any unidentified probing clients seen for the installed version, and avoid hard-blocking unknown JavaScript runtime user agents until you have separated Claude Code probes from unrelated traffic.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80191" target="_blank">#80191</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
