@@ -76,13 +76,31 @@ unset IS_DEMO CLAUDE_CODE_SIMPLE
 test ! -f ~/.claude/settings.json || python3 -m json.tool ~/.claude/settings.json >/dev/null
 test -f .claude/settings.json && cp .claude/settings.json .claude/settings.json.bak
 test ! -f .claude/settings.json || python3 -m json.tool .claude/settings.json >/dev/null
-curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- all
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- doctor
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- recommended
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
+
+On native Windows:
+
+```powershell
+Remove-Item Env:IS_DEMO -ErrorAction SilentlyContinue
+Remove-Item Env:CLAUDE_CODE_SIMPLE -ErrorAction SilentlyContinue
+if (Test-Path "$HOME/.claude/settings.json") { Get-Content "$HOME/.claude/settings.json" | ConvertFrom-Json | Out-Null }
+if (Test-Path ".claude/settings.json") { Get-Content ".claude/settings.json" | ConvertFrom-Json | Out-Null }
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+```
+
+Use `all` instead of `recommended` only when you want the full standalone hook
+suite. The recommended set is the smallest default safety boundary:
+`bash-guard`, `git-safe`, and `file-guard`.
 
 `install.sh backup` protects the user-level `~/.claude/settings.json` only. If this project has repo-local settings, keep the `.claude/settings.json.bak` copy until the update or hook test is done.
 
 If either `json.tool` command fails, remove comments or trailing commas from that settings file before installing hooks. A broken project `.claude/settings.json` can change hook behavior even when the user-level settings file is valid. If `--verify` still reports `FAIL-OPEN`, inspect that hook before trusting it.
+For a symptom-by-symptom repair order, use the [safety summary triage guide](TRIAGE.md).
 
 ## Residual warnings
 

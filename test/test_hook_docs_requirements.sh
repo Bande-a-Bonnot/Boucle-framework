@@ -45,6 +45,12 @@ docs = {
         "## Requirements",
         "Bash 4+",
         "Python 3 (for JSON parsing of settings.json)",
+        "install.sh | bash -s -- doctor",
+        "install.sh | bash -s -- recommended",
+        "install.ps1) } doctor",
+        "install.ps1) } recommended",
+        "Use `all` instead of `recommended` only when you want the full standalone hook",
+        "safety summary triage guide",
     ],
     repo / "tools" / "safety-check" / "check.sh": [
         "No hook installation required for the audit",
