@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1242,
+  "count": 1244,
   "categories": {
     "Hook behavior & events": 184,
     "Permission system": 127,
@@ -21,9 +21,9 @@
     "Security & trust boundaries": 14,
     "Data integrity": 13,
     "MCP integration": 13,
+    "Remote & cloud": 13,
     "Core & session management": 12,
     "Cowork & remote": 12,
-    "Remote & cloud": 12,
     "Plugin & channel system": 11,
     "Worktree": 11,
     "Bash & shell execution": 10,
@@ -50,6 +50,7 @@
     "MCP & plugins": 4,
     "Memory & context": 4,
     "Model behavior & instructions": 4,
+    "Performance & resources": 4,
     "permissions": 4,
     "sandbox": 4,
     "Telemetry & insights": 4,
@@ -62,7 +63,6 @@
     "Model routing & identity": 3,
     "model-behavior": 3,
     "Performance & resource usage": 3,
-    "Performance & resources": 3,
     "Remote": 3,
     "Sandbox": 3,
     "Security": 3,
@@ -183,7 +183,7 @@
   },
   "severity_counts": {
     "CRITICAL": 97,
-    "HIGH": 645,
+    "HIGH": 647,
     "LOW": 105,
     "MEDIUM": 395
   },
@@ -15828,10 +15828,12 @@
       "issues": [
         "https://github.com/anthropics/claude-code/issues/79962",
         "https://github.com/anthropics/claude-code/issues/79986",
-        "https://github.com/anthropics/claude-code/issues/80002"
+        "https://github.com/anthropics/claude-code/issues/80002",
+        "https://github.com/anthropics/claude-code/issues/80012",
+        "https://github.com/anthropics/claude-code/issues/80026"
       ],
-      "description": "Reported Claude Desktop 1.24012.1 sessions on macOS and Windows initialized local MCP servers and listed tools, but later dropped `tools/call` before the request reached the server. One macOS report captured paired `localMcpBridge` announcements and paired `remote-tools-device` WebSocket connections for the same device ID from chat, Cowork, and Claude-Code-Desktop surfaces, suggesting competing bridge owners can evict each other and leave file-tool calls with no live route. A later first-party Directory-installed Filesystem extension report reproduced the same no-dispatch symptom after a full app wipe, so the failure is not limited to manually configured stdio servers.",
-      "workaround": "When Desktop file or local-MCP tools fail after a healthy handshake, compare Desktop logs with the MCP server log before changing the server. Look for duplicated bridge announcements or missing `tools/call` lines, try Claude Code CLI as a control path, and preserve redacted `main.log` excerpts around launch and the failing call.",
+      "description": "Reported Claude Desktop 1.24012.1 sessions on macOS and Windows initialized local MCP servers and listed tools, but later dropped `tools/call` before the request reached the server or lost completed results on the way back to the client. One macOS report captured paired `localMcpBridge` announcements, paired `remote-tools-device` WebSocket connections, and thousands of `oncalltool handler replaced` warnings during multi-conversation use, suggesting competing bridge owners can evict each other and orphan in-flight calls. Later first-party Directory Filesystem extension reports reproduced the same no-dispatch symptom after full app wipes and fresh chats, including a Windows case where Chat mode failed while Cowork and embedded Claude Code MCP access still worked.",
+      "workaround": "When Desktop file or local-MCP tools fail after a healthy handshake, compare Desktop logs with the MCP server log before changing the server. Look for duplicated bridge announcements, `oncalltool handler replaced` storms, or missing `tools/call` lines, try Claude Code CLI or Cowork as a control path, and preserve redacted `main.log` excerpts around launch and the failing call. If writes can be retried, add idempotency keys or verify-before-retry checks so a lost response does not create duplicate side effects.",
       "status": "open",
       "date_added": "2026-07-22"
     },
@@ -15951,30 +15953,56 @@
       "workaround": "If all Bash calls fail with `bwrap: Can't mkdir <ancestor>/.claude`, move the workspace under a fully writable ancestor chain, pin Claude Code to a known-good version, or use a carefully audited `bwrap` PATH shim that drops impossible deny binds while preserving other sandbox arguments. Test a harmless Bash command after updates before trusting unattended Linux agents under `/opt`, `/home`, or other root-owned ancestors.",
       "status": "open",
       "date_added": "2026-07-22"
+    },
+    {
+      "id": "linux-daemon-self-update-can-replace-native-binary-with-npm-stub",
+      "title": "Linux daemon self-update can replace the native binary with the npm stub",
+      "category": "Performance & resources",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80021"
+      ],
+      "description": "A reported Linux Claude Code 2.1.215 through 2.1.217 background supervisor noticed the watched global executable path changed, then tried to self-restart from `/usr/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe`. Because npm 12 policy had blocked the package `postinstall` script, that path contained the small ASCII \"native binary not installed\" npm stub even though the platform optional package was present. The daemon spawn path failed with raw `ENOEXEC` before the stub could print remediation text, leaving daemon control unreachable until a manual reinstall allowed scripts and restored the ELF binary.",
+      "workaround": "On Linux global npm installs, check for npm lifecycle-script policy warnings during Claude Code updates and verify `file $(command -v claude)` or the watched `bin/claude.exe` path still points to a native executable. If updates leave an ASCII stub, allow scripts for `@anthropic-ai/claude-code`, reinstall with optional dependencies and foreground scripts, then restart or check the daemon status. For unattended daemons, monitor update logs for `ENOEXEC` and treat a changed executable mtime as unsafe until the target binary type is verified.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "cloud-remote-triggers-can-acknowledge-dispatch-without-starting-a-session",
+      "title": "Cloud RemoteTriggers can acknowledge dispatch without starting a session",
+      "category": "Remote & cloud",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80024"
+      ],
+      "description": "A reported Claude Code Remote Control setup with 31 scheduled cloud routines saw triggers fire server-side and advance `last_fired_at`, while no paired-Mac session started, no remote-control log line appeared, and no transcript JSONL was created. On 2026-07-22, 7 of 18 due cloud routines were silently dropped on an awake wired Mac, while local scheduled-tasks on the same machine ran 4 of 4 in the same window. Manual `/run` calls could also return HTTP 200 with a `session_id` but still produce no local session, making the failure an acknowledged dispatch loss rather than a normal routine hang.",
+      "workaround": "For critical RemoteTriggers, reconcile expected fire times against actual transcript creation or another durable success marker instead of trusting `last_fired_at`. Keep important low-frequency routines on local scheduled-tasks when possible, because local catch-up-on-wake can recover missed work while a dropped cloud dispatch may be invisible. When filing evidence, include trigger ids, cloud fire timestamps, bridge uptime, remote-control logs, transcript birth times, and a local scheduled-task control from the same machine.",
+      "status": "open",
+      "date_added": "2026-07-22"
     }
   ],
   "status_summary": {
-    "open": 1228,
+    "open": 1230,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 97,
-    "high": 645,
+    "high": 647,
     "low": 105,
     "medium": 395
   },
   "lastUpdated": "2026-07-22",
   "stats": {
-    "total": 1242,
+    "total": 1244,
     "critical": 97,
-    "high": 645,
+    "high": 647,
     "medium": 395,
     "low": 105,
-    "open": 1228,
+    "open": 1230,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-22",
-  "total": 1242
+  "total": 1244
 }
