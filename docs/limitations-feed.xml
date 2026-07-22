@@ -7,6 +7,30 @@
   <updated>2026-07-22T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Nested-subagent docs can overstate default availability</title>
+    <id>https://framework.boucle.sh/limitations.html#nested-subagent-docs-can-overstate-default-availability</id>
+    <link href="https://framework.boucle.sh/limitations.html#nested-subagent-docs-can-overstate-default-availability"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A Claude Code 2.1.217 documentation report says the subagent docs still describe nested subagent spawning as generally available with a fixed, non-configurable depth limit, while the current release disables nested spawning by default and introduces `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` to configure it. The mismatch can lead users to design workflows that expect subagents to receive the Agent tool by default, only to find nested fan-out unavailable at runtime.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Subagent docs omit the concurrent-running cap</title>
+    <id>https://framework.boucle.sh/limitations.html#subagent-docs-omit-concurrent-running-cap</id>
+    <link href="https://framework.boucle.sh/limitations.html#subagent-docs-omit-concurrent-running-cap"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A Claude Code 2.1.217 documentation report says the subagent docs describe the cumulative per-session spawn limit and `CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION`, but omit a separate concurrently running subagent cap with default 20 and override `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`. Without that distinction, users can misread a fan-out pause or denial as reaching the 200-subagent lifetime limit, even when the actual blocker is the lower concurrent-running limit.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Idle CLI sessions can increase usage without prompts</title>
+    <id>https://framework.boucle.sh/limitations.html#idle-cli-sessions-can-increase-usage-without-prompts</id>
+    <link href="https://framework.boucle.sh/limitations.html#idle-cli-sessions-can-increase-usage-without-prompts"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported Ubuntu Claude Code 2.1.217 terminal-login session showed the usage percentage increasing every few minutes while the CLI was idle, with no prompts sent and no user action. The reporter ruled out other active devices, scheduled routines, running background tasks, dashboard catch-up, and non-essential model calls by checking the relevant Claude Code surfaces and setting `DISABLE_NON_ESSENTIAL_MODEL_CALLS=1`. The behavior did not reproduce when staying idle in the web app, narrowing the report to the terminal login path.</summary>
+    <category term="Performance &amp; cost"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] AskUserQuestion preview layout can hide custom Other input</title>
     <id>https://framework.boucle.sh/limitations.html#askuserquestion-preview-layout-can-hide-custom-other-input</id>
     <link href="https://framework.boucle.sh/limitations.html#askuserquestion-preview-layout-can-hide-custom-other-input"/>
@@ -141,29 +165,5 @@
     <updated>2026-07-22T00:00:00Z</updated>
     <summary>A reported Linux Claude Code 2.1.215 through 2.1.217 background supervisor noticed the watched global executable path changed, then tried to self-restart from `/usr/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe`. Because npm 12 policy had blocked the package `postinstall` script, that path contained the small ASCII &quot;native binary not installed&quot; npm stub even though the platform optional package was present. The daemon spawn path failed with raw `ENOEXEC` before the stub could print remediation text, leaving daemon control unreachable until a manual reinstall allowed scripts and restored the ELF binary.</summary>
     <category term="Performance &amp; resources"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Non-root Linux sandbox can fail under root-owned ancestors</title>
-    <id>https://framework.boucle.sh/limitations.html#non-root-linux-sandbox-can-fail-under-root-owned-ancestors</id>
-    <link href="https://framework.boucle.sh/limitations.html#non-root-linux-sandbox-can-fail-under-root-owned-ancestors"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 and 2.1.217 regression on Linux non-root installs caused every sandboxed Bash tool call to fail before the user command ran when the project lived under a root-owned ancestor such as `/opt`. The bwrap setup tried to create deny-write mountpoints like `/opt/.claude` and `/opt/.mcp.json`; the non-root process could not create them, so sandbox startup aborted with `bwrap: Can&#x27;t mkdir /opt/.claude: Permission denied`.</summary>
-    <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Resumed worktree sessions can commit to the root branch</title>
-    <id>https://framework.boucle.sh/limitations.html#resumed-worktree-sessions-can-commit-to-root-branch</id>
-    <link href="https://framework.boucle.sh/limitations.html#resumed-worktree-sessions-can-commit-to-root-branch"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported Windows Claude Code 2.1.217 session started inside a linked git worktree later resumed as though it were running in the root worktree. Git commits from the resumed session landed on the root worktree&#x27;s checked-out branch instead of the feature branch where the session began, silently stranding unrelated work on the wrong branch.</summary>
-    <category term="Worktree"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Path-scoped rules only load through the Read tool</title>
-    <id>https://framework.boucle.sh/limitations.html#path-scoped-rules-only-load-through-read-tool</id>
-    <link href="https://framework.boucle.sh/limitations.html#path-scoped-rules-only-load-through-read-tool"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported `.claude/rules/*.md` file with `paths:` frontmatter loaded when the matching file was opened with the Read tool, but not when the agent touched the same path through Bash commands such as `git show`, `grep`, or `cat`, and not when creating a matching file with Write. Review agents and subagents often inspect diffs through Bash or forge CLIs, so path-scoped conventions can be silently absent exactly when file-specific guidance is expected.</summary>
-    <category term="Context &amp; memory"/>
   </entry>
 </feed>
