@@ -66,6 +66,14 @@ docs = {
         "platform can prefix it with the hook command path",
         "safe support evidence guide",
     ],
+    repo / "tools" / "enforce" / "READ_ONLY_AUDIT.md": [
+        "cp .claude/settings.json .claude/settings.json.pre-read-only.bak",
+        "snapshots the project-level `.claude/settings.json` before",
+        "remove the `enforce-pretooluse.sh` hook from Claude Code's",
+        "Expect the strict audit to exit non-zero",
+        "policy is no longer covered by",
+        "zero `FAIL-OPEN` results for any remaining hooks",
+    ],
     repo / "docs" / "index.html": [
         "bash, python3, and jq",
         "No hook installation required for the audit",
