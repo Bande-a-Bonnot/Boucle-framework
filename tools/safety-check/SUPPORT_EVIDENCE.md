@@ -112,5 +112,6 @@ What changed recently:
 ```
 
 For a full repair path before asking for help, start with the
-[safety-check quickstart](QUICKSTART.md). For failures after Claude Code
-updates, use the [update checklist](UPDATE_CHECKLIST.md).
+[safety-check quickstart](QUICKSTART.md). To decide which summary item to fix
+first, use the [safety summary triage guide](TRIAGE.md). For failures after
+Claude Code updates, use the [update checklist](UPDATE_CHECKLIST.md).
