@@ -19,6 +19,12 @@ snippets = [
     "The Ubuntu workflow above does not install",
     "install.ps1 verify",
     "Git Bash, WSL, or a runner with bash",
+    "Do not add `install.sh recommended` to a repository CI job",
+    "The installer writes user-level hooks under the CI",
+    "installer smoke test",
+    "does not prove the repository's checked-in",
+    "run `--verify --strict` in the same job and",
+    "do not use it as evidence that repo-local project hooks are present",
 ]
 
 missing = [snippet for snippet in snippets if snippet not in text]
