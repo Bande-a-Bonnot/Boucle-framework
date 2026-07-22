@@ -35,6 +35,12 @@ CI can only verify hook settings that are present in the checked-out repository
 or installed in the CI user's home directory. It cannot prove every developer's
 global `~/.claude/settings.json` is safe.
 
+Do not add `install.sh recommended` to a repository CI job and treat that as
+project policy verification. The installer writes user-level hooks under the CI
+runner's temporary `~/.claude` directory, not repo-local hooks. That is useful
+for an installer smoke test, but it does not prove the repository's checked-in
+`.claude/settings.json` or hook scripts will protect developers.
+
 Use this when your repository includes `.claude/settings.json` with direct hook
 script paths, or interpreter-wrapped paths such as `bash ./hooks/check.sh` or
 `python ./hooks/check.py`:
@@ -110,6 +116,9 @@ blocking file writes or shell commands, keep at least one verifiable
 - Install hooks before running the strict workstation check:
   `curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- recommended`
 - Commit repo-local hook scripts when CI checks `.claude/settings.json`.
+- If CI intentionally installs hooks with `install.sh recommended`, keep that
+  as an installer smoke test and run `--verify --strict` in the same job and
+  `HOME`; do not use it as evidence that repo-local project hooks are present.
 - Run repository checks from the directory that owns `.claude/settings.json`.
 - Avoid shell snippets that cannot be mapped to a script path. Prefer
   `bash ./hooks/name.sh` or `python ./hooks/name.py`.
