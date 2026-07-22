@@ -7,6 +7,22 @@
   <updated>2026-07-22T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Non-root Linux sandbox can fail under root-owned ancestors</title>
+    <id>https://framework.boucle.sh/limitations.html#non-root-linux-sandbox-can-fail-under-root-owned-ancestors</id>
+    <link href="https://framework.boucle.sh/limitations.html#non-root-linux-sandbox-can-fail-under-root-owned-ancestors"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 and 2.1.217 regression on Linux non-root installs caused every sandboxed Bash tool call to fail before the user command ran when the project lived under a root-owned ancestor such as `/opt`. The bwrap setup tried to create deny-write mountpoints like `/opt/.claude` and `/opt/.mcp.json`; the non-root process could not create them, so sandbox startup aborted with `bwrap: Can&#x27;t mkdir /opt/.claude: Permission denied`.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Resumed worktree sessions can commit to the root branch</title>
+    <id>https://framework.boucle.sh/limitations.html#resumed-worktree-sessions-can-commit-to-root-branch</id>
+    <link href="https://framework.boucle.sh/limitations.html#resumed-worktree-sessions-can-commit-to-root-branch"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code 2.1.217 session started inside a linked git worktree later resumed as though it were running in the root worktree. Git commits from the resumed session landed on the root worktree&#x27;s checked-out branch instead of the feature branch where the session began, silently stranding unrelated work on the wrong branch.</summary>
+    <category term="Worktree"/>
+  </entry>
+  <entry>
     <title>[HIGH] Path-scoped rules only load through the Read tool</title>
     <id>https://framework.boucle.sh/limitations.html#path-scoped-rules-only-load-through-read-tool</id>
     <link href="https://framework.boucle.sh/limitations.html#path-scoped-rules-only-load-through-read-tool"/>
@@ -149,21 +165,5 @@
     <updated>2026-07-22T00:00:00Z</updated>
     <summary>A reported git-backed marketplace plugin gained real upstream commits while its `plugin.json` version stayed unchanged. `claude plugin update` and `/reload-plugins` compared only the declared version string, reported the plugin was already latest, left the runtime cache byte-identical, and did not update the recorded `gitCommitSha` even though the marketplace clone itself had fetched the newer source.</summary>
     <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Config editing can ignore CLAUDE_CONFIG_DIR</title>
-    <id>https://framework.boucle.sh/limitations.html#config-editing-can-ignore-claude-config-dir</id>
-    <link href="https://framework.boucle.sh/limitations.html#config-editing-can-ignore-claude-config-dir"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported macOS setup with `CLAUDE_CONFIG_DIR` pointing at `~/.config/claude` found that Claude Code&#x27;s config-editing path, including update-config skill or agent-driven settings edits, wrote `~/.claude/settings.json` instead. The main CLI read path honored the alternate config directory, so the edit appeared to succeed but landed in a file that the running profile did not load.</summary>
-    <category term="Configuration behavior"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Workflow-internal agents can bypass blocking Agent hooks</title>
-    <id>https://framework.boucle.sh/limitations.html#workflow-internal-agents-can-bypass-blocking-agent-hooks</id>
-    <link href="https://framework.boucle.sh/limitations.html#workflow-internal-agents-can-bypass-blocking-agent-hooks"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.216 Workflow run on Linux/WSL2 triggered a blocking PreToolUse hook for the outer Workflow call, but the Workflow runtime&#x27;s internal `agent()` calls did not emit additional blocking Agent PreToolUse events before allocation. Non-blocking SubagentStart events and transcript counts could only observe the fan-out after agents had already started, so a single admitted Workflow could exceed local agent, cost, or concurrency caps.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>

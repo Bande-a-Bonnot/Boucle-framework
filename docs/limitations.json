@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1240,
+  "count": 1242,
   "categories": {
     "Hook behavior & events": 184,
     "Permission system": 127,
@@ -17,19 +17,19 @@
     "Agents & subagents": 19,
     "Performance & cost": 19,
     "MCP & integrations": 17,
+    "Sandbox & permissions": 14,
     "Security & trust boundaries": 14,
     "Data integrity": 13,
     "MCP integration": 13,
-    "Sandbox & permissions": 13,
     "Core & session management": 12,
     "Cowork & remote": 12,
     "Remote & cloud": 12,
     "Plugin & channel system": 11,
+    "Worktree": 11,
     "Bash & shell execution": 10,
     "File system & paths": 10,
     "Scheduling & remote triggers": 10,
     "VS Code extension": 10,
-    "Worktree": 10,
     "Auth & accounts": 9,
     "hooks": 9,
     "Model behavior": 9,
@@ -183,7 +183,7 @@
   },
   "severity_counts": {
     "CRITICAL": 97,
-    "HIGH": 643,
+    "HIGH": 645,
     "LOW": 105,
     "MEDIUM": 395
   },
@@ -15330,10 +15330,11 @@
       "category": "Tool availability",
       "severity": "MEDIUM",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/79900"
+        "https://github.com/anthropics/claude-code/issues/79900",
+        "https://github.com/anthropics/claude-code/issues/80015"
       ],
-      "description": "A reported macOS Claude Code 2.1.216 fresh session had no task or todo tools in the tool list, no `/todos` slash command, and no deferred-tool match for `TaskCreate` or `TodoWrite`, even though the installed binary still contained those tool names and no local settings disabled them.",
-      "workaround": "At session start, probe for `TaskCreate`, `TaskUpdate`, `TodoWrite`, and `/todos` before storing workflow state only inside Claude Code. If they are absent, keep an external task list and start a fresh terminal or downgraded session before relying on todo-driven automation.",
+      "description": "Reported Claude Code 2.1.216 and 2.1.217 sessions have missed task and todo tools in the model-facing tool list even though task state or tool names still existed elsewhere. One macOS fresh session had no `TaskCreate`, `TodoWrite`, or `/todos` surface; a later Windows project with `CLAUDE_CODE_TASK_LIST_ID` set still showed tasks in the UI but exposed no `TaskCreate`, `TaskUpdate`, `TaskList`, or `TaskGet` tools to the model.",
+      "workaround": "At session start, probe for `TaskCreate`, `TaskUpdate`, `TaskList`, `TaskGet`, `TodoWrite`, and `/todos` before storing workflow state only inside Claude Code. If they are absent, keep an external task list and start a fresh terminal, downgraded session, or manually verified UI workflow before relying on task-driven automation.",
       "status": "open",
       "date_added": "2026-07-21"
     },
@@ -15924,30 +15925,56 @@
       "workaround": "Treat path-scoped rules as Read-tool-triggered guidance, not universal policy. For reviews, subagents, generated files, or Bash-mediated inspection, inject the relevant rule text explicitly or require a preliminary Read-tool pass over representative matching files, then verify the rule sentinel or expected convention is present in the agent's context.",
       "status": "open",
       "date_added": "2026-07-22"
+    },
+    {
+      "id": "resumed-worktree-sessions-can-commit-to-root-branch",
+      "title": "Resumed worktree sessions can commit to the root branch",
+      "category": "Worktree",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80014"
+      ],
+      "description": "A reported Windows Claude Code 2.1.217 session started inside a linked git worktree later resumed as though it were running in the root worktree. Git commits from the resumed session landed on the root worktree's checked-out branch instead of the feature branch where the session began, silently stranding unrelated work on the wrong branch.",
+      "workaround": "After every resume from a worktree-based session, verify `pwd`, `git rev-parse --show-toplevel`, and `git branch --show-current` before committing or staging. Keep the root worktree on an obvious throwaway branch, audit root-only commits regularly, and recover misplaced work with selective cherry-pick or reset before it accumulates.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "non-root-linux-sandbox-can-fail-under-root-owned-ancestors",
+      "title": "Non-root Linux sandbox can fail under root-owned ancestors",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79997"
+      ],
+      "description": "A reported Claude Code 2.1.216 and 2.1.217 regression on Linux non-root installs caused every sandboxed Bash tool call to fail before the user command ran when the project lived under a root-owned ancestor such as `/opt`. The bwrap setup tried to create deny-write mountpoints like `/opt/.claude` and `/opt/.mcp.json`; the non-root process could not create them, so sandbox startup aborted with `bwrap: Can't mkdir /opt/.claude: Permission denied`.",
+      "workaround": "If all Bash calls fail with `bwrap: Can't mkdir <ancestor>/.claude`, move the workspace under a fully writable ancestor chain, pin Claude Code to a known-good version, or use a carefully audited `bwrap` PATH shim that drops impossible deny binds while preserving other sandbox arguments. Test a harmless Bash command after updates before trusting unattended Linux agents under `/opt`, `/home`, or other root-owned ancestors.",
+      "status": "open",
+      "date_added": "2026-07-22"
     }
   ],
   "status_summary": {
-    "open": 1226,
+    "open": 1228,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 97,
-    "high": 643,
+    "high": 645,
     "low": 105,
     "medium": 395
   },
   "lastUpdated": "2026-07-22",
   "stats": {
-    "total": 1240,
+    "total": 1242,
     "critical": 97,
-    "high": 643,
+    "high": 645,
     "medium": 395,
     "low": 105,
-    "open": 1226,
+    "open": 1228,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-22",
-  "total": 1240
+  "total": 1242
 }
