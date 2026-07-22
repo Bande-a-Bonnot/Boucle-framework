@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1236,
+  "count": 1240,
   "categories": {
     "Hook behavior & events": 184,
     "Permission system": 127,
@@ -11,7 +11,7 @@
     "Platform & compatibility": 27,
     "TUI & display": 27,
     "CLI & terminal": 25,
-    "Context & memory": 23,
+    "Context & memory": 24,
     "Configuration behavior": 22,
     "Tool behavior": 20,
     "Agents & subagents": 19,
@@ -29,12 +29,12 @@
     "File system & paths": 10,
     "Scheduling & remote triggers": 10,
     "VS Code extension": 10,
+    "Worktree": 10,
+    "Auth & accounts": 9,
     "hooks": 9,
     "Model behavior": 9,
     "Scheduled tasks": 9,
-    "Worktree": 9,
     "auth": 8,
-    "Auth & accounts": 8,
     "Configuration & settings": 8,
     "Desktop & platform bugs": 7,
     "Git & repository safety": 7,
@@ -62,6 +62,7 @@
     "Model routing & identity": 3,
     "model-behavior": 3,
     "Performance & resource usage": 3,
+    "Performance & resources": 3,
     "Remote": 3,
     "Sandbox": 3,
     "Security": 3,
@@ -87,7 +88,6 @@
     "Model behavior & compliance": 2,
     "Multi-agent": 2,
     "Performance": 2,
-    "Performance & resources": 2,
     "Permissions and safety": 2,
     "platform": 2,
     "security": 2,
@@ -183,9 +183,9 @@
   },
   "severity_counts": {
     "CRITICAL": 97,
-    "HIGH": 640,
+    "HIGH": 643,
     "LOW": 105,
-    "MEDIUM": 394
+    "MEDIUM": 395
   },
   "entries": [
     {
@@ -15826,9 +15826,10 @@
       "severity": "HIGH",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/79962",
-        "https://github.com/anthropics/claude-code/issues/79986"
+        "https://github.com/anthropics/claude-code/issues/79986",
+        "https://github.com/anthropics/claude-code/issues/80002"
       ],
-      "description": "Reported Claude Desktop 1.24012.1 sessions on macOS and Windows initialized local MCP servers and listed tools, but later dropped `tools/call` before the request reached the server. One macOS report captured paired `localMcpBridge` announcements and paired `remote-tools-device` WebSocket connections for the same device ID from chat, Cowork, and Claude-Code-Desktop surfaces, suggesting competing bridge owners can evict each other and leave file-tool calls with no live route.",
+      "description": "Reported Claude Desktop 1.24012.1 sessions on macOS and Windows initialized local MCP servers and listed tools, but later dropped `tools/call` before the request reached the server. One macOS report captured paired `localMcpBridge` announcements and paired `remote-tools-device` WebSocket connections for the same device ID from chat, Cowork, and Claude-Code-Desktop surfaces, suggesting competing bridge owners can evict each other and leave file-tool calls with no live route. A later first-party Directory-installed Filesystem extension report reproduced the same no-dispatch symptom after a full app wipe, so the failure is not limited to manually configured stdio servers.",
       "workaround": "When Desktop file or local-MCP tools fail after a healthy handshake, compare Desktop logs with the MCP server log before changing the server. Look for duplicated bridge announcements or missing `tools/call` lines, try Claude Code CLI as a control path, and preserve redacted `main.log` excerpts around launch and the failing call.",
       "status": "open",
       "date_added": "2026-07-22"
@@ -15871,30 +15872,82 @@
       "workaround": "Before automating browser tab creation with Claude in Chrome enabled, test the exact launcher path in a disposable browser profile. If bare helper-name tabs appear, disable the extension for that workflow or isolate it in a dedicated profile until the native-host URL handling is fixed.",
       "status": "open",
       "date_added": "2026-07-22"
+    },
+    {
+      "id": "enterworktree-path-can-reject-separate-git-dir-worktrees",
+      "title": "EnterWorktree path can reject separate-git-dir worktrees",
+      "category": "Worktree",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80001"
+      ],
+      "description": "A reported Claude Code 2.1.206 setup rejected `EnterWorktree path=` for a valid linked worktree when the main checkout used `git init --separate-git-dir`. Git listed the linked worktree under the current repository, but Claude Code appeared to compare against the external git-dir path from the primary `git worktree list` entry instead of the real checkout path, so every linked worktree was treated as not owned by the current repo.",
+      "workaround": "For repositories with an external git directory, launch Claude Code from inside the target worktree or use per-command `cd` instead of `EnterWorktree path=`. When debugging, compare `git worktree list --porcelain`, `git rev-parse --show-toplevel`, and `git rev-parse --git-common-dir` before deleting or recreating worktrees.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "cloud-gateway-login-can-disappear-after-session-expiry",
+      "title": "Cloud Gateway login can disappear after session expiry",
+      "category": "Auth & accounts",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80000"
+      ],
+      "description": "A reported Claude Code 2.1.217 Linux session using Claude Apps Gateway expired its gateway credential and displayed `API Error: Cloud gateway session expired - run /login to reconnect`. Running `/login` inside the same session only showed the default Claude account, Console account, and third-party platform choices; the Cloud Gateway option appeared again only after fully exiting and relaunching Claude Code.",
+      "workaround": "If Cloud Gateway expiry tells you to run `/login` but the gateway option is missing, save any needed context and restart Claude Code before reconnecting. For long-running gateway-backed sessions, checkpoint work before expected credential-expiry windows because the in-session reconnect path may not be available.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "desktop-windows-renderer-can-run-away-with-many-sessions",
+      "title": "Desktop Windows renderer can run away with many sessions",
+      "category": "Performance & resources",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79999"
+      ],
+      "description": "A reported Claude Desktop Windows 1.24012.1 installation with roughly 35 saved sessions showed a five-minute cold-start delay and stutter confined to the Claude window. Per-process sampling found one `Claude.exe --type=renderer` child pinned around 150-245% CPU while its RSS grew by about 7 MB/s, even though aggregate system CPU stayed under 30% and other applications remained responsive.",
+      "workaround": "When Desktop stutters but system-wide CPU looks normal, inspect individual Claude renderer processes rather than Task Manager's aggregate view. Reduce open or restored sessions, capture per-process CPU and RSS growth over several samples, and restart Desktop after saving work if one renderer keeps growing without plateauing.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "path-scoped-rules-only-load-through-read-tool",
+      "title": "Path-scoped rules only load through the Read tool",
+      "category": "Context & memory",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79984"
+      ],
+      "description": "A reported `.claude/rules/*.md` file with `paths:` frontmatter loaded when the matching file was opened with the Read tool, but not when the agent touched the same path through Bash commands such as `git show`, `grep`, or `cat`, and not when creating a matching file with Write. Review agents and subagents often inspect diffs through Bash or forge CLIs, so path-scoped conventions can be silently absent exactly when file-specific guidance is expected.",
+      "workaround": "Treat path-scoped rules as Read-tool-triggered guidance, not universal policy. For reviews, subagents, generated files, or Bash-mediated inspection, inject the relevant rule text explicitly or require a preliminary Read-tool pass over representative matching files, then verify the rule sentinel or expected convention is present in the agent's context.",
+      "status": "open",
+      "date_added": "2026-07-22"
     }
   ],
   "status_summary": {
-    "open": 1222,
+    "open": 1226,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 97,
-    "high": 640,
+    "high": 643,
     "low": 105,
-    "medium": 394
+    "medium": 395
   },
   "lastUpdated": "2026-07-22",
   "stats": {
-    "total": 1236,
+    "total": 1240,
     "critical": 97,
-    "high": 640,
-    "medium": 394,
+    "high": 643,
+    "medium": 395,
     "low": 105,
-    "open": 1222,
+    "open": 1226,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-22",
-  "total": 1236
+  "total": 1240
 }
