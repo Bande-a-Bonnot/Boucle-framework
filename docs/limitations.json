@@ -1,22 +1,22 @@
 {
   "version": "0.13.0",
-  "count": 1262,
+  "count": 1266,
   "categories": {
     "Hook behavior & events": 184,
     "Permission system": 127,
     "Hook bypass & evasion": 101,
     "MCP & plugin issues": 65,
     "Subagent & spawned agents": 55,
-    "Desktop & IDE integration": 41,
+    "Desktop & IDE integration": 42,
+    "TUI & display": 28,
     "Platform & compatibility": 27,
-    "TUI & display": 27,
     "CLI & terminal": 25,
     "Context & memory": 24,
     "Configuration behavior": 22,
     "Performance & cost": 20,
     "Tool behavior": 20,
     "Agents & subagents": 19,
-    "MCP & integrations": 17,
+    "MCP & integrations": 18,
     "Sandbox & permissions": 15,
     "Data integrity": 14,
     "Security & trust boundaries": 14,
@@ -41,8 +41,8 @@
     "MCP": 7,
     "Permissions": 7,
     "Permissions & safety": 7,
+    "UX & display": 7,
     "Authentication & accounts": 6,
-    "UX & display": 6,
     "Model behavior & output": 5,
     "Skills & commands": 5,
     "Skills / slash commands": 5,
@@ -183,9 +183,9 @@
   },
   "severity_counts": {
     "CRITICAL": 101,
-    "HIGH": 658,
+    "HIGH": 661,
     "LOW": 105,
-    "MEDIUM": 398
+    "MEDIUM": 399
   },
   "entries": [
     {
@@ -16213,30 +16213,83 @@
       "workaround": "Before depending on nested subagents, probe whether the child agent actually receives the Agent tool in the target session and record the installed version. Set and document `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` explicitly for workflows that require nesting, and keep fallback orchestration at the parent level when the child tool inventory does not expose nested spawning.",
       "status": "open",
       "date_added": "2026-07-22"
+    },
+    {
+      "id": "desktop-code-mode-can-intercept-system-hide-shortcut",
+      "title": "Desktop Code mode can intercept the macOS Hide shortcut",
+      "category": "Desktop & IDE integration",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80130"
+      ],
+      "description": "A reported Claude Code macOS desktop app 2.1.216 regression intercepts Cmd+H while the app is open in Code mode and opens the terminal instead of hiding the app. Cmd+M still minimizes, but the standard macOS Hide shortcut no longer behaves like other desktop apps.",
+      "workaround": "If Cmd+H opens the Code-mode terminal instead of hiding Claude, use Cmd+M or the window manager menu path until the shortcut routing is fixed. Before recording or presenting desktop workflows, test global macOS shortcuts in Code mode separately from VS Code extension shortcut behavior because the failure is reported in the standalone desktop app.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "iterm2-fullscreen-renderer-can-suspend-on-launch",
+      "title": "iTerm2 fullscreen renderer can suspend Claude Code on launch",
+      "category": "TUI & display",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80131"
+      ],
+      "description": "A reported macOS Claude Code 2.1.217 native install with `CLAUDE_CODE_NO_FLICKER=1` enabled suspended immediately after the welcome banner in iTerm2 3.6.1164 with `zsh: suspended (tty input)`. The same fullscreen-renderer path also suspended at the opt-in promo prompt when settings were removed, and mouse-tracking escape sequences plus terminal device responses leaked into the shell. The same binary and shell configuration worked in Ghostty.",
+      "workaround": "On iTerm2, disable the fullscreen renderer by removing `CLAUDE_CODE_NO_FLICKER` and setting the TUI back to default before relying on interactive sessions. If the shell is returned with mouse tracking enabled after a suspend, reset the terminal state before typing sensitive commands, and use Ghostty or another verified terminal for fullscreen-renderer testing.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "background-task-prompts-can-steal-focus-from-active-typing",
+      "title": "Background task prompts can steal focus from active typing",
+      "category": "UX & display",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80049",
+        "https://github.com/anthropics/claude-code/issues/80052"
+      ],
+      "description": "Reported macOS Claude Code 2.1.170 sessions can move focus away from the user's active control when background work emits new content or a decision popup. One report covers decision prompts stealing keyboard focus while the user is typing into the prompt, so the rest of the text can land in the decision window; another covers scrollback focus being pulled back to the bottom while the user is dragging the scroll bar. A follow-up notes this can become a security concern if the user is typing a password or key when focus changes.",
+      "workaround": "Avoid typing secrets into a Claude Code window while background tasks may raise decision prompts, and pause or drain background work before entering sensitive text. For long sessions with background jobs, verify where focus is after every popup or output burst, and treat sudden scroll jumps as a sign that the UI may also have captured keyboard input.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "vscode-mcp-subprocess-can-fail-credentials-that-work-standalone",
+      "title": "VS Code MCP subprocess can fail credentials that work standalone",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80118"
+      ],
+      "description": "A reported Claude Code VS Code native-extension session failed every tool call from the official `google-ads-mcp` stdio server with a Google Ads authentication error, even though the same Application Default Credentials, developer token, command, and environment worked through direct curl and a standalone FastMCP stdio client. Full app restarts, explicit credential paths, server renaming, and local server patching did not change the Claude-Code-routed failure.",
+      "workaround": "When an MCP server returns credential errors only through Claude Code, reproduce the same server command and tool call outside Claude Code before rotating credentials or developer tokens. Compare the extension-spawned environment and file access with a standalone stdio client, and keep a manual or direct-client fallback for write-sensitive integrations until the Claude Code MCP subprocess path is verified.",
+      "status": "open",
+      "date_added": "2026-07-22"
     }
   ],
   "status_summary": {
-    "open": 1248,
+    "open": 1252,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 101,
-    "high": 658,
+    "high": 661,
     "low": 105,
-    "medium": 398
+    "medium": 399
   },
   "lastUpdated": "2026-07-22",
   "stats": {
-    "total": 1262,
+    "total": 1266,
     "critical": 101,
-    "high": 658,
-    "medium": 398,
+    "high": 661,
+    "medium": 399,
     "low": 105,
-    "open": 1248,
+    "open": 1252,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-22",
-  "total": 1262
+  "total": 1266
 }
