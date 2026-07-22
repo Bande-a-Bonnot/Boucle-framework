@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1232</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-21.</span></p>
+        <p class="subtitle"><span id="total-count">1236</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-22.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -13504,6 +13504,54 @@
                         <!-- workaround:deep-research-can-lose-progress-at-spend-limit -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before launching broad deep-research runs, set a narrow scope and ask for incremental notes or files after each verified batch. If a run is cut off by quota, mine the transcript for partial findings before restarting, and prefer smaller staged research tasks until cross-session resume and durable checkpoints are available.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79958" target="_blank">#79958</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="79962 79986" id="desktop-local-mcp-bridge-can-race-device-surfaces" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1233</span>
+                <span class="kl-cat">MCP &amp; integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Desktop local MCP bridge can race device surfaces</h3>
+            <p>Reported Claude Desktop 1.24012.1 sessions on macOS and Windows initialized local MCP servers and listed tools, but later dropped `tools/call` before the request reached the server. One macOS report captured paired `localMcpBridge` announcements and paired `remote-tools-device` WebSocket connections for the same device ID from chat, Cowork, and Claude-Code-Desktop surfaces, suggesting competing bridge owners can evict each other and leave file-tool calls with no live route.</p>
+                        <!-- workaround:desktop-local-mcp-bridge-can-race-device-surfaces -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When Desktop file or local-MCP tools fail after a healthy handshake, compare Desktop logs with the MCP server log before changing the server. Look for duplicated bridge announcements or missing `tools/call` lines, try Claude Code CLI as a control path, and preserve redacted `main.log` excerpts around launch and the failing call.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79962" target="_blank">#79962</a>, <a href="https://github.com/anthropics/claude-code/issues/79986" target="_blank">#79986</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="79983" id="remote-mcp-approval-can-loop-after-allow" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1234</span>
+                <span class="kl-cat">MCP &amp; integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Remote MCP approval can loop after Allow</h3>
+            <p>A reported Claude Code web or remote execution session repeatedly failed a Gmail `create_draft` MCP tool call with `MCP error -32003: MCP tool call requires approval` even after the user approved the permission prompt twice. The same session had several MCP connectors repeatedly disconnecting and reconnecting, and the tool never created the draft.</p>
+                        <!-- workaround:remote-mcp-approval-can-loop-after-allow -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> After approving a remote MCP action, verify the external side effect rather than trusting the prompt state. If the same approval error repeats, stop retrying the write, copy the intended content manually, and capture connector reconnect activity from the session so maintainers can distinguish an approval-state bug from a connector-auth bug.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79983" target="_blank">#79983</a></div>
+        </div>
+        <div class="kl-entry" data-category="Browser automation" data-issues="79976" id="claude-in-chrome-1password-credential-bridge-can-fail-disconnected" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1235</span>
+                <span class="kl-cat">Browser automation</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Claude in Chrome 1Password credential bridge can fail disconnected</h3>
+            <p>A reported Claude in Chrome credential-request flow could see the browser connection and a healthy, unlocked 1Password desktop app and extension, but the `Connect 1Password` banner still returned `Couldn&#x27;t connect to 1Password` after approval. Updating 1Password, restarting Claude Code, testing multiple sites, and verifying direct `op` CLI access did not fix the Claude-in-Chrome to 1Password bridge.</p>
+                        <!-- workaround:claude-in-chrome-1password-credential-bridge-can-fail-disconnected -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume a connected browser and unlocked password manager prove Claude can retrieve credentials. Keep manual login or direct `op` CLI access available as a fallback, and verify credential handoff on a low-risk site before relying on browser credential requests for production accounts.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79976" target="_blank">#79976</a></div>
+        </div>
+        <div class="kl-entry" data-category="Browser automation" data-issues="79956" id="claude-in-chrome-can-open-broken-helper-tabs" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1236</span>
+                <span class="kl-cat">Browser automation</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Claude in Chrome can open broken helper tabs</h3>
+            <p>A reported Windows Claude in Chrome v1.0.81 setup opened four extra tabs named `native`, `host`, `wrapper`, and `script` with `DNS_PROBE_FINISHED_NXDOMAIN` whenever a local PowerShell script opened a target URL. Disabling other extensions did not help, while disabling Claude in Chrome stopped the extra tabs.</p>
+                        <!-- workaround:claude-in-chrome-can-open-broken-helper-tabs -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before automating browser tab creation with Claude in Chrome enabled, test the exact launcher path in a disposable browser profile. If bare helper-name tabs appear, disable the extension for that workflow or isolate it in a dedicated profile until the native-host URL handling is fixed.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/79956" target="_blank">#79956</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
