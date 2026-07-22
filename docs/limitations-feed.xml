@@ -23,6 +23,38 @@
     <category term="Data integrity"/>
   </entry>
   <entry>
+    <title>[HIGH] Concurrent macOS OAuth instances can cascade logouts</title>
+    <id>https://framework.boucle.sh/limitations.html#concurrent-macos-oauth-instances-can-cascade-logouts</id>
+    <link href="https://framework.boucle.sh/limitations.html#concurrent-macos-oauth-instances-can-cascade-logouts"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported macOS Claude Code 2.1.216 setup with many concurrent Claude Code processes sharing one Keychain OAuth credential saw repeated mid-session logouts. The failure matches an existing refresh-token rotation race pattern: one process rotates the token chain, another process refreshes with an already-consumed token, receives a 401, and may overwrite shared credentials with a logged-out state that kills the interactive session too. The report extends the risk from Linux file-based credentials to macOS Keychain-backed credentials.</summary>
+    <category term="Auth &amp; accounts"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Headless claude -p can 401 despite valid OAuth status</title>
+    <id>https://framework.boucle.sh/limitations.html#headless-claude-p-can-401-despite-valid-oauth-status</id>
+    <link href="https://framework.boucle.sh/limitations.html#headless-claude-p-can-401-despite-valid-oauth-status"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported macOS Claude Code CLI 2.1.179 setup using claude.ai OAuth credentials succeeded from an attended Terminal.app session but returned 401 authentication errors from LaunchAgents, non-TTY subprocesses, and bare pseudo-TTY wrappers. In the same failing context, `claude auth status --json` still reported a logged-in Pro subscription, so the local auth check and real API call disagreed. The reporter also observed repeated macOS TCC prompts on each non-Terminal process launch.</summary>
+    <category term="Auth &amp; accounts"/>
+  </entry>
+  <entry>
+    <title>[HIGH] macOS Local Network deny can break daemon-spawned sessions</title>
+    <id>https://framework.boucle.sh/limitations.html#macos-local-network-deny-can-break-daemon-spawned-sessions</id>
+    <link href="https://framework.boucle.sh/limitations.html#macos-local-network-deny-can-break-daemon-spawned-sessions"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported macOS Claude Code 2.1.217 setup minted a silent Local Network default-deny record for `com.anthropic.claude-code` when background daemon workers first touched the network without a visible permission prompt. Foreground terminal sessions could still reach the API, but daemon-spawned sessions from FleetView, pre-warmed spares, and background handoffs failed every API call with ENOTFOUND. Attaching to an old session from the agent overview also handed the originally working terminal session to the daemon, causing later sessions in that terminal to fail until restart.</summary>
+    <category term="Desktop &amp; platform bugs"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Hyphenated HTTP MCP server names can register uncallable tools</title>
+    <id>https://framework.boucle.sh/limitations.html#hyphenated-http-mcp-server-names-can-register-uncallable-tools</id>
+    <link href="https://framework.boucle.sh/limitations.html#hyphenated-http-mcp-server-names-can-register-uncallable-tools"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code 2.1.217 setup connected an HTTP MCP server whose config key contained a hyphen and showed the expected hyphenated tool names in `/mcp`, but injected underscore-normalized names into the model function schema. The model could only call the underscore form while the router was registered under the hyphen form, so every attempted tool call failed with `No such tool available`. A stdio MCP server without a hyphenated key worked in the same configuration, narrowing the failure to inconsistent MCP server-name normalization.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[HIGH] Fresh subagents can lose their nested agent launch tool</title>
     <id>https://framework.boucle.sh/limitations.html#fresh-subagents-can-lose-their-nested-agent-launch-tool</id>
     <link href="https://framework.boucle.sh/limitations.html#fresh-subagents-can-lose-their-nested-agent-launch-tool"/>
@@ -133,37 +165,5 @@
     <updated>2026-07-22T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.217 Linux session using Claude Apps Gateway expired its gateway credential and displayed `API Error: Cloud gateway session expired - run /login to reconnect`. Running `/login` inside the same session only showed the default Claude account, Console account, and third-party platform choices; the Cloud Gateway option appeared again only after fully exiting and relaunching Claude Code.</summary>
     <category term="Auth &amp; accounts"/>
-  </entry>
-  <entry>
-    <title>[HIGH] EnterWorktree path can reject separate-git-dir worktrees</title>
-    <id>https://framework.boucle.sh/limitations.html#enterworktree-path-can-reject-separate-git-dir-worktrees</id>
-    <link href="https://framework.boucle.sh/limitations.html#enterworktree-path-can-reject-separate-git-dir-worktrees"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.206 setup rejected `EnterWorktree path=` for a valid linked worktree when the main checkout used `git init --separate-git-dir`. Git listed the linked worktree under the current repository, but Claude Code appeared to compare against the external git-dir path from the primary `git worktree list` entry instead of the real checkout path, so every linked worktree was treated as not owned by the current repo.</summary>
-    <category term="Worktree"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Claude in Chrome can open broken helper tabs</title>
-    <id>https://framework.boucle.sh/limitations.html#claude-in-chrome-can-open-broken-helper-tabs</id>
-    <link href="https://framework.boucle.sh/limitations.html#claude-in-chrome-can-open-broken-helper-tabs"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported Windows Claude in Chrome v1.0.81 setup opened four extra tabs named `native`, `host`, `wrapper`, and `script` with `DNS_PROBE_FINISHED_NXDOMAIN` whenever a local PowerShell script opened a target URL. Disabling other extensions did not help, while disabling Claude in Chrome stopped the extra tabs.</summary>
-    <category term="Browser automation"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Claude in Chrome 1Password credential bridge can fail disconnected</title>
-    <id>https://framework.boucle.sh/limitations.html#claude-in-chrome-1password-credential-bridge-can-fail-disconnected</id>
-    <link href="https://framework.boucle.sh/limitations.html#claude-in-chrome-1password-credential-bridge-can-fail-disconnected"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported Claude in Chrome credential-request flow could see the browser connection and a healthy, unlocked 1Password desktop app and extension, but the `Connect 1Password` banner still returned `Couldn&#x27;t connect to 1Password` after approval. Updating 1Password, restarting Claude Code, testing multiple sites, and verifying direct `op` CLI access did not fix the Claude-in-Chrome to 1Password bridge.</summary>
-    <category term="Browser automation"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Remote MCP approval can loop after Allow</title>
-    <id>https://framework.boucle.sh/limitations.html#remote-mcp-approval-can-loop-after-allow</id>
-    <link href="https://framework.boucle.sh/limitations.html#remote-mcp-approval-can-loop-after-allow"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported Claude Code web or remote execution session repeatedly failed a Gmail `create_draft` MCP tool call with `MCP error -32003: MCP tool call requires approval` even after the user approved the permission prompt twice. The same session had several MCP connectors repeatedly disconnecting and reconnecting, and the tool never created the draft.</summary>
-    <category term="MCP &amp; integrations"/>
   </entry>
 </feed>
