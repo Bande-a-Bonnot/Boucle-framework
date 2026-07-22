@@ -1,12 +1,12 @@
 {
   "version": "0.13.0",
-  "count": 1248,
+  "count": 1251,
   "categories": {
     "Hook behavior & events": 184,
     "Permission system": 127,
     "Hook bypass & evasion": 101,
-    "MCP & plugin issues": 63,
-    "Subagent & spawned agents": 52,
+    "MCP & plugin issues": 64,
+    "Subagent & spawned agents": 53,
     "Desktop & IDE integration": 41,
     "Platform & compatibility": 27,
     "TUI & display": 27,
@@ -17,7 +17,7 @@
     "Agents & subagents": 19,
     "Performance & cost": 19,
     "MCP & integrations": 17,
-    "Sandbox & permissions": 14,
+    "Sandbox & permissions": 15,
     "Security & trust boundaries": 14,
     "Data integrity": 13,
     "MCP integration": 13,
@@ -182,8 +182,8 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 98,
-    "HIGH": 650,
+    "CRITICAL": 100,
+    "HIGH": 651,
     "LOW": 105,
     "MEDIUM": 395
   },
@@ -16031,30 +16031,69 @@
       "workaround": "Do not assume usage-limit resets preserve unattended background agents or scheduled tasks. For overnight work, keep durable checkpoints outside the conversation, reconcile scheduled fire times against transcript or output artifacts, and add a watchdog that records usage-limit banners or missing completion records before resuming. For critical schedules, prefer idempotent tasks that can be requeued explicitly after the limit reset.",
       "status": "open",
       "date_added": "2026-07-22"
+    },
+    {
+      "id": "mcp-config-env-secrets-can-leak-through-process-argv",
+      "title": "MCP config env secrets can leak through process argv",
+      "category": "MCP & plugin issues",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80045"
+      ],
+      "description": "A reported VS Code extension launch path passed resolved MCP server `env` values inline inside the `--mcp-config` command-line argument. Token-bearing MCP settings could therefore be read from ordinary process listings such as `ps`, `/proc/<pid>/cmdline`, macOS process inspectors, endpoint telemetry, or even the agent's own Bash output during routine process diagnostics.",
+      "workaround": "Do not put long-lived secrets in MCP configs that may be forwarded through `--mcp-config` argv. Prefer launch paths that pass secret-bearing MCP configuration through a permission-restricted temp file or child-process environment only, rotate any token observed in process listings or transcripts, and avoid broad `ps` output in agent transcripts on hosts with sensitive MCP servers.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "local-broad-allow-can-bypass-more-specific-ask-rules",
+      "title": "Local broad allow can bypass more specific ask rules",
+      "category": "Sandbox & permissions",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80031"
+      ],
+      "description": "A reported Claude Code 2.1.205 permission setup put a specific `ask` rule in project settings and a broader overlapping `allow` rule in `settings.local.json`. A command matching both rules executed immediately without a confirmation prompt, contrary to the documented deny-then-ask-then-allow ordering and making prompt gates for operations such as PR merges or pushes fail open when broad local allowlists overlap them.",
+      "workaround": "Audit all permission scopes for overlapping `allow` and `ask` patterns, especially broad local rules such as `Bash(gh pr *)`, `Bash(git *)`, or publish commands. Until precedence is verified in your installed version, treat `ask` rules as advisory when any broader allow might match, replace high-risk asks with hard denies or narrower allows, and run real prompt-rendering smoke tests before trusting a policy.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "fresh-subagents-can-lose-their-nested-agent-launch-tool",
+      "title": "Fresh subagents can lose their nested agent launch tool",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80036"
+      ],
+      "description": "A reported Claude Code 2.1.217 setup found that freshly spawned `general-purpose` and `claude` subagents did not receive the documented `Agent` or `Task` launch tool, so they could not create nested subagents despite the documented nesting cap. The behavior was inconsistent because `fork` subagents retained the launch tool, which means fan-out workflows inside ordinary subagents can silently degrade to a single inline pass.",
+      "workaround": "Have subagents inventory their effective toolset before starting workflows that depend on nested fan-out, and fail closed when the launch tool is absent. Keep multi-reviewer or orchestration fan-out at the parent level unless a probe proves the child can spawn nested agents, and document whether a workflow requires `fork` semantics or single-level execution.",
+      "status": "open",
+      "date_added": "2026-07-22"
     }
   ],
   "status_summary": {
-    "open": 1234,
+    "open": 1237,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 98,
-    "high": 650,
+    "critical": 100,
+    "high": 651,
     "low": 105,
     "medium": 395
   },
   "lastUpdated": "2026-07-22",
   "stats": {
-    "total": 1248,
-    "critical": 98,
-    "high": 650,
+    "total": 1251,
+    "critical": 100,
+    "high": 651,
     "medium": 395,
     "low": 105,
-    "open": 1234,
+    "open": 1237,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-22",
-  "total": 1248
+  "total": 1251
 }
