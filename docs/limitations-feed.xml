@@ -7,6 +7,22 @@
   <updated>2026-07-22T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Connection probes can use unidentified user agents</title>
+    <id>https://framework.boucle.sh/limitations.html#connection-probes-can-use-unidentified-user-agents</id>
+    <link href="https://framework.boucle.sh/limitations.html#connection-probes-can-use-unidentified-user-agents"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported enterprise gateway setup saw Claude Code 2.1.217 launch-time probing or pre-flight traffic with user-agent strings such as `Dmi/JS 0.94.0`, `MTi/JS 0.94.0`, and `NNi/JS 0.94.0` instead of the ordinary `claude-cli/...` identifier. The reporter had to correlate the traffic manually with Claude Code startup, which makes proxy logs, client allowlists, and traffic attribution harder to interpret.</summary>
+    <category term="Security &amp; trust boundaries"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Skill shared docs can load large unrelated context</title>
+    <id>https://framework.boucle.sh/limitations.html#skill-shared-docs-can-load-large-unrelated-context</id>
+    <link href="https://framework.boucle.sh/limitations.html#skill-shared-docs-can-load-large-unrelated-context"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.212 `claude-api` skill invocation correctly applied language-specific progressive disclosure for a Python project, but then unconditionally loaded all files under the skill&#x27;s `shared/` directory. For a narrow Bedrock-client question, the reporter saw roughly 84 KB of Python docs plus about 468 KB of shared docs, including model-migration and managed-agents references unrelated to the query, where the apparently relevant AWS-specific shared docs were closer to 8 KB.</summary>
+    <category term="Context &amp; memory"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Session docs can omit transcript-persistence warning recovery</title>
     <id>https://framework.boucle.sh/limitations.html#session-docs-can-omit-transcript-persistence-warning-recovery</id>
     <link href="https://framework.boucle.sh/limitations.html#session-docs-can-omit-transcript-persistence-warning-recovery"/>
@@ -149,21 +165,5 @@
     <updated>2026-07-22T00:00:00Z</updated>
     <summary>A reported macOS Claude Code 2.1.216 setup with many concurrent Claude Code processes sharing one Keychain OAuth credential saw repeated mid-session logouts. The failure matches an existing refresh-token rotation race pattern: one process rotates the token chain, another process refreshes with an already-consumed token, receives a 401, and may overwrite shared credentials with a logged-out state that kills the interactive session too. The report extends the risk from Linux file-based credentials to macOS Keychain-backed credentials.</summary>
     <category term="Auth &amp; accounts"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Headless claude -p can 401 despite valid OAuth status</title>
-    <id>https://framework.boucle.sh/limitations.html#headless-claude-p-can-401-despite-valid-oauth-status</id>
-    <link href="https://framework.boucle.sh/limitations.html#headless-claude-p-can-401-despite-valid-oauth-status"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported macOS Claude Code CLI 2.1.179 setup using claude.ai OAuth credentials succeeded from an attended Terminal.app session but returned 401 authentication errors from LaunchAgents, non-TTY subprocesses, and bare pseudo-TTY wrappers. In the same failing context, `claude auth status --json` still reported a logged-in Pro subscription, so the local auth check and real API call disagreed. The reporter also observed repeated macOS TCC prompts on each non-Terminal process launch.</summary>
-    <category term="Auth &amp; accounts"/>
-  </entry>
-  <entry>
-    <title>[HIGH] macOS Local Network deny can break daemon-spawned sessions</title>
-    <id>https://framework.boucle.sh/limitations.html#macos-local-network-deny-can-break-daemon-spawned-sessions</id>
-    <link href="https://framework.boucle.sh/limitations.html#macos-local-network-deny-can-break-daemon-spawned-sessions"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported macOS Claude Code 2.1.217 setup minted a silent Local Network default-deny record for `com.anthropic.claude-code` when background daemon workers first touched the network without a visible permission prompt. Foreground terminal sessions could still reach the API, but daemon-spawned sessions from FleetView, pre-warmed spares, and background handoffs failed every API call with ENOTFOUND. Attaching to an old session from the agent overview also handed the originally working terminal session to the daemon, causing later sessions in that terminal to fail until restart.</summary>
-    <category term="Desktop &amp; platform bugs"/>
   </entry>
 </feed>

@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1272,
+  "count": 1274,
   "categories": {
     "Hook behavior & events": 185,
     "Permission system": 127,
@@ -11,15 +11,15 @@
     "TUI & display": 29,
     "Platform & compatibility": 27,
     "CLI & terminal": 25,
-    "Context & memory": 24,
+    "Context & memory": 25,
     "Configuration behavior": 22,
     "Performance & cost": 20,
     "Tool behavior": 20,
     "Agents & subagents": 19,
     "MCP & integrations": 18,
     "Sandbox & permissions": 15,
+    "Security & trust boundaries": 15,
     "Data integrity": 14,
-    "Security & trust boundaries": 14,
     "VS Code extension": 14,
     "Core & session management": 13,
     "MCP integration": 13,
@@ -185,7 +185,7 @@
     "CRITICAL": 101,
     "HIGH": 663,
     "LOW": 105,
-    "MEDIUM": 403
+    "MEDIUM": 405
   },
   "entries": [
     {
@@ -16344,10 +16344,36 @@
       "workaround": "Treat transcript-persistence warnings as session-continuity risks, not cosmetic output. Check disk space and write permissions for the transcript directory, inspect inherited persistence-related environment variables such as `CLAUDE_CODE_SKIP_PROMPT_HISTORY` and `CLAUDE_CODE_CHILD_SESSION`, and only rely on resume or prompt history after confirming transcript writes have resumed.",
       "status": "open",
       "date_added": "2026-07-22"
+    },
+    {
+      "id": "skill-shared-docs-can-load-large-unrelated-context",
+      "title": "Skill shared docs can load large unrelated context",
+      "category": "Context & memory",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80190"
+      ],
+      "description": "A reported Claude Code 2.1.212 `claude-api` skill invocation correctly applied language-specific progressive disclosure for a Python project, but then unconditionally loaded all files under the skill's `shared/` directory. For a narrow Bedrock-client question, the reporter saw roughly 84 KB of Python docs plus about 468 KB of shared docs, including model-migration and managed-agents references unrelated to the query, where the apparently relevant AWS-specific shared docs were closer to 8 KB.",
+      "workaround": "Treat skill auto-loading as a context-budget risk even when language-specific disclosure works. For narrow API questions, ask the assistant which skill references it loaded, restart with optional skills disabled if unrelated shared docs dominate context, and split large shared skill references behind topic-specific routing when authoring internal skills.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "connection-probes-can-use-unidentified-user-agents",
+      "title": "Connection probes can use unidentified user agents",
+      "category": "Security & trust boundaries",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80191"
+      ],
+      "description": "A reported enterprise gateway setup saw Claude Code 2.1.217 launch-time probing or pre-flight traffic with user-agent strings such as `Dmi/JS 0.94.0`, `MTi/JS 0.94.0`, and `NNi/JS 0.94.0` instead of the ordinary `claude-cli/...` identifier. The reporter had to correlate the traffic manually with Claude Code startup, which makes proxy logs, client allowlists, and traffic attribution harder to interpret.",
+      "workaround": "When enforcing enterprise proxy or gateway policy for Claude Code, do not assume every Claude-originated request uses the normal `claude-cli` user agent. Capture a startup trace through the same proxy path, document any unidentified probing clients seen for the installed version, and avoid hard-blocking unknown JavaScript runtime user agents until you have separated Claude Code probes from unrelated traffic.",
+      "status": "open",
+      "date_added": "2026-07-22"
     }
   ],
   "status_summary": {
-    "open": 1258,
+    "open": 1260,
     "fixed": 13,
     "mitigated": 1
   },
@@ -16355,19 +16381,19 @@
     "critical": 101,
     "high": 663,
     "low": 105,
-    "medium": 403
+    "medium": 405
   },
   "lastUpdated": "2026-07-22",
   "stats": {
-    "total": 1272,
+    "total": 1274,
     "critical": 101,
     "high": 663,
-    "medium": 403,
+    "medium": 405,
     "low": 105,
-    "open": 1258,
+    "open": 1260,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-22",
-  "total": 1272
+  "total": 1274
 }
