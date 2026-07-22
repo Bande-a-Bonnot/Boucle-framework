@@ -7,6 +7,38 @@
   <updated>2026-07-22T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Usage limits can silently kill background and scheduled work</title>
+    <id>https://framework.boucle.sh/limitations.html#usage-limits-can-silently-kill-background-and-scheduled-work</id>
+    <link href="https://framework.boucle.sh/limitations.html#usage-limits-can-silently-kill-background-and-scheduled-work"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.71 desktop session with three in-flight background agents and a one-time scheduled task hit its session usage limit while idle overnight. The process exited, the background agents were killed mid-run with no checkpoint surfaced until resume many hours later, and the scheduled task never fired at its configured time. After the limit reset, the task still appeared pending and enabled rather than fired, blocked, failed, or deferred, and the transcript had no explicit event explaining that the usage limit suspended work.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Plugin cache versioning can walk into a parent git repo</title>
+    <id>https://framework.boucle.sh/limitations.html#plugin-cache-versioning-can-walk-into-parent-git-repo</id>
+    <link href="https://framework.boucle.sh/limitations.html#plugin-cache-versioning-can-walk-into-parent-git-repo"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code 2.1.217 setup with `~/.claude` managed as a git repository found that official marketplace plugin version detection ran git from a GCS snapshot directory with no `.git` directory. Git walked upward into `~/.claude/.git`, so `installed_plugins.json` recorded the user&#x27;s config repo HEAD as the marketplace plugin version and created a new SHA-named cache directory after every config commit. The reporter observed 297 orphan version directories across 9 official plugins and noted that any write-mode git command in the same path class could affect the parent config repo.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Mid-session /login can drop built-in task tools</title>
+    <id>https://framework.boucle.sh/limitations.html#mid-session-login-can-drop-built-in-task-tools</id>
+    <link href="https://framework.boucle.sh/limitations.html#mid-session-login-can-drop-built-in-task-tools"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.216 session on macOS, with fleet reproduction on Linux, permanently lost built-in Task tools after running `/login` mid-session. Claude Code displayed a misleading MCP server disconnected notice, `ToolSearch` could no longer find `TaskCreate`, `TaskUpdate`, `TaskList`, `TaskGet`, `TaskOutput`, or `TaskStop`, and the tools did not reconnect for the lifetime of the session even though fresh sessions still had them. TodoWrite was also absent in the affected session.</summary>
+    <category term="Tool availability"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Windows hook exit 2 can fail to block Edit and Write</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-hook-exit2-can-fail-to-block-edit-write</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-hook-exit2-can-fail-to-block-edit-write"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported Windows 11 Claude Code 2.1.217 session ran a flat command-type PreToolUse hook for `Edit|Write` that received the correct stdin JSON, executed real detection logic, wrote a block reason to stderr, and exited with status 2, but Claude Code still applied the Edit tool call and never surfaced the blocking message to the assistant. The same report also found a PostToolUse hook exit-2 stderr message did not reach the model, while sibling hooks in the same array still dispatched, narrowing the failure to exit-code and stderr propagation rather than hook registration.</summary>
+    <category term="Hook bypass &amp; evasion"/>
+  </entry>
+  <entry>
     <title>[HIGH] Cloud RemoteTriggers can acknowledge dispatch without starting a session</title>
     <id>https://framework.boucle.sh/limitations.html#cloud-remote-triggers-can-acknowledge-dispatch-without-starting-a-session</id>
     <link href="https://framework.boucle.sh/limitations.html#cloud-remote-triggers-can-acknowledge-dispatch-without-starting-a-session"/>
@@ -133,37 +165,5 @@
     <updated>2026-07-22T00:00:00Z</updated>
     <summary>A reported Claude Code project entry reached the contradictory state `hasCompletedProjectOnboarding: true`, `projectOnboardingSeenCount: 0`, and `hasTrustDialogAccepted: false` in `~/.claude.json`. Because the trust dialog was never shown again, project-scope plugins under `./.claude/skills/*` silently failed to load and `.mcp.json` approvals were re-prompted on every launch despite being written to project settings.</summary>
     <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Desktop session index can zero-fill after unclean shutdown</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-session-index-can-zero-fill-after-unclean-shutdown</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-session-index-can-zero-fill-after-unclean-shutdown"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported Windows Claude Desktop session-state JSON under `claude-code-sessions` became entirely NUL bytes after hard power-off events while the app was open. The conversation disappeared from the Desktop sidebar even though the underlying CLI transcript remained intact, making recoverable metadata corruption look like permanent chat loss to the user.</summary>
-    <category term="Data integrity"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Auto-updater can download once per running session</title>
-    <id>https://framework.boucle.sh/limitations.html#auto-updater-can-download-once-per-running-session</id>
-    <link href="https://framework.boucle.sh/limitations.html#auto-updater-can-download-once-per-running-session"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported Linux native-install setup with six concurrent Claude Code sessions saw each running session independently download the same roughly 265 MB point release into separate staging directories. Several downloads ran simultaneously, failed attempts left empty or partial staging artifacts, and one 0-byte version file triggered an auto-update failure banner.</summary>
-    <category term="Performance &amp; cost"/>
-  </entry>
-  <entry>
-    <title>[HIGH] MCP text content can be dropped when structuredContent is present</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-text-content-can-be-dropped-when-structuredcontent-present</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-text-content-can-be-dropped-when-structuredcontent-present"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported Claude Code CLI MCP call to an HTTP server returned only the structuredContent metadata block from a tool response and silently omitted the separate text content block containing the actual document body. The same server and tool call returned both metadata and text correctly in Cursor, isolating the loss to Claude Code&#x27;s MCP response handling.</summary>
-    <category term="MCP &amp; integrations"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Sandboxed .cc-writes can block worktree removal</title>
-    <id>https://framework.boucle.sh/limitations.html#sandboxed-cc-writes-can-block-worktree-removal</id>
-    <link href="https://framework.boucle.sh/limitations.html#sandboxed-cc-writes-can-block-worktree-removal"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported macOS sandboxed Claude Code worktree session created `&lt;worktree&gt;/.claude/.cc-writes/` while editing inside an entered linked worktree. That harness-owned path remained write-denied after ExitWorktree, causing both sandboxed `git worktree remove --force` and Claude Code&#x27;s own `ExitWorktree({action: &quot;remove&quot;})` cleanup path to fail with operation-permitted errors and leave an orphaned stub.</summary>
-    <category term="Sandbox &amp; permissions"/>
   </entry>
 </feed>

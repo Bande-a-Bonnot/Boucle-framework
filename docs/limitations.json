@@ -1,12 +1,12 @@
 {
   "version": "0.13.0",
-  "count": 1244,
+  "count": 1248,
   "categories": {
     "Hook behavior & events": 184,
     "Permission system": 127,
-    "Hook bypass & evasion": 100,
-    "MCP & plugin issues": 62,
-    "Subagent & spawned agents": 51,
+    "Hook bypass & evasion": 101,
+    "MCP & plugin issues": 63,
+    "Subagent & spawned agents": 52,
     "Desktop & IDE integration": 41,
     "Platform & compatibility": 27,
     "TUI & display": 27,
@@ -68,6 +68,7 @@
     "Security": 3,
     "Skills": 3,
     "Stability & crashes": 3,
+    "Tool availability": 3,
     "Agents": 2,
     "agents": 2,
     "API & infrastructure": 2,
@@ -92,7 +93,6 @@
     "platform": 2,
     "security": 2,
     "session-management": 2,
-    "Tool availability": 2,
     "UI & display": 2,
     "Agent": 1,
     "Agent & multi-agent": 1,
@@ -182,8 +182,8 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 97,
-    "HIGH": 647,
+    "CRITICAL": 98,
+    "HIGH": 650,
     "LOW": 105,
     "MEDIUM": 395
   },
@@ -15979,30 +15979,82 @@
       "workaround": "For critical RemoteTriggers, reconcile expected fire times against actual transcript creation or another durable success marker instead of trusting `last_fired_at`. Keep important low-frequency routines on local scheduled-tasks when possible, because local catch-up-on-wake can recover missed work while a dropped cloud dispatch may be invisible. When filing evidence, include trigger ids, cloud fire timestamps, bridge uptime, remote-control logs, transcript birth times, and a local scheduled-task control from the same machine.",
       "status": "open",
       "date_added": "2026-07-22"
+    },
+    {
+      "id": "windows-hook-exit2-can-fail-to-block-edit-write",
+      "title": "Windows hook exit 2 can fail to block Edit and Write",
+      "category": "Hook bypass & evasion",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80039"
+      ],
+      "description": "A reported Windows 11 Claude Code 2.1.217 session ran a flat command-type PreToolUse hook for `Edit|Write` that received the correct stdin JSON, executed real detection logic, wrote a block reason to stderr, and exited with status 2, but Claude Code still applied the Edit tool call and never surfaced the blocking message to the assistant. The same report also found a PostToolUse hook exit-2 stderr message did not reach the model, while sibling hooks in the same array still dispatched, narrowing the failure to exit-code and stderr propagation rather than hook registration.",
+      "workaround": "On Windows, do not trust exit-code-only hook blocking until a real Claude Code tool call proves it stops `Edit` and `Write`. Prefer JSON hook responses with explicit decisions where supported, keep commands flat rather than nested through multiple shells, and add a startup smoke test that attempts a harmless blocked edit and verifies the file is unchanged. For high-risk paths, pair hooks with file permissions, git pre-commit checks, or an external guard that does not depend on Claude Code honoring exit status.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "mid-session-login-can-drop-built-in-task-tools",
+      "title": "Mid-session /login can drop built-in task tools",
+      "category": "Tool availability",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80034"
+      ],
+      "description": "A reported Claude Code 2.1.216 session on macOS, with fleet reproduction on Linux, permanently lost built-in Task tools after running `/login` mid-session. Claude Code displayed a misleading MCP server disconnected notice, `ToolSearch` could no longer find `TaskCreate`, `TaskUpdate`, `TaskList`, `TaskGet`, `TaskOutput`, or `TaskStop`, and the tools did not reconnect for the lifetime of the session even though fresh sessions still had them. TodoWrite was also absent in the affected session.",
+      "workaround": "Avoid running `/login` inside long-lived sessions that depend on task or todo tools. Checkpoint task state to files before reauth, restart the session after authentication changes, and probe for `TaskCreate`, `TaskUpdate`, `TaskList`, `TaskGet`, `TaskOutput`, `TaskStop`, and `TodoWrite` before allowing Stop hooks or agent workflows to require those tools.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "plugin-cache-versioning-can-walk-into-parent-git-repo",
+      "title": "Plugin cache versioning can walk into a parent git repo",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80042"
+      ],
+      "description": "A reported Windows Claude Code 2.1.217 setup with `~/.claude` managed as a git repository found that official marketplace plugin version detection ran git from a GCS snapshot directory with no `.git` directory. Git walked upward into `~/.claude/.git`, so `installed_plugins.json` recorded the user's config repo HEAD as the marketplace plugin version and created a new SHA-named cache directory after every config commit. The reporter observed 297 orphan version directories across 9 official plugins and noted that any write-mode git command in the same path class could affect the parent config repo.",
+      "workaround": "If `~/.claude` is a git repo, audit `~/.claude/plugins/cache/` and `installed_plugins.json` for versions matching your config commits rather than marketplace commits. Keep plugin cache paths outside parent git repositories when possible, set `GIT_CEILING_DIRECTORIES` around marketplace maintenance commands, and verify plugin versions against `.gcs-sha` or source metadata instead of trusting cache directory names.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "usage-limits-can-silently-kill-background-and-scheduled-work",
+      "title": "Usage limits can silently kill background and scheduled work",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80037"
+      ],
+      "description": "A reported Claude Code 2.1.71 desktop session with three in-flight background agents and a one-time scheduled task hit its session usage limit while idle overnight. The process exited, the background agents were killed mid-run with no checkpoint surfaced until resume many hours later, and the scheduled task never fired at its configured time. After the limit reset, the task still appeared pending and enabled rather than fired, blocked, failed, or deferred, and the transcript had no explicit event explaining that the usage limit suspended work.",
+      "workaround": "Do not assume usage-limit resets preserve unattended background agents or scheduled tasks. For overnight work, keep durable checkpoints outside the conversation, reconcile scheduled fire times against transcript or output artifacts, and add a watchdog that records usage-limit banners or missing completion records before resuming. For critical schedules, prefer idempotent tasks that can be requeued explicitly after the limit reset.",
+      "status": "open",
+      "date_added": "2026-07-22"
     }
   ],
   "status_summary": {
-    "open": 1230,
+    "open": 1234,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 97,
-    "high": 647,
+    "critical": 98,
+    "high": 650,
     "low": 105,
     "medium": 395
   },
   "lastUpdated": "2026-07-22",
   "stats": {
-    "total": 1244,
-    "critical": 97,
-    "high": 647,
+    "total": 1248,
+    "critical": 98,
+    "high": 650,
     "medium": 395,
     "low": 105,
-    "open": 1230,
+    "open": 1234,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-22",
-  "total": 1244
+  "total": 1248
 }
