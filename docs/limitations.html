@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1274</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-22.</span></p>
+        <p class="subtitle"><span id="total-count">1276</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-22.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -13925,9 +13925,33 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If a workflow depends on `Notification` hooks for permission prompts, set `claudeCode.useTerminal: true` in VS Code settings and verify a harmless permission prompt emits the expected hook payload before relying on notifications. Otherwise treat VS Code graphical approval prompts as a separate channel, and do not assume CLI prompt hooks cover extension UI decisions.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80110" target="_blank">#80110</a></div>
         </div>
-        <div class="kl-entry" data-category="VS Code extension" data-issues="80126" id="vscode-chat-links-can-ignore-secondary-workspace-roots" data-severity="medium" data-status="open">
+        <div class="kl-entry" data-category="Sandbox &amp; permissions" data-issues="80212" id="wsl-env-scrub-can-force-broken-bwrap-managed-settings-bind" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1268</span>
+                <span class="kl-cat">Sandbox &amp; permissions</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>WSL env scrub can force a broken bwrap managed-settings bind</h3>
+            <p>A reported WSL2 Claude Code 2.1.187 through 2.1.217 setup found that setting `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` forced the bubblewrap filesystem sandbox on for every Bash call even though no user, project, or managed setting enabled sandboxing. The sandbox then tried to protect the Windows managed-settings path under `/mnt/c/Program Files/ClaudeCode`, which did not exist because Claude Code was installed only inside WSL. Bubblewrap attempted to create the missing Windows-side directory and every Bash call failed before execution with a permission error.</p>
+                        <!-- workaround:wsl-env-scrub-can-force-broken-bwrap-managed-settings-bind -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On WSL, test one harmless Bash command after enabling `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` before relying on credential scrubbing in a real workflow. If every Bash call fails with a `/mnt/c/Program Files/ClaudeCode` bwrap mkdir error, either unset the scrub variable and accept the reduced credential protection, or create `C:\Program Files\ClaudeCode` from an elevated Windows shell so the sandbox setup no longer tries to make it from WSL. Re-check that Bash still runs after Claude Code updates because the failure is in launch-time sandbox assembly.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80212" target="_blank">#80212</a></div>
+        </div>
+        <div class="kl-entry" data-category="Sandbox &amp; permissions" data-issues="80214" id="sandbox-allowread-directory-can-be-shadowed-by-later-parent-tmpfs" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1269</span>
+                <span class="kl-cat">Sandbox &amp; permissions</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Sandbox allowRead directories can be shadowed by later parent tmpfs mounts</h3>
+            <p>A reported Linux Claude Code 2.1.209 sandbox configuration used `denyRead` on a parent directory and `allowRead` on a more specific child directory, matching the documented expectation that the more specific path should win. The generated bubblewrap arguments bound the allowed child directory first, then mounted a tmpfs over the denied parent path later, shadowing the child bind. Only a few individually re-bound files survived, so most files under the allowed directory appeared missing inside sandboxed Bash despite existing on the real filesystem.</p>
+                        <!-- workaround:sandbox-allowread-directory-can-be-shadowed-by-later-parent-tmpfs -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume an overlapping `allowRead` directory has restored the full tree until a sandboxed Bash probe lists files below it. Avoid broad parent `denyRead` rules that require child directory reopenings for critical work, or grant access at a boundary that does not need a later parent tmpfs overlay. For controlled environments, inspect the generated bwrap mount order during a short command and treat missing allowed directories as a sandbox assembly failure rather than a missing-file condition.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80214" target="_blank">#80214</a></div>
+        </div>
+        <div class="kl-entry" data-category="VS Code extension" data-issues="80126" id="vscode-chat-links-can-ignore-secondary-workspace-roots" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1270</span>
                 <span class="kl-cat">VS Code extension</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -13939,7 +13963,7 @@
         </div>
         <div class="kl-entry" data-category="TUI &amp; display" data-issues="80066" id="tabby-terminal-can-render-thai-ime-composition-incompletely" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1269</span>
+                <span class="kl-num">#1271</span>
                 <span class="kl-cat">TUI &amp; display</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -13951,7 +13975,7 @@
         </div>
         <div class="kl-entry" data-category="VS Code extension" data-issues="80127" id="vscode-compact-summary-can-be-non-copyable" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1270</span>
+                <span class="kl-num">#1272</span>
                 <span class="kl-cat">VS Code extension</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -13963,7 +13987,7 @@
         </div>
         <div class="kl-entry" data-category="VS Code extension" data-issues="80004" id="vscode-extension-host-can-time-out-after-subprocess-init" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1271</span>
+                <span class="kl-num">#1273</span>
                 <span class="kl-cat">VS Code extension</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -13975,7 +13999,7 @@
         </div>
         <div class="kl-entry" data-category="Core &amp; session management" data-issues="80079" id="session-docs-can-omit-transcript-persistence-warning-recovery" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1272</span>
+                <span class="kl-num">#1274</span>
                 <span class="kl-cat">Core &amp; session management</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -13987,7 +14011,7 @@
         </div>
         <div class="kl-entry" data-category="Context &amp; memory" data-issues="80190" id="skill-shared-docs-can-load-large-unrelated-context" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1273</span>
+                <span class="kl-num">#1275</span>
                 <span class="kl-cat">Context &amp; memory</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -13999,7 +14023,7 @@
         </div>
         <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="80191" id="connection-probes-can-use-unidentified-user-agents" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1274</span>
+                <span class="kl-num">#1276</span>
                 <span class="kl-cat">Security &amp; trust boundaries</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>

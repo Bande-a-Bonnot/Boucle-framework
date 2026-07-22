@@ -63,6 +63,22 @@
     <category term="VS Code extension"/>
   </entry>
   <entry>
+    <title>[HIGH] Sandbox allowRead directories can be shadowed by later parent tmpfs mounts</title>
+    <id>https://framework.boucle.sh/limitations.html#sandbox-allowread-directory-can-be-shadowed-by-later-parent-tmpfs</id>
+    <link href="https://framework.boucle.sh/limitations.html#sandbox-allowread-directory-can-be-shadowed-by-later-parent-tmpfs"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported Linux Claude Code 2.1.209 sandbox configuration used `denyRead` on a parent directory and `allowRead` on a more specific child directory, matching the documented expectation that the more specific path should win. The generated bubblewrap arguments bound the allowed child directory first, then mounted a tmpfs over the denied parent path later, shadowing the child bind. Only a few individually re-bound files survived, so most files under the allowed directory appeared missing inside sandboxed Bash despite existing on the real filesystem.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
+    <title>[HIGH] WSL env scrub can force a broken bwrap managed-settings bind</title>
+    <id>https://framework.boucle.sh/limitations.html#wsl-env-scrub-can-force-broken-bwrap-managed-settings-bind</id>
+    <link href="https://framework.boucle.sh/limitations.html#wsl-env-scrub-can-force-broken-bwrap-managed-settings-bind"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported WSL2 Claude Code 2.1.187 through 2.1.217 setup found that setting `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` forced the bubblewrap filesystem sandbox on for every Bash call even though no user, project, or managed setting enabled sandboxing. The sandbox then tried to protect the Windows managed-settings path under `/mnt/c/Program Files/ClaudeCode`, which did not exist because Claude Code was installed only inside WSL. Bubblewrap attempted to create the missing Windows-side directory and every Bash call failed before execution with a permission error.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
     <title>[HIGH] VS Code permission prompts can bypass Notification hooks</title>
     <id>https://framework.boucle.sh/limitations.html#vscode-permission-prompts-can-bypass-notification-hooks</id>
     <link href="https://framework.boucle.sh/limitations.html#vscode-permission-prompts-can-bypass-notification-hooks"/>
@@ -149,21 +165,5 @@
     <updated>2026-07-22T00:00:00Z</updated>
     <summary>A reported Windows 11 Claude Code for VS Code regression began in extension v2.1.214 and persisted through v2.1.217: with `claudeCode.useTerminal: true`, the extension reported `Could not locate the Claude CLI on PATH` even though `Get-Command claude` and `where.exe claude` resolved the standalone installer binary correctly. The affected account used a non-ASCII profile path, and the CLI binary itself continued to work, narrowing the issue to the extension&#x27;s terminal-launch CLI detection path rather than the Claude CLI installation. The latest webview panel path with `claudeCode.useTerminal: false` still worked.</summary>
     <category term="VS Code extension"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Channel host mode can ignore a valid OAuth env token</title>
-    <id>https://framework.boucle.sh/limitations.html#channel-host-mode-can-ignore-valid-oauth-env-token</id>
-    <link href="https://framework.boucle.sh/limitations.html#channel-host-mode-can-ignore-valid-oauth-env-token"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported macOS Claude Code 2.1.216 and 2.1.217 setup running `claude --channels` as a long-lived headless channel host under launchd used the stored Keychain OAuth session even when `CLAUDE_CODE_OAUTH_TOKEN` was present and independently verified as valid. Interactive mode and `claude -p` honored the env token in the same environment, but channel-host mode sent the expired Keychain access token and every command failed with 401 while the process, socket, and gateway remained healthy. Deleting the `Claude Code-credentials` Keychain entry made the host use the env token again.</summary>
-    <category term="Auth &amp; accounts"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Concurrent macOS OAuth instances can cascade logouts</title>
-    <id>https://framework.boucle.sh/limitations.html#concurrent-macos-oauth-instances-can-cascade-logouts</id>
-    <link href="https://framework.boucle.sh/limitations.html#concurrent-macos-oauth-instances-can-cascade-logouts"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported macOS Claude Code 2.1.216 setup with many concurrent Claude Code processes sharing one Keychain OAuth credential saw repeated mid-session logouts. The failure matches an existing refresh-token rotation race pattern: one process rotates the token chain, another process refreshes with an already-consumed token, receives a 401, and may overwrite shared credentials with a logged-out state that kills the interactive session too. The report extends the risk from Linux file-based credentials to macOS Keychain-backed credentials.</summary>
-    <category term="Auth &amp; accounts"/>
   </entry>
 </feed>
