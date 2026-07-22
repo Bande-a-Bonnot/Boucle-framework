@@ -7,6 +7,22 @@
   <updated>2026-07-22T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Cloud RemoteTriggers can acknowledge dispatch without starting a session</title>
+    <id>https://framework.boucle.sh/limitations.html#cloud-remote-triggers-can-acknowledge-dispatch-without-starting-a-session</id>
+    <link href="https://framework.boucle.sh/limitations.html#cloud-remote-triggers-can-acknowledge-dispatch-without-starting-a-session"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported Claude Code Remote Control setup with 31 scheduled cloud routines saw triggers fire server-side and advance `last_fired_at`, while no paired-Mac session started, no remote-control log line appeared, and no transcript JSONL was created. On 2026-07-22, 7 of 18 due cloud routines were silently dropped on an awake wired Mac, while local scheduled-tasks on the same machine ran 4 of 4 in the same window. Manual `/run` calls could also return HTTP 200 with a `session_id` but still produce no local session, making the failure an acknowledged dispatch loss rather than a normal routine hang.</summary>
+    <category term="Remote &amp; cloud"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Linux daemon self-update can replace the native binary with the npm stub</title>
+    <id>https://framework.boucle.sh/limitations.html#linux-daemon-self-update-can-replace-native-binary-with-npm-stub</id>
+    <link href="https://framework.boucle.sh/limitations.html#linux-daemon-self-update-can-replace-native-binary-with-npm-stub"/>
+    <updated>2026-07-22T00:00:00Z</updated>
+    <summary>A reported Linux Claude Code 2.1.215 through 2.1.217 background supervisor noticed the watched global executable path changed, then tried to self-restart from `/usr/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe`. Because npm 12 policy had blocked the package `postinstall` script, that path contained the small ASCII &quot;native binary not installed&quot; npm stub even though the platform optional package was present. The daemon spawn path failed with raw `ENOEXEC` before the stub could print remediation text, leaving daemon control unreachable until a manual reinstall allowed scripts and restored the ELF binary.</summary>
+    <category term="Performance &amp; resources"/>
+  </entry>
+  <entry>
     <title>[HIGH] Non-root Linux sandbox can fail under root-owned ancestors</title>
     <id>https://framework.boucle.sh/limitations.html#non-root-linux-sandbox-can-fail-under-root-owned-ancestors</id>
     <link href="https://framework.boucle.sh/limitations.html#non-root-linux-sandbox-can-fail-under-root-owned-ancestors"/>
@@ -83,7 +99,7 @@
     <id>https://framework.boucle.sh/limitations.html#desktop-local-mcp-bridge-can-race-device-surfaces</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-local-mcp-bridge-can-race-device-surfaces"/>
     <updated>2026-07-22T00:00:00Z</updated>
-    <summary>Reported Claude Desktop 1.24012.1 sessions on macOS and Windows initialized local MCP servers and listed tools, but later dropped `tools/call` before the request reached the server. One macOS report captured paired `localMcpBridge` announcements and paired `remote-tools-device` WebSocket connections for the same device ID from chat, Cowork, and Claude-Code-Desktop surfaces, suggesting competing bridge owners can evict each other and leave file-tool calls with no live route. A later first-party Directory-installed Filesystem extension report reproduced the same no-dispatch symptom after a full app wipe, so the failure is not limited to manually configured stdio servers.</summary>
+    <summary>Reported Claude Desktop 1.24012.1 sessions on macOS and Windows initialized local MCP servers and listed tools, but later dropped `tools/call` before the request reached the server or lost completed results on the way back to the client. One macOS report captured paired `localMcpBridge` announcements, paired `remote-tools-device` WebSocket connections, and thousands of `oncalltool handler replaced` warnings during multi-conversation use, suggesting competing bridge owners can evict each other and orphan in-flight calls. Later first-party Directory Filesystem extension reports reproduced the same no-dispatch symptom after full app wipes and fresh chats, including a Windows case where Chat mode failed while Cowork and embedded Claude Code MCP access still worked.</summary>
     <category term="MCP &amp; integrations"/>
   </entry>
   <entry>
@@ -149,21 +165,5 @@
     <updated>2026-07-22T00:00:00Z</updated>
     <summary>A reported macOS sandboxed Claude Code worktree session created `&lt;worktree&gt;/.claude/.cc-writes/` while editing inside an entered linked worktree. That harness-owned path remained write-denied after ExitWorktree, causing both sandboxed `git worktree remove --force` and Claude Code&#x27;s own `ExitWorktree({action: &quot;remove&quot;})` cleanup path to fail with operation-permitted errors and leave an orphaned stub.</summary>
     <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Plan mode workflow can override project CLAUDE.md process</title>
-    <id>https://framework.boucle.sh/limitations.html#plan-mode-workflow-can-override-project-claude-md-process</id>
-    <link href="https://framework.boucle.sh/limitations.html#plan-mode-workflow-can-override-project-claude-md-process"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.217 plan-mode session loaded project CLAUDE.md under an override-precedence wrapper, then plan-mode&#x27;s injected workflow still directed the model into an incompatible chat-side planning process and unapproved Explore-agent fan-out. The more proximate plan-mode instructions overrode the repository&#x27;s reviewed plan-document and code-search conventions, producing wasted token spend and work the project process rejected.</summary>
-    <category term="Model behavior &amp; instructions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Plugin update can miss source drift with unchanged version</title>
-    <id>https://framework.boucle.sh/limitations.html#plugin-update-can-miss-source-drift-with-unchanged-version</id>
-    <link href="https://framework.boucle.sh/limitations.html#plugin-update-can-miss-source-drift-with-unchanged-version"/>
-    <updated>2026-07-22T00:00:00Z</updated>
-    <summary>A reported git-backed marketplace plugin gained real upstream commits while its `plugin.json` version stayed unchanged. `claude plugin update` and `/reload-plugins` compared only the declared version string, reported the plugin was already latest, left the runtime cache byte-identical, and did not update the recorded `gitCommitSha` even though the marketplace clone itself had fetched the newer source.</summary>
-    <category term="MCP &amp; plugin issues"/>
   </entry>
 </feed>
