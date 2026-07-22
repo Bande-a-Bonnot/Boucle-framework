@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1232,
+  "count": 1236,
   "categories": {
     "Hook behavior & events": 184,
     "Permission system": 127,
@@ -16,7 +16,7 @@
     "Tool behavior": 20,
     "Agents & subagents": 19,
     "Performance & cost": 19,
-    "MCP & integrations": 15,
+    "MCP & integrations": 17,
     "Security & trust boundaries": 14,
     "Data integrity": 13,
     "MCP integration": 13,
@@ -74,6 +74,7 @@
     "Auth and login": 2,
     "auth/bedrock": 2,
     "auth/oauth": 2,
+    "Browser automation": 2,
     "Configuration": 2,
     "Cost & usage": 2,
     "Cowork": 2,
@@ -182,9 +183,9 @@
   },
   "severity_counts": {
     "CRITICAL": 97,
-    "HIGH": 637,
+    "HIGH": 640,
     "LOW": 105,
-    "MEDIUM": 393
+    "MEDIUM": 394
   },
   "entries": [
     {
@@ -15817,30 +15818,83 @@
       "workaround": "Before launching broad deep-research runs, set a narrow scope and ask for incremental notes or files after each verified batch. If a run is cut off by quota, mine the transcript for partial findings before restarting, and prefer smaller staged research tasks until cross-session resume and durable checkpoints are available.",
       "status": "open",
       "date_added": "2026-07-21"
+    },
+    {
+      "id": "desktop-local-mcp-bridge-can-race-device-surfaces",
+      "title": "Desktop local MCP bridge can race device surfaces",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79962",
+        "https://github.com/anthropics/claude-code/issues/79986"
+      ],
+      "description": "Reported Claude Desktop 1.24012.1 sessions on macOS and Windows initialized local MCP servers and listed tools, but later dropped `tools/call` before the request reached the server. One macOS report captured paired `localMcpBridge` announcements and paired `remote-tools-device` WebSocket connections for the same device ID from chat, Cowork, and Claude-Code-Desktop surfaces, suggesting competing bridge owners can evict each other and leave file-tool calls with no live route.",
+      "workaround": "When Desktop file or local-MCP tools fail after a healthy handshake, compare Desktop logs with the MCP server log before changing the server. Look for duplicated bridge announcements or missing `tools/call` lines, try Claude Code CLI as a control path, and preserve redacted `main.log` excerpts around launch and the failing call.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "remote-mcp-approval-can-loop-after-allow",
+      "title": "Remote MCP approval can loop after Allow",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79983"
+      ],
+      "description": "A reported Claude Code web or remote execution session repeatedly failed a Gmail `create_draft` MCP tool call with `MCP error -32003: MCP tool call requires approval` even after the user approved the permission prompt twice. The same session had several MCP connectors repeatedly disconnecting and reconnecting, and the tool never created the draft.",
+      "workaround": "After approving a remote MCP action, verify the external side effect rather than trusting the prompt state. If the same approval error repeats, stop retrying the write, copy the intended content manually, and capture connector reconnect activity from the session so maintainers can distinguish an approval-state bug from a connector-auth bug.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "claude-in-chrome-1password-credential-bridge-can-fail-disconnected",
+      "title": "Claude in Chrome 1Password credential bridge can fail disconnected",
+      "category": "Browser automation",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79976"
+      ],
+      "description": "A reported Claude in Chrome credential-request flow could see the browser connection and a healthy, unlocked 1Password desktop app and extension, but the `Connect 1Password` banner still returned `Couldn't connect to 1Password` after approval. Updating 1Password, restarting Claude Code, testing multiple sites, and verifying direct `op` CLI access did not fix the Claude-in-Chrome to 1Password bridge.",
+      "workaround": "Do not assume a connected browser and unlocked password manager prove Claude can retrieve credentials. Keep manual login or direct `op` CLI access available as a fallback, and verify credential handoff on a low-risk site before relying on browser credential requests for production accounts.",
+      "status": "open",
+      "date_added": "2026-07-22"
+    },
+    {
+      "id": "claude-in-chrome-can-open-broken-helper-tabs",
+      "title": "Claude in Chrome can open broken helper tabs",
+      "category": "Browser automation",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79956"
+      ],
+      "description": "A reported Windows Claude in Chrome v1.0.81 setup opened four extra tabs named `native`, `host`, `wrapper`, and `script` with `DNS_PROBE_FINISHED_NXDOMAIN` whenever a local PowerShell script opened a target URL. Disabling other extensions did not help, while disabling Claude in Chrome stopped the extra tabs.",
+      "workaround": "Before automating browser tab creation with Claude in Chrome enabled, test the exact launcher path in a disposable browser profile. If bare helper-name tabs appear, disable the extension for that workflow or isolate it in a dedicated profile until the native-host URL handling is fixed.",
+      "status": "open",
+      "date_added": "2026-07-22"
     }
   ],
   "status_summary": {
-    "open": 1218,
+    "open": 1222,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 97,
-    "high": 637,
+    "high": 640,
     "low": 105,
-    "medium": 393
+    "medium": 394
   },
-  "lastUpdated": "2026-07-21",
+  "lastUpdated": "2026-07-22",
   "stats": {
-    "total": 1232,
+    "total": 1236,
     "critical": 97,
-    "high": 637,
-    "medium": 393,
+    "high": 640,
+    "medium": 394,
     "low": 105,
-    "open": 1218,
+    "open": 1222,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-07-21",
-  "total": 1232
+  "last_updated": "2026-07-22",
+  "total": 1236
 }
