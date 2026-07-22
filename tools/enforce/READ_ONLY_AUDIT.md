@@ -29,6 +29,8 @@ rules but will not activate them.
 Run these commands from the project root, next to the `CLAUDE.md` you edited:
 
 ```sh
+mkdir -p .claude
+test ! -f .claude/settings.json || cp .claude/settings.json .claude/settings.json.pre-read-only.bak
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/enforce-hooks.py -o /tmp/enforce-hooks.py
 python3 /tmp/enforce-hooks.py CLAUDE.md --scan
 python3 /tmp/enforce-hooks.py CLAUDE.md --install-plugin
@@ -37,6 +39,8 @@ python3 /tmp/enforce-hooks.py CLAUDE.md --install-plugin
 Plugin mode installs one `PreToolUse` hook that re-reads `CLAUDE.md` on every
 tool call. If you edit the read-only policy later, you do not need to reinstall
 the hook.
+The backup command snapshots the project-level `.claude/settings.json` before
+`--install-plugin` registers the hook. Keep it until the audit is finished.
 
 ## 3. Verify the hook is registered
 
@@ -117,3 +121,17 @@ If you want warnings instead of hard blocks, change the heading to:
 
 Warnings are useful for dry runs, but they do not provide a read-only boundary.
 Use `@enforced` for real audits.
+
+If you want to remove the plugin registration entirely, restore the project
+settings snapshot or remove the `enforce-pretooluse.sh` hook from Claude Code's
+hooks UI. Then run:
+
+```sh
+python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
+```
+
+Expect the strict audit to exit non-zero if `CLAUDE.md` still contains the
+`Read-only mode @enforced` section, because the policy is no longer covered by
+an active hook. The safety-check summary should still show zero `FAIL-OPEN`
+results for any remaining hooks you intend to keep.
