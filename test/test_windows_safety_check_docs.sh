@@ -44,6 +44,9 @@ checks = [
             "install.ps1 verify` uses native PowerShell hook payload checks",
             "install.ps1 check` command delegates to this bash-based safety-check script",
             "Git Bash, WSL, or another `bash` on PATH",
+            "For native `install.ps1 verify`, there is no safety summary block",
+            "On native Windows with `install.ps1 verify`, copy only the final verifier count",
+            "The PowerShell verifier does not print the\n`--- Safety Summary (copy/paste) ---` block",
         ],
     ),
     (
