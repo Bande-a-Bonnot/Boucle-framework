@@ -166,6 +166,9 @@ iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
 
+For native `install.ps1 verify`, there is no safety summary block. Share only
+the final verifier count plus any `WARN` or `SKIP` lines.
+
 If verification fails after the update, run `doctor` before reinstalling. If
 hooks disappeared or `doctor` reports that `settings.json` was wiped, restore
 the most recent backup, then run the strict audit again:
@@ -219,6 +222,10 @@ Copy the block that starts with:
 That block includes the grade, installed hook inventory, `Issue:` lines, verify
 counts, and the current trust boundary. It does not include raw settings files
 or hook source.
+
+On native Windows with `install.ps1 verify`, copy only the final verifier count
+plus any `WARN` or `SKIP` lines. The PowerShell verifier does not print the
+`--- Safety Summary (copy/paste) ---` block.
 
 Do not share raw `settings.json`, hook scripts, shell history, session logs,
 private paths, tokens, `.env` contents, or proprietary `CLAUDE.md` rules in
