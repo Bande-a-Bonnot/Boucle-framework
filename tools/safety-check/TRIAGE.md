@@ -1,9 +1,10 @@
 # Safety summary triage
 
-Use this after running `safety-check --verify`. The copy/paste summary is a
-repair list, not a certificate. Start with the first item that proves hooks
-could be skipped or fail open, then rerun verification from the same project
-root.
+Use this after running `safety-check --verify`, or `install.ps1 verify` for
+native Windows PowerShell hooks. The safety-check copy/paste summary and the
+PowerShell verifier counts are repair lists, not certificates. Start with the
+first item that proves hooks could be skipped or fail open, then rerun
+verification from the same project root.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
@@ -16,9 +17,16 @@ PowerShell hooks:
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
 
+`install.ps1 verify` does not print the `--- Safety Summary (copy/paste) ---`
+block. Use its final count line plus any `WARN` or `SKIP` lines as the repair
+list. If Git Bash or WSL is available, `install.ps1 check --verify` delegates to
+the bash safety-check and prints the full summary block.
+
 ## First pass
 
-Read the `--- Safety Summary (copy/paste) ---` block from top to bottom:
+For safety-check output, read the `--- Safety Summary (copy/paste) ---` block
+from top to bottom. For native PowerShell output, read the final count line and
+any `WARN` or `SKIP` lines:
 
 1. Fix anything that can disable hooks for the whole session.
 2. Fix invalid settings or missing hook files.
@@ -41,6 +49,8 @@ Do not trust a good letter grade by itself. A setup with Grade A and
 | `FAIL-OPEN` | High | A configured hook did not block its representative dangerous payload. | Inspect or reinstall that hook before trusting the session. |
 | `skipped PreToolUse` | High | Safety-check could not prove that hook blocks anything. | Point the hook command at a script path that can be executed directly. |
 | `missing` or `not executable` hook file | High | Claude Code can call a hook command that no longer exists or cannot run. | Run `install.sh doctor`, then repair or reinstall the hook. |
+| Native `install.ps1 verify` warning count | High | A native PowerShell hook verifier warning means at least one installed hook did not pass its representative payload check. | Run `install.ps1 doctor`, then repair or reinstall the named hook. |
+| Native `install.ps1 verify` skipped count | Medium | Some native PowerShell hooks need repo context or a lifecycle event before they can be fully verified. | Treat the skipped hook as unproven for that boundary, or verify it in the relevant repo/session context. |
 | Ancestor project settings warning | Medium | Starting Claude Code from a subdirectory can miss project hooks. | Rerun from the directory that owns `.claude/settings.json`. |
 | Windows hook warning | Medium | Native Windows hook behavior varies by Claude Code version and shell. | Prefer WSL or verify with the native PowerShell path. |
 

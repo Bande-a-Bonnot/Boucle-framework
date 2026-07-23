@@ -46,6 +46,24 @@ checks = [
             "Git Bash, WSL, or another `bash` on PATH",
         ],
     ),
+    (
+        repo / "tools" / "safety-check" / "SUPPORT_EVIDENCE.md",
+        [
+            "native PowerShell verifier does not emit that block",
+            "final count line",
+            "Any `WARN` or `SKIP` lines",
+            "Native Windows PowerShell verifier, if no Safety Summary block exists",
+        ],
+    ),
+    (
+        repo / "tools" / "safety-check" / "TRIAGE.md",
+        [
+            "install.ps1 verify` does not print the `--- Safety Summary (copy/paste) ---`",
+            "final count line plus any `WARN` or `SKIP` lines",
+            "Native `install.ps1 verify` warning count",
+            "Native `install.ps1 verify` skipped count",
+        ],
+    ),
 ]
 
 failures = []
