@@ -42,6 +42,12 @@ If you want the full hook suite:
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- all
 ```
 
+Both `recommended` and `all` install user-level hooks under
+`~/.claude/<hook-name>/` and register them in `~/.claude/settings.json`. They do
+not create repo-local `.claude/settings.json` policy for the current project.
+The project root still matters for the audit because safety-check also inspects
+checked-in project settings when they already exist.
+
 On Windows, use PowerShell 7 or WSL. Native Windows hook behavior can vary by
 Claude Code version, so verify after installing:
 
