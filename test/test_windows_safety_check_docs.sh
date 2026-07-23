@@ -26,6 +26,10 @@ checks = [
             "install.ps1 check",
             "similar. The safety-check summary",
             "Git Bash or WSL for safety-check",
+            "Safe Support Evidence",
+            "For native\n`install.ps1 verify`, which does not print that summary block",
+            "final verifier count plus any `WARN` or `SKIP` lines",
+            "safety-check/SUPPORT_EVIDENCE.md",
         ],
     ),
     (
