@@ -166,6 +166,20 @@ If `verify` passes with zero `FAIL-OPEN` checks but `doctor` still reports
 platform warnings, do not keep reinstalling hooks. Treat the hooks as one
 verified boundary and document the remaining Claude Code platform risk.
 
+## Safe Support Evidence
+
+When a verification result looks wrong, share only the smallest public evidence
+needed for triage. Do not paste raw `settings.json`, full hook stderr, session
+logs, shell history, or screenshots that expose local paths.
+
+For `install.sh check --verify` or direct `safety-check --verify` output, copy
+only the final `--- Safety Summary (copy/paste) ---` block. For native
+`install.ps1 verify`, which does not print that summary block, copy only the
+final verifier count plus any `WARN` or `SKIP` lines.
+
+See [safety-check/SUPPORT_EVIDENCE.md](safety-check/SUPPORT_EVIDENCE.md) for a
+public-report template and redaction checklist.
+
 ## Common Problems & Solutions
 
 See [recipes](https://framework.boucle.sh/recipes.html) for a detailed guide mapping common Claude Code problems (rules ignored, files deleted, dangerous commands, force pushes) to the specific hooks that fix them, with install commands and GitHub issue references.
