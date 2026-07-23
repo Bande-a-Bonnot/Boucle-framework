@@ -17,11 +17,17 @@ Use the project root that contains `.claude/settings.json` when one exists. If
 the summary reports ancestor project settings, rerun from that root before
 posting the report.
 
-On native Windows, use the PowerShell installer verification path:
+On native Windows, use the PowerShell installer verification path when you
+installed native `.ps1` hooks:
 
 ```powershell
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
+
+If Git Bash or WSL is available, you can also run `install.ps1 check --verify`
+or the bash checker directly to get the full safety-check summary block. The
+native PowerShell verifier does not emit that block; it prints hook-by-hook
+verification plus a final count line.
 
 If the command hangs, rerun with the default timeout. Do not raise
 `HOOK_VERIFY_TIMEOUT_SECONDS` for a public support report unless you know a
@@ -29,7 +35,8 @@ local hook is intentionally slow.
 
 ## 2. Copy only the summary block
 
-Near the end of the output, copy the block that starts with:
+For `safety-check --verify` output, copy the block near the end that starts
+with:
 
 ```text
 --- Safety Summary (copy/paste) ---
@@ -48,6 +55,17 @@ Do not paste raw hook stderr from a live Claude Code session. Claude Code can
 prefix hook stderr with the hook command path, so even a clean block message can
 expose local usernames, repository names, or private hook locations. The
 safety-check summary is the safer public artifact.
+
+For native `install.ps1 verify` output, there is no `--- Safety Summary
+(copy/paste) ---` block. Copy only:
+
+- The final count line, such as `All 3 hooks verified, 0 skipped.` or
+  `2 passed, 1 warnings, 1 skipped.`
+- Any `WARN` or `SKIP` lines printed during verification.
+- `No hooks installed. Run: install.ps1 recommended`, if that is the result.
+
+Do not include the startup hook table if it exposes private paths or local hook
+locations.
 
 ## 3. Add the minimum context
 
@@ -108,6 +126,9 @@ Where hooks are installed:
 What changed recently:
 
 --- Safety Summary (copy/paste) ---
+...
+
+Native Windows PowerShell verifier, if no Safety Summary block exists:
 ...
 ```
 
