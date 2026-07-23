@@ -65,6 +65,10 @@ docs = {
         "Do not paste raw hook stderr from a live Claude Code session",
         "platform can prefix it with the hook command path",
         "safe support evidence guide",
+        "install user-level hooks under",
+        "register them in `~/.claude/settings.json`",
+        "do not create repo-local `.claude/settings.json` policy",
+        "project settings when they already exist",
     ],
     repo / "tools" / "enforce" / "READ_ONLY_AUDIT.md": [
         "cp .claude/settings.json .claude/settings.json.pre-read-only.bak",
