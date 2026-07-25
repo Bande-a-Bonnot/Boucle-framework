@@ -5,6 +5,7 @@
 # Or:    curl ... | bash -s -- read-once file-guard git-safe
 # Or:    curl ... | bash -s -- list
 # Or:    curl ... | bash -s -- verify
+# Or:    curl ... | bash -s -- check --verify --summary-only
 # Or:    curl ... | bash -s -- check --verify --strict
 # Or:    curl ... | bash -s -- upgrade
 # Or:    curl ... | bash -s -- uninstall read-once
@@ -103,7 +104,7 @@ if [ $# -gt 0 ] && { [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]
   echo "  backup list           Show available backups"
   echo "  restore               Restore the most recent backup"
   echo "  restore <file>        Restore a specific backup"
-  echo "  check [--verify] [--strict]"
+  echo "  check [--verify] [--summary-only] [--strict]"
   echo "                        Run safety audit on your Claude Code setup"
   echo "  doctor                Diagnose installation health (files, settings, permissions)"
   echo "  help                  Show this help message"
@@ -129,6 +130,7 @@ if [ $# -gt 0 ] && { [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]
   echo "  install.sh backup                 # Snapshot before updating Claude Code"
   echo "  install.sh restore                # Restore after a wipe"
   echo "  install.sh check                  # Run safety audit"
+  echo "  install.sh check --verify --summary-only # Public support summary"
   echo "  install.sh check --verify --strict # Strict safety audit"
   echo "  install.sh doctor                 # Check installation health"
   exit 0
