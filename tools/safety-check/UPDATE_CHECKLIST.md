@@ -96,6 +96,12 @@ When asking for help, share only the block that starts with:
 --- Safety Summary (copy/paste) ---
 ```
 
+and ends with:
+
+```text
+--- End Safety Summary ---
+```
+
 Do not share raw `settings.json`, hook scripts, shell history, session logs,
 private paths, tokens, `.env` contents, or proprietary `CLAUDE.md` rules in
 public threads. The [safe support evidence guide](SUPPORT_EVIDENCE.md) gives a

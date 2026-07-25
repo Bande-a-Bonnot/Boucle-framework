@@ -2223,6 +2223,7 @@ if [ "$VERIFY_RAN" = "1" ]; then
     fi
 fi
 printf "github.com/Bande-a-Bonnot/Boucle-framework\n"
+printf "%s\n" "--- End Safety Summary ---"
 
 echo ""
 printf "${DIM}https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools${NC}\n"
