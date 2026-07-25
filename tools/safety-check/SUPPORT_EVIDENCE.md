@@ -128,8 +128,23 @@ Do not post:
 - Tokens, API keys, `.env` contents, OAuth files, SSH keys, or private URLs.
 - Proprietary `CLAUDE.md` rules unless you have reviewed and redacted them.
 
-If a maintainer needs raw files, share a minimal reproduction in a temporary
-directory instead of your real workspace.
+If a maintainer needs raw files, do not trim your real workspace into a public
+zip. Build a minimal reproduction in a temporary directory, then run
+`safety-check` there:
+
+```sh
+tmpdir="$(mktemp -d)"
+cd "$tmpdir"
+mkdir -p .claude/hooks
+printf '{"hooks":{}}\n' > .claude/settings.json
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
+```
+
+Replace the sample `.claude/settings.json` with the smallest redacted settings
+file that reproduces the issue. Keep only throwaway hook scripts and placeholder
+paths in the temporary directory. If the problem does not reproduce there, say
+that; it usually means the remaining signal is in local paths, environment
+variables, shell startup files, or private hook code that should not be posted.
 
 ## 6. Minimal public report template
 
