@@ -64,6 +64,8 @@ docs = {
         "Do not paste raw hook stderr from a live Claude Code session",
         "prefix hook stderr with the hook command path",
         "safety-check summary is the safer public artifact",
+        "Build a minimal reproduction in a temporary directory",
+        "smallest redacted settings file that reproduces the issue",
         "--summary-only",
         "--- End Safety Summary ---",
     ],
@@ -77,6 +79,7 @@ docs = {
         "register them in `~/.claude/settings.json`",
         "do not create repo-local `.claude/settings.json` policy",
         "project settings when they already exist",
+        "temporary-directory reproduction instead of real workspace",
     ],
     repo / "tools" / "enforce" / "READ_ONLY_AUDIT.md": [
         "cp .claude/settings.json .claude/settings.json.pre-read-only.bak",

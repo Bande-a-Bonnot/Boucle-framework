@@ -250,4 +250,5 @@ private paths, tokens, `.env` contents, or proprietary `CLAUDE.md` rules in
 public threads. Do not paste raw hook stderr from a live Claude Code session,
 because the platform can prefix it with the hook command path. Use the
 [safe support evidence guide](SUPPORT_EVIDENCE.md) when you need a copy/paste
-report format.
+report format or a temporary-directory reproduction instead of real workspace
+files.
