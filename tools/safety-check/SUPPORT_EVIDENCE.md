@@ -17,6 +17,12 @@ Use the project root that contains `.claude/settings.json` when one exists. If
 the summary reports ancestor project settings, rerun from that root before
 posting the report.
 
+To print only the bounded public support block, add `--summary-only`:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
+```
+
 On native Windows, use the PowerShell installer verification path when you
 installed native `.ps1` hooks:
 
@@ -47,6 +53,9 @@ and stops at:
 ```text
 --- End Safety Summary ---
 ```
+
+If you ran `--summary-only`, the command output is already limited to this
+bounded block.
 
 That bounded block is designed for public triage. It includes the grade, hook
 inventory, `Issue:` lines, verification counts, and the current trust boundary.

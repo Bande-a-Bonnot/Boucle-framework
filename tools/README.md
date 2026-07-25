@@ -174,7 +174,14 @@ logs, shell history, or screenshots that expose local paths.
 
 For `install.sh check --verify` or direct `safety-check --verify` output, copy
 only the final block from `--- Safety Summary (copy/paste) ---` through
-`--- End Safety Summary ---`. For native `install.ps1 verify`, which does not
+`--- End Safety Summary ---`. To print only that bounded public block, run
+`safety-check --verify --summary-only` or:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
+```
+
+For native `install.ps1 verify`, which does not
 print that summary block, copy only the final verifier count plus any `WARN` or
 `SKIP` lines.
 
