@@ -173,9 +173,10 @@ needed for triage. Do not paste raw `settings.json`, full hook stderr, session
 logs, shell history, or screenshots that expose local paths.
 
 For `install.sh check --verify` or direct `safety-check --verify` output, copy
-only the final `--- Safety Summary (copy/paste) ---` block. For native
-`install.ps1 verify`, which does not print that summary block, copy only the
-final verifier count plus any `WARN` or `SKIP` lines.
+only the final block from `--- Safety Summary (copy/paste) ---` through
+`--- End Safety Summary ---`. For native `install.ps1 verify`, which does not
+print that summary block, copy only the final verifier count plus any `WARN` or
+`SKIP` lines.
 
 See [safety-check/SUPPORT_EVIDENCE.md](safety-check/SUPPORT_EVIDENCE.md) for a
 public-report template and redaction checklist.

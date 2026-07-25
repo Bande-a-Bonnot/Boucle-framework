@@ -39,6 +39,7 @@ docs = {
         "not a universal hard-block contract",
         "Ancestor project settings warning",
         "subdirectory launches can skip root project hooks",
+        "--- End Safety Summary ---",
     ],
     repo / "tools" / "safety-check" / "README.md": [
         "No hook installation required for the audit",
@@ -60,11 +61,13 @@ docs = {
         "Do not paste raw hook stderr from a live Claude Code session",
         "prefix hook stderr with the hook command path",
         "safety-check summary is the safer public artifact",
+        "--- End Safety Summary ---",
     ],
     repo / "tools" / "safety-check" / "QUICKSTART.md": [
         "Do not paste raw hook stderr from a live Claude Code session",
         "platform can prefix it with the hook command path",
         "safe support evidence guide",
+        "--- End Safety Summary ---",
         "install user-level hooks under",
         "register them in `~/.claude/settings.json`",
         "do not create repo-local `.claude/settings.json` policy",

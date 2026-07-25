@@ -3584,6 +3584,7 @@ assert "summary block present" "Safety Summary" "$OUTPUT"
 assert "summary has grade line" "Grade .* | " "$OUTPUT"
 assert "summary has hook status" "bash-guard" "$OUTPUT"
 assert "summary has repo link" "github.com/Bande-a-Bonnot/Boucle-framework" "$OUTPUT"
+assert "summary has end marker" "--- End Safety Summary ---" "$OUTPUT"
 
 # Test: verify mode explains the trust boundary after hook payload checks
 TMPDIR_VERIFY_BOUNDARY=$(mktemp -d)
@@ -3624,7 +3625,7 @@ SUMMARY_HOME="$TMPDIR_SUMMARY_PATHS/Home With Spaces"
 mkdir -p "$SUMMARY_HOME/.claude"
 printf '{ invalid json\n' > "$SUMMARY_HOME/.claude/settings.json"
 SUMMARY_PATH_OUTPUT=$(HOME="$SUMMARY_HOME" bash "$CHECK_SCRIPT" 2>&1) || true
-SUMMARY_PATH_BLOCK=$(printf "%s\n" "$SUMMARY_PATH_OUTPUT" | awk '/--- Safety Summary \(copy\/paste\) ---/{flag=1} flag')
+SUMMARY_PATH_BLOCK=$(printf "%s\n" "$SUMMARY_PATH_OUTPUT" | awk '/--- Safety Summary \(copy\/paste\) ---/{flag=1} flag {print} /--- End Safety Summary ---/{flag=0}')
 assert "local report keeps exact home settings path" "$SUMMARY_HOME/.claude/settings.json contains JSONC comments" "$SUMMARY_PATH_OUTPUT"
 assert "summary redacts home settings path" "~/.claude/settings.json contains JSONC comments" "$SUMMARY_PATH_BLOCK"
 assert_not "summary omits exact home path" "$SUMMARY_HOME" "$SUMMARY_PATH_BLOCK"

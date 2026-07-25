@@ -25,8 +25,9 @@ missing or broken:
 
 Do not paste private settings or full hook output into a public issue. If you
 need support, share only the final `--- Safety Summary (copy/paste) ---` block
-from the audit output. The [safe support evidence guide](SUPPORT_EVIDENCE.md)
-has a short public-report template and a list of fields to redact.
+from the audit output, stopping at `--- End Safety Summary ---`. The
+[safe support evidence guide](SUPPORT_EVIDENCE.md) has a short public-report
+template and a list of fields to redact.
 
 ## 2. Install the baseline hooks
 
@@ -219,9 +220,15 @@ Copy the block that starts with:
 --- Safety Summary (copy/paste) ---
 ```
 
-That block includes the grade, installed hook inventory, `Issue:` lines, verify
-counts, and the current trust boundary. It does not include raw settings files
-or hook source.
+and ends with:
+
+```text
+--- End Safety Summary ---
+```
+
+That bounded block includes the grade, installed hook inventory, `Issue:` lines,
+verify counts, and the current trust boundary. It does not include raw settings
+files or hook source.
 
 On native Windows with `install.ps1 verify`, copy only the final verifier count
 plus any `WARN` or `SKIP` lines. The PowerShell verifier does not print the

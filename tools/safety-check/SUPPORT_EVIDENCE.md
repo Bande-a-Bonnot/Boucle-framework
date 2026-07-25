@@ -42,10 +42,16 @@ with:
 --- Safety Summary (copy/paste) ---
 ```
 
-That block is designed for public triage. It includes the grade, hook inventory,
-`Issue:` lines, verification counts, and the current trust boundary. Path-related
-summary issues redact your home directory as `~` and the current checkout as
-`<project>`.
+and stops at:
+
+```text
+--- End Safety Summary ---
+```
+
+That bounded block is designed for public triage. It includes the grade, hook
+inventory, `Issue:` lines, verification counts, and the current trust boundary.
+Path-related summary issues redact your home directory as `~` and the current
+checkout as `<project>`.
 
 It should not include raw `settings.json`, hook script contents, shell history,
 session logs, `.env` values, tokens, private file paths, or proprietary
@@ -127,6 +133,7 @@ What changed recently:
 
 --- Safety Summary (copy/paste) ---
 ...
+--- End Safety Summary ---
 
 Native Windows PowerShell verifier, if no Safety Summary block exists:
 ...
