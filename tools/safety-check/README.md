@@ -26,8 +26,9 @@ from the subdirectory.
 New to the tool? Start with the [safety-check quickstart](QUICKSTART.md) for the
 short audit, install, verify, and repair loop.
 
-Need help with a result? Use the [safe support evidence guide](SUPPORT_EVIDENCE.md)
-to share the copy/paste summary without exposing private settings or secrets.
+Need help with a result? Use `--summary-only` or the
+[safe support evidence guide](SUPPORT_EVIDENCE.md) to share the copy/paste
+summary without exposing private settings or secrets.
 To interpret the summary and choose the first repair, use the
 [safety summary triage guide](TRIAGE.md).
 
@@ -46,6 +47,12 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 Each hook payload check has a 5-second timeout, so a stuck hook is reported as `FAIL-OPEN` evidence instead of hanging the audit. Set `HOOK_VERIFY_TIMEOUT_SECONDS` only if a deliberately slow local hook needs a longer bound.
 
 Use `--help` to check supported flags. Unknown flags fail closed instead of falling back to the basic audit, so a typo cannot make `--verify` look like it ran.
+
+To print only the bounded public support summary:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
+```
 
 For CI or scripted checks, add `--strict`:
 
@@ -185,7 +192,7 @@ Hook Verification (sending test payloads)
   1/5 payload checks FAIL-OPEN
 ```
 
-The copy/paste summary at the end runs from `--- Safety Summary (copy/paste) ---` through `--- End Safety Summary ---`. It includes setup blockers as `Issue:` lines, the verify result, for example `Verify: 0 FAIL-OPEN | 8 payload checks | 2 skipped`, plus the trust boundary to use when sharing an audit result. Its `N/8 hooks` inventory counts the 7 standalone hooks plus `enforce-hooks`, which installs separately. The summary includes hook-disabling environment flags, invalid user or project settings JSON, broken hook files, and timed-out hook payload checks so support triage can work from the summary without asking for private settings. See [safe support evidence](SUPPORT_EVIDENCE.md) for the short public-report template.
+The copy/paste summary at the end runs from `--- Safety Summary (copy/paste) ---` through `--- End Safety Summary ---`. Use `--summary-only` when you want the command to print only that bounded block. It includes setup blockers as `Issue:` lines, the verify result, for example `Verify: 0 FAIL-OPEN | 8 payload checks | 2 skipped`, plus the trust boundary to use when sharing an audit result. Its `N/8 hooks` inventory counts the 7 standalone hooks plus `enforce-hooks`, which installs separately. The summary includes hook-disabling environment flags, invalid user or project settings JSON, broken hook files, and timed-out hook payload checks so support triage can work from the summary without asking for private settings. See [safe support evidence](SUPPORT_EVIDENCE.md) for the short public-report template.
 If no hooks are installed yet, verify mode still prints a summary, but it will say `Verify: not run | no hooks found | 0 payload checks` and `Boundary: install hooks before trusting the hook layer.`
 Custom hook commands that are not direct script paths are skipped rather than reported as missing files. Interpreter-wrapped hook scripts such as `sh ./hook.sh`, `zsh ./hook.sh`, or `python ./hook.py` are file-checked and verified through that interpreter, so they do not need the executable bit. Lifecycle hooks such as `SessionStart` and `Stop` are also skipped because they do not receive PreToolUse tool payloads. If every hook is skipped, the summary says no payload checks ran instead of claiming the hook layer passed. In strict mode, any skipped `PreToolUse` hook check exits `1`; skipped lifecycle hooks remain informational unless no `PreToolUse` payload checks ran.
 

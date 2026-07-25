@@ -27,7 +27,11 @@ Do not paste private settings or full hook output into a public issue. If you
 need support, share only the final `--- Safety Summary (copy/paste) ---` block
 from the audit output, stopping at `--- End Safety Summary ---`. The
 [safe support evidence guide](SUPPORT_EVIDENCE.md) has a short public-report
-template and a list of fields to redact.
+template and a list of fields to redact. To print only that bounded block:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
+```
 
 ## 2. Install the baseline hooks
 
@@ -212,6 +216,13 @@ Run verification before asking for help:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
+```
+
+To avoid copying from the full local report, print only the bounded public
+support block:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
 ```
 
 Copy the block that starts with:

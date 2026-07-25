@@ -2,6 +2,7 @@
 # Claude Code Safety Check
 # Run: curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
 # Verify: curl -fsSL ... | bash -s -- --verify
+# Public summary only: curl -fsSL ... | bash -s -- --verify --summary-only
 # Strict CI gate: curl -fsSL ... | bash -s -- --verify --strict
 #
 # Audits your Claude Code setup and scores it for safety.
@@ -14,22 +15,27 @@ print_usage() {
     cat << 'EOF'
 Claude Code Safety Check
 
-Usage: check.sh [--verify] [--strict] [--help]
+Usage: check.sh [--verify] [--summary-only] [--strict] [--help]
 
 Options:
-  --verify  Send representative payloads to installed PreToolUse hooks and detect FAIL-OPEN results.
-  --strict  With --verify, exit 1 when hook verification fails or is inconclusive.
-  --help    Show this help text.
+  --verify        Send representative payloads to installed PreToolUse hooks and detect FAIL-OPEN results.
+  --summary-only  Print only the bounded copy/paste support summary.
+  --strict        With --verify, exit 1 when hook verification fails or is inconclusive.
+  --help          Show this help text.
 EOF
 }
 
 # Parse flags
 VERIFY_MODE=0
 STRICT_MODE=0
+SUMMARY_ONLY=0
 for arg in "$@"; do
     case "$arg" in
         --verify)
             VERIFY_MODE=1
+            ;;
+        --summary-only)
+            SUMMARY_ONLY=1
             ;;
         --strict)
             STRICT_MODE=1
@@ -50,6 +56,14 @@ if [ "$STRICT_MODE" = "1" ] && [ "$VERIFY_MODE" != "1" ]; then
     printf "Option --strict requires --verify.\n\n" >&2
     print_usage >&2
     exit 2
+fi
+
+SUMMARY_ONLY_TMP=""
+if [ "$SUMMARY_ONLY" = "1" ]; then
+    SUMMARY_ONLY_TMP=$(mktemp "${TMPDIR:-/tmp}/boucle-safety-check-summary-only-XXXXXX")
+    trap '[ -n "$SUMMARY_ONLY_TMP" ] && rm -f "$SUMMARY_ONLY_TMP"' EXIT
+    exec 3>&1
+    exec >"$SUMMARY_ONLY_TMP"
 fi
 
 CLAUDE_DIR="${HOME}/.claude"
@@ -2192,6 +2206,12 @@ _installed_count=0
 for _h in bash-guard git-safe file-guard read-once branch-guard session-log enforce-hooks worktree-guard; do
     has_hook "$_h" && _installed_count=$((_installed_count + 1))
 done
+if [ "$SUMMARY_ONLY" = "1" ]; then
+    exec 1>&3
+    exec 3>&-
+    rm -f "$SUMMARY_ONLY_TMP"
+    SUMMARY_ONLY_TMP=""
+fi
 echo "--- Safety Summary (copy/paste) ---"
 printf "Grade %s | %d%% | %d/8 hooks\n" "$GRADE" "$PCT" "$_installed_count"
 printf "[%s] bash-guard  [%s] git-safe  [%s] file-guard  [%s] read-once\n" \
@@ -2225,9 +2245,11 @@ fi
 printf "github.com/Bande-a-Bonnot/Boucle-framework\n"
 printf "%s\n" "--- End Safety Summary ---"
 
-echo ""
-printf "${DIM}https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools${NC}\n"
-echo ""
+if [ "$SUMMARY_ONLY" != "1" ]; then
+    echo ""
+    printf "${DIM}https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools${NC}\n"
+    echo ""
+fi
 
 if [ "$STRICT_MODE" = "1" ]; then
     if [ "$VERIFY_NO_HOOKS" = "1" ] || [ "$VERIFY_TOTAL" -eq 0 ] || [ "$VERIFY_FAIL" -gt 0 ] || [ "$VERIFY_PRETOOLUSE_SKIP" -gt 0 ] || [ "$HOOK_HEALTH_ISSUES" -gt 0 ]; then

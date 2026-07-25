@@ -50,7 +50,13 @@ Checks hook installation, hook health (missing/non-executable scripts), live ver
 
 For a 10-minute path from audit to verified hooks, see the [safety-check quickstart](tools/safety-check/QUICKSTART.md).
 If you need to ask for help, use the [safe support evidence guide](tools/safety-check/SUPPORT_EVIDENCE.md)
-to share the summary block without exposing private settings or secrets.
+to share the summary block without exposing private settings or secrets. To
+print only that bounded public block, run:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
+```
+
 For upstream Claude Code hook and permission gaps, use the
 [searchable limitations page](https://framework.boucle.sh/limitations.html),
 the [machine-readable JSON export](https://framework.boucle.sh/limitations.json),

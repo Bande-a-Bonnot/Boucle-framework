@@ -17,6 +17,7 @@ docs = {
         "safety-check uses python3",
         "most standalone shell hooks use jq",
         "No hook installation required for the audit",
+        "--verify --summary-only",
         "**Windows (PowerShell 7+)",
         "tools/install.ps1) } recommended",
         "Or install all standalone hooks at once",
@@ -40,6 +41,7 @@ docs = {
         "Ancestor project settings warning",
         "subdirectory launches can skip root project hooks",
         "--- End Safety Summary ---",
+        "safety-check --verify --summary-only",
     ],
     repo / "tools" / "safety-check" / "README.md": [
         "No hook installation required for the audit",
@@ -51,6 +53,7 @@ docs = {
         "install.ps1) } doctor",
         "install.ps1) } recommended",
         "Use `all` instead of `recommended` only when you want the full standalone hook",
+        "--verify --summary-only",
         "safety summary triage guide",
     ],
     repo / "tools" / "safety-check" / "check.sh": [
@@ -61,12 +64,14 @@ docs = {
         "Do not paste raw hook stderr from a live Claude Code session",
         "prefix hook stderr with the hook command path",
         "safety-check summary is the safer public artifact",
+        "--summary-only",
         "--- End Safety Summary ---",
     ],
     repo / "tools" / "safety-check" / "QUICKSTART.md": [
         "Do not paste raw hook stderr from a live Claude Code session",
         "platform can prefix it with the hook command path",
         "safe support evidence guide",
+        "--verify --summary-only",
         "--- End Safety Summary ---",
         "install user-level hooks under",
         "register them in `~/.claude/settings.json`",

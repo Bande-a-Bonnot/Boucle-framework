@@ -174,6 +174,7 @@ fi
 HELP_OUTPUT=$(bash "$CHECK_SCRIPT" --help 2>&1) || true
 assert "help shows usage" "Usage: check.sh" "$HELP_OUTPUT"
 assert "help shows verify flag" "--verify" "$HELP_OUTPUT"
+assert "help shows summary-only flag" "--summary-only" "$HELP_OUTPUT"
 assert "help shows strict flag" "--strict" "$HELP_OUTPUT"
 assert_not "help does not run audit" "Safety Score:" "$HELP_OUTPUT"
 
@@ -209,8 +210,21 @@ assert "strict without verify explains requirement" "Option --strict requires --
 assert "strict without verify shows usage" "Usage: check.sh" "$STRICT_NO_VERIFY_OUTPUT"
 assert_not "strict without verify does not run audit" "Safety Score:" "$STRICT_NO_VERIFY_OUTPUT"
 
+# === Test 9e: Summary-only prints only the bounded support block ===
+TMPDIR_SUMMARY_ONLY=$(mktemp -d)
+mkdir -p "$TMPDIR_SUMMARY_ONLY/.claude"
+echo '{"hooks": {}}' > "$TMPDIR_SUMMARY_ONLY/.claude/settings.json"
+SUMMARY_ONLY_OUTPUT=$(HOME="$TMPDIR_SUMMARY_ONLY" bash "$CHECK_SCRIPT" --verify --summary-only 2>&1) || true
+assert "summary-only prints copy/paste marker" "--- Safety Summary (copy/paste) ---" "$SUMMARY_ONLY_OUTPUT"
+assert "summary-only includes verify line" "Verify: not run | no hooks found | 0 payload checks" "$SUMMARY_ONLY_OUTPUT"
+assert "summary-only ends with end marker" "--- End Safety Summary ---$" "$SUMMARY_ONLY_OUTPUT"
+assert_not "summary-only omits long score report" "Safety Score:" "$SUMMARY_ONLY_OUTPUT"
+assert_not "summary-only omits verification boundary section" "Verification boundary" "$SUMMARY_ONLY_OUTPUT"
+assert_not "summary-only omits footer outside summary" "tree/main/tools" "$SUMMARY_ONLY_OUTPUT"
+rm -rf "$TMPDIR_SUMMARY_ONLY"
+
 stage "version timeout guard"
-# === Test 9e: Hanging claude --version cannot hang the audit ===
+# === Test 9f: Hanging claude --version cannot hang the audit ===
 TMPDIR_HANGING_CLAUDE=$(mktemp -d)
 TMPDIR_HANGING_AUDIT=$(mktemp -d)
 cat > "$TMPDIR_HANGING_CLAUDE/claude" << 'HANGINGCLAUDE'
@@ -684,6 +698,20 @@ else
     echo "FAIL: strict no-hooks verify should exit 1, got $VNONE_STRICT_EXIT"
 fi
 assert "strict no-hooks still prints summary" "Verify: not run | no hooks found | 0 payload checks" "$VNONE_STRICT_OUTPUT"
+set +e
+VNONE_STRICT_SUMMARY_OUTPUT=$(bash "$CHECK_SCRIPT" --verify --strict --summary-only 2>&1)
+VNONE_STRICT_SUMMARY_EXIT=$?
+set -e
+TOTAL=$((TOTAL + 1))
+if [ "$VNONE_STRICT_SUMMARY_EXIT" -eq 1 ]; then
+    PASS=$((PASS + 1))
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: strict summary-only no-hooks verify should exit 1, got $VNONE_STRICT_SUMMARY_EXIT"
+fi
+assert "strict summary-only still prints bounded summary" "--- Safety Summary (copy/paste) ---" "$VNONE_STRICT_SUMMARY_OUTPUT"
+assert "strict summary-only still prints verify evidence" "Verify: not run | no hooks found | 0 payload checks" "$VNONE_STRICT_SUMMARY_OUTPUT"
+assert_not "strict summary-only omits long no-hooks report" "No hooks found to verify" "$VNONE_STRICT_SUMMARY_OUTPUT"
 rm -rf "$TMPDIR_VNONE"
 
 # === Test 26: --verify with working bash-guard ===
