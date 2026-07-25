@@ -39,6 +39,15 @@ case "$output" in
         ;;
 esac
 
+summary_output=$(PATH="$tmpdir:/usr/bin:/bin" bash "$REPO_ROOT/tools/install.sh" check --verify --summary-only 2>&1)
+case "$summary_output" in
+    *"CHECK_ARGS:--verify --summary-only"*) ;;
+    *)
+        printf 'install.sh check did not pass --summary-only through.\nOutput:\n%s\n' "$summary_output" >&2
+        exit 1
+        ;;
+esac
+
 python3 - <<'PY' "$REPO_ROOT"
 import sys
 from pathlib import Path
@@ -46,7 +55,14 @@ from pathlib import Path
 repo = Path(sys.argv[1])
 text = (repo / "tools" / "install.ps1").read_text()
 paths = {
+    repo / "tools" / "install.sh": [
+        "check [--verify] [--summary-only] [--strict]",
+        "check --verify --summary-only",
+        "check --verify --strict",
+    ],
     repo / "tools" / "install.ps1": [
+        "check [--verify] [--summary-only] [--strict]",
+        "check --verify --summary-only",
         "check --verify --strict",
         "$checkArgs = @()",
         "& bash $tmpFile @checkArgs",
@@ -54,11 +70,13 @@ paths = {
         "exit $checkExit",
     ],
     repo / "README.md": [
+        "check --verify --summary-only",
         "check --verify --strict",
         "Run `install.sh check --verify --strict` first",
         "Run strict safety audit with hook payload verification",
     ],
     repo / "tools" / "README.md": [
+        "install.sh check --verify --summary-only",
         "install.sh check --verify --strict",
         "Run strict safety audit with payload checks",
     ],
@@ -68,6 +86,7 @@ paths = {
         "then run the strict audit again",
     ],
     repo / "docs" / "index.html": [
+        "check --verify --summary-only",
         "check --verify --strict",
         "installer-managed strict safety audit",
     ],
