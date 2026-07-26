@@ -5,7 +5,7 @@
 
 Claude Code hooks that actually enforce your rules. 7 installable hooks, plus enforcement and audit tooling, 1,900+ tests, and a [searchable Claude Code gaps corpus](https://framework.boucle.sh/limitations.html) with severity ratings and workarounds.
 
-> **Quick links:** [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Known limitations](https://framework.boucle.sh/limitations.html) · [JSON export](https://framework.boucle.sh/limitations.json) · [Update checklist](tools/safety-check/UPDATE_CHECKLIST.md) · [Safe support evidence](tools/safety-check/SUPPORT_EVIDENCE.md) · [Read-only audits](tools/enforce/READ_ONLY_AUDIT.md) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
+> **Quick links:** [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Known limitations](https://framework.boucle.sh/limitations.html) · [JSON export](https://framework.boucle.sh/limitations.json) · [Update checklist](tools/safety-check/UPDATE_CHECKLIST.md) · [Safe support evidence](tools/safety-check/SUPPORT_EVIDENCE.md) · [Support examples](tools/safety-check/SUPPORT_EXAMPLES.md) · [Read-only audits](tools/enforce/READ_ONLY_AUDIT.md) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
 
 ## Claude Code Hooks
 
@@ -66,6 +66,9 @@ print only that bounded public block, run:
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
 ```
+
+For examples of safe public reports and unsafe snippets to avoid, see
+[safe support examples](tools/safety-check/SUPPORT_EXAMPLES.md).
 
 For upstream Claude Code hook and permission gaps, use the
 [searchable limitations page](https://framework.boucle.sh/limitations.html),
