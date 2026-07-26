@@ -29,6 +29,16 @@ No prompts, no "are you sure" dialogs. The command never runs.
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
 ```
 
+Run this from the same project root where you start Claude Code. Project hooks
+are resolved from the current directory, so a subdirectory launch can miss
+`.claude/settings.json` at the repo root. If you are already somewhere inside a
+git checkout:
+
+```sh
+cd "$(git rev-parse --show-toplevel)"
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
+```
+
 Scores your Claude Code safety configuration from A to F and shows one-liner fixes for each gap. Add `--verify` to send test payloads to each hook and confirm they actually block:
 
 ```sh

@@ -52,9 +52,15 @@ After installing, verify that the hooks actually block payloads and then run the
 doctor if anything looks wrong:
 
 ```bash
+root="$(git rev-parse --show-toplevel 2>/dev/null)" && cd "$root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- doctor
 ```
+
+Run verification from the same project root where you start Claude Code. The
+first line assumes you are already inside a git checkout. If Claude starts from
+a subdirectory, root project hooks in `.claude/settings.json` can be skipped;
+safety-check reports this as an ancestor project settings warning.
 
 ```powershell
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"

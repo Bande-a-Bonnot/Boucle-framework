@@ -10,6 +10,12 @@ Run it from the project root you use to start Claude Code, especially when the
 repository has `.claude/settings.json`. Running from a subdirectory can miss
 project-level hooks that live at the repo root.
 
+If you are already inside a git checkout, move to the repo root first:
+
+```sh
+cd "$(git rev-parse --show-toplevel)"
+```
+
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
 ```
