@@ -18,10 +18,22 @@ not require bash:
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
 
-Run it from the same project root you use to start Claude Code. If a parent
-directory has `.claude/settings.json` and the current directory does not,
-safety-check warns because Claude Code may skip root project hooks when launched
-from the subdirectory.
+Run it from the same project root you use to start Claude Code. If you are
+already inside a git checkout, move to the repo root first:
+
+```sh
+cd "$(git rev-parse --show-toplevel)"
+```
+
+On native Windows PowerShell:
+
+```powershell
+Set-Location (git rev-parse --show-toplevel)
+```
+
+If a parent directory has `.claude/settings.json` and the current directory
+does not, safety-check warns because Claude Code may skip root project hooks
+when launched from the subdirectory.
 
 New to the tool? Start with the [safety-check quickstart](QUICKSTART.md) for the
 short audit, install, verify, and repair loop.

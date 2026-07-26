@@ -56,6 +56,8 @@ docs = {
         "install.sh | bash -s -- recommended",
         "install.ps1) } doctor",
         "install.ps1) } recommended",
+        "git rev-parse --show-toplevel",
+        "Set-Location (git rev-parse --show-toplevel)",
         "Use `all` instead of `recommended` only when you want the full standalone hook",
         "--verify --summary-only",
         "safety summary triage guide",
