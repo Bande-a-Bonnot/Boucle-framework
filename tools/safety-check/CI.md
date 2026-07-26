@@ -18,6 +18,7 @@ Run this after installing hooks, updating Claude Code, or changing
 `~/.claude/settings.json`:
 
 ```sh
+cd "$(git rev-parse --show-toplevel)"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
 ```
 
@@ -59,6 +60,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Verify Claude Code hooks
+        working-directory: ${{ github.workspace }}
         run: |
           curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh -o /tmp/safety-check.sh
           SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 bash /tmp/safety-check.sh --verify --strict
