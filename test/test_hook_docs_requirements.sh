@@ -77,6 +77,8 @@ docs = {
         "safety-check summary is the safer public artifact",
         "Build a minimal reproduction in a temporary directory",
         "smallest redacted settings file that reproduces the issue",
+        "git rev-parse --show-toplevel",
+        "Set-Location (git rev-parse --show-toplevel)",
         "--summary-only",
         "--- End Safety Summary ---",
     ],
