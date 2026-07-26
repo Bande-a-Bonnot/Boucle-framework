@@ -3,9 +3,9 @@
 [![Tests](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml/badge.svg)](https://github.com/Bande-a-Bonnot/Boucle-framework/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Claude Code hooks that actually enforce your rules. 7 installable hooks, plus enforcement and audit tooling, 1,900+ tests, and a [searchable Claude Code gaps corpus](https://framework.boucle.sh/limitations.html) with severity ratings and workarounds.
+Claude Code hooks that actually enforce your rules. 7 standalone hooks, plus `enforce-hooks` for CLAUDE.md policy, audit tooling, 1,900+ tests, and a [searchable Claude Code gaps corpus](https://framework.boucle.sh/limitations.html) with severity ratings and workarounds.
 
-> **Quick links:** [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Known limitations](https://framework.boucle.sh/limitations.html) · [JSON export](https://framework.boucle.sh/limitations.json) · [Update checklist](tools/safety-check/UPDATE_CHECKLIST.md) · [Safe support evidence](tools/safety-check/SUPPORT_EVIDENCE.md) · [Support examples](tools/safety-check/SUPPORT_EXAMPLES.md) · [Read-only audits](tools/enforce/READ_ONLY_AUDIT.md) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
+> **Quick links:** [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Known limitations](https://framework.boucle.sh/limitations.html) · [JSON export](https://framework.boucle.sh/limitations.json) · [Quickstart](tools/safety-check/QUICKSTART.md) · [Triage](tools/safety-check/TRIAGE.md) · [Update checklist](tools/safety-check/UPDATE_CHECKLIST.md) · [Safe support evidence](tools/safety-check/SUPPORT_EVIDENCE.md) · [Support examples](tools/safety-check/SUPPORT_EXAMPLES.md) · [Read-only audits](tools/enforce/READ_ONLY_AUDIT.md) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
 
 ## Claude Code Hooks
 
