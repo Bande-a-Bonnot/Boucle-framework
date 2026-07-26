@@ -18,6 +18,7 @@ docs = {
         "most standalone shell hooks use jq",
         "No hook installation required for the audit",
         "--verify --summary-only",
+        "git rev-parse --show-toplevel",
         "**Windows (PowerShell 7+)",
         "tools/install.ps1) } recommended",
         "Or install all standalone hooks at once",
@@ -40,6 +41,7 @@ docs = {
         "not a universal hard-block contract",
         "Ancestor project settings warning",
         "subdirectory launches can skip root project hooks",
+        "git rev-parse --show-toplevel",
         "--- End Safety Summary ---",
         "safety-check --verify --summary-only",
     ],
@@ -80,6 +82,7 @@ docs = {
         "do not create repo-local `.claude/settings.json` policy",
         "project settings when they already exist",
         "temporary-directory reproduction instead of real workspace",
+        "git rev-parse --show-toplevel",
     ],
     repo / "tools" / "enforce" / "READ_ONLY_AUDIT.md": [
         "cp .claude/settings.json .claude/settings.json.pre-read-only.bak",

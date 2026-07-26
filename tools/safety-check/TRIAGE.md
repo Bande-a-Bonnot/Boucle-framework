@@ -54,6 +54,13 @@ Do not trust a good letter grade by itself. A setup with Grade A and
 | Ancestor project settings warning | Medium | Starting Claude Code from a subdirectory can miss project hooks. | Rerun from the directory that owns `.claude/settings.json`. |
 | Windows hook warning | Medium | Native Windows hook behavior varies by Claude Code version and shell. | Prefer WSL or verify with the native PowerShell path. |
 
+If you see the ancestor project settings warning and you are in a git checkout,
+this usually gets you to the right directory:
+
+```sh
+cd "$(git rev-parse --show-toplevel)"
+```
+
 ## Fast repair commands
 
 Use this section when you have the summary line in front of you and need the
