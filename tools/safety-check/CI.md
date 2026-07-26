@@ -59,6 +59,40 @@ Use this when your repository includes `.claude/settings.json` with direct hook
 script paths, or interpreter-wrapped paths such as `bash ./hooks/check.sh` or
 `python ./hooks/check.py`:
 
+Minimal repo-local example:
+
+```text
+.
+|-- .claude/
+|   `-- settings.json
+`-- hooks/
+    `-- block-dangerous-bash.sh
+```
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ./hooks/block-dangerous-bash.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+The `bash ./hooks/block-dangerous-bash.sh` form is intentionally explicit:
+`safety-check --verify --strict` can map it to a checked-in file, run it through
+the named interpreter, and avoid depending on the executable bit. Commit both
+the hook script and `.claude/settings.json`; otherwise CI may only prove that the
+temporary runner has no hook layer.
+
 ```yaml
 name: claude-code-safety
 
