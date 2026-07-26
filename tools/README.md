@@ -61,6 +61,9 @@ Run verification from the same project root where you start Claude Code. The
 first line assumes you are already inside a git checkout. If Claude starts from
 a subdirectory, root project hooks in `.claude/settings.json` can be skipped;
 safety-check reports this as an ancestor project settings warning.
+After a clean verification, start a fresh Claude Code session from that same
+root before trusting newly installed or upgraded hooks; an existing session may
+have loaded the previous settings or hook files.
 
 ```powershell
 Set-Location (git rev-parse --show-toplevel)

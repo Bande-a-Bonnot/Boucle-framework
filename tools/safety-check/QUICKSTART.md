@@ -137,6 +137,10 @@ Trust the hook layer only when the summary says there are zero `FAIL-OPEN`
 results and the hook files are healthy. If no payload checks ran, you have not
 verified enforcement yet.
 
+After a clean verification, start a fresh Claude Code session from that same
+project root before trusting the new boundary. A running session may have
+loaded the previous settings or hook files.
+
 For a usable result, look at the copy/paste summary near the end. A verified
 baseline looks like this:
 
