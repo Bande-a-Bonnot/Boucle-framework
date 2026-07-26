@@ -41,6 +41,14 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 ## 2. Install the baseline hooks
 
+Pick the smallest hook layer that matches the boundary you need:
+
+| Need | Install path | What it covers |
+|------|--------------|----------------|
+| Block the most dangerous shell, git, and secret-file operations | `install.sh recommended` or `install.ps1 recommended` | `bash-guard`, `git-safe`, and `file-guard`. Start here for most personal workstations. |
+| Add the full standalone hook suite | `install.sh all` or `install.ps1 all` | The recommended hooks plus read-once, branch-guard, worktree-guard, and session-log. |
+| Enforce project rules from `CLAUDE.md` | `tools/enforce/install.sh` | One dynamic hook that reads `@enforced` rules from the current repo. Use this when prompt rules need to become runtime blocks. |
+
 If this is a personal workstation, start with the recommended hook set:
 
 ```sh
@@ -65,6 +73,9 @@ Claude Code version, so verify after installing:
 ```powershell
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"
 ```
+
+The native PowerShell installer covers the standalone hooks. The `enforce-hooks`
+installer is a bash/Python tool; run it from WSL or Git Bash on Windows.
 
 If you are only testing the hook suite, keep the rollback command handy. It
 removes Boucle hook files and their `settings.json` registrations:
