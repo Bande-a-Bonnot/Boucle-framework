@@ -7,10 +7,22 @@ secrets.
 
 ## 1. Run verification
 
-Run the checker from the project where Claude Code will work:
+Run the checker from the project where Claude Code will work. If you are inside
+a git checkout, move to the repo root first so the summary matches the
+project-level `.claude/settings.json` Claude Code can load:
+
+```sh
+cd "$(git rev-parse --show-toplevel)"
+```
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
+```
+
+On native Windows PowerShell:
+
+```powershell
+Set-Location (git rev-parse --show-toplevel)
 ```
 
 Use the project root that contains `.claude/settings.json` when one exists. If
