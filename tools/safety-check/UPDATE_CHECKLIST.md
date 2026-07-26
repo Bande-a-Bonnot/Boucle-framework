@@ -4,6 +4,18 @@ Use this when Claude Code changes version, updates itself, or starts behaving
 differently after an IDE or plugin update. The goal is to prove that hooks still
 fire before trusting a session with real work.
 
+Run the checklist when any of these changes:
+
+- Claude Code CLI, desktop app, IDE extension, or plugin version.
+- `~/.claude/settings.json` or project `.claude/settings.json`.
+- Shell profile, terminal app, WSL distribution, or PowerShell version used to
+  launch Claude Code.
+- Hook files, hook permissions, or the directory where Claude Code is started.
+
+Use the same terminal profile and project root you use for real Claude Code
+sessions. A clean check from a different shell or subdirectory does not prove
+the session you are about to trust.
+
 ## Before updating
 
 Snapshot the user-level settings file:
@@ -54,9 +66,23 @@ iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
 
-Trust the hook layer only if verification reports zero `FAIL-OPEN` payload
-checks, hook files are healthy, and the summary does not say `Verify: not run`,
-`no hooks found`, or `no payload checks ran`.
+Start a fresh Claude Code session after the check. Updated settings and hook
+files are not enough if an existing session already loaded the old boundary.
+
+Trust the hook layer only if all of these are true:
+
+- Verification reports zero `FAIL-OPEN` payload checks.
+- Hook files are healthy.
+- The summary does not say `Verify: not run`, `no hooks found`, or
+  `no payload checks ran`.
+- Any skipped `PreToolUse` checks are understood and are not part of the
+  boundary you rely on for blocking destructive tool calls.
+
+A passing summary usually includes a line like:
+
+```text
+Verify: 0 FAIL-OPEN | 8 payload checks | 0 skipped
+```
 
 ## If verification fails
 
@@ -114,3 +140,6 @@ Do not share raw `settings.json`, hook scripts, shell history, session logs,
 private paths, tokens, `.env` contents, or proprietary `CLAUDE.md` rules in
 public threads. The [safe support evidence guide](SUPPORT_EVIDENCE.md) gives a
 short public-report template and explains the common summary lines.
+
+For native Windows `install.ps1 verify`, there is no safety summary block.
+Share only the final verifier count plus any `WARN` or `SKIP` lines.
