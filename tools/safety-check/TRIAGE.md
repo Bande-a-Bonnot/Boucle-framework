@@ -61,6 +61,12 @@ this usually gets you to the right directory:
 cd "$(git rev-parse --show-toplevel)"
 ```
 
+On native Windows PowerShell:
+
+```powershell
+Set-Location (git rev-parse --show-toplevel)
+```
+
 ## Fast repair commands
 
 Use this section when you have the summary line in front of you and need the

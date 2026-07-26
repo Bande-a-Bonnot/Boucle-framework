@@ -63,6 +63,7 @@ a subdirectory, root project hooks in `.claude/settings.json` can be skipped;
 safety-check reports this as an ancestor project settings warning.
 
 ```powershell
+Set-Location (git rev-parse --show-toplevel)
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
 ```
