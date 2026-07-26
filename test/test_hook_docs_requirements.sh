@@ -62,6 +62,11 @@ docs = {
         "--verify --summary-only",
         "safety summary triage guide",
     ],
+    repo / "tools" / "safety-check" / "CI.md": [
+        "cd \"$(git rev-parse --show-toplevel)\"",
+        "working-directory: ${{ github.workspace }}",
+        "Run it from the project root that contains `.claude/settings.json`",
+    ],
     repo / "tools" / "safety-check" / "check.sh": [
         "No hook installation required for the audit",
         "Requires bash and python3",
