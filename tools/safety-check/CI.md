@@ -12,6 +12,19 @@ Strict mode exits `1` when safety-check finds any of these:
 - A skipped `PreToolUse` hook check.
 - Missing, broken, or non-executable hook files.
 
+## CI runner prerequisites
+
+The bash safety-check script needs `bash` and `python3` on the runner. The
+GitHub-hosted Ubuntu runner already provides both, and the example below also
+uses `curl` to download the checker.
+
+Strict payload verification runs the hook commands from the checked settings.
+Install any interpreter those hooks name before calling `--verify --strict`,
+for example `jq` for framework shell hooks, `python3` for Python hooks, or
+`pwsh` for PowerShell hook scripts. Native Windows verification through
+`install.ps1 verify` must run in PowerShell 7 (`pwsh`), not Windows PowerShell
+5.
+
 ## Developer workstation check
 
 Run this after installing hooks, updating Claude Code, or changing
