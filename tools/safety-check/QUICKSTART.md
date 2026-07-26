@@ -66,6 +66,19 @@ Claude Code version, so verify after installing:
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"
 ```
 
+If you are only testing the hook suite, keep the rollback command handy. It
+removes Boucle hook files and their `settings.json` registrations:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- uninstall all
+```
+
+On native Windows:
+
+```powershell
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } uninstall all"
+```
+
 ## 3. Verify the hooks fire
 
 The basic audit can confirm that hooks are registered. Verification mode sends
