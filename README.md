@@ -667,7 +667,9 @@ in `.claude/settings.json` at the repo root, start Claude Code and run
 `safety-check` from that same root. Launching from a subdirectory can make
 Claude treat that subdirectory as the project root and skip the ancestor
 project hooks without warning. `safety-check` reports this as an ancestor
-project settings warning.
+project settings warning. On native Windows PowerShell, run
+`Set-Location (git rev-parse --show-toplevel)` from inside the checkout before
+running `install.ps1 verify`.
 
 **Permission bypass resets with hooks installed**: If you use `--dangerously-skip-permissions` (common in autonomous setups), PreToolUse hooks can [cause the permission state to reset mid-session](https://github.com/anthropics/claude-code/issues/37745), reverting all tools to manual approval. This is a platform bug, not a hooks bug. If tools suddenly require approval 30-120 minutes into a session, this is why.
 

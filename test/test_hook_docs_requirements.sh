@@ -19,6 +19,7 @@ docs = {
         "No hook installation required for the audit",
         "--verify --summary-only",
         "git rev-parse --show-toplevel",
+        "Set-Location (git rev-parse --show-toplevel)",
         "**Windows (PowerShell 7+)",
         "tools/install.ps1) } recommended",
         "Or install all standalone hooks at once",
@@ -42,6 +43,7 @@ docs = {
         "Ancestor project settings warning",
         "subdirectory launches can skip root project hooks",
         "git rev-parse --show-toplevel",
+        "Set-Location (git rev-parse --show-toplevel)",
         "--- End Safety Summary ---",
         "safety-check --verify --summary-only",
     ],
@@ -83,6 +85,7 @@ docs = {
         "project settings when they already exist",
         "temporary-directory reproduction instead of real workspace",
         "git rev-parse --show-toplevel",
+        "Set-Location (git rev-parse --show-toplevel)",
     ],
     repo / "tools" / "enforce" / "READ_ONLY_AUDIT.md": [
         "cp .claude/settings.json .claude/settings.json.pre-read-only.bak",
@@ -95,6 +98,7 @@ docs = {
     repo / "tools" / "safety-check" / "UPDATE_CHECKLIST.md": [
         "same project root you use to start Claude Code",
         "git rev-parse --show-toplevel",
+        "Set-Location (git rev-parse --show-toplevel)",
         "Then verify the updated hook boundary",
     ],
     repo / "docs" / "index.html": [
