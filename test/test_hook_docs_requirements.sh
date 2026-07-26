@@ -95,6 +95,7 @@ docs = {
         "Set-Location (git rev-parse --show-toplevel)",
     ],
     repo / "tools" / "enforce" / "READ_ONLY_AUDIT.md": [
+        "cd \"$(git rev-parse --show-toplevel)\"",
         "cp .claude/settings.json .claude/settings.json.pre-read-only.bak",
         "snapshots the project-level `.claude/settings.json` before",
         "remove the `enforce-pretooluse.sh` hook from Claude Code's",

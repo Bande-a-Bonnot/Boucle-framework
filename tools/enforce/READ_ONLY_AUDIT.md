@@ -29,6 +29,7 @@ rules but will not activate them.
 Run these commands from the project root, next to the `CLAUDE.md` you edited:
 
 ```sh
+cd "$(git rev-parse --show-toplevel)"
 mkdir -p .claude
 test ! -f .claude/settings.json || cp .claude/settings.json .claude/settings.json.pre-read-only.bak
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/enforce-hooks.py -o /tmp/enforce-hooks.py
@@ -127,6 +128,7 @@ settings snapshot or remove the `enforce-pretooluse.sh` hook from Claude Code's
 hooks UI. Then run:
 
 ```sh
+cd "$(git rev-parse --show-toplevel)"
 python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
