@@ -6,6 +6,16 @@ trust boundary before you let Claude edit a real project.
 
 ## 1. Run the audit
 
+Prerequisites:
+
+- macOS, Linux, WSL, or Git Bash: `bash`, `python3`, and either `curl` or
+  `wget` for the audit command.
+- Shell hooks on macOS, Linux, WSL, or Git Bash: install `jq` before trusting
+  hook enforcement. Most standalone shell hooks need it to parse Claude Code
+  hook payloads.
+- Native Windows hooks: run the PowerShell installer from PowerShell 7
+  (`pwsh`), not Windows PowerShell 5.
+
 Run it from the project root you use to start Claude Code, especially when the
 repository has `.claude/settings.json`. Running from a subdirectory can miss
 project-level hooks that live at the repo root.
