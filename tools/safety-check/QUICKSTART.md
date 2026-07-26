@@ -132,6 +132,18 @@ The `N/8 hooks` inventory counts the 7 standalone hooks plus `enforce-hooks`;
 `install.sh all` installs the standalone suite, and `enforce-hooks` is installed
 separately when you want CLAUDE.md rules enforced at tool-call time.
 
+Use the first matching row from the summary as your next repair:
+
+| Summary evidence | First repair |
+|------------------|--------------|
+| `Issue: IS_DEMO is set` or `Issue: CLAUDE_CODE_SIMPLE is set` | Unset the environment variable, restart the shell that launches Claude Code, then rerun `--verify`. |
+| `Issue: invalid settings JSON` | Validate the named settings file with `python3 -m json.tool`, remove comments or trailing commas, then rerun `--verify`. |
+| `Verify: not run`, `no hooks found`, or `0 payload checks` | Install the recommended hooks or replace dynamic hook snippets with direct script paths, then rerun from the same project root. |
+| `FAIL-OPEN` | Run `install.sh doctor`, inspect or reinstall the named hook, then rerun `--verify` before trusting the session. |
+| `skipped PreToolUse` | Point the hook command at a verifiable script path such as `bash ./hooks/name.sh` or `python ./hooks/name.py`. |
+| Ancestor project settings warning | `cd "$(git rev-parse --show-toplevel)"`, or start Claude Code from the directory that owns `.claude/settings.json`. |
+| `Verify: 0 FAIL-OPEN` with a Grade C or warnings | Keep the verified hook boundary and document the residual platform warnings. Do not reinstall hooks just to chase an A. |
+
 ## 4. Fix the common blockers
 
 Run these checks before reinstalling hooks repeatedly:
