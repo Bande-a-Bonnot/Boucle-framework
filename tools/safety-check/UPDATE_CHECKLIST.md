@@ -27,7 +27,14 @@ if (Test-Path .claude/settings.json) { Copy-Item .claude/settings.json .claude/s
 
 ## After updating
 
-Run these from the project root:
+Run these from the same project root you use to start Claude Code. If this is a
+git checkout, get there first:
+
+```sh
+cd "$(git rev-parse --show-toplevel)"
+```
+
+Then verify the updated hook boundary:
 
 ```sh
 unset IS_DEMO CLAUDE_CODE_SIMPLE
