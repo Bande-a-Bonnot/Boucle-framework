@@ -94,6 +94,9 @@ For native `install.ps1 verify` output, there is no `--- Safety Summary
 Do not include the startup hook table if it exposes private paths or local hook
 locations.
 
+For concrete safe and unsafe report examples, see
+[safe support examples](SUPPORT_EXAMPLES.md).
+
 ## 3. Add the minimum context
 
 Add these short details above the summary block:
@@ -178,4 +181,5 @@ Native Windows PowerShell verifier, if no Safety Summary block exists:
 For a full repair path before asking for help, start with the
 [safety-check quickstart](QUICKSTART.md). To decide which summary item to fix
 first, use the [safety summary triage guide](TRIAGE.md). For failures after
-Claude Code updates, use the [update checklist](UPDATE_CHECKLIST.md).
+Claude Code updates, use the [update checklist](UPDATE_CHECKLIST.md). For
+copy/paste examples, use [safe support examples](SUPPORT_EXAMPLES.md).

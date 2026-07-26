@@ -40,7 +40,9 @@ short audit, install, verify, and repair loop.
 
 Need help with a result? Use `--summary-only` or the
 [safe support evidence guide](SUPPORT_EVIDENCE.md) to share the copy/paste
-summary without exposing private settings or secrets.
+summary without exposing private settings or secrets. Use
+[safe support examples](SUPPORT_EXAMPLES.md) to compare a safe public report
+with snippets that should stay private.
 To interpret the summary and choose the first repair, use the
 [safety summary triage guide](TRIAGE.md).
 
