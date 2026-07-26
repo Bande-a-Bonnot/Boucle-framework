@@ -92,6 +92,11 @@ docs = {
         "policy is no longer covered by",
         "zero `FAIL-OPEN` results for any remaining hooks",
     ],
+    repo / "tools" / "safety-check" / "UPDATE_CHECKLIST.md": [
+        "same project root you use to start Claude Code",
+        "git rev-parse --show-toplevel",
+        "Then verify the updated hook boundary",
+    ],
     repo / "docs" / "index.html": [
         "bash, python3, and jq",
         "No hook installation required for the audit",
