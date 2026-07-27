@@ -1923,10 +1923,10 @@ if [ -n "$HOOK_PATHS" ]; then
     fi
 fi
 
-# === Section 9: Verify Mode - test hooks with real payloads ===
+# === Section 9: Verify Mode - test hooks with representative payloads ===
 if [ "$VERIFY_MODE" = "1" ] && [ -n "$HOOK_PATHS" ]; then
     echo ""
-    printf "${BOLD}Hook Verification${NC} ${DIM}(sending test payloads)${NC}\n"
+    printf "${BOLD}Hook Verification${NC} ${DIM}(sending representative test payloads)${NC}\n"
 
     VERIFY_RAN=1
     VERIFY_PASS=0
