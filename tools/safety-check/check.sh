@@ -708,7 +708,7 @@ except: print(0)
 fi
 if [ "$HOOK_COUNT" -gt 0 ]; then
     WARNINGS+=("Hooks and worktree isolation are incompatible on v2.1.86+. Hook stdout JSON is concatenated into the worktree path instead of being consumed by the hook protocol, producing paths like /project/{\"continue\":true}. If you spawn agents with isolation:worktree, expect Path does not exist errors. No workaround except disabling hooks before worktree agent calls. (see claude-code#40262)")
-    WARNINGS+=("Hook enforcement does not work in subagents. PreToolUse hooks fire inside Agent-spawned subagents, but the exit code and block decision are silently ignored. A command blocked in the parent session will succeed in a subagent. All hook-based enforcement is parent-session-only. There is no workaround. (see claude-code#40580)")
+    WARNINGS+=("Hook enforcement does not work in subagents. Agent-spawned subagents have been reported to skip PreToolUse Bash hooks entirely, and in other cases hooks fire but exit-code/block decisions are silently ignored. A command blocked in the parent session can succeed in a subagent. Treat hook-based enforcement as parent-session-only until your exact subagent workflow is verified. (see claude-code#40580, claude-code#78970)")
 fi
 
 # additionalDirectories leak across projects (claude-code#40606)
