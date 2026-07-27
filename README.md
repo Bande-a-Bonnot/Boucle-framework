@@ -86,9 +86,14 @@ payloads.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- recommended
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
 ```
 
-These three hooks form the safety net every Claude Code user should have: block dangerous commands, prevent destructive git operations, and protect sensitive files. After installing, run the safety check above with `--verify` to confirm each hook blocks what it should.
+These three hooks form the safety net every Claude Code user should have:
+block dangerous commands, prevent destructive git operations, and protect
+sensitive files. The installer verifier checks installed hook payload paths
+quickly. Then run the safety check above with `--verify` to confirm each hook
+blocks what it should.
 
 **If the install succeeds but hooks do not block anything:**
 
@@ -101,6 +106,7 @@ These three hooks form the safety net every Claude Code user should have: block 
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- all
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
 ```
 
 **Windows (PowerShell 7+)** — native PS1 hooks, no bash or jq required. Requires [PowerShell 7](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (`pwsh`), not the built-in Windows PowerShell 5. Start with the same recommended safety set:
@@ -114,6 +120,7 @@ Or install all standalone hooks at once:
 
 ```powershell
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } all"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
 
 **Manage hooks:**

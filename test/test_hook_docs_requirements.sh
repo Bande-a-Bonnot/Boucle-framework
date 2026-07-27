@@ -27,6 +27,9 @@ docs = {
         "ancestor project settings warning",
         "If you use `claude -w`, also install [worktree-guard]",
         "delete unmerged or unpushed commits",
+        "tools/install.sh | bash -s -- recommended curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
+        "tools/install.sh | bash -s -- all curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
+        "tools/install.ps1) } all\" iex \"& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify",
     ],
     repo / "tools" / "README.md": [
         "**macOS / Linux:** bash, python3, and jq",
@@ -46,6 +49,9 @@ docs = {
         "Set-Location (git rev-parse --show-toplevel)",
         "--- End Safety Summary ---",
         "safety-check --verify --summary-only",
+        "tools/install.sh | bash curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
+        "tools/install.sh | bash -s -- recommended curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
+        "tools/install.sh | bash -s -- read-once git-safe file-guard curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
     ],
     repo / "tools" / "safety-check" / "README.md": [
         "No hook installation required for the audit",
@@ -125,6 +131,8 @@ docs = {
         "start a fresh Claude Code session from that same project root",
         "github.com/anthropics/claude-code/issues/37550",
         "200+ Rust tests",
+        "tools/install.sh | bash -s -- recommended <span class=\"prompt-char\">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
+        "tools/install.sh | bash -s -- all <span class=\"prompt-char\">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
     ],
 }
 
