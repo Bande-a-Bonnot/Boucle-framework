@@ -91,12 +91,13 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 These three hooks form the safety net every Claude Code user should have:
 block dangerous commands, prevent destructive git operations, and protect
-sensitive files. The installer verifier checks installed hook payload paths
-quickly. Then run the safety check above with `--verify` to confirm each hook
-blocks what it should. After a clean verification, start a fresh Claude Code
-session from that same project root before relying on newly installed or
-upgraded hooks; an existing session may have loaded the previous settings or
-hook files.
+sensitive files. The installer verifier sends representative payloads to the
+installed hooks and confirms the expected blocks. Then run the safety check
+above with `--verify --strict` when you need the broader audit summary,
+environment warnings, project-settings inventory, and fail-closed exit status.
+After a clean verification, start a fresh Claude Code session from that same
+project root before relying on newly installed or upgraded hooks; an existing
+session may have loaded the previous settings or hook files.
 
 **If the install succeeds but hooks do not block anything:**
 
