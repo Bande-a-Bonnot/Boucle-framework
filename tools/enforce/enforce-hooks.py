@@ -2480,7 +2480,7 @@ def format_verify_report(result):
 
 
 def smoke_test_hooks(hooks_dir='.claude/hooks', settings_path='.claude/settings.json'):
-    """Run each registered hook with real test payloads and verify it responds correctly.
+    """Run each registered hook with representative test payloads and verify it responds correctly.
 
     Unlike --verify (static analysis), this actually executes hooks and checks:
       - Hook runs without crashing

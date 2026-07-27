@@ -62,6 +62,8 @@ docs = {
         "## Requirements",
         "Bash 4+",
         "Python 3 (for JSON parsing of settings.json)",
+        "Use `--verify` to send representative test payloads",
+        "Hook Verification (sending representative test payloads)",
         "install.sh | bash -s -- doctor",
         "install.sh | bash -s -- recommended",
         "install.ps1) } doctor",
@@ -80,6 +82,7 @@ docs = {
     repo / "tools" / "safety-check" / "check.sh": [
         "No hook installation required for the audit",
         "Requires bash and python3",
+        "sending representative test payloads",
     ],
     repo / "tools" / "safety-check" / "SUPPORT_EVIDENCE.md": [
         "Do not paste raw hook stderr from a live Claude Code session",
@@ -162,15 +165,18 @@ if expected_count != "6 of the 7 standalone shell hooks use jq":
 banned = {
     repo / "tools" / "safety-check" / "README.md": [
         "## No dependencies",
+        "real test payloads",
     ],
     repo / "tools" / "safety-check" / "check.sh": [
         "No installation, no dependencies",
+        "real payloads",
     ],
     repo / "README.md": [
         "cargo test           # Framework tests (",
         "218 Rust tests",
         "Boucle-framework has 96 stars",
         "not yet in the official docs",
+        "real payloads",
     ],
     repo / "tools" / "enforce" / "README.md": [
         "The current docs still describe",

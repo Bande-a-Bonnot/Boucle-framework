@@ -187,16 +187,19 @@ Each failed check shows a one-liner fix command.
 
 ## Verify mode
 
-The basic check only confirms hooks are registered. Use `--verify` to send real test payloads and confirm hooks actually block what they claim to:
+The basic check only confirms hooks are registered. Use `--verify` to send
+representative test payloads and confirm hooks actually block the covered cases:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
-This sends dangerous payloads (like `rm -rf /`) to each installed hook and checks the response. Hooks that fail to block are flagged as **FAIL-OPEN**.
+This sends representative dangerous payloads (like `rm -rf /`) to each
+installed hook and checks the response. Hooks that fail to block are flagged as
+**FAIL-OPEN**.
 
 ```
-Hook Verification (sending test payloads)
+Hook Verification (sending representative test payloads)
   ✓ bash-guard blocks rm -rf / - blocks correctly
   ✓ bash-guard passes safe commands - passes safe payload
   ✓ git-safe blocks force push - blocks correctly
