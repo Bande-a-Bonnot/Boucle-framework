@@ -4283,6 +4283,32 @@ unset CLAUDE_CODE_SIMPLE
 export HOME="$SAVE_HOME"
 rm -rf "$TMPDIR_SIMPLE_FALSE"
 
+# === Test: ANTHROPIC_API_KEY warning ===
+TMPDIR_API_KEY=$(mktemp -d)
+SAVE_HOME="$HOME"
+export HOME="$TMPDIR_API_KEY"
+export ANTHROPIC_API_KEY="test-key-that-must-not-print"
+API_KEY_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "ANTHROPIC_API_KEY warning shown" "ANTHROPIC_API_KEY is set" "$API_KEY_OUTPUT"
+assert "ANTHROPIC_API_KEY warning mentions subprocess billing" "API-key billing instead of subscription" "$API_KEY_OUTPUT"
+assert "ANTHROPIC_API_KEY warning suggests PATH wrapper" "real wrapper executable earlier in PATH" "$API_KEY_OUTPUT"
+assert "ANTHROPIC_API_KEY warning suggests PreToolUse block" "block nested claude calls with a PreToolUse Bash rule" "$API_KEY_OUTPUT"
+assert "ANTHROPIC_API_KEY warning included in copy-paste summary" "Issue: ANTHROPIC_API_KEY is set" "$API_KEY_OUTPUT"
+assert_not "ANTHROPIC_API_KEY value is redacted" "test-key-that-must-not-print" "$API_KEY_OUTPUT"
+unset ANTHROPIC_API_KEY
+export HOME="$SAVE_HOME"
+rm -rf "$TMPDIR_API_KEY"
+
+# === Test: No ANTHROPIC_API_KEY warning when unset ===
+TMPDIR_NO_API_KEY=$(mktemp -d)
+SAVE_HOME="$HOME"
+export HOME="$TMPDIR_NO_API_KEY"
+unset ANTHROPIC_API_KEY 2>/dev/null || true
+NO_API_KEY_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "no ANTHROPIC_API_KEY warning when unset" "ANTHROPIC_API_KEY is set" "$NO_API_KEY_OUTPUT"
+export HOME="$SAVE_HOME"
+rm -rf "$TMPDIR_NO_API_KEY"
+
 # === Test: WorktreeCreate hook triggers #41614 hang warning ===
 TMPDIR_WTC2=$(mktemp -d)
 SAVE_HOME="$HOME"
