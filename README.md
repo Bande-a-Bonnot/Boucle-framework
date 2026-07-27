@@ -39,7 +39,7 @@ cd "$(git rev-parse --show-toplevel)"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
 ```
 
-Scores your Claude Code safety configuration from A to F and shows one-liner fixes for each gap. Add `--verify` to send test payloads to each hook and confirm they actually block:
+Scores your Claude Code safety configuration from A to F and shows one-liner fixes for each gap. Add `--verify` to send representative hook payloads to each hook and confirm they actually block covered cases. Verification invokes the hook scripts with Claude-style JSON input; it does not execute the dangerous shell or git commands named in those payloads:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
@@ -56,7 +56,7 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 Use the [scripted checks guide](tools/safety-check/CI.md) for GitHub Actions,
 developer workstation checks, exit codes, and the limits of what CI can prove.
 
-Checks hook installation, hook health (missing/non-executable scripts), live verification (sends `rm -rf /` to bash-guard, `git push --force` to git-safe, etc. and confirms they block), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings, jq/python3 dependencies, Windows hook reliability), and known CLI version regressions. Scans both user-level (`~/.claude/settings.json`) and project-level (`.claude/settings.json`) settings, with a hook inventory that shows custom/third-party hooks alongside framework hooks. The summary counts 8 framework hook slots because it includes the `enforce-hooks` policy hook; `install.sh all` installs the 7 standalone hooks listed below. Also warns when deny rules are configured without bash-guard, since deny patterns [can be bypassed](https://github.com/anthropics/claude-code/issues/38119) by compound commands and multi-line scripts. No hook installation required for the audit. Covered by hundreds of tests.
+Checks hook installation, hook health (missing/non-executable scripts), live verification (builds Claude-style JSON payloads for cases such as `rm -rf /` and `git push --force`, invokes the configured hook scripts, and confirms they block), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings, jq/python3 dependencies, Windows hook reliability), and known CLI version regressions. Scans both user-level (`~/.claude/settings.json`) and project-level (`.claude/settings.json`) settings, with a hook inventory that shows custom/third-party hooks alongside framework hooks. The summary counts 8 framework hook slots because it includes the `enforce-hooks` policy hook; `install.sh all` installs the 7 standalone hooks listed below. Also warns when deny rules are configured without bash-guard, since deny patterns [can be bypassed](https://github.com/anthropics/claude-code/issues/38119) by compound commands and multi-line scripts. No hook installation required for the audit. Covered by hundreds of tests.
 
 For a 10-minute path from audit to verified hooks, see the [safety-check quickstart](tools/safety-check/QUICKSTART.md).
 If you need to ask for help, use the [safe support evidence guide](tools/safety-check/SUPPORT_EVIDENCE.md)

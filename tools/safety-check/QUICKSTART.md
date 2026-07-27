@@ -111,8 +111,9 @@ iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework
 ## 3. Verify the hooks fire
 
 The basic audit can confirm that hooks are registered. Verification mode sends
-representative payloads to installed `PreToolUse` hooks and checks whether they
-block:
+representative Claude-style JSON payloads to installed `PreToolUse` hooks and
+checks whether they block. It invokes the hook scripts; it does not execute the
+dangerous shell or git commands named inside those payloads:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
