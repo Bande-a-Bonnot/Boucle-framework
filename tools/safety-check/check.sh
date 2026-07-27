@@ -540,6 +540,50 @@ if [ -d ".claude/hooks" ]; then
     fi
 fi
 
+# MCP PreToolUse ask/deny enforcement is platform-unreliable even when direct
+# hook stdin tests pass (claude-code#33106, claude-code#81569).
+detect_mcp_pretooluse_matchers() {
+    local file="$1"
+    local source_label="$2"
+    [ -f "$file" ] || return 0
+    python3 - "$file" "$source_label" << 'PYEOF'
+import json, sys
+try:
+    with open(sys.argv[1]) as f:
+        settings = json.load(f)
+except Exception:
+    sys.exit(0)
+
+source = sys.argv[2]
+matches = []
+for entry in settings.get("hooks", {}).get("PreToolUse", []):
+    matcher = str(entry.get("matcher", ""))
+    commands = [str(hook.get("command", "")) for hook in entry.get("hooks", [])]
+    commands.append(str(entry.get("command", "")))
+    haystack = " ".join([matcher] + commands)
+    if "mcp__" in haystack or "MCP" in haystack:
+        matches.append(matcher or "<empty matcher>")
+
+if matches:
+    print(f"{source}:{', '.join(matches[:3])}")
+PYEOF
+}
+
+MCP_HOOK_MATCHERS=""
+MCP_USER_MATCHERS=$(detect_mcp_pretooluse_matchers "$SETTINGS_FILE" "user" 2>/dev/null || true)
+MCP_PROJECT_MATCHERS=$(detect_mcp_pretooluse_matchers "$PROJECT_SETTINGS" "project" 2>/dev/null || true)
+if [ -n "$MCP_USER_MATCHERS" ]; then
+    MCP_HOOK_MATCHERS="$MCP_HOOK_MATCHERS $MCP_USER_MATCHERS"
+fi
+if [ -n "$MCP_PROJECT_MATCHERS" ]; then
+    MCP_HOOK_MATCHERS="$MCP_HOOK_MATCHERS $MCP_PROJECT_MATCHERS"
+fi
+if [ -n "$MCP_HOOK_MATCHERS" ]; then
+    _WARN="PreToolUse hooks target MCP tools:${MCP_HOOK_MATCHERS}. Claude Code has reported gaps where permissionDecision ask/deny is ignored for real MCP tool calls even when direct hook stdin tests pass. Use MCP server-side controls or managed-settings disallowedTools for sensitive MCP writes. (see claude-code#33106, claude-code#81569)"
+    WARNINGS+=("$_WARN")
+    summary_issue "$_WARN"
+fi
+
 # Hooks using exit code 2 for deny may be silently ignored (claude-code#37210)
 # Exit 2 can be treated as a hook crash, causing Claude to proceed despite the deny.
 # Correct pattern: exit 0 with hookSpecificOutput JSON on stdout.
