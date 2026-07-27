@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1282,
+  "count": 1284,
   "categories": {
     "Hook behavior & events": 186,
     "Permission system": 127,
@@ -9,9 +9,9 @@
     "Subagent & spawned agents": 57,
     "Desktop & IDE integration": 42,
     "TUI & display": 29,
+    "Context & memory": 27,
     "Platform & compatibility": 27,
     "CLI & terminal": 25,
-    "Context & memory": 25,
     "Configuration behavior": 22,
     "Performance & cost": 20,
     "Tool behavior": 20,
@@ -183,7 +183,7 @@
   },
   "severity_counts": {
     "CRITICAL": 101,
-    "HIGH": 671,
+    "HIGH": 673,
     "LOW": 105,
     "MEDIUM": 405
   },
@@ -16474,30 +16474,56 @@
       "workaround": "Do not treat ~/.claude/projects session files as tamper-proof audit evidence when write-capable agents have Bash access. Preserve important transcripts outside the session's writable home directory, copy audit artifacts to append-only or separately permissioned storage, and add local filesystem or hook rules that deny writes and deletes under ~/.claude/projects/** before relying on the records for incident response.",
       "status": "open",
       "date_added": "2026-07-27"
+    },
+    {
+      "id": "oversized-sessions-can-dead-end-before-compact",
+      "title": "Oversized sessions can become unrecoverable because /compact needs the failing request path.",
+      "category": "Context & memory",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81793"
+      ],
+      "description": "A reported Claude Code 2.1.220 macOS session grew large enough that requests started failing, but the normal recovery path was unreachable: /compact had to send the full conversation to the model to produce a summary, and --resume resent the same failing history. The user recovered only by externally parsing and pruning session JSONL before resuming, including preserving non-obvious parent-chain relationships for parallel tool calls and tool_result blocks.",
+      "workaround": "Before long sessions approach failure, write a handoff summary or critical state to versioned files outside the transcript. If a session is already wedged, do not repeatedly retry the same resume path. Preserve the original JSONL, prune only on a copy, and keep enough parent-chain/tool_result structure for every retained tool_use. Prefer smaller staged sessions until Claude Code provides a local truncate or documented offline recovery command.",
+      "status": "open",
+      "date_added": "2026-07-27"
+    },
+    {
+      "id": "pdf-page-images-can-wedge-sessions-by-byte-size",
+      "title": "PDF page images can wedge sessions by byte size while the context meter looks safe.",
+      "category": "Context & memory",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81792"
+      ],
+      "description": "A reported Claude Code 2.1.220 macOS session became unusable after reading an 8-page PDF because each page added a base64 JPEG to the conversation. The token count stayed far below the 1M context window, but the serialized request payload grew by roughly 1.5 MB and was resent on every later request. From the user's view, the session looked like it failed randomly while the context meter still appeared safe.",
+      "workaround": "For multi-page PDFs, extract text outside Claude Code or read only the pages you actually need. Treat PDF page images as request-payload budget, not just token budget, and restart or compact soon after accidental image-heavy reads. If a session wedges after a PDF read, preserve the transcript and recover from text/source files rather than re-reading the same PDF pages into the same conversation.",
+      "status": "open",
+      "date_added": "2026-07-27"
     }
   ],
   "status_summary": {
-    "open": 1268,
+    "open": 1270,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 101,
-    "high": 671,
+    "high": 673,
     "low": 105,
     "medium": 405
   },
   "lastUpdated": "2026-07-27",
   "stats": {
-    "total": 1282,
+    "total": 1284,
     "critical": 101,
-    "high": 671,
+    "high": 673,
     "medium": 405,
     "low": 105,
-    "open": 1268,
+    "open": 1270,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-27",
-  "total": 1282
+  "total": 1284
 }
