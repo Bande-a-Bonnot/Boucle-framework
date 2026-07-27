@@ -117,6 +117,8 @@ docs = {
         "bash, python3, and jq",
         "No hook installation required for the audit",
         'cd "$(git rev-parse --show-toplevel)"',
+        "install.ps1) } recommended",
+        "install the same recommended set from PowerShell 7",
         "start a fresh Claude Code session from that same project root",
         "github.com/anthropics/claude-code/issues/37550",
         "200+ Rust tests",
