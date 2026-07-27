@@ -4180,6 +4180,35 @@ assert_not "no bypassPermissions means no sensitive-file warning" "sensitive-fil
 export HOME="$SAVE_HOME"
 rm -rf "$TMPDIR_NOSENS"
 
+# === Test: MCP PreToolUse hooks trigger platform enforcement warning ===
+TMPDIR_MCP_HOOK=$(mktemp -d)
+SAVE_HOME="$HOME"
+export HOME="$TMPDIR_MCP_HOOK"
+mkdir -p "$TMPDIR_MCP_HOOK/.claude"
+cat > "$TMPDIR_MCP_HOOK/.claude/settings.json" << 'MCPHOF'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__supabase__execute_sql",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/mcp-guard.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+MCPHOF
+MCP_HOOK_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "MCP PreToolUse warning shown" "PreToolUse hooks target MCP tools" "$MCP_HOOK_OUTPUT"
+assert "MCP warning references fresh ask issue" "81569" "$MCP_HOOK_OUTPUT"
+assert "MCP warning included in copy-paste summary" "Issue: PreToolUse hooks target MCP tools" "$MCP_HOOK_OUTPUT"
+export HOME="$SAVE_HOME"
+rm -rf "$TMPDIR_MCP_HOOK"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
