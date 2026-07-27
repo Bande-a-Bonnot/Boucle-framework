@@ -80,6 +80,11 @@ Fix those first, then re-run the check from the project root.
 
 ## 5. Smoke test the runtime boundary
 
+After a clean verification, start a fresh Claude Code session from that same
+project root before relying on read-only mode. The hook registration and
+project settings are on disk, but a session that was already open may still be
+using its old in-memory boundary.
+
 Run from the project root:
 
 ```sh
