@@ -1519,6 +1519,84 @@ except Exception:
     fi
 fi
 
+# User+project plugin enablement can produce only a project-scoped install record: #81706
+INSTALLED_PLUGINS_FILE="${HOME}/.claude/plugins/installed_plugins.json"
+if [ -f "$INSTALLED_PLUGINS_FILE" ]; then
+    PLUGIN_SCOPE_ISSUES=$(python3 - "$SETTINGS_FILE" "$PROJECT_SETTINGS" "$INSTALLED_PLUGINS_FILE" << 'PYEOF' 2>/dev/null
+import json
+import sys
+
+
+def read_json(path):
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+    except Exception:
+        return {}
+
+
+def enabled_refs(path):
+    settings = read_json(path)
+    raw = settings.get("enabledPlugins", {})
+    refs = set()
+    if isinstance(raw, dict):
+        for key, value in raw.items():
+            if value is not False:
+                refs.add(str(key))
+    elif isinstance(raw, list):
+        refs.update(str(item) for item in raw)
+    return refs
+
+
+user_settings, project_settings, installed_path = sys.argv[1:4]
+user_enabled = enabled_refs(user_settings)
+project_enabled = enabled_refs(project_settings)
+both_enabled = user_enabled & project_enabled
+
+installed = read_json(installed_path)
+if not isinstance(installed, dict):
+    installed = {}
+
+missing_user_scope = []
+invalid_project_scope = []
+for ref, records in installed.items():
+    if not isinstance(records, list):
+        continue
+    has_user_record = any(
+        isinstance(record, dict) and record.get("scope") == "user"
+        for record in records
+    )
+    if ref in both_enabled and records and not has_user_record:
+        missing_user_scope.append(ref)
+    for record in records:
+        if (
+            isinstance(record, dict)
+            and record.get("scope") == "project"
+            and not record.get("projectPath")
+        ):
+            invalid_project_scope.append(ref)
+            break
+
+if missing_user_scope:
+    print("missing_user_scope:" + ",".join(sorted(missing_user_scope)[:5]))
+if invalid_project_scope:
+    print("invalid_project_scope:" + ",".join(sorted(invalid_project_scope)[:5]))
+PYEOF
+)
+    while IFS= read -r plugin_scope_line; do
+        case "$plugin_scope_line" in
+            missing_user_scope:*)
+                PLUGIN_REFS=${plugin_scope_line#missing_user_scope:}
+                WARNINGS+=("Plugins enabled at both user and project scope lack user-scope install records: ${PLUGIN_REFS}. They can appear enabled globally while working only in one project, so any hooks or policy shipped by those plugins may be absent elsewhere. Reinstall at user scope or keep separate user and project install records. (see claude-code#81706)")
+                ;;
+            invalid_project_scope:*)
+                PLUGIN_REFS=${plugin_scope_line#invalid_project_scope:}
+                WARNINGS+=("Plugin install records with scope=project but no projectPath detected: ${PLUGIN_REFS}. Claude Code cannot reliably match these records to a project, and loader behavior may depend on record order. Audit ~/.claude/plugins/installed_plugins.json before trusting plugin hooks. (see claude-code#81706)")
+                ;;
+        esac
+    done <<< "$PLUGIN_SCOPE_ISSUES"
+fi
+
 # MCP tool calls silently rejected by parameter value: #41528
 # Universal warning - affects anyone using MCP tools in allow lists
 if [ -f "$SETTINGS_FILE" ]; then
