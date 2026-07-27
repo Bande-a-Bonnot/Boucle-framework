@@ -18,6 +18,7 @@ checks = [
             "install.ps1 check` command runs the bash-based safety-check audit",
             "Git Bash, WSL, or another `bash` on PATH",
             "Set-Location (git rev-parse --show-toplevel)",
+            "tools/install.ps1) } recommended\"\niex \"& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify",
         ],
     ),
     (
