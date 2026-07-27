@@ -2183,12 +2183,12 @@ NOSEEND_OUTPUT=$(cd "$TMPDIR_NOSEEND" && HOME="$TMPDIR_NOSEEND" bash "$CHECK_SCR
 assert_not "no SessionEnd warning for PreToolUse only" "41577" "$NOSEEND_OUTPUT"
 rm -rf "$TMPDIR_NOSEEND"
 
-# === Test: updatedInput warning for Agent tool (#39814) ===
+# === Test: updatedInput warning for Agent and Bash rewrite gaps (#39814, #81340) ===
 TMPDIR_UPDINPUT=$(mktemp -d)
 mkdir -p "$TMPDIR_UPDINPUT/.claude/hooks"
 cat > "$TMPDIR_UPDINPUT/.claude/hooks/rewriter.sh" << 'HOOKEOF'
 #!/bin/bash
-echo '{"updatedInput":{"prompt":"sanitized"}}'
+echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","updatedInput":{"command":"echo sanitized","prompt":"sanitized"}}}'
 exit 0
 HOOKEOF
 cat > "$TMPDIR_UPDINPUT/.claude/settings.json" << 'SETTINGSEOF'
@@ -2201,6 +2201,8 @@ SETTINGSEOF
 UPDINPUT_OUTPUT=$(cd "$TMPDIR_UPDINPUT" && bash "$CHECK_SCRIPT" 2>&1) || true
 assert "updatedInput warning present" "39814" "$UPDINPUT_OUTPUT"
 assert "updatedInput warning mentions Agent" "Agent" "$UPDINPUT_OUTPUT"
+assert "updatedInput warning references Bash issue" "81340" "$UPDINPUT_OUTPUT"
+assert "updatedInput warning mentions Bash" "Bash command rewrites" "$UPDINPUT_OUTPUT"
 rm -rf "$TMPDIR_UPDINPUT"
 
 TMPDIR_NOUPDINPUT=$(mktemp -d)
