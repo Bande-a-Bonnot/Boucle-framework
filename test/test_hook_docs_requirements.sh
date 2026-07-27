@@ -30,6 +30,8 @@ docs = {
         "tools/install.sh | bash -s -- recommended curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
         "tools/install.sh | bash -s -- all curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
         "tools/install.ps1) } all\" iex \"& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify",
+        "start a fresh Claude Code session from that same project root",
+        "existing session may have loaded the previous settings or hook files",
     ],
     repo / "tools" / "README.md": [
         "**macOS / Linux:** bash, python3, and jq",
