@@ -52,7 +52,7 @@ disappear.
 
 ## Verify it
 
-The default audit checks whether hooks are configured. Verification mode checks whether installed `PreToolUse` hooks actually block representative payloads:
+The default audit checks whether hooks are configured. Verification mode checks whether installed `PreToolUse` hooks actually block representative Claude-style JSON payloads:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
@@ -194,9 +194,10 @@ representative test payloads and confirm hooks actually block the covered cases:
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
-This sends representative dangerous payloads (like `rm -rf /`) to each
-installed hook and checks the response. Hooks that fail to block are flagged as
-**FAIL-OPEN**.
+This invokes each installed hook with representative dangerous payloads (like
+`rm -rf /`) encoded as hook input and checks the response. It does not execute
+the shell or git commands named inside those payloads. Hooks that fail to block
+are flagged as **FAIL-OPEN**.
 
 ```
 Hook Verification (sending representative test payloads)

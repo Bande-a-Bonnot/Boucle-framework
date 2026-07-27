@@ -42,6 +42,9 @@ flags such as `IS_DEMO` and `CLAUDE_CODE_SIMPLE` can change hook behavior.
 Run it from the project root that contains `.claude/settings.json`; a
 subdirectory run can miss project hooks that Claude Code also skips when started
 from that subdirectory.
+Safety-check invokes the configured hook scripts with Claude-style JSON payloads;
+it does not execute the dangerous shell or git commands named inside those
+payloads.
 
 ## Repository CI check
 
