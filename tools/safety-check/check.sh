@@ -707,7 +707,8 @@ except: print('false')
     fi
 done
 
-# Hooks using updatedInput with Agent tool (claude-code#39814)
+# Hooks using updatedInput on tool calls with reported rewrite gaps
+# (claude-code#39814, claude-code#79321, claude-code#81340)
 for hookdir in "${HOME}/.claude/hooks" ".claude/hooks"; do
     [ -d "$hookdir" ] || continue
     UPDATEDINPUT_HOOKS=""
@@ -720,7 +721,7 @@ for hookdir in "${HOME}/.claude/hooks" ".claude/hooks"; do
     if [ -n "$UPDATEDINPUT_HOOKS" ]; then
         scope="Hook(s)"
         [ "$hookdir" = ".claude/hooks" ] && scope="Project hook(s)"
-        WARNINGS+=("${scope} use updatedInput:${UPDATEDINPUT_HOOKS}. The updatedInput field is silently ignored for Agent tool calls - the original prompt is used instead. Use decision:block to reject unsafe Agent prompts rather than trying to rewrite them. (see claude-code#39814)")
+        WARNINGS+=("${scope} use updatedInput:${UPDATEDINPUT_HOOKS}. The updatedInput field is silently ignored for Agent tool calls, and recent reports show Bash command rewrites can also be dropped while permissionDecision is still honored. Use decision:block to reject unsafe Agent prompts or Bash commands rather than relying on transparent rewrites. (see claude-code#39814, claude-code#79321, claude-code#81340)")
     fi
 done
 
