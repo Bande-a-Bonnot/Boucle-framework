@@ -102,7 +102,7 @@ docs = {
         "project settings when they already exist",
         "curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- recommended curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
         "curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- all curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
-        "The installer verifier checks the installed hook payload paths quickly",
+        "The installer verifier sends representative payloads to the installed hooks",
         "temporary-directory reproduction instead of real workspace",
         "git rev-parse --show-toplevel",
         "Set-Location (git rev-parse --show-toplevel)",

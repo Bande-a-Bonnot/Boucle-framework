@@ -73,9 +73,10 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
 ```
 
-The installer verifier checks the installed hook payload paths quickly. The
-full safety-check verification in the next section adds the summary, strict
-mode, environment warnings, and project-settings inventory.
+The installer verifier sends representative payloads to the installed hooks and
+confirms the expected blocks. The full safety-check verification in the next
+section adds the copy/paste summary, strict mode, environment warnings, and
+project-settings inventory.
 
 Both `recommended` and `all` install user-level hooks under
 `~/.claude/<hook-name>/` and register them in `~/.claude/settings.json`. They do
