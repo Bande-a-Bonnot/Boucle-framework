@@ -274,6 +274,14 @@ if [ -n "${CLAUDE_CODE_SIMPLE:-}" ]; then
     summary_issue "$_WARN"
 fi
 
+# API key precedence check: shell aliases that unset ANTHROPIC_API_KEY do not
+# protect Bash-spawned noninteractive `claude -p` subprocesses.
+if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+    _WARN="ANTHROPIC_API_KEY is set in your environment. Assistant-launched Bash subprocesses such as 'claude -p' can bypass interactive aliases and use API-key billing instead of subscription/OAuth auth. Start Claude Code from a shell with the key unset, put a real wrapper executable earlier in PATH that unsets billing-sensitive credentials, or block nested claude calls with a PreToolUse Bash rule. (see claude-code#81748)"
+    WARNINGS+=("$_WARN")
+    summary_issue "$_WARN"
+fi
+
 # GIT_INDEX_FILE check (claude-code#38181: corrupts git index when Claude launched from git hooks)
 if [ -n "${GIT_INDEX_FILE:-}" ]; then
     WARNINGS+=("GIT_INDEX_FILE is set ($GIT_INDEX_FILE). If Claude was launched from a git hook (post-commit, pre-push, etc.), plugin initialization can corrupt your git index by writing plugin entries into it. Unset this variable before invoking Claude, or run in a separate shell. (see claude-code#38181)")
