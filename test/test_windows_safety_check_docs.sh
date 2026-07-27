@@ -76,6 +76,15 @@ checks = [
             "Set-Location (git rev-parse --show-toplevel)",
         ],
     ),
+    (
+        repo / "docs" / "index.html",
+        [
+            "run the PowerShell verifier from <strong>PowerShell 7</strong>",
+            "tests the native <code>.ps1</code> hooks without bash or jq",
+            "install.ps1) } verify",
+            "No jq or bash needed for native install, verify, or doctor",
+        ],
+    ),
 ]
 
 failures = []
