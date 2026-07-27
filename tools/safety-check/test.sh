@@ -2033,6 +2033,66 @@ NOSPACES_OUTPUT=$(cd "$TMPDIR_NOSPACES" && bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "no spaces warning for normal path" "39478" "$NOSPACES_OUTPUT"
 rm -rf "$TMPDIR_NOSPACES"
 
+# === Test: Unquoted CLAUDE_PROJECT_DIR hook command warning (#81458) ===
+TMPDIR_UNQUOTED_PROJECT_DIR=$(mktemp -d)
+mkdir -p "$TMPDIR_UNQUOTED_PROJECT_DIR/.claude/hooks"
+cat > "$TMPDIR_UNQUOTED_PROJECT_DIR/.claude/hooks/guard.sh" << 'HOOKEOF'
+#!/bin/bash
+echo '{"decision":"block","reason":"blocked"}'
+exit 0
+HOOKEOF
+chmod +x "$TMPDIR_UNQUOTED_PROJECT_DIR/.claude/hooks/guard.sh"
+cat > "$TMPDIR_UNQUOTED_PROJECT_DIR/.claude/settings.json" << 'SETTINGSEOF'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/guard.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+SETTINGSEOF
+UNQUOTED_PROJECT_DIR_OUTPUT=$(cd "$TMPDIR_UNQUOTED_PROJECT_DIR" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "unquoted CLAUDE_PROJECT_DIR warning present" "81458" "$UNQUOTED_PROJECT_DIR_OUTPUT"
+assert "unquoted CLAUDE_PROJECT_DIR warning names fail-open" "fail open" "$UNQUOTED_PROJECT_DIR_OUTPUT"
+rm -rf "$TMPDIR_UNQUOTED_PROJECT_DIR"
+
+TMPDIR_QUOTED_PROJECT_DIR=$(mktemp -d)
+mkdir -p "$TMPDIR_QUOTED_PROJECT_DIR/.claude/hooks"
+cat > "$TMPDIR_QUOTED_PROJECT_DIR/.claude/hooks/guard.sh" << 'HOOKEOF'
+#!/bin/bash
+echo '{"decision":"block","reason":"blocked"}'
+exit 0
+HOOKEOF
+chmod +x "$TMPDIR_QUOTED_PROJECT_DIR/.claude/hooks/guard.sh"
+cat > "$TMPDIR_QUOTED_PROJECT_DIR/.claude/settings.json" << 'SETTINGSEOF'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}
+SETTINGSEOF
+QUOTED_PROJECT_DIR_OUTPUT=$(cd "$TMPDIR_QUOTED_PROJECT_DIR" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "quoted CLAUDE_PROJECT_DIR has no warning" "81458" "$QUOTED_PROJECT_DIR_OUTPUT"
+rm -rf "$TMPDIR_QUOTED_PROJECT_DIR"
+
 # === Test: Spaces in HOME path warning (#40084) ===
 # Simulate a user profile path with spaces (e.g., /Users/Lea Chan/)
 TMPDIR_HOMESPACE=$(mktemp -d)

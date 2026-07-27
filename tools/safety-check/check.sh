@@ -612,6 +612,56 @@ case "$PWD" in
         ;;
 esac
 
+_UNQUOTED_PROJECT_DIR_HOOKS=$(python3 - "$ALL_HOOK_CMDS" << 'PYEOF_UNQUOTED_PROJECT_DIR'
+import sys
+
+commands = sys.argv[1].splitlines()
+bad = []
+
+for line in commands:
+    if not line:
+        continue
+    try:
+        hook_type, source, command = line.split(":", 2)
+    except ValueError:
+        continue
+
+    quote = None
+    escaped = False
+    i = 0
+    while i < len(command):
+        ch = command[i]
+        if escaped:
+            escaped = False
+            i += 1
+            continue
+        if ch == "\\":
+            escaped = True
+            i += 1
+            continue
+        if ch == "'" and quote != '"':
+            quote = None if quote == "'" else "'"
+            i += 1
+            continue
+        if ch == '"' and quote != "'":
+            quote = None if quote == '"' else '"'
+            i += 1
+            continue
+        if command.startswith("$CLAUDE_PROJECT_DIR", i) or command.startswith("${CLAUDE_PROJECT_DIR}", i):
+            if quote != '"':
+                bad.append(f"{hook_type}/{source}")
+                break
+        i += 1
+
+for item in sorted(set(bad)):
+    print(item)
+PYEOF_UNQUOTED_PROJECT_DIR
+)
+if [ -n "$_UNQUOTED_PROJECT_DIR_HOOKS" ]; then
+    _UNQUOTED_PROJECT_DIR_COUNT=$(printf "%s\n" "$_UNQUOTED_PROJECT_DIR_HOOKS" | awk 'NF { count++ } END { print count + 0 }')
+    WARNINGS+=("${_UNQUOTED_PROJECT_DIR_COUNT} hook command(s) reference CLAUDE_PROJECT_DIR without double quotes:${_UNQUOTED_PROJECT_DIR_HOOKS//$'\n'/, }. If the project path contains spaces, Claude Code can word-split the hook path and fail open with hook_non_blocking_error exit 127. Quote the variable inside settings.json, for example \"\$CLAUDE_PROJECT_DIR/.claude/hooks/hook.sh\". (see claude-code#81458)")
+fi
+
 # Spaces in HOME path break hook command invocation (claude-code#40084)
 # When the user profile path contains spaces (e.g. /Users/Lea Chan/), hook commands
 # that reference $HOME or CLAUDE_PLUGIN_ROOT get word-split by bash, causing:
