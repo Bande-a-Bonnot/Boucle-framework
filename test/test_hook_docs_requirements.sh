@@ -104,6 +104,8 @@ docs = {
         "Expect the strict audit to exit non-zero",
         "policy is no longer covered by",
         "zero `FAIL-OPEN` results for any remaining hooks",
+        "start a fresh Claude Code session from that same project root",
+        "old in-memory boundary",
     ],
     repo / "tools" / "safety-check" / "UPDATE_CHECKLIST.md": [
         "same project root you use to start Claude Code",
