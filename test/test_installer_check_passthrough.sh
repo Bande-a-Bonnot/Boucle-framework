@@ -59,11 +59,13 @@ paths = {
         "check [--verify] [--summary-only] [--strict]",
         "check --verify --summary-only",
         "check --verify --strict",
+        "Test all installed hooks with representative payloads",
     ],
     repo / "tools" / "install.ps1": [
         "check [--verify] [--summary-only] [--strict]",
         "check --verify --summary-only",
         "check --verify --strict",
+        "Test installed hooks with representative payloads",
         "$checkArgs = @()",
         "& bash $tmpFile @checkArgs",
         "$checkExit = $LASTEXITCODE",
@@ -73,12 +75,14 @@ paths = {
         "check --verify --summary-only",
         "check --verify --strict",
         "Run `install.sh check --verify --strict` first",
+        "Test all installed hooks with representative payloads",
         "Run strict safety audit with hook payload verification",
     ],
     repo / "tools" / "README.md": [
         "install.sh check --verify --summary-only",
         "install.sh check --verify --strict",
         "Run strict safety audit with payload checks",
+        "Test installed hooks with representative payloads",
     ],
     repo / "tools" / "safety-check" / "QUICKSTART.md": [
         "run the strict audit with",
