@@ -116,6 +116,8 @@ docs = {
     repo / "docs" / "index.html": [
         "bash, python3, and jq",
         "No hook installation required for the audit",
+        'cd "$(git rev-parse --show-toplevel)"',
+        "start a fresh Claude Code session from that same project root",
         "github.com/anthropics/claude-code/issues/37550",
         "200+ Rust tests",
     ],
