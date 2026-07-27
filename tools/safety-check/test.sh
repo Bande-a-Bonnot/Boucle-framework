@@ -2461,6 +2461,108 @@ assert "plugin with hooks warns about silent install" "executable hooks" "$HOOKP
 assert "plugin hook warning mentions 40036" "40036" "$HOOKP_OUTPUT"
 rm -rf "$TMPDIR_HOOKPLUGIN"
 
+# === Test: User+project plugin enablement missing user install warns (#81706) ===
+TMPDIR_PLUGIN_SCOPE=$(mktemp -d)
+export HOME="$TMPDIR_PLUGIN_SCOPE"
+mkdir -p "$TMPDIR_PLUGIN_SCOPE/.claude/plugins" "$TMPDIR_PLUGIN_SCOPE/project/.claude"
+cat > "$TMPDIR_PLUGIN_SCOPE/.claude/settings.json" << 'PLUGSCOPEEOF'
+{
+  "enabledPlugins": {
+    "bootstrap@plugins-kit": true
+  },
+  "permissions": {}
+}
+PLUGSCOPEEOF
+cat > "$TMPDIR_PLUGIN_SCOPE/project/.claude/settings.json" << 'PLUGSCOPE2EOF'
+{
+  "enabledPlugins": {
+    "bootstrap@plugins-kit": true
+  },
+  "permissions": {}
+}
+PLUGSCOPE2EOF
+cat > "$TMPDIR_PLUGIN_SCOPE/.claude/plugins/installed_plugins.json" << 'PLUGSCOPE3EOF'
+{
+  "bootstrap@plugins-kit": [
+    {
+      "scope": "project",
+      "projectPath": "/tmp/project",
+      "installPath": "/tmp/bootstrap",
+      "version": "0.64.1"
+    }
+  ]
+}
+PLUGSCOPE3EOF
+PLUGSCOPE_OUTPUT=$(cd "$TMPDIR_PLUGIN_SCOPE/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "user plus project plugin missing user record warns" "lack user-scope install records" "$PLUGSCOPE_OUTPUT"
+assert "user plus project plugin warning mentions 81706" "81706" "$PLUGSCOPE_OUTPUT"
+rm -rf "$TMPDIR_PLUGIN_SCOPE"
+
+# === Test: Invalid project-scope plugin records warn (#81706) ===
+TMPDIR_PLUGIN_INVALID=$(mktemp -d)
+export HOME="$TMPDIR_PLUGIN_INVALID"
+mkdir -p "$TMPDIR_PLUGIN_INVALID/.claude/plugins" "$TMPDIR_PLUGIN_INVALID/project/.claude"
+cat > "$TMPDIR_PLUGIN_INVALID/.claude/settings.json" << 'PLUGINVALIDEOF'
+{
+  "permissions": {}
+}
+PLUGINVALIDEOF
+cat > "$TMPDIR_PLUGIN_INVALID/project/.claude/settings.json" << 'PLUGINVALID2EOF'
+{
+  "permissions": {}
+}
+PLUGINVALID2EOF
+cat > "$TMPDIR_PLUGIN_INVALID/.claude/plugins/installed_plugins.json" << 'PLUGINVALID3EOF'
+{
+  "engineer@myorg-plugins": [
+    {
+      "scope": "project",
+      "installPath": "/tmp/engineer",
+      "version": "0.3.4"
+    }
+  ]
+}
+PLUGINVALID3EOF
+PLUGINVALID_OUTPUT=$(cd "$TMPDIR_PLUGIN_INVALID/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "invalid project plugin record warns" "scope=project but no projectPath" "$PLUGINVALID_OUTPUT"
+assert "invalid project plugin warning mentions 81706" "81706" "$PLUGINVALID_OUTPUT"
+rm -rf "$TMPDIR_PLUGIN_INVALID"
+
+# === Test: User-scoped plugin install record does NOT warn (#81706) ===
+TMPDIR_PLUGIN_OK=$(mktemp -d)
+export HOME="$TMPDIR_PLUGIN_OK"
+mkdir -p "$TMPDIR_PLUGIN_OK/.claude/plugins" "$TMPDIR_PLUGIN_OK/project/.claude"
+cat > "$TMPDIR_PLUGIN_OK/.claude/settings.json" << 'PLUGINOKEOF'
+{
+  "enabledPlugins": {
+    "bootstrap@plugins-kit": true
+  },
+  "permissions": {}
+}
+PLUGINOKEOF
+cat > "$TMPDIR_PLUGIN_OK/project/.claude/settings.json" << 'PLUGINOK2EOF'
+{
+  "enabledPlugins": {
+    "bootstrap@plugins-kit": true
+  },
+  "permissions": {}
+}
+PLUGINOK2EOF
+cat > "$TMPDIR_PLUGIN_OK/.claude/plugins/installed_plugins.json" << 'PLUGINOK3EOF'
+{
+  "bootstrap@plugins-kit": [
+    {
+      "scope": "user",
+      "installPath": "/tmp/bootstrap",
+      "version": "0.64.1"
+    }
+  ]
+}
+PLUGINOK3EOF
+PLUGINOK_OUTPUT=$(cd "$TMPDIR_PLUGIN_OK/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "valid user plugin install no 81706 warning" "81706" "$PLUGINOK_OUTPUT"
+rm -rf "$TMPDIR_PLUGIN_OK"
+
 # === Test: No marketplace plugins means no #40036 warning ===
 TMPDIR_NOPLUGIN=$(mktemp -d)
 export HOME="$TMPDIR_NOPLUGIN"
