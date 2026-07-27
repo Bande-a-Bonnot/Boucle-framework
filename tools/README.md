@@ -145,7 +145,7 @@ The installer doubles as a management CLI:
 ```bash
 install.sh help                  # Show all commands and available hooks
 install.sh list                  # See which hooks are currently installed
-install.sh verify                # Test installed hooks with real payloads
+install.sh verify                # Test installed hooks with representative payloads
 install.sh upgrade               # Re-download all installed hooks to latest version
 install.sh uninstall <hook>      # Remove a specific hook (files + settings.json entry)
 install.sh uninstall all         # Remove all hooks

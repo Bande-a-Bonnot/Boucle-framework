@@ -96,7 +96,7 @@ if [ $# -gt 0 ] && { [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]
   echo "  all                   Install all 7 hooks"
   echo "  <hook> [hook...]      Install specific hooks by name"
   echo "  list                  Show which hooks are currently installed"
-  echo "  verify                Test all installed hooks with real payloads"
+  echo "  verify                Test all installed hooks with representative payloads"
   echo "  upgrade               Re-download all installed hooks to latest version"
   echo "  uninstall <hook>      Remove a specific hook (files + settings.json entry)"
   echo "  uninstall all         Remove all hooks"
@@ -124,7 +124,7 @@ if [ $# -gt 0 ] && { [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]
   echo "  install.sh all                    # Everything at once"
   echo "  install.sh read-once git-safe     # Pick specific hooks"
   echo "  install.sh list                   # See what you have"
-  echo "  install.sh verify                 # Test hooks with payloads"
+  echo "  install.sh verify                 # Test hooks with representative payloads"
   echo "  install.sh upgrade                # Update to latest"
   echo "  install.sh uninstall read-once    # Remove one hook"
   echo "  install.sh backup                 # Snapshot before updating Claude Code"
@@ -415,7 +415,7 @@ if [ $# -gt 0 ] && [ "$1" = "list" ]; then
   exit 0
 fi
 
-# Handle verify subcommand — test all installed hooks with real payloads
+# Handle verify subcommand: test all installed hooks with representative payloads
 if [ $# -gt 0 ] && [ "$1" = "verify" ]; then
   echo -e "${BOLD}Verifying installed hooks...${RESET}"
   echo ""

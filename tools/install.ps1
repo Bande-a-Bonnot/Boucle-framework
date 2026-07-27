@@ -292,7 +292,7 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
     Write-Host "  all                   Install all 7 hooks"
     Write-Host "  <hook> [hook...]      Install specific hooks by name"
     Write-Host "  list                  Show which hooks are currently installed"
-    Write-Host "  verify                Test installed hooks with real payloads"
+    Write-Host "  verify                Test installed hooks with representative payloads"
     Write-Host "  upgrade               Re-download all installed hooks to latest version"
     Write-Host "  uninstall <hook>      Remove a specific hook (files + settings.json entry)"
     Write-Host "  uninstall all         Remove all hooks"
@@ -320,7 +320,7 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
     Write-Host "  install.ps1 all                    # Everything at once"
     Write-Host "  install.ps1 read-once git-safe     # Pick specific hooks"
     Write-Host "  install.ps1 list                   # See what you have"
-    Write-Host "  install.ps1 verify                 # Test hooks with payloads"
+    Write-Host "  install.ps1 verify                 # Test hooks with representative payloads"
     Write-Host "  install.ps1 upgrade                # Update to latest"
     Write-Host "  install.ps1 uninstall read-once    # Remove one hook"
     Write-Host "  install.ps1 backup                 # Snapshot before updating Claude Code"
@@ -338,7 +338,7 @@ if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'list') {
     exit 0
 }
 
-# Handle verify subcommand — test all installed hooks with real payloads
+# Handle verify subcommand: test all installed hooks with representative payloads
 if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'verify') {
     Write-Host "Verifying installed hooks..." -ForegroundColor White
     Write-Host ""
