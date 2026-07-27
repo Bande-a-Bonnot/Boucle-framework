@@ -82,6 +82,8 @@ checks = [
             "run the PowerShell verifier from <strong>PowerShell 7</strong>",
             "tests the native <code>.ps1</code> hooks without bash or jq",
             "install.ps1) } verify",
+            "install.ps1) } recommended",
+            "install the same recommended set from PowerShell 7",
             "No jq or bash needed for native install, verify, or doctor",
         ],
     ),
