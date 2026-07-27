@@ -78,10 +78,11 @@ The project root still matters for the audit because safety-check also inspects
 checked-in project settings when they already exist.
 
 On Windows, use PowerShell 7 or WSL. Native Windows hook behavior can vary by
-Claude Code version, so verify after installing:
+Claude Code version, so verify immediately after installing:
 
 ```powershell
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
 
 The native PowerShell installer covers the standalone hooks. The `enforce-hooks`
