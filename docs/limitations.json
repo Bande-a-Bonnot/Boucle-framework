@@ -1,37 +1,37 @@
 {
   "version": "0.13.0",
-  "count": 1350,
+  "count": 1360,
   "categories": {
     "Hook behavior & events": 186,
     "Permission system": 130,
     "Hook bypass & evasion": 102,
-    "MCP & plugin issues": 70,
-    "Subagent & spawned agents": 63,
+    "MCP & plugin issues": 71,
+    "Subagent & spawned agents": 64,
     "Desktop & IDE integration": 49,
     "TUI & display": 32,
     "Platform & compatibility": 30,
+    "CLI & terminal": 28,
     "Context & memory": 28,
-    "CLI & terminal": 27,
     "Configuration behavior": 23,
+    "MCP & integrations": 21,
     "Performance & cost": 21,
-    "MCP & integrations": 20,
     "Tool behavior": 20,
     "Agents & subagents": 19,
     "Core & session management": 17,
     "Sandbox & permissions": 17,
     "Security & trust boundaries": 17,
     "Cowork & remote": 16,
+    "Auth & accounts": 15,
     "Data integrity": 15,
     "Remote & cloud": 15,
-    "Auth & accounts": 14,
+    "VS Code extension": 15,
     "Model behavior": 14,
-    "VS Code extension": 14,
     "MCP integration": 13,
     "Worktree": 12,
     "Bash & shell execution": 11,
     "Plugin & channel system": 11,
+    "Scheduling & remote triggers": 11,
     "File system & paths": 10,
-    "Scheduling & remote triggers": 10,
     "hooks": 9,
     "Scheduled tasks": 9,
     "auth": 8,
@@ -45,9 +45,10 @@
     "Authentication & accounts": 6,
     "Model behavior & output": 6,
     "Skills & commands": 6,
+    "Stability & crashes": 6,
     "CLI / TUI rendering": 5,
+    "Skills": 5,
     "Skills / slash commands": 5,
-    "Stability & crashes": 5,
     "Telemetry & insights": 5,
     "MCP & plugins": 4,
     "Memory & context": 4,
@@ -56,10 +57,10 @@
     "Performance & resources": 4,
     "permissions": 4,
     "sandbox": 4,
-    "Skills": 4,
     "tui": 4,
     "Browser automation": 3,
     "Context / compaction": 3,
+    "Cost & usage": 3,
     "cowork": 3,
     "Desktop": 3,
     "Hooks": 3,
@@ -80,7 +81,6 @@
     "auth/bedrock": 2,
     "auth/oauth": 2,
     "Configuration": 2,
-    "Cost & usage": 2,
     "Cowork": 2,
     "Cowork / remote sessions": 2,
     "Hooks & automation": 2,
@@ -182,10 +182,10 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 115,
-    "HIGH": 704,
+    "CRITICAL": 116,
+    "HIGH": 711,
     "LOW": 107,
-    "MEDIUM": 424
+    "MEDIUM": 426
   },
   "entries": [
     {
@@ -17363,30 +17363,160 @@
       "date_added": "2026-07-28",
       "description": "A reported Claude Code desktop session on macOS saw two `claude-fable-5` sessions stall for 5 to 30 minutes at nearly the same timestamps while a concurrent `claude-opus-5` session remained responsive. The affected clients showed no retry, waiting, or rate-limit indication, leaving the user to distinguish a live API wait from a dead process by inspecting sockets and transcript timestamps.",
       "workaround": "For long silent pauses, check whether the process still has an established API connection and whether other models or sessions are responsive before killing the client. Keep timestamps for each stall and switch models for urgent work if one model family shows synchronized delay. Supervisors should surface elapsed wait or retry state instead of treating silence as normal progress."
+    },
+    {
+      "id": "usage-credits-can-appear-to-accrue-while-plan-limit-blocked",
+      "title": "Usage credits can appear to accrue while plan-limit blocked.",
+      "category": "Cost & usage",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81941"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude subscription account saw 35 usage-credit charges totaling EUR 1809.55 after the interface repeatedly said the weekly limit had been reached and instructed the user to wait. The reporter says many charges landed overnight while their computer was off, with regular 4 to 6 minute spacing, and that the billing history did not expose request-level attribution for the charges.",
+      "workaround": "Treat quota-limit and usage-credit state as separate until billing evidence says otherwise. If paid usage credits are enabled, check the billing page independently after limit blocks, keep screenshots of limit messages and charge timestamps, and disable usage credits or set the strictest available spending controls before unattended or automated sessions. Escalate unexplained charges with timestamps, plan history, and device-off evidence rather than assuming client-side login repair will resolve it."
+    },
+    {
+      "id": "vscode-extension-config-probe-can-time-out-after-startup-completes",
+      "title": "VS Code extension config probe can time out after startup completes.",
+      "category": "VS Code extension",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81939"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Claude Code extension startup path failed after exactly 60 seconds with `Subprocess initialization did not complete within 60000ms`, even though direct CLI use, a manual stream-json initialize handshake, shell startup, authentication, and network connectivity all succeeded. The report attributes the failure to a config-probe subprocess completing work but never delivering its initialization acknowledgment to the extension.",
+      "workaround": "When the extension reports the 60 second auth or network timeout, verify the CLI and a manual stream-json initialize request before rotating credentials. On affected Windows setups, set `claudeCode.useTerminal: true` or use the CLI/Desktop path while collecting extension logs that show probe completion followed by the missing acknowledgment."
+    },
+    {
+      "id": "print-mode-can-fail-oauth-while-interactive-mode-authenticates",
+      "title": "Print mode can fail OAuth while interactive mode authenticates.",
+      "category": "Auth & accounts",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81937"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported macOS Claude Code 2.1.220 setup failed every `claude -p` invocation with `OAuth session expired and could not be refreshed` or a revoked-token 401, while an interactive `claude` session in the same terminal and directory authenticated immediately without a login prompt. The interactive banner also showed an older version than `claude update`, suggesting print mode and interactive mode may not be reading identical runtime or credential state.",
+      "workaround": "For cron or scripted use, smoke-test `claude -p` separately from interactive login and do not assume one proves the other. Capture `claude update`, interactive banner version, and the exact `-p` auth error. Until the modes converge, avoid unattended jobs that depend on print mode unless a fresh print-mode smoke test passes."
+    },
+    {
+      "id": "session-level-agent-constraints-can-override-skill-subagent-requirements",
+      "title": "Session-level agent constraints can override Skill subagent requirements.",
+      "category": "Skills",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81935"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 Windows session invoked a Skill whose workflow required subagent baseline testing, but the model skipped that phase because its session configuration said not to call the Agent tool unless the user requested it. The model first misattributed the constraint to workspace rules, then acknowledged the rule came only from session config, defeating the Skill's intended red-green validation loop.",
+      "workaround": "When a Skill is supposed to dispatch subagents, state that permission explicitly in the user request and verify the transcript for actual Task or Agent calls before trusting the Skill result. Skill authors should make required subagent dispatch a hard precondition and fail closed when session-level tool constraints conflict with the Skill workflow."
+    },
+    {
+      "id": "mcp-oauth-cache-can-fragment-tokens-by-registration-name",
+      "title": "MCP OAuth cache can fragment tokens by registration name.",
+      "category": "MCP & integrations",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81934"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported HTTP MCP gateway exposed multiple server registrations that advertised the same Protected Resource Metadata `resource` value and shared the same static OAuth client, but Claude Code still stored OAuth state under each `mcpServers.<registration-name>.oauth` key. Authenticating one registration left sibling registrations in `Needs authentication`, forcing repeated browser authorization despite the same token audience.",
+      "workaround": "For multi-service MCP gateways, expect one authorization per Claude registration name even when PRM `resource` is shared. Consolidate services behind one registration where possible, or document the repeated auth cost for users. When diagnosing scattered re-auth prompts, compare the configured MCP names and `~/.claude.json` OAuth state instead of only checking the authorization server."
+    },
+    {
+      "id": "gpu-process-crash-can-terminate-the-desktop-app",
+      "title": "GPU process crash can terminate the desktop app.",
+      "category": "Stability & crashes",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81933"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows 11 Claude Desktop MSIX 1.24012.9 install saw the GPU process crash with the same exitCode 101457950 three times, and the entire app process tree exited immediately with no error dialog or crash dump. The reporter ruled out Preview screenshot noise, reinstall, reboot, forced discrete-GPU selection, and Windows display-driver TDR events as clear causes.",
+      "workaround": "If the desktop window vanishes without an error, inspect the MSIX main.log for `GPU process gone` and preserve the exact exit code and launch-to-crash interval. Save work frequently in local sessions that use Preview on affected Windows machines, and include GPU model, driver versions, display settings, and Crashpad contents when escalating. Do not assume reinstalling or forcing a different GPU will fix this symptom."
+    },
+    {
+      "id": "plugins-panel-can-show-stale-version-after-clean-reinstall",
+      "title": "Plugins panel can show a stale version after clean reinstall.",
+      "category": "MCP & plugin issues",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81932"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported macOS plugin setup showed an outdated plugin version in Settings -> Plugins even after Update, uninstall, reinstall, full app quit, and restart. On-disk state under `installed_plugins.json`, the plugin cache version directory, and `settings.json` all reflected the newer version, suggesting the panel reads a separate UI cache that is not invalidated by the normal plugin lifecycle.",
+      "workaround": "When the Plugins panel shows a stale version, verify the actual install from `~/.claude/plugins/installed_plugins.json` and the matching cache directory before reinstalling repeatedly. If the disk state is current but the UI is stale, treat the Settings panel as advisory and capture the marketplace, plugin id, old and new versions, and cache paths for the bug report."
+    },
+    {
+      "id": "scheduled-tasks-can-advance-last-run-without-session-or-output",
+      "title": "Scheduled tasks can advance lastRunAt without session or output.",
+      "category": "Scheduling & remote triggers",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81931"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported daily scheduled task advanced `lastRunAt` and `nextRunAt` as if it had fired, but no session appeared and no output file was written. The reporter ruled out machine sleep for the latest missed run with `pmset`, confirmed the app was open, and found no running, completed, or archived session matching the task for that date.",
+      "workaround": "Do not treat `lastRunAt` alone as proof that scheduled work ran. For important tasks, add an external witness such as an output file, notification, or follow-up check that verifies a session was created and completed. Keep machine sleep logs, task ids, scheduled fire times, and session-list evidence for silent misses so failures can be distinguished from local power or app-state issues."
+    },
+    {
+      "id": "ios-subagent-drill-in-can-render-task-launch-metadata",
+      "title": "iOS subagent drill-in can render Task launch metadata.",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81930"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude iOS app view of a remote Claude Code session opened a subagent detail sheet with the parent Task tool launch prompt and async acknowledgment instead of the child agent transcript. The rendered payload included model-facing orchestration text, an internal agent id, and an absolute host output path, even though this metadata is not meant for user display.",
+      "workaround": "When auditing remote subagents from iOS, verify important agent output from web, desktop, or the host transcript instead of trusting the drill-in body. Treat displayed Task launch acknowledgments as metadata, not the subagent's work product, and avoid sharing screenshots that expose internal ids or host paths."
+    },
+    {
+      "id": "korean-ime-can-swallow-ctrl-c-in-modern-terminal-keyboard-mode",
+      "title": "Korean IME can swallow Ctrl-C in modern terminal keyboard mode.",
+      "category": "CLI & terminal",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81929"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported macOS Claude Code 2.1.220 TUI session ignored Ctrl-C when the Apple Korean IME was active in iTerm2 or Ghostty, while switching back to English made Ctrl-C work immediately. Terminal.app did not reproduce, and disabling iTerm2's `Applications can change how keys are reported` option made the issue disappear, pointing at an interaction with modern terminal keyboard protocols.",
+      "workaround": "If Ctrl-C appears dead in Claude Code on macOS, switch the input source to English before pressing it again. In iTerm2, try disabling application-controlled key reporting for the profile. For long-running operations, keep a second terminal ready to inspect or terminate the process when the TUI cannot receive SIGINT under the active IME."
     }
   ],
   "status_summary": {
-    "open": 1336,
+    "open": 1346,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 115,
-    "high": 704,
+    "critical": 116,
+    "high": 711,
     "low": 107,
-    "medium": 424
+    "medium": 426
   },
   "lastUpdated": "2026-07-28",
   "stats": {
-    "total": 1350,
-    "critical": 115,
-    "high": 704,
-    "medium": 424,
+    "total": 1360,
+    "critical": 116,
+    "high": 711,
+    "medium": 426,
     "low": 107,
-    "open": 1336,
+    "open": 1346,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-28",
-  "total": 1350
+  "total": 1360
 }
