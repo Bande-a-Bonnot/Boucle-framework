@@ -1,13 +1,13 @@
 {
   "version": "0.13.0",
-  "count": 1307,
+  "count": 1312,
   "categories": {
     "Hook behavior & events": 186,
-    "Permission system": 128,
+    "Permission system": 129,
     "Hook bypass & evasion": 102,
     "MCP & plugin issues": 68,
-    "Subagent & spawned agents": 59,
-    "Desktop & IDE integration": 44,
+    "Subagent & spawned agents": 60,
+    "Desktop & IDE integration": 45,
     "Platform & compatibility": 29,
     "TUI & display": 29,
     "Context & memory": 28,
@@ -26,7 +26,7 @@
     "Auth & accounts": 13,
     "Cowork & remote": 13,
     "MCP integration": 13,
-    "Model behavior": 12,
+    "Model behavior": 13,
     "Plugin & channel system": 11,
     "Worktree": 11,
     "Bash & shell execution": 10,
@@ -44,10 +44,10 @@
     "UX & display": 7,
     "Authentication & accounts": 6,
     "Skills & commands": 6,
+    "CLI / TUI rendering": 5,
     "Model behavior & output": 5,
     "Skills / slash commands": 5,
     "Stability & crashes": 5,
-    "CLI / TUI rendering": 4,
     "MCP & plugins": 4,
     "Memory & context": 4,
     "Model behavior & instructions": 4,
@@ -182,10 +182,10 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 105,
-    "HIGH": 685,
+    "CRITICAL": 108,
+    "HIGH": 686,
     "LOW": 106,
-    "MEDIUM": 411
+    "MEDIUM": 412
   },
   "entries": [
     {
@@ -16803,30 +16803,95 @@
       "date_added": "2026-07-28",
       "description": "A reported Windows Claude Code repository had governing instructions, skills, hooks, documented workflow, and a working sibling implementation for the same class of task. The agent still generated a fresh implementation from memory, bypassing the real on-screen input path encoded by the sibling file, then repeated the same failure across many iterations until the operator forced it to read the existing example. Reading the sibling made the correct approach obvious in one pass.",
       "workaround": "For any task with an obvious precedent, make reading the precedent a precondition: sibling files, named workflows, project instructions, skills, and hook behavior. In reviews, ask for the exact source files read before implementation and reject fixes that add parallel logic without demonstrating alignment with the existing working path."
+    },
+    {
+      "id": "bypass-permissions-mode-can-still-loop-approval-prompts",
+      "title": "Bypass permissions mode can still loop approval prompts.",
+      "category": "Permission system",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81851"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Claude Desktop 1.24012.9 session with Allow bypass permissions mode enabled still prompted every two to three seconds while browser and tool actions ran. The user selected Allow every time, but prompts reappeared for routine actions such as scrolling, Read, Bash, Glob, and browser tool calls, so bypass mode did not provide the expected unattended execution path.",
+      "workaround": "Treat bypass mode as an optimization, not a guarantee. For unattended workflows, keep a session-local watchdog or timeout around tool-heavy browser work and fall back to explicit settings allowlists or a non-Desktop CLI route when repeated approval prompts appear. Preserve the Desktop version, OS, permission mode, and prompt cadence for support."
+    },
+    {
+      "id": "named-agent-teammate-dispatch-can-drop-tools-allowlist",
+      "title": "Named agent teammate dispatch can drop the `tools:` allowlist.",
+      "category": "Subagent & spawned agents",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81852"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 agent-teams session enforced a subagent definition's `tools:` restriction when spawned without `name`, but silently ignored the same restriction when spawned with `name`. A built-in Explore agent and a custom read-only agent were both able to use Write/Edit on the named teammate path while the unnamed path correctly refused Write. Disk readback confirmed the writes, and the team registry still showed the intended agent type, so the definition resolved while its tool containment was dropped.",
+      "workaround": "Do not rely on `tools:` in agent definitions as the only containment boundary for named teammates. For security-sensitive read-only roles, avoid named teammate dispatch until fixed, or add outer enforcement such as repository permissions, OS-level read-only mounts, hooks/settings that deny writes globally, and post-run filesystem diff checks. Reproduce with a harmless write probe before trusting a named agent role."
+    },
+    {
+      "id": "fable-five-mixed-text-tool-responses-can-hide-assistant-text",
+      "title": "Fable 5 mixed text plus tool-call responses can hide assistant text.",
+      "category": "CLI / TUI rendering",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81853"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code CLI 2.1.218 Windows Git Bash session using `claude-fable-5` rendered only the tool call when one assistant response contained both normal text and a tool call. The missing text was still present in the detailed transcript opened with Ctrl+O, and the same machine/version/terminal displayed both parts correctly with Opus 4.8, making this a model-specific visible-output loss rather than transcript loss.",
+      "workaround": "When using Fable 5 for investigative commands, inspect Ctrl+O or the session JSONL if a turn appears to contain only tool output. Ask for answers and tool use in separate turns, or switch to a model/version combination that renders mixed text and tool-call responses correctly on the same terminal."
+    },
+    {
+      "id": "desktop-browser-pane-copy-can-silently-leave-clipboard-unchanged",
+      "title": "Desktop Browser pane copy can silently leave the clipboard unchanged.",
+      "category": "Desktop & IDE integration",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81854"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported macOS Claude Code Desktop Browser pane allowed text selection and copy actions with no error, but the system clipboard stayed unchanged and later pasted the previous sentinel value. The failure affected both keyboard copy and page-provided copy buttons. In one case a one-time API key was believed copied, an empty secret value was saved into a masked environment field, and the root cause was only found days later from runtime logs.",
+      "workaround": "Do not copy one-time secrets or recovery values directly from the in-app Browser pane without verification. Copy a sentinel first, paste into a scratch field immediately after copying from the Browser pane, or use an external browser for secret/token pages. Treat masked secret saves as suspect until runtime readback proves the value is present."
+    },
+    {
+      "id": "assistant-output-can-fabricate-role-turns-that-later-look-like-user-input",
+      "title": "Assistant output can fabricate role turns that later look like user input.",
+      "category": "Model behavior",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81855"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported long Claude Code VS Code native extension session on Opus with 1M context emitted visible role markers such as `user`, `th`, or `thUser:` inside a single assistant message, followed by fabricated user turns. One fabricated turn contained a malicious instruction payload generated by the model itself; the next step treated that self-generated text as if it were external user input and refused it as prompt injection. Transcript checks showed the fabricated content lived in assistant rows, not user rows.",
+      "workaround": "For long listening-style sessions, inspect transcript row types when role markers or unexpected user instructions appear in assistant output. Do not execute, summarize, or quote fabricated `user` blocks as real user requests unless the session JSONL shows a matching user row. If the session starts ingesting assistant-generated role text, stop or fork the session with a clean summary that excludes the fabricated block."
     }
   ],
   "status_summary": {
-    "open": 1293,
+    "open": 1298,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 105,
-    "high": 685,
+    "critical": 108,
+    "high": 686,
     "low": 106,
-    "medium": 411
+    "medium": 412
   },
   "lastUpdated": "2026-07-28",
   "stats": {
-    "total": 1307,
-    "critical": 105,
-    "high": 685,
-    "medium": 411,
+    "total": 1312,
+    "critical": 108,
+    "high": 686,
+    "medium": 412,
     "low": 106,
-    "open": 1293,
+    "open": 1298,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-28",
-  "total": 1307
+  "total": 1312
 }
