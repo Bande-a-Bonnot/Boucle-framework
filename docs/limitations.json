@@ -1,16 +1,16 @@
 {
   "version": "0.13.0",
-  "count": 1291,
+  "count": 1300,
   "categories": {
     "Hook behavior & events": 186,
-    "Permission system": 127,
+    "Permission system": 128,
     "Hook bypass & evasion": 102,
-    "MCP & plugin issues": 67,
-    "Subagent & spawned agents": 58,
-    "Desktop & IDE integration": 43,
+    "MCP & plugin issues": 68,
+    "Subagent & spawned agents": 59,
+    "Desktop & IDE integration": 44,
+    "Platform & compatibility": 29,
     "TUI & display": 29,
-    "Platform & compatibility": 28,
-    "Context & memory": 27,
+    "Context & memory": 28,
     "CLI & terminal": 25,
     "Configuration behavior": 22,
     "Performance & cost": 20,
@@ -19,13 +19,13 @@
     "MCP & integrations": 18,
     "Sandbox & permissions": 17,
     "Security & trust boundaries": 16,
-    "Core & session management": 14,
+    "Core & session management": 15,
     "Data integrity": 14,
     "Remote & cloud": 14,
     "VS Code extension": 14,
+    "Auth & accounts": 13,
     "Cowork & remote": 13,
     "MCP integration": 13,
-    "Auth & accounts": 12,
     "Plugin & channel system": 11,
     "Worktree": 11,
     "Bash & shell execution": 10,
@@ -53,6 +53,7 @@
     "Performance & resources": 4,
     "permissions": 4,
     "sandbox": 4,
+    "Stability & crashes": 4,
     "Telemetry & insights": 4,
     "tui": 4,
     "Context / compaction": 3,
@@ -67,7 +68,6 @@
     "Sandbox": 3,
     "Security": 3,
     "Skills": 3,
-    "Stability & crashes": 3,
     "Tool availability": 3,
     "Agents": 2,
     "agents": 2,
@@ -182,10 +182,10 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 101,
-    "HIGH": 675,
-    "LOW": 105,
-    "MEDIUM": 410
+    "CRITICAL": 103,
+    "HIGH": 680,
+    "LOW": 106,
+    "MEDIUM": 411
   },
   "entries": [
     {
@@ -16595,30 +16595,147 @@
       "date_added": "2026-07-28",
       "description": "A reported Windows Claude Desktop Code-tab SSH connection to a Debian container returned NO_INSTALL_RESULT even though SSH authentication succeeded, the remote home directory was writable, the Claude CLI was already installed, and the remote network was reachable. Remote-side diagnostics showed no ~/.claude/remote directory was ever created, and ssh.log was empty, suggesting a client-side install failure before any transfer or remote filesystem activation.",
       "workaround": "When NO_INSTALL_RESULT appears, verify whether the remote was touched at all before debugging remote permissions. Check Desktop main.log, ssh.log, remote ~/.claude/remote paths, manual ssh, remote claude --version, and remote write/network tests separately. If the remote is clean and healthy, treat it as a Desktop client install path failure and use the standalone CLI or a different remote target while preserving logs for support."
+    },
+    {
+      "id": "ralph-loop-counter-can-freeze-on-space-less-frontmatter",
+      "title": "ralph-loop iteration counter can freeze on space-less frontmatter.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81829"
+      ],
+      "date_added": "2026-07-28",
+      "description": "The official marketplace ralph-loop plugin reads `iteration:1` as a valid counter value but writes updates with a stricter `iteration: ` pattern that requires a space after the colon. A hand-edited, copied, or externally generated state file using `iteration:N` can therefore be read but never updated, leaving max_iterations unreachable while the Stop hook continues returning block decisions.",
+      "workaround": "Keep ralph-loop state frontmatter in the exact spaced form produced by setup-ralph-loop.sh, and inspect `.claude/ralph-loop.local.md` if a loop keeps blocking beyond its configured cap. For local forks or wrapper scripts, make the writer match `^iteration:.*` so the reader and writer accept the same YAML shape."
+    },
+    {
+      "id": "cowork-code-can-return-account-level-403-while-chat-works",
+      "title": "Cowork and Code can return account-level 403 while Chat still works.",
+      "category": "Auth & accounts",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81830"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Claude Desktop account could use regular Chat but every Cowork or Code start failed for more than ten days with 403 `Invalid authorization` and `VM service not running`. Re-login, regenerating `.claude/.credentials.json`, workspace reinstall, and PC restart did not help, and each attempt reached the server with a fresh request_id, suggesting a server-side Cowork authorization state distinct from normal Chat authentication.",
+      "workaround": "When Chat works but Cowork or Code returns 403, stop treating local credential refresh as proof the account is fixed. Preserve request_ids, confirm whether the failure is Cowork/Code-only, and ask support for a Cowork or Code authorization reset. Use Chat, CLI, or a different account/workspace path as a control while waiting."
+    },
+    {
+      "id": "code-web-repo-picker-can-return-empty-despite-github-app-access",
+      "title": "Claude Code web repo picker can return empty despite GitHub App access.",
+      "category": "Desktop & IDE integration",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81831"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported claude.ai/code repository picker returned `No repos match` for every search term, including an empty query, even though repositories had been granted to the Claude GitHub App. The report matches earlier backend repository indexing reset symptoms: the UI provides no local diagnostic and the failure can look like missing app permissions even when the grant exists.",
+      "workaround": "Before changing repository permissions repeatedly, verify the GitHub App installation and repo grant directly in GitHub, then treat a globally empty picker as a backend indexing problem. Record account, app installation, locale, and search behavior, and ask support to reset or resync the repository index."
+    },
+    {
+      "id": "macos-sleep-inhibitor-handoff-can-drop-all-assertions-mid-task",
+      "title": "macOS sleep-inhibitor handoff can drop all assertions mid-task.",
+      "category": "Platform & compatibility",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81832"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 macOS setup renews short-lived `caffeinate -i -t 300` children every 240 seconds by killing the current process before spawning the replacement. Once the display is off and powerd's display assertion is gone, that non-overlapped handoff can briefly leave zero sleep assertions, letting the Mac idle-sleep and suspend the CLI process tree during an in-flight response.",
+      "workaround": "For unattended long tasks on macOS, hold one continuous external assertion for the whole task, for example `caffeinate -i -w <claude-pid>`, instead of relying on the built-in relay. When debugging `API Error: Connection closed mid-response`, correlate with `pmset -g log` for `ClientDied` caffeinate assertions followed by `Entering Sleep`."
+    },
+    {
+      "id": "auto-memory-can-silently-miss-git-worktree-sessions",
+      "title": "Auto-memory can silently miss git-worktree sessions.",
+      "category": "Context & memory",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81833"
+      ],
+      "date_added": "2026-07-28",
+      "description": "Reported Claude Code Desktop worktree sessions under `<repo>/.claude/worktrees/<name>` inconsistently loaded the origin project's auto-memory. Some sessions quoted MEMORY.md-only facts verbatim, while others had no memory content at all despite the same repository and same machine. The missing state was silent, and session metadata exposed originCwd while worktree-path-keyed project directories lacked the origin memory store.",
+      "workaround": "Use a first-turn probe in new worktree sessions when auto-memory matters: ask the model to quote a known memory sentinel that is absent from repo files, with permission to answer `NO MEMORY LOADED`. If the probe fails, inject the needed memory explicitly or restart from a launch path that resolves memory through the origin project directory."
+    },
+    {
+      "id": "permissions-ask-can-skip-git-after-cross-directory-cd-prefix",
+      "title": "permissions.ask can skip git after a cross-directory cd prefix.",
+      "category": "Permission system",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81834"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.219/2.1.220 Windows Git Bash setup with `permissions.ask` for destructive git commands prompted for `git clean -f -n` in the session cwd, but silently executed `cd /path/to/other-repo && git clean -f -n` with no prompt. The same `cd` prefix still prompted for non-git binaries, and the non-dry-run form deleted files without the configured approval gate.",
+      "workaround": "Do not rely on settings-level `permissions.ask` alone for destructive git in multi-worktree or cross-directory workflows. Add a PreToolUse Bash hook that parses compound commands, resolves `cd`, `pushd`, `git -C`, `--git-dir`, and `--work-tree`, and returns `permissionDecision: \"ask\"` or blocks destructive git regardless of the effective directory."
+    },
+    {
+      "id": "desktop-app-does-not-discover-valid-on-disk-cli-transcripts",
+      "title": "Desktop app does not discover valid on-disk CLI transcripts.",
+      "category": "Core & session management",
+      "severity": "LOW",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81835"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported macOS cross-machine workflow copied valid, readable Claude Code JSONL transcripts into the matching `~/.claude/projects/<project-key>/` directory. The CLI listed all sessions from disk, but the Desktop app only showed conversations indexed in its per-installation Electron IndexedDB store. Valid on-disk transcripts were therefore invisible to Desktop with no import or rescan path.",
+      "workaround": "For cross-machine continuation of local sessions, use Claude Code CLI on both machines with the state directory replicated, or use Claude Code on the web when cloud execution can reach the needed resources. Do not assume copying JSONL transcripts into `~/.claude/projects` will make them appear in Desktop; keep session ids and transcript paths externally indexed."
+    },
+    {
+      "id": "windows-desktop-gpu-process-crash-can-wedge-main-process",
+      "title": "Windows Desktop GPU-process crash can wedge the main process.",
+      "category": "Stability & crashes",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81836"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Claude Desktop 1.24012.9 MSIX install on a hybrid AMD GPU laptop twice logged `GPU process gone` with the same exit code, then stopped producing heartbeat or shutdown logs for 8 to 18 minutes. Relaunch alone was not enough in either incident; the app needed Windows Settings > Apps > Claude > Repair before it would start cleanly again, and Windows produced no Claude.exe crash report.",
+      "workaround": "If Desktop hangs immediately after a GPU-process crash, preserve `%APPDATA%\\Claude\\logs\\main.log` before repairing the app. Check Windows Event Viewer for matching Display, WER, AppModel, and reboot events, note hybrid-GPU and driver details, then use Windows App Repair only after capturing logs. Consider disabling GPU acceleration or testing a different graphics mode if the app exposes such a control."
+    },
+    {
+      "id": "subagent-max-token-continuation-can-drop-earlier-reply-chunks",
+      "title": "Subagent max-token continuation can drop earlier reply chunks.",
+      "category": "Subagent & spawned agents",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81838"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 subagent that hit `stop_reason: max_tokens` continued its logical final answer in a second assistant message, but the parent received only the final message. Both synchronous Agent tool results and background-agent task notifications reported completed status while silently dropping the earlier chunk; one real extraction lost about 84 percent of the generated content even though it remained present in the subagent transcript.",
+      "workaround": "Do not treat large subagent results as complete unless their transcript is checked. For extraction or audit tasks, require chunked files or explicit numbered artifacts written to disk, then verify counts from the filesystem. Raising `CLAUDE_CODE_MAX_OUTPUT_TOKENS` may reduce splits but does not remove the loss boundary when a split still occurs."
     }
   ],
   "status_summary": {
-    "open": 1277,
+    "open": 1286,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 101,
-    "high": 675,
-    "low": 105,
-    "medium": 410
+    "critical": 103,
+    "high": 680,
+    "low": 106,
+    "medium": 411
   },
   "lastUpdated": "2026-07-28",
   "stats": {
-    "total": 1291,
-    "critical": 101,
-    "high": 675,
-    "medium": 410,
-    "low": 105,
-    "open": 1277,
+    "total": 1300,
+    "critical": 103,
+    "high": 680,
+    "medium": 411,
+    "low": 106,
+    "open": 1286,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-28",
-  "total": 1291
+  "total": 1300
 }
