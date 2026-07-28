@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1392</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-28.</span></p>
+        <p class="subtitle"><span id="total-count">1404</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-28.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -15426,6 +15426,150 @@
                         <!-- workaround:desktop-transcript-docs-can-omit-thinking-view-mode -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Inspect the actual Desktop transcript-view dropdown when explaining or documenting display behavior, and do not equate the Thinking transcript view with the separate extended-thinking model setting. If a support note depends on transcript visibility, name the exact UI mode observed in the app version being used.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81979" target="_blank">#81979</a></div>
+        </div>
+        <div class="kl-entry" data-category="Cowork &amp; remote" data-issues="82020" id="remote-control-new-sessions-can-stall-before-local-work-queue" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1393</span>
+                <span class="kl-cat">Cowork &amp; remote</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Remote Control new sessions can stall before reaching the local work queue.</h3>
+            <p>A reported Claude Code 2.1.220 Remote Control setup on macOS registered an environment successfully and ran the pre-created default session, but client-initiated new sessions from Claude mobile or `claude.ai/code` stayed on `Allocating sandbox` forever. The local bridge poll loop kept returning no work, so the client request appeared not to reach the registered environment queue even after fresh environment registrations.</p>
+                        <!-- workaround:remote-control-new-sessions-can-stall-before-local-work-queue -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Verify Remote Control with a debug log instead of relying on the client loading state. If new sessions never produce a `workId` in the local poll loop, keep using the pre-created attached session or restart with a fresh registration only as a diagnostic. On macOS launchd, avoid iCloud/File Provider working directories for the daemon because they can produce separate `getcwd` permission failures that look similar.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82020" target="_blank">#82020</a></div>
+        </div>
+        <div class="kl-entry" data-category="Model behavior &amp; compliance" data-issues="82021" id="rules-and-verified-facts-can-be-ignored-within-same-session" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1394</span>
+                <span class="kl-cat">Model behavior &amp; compliance</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Rules and verified facts can be ignored within the same session.</h3>
+            <p>A reported Claude Code 2.1.220 session at roughly 50 percent context repeatedly failed to apply explicit rules, verified facts, and freshly corrected instructions while preparing a short handoff. The failures included stale PR status claims, broad filesystem searches after being told the project scope, missed primary-source alerts, and repeating a formatting violation immediately after identifying it.</p>
+                        <!-- workaround:rules-and-verified-facts-can-be-ignored-within-same-session -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume a correction was internalized just because the model acknowledged it. For handoffs or operational work, require primary-source checks for live status, constrain search roots in commands, and verify the final artifact against a short checklist before using it. Keep standing formatting and approval rules in enforceable tooling where possible rather than relying only on conversational memory.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82021" target="_blank">#82021</a></div>
+        </div>
+        <div class="kl-entry" data-category="Scheduling &amp; remote triggers" data-issues="82023" id="scheduled-task-sessions-can-rearm-idle-timeout-indefinitely" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1395</span>
+                <span class="kl-cat">Scheduling &amp; remote triggers</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Scheduled-task sessions can re-arm idle timeout indefinitely.</h3>
+            <p>A reported Claude Desktop 1.24012.9 scheduled-task session completed its work, logged a healthy cycle, then never terminated. Each `WarmLifecycle:session` idle timeout logged `disconnecting` and immediately started another 900 second timer, leaving the `claude` process and 11 MCP servers resident. A 4-hour cron cadence accumulated 23 leaked session trees over about three days, driving the machine into swap.</p>
+                        <!-- workaround:scheduled-task-sessions-can-rearm-idle-timeout-indefinitely -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Audit scheduled-task hosts for old `claude` session trees and MCP children instead of assuming a completed task exited. Until lifecycle teardown is fixed, use a conservative cleanup guard that only kills sessions matching the scheduled-task argv profile, no active non-helper descendants, and an age greater than the task interval. Capture `WarmLifecycle:session` log lines and process ages when reporting leaks.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82023" target="_blank">#82023</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permissions &amp; safety" data-issues="82026" id="fullscreen-mouse-capture-can-approve-permission-prompts" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1396</span>
+                <span class="kl-cat">Permissions &amp; safety</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Fullscreen mouse capture can approve permission prompts on focus click.</h3>
+            <p>A reported Windows Terminal PowerShell setup using Claude Code fullscreen TUI with mouse capture enabled can treat a click used only to focus the terminal as a menu selection. On permission prompts, the highlighted default row is `Yes`, so a stray focus click can approve a tool action even in Manual permission mode.</p>
+                        <!-- workaround:fullscreen-mouse-capture-can-approve-permission-prompts -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid mouse interaction around permission prompts in fullscreen TUI mode until click activation and menu selection are separated. Use keyboard navigation deliberately, disable fullscreen or mouse handling if available for the session, and review recent tool approvals after refocusing the terminal. Treat unexpected prompt dismissal as a possible approval, not as a harmless UI event.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82026" target="_blank">#82026</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="82027" id="apify-mcp-connector-can-reject-valid-tokens" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1397</span>
+                <span class="kl-cat">MCP &amp; integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Apify MCP connector can reject valid tokens on every tool call.</h3>
+            <p>A reported Claude Code 2.1.220 Windows WSL setup found the Apify MCP connector failed every tool call with `User was not found or authentication token is not valid`, even after testing two accounts, fresh tokens, reinstalling the connector, and confirming the same token worked against the Apify API directly. The evidence points to the connector path not forwarding authentication correctly.</p>
+                        <!-- workaround:apify-mcp-connector-can-reject-valid-tokens -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Validate the Apify token outside Claude Code before rotating credentials or changing accounts. If direct API calls work but connector tools fail, preserve the connector logs and token test result, then use direct Apify API calls or another integration path until the connector is fixed. Avoid repeatedly regenerating tokens as the only diagnostic once direct validation has passed.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82027" target="_blank">#82027</a></div>
+        </div>
+        <div class="kl-entry" data-category="API &amp; infrastructure" data-issues="82028" id="healthy-network-can-still-see-repeated-api-econnreset" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1398</span>
+                <span class="kl-cat">API &amp; infrastructure</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Healthy local network checks can still see repeated API ECONNRESET failures.</h3>
+            <p>A reported Windows setup reproduced Claude Code API `ECONNRESET` failures on both CLI 2.1.100 and the VS Code extension bundled binary 2.1.220. The user ruled out packet loss, TLS reachability, Windows Defender, router firewall features, MTU, DNS order, VPN/proxy, OneDrive paths, and Wi-Fi power management while debug logs showed streams starting and then socket resets across retry cycles.</p>
+                        <!-- workaround:healthy-network-can-still-see-repeated-api-econnreset -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not stop at ping or curl success when diagnosing repeated Claude Code connection resets. Capture `~/.claude/debug` request IDs, CLI and extension versions, platform, network path, and the list of local mitigations already tried. If retries sometimes recover, preserve both recovered and exhausted retry examples so support can distinguish transient network loss from client or service reset behavior.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82028" target="_blank">#82028</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="82029" id="m365-docs-can-omit-teams-write-scope-path" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1399</span>
+                <span class="kl-cat">MCP &amp; integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>M365 connector docs can omit the Teams write scope path.</h3>
+            <p>A reported documentation mismatch says the Cowork changelog advertises Microsoft Teams write operations in v1.24012.0 and later, while the M365 connector configuration reference has no Teams row in its write-scope table. Users following the changelog to enable Teams write tools can reach a dead end with no documented permission path.</p>
+                        <!-- workaround:m365-docs-can-omit-teams-write-scope-path -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before promising Teams write access, compare the changelog, connector reference, and the actual connector manifest or tool list. If Teams write tools do not appear after granting documented scopes, report the docs mismatch and include the Desktop version plus the scopes granted. Treat missing write tools as a documentation or rollout ambiguity, not necessarily an operator setup mistake.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82029" target="_blank">#82029</a></div>
+        </div>
+        <div class="kl-entry" data-category="CLI &amp; terminal" data-issues="82031" id="interactive-prompts-can-freeze-in-ghostty" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1400</span>
+                <span class="kl-cat">CLI &amp; terminal</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Interactive prompts can freeze in Ghostty and require Ctrl-C.</h3>
+            <p>A reported Claude Code 2.1.220 Linux session in Ghostty often froze when asking interactive questions. The user could not navigate options or select an answer and had to press Ctrl-C to exit the prompt, then ask for the questions again.</p>
+                        <!-- workaround:interactive-prompts-can-freeze-in-ghostty -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If prompt navigation freezes, capture the terminal emulator, shell, Claude Code version, and whether the failure occurs only on select menus or all interactive prompts. Use Ctrl-C as a recovery only after noting whether the prompt state was lost, and retry in another terminal when the blocked prompt gates important permission or planning choices.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82031" target="_blank">#82031</a></div>
+        </div>
+        <div class="kl-entry" data-category="Model behavior &amp; output" data-issues="82032" id="model-can-add-stale-session-specific-comments-to-code" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1401</span>
+                <span class="kl-cat">Model behavior &amp; output</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Model can add stale session-specific comments to code.</h3>
+            <p>A reported Claude Code 2.1.220 Sonnet edit added verbose comments to a CSS file that referenced the current session plan rather than durable code semantics. The user reported this happened reproducibly and that a later session treated the low-quality comment as meaningful context, making cleanup harder.</p>
+                        <!-- workaround:model-can-add-stale-session-specific-comments-to-code -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Review auto-accepted edits for comments that describe the chat session, plan state, or temporary rationale instead of the code. Remove those comments before starting a new session, and prefer project rules that require comments only for durable behavior or non-obvious constraints. For high-risk files, turn off auto-accept until generated comments have been checked.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82032" target="_blank">#82032</a></div>
+        </div>
+        <div class="kl-entry" data-category="UX &amp; display" data-issues="82033" id="accessibility-formatting-may-require-custom-output-style" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1402</span>
+                <span class="kl-cat">UX &amp; display</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Accessibility formatting may require a custom output style.</h3>
+            <p>A reported Claude Code 2.1.220 user with a reading disability needed short, numbered, complete sentences with the answer first, but CLAUDE.md formatting instructions decayed across sessions. The user also found `/output-style` unavailable on their install and had to discover the setting through `/config`, then patch failure modes like fragment compression and restarted numbering.</p>
+                        <!-- workaround:accessibility-formatting-may-require-custom-output-style -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For accessibility-critical response shape, use output styles or configuration where available rather than relying only on CLAUDE.md prose. Test the style on a fresh session, include explicit rules against fragments if needed, and document the configuration path for teammates. If `/output-style` is unavailable, check `/config` before assuming output styles are unsupported.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82033" target="_blank">#82033</a></div>
+        </div>
+        <div class="kl-entry" data-category="VS Code extension" data-issues="82034" id="vscode-extension-hosts-can-pin-mcp-processes-for-days" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1403</span>
+                <span class="kl-cat">VS Code extension</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>VS Code extension hosts can pin MCP subprocesses for days.</h3>
+            <p>A reported Windows 11 VS Code extension setup kept long-lived `claude.exe` hosts and their stdio MCP server trees running for the full host lifetime. With several workspaces open for days, a census found 12 `claude.exe` processes under 6 Code parents pinning 52 MCP launchers plus 52 backend children, with earlier counts near 60 hosts before a reload cleared many stale processes.</p>
+                        <!-- workaround:vscode-extension-hosts-can-pin-mcp-processes-for-days -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Periodically inspect VS Code, `claude.exe`, and MCP child process trees on machines with multi-day editor uptime. Reloading windows may clear stale hosts, but avoid killing processes blindly because external process trees may not distinguish an abandoned host from an active workspace. MCP launchers should still implement parent-death reaping, but that cannot solve hosts that stay alive indefinitely.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82034" target="_blank">#82034</a></div>
+        </div>
+        <div class="kl-entry" data-category="Model behavior &amp; compliance" data-issues="82036" id="fable-safeguards-can-hard-block-legitimate-devops-work" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1404</span>
+                <span class="kl-cat">Model behavior &amp; compliance</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Fable safeguards can hard-block legitimate DevOps work.</h3>
+            <p>A reported macOS Claude Code project using `claude-fable-5` hit 216 `Fable 5&#x27;s safeguards flagged this message` hard blocks across 11 sessions in 22 days while doing legitimate cloud-infrastructure DevOps work such as screenshots, Docker builds, ACR login, and read-only code audits. The same sessions reportedly continued without the flags after switching to `claude-opus-5`.</p>
+                        <!-- workaround:fable-safeguards-can-hard-block-legitimate-devops-work -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If safeguards repeatedly block benign infrastructure work, preserve timestamps, model name, session transcript paths, and a small set of mundane flagged turns. Switch models only when it is acceptable for cost, capability, and policy needs, and distinguish false-positive mitigation from bypassing safety controls. Avoid retry storms that consume quota without changing the prompt or evidence package.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82036" target="_blank">#82036</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
