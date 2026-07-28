@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1286,
+  "count": 1288,
   "categories": {
     "Hook behavior & events": 186,
     "Permission system": 127,
@@ -9,8 +9,8 @@
     "Subagent & spawned agents": 58,
     "Desktop & IDE integration": 43,
     "TUI & display": 29,
+    "Platform & compatibility": 28,
     "Context & memory": 27,
-    "Platform & compatibility": 27,
     "CLI & terminal": 25,
     "Configuration behavior": 22,
     "Performance & cost": 20,
@@ -19,9 +19,9 @@
     "MCP & integrations": 18,
     "Sandbox & permissions": 17,
     "Security & trust boundaries": 16,
+    "Core & session management": 14,
     "Data integrity": 14,
     "VS Code extension": 14,
-    "Core & session management": 13,
     "MCP integration": 13,
     "Remote & cloud": 13,
     "Auth & accounts": 12,
@@ -185,7 +185,7 @@
     "CRITICAL": 101,
     "HIGH": 674,
     "LOW": 105,
-    "MEDIUM": 406
+    "MEDIUM": 408
   },
   "entries": [
     {
@@ -16526,10 +16526,36 @@
       "date_added": "2026-07-28",
       "description": "A reported Claude Code session spawned four Agent-tool teammates, then sent each a shutdown_request through SendMessage after they went idle. The two Sonnet teammates returned shutdown_approved and terminated, while the two Opus teammates repeatedly emitted idle_notification messages and never acknowledged the shutdown request. SendMessage still reported success, so the parent had no direct nack even though the control message was not processed, and each idle notification woke the parent with extra token overhead.",
       "workaround": "After sending shutdown_request to a teammate, treat lack of shutdown_approved within a short grace period as a failed cooperative shutdown. Use TaskStop with the bare agent name as the fallback when available, and keep an external list of spawned teammate IDs so stuck idle agents can be force-stopped instead of allowed to wake the parent indefinitely. Do not assume SendMessage success means the remote agent handled the request."
+    },
+    {
+      "id": "auto-update-checksum-mismatch-can-hang-windows-clients",
+      "title": "Auto-update checksum mismatch can hang Windows Claude clients.",
+      "category": "Platform & compatibility",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81811"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported managed Windows environment with HTTPS inspection saw both Claude Desktop and the Claude Code CLI become unresponsive when the native auto-update download failed checksum verification. The CLI surfaced a checksum mismatch and suggested claude doctor, while the Desktop app froze around the update prompt and had to be killed manually. The reporter tied the mismatch to corporate network rewriting of downloads from downloads.claude.ai.",
+      "workaround": "If update attempts hang or repeatedly fail with checksum mismatches, stop retrying the same auto-update path and verify whether a corporate proxy, TLS inspection product, antivirus, or mirror is rewriting downloads from downloads.claude.ai. Keep using the last working version until IT can allow or bypass the update route, and run claude doctor from a fresh terminal to confirm whether the native install is otherwise healthy."
+    },
+    {
+      "id": "session-auto-names-can-come-from-stale-project-files",
+      "title": "Session auto-names can come from stale project files instead of the conversation.",
+      "category": "Core & session management",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81813"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code CLI setup gave two unrelated interactive sessions in the same project the identical generated name. The name matched a completed spec file under the project directory, and the reporter confirmed the phrase never appeared in at least one session transcript. This suggests the naming heuristic can draw from project filesystem state instead of the live conversation.",
+      "workaround": "For projects with many specs, generated docs, or stale planning files, do not rely on Claude Code's auto-generated session names to identify resume targets. Record the session id and task externally, rename important sessions explicitly where possible, and confirm the transcript or cwd before resuming work from a session picker."
     }
   ],
   "status_summary": {
-    "open": 1272,
+    "open": 1274,
     "fixed": 13,
     "mitigated": 1
   },
@@ -16537,19 +16563,19 @@
     "critical": 101,
     "high": 674,
     "low": 105,
-    "medium": 406
+    "medium": 408
   },
   "lastUpdated": "2026-07-28",
   "stats": {
-    "total": 1286,
+    "total": 1288,
     "critical": 101,
     "high": 674,
-    "medium": 406,
+    "medium": 408,
     "low": 105,
-    "open": 1272,
+    "open": 1274,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-28",
-  "total": 1286
+  "total": 1288
 }
