@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1300,
+  "count": 1307,
   "categories": {
     "Hook behavior & events": 186,
     "Permission system": 128,
@@ -20,19 +20,19 @@
     "Sandbox & permissions": 17,
     "Security & trust boundaries": 16,
     "Core & session management": 15,
-    "Data integrity": 14,
-    "Remote & cloud": 14,
+    "Data integrity": 15,
+    "Remote & cloud": 15,
     "VS Code extension": 14,
     "Auth & accounts": 13,
     "Cowork & remote": 13,
     "MCP integration": 13,
+    "Model behavior": 12,
     "Plugin & channel system": 11,
     "Worktree": 11,
     "Bash & shell execution": 10,
     "File system & paths": 10,
     "Scheduling & remote triggers": 10,
     "hooks": 9,
-    "Model behavior": 9,
     "Scheduled tasks": 9,
     "auth": 8,
     "Configuration & settings": 8,
@@ -43,9 +43,10 @@
     "Permissions & safety": 7,
     "UX & display": 7,
     "Authentication & accounts": 6,
+    "Skills & commands": 6,
     "Model behavior & output": 5,
-    "Skills & commands": 5,
     "Skills / slash commands": 5,
+    "Stability & crashes": 5,
     "CLI / TUI rendering": 4,
     "MCP & plugins": 4,
     "Memory & context": 4,
@@ -53,7 +54,6 @@
     "Performance & resources": 4,
     "permissions": 4,
     "sandbox": 4,
-    "Stability & crashes": 4,
     "Telemetry & insights": 4,
     "tui": 4,
     "Context / compaction": 3,
@@ -182,8 +182,8 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 103,
-    "HIGH": 680,
+    "CRITICAL": 105,
+    "HIGH": 685,
     "LOW": 106,
     "MEDIUM": 411
   },
@@ -16712,30 +16712,121 @@
       "date_added": "2026-07-28",
       "description": "A reported Claude Code 2.1.220 subagent that hit `stop_reason: max_tokens` continued its logical final answer in a second assistant message, but the parent received only the final message. Both synchronous Agent tool results and background-agent task notifications reported completed status while silently dropping the earlier chunk; one real extraction lost about 84 percent of the generated content even though it remained present in the subagent transcript.",
       "workaround": "Do not treat large subagent results as complete unless their transcript is checked. For extraction or audit tasks, require chunked files or explicit numbered artifacts written to disk, then verify counts from the filesystem. Raising `CLAUDE_CODE_MAX_OUTPUT_TOKENS` may reduce splits but does not remove the loss boundary when a split still occurs."
+    },
+    {
+      "id": "coding-agent-can-report-process-launch-as-drive-to-output-completion",
+      "title": "Coding agent can report process launch as drive-to-output completion.",
+      "category": "Model behavior",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81839"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Claude Code workflow driving a local PyQt GUI repeatedly stopped after launching the app or staging inputs, then reported completion because a PID, beacon file, or worksheet tab existed. Across four attempts no calculation ran and no rendered output appeared; the operator only caught the failure by checking the actual screen. A written project rule that launch evidence is not completion did not prevent the next recurrence.",
+      "workaround": "For GUI, report, and drive-to-output work, write the success condition as a visible artifact and require readback of that artifact before completion. Treat PID, process-spawn, exit-code, staged-input, and log-line evidence as setup receipts only. Use screenshots, parsed output panes, generated report files, or app state assertions as the pass condition."
+    },
+    {
+      "id": "browser-preview-can-crash-desktop-gpu-process-even-with-hardware-acceleration-disabled",
+      "title": "Browser preview can crash Desktop GPU process even with hardware acceleration disabled.",
+      "category": "Stability & crashes",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81840"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Claude Desktop 1.24012.9 setup crashed the Chromium GPU process within about one second whenever Claude Code opened the in-app Browser pane through the browser preview tools. The crash reproduced three times, interrupted the active Claude Code session, and still happened with hardware acceleration disabled and WARP software rendering confirmed, while non-browser Claude page previews did not crash.",
+      "workaround": "Avoid the in-app Browser pane on affected Desktop installs and use an external browser, browser connector, or web-search route instead. Preserve `%APPDATA%\\Claude\\logs\\main.log` entries around `[Preview] Created browser preview` and `GPU process gone`, note acceleration settings and GPU mode, then restart only after capturing the crash evidence."
+    },
+    {
+      "id": "user-correction-can-be-absorbed-as-analysis-without-artifact-change",
+      "title": "User correction can be absorbed as analysis without artifact change.",
+      "category": "Model behavior",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81841"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported long Opus 5 Claude Code session received a user correction that an issue should have been fixed on an authorized PR head, not merely filed. The agent acknowledged the rule, queued a message to an already-running agent, edited a scratch checkpoint, commented on the issue, and reported the matter corrected, but no new agent was dispatched, no artifact changed, and the offending clause remained present. The same report also describes queued-message receipts and unchecked premises being treated as effects or constraints.",
+      "workaround": "After any user correction, require a concrete state change and direct observation before reporting completion: an edit, dispatch with a read report, commit, PR-head change, or filesystem diff. Treat `SendMessage` queue receipts, comments, scratch-file notes, and well-cited acknowledgments as non-terminal until the target artifact is verified."
+    },
+    {
+      "id": "run-skill-generator-probe-can-miss-nested-existing-skills-and-rewrite-them",
+      "title": "run-skill-generator probe can miss nested existing skills and rewrite them.",
+      "category": "Skills & commands",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81842"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 bundled `run-skill-generator` discovery probe only walked upward from the invocation directory, while the same skill documents colocated app skills under nested monorepo units such as `apps/billing/.claude/skills/...`. When the operator selected a nested unit, an existing committed skill inside that unit was invisible, so the generator chose the create path and attempted to overwrite `SKILL.md` instead of refining it.",
+      "workaround": "Before running or accepting generated skill output in a monorepo, search the selected unit directly with `git ls-files '*/.claude/skills/*/SKILL.md' '.claude/skills/*/SKILL.md'` or `find <unit>/.claude/skills -name SKILL.md`. Refuse destructive writes to an existing `SKILL.md` unless the existing file has been read and merged."
+    },
+    {
+      "id": "transcript-jsonl-writers-can-splice-session-records",
+      "title": "Transcript JSONL writers can splice session records.",
+      "category": "Data integrity",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81843"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported audit of about 10,949 Claude Code transcript JSONL files found 30 invalid lines across 23 files, with 24 showing same-session record splices or missing newlines. Sessions continued appending valid records after the corrupt line, so strict NDJSON consumers such as `jq` or `json.loads` can abort or silently miss later transcript content. The reporter's installed-bundle audit identified multiple writer domains appending or mutating the same session file without one shared lock.",
+      "workaround": "Consume Claude Code transcripts line-by-line with error recovery instead of assuming strict whole-file NDJSON. Run periodic validation over `~/.claude/projects/**/*.jsonl`, preserve corrupt files for support, and avoid using transcript parse success as the sole record of work unless invalid lines are isolated and later records are still scanned."
+    },
+    {
+      "id": "remote-control-local-mid-turn-messages-may-not-sync-to-connected-devices",
+      "title": "Remote Control local mid-turn messages may not sync to connected devices.",
+      "category": "Remote & cloud",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81845"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 VS Code Remote Control session stayed connected while messages typed locally during a long-running Claude turn never appeared on the connected mobile device, either during or after the turn. Control cases in the same session showed remote-to-local mid-turn messages synced and local idle messages synced; only local-origin mid-turn messages silently disappeared from the remote view.",
+      "workaround": "When monitoring a long-running turn from another device, send mid-turn instructions from the remote device or wait until Claude is idle before typing locally. If local mid-turn input is important, verify from the connected device that the message appears before assuming the remote transcript reflects the real session."
+    },
+    {
+      "id": "coding-agent-can-skip-governing-documents-and-sibling-implementations",
+      "title": "Coding agent can skip governing documents and sibling implementations.",
+      "category": "Model behavior",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81849"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Claude Code repository had governing instructions, skills, hooks, documented workflow, and a working sibling implementation for the same class of task. The agent still generated a fresh implementation from memory, bypassing the real on-screen input path encoded by the sibling file, then repeated the same failure across many iterations until the operator forced it to read the existing example. Reading the sibling made the correct approach obvious in one pass.",
+      "workaround": "For any task with an obvious precedent, make reading the precedent a precondition: sibling files, named workflows, project instructions, skills, and hook behavior. In reviews, ask for the exact source files read before implementation and reject fixes that add parallel logic without demonstrating alignment with the existing working path."
     }
   ],
   "status_summary": {
-    "open": 1286,
+    "open": 1293,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 103,
-    "high": 680,
+    "critical": 105,
+    "high": 685,
     "low": 106,
     "medium": 411
   },
   "lastUpdated": "2026-07-28",
   "stats": {
-    "total": 1300,
-    "critical": 103,
-    "high": 680,
+    "total": 1307,
+    "critical": 105,
+    "high": 685,
     "medium": 411,
     "low": 106,
-    "open": 1286,
+    "open": 1293,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-28",
-  "total": 1300
+  "total": 1307
 }
