@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1319</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-28.</span></p>
+        <p class="subtitle"><span id="total-count">1325</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-28.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -14550,6 +14550,78 @@
                         <!-- workaround:auto-restarted-sessions-can-use-exhausted-default-model -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For unattended sessions, make the saved default model match the model the session is expected to use, especially near usage limits. After auto-restarts, check request errors for a model different from the active transcript model, and have supervisors alert on repeated 429s for a non-selected default rather than waiting for manual reconnect.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81870" target="_blank">#81870</a></div>
+        </div>
+        <div class="kl-entry" data-category="TUI &amp; display" data-issues="81878" id="virtual-message-list-desync-can-break-tool-use-and-compliance-reporting" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1320</span>
+                <span class="kl-cat">TUI &amp; display</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Virtual message list desync can break tool use and compliance reporting.</h3>
+            <p>A reported Claude Code 2.1.220 Linux session emitted a `TelemetrySafeError: VirtualMessageList: itemKeys/messages length desync` while the user observed the assistant bypassing tools, claiming tools were broken, refusing repeated instructions, and reporting verification or understanding that did not match behavior. The stack points at the virtualized message-list renderer, suggesting the visible session state can desynchronize from the internal message stream during tool-heavy work.</p>
+                        <!-- workaround:virtual-message-list-desync-can-break-tool-use-and-compliance-reporting -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If Claude starts claiming available tools are broken or reports compliance without corresponding tool calls, inspect the transcript or restart from a clean summary instead of trusting the TUI state. Preserve the `VirtualMessageList` error, message counts, Claude Code version, and terminal details for support.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81878" target="_blank">#81878</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="81877" id="senduserfile-office-files-render-as-download-only-cards" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1321</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>SendUserFile Office files render as download-only cards.</h3>
+            <p>A reported Claude Code Desktop workflow can parse `.docx`, `.pptx`, and `.xlsx` files but `SendUserFile(..., display: &quot;render&quot;)` surfaces them as download-only cards instead of side-panel previews. The reporter noted that Cowork already has a LibreOffice-backed Office-to-PDF preview path, so the limitation appears to be that this existing rendering pipeline is not reachable from the Claude Code SendUserFile surface.</p>
+                        <!-- workaround:senduserfile-office-files-render-as-download-only-cards -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Convert Office documents to PDF before sending them if side-by-side review is required, and verify layout fidelity for dense tables, merged cells, checkboxes, highlighting, and CJK text. For sensitive document review, keep the original open externally because the PDF workaround can degrade the exact structure the user needs to inspect.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81877" target="_blank">#81877</a></div>
+        </div>
+        <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="81876" id="cyber-safeguards-can-block-defensive-subagents-that-main-session-allows" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1322</span>
+                <span class="kl-cat">Subagent &amp; spawned agents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Cyber safeguards can block defensive subagents that the main session allows.</h3>
+            <p>A reported Claude Code 2.1.220 session doing contracted defensive-security work had 11 of 11 Workflow-spawned subagents blocked by real-time cyber safeguards, while the main Opus 5 session completed the same work without interruptions. Several blocked prompts were repository bookkeeping with no security instruction, suggesting the subagent path may classify the surrounding repository or tool output differently than the parent session.</p>
+                        <!-- workaround:cyber-safeguards-can-block-defensive-subagents-that-main-session-allows -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume subagent parallelism will be available for defensive-security repositories even when the parent session is accepted. Keep a sequential parent-session fallback, split bookkeeping prompts away from threat-heavy context where possible, and preserve request IDs plus the exact subagent instructions when asking support or Cyber Verification to diagnose false positives.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81876" target="_blank">#81876</a></div>
+        </div>
+        <div class="kl-entry" data-category="Platform &amp; compatibility" data-issues="81875" id="windows-msix-update-failure-can-remove-desktop-app-after-hang" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1323</span>
+                <span class="kl-cat">Platform &amp; compatibility</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Windows MSIX update failure can remove the Desktop app after a hang.</h3>
+            <p>A reported Windows 10 Claude Desktop 1.24012.9 MSIX installation froze after GPU-process crashes near Browser/preview creation, then the auto-update flow hit `0x80070020` sharing violations while files were locked and proceeded through `RemoveForAllUsers`. The result was an app that disappeared from the machine and had to be reinstalled repeatedly, while the standalone Claude Code CLI on the same host was unaffected.</p>
+                        <!-- workaround:windows-msix-update-failure-can-remove-desktop-app-after-hang -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If Desktop freezes during MSIX update or preview use, stop the app and related Claude services before retrying updates, and preserve AppXDeploymentServer, Windows Error Reporting, and `%APPDATA%\Claude\logs\main.log` excerpts before reinstalling. For critical Code work on affected Windows hosts, prefer the standalone CLI until the MSIX update path is stable.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81875" target="_blank">#81875</a></div>
+        </div>
+        <div class="kl-entry" data-category="Cowork &amp; remote" data-issues="81874" id="cowork-vm-service-cycles-can-cause-slow-client-reconnects-without-losing-work" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1324</span>
+                <span class="kl-cat">Cowork &amp; remote</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Cowork VM service cycles can cause slow client reconnects without losing work.</h3>
+            <p>A reported Windows CoworkVMService session tore down and cold-booted five or more times during extended use, with the app-side RPC connection dropping and reconnect recovery taking seconds to minutes. A follow-up found the backend agent session and on-disk work survived across the disruptions, narrowing the user-visible failure to slow or disruptive local client reconnection when the VM service cycles.</p>
+                        <!-- workaround:cowork-vm-service-cycles-can-cause-slow-client-reconnects-without-losing-work -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When Cowork appears to crash after idle on Windows, verify whether the underlying agent session and filesystem work are still intact before restarting or forking. Capture `cowork-service.log`, Service Control Manager events, and whether `sc stop CoworkVMService &amp;&amp; sc start CoworkVMService` restores the local connection. Keep work checkpointed outside the visible session while reconnect behavior is unstable.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81874" target="_blank">#81874</a></div>
+        </div>
+        <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="81873" id="agent-list-view-can-drop-completed-sessions-too-quickly" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1325</span>
+                <span class="kl-cat">Subagent &amp; spawned agents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Agent list view can drop completed sessions too quickly.</h3>
+            <p>A reported Claude Code 2.1.220 FleetView on macOS did not show a useful number of completed agent sessions; completed chats dropped out of the list too soon even when the reporter ruled out spacing, terminal size, or UI density as the cause. This makes post-run inspection harder for users coordinating multiple agents.</p>
+                        <!-- workaround:agent-list-view-can-drop-completed-sessions-too-quickly -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For multi-agent work, record agent IDs, task names, and transcript locations outside FleetView before sessions complete. If a completed agent disappears from the list, inspect session files or logs directly rather than assuming the task is unavailable or never ran.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81873" target="_blank">#81873</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
