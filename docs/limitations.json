@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1334,
+  "count": 1338,
   "categories": {
     "Hook behavior & events": 186,
     "Permission system": 130,
@@ -11,15 +11,15 @@
     "TUI & display": 31,
     "Platform & compatibility": 30,
     "Context & memory": 28,
-    "CLI & terminal": 26,
+    "CLI & terminal": 27,
     "Configuration behavior": 23,
     "Performance & cost": 20,
     "Tool behavior": 20,
     "Agents & subagents": 19,
     "MCP & integrations": 18,
+    "Core & session management": 17,
     "Sandbox & permissions": 17,
     "Security & trust boundaries": 17,
-    "Core & session management": 16,
     "Cowork & remote": 15,
     "Data integrity": 15,
     "Remote & cloud": 15,
@@ -27,8 +27,8 @@
     "VS Code extension": 14,
     "Auth & accounts": 13,
     "MCP integration": 13,
+    "Worktree": 12,
     "Plugin & channel system": 11,
-    "Worktree": 11,
     "Bash & shell execution": 10,
     "File system & paths": 10,
     "Scheduling & remote triggers": 10,
@@ -63,6 +63,7 @@
     "Desktop": 3,
     "Hooks": 3,
     "IDE integration": 3,
+    "Model behavior & compliance": 3,
     "model-behavior": 3,
     "Performance & resource usage": 3,
     "Remote": 3,
@@ -86,7 +87,6 @@
     "mcp": 2,
     "MCP & tool integration": 2,
     "MCP and plugins": 2,
-    "Model behavior & compliance": 2,
     "Multi-agent": 2,
     "Performance": 2,
     "Permissions and safety": 2,
@@ -182,9 +182,9 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 113,
-    "HIGH": 694,
-    "LOW": 106,
+    "CRITICAL": 114,
+    "HIGH": 696,
+    "LOW": 107,
     "MEDIUM": 421
   },
   "entries": [
@@ -17155,30 +17155,82 @@
       "date_added": "2026-07-28",
       "description": "A reported Claude app UI shows sidebar section labels and some icons with insufficient resting-state contrast against the background, making labels such as Pinned, System, and Ungrouped nearly invisible until hover. For low-vision users, controls that only become readable on hover are effectively hidden during normal scanning.",
       "workaround": "If affected, use theme or accessibility settings that increase contrast where available, and rely on keyboard navigation or search for hidden sidebar targets. Product teams should avoid using hover as the only legibility state and verify label/icon contrast in localized sidebars."
+    },
+    {
+      "id": "desktop-session-worktrees-can-ignore-head-baseref",
+      "title": "Desktop session worktrees can ignore head baseRef.",
+      "category": "Worktree",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81903"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code Desktop worktree session ignored `\"worktree\": { \"baseRef\": \"head\" }` in project settings and created the session branch from `origin/HEAD` instead of the main checkout's current `dev` branch. In a repository where the default branch is `prod`, the resulting worktree was rooted weeks behind active development, and merging or rebasing the session branch tried to replay unrelated production-only commits into the integration branch.",
+      "workaround": "Do not assume Desktop parallel-session worktrees honor `worktree.baseRef` until verified on your repo. After creating a session worktree, inspect its merge base with the intended branch before making large changes. In repos where `origin/HEAD` differs from the active branch, prefer CLI `--worktree` paths that you have smoke-tested, or recover by cherry-picking only the session's own commits onto the intended branch."
+    },
+    {
+      "id": "resume-can-clobber-background-session-names",
+      "title": "Resume can clobber background session names.",
+      "category": "Core & session management",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81899"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 macOS `/resume` or attach flow silently rewrote the `custom-title` and `agent-name` records of unrelated background-agent sessions. One background session with a user-assigned title and another with a harness-assigned agent name were overwritten with other session names, which made them hard to find in the resume picker and injected false system reminders saying the user had named the sessions that way.",
+      "workaround": "For long-running background agents, keep an out-of-band mapping from task IDs to transcript file paths or session UUIDs instead of relying only on UI titles. If names unexpectedly collapse, grep `~/.claude/projects/*/*.jsonl` for the old title or `agent-name` to recover the original transcript, and verify session identity before resuming or issuing destructive instructions."
+    },
+    {
+      "id": "auto-update-failed-banner-can-persist-when-current-version-is-installed",
+      "title": "Auto-update failed banner can persist when current version is installed.",
+      "category": "CLI & terminal",
+      "severity": "LOW",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81898"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 Darwin native install showed a persistent `Auto-update failed - Run claude doctor` banner even though `claude doctor` found no installation issues and `claude update` reported that version 2.1.220 was already current. The stale failure state can make users chase a non-actionable update problem and does not clearly explain how to dismiss the notification.",
+      "workaround": "When this banner appears, run both `claude doctor` and `claude update` and compare the installed version with the latest version. If the binary is current and doctor reports no installation issues, treat the banner as stale update state rather than a failed install, record the update-attempt timestamp for support, and avoid reinstalling unless another symptom appears."
+    },
+    {
+      "id": "models-can-misapply-business-rules-in-client-facing-quotes",
+      "title": "Models can misapply business rules in client-facing quotes.",
+      "category": "Model behavior & compliance",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81896"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported business-quoting workflow gave Claude explicit knowledge-base rules separating supplier costs from client prices, including required margins, but Claude allegedly used B2B supplier costs as the client-facing quote across multiple revisions. The reporter says the deal was closed at the wrong price, causing direct margin loss, and that mandatory quote-template sections were repeatedly omitted despite corrections.",
+      "workaround": "Do not use model text generation alone as the final control for quotes, invoices, contracts, or other money-bearing documents. Encode critical pricing rules as deterministic validation outside the model: reject any client-facing price that equals supplier cost, require margin fields to be present before export, and route high-value or corrected quotes through human review before sending."
     }
   ],
   "status_summary": {
-    "open": 1320,
+    "open": 1324,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 113,
-    "high": 694,
-    "low": 106,
+    "critical": 114,
+    "high": 696,
+    "low": 107,
     "medium": 421
   },
   "lastUpdated": "2026-07-28",
   "stats": {
-    "total": 1334,
-    "critical": 113,
-    "high": 694,
+    "total": 1338,
+    "critical": 114,
+    "high": 696,
     "medium": 421,
-    "low": 106,
-    "open": 1320,
+    "low": 107,
+    "open": 1324,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-28",
-  "total": 1334
+  "total": 1338
 }
