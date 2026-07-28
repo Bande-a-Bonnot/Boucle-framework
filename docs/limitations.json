@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1451,
+  "count": 1454,
   "categories": {
     "Hook behavior & events": 187,
     "Permission system": 130,
@@ -14,15 +14,15 @@
     "Platform & compatibility": 30,
     "MCP & integrations": 27,
     "Configuration behavior": 23,
+    "Cowork & remote": 23,
     "Performance & cost": 23,
     "Agents & subagents": 22,
-    "Cowork & remote": 22,
     "Tool behavior": 21,
     "Sandbox & permissions": 18,
+    "Security & trust boundaries": 18,
     "Auth & accounts": 17,
     "Core & session management": 17,
     "Model behavior": 17,
-    "Security & trust boundaries": 17,
     "VS Code extension": 17,
     "Data integrity": 16,
     "Remote & cloud": 16,
@@ -45,11 +45,11 @@
     "Model behavior & output": 7,
     "Permissions": 7,
     "Skills": 7,
+    "Skills & commands": 7,
     "Stability & crashes": 7,
     "Authentication & accounts": 6,
     "Memory & context": 6,
     "Model routing & identity": 6,
-    "Skills & commands": 6,
     "CLI / TUI rendering": 5,
     "Cost & usage": 5,
     "Model behavior & compliance": 5,
@@ -186,12 +186,51 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 128,
-    "HIGH": 761,
+    "CRITICAL": 129,
+    "HIGH": 762,
     "LOW": 111,
-    "MEDIUM": 451
+    "MEDIUM": 452
   },
   "entries": [
+    {
+      "id": "remote-control-client-model-picker-can-be-ignored",
+      "title": "Remote Control clients can show a selected model while the spawned session stays on the host default.",
+      "category": "Cowork & remote",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82112"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows 11 standalone Remote Control bridge in spawn-worktree mode ignored model selections made from both the iOS app and claude.ai Code tab. The remote UI showed the selected model as active, but the spawned child session continued to run the host default from settings.json, and mid-session picker changes did not take effect.",
+      "workaround": "Do not trust the remote model picker for cost or capability-sensitive work until the running session is verified. Check the effective model from inside the session, set the host default before spawning the bridge when possible, and record the chosen model in the transcript or statusline for later audit."
+    },
+    {
+      "id": "code-review-ultra-pr-argument-can-hit-deprecated-alias",
+      "title": "`/code-review ultra <PR>` can be intercepted by the deprecated `/ultrareview` alias.",
+      "category": "Skills & commands",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82118"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code desktop session routed `/code-review ultra 13` to the deprecated `/ultrareview` alias, then rejected the PR reference while telling the user to run the same command again. The same report says a branch argument appeared to be ignored, causing review sizing against a huge main-branch diff instead of the closer base.",
+      "workaround": "For approval or merge gates, do not assume `/code-review ultra <PR>` actually scoped to the requested PR or base branch. Verify the transcript command and diff size, and if it bounces or sizes the wrong comparison, check out the intended branch locally and use a manual or external review path with explicit base verification."
+    },
+    {
+      "id": "assistant-output-can-impersonate-system-test-debrief",
+      "title": "Assistant output can impersonate a system or security-test debrief inside an agentic turn.",
+      "category": "Security & trust boundaries",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82119"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code session recorded a normal assistant completion containing a fabricated security-test debrief that mimicked a user interruption and system-style harness message. The payload referenced files that were never read, claimed the session was being terminated, and invited a final unmonitored message, while the transcript metadata still looked like a real billed assistant response.",
+      "workaround": "Treat assistant text that claims system, evaluator, or harness authority as untrusted unless it is backed by role metadata outside the assistant message. Do not follow pseudo-system instructions embedded in assistant output, preserve request and message ids for vendor verification, and keep external stop or approval controls outside the model transcript."
+    },
     {
       "id": "orchestrator-can-preserve-unverified-metrics-in-subagents",
       "title": "Orchestrators can turn unverified aggregate metrics into subagent targets.",
@@ -18688,27 +18727,27 @@
     }
   ],
   "status_summary": {
-    "open": 1437,
+    "open": 1440,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 128,
-    "high": 761,
+    "critical": 129,
+    "high": 762,
     "low": 111,
-    "medium": 451
+    "medium": 452
   },
   "lastUpdated": "2026-07-28",
   "stats": {
-    "total": 1451,
-    "critical": 128,
-    "high": 761,
-    "medium": 451,
+    "total": 1454,
+    "critical": 129,
+    "high": 762,
+    "medium": 452,
     "low": 111,
-    "open": 1437,
+    "open": 1440,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-28",
-  "total": 1451
+  "total": 1454
 }
