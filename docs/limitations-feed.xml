@@ -7,6 +7,78 @@
   <updated>2026-07-28T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Sandbox excludedCommands can be skipped inside shell loops.</title>
+    <id>https://framework.boucle.sh/limitations.html#sandbox-excludedcommands-can-be-skipped-inside-shell-loops</id>
+    <link href="https://framework.boucle.sh/limitations.html#sandbox-excludedcommands-can-be-skipped-inside-shell-loops"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>On macOS with sandboxing enabled, `sandbox.excludedCommands` reportedly matches the whole Bash command string rather than commands inside compound shell syntax. With `gh *` excluded, a bare `gh --version` runs outside Seatbelt, but the same `gh` call inside a `for` loop remains sandboxed and can hit the Go TLS failure the docs tell users to avoid via exclusions.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
+    <title>[LOW] Vim-mode search keys can open history or help over nonempty input.</title>
+    <id>https://framework.boucle.sh/limitations.html#vim-mode-search-keys-can-open-history-or-help-over-nonempty-input</id>
+    <link href="https://framework.boucle.sh/limitations.html#vim-mode-search-keys-can-open-history-or-help-over-nonempty-input"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>In Vim mode, pressing `/` or `?` in NORMAL mode while editing a nonempty Claude Code prompt opens reverse history search or the help menu instead of searching within the current input. The `?` binding can draw the help popup over the text being edited, interrupting normal Vim search muscle memory.</summary>
+    <category term="TUI &amp; interface"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Background-agent daemon can reclaim reaped spares from a stale roster.</title>
+    <id>https://framework.boucle.sh/limitations.html#background-agent-daemon-can-reclaim-reaped-spares-from-stale-roster</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-agent-daemon-can-reclaim-reaped-spares-from-stale-roster"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A Claude Code 2.1.220 daemon log report shows a spare worker spawned, reaped as idle, and then claimed by the fleet about 78 minutes after it had already been killed. The same report shows duplicate `settled` events for individual workers, making `claude stop &lt;id&gt;` appear successful before the same id reappears as live minutes later.</summary>
+    <category term="Agents &amp; subagents"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Terminal selection copy can report success with an empty clipboard near horizontal rules.</title>
+    <id>https://framework.boucle.sh/limitations.html#terminal-selection-copy-can-report-success-with-empty-clipboard-near-horizontal-rules</id>
+    <link href="https://framework.boucle.sh/limitations.html#terminal-selection-copy-can-report-success-with-empty-clipboard-near-horizontal-rules"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>In Claude Code 2.1.220 on Alacritty, mouse-selection copy can show the `Copied` indicator while writing nothing to PRIMARY or CLIPBOARD when the selected text touches a line adjacent to a rendered markdown horizontal rule. The reporter isolated the failure to horizontal-rule-adjacent selections and reproduced it in old scrollback.</summary>
+    <category term="TUI &amp; rendering"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] TaskStop can leave descendant subagents running and billing.</title>
+    <id>https://framework.boucle.sh/limitations.html#taskstop-can-leave-descendant-subagents-running-and-billing</id>
+    <link href="https://framework.boucle.sh/limitations.html#taskstop-can-leave-descendant-subagents-running-and-billing"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A background-agent incident report says stopping parent agents with `TaskStop` did not stop child subagents, which continued running for about forty minutes and consumed 750,460 tokens after the parents were killed. A later update says deeper descendants were not visible to `TaskStop`, and live token usage was not available until completion notifications arrived.</summary>
+    <category term="Agents &amp; subagents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Large-workflow warnings can miss chained multi-agent token spend.</title>
+    <id>https://framework.boucle.sh/limitations.html#large-workflow-warnings-can-miss-chained-multi-agent-token-spend</id>
+    <link href="https://framework.boucle.sh/limitations.html#large-workflow-warnings-can-miss-chained-multi-agent-token-spend"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A measured multi-agent session report says support warning thresholds of more than 25 agents or more than 1.5M projected tokens did not trigger during about 24 hours of workflows. Several individual workflows exceeded 1.5M actual subagent tokens, and ten sequential workflows from one request reached 100 agents and 17.38M subagent tokens without aggregation across the turn or session.</summary>
+    <category term="Agents &amp; subagents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Desktop Cowork bundled CLI can segfault on Windows startup.</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-cowork-bundled-cli-can-segfault-on-windows-startup</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-cowork-bundled-cli-can-segfault-on-windows-startup"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A Windows 10 report says Claude Desktop Cowork `On your computer` launches the bundled `claude-code` 2.1.219 harness and it deterministically exits within roughly 68 to 112 ms with a Bun 1.4.0 segmentation fault. The Desktop app retries and crashes the same way, leaving local Cowork unusable with no visible downgrade path.</summary>
+    <category term="Cowork &amp; remote"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] VS Code insert-at-mention can reveal the wrong conversation tab.</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-insert-at-mention-can-reveal-the-wrong-conversation-tab</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-insert-at-mention-can-reveal-the-wrong-conversation-tab"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>With multiple Claude Code conversation tabs open in VS Code, `Claude Code: Insert @-Mention Reference` can insert the mention into the intended visible conversation but then reveal and focus a different hidden conversation. The report says each open session subscribes to the shared insert event and calls reveal on its panel tab.</summary>
+    <category term="VS Code extension"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Hook-based worktree removal can fail with a misleading hook error.</title>
+    <id>https://framework.boucle.sh/limitations.html#hookbased-worktree-removal-can-fail-with-misleading-hook-error</id>
+    <link href="https://framework.boucle.sh/limitations.html#hookbased-worktree-removal-can-fail-with-misleading-hook-error"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>In Claude Code agents mode, removing an agent-created worktree can fail with a `WorktreeRemove hook failed` message even when the user&#x27;s remove hook exits 0. The report attributes the failure to hook-based session records that have `hookBased: true` but no `originalHeadCommit`, leaving the CLI unable to verify worktree state before removal.</summary>
+    <category term="Worktrees &amp; isolation"/>
+  </entry>
+  <entry>
     <title>[HIGH] MCP OAuth redirect_uri localhost can break IP-literal allowlists.</title>
     <id>https://framework.boucle.sh/limitations.html#mcp-oauth-redirect-uri-localhost-can-break-ip-literal-allowlists</id>
     <link href="https://framework.boucle.sh/limitations.html#mcp-oauth-redirect-uri-localhost-can-break-ip-literal-allowlists"/>
@@ -93,77 +165,5 @@
     <updated>2026-07-28T00:00:00Z</updated>
     <summary>Claude Code can apply a default 30-day cleanup period to local session transcripts at startup. A reported user lost months of conversation context with no prior warning, onboarding notice, archive step, or recovery path, even though transcripts often contain reasoning and decisions not preserved in generated project files.</summary>
     <category term="Data integrity"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Undefined hook control_response can crash the headless stdin reader.</title>
-    <id>https://framework.boucle.sh/limitations.html#undefined-hook-control-response-can-crash-headless-stdin-reader</id>
-    <link href="https://framework.boucle.sh/limitations.html#undefined-hook-control-response-can-crash-headless-stdin-reader"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>Headless Claude Code subprocesses with hooks registered can reportedly throw an unhandled ZodError when a hook callback round trip delivers `undefined` where `control_response` expects an object. The subprocess can die before its first turn with zero cost and no session ID, and some fully headless paths surface a misleading user-aborted message.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Terminal hyperlink clicks can double-dispatch on Linux.</title>
-    <id>https://framework.boucle.sh/limitations.html#terminal-hyperlink-clicks-can-double-dispatch-on-linux</id>
-    <link href="https://framework.boucle.sh/limitations.html#terminal-hyperlink-clicks-can-double-dispatch-on-linux"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>On native Linux with gnome-terminal/VTE, Ctrl-clicking Claude Code OSC 8 hyperlinks can trigger both the terminal handler and Claude Code internal `onHyperlinkClick` handling. File links may open once in the editor and once in the file manager; a follow-up says web URLs can open two browser tabs.</summary>
-    <category term="CLI &amp; terminal"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Cowork Windows export can fail on transcript paths over 260 characters.</title>
-    <id>https://framework.boucle.sh/limitations.html#cowork-windows-export-can-fail-on-transcript-paths-over-260-chars</id>
-    <link href="https://framework.boucle.sh/limitations.html#cowork-windows-export-can-fail-on-transcript-paths-over-260-chars"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>Windows Cowork session export can fail with `Transcript could not be read` even though the `.jsonl` transcript exists. The reported structural path formula can exceed 260 characters, and the native file reader path appears not to use an extended-length prefix even though other APIs can stat or copy the file.</summary>
-    <category term="File system &amp; paths"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Cowork VM can fail HCS create_vm_config after a Desktop update.</title>
-    <id>https://framework.boucle.sh/limitations.html#cowork-vm-can-fail-hcs-create-vm-config-after-desktop-update</id>
-    <link href="https://framework.boucle.sh/limitations.html#cowork-vm-can-fail-hcs-create-vm-config-after-desktop-update"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A Windows 11 25H2 MSIX report describes Cowork failing every VM start with HCS 0x80070005 at `create_vm_config` after updating from Desktop 1.24012.0 to 1.24012.9. The reporter ruled out common SYSTEM ACL, VM identity ACL, Hyper-V group, WDAC, service, and bundle-file workarounds, and noted a separate MSIX-virtualized bundlePath leak.</summary>
-    <category term="Cowork &amp; remote"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Background terminal view can drop a visible assistant message when a new turn arrives.</title>
-    <id>https://framework.boucle.sh/limitations.html#background-terminal-view-can-drop-visible-assistant-message-on-new-turn</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-terminal-view-can-drop-visible-assistant-message-on-new-turn"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>In background or daemon-managed sessions, a newly arriving user turn such as a scheduled prompt can reportedly remove the assistant message currently being read from the main terminal viewport. The transcript and ctrl+o view still contain the message, so this is a rendering loss rather than confirmed data loss.</summary>
-    <category term="TUI &amp; display"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Desktop build can hang at _dyld_start while Gatekeeper reports damaged.</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-build-can-hang-at-dyld-start-while-gatekeeper-reports-damaged</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-build-can-hang-at-dyld-start-while-gatekeeper-reports-damaged"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>Claude Desktop 1.24012.9 on macOS 26.5 arm64 was reported to pass checksum, codesign, notarization, and Gatekeeper checks, yet hang indefinitely at `_dyld_start` before loading application libraries. macOS presents this as a damaged-app dialog, which can lead users into repeated delete and reinstall loops.</summary>
-    <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] headersHelper can fall into OAuth registration after token expiry.</title>
-    <id>https://framework.boucle.sh/limitations.html#headershelper-can-fall-into-oauth-registration-after-token-expiry</id>
-    <link href="https://framework.boucle.sh/limitations.html#headershelper-can-fall-into-oauth-registration-after-token-expiry"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>For HTTP MCP servers configured with `headersHelper` and no OAuth block, a post-expiry 401 can reportedly bypass helper re-execution and surface `Incompatible auth server: does not support dynamic client registration`. The helper works on manual reconnect, but automatic recovery never fires after expiry.</summary>
-    <category term="MCP &amp; integrations"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Plugins lack a stable current path for versioned CLAUDE.md imports.</title>
-    <id>https://framework.boucle.sh/limitations.html#plugins-lack-stable-current-path-for-versioned-claudemd-imports</id>
-    <link href="https://framework.boucle.sh/limitations.html#plugins-lack-stable-current-path-for-versioned-claudemd-imports"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>Installed plugins live under version-suffixed cache paths, while `@import` lines in CLAUDE.md do not expand plugin-root variables. Teams that want to ship shared instructions inside a versioned plugin must either hard-code a stale version path or import from the unversioned marketplace clone.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Manual /compact can fail at very large context sizes.</title>
-    <id>https://framework.boucle.sh/limitations.html#manual-compact-can-fail-at-very-large-context</id>
-    <link href="https://framework.boucle.sh/limitations.html#manual-compact-can-fail-at-very-large-context"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A Claude Code 2.1.220 macOS VS Code session reportedly failed when `/compact` was invoked around 435K context tokens. The report says the session became effectively unrecoverable and continuing in the same session led to more unproductive work.</summary>
-    <category term="Context &amp; memory"/>
   </entry>
 </feed>
