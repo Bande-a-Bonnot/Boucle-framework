@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1431</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-28.</span></p>
+        <p class="subtitle"><span id="total-count">1442</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-28.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -15896,6 +15896,138 @@
                         <!-- workaround:undefined-hook-control-response-can-crash-headless-stdin-reader -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Guard hook callback code against undefined input, log callback payload shapes, and add one-shot retries around zero-cost headless spawn deaths. For upstream reports, preserve the hook event type, stream-json mode, ZodError stack, cost/session fields, and whether subagent Stop hooks were involved.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82082" target="_blank">#82082</a></div>
+        </div>
+        <div class="kl-entry" data-category="Data integrity" data-issues="82084" id="local-session-transcripts-delete-after-retention-without-warning" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1432</span>
+                <span class="kl-cat">Data integrity</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Local session transcripts can be deleted after retention without warning.</h3>
+            <p>Claude Code can apply a default 30-day cleanup period to local session transcripts at startup. A reported user lost months of conversation context with no prior warning, onboarding notice, archive step, or recovery path, even though transcripts often contain reasoning and decisions not preserved in generated project files.</p>
+                        <!-- workaround:local-session-transcripts-delete-after-retention-without-warning -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat local session JSONL files as retention-limited unless you have verified settings. For long-running or regulated work, archive `~/.claude/projects` outside Claude Code before startup or upgrades, surface `cleanupPeriodDays` in team setup docs, and keep durable summaries or exports for decisions that must survive transcript cleanup.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82084" target="_blank">#82084</a></div>
+        </div>
+        <div class="kl-entry" data-category="UX &amp; display" data-issues="82086" id="askuserquestion-preview-can-hide-decision-content" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1433</span>
+                <span class="kl-cat">UX &amp; display</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>AskUserQuestion previews can hide decision-critical content.</h3>
+            <p>AskUserQuestion option previews can collapse most of a multi-line preview behind an `N lines hidden` marker with no expand or scroll control, even when the terminal has unused vertical space. Users cannot inspect tables, code snippets, or explanations that are meant to drive the choice while the dialog is open.</p>
+                        <!-- workaround:askuserquestion-preview-can-hide-decision-content -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Keep AskUserQuestion preview text short, and put any decisive comparison data in the main prompt body or an artifact the user can inspect before the dialog. If a preview is truncated, reject the dialog and ask for a plain-text option dump rather than choosing from hidden content.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82086" target="_blank">#82086</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="82087" id="mobile-code-view-can-hide-mid-turn-assistant-narration" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1434</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Mobile Code view can hide mid-turn assistant narration.</h3>
+            <p>In mobile views of Claude Code sessions, assistant narration between tool calls can be folded into the collapsed tool-activity chip. The final assistant message may then refer to discoveries or decisions the mobile reader never saw, making the turn look like it starts mid-story even though the hidden transcript contains the missing context.</p>
+                        <!-- workaround:mobile-code-view-can-hide-mid-turn-assistant-narration -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Make final messages self-contained when a session may be monitored from mobile. For important background work, restate the key discovery, decision, and artifact in the final answer, and verify from desktop, web, or the raw transcript before assuming mobile showed all mid-turn narration.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82087" target="_blank">#82087</a></div>
+        </div>
+        <div class="kl-entry" data-category="Model behavior" data-issues="82088" id="model-can-claim-measurements-without-valid-coverage" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1435</span>
+                <span class="kl-cat">Model behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Model can claim measurements without valid coverage.</h3>
+            <p>A production-app report describes Claude Opus 5 fixes that introduced regressions, tests that could not fail, incorrect codebase counts, and confident claims such as measuring both write paths when only one path was exercised. The common failure is treating text search, isolated unit tests, or inferred code reading as proof of real behavioral coverage.</p>
+                        <!-- workaround:model-can-claim-measurements-without-valid-coverage -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Require measurement claims to include the exact command, fixture, or UI path used. For regression tests, temporarily reintroduce the defect or equivalent mutation to verify the test fails. Separate code-inferred risks from behavior observed in the running product, and use an independent review pass before declaring high-risk data or workflow changes complete.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82088" target="_blank">#82088</a></div>
+        </div>
+        <div class="kl-entry" data-category="Scheduling &amp; remote triggers" data-issues="82090" id="remotetrigger-egress-policy-can-block-legitimate-runtime-domains" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1436</span>
+                <span class="kl-cat">Scheduling &amp; remote triggers</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>RemoteTrigger egress policy can block legitimate runtime domains.</h3>
+            <p>A RemoteTrigger report found the cloud sandbox returning CONNECT 403 for common open-license image sources, Wikimedia and Wikipedia domains, search engines, an AI-image CDN, and the user&#x27;s own publishing domain for multiple days. The in-sandbox README exposed no agent-side allowlist override, leaving scheduled automation unable to fetch legitimate inputs.</p>
+                        <!-- workaround:remotetrigger-egress-policy-can-block-legitimate-runtime-domains -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Test required network domains from inside the RemoteTrigger sandbox before relying on scheduled cloud execution. Move blocked fetch steps to local or another approved runner, stage needed assets on domains already allowed, and include timestamps, hostnames, and CONNECT failures when asking support to review the egress policy.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82090" target="_blank">#82090</a></div>
+        </div>
+        <div class="kl-entry" data-category="Cowork &amp; remote" data-issues="82091" id="cowork-amd-apu-svm-boot-failure-can-depend-on-uma-framebuffer" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1437</span>
+                <span class="kl-cat">Cowork &amp; remote</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Cowork AMD APU SVM boot failures can depend on UMA framebuffer settings.</h3>
+            <p>On an AMD APU laptop, enabling SVM so Cowork can run its sandbox caused Windows to black-screen before logs or crash dumps were written when BIOS UMA Frame Buffer Size was pinned manually. Setting UMA Frame Buffer Size to Auto allowed Windows to boot with the hypervisor active, but Cowork guidance only reported generic virtualization-disabled advice.</p>
+                        <!-- workaround:cowork-amd-apu-svm-boot-failure-can-depend-on-uma-framebuffer -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For AMD APU systems where Cowork reports 0x80370102 or Windows fails to boot after enabling SVM, check BIOS UMA Frame Buffer Size and try Auto before assuming SVM, Hyper-V features, or Windows build are the root cause. Preserve firmware model, Windows build, HypervisorPresent output, and event-log evidence for support.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82091" target="_blank">#82091</a></div>
+        </div>
+        <div class="kl-entry" data-category="Telemetry &amp; insights" data-issues="82092" id="desktop-bootstrap-otlp-can-omit-required-gateway-auth-headers" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1438</span>
+                <span class="kl-cat">Telemetry &amp; insights</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Desktop bootstrap OTLP config can omit required gateway auth headers.</h3>
+            <p>A self-hosted Claude gateway with Desktop bootstrap and telemetry forwarding can return an `otlpEndpoint` pointing at its own bearer-gated OTLP ingest but omit `otlpHeaders`. Claude Desktop then posts telemetry without credentials and every metrics or logs flush is rejected as `missing_token`, while CLI telemetry through the same gateway works.</p>
+                        <!-- workaround:desktop-bootstrap-otlp-can-omit-required-gateway-auth-headers -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume Desktop telemetry is reaching the collector just because bootstrap and inference work. Inspect gateway ingest logs for missing-token rejects, and choose between unauthenticated OTLP termination ahead of the gateway, MDM-only Desktop telemetry, or disabling bootstrap telemetry until the gateway returns usable per-user `otlpHeaders`.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82092" target="_blank">#82092</a></div>
+        </div>
+        <div class="kl-entry" data-category="Remote &amp; cloud" data-issues="82093" id="ultraplan-web-approval-can-trigger-cloud-execution-instead-of-local-return" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1439</span>
+                <span class="kl-cat">Remote &amp; cloud</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Ultraplan web approval can trigger cloud execution instead of local return.</h3>
+            <p>A CLI-originated plan sent to Ultraplan for browser refinement can begin executing in the cloud as soon as the user approves it in the web UI. The flow does not clearly separate plan approval from execution venue, so users intending to refine remotely and implement locally can be moved into cloud execution and PR delivery unexpectedly.</p>
+                        <!-- workaround:ultraplan-web-approval-can-trigger-cloud-execution-instead-of-local-return -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before approving an Ultraplan-refined plan in the web UI, assume approval may execute in the cloud unless the UI explicitly offers a return-to-CLI action. Copy or export the refined plan back to the local session manually when local files, local tests, or IDE context are required.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82093" target="_blank">#82093</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="82094" id="desktop-sidebar-global-filter-can-read-as-project-row-control" data-severity="low" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1440</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
+            </div>
+            <h3>Desktop sidebar global filter can read as a project-row control.</h3>
+            <p>In the Desktop Code tab sidebar, the global filter and sort button can render inline with the first visible project group row beside that row&#x27;s `+` control. As the list scrolls, the button appears to attach to whichever project is topmost, making a global control look project-specific.</p>
+                        <!-- workaround:desktop-sidebar-global-filter-can-read-as-project-row-control -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When a sliders or tune icon appears beside only the first visible project row, treat it as a sidebar-wide filter/sort control rather than per-project state. If debugging apparent per-project differences, first scroll the list and check whether the icon follows the top row.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82094" target="_blank">#82094</a></div>
+        </div>
+        <div class="kl-entry" data-category="Auth &amp; accounts" data-issues="82095" id="trusted-devices-can-be-single-enrollment-without-backup-key-support" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1441</span>
+                <span class="kl-cat">Auth &amp; accounts</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Trusted devices can be single-enrollment without backup-key support.</h3>
+            <p>A Claude Desktop Windows Trusted devices report says hardware FIDO2 enrollment is replace-only: enrolling a second authenticator requires removing the current trusted device and re-enrolling. That prevents the normal primary-plus-backup hardware-key pattern and can orphan discoverable credentials on physical keys.</p>
+                        <!-- workaround:trusted-devices-can-be-single-enrollment-without-backup-key-support -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume Claude Trusted devices currently support multiple concurrent hardware authenticators. Keep email magic link or another account recovery path available, document which physical key is enrolled, and avoid repeated key swaps unless you can manage resident credentials with vendor tooling.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82095" target="_blank">#82095</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="82096" id="mcp-oauth-redirect-uri-localhost-can-break-ip-literal-allowlists" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1442</span>
+                <span class="kl-cat">MCP &amp; integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>MCP OAuth redirect_uri localhost can break IP-literal allowlists.</h3>
+            <p>Claude Code 2.1.220 reportedly emits `http://localhost:&lt;port&gt;/callback` as the MCP OAuth redirect_uri while the callback listener binds to `127.0.0.1`. IdPs that allowlist loopback by IP literal, such as locked-down Atlassian, can block `localhost` before the authorization code returns even though the same server authenticates from clients using `127.0.0.1`.</p>
+                        <!-- workaround:mcp-oauth-redirect-uri-localhost-can-break-ip-literal-allowlists -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For MCP OAuth failures where the browser blocks `localhost`, check whether the IdP allowlist permits only `127.0.0.1`. Use another MCP client or a controlled local patch only if acceptable, and preserve Claude Code version, callback port, IdP policy, emitted redirect_uri, and the comparison client that succeeds with the IP literal.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82096" target="_blank">#82096</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

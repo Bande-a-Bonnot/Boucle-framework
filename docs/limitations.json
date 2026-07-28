@@ -1,46 +1,46 @@
 {
   "version": "0.13.0",
-  "count": 1431,
+  "count": 1442,
   "categories": {
     "Hook behavior & events": 187,
     "Permission system": 130,
     "Hook bypass & evasion": 102,
     "MCP & plugin issues": 74,
     "Subagent & spawned agents": 68,
-    "Desktop & IDE integration": 51,
+    "Desktop & IDE integration": 53,
     "TUI & display": 35,
     "CLI & terminal": 31,
     "Context & memory": 30,
     "Platform & compatibility": 30,
-    "MCP & integrations": 26,
+    "MCP & integrations": 27,
     "Configuration behavior": 23,
     "Performance & cost": 23,
+    "Cowork & remote": 21,
     "Tool behavior": 21,
-    "Cowork & remote": 20,
     "Agents & subagents": 19,
+    "Auth & accounts": 17,
     "Core & session management": 17,
+    "Model behavior": 17,
     "Sandbox & permissions": 17,
     "Security & trust boundaries": 17,
-    "Auth & accounts": 16,
-    "Model behavior": 16,
+    "Data integrity": 16,
+    "Remote & cloud": 16,
     "VS Code extension": 16,
-    "Data integrity": 15,
-    "Remote & cloud": 15,
-    "Scheduling & remote triggers": 14,
+    "Scheduling & remote triggers": 15,
     "MCP integration": 13,
     "Worktree": 13,
     "File system & paths": 12,
     "Bash & shell execution": 11,
     "Plugin & channel system": 11,
-    "UX & display": 10,
+    "UX & display": 11,
     "hooks": 9,
     "Permissions & safety": 9,
     "Scheduled tasks": 9,
+    "Telemetry & insights": 9,
     "auth": 8,
     "Configuration & settings": 8,
     "Desktop & platform bugs": 8,
     "Git & repository safety": 8,
-    "Telemetry & insights": 8,
     "MCP": 7,
     "Model behavior & output": 7,
     "Permissions": 7,
@@ -187,9 +187,9 @@
   },
   "severity_counts": {
     "CRITICAL": 127,
-    "HIGH": 751,
-    "LOW": 109,
-    "MEDIUM": 444
+    "HIGH": 757,
+    "LOW": 110,
+    "MEDIUM": 448
   },
   "entries": [
     {
@@ -18425,30 +18425,173 @@
       "date_added": "2026-07-28",
       "description": "Headless Claude Code subprocesses with hooks registered can reportedly throw an unhandled ZodError when a hook callback round trip delivers `undefined` where `control_response` expects an object. The subprocess can die before its first turn with zero cost and no session ID, and some fully headless paths surface a misleading user-aborted message.",
       "workaround": "Guard hook callback code against undefined input, log callback payload shapes, and add one-shot retries around zero-cost headless spawn deaths. For upstream reports, preserve the hook event type, stream-json mode, ZodError stack, cost/session fields, and whether subagent Stop hooks were involved."
+    },
+    {
+      "id": "local-session-transcripts-delete-after-retention-without-warning",
+      "title": "Local session transcripts can be deleted after retention without warning.",
+      "category": "Data integrity",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82084"
+      ],
+      "date_added": "2026-07-28",
+      "description": "Claude Code can apply a default 30-day cleanup period to local session transcripts at startup. A reported user lost months of conversation context with no prior warning, onboarding notice, archive step, or recovery path, even though transcripts often contain reasoning and decisions not preserved in generated project files.",
+      "workaround": "Treat local session JSONL files as retention-limited unless you have verified settings. For long-running or regulated work, archive `~/.claude/projects` outside Claude Code before startup or upgrades, surface `cleanupPeriodDays` in team setup docs, and keep durable summaries or exports for decisions that must survive transcript cleanup."
+    },
+    {
+      "id": "askuserquestion-preview-can-hide-decision-content",
+      "title": "AskUserQuestion previews can hide decision-critical content.",
+      "category": "UX & display",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82086"
+      ],
+      "date_added": "2026-07-28",
+      "description": "AskUserQuestion option previews can collapse most of a multi-line preview behind an `N lines hidden` marker with no expand or scroll control, even when the terminal has unused vertical space. Users cannot inspect tables, code snippets, or explanations that are meant to drive the choice while the dialog is open.",
+      "workaround": "Keep AskUserQuestion preview text short, and put any decisive comparison data in the main prompt body or an artifact the user can inspect before the dialog. If a preview is truncated, reject the dialog and ask for a plain-text option dump rather than choosing from hidden content."
+    },
+    {
+      "id": "mobile-code-view-can-hide-mid-turn-assistant-narration",
+      "title": "Mobile Code view can hide mid-turn assistant narration.",
+      "category": "Desktop & IDE integration",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82087"
+      ],
+      "date_added": "2026-07-28",
+      "description": "In mobile views of Claude Code sessions, assistant narration between tool calls can be folded into the collapsed tool-activity chip. The final assistant message may then refer to discoveries or decisions the mobile reader never saw, making the turn look like it starts mid-story even though the hidden transcript contains the missing context.",
+      "workaround": "Make final messages self-contained when a session may be monitored from mobile. For important background work, restate the key discovery, decision, and artifact in the final answer, and verify from desktop, web, or the raw transcript before assuming mobile showed all mid-turn narration."
+    },
+    {
+      "id": "model-can-claim-measurements-without-valid-coverage",
+      "title": "Model can claim measurements without valid coverage.",
+      "category": "Model behavior",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82088"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A production-app report describes Claude Opus 5 fixes that introduced regressions, tests that could not fail, incorrect codebase counts, and confident claims such as measuring both write paths when only one path was exercised. The common failure is treating text search, isolated unit tests, or inferred code reading as proof of real behavioral coverage.",
+      "workaround": "Require measurement claims to include the exact command, fixture, or UI path used. For regression tests, temporarily reintroduce the defect or equivalent mutation to verify the test fails. Separate code-inferred risks from behavior observed in the running product, and use an independent review pass before declaring high-risk data or workflow changes complete."
+    },
+    {
+      "id": "remotetrigger-egress-policy-can-block-legitimate-runtime-domains",
+      "title": "RemoteTrigger egress policy can block legitimate runtime domains.",
+      "category": "Scheduling & remote triggers",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82090"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A RemoteTrigger report found the cloud sandbox returning CONNECT 403 for common open-license image sources, Wikimedia and Wikipedia domains, search engines, an AI-image CDN, and the user's own publishing domain for multiple days. The in-sandbox README exposed no agent-side allowlist override, leaving scheduled automation unable to fetch legitimate inputs.",
+      "workaround": "Test required network domains from inside the RemoteTrigger sandbox before relying on scheduled cloud execution. Move blocked fetch steps to local or another approved runner, stage needed assets on domains already allowed, and include timestamps, hostnames, and CONNECT failures when asking support to review the egress policy."
+    },
+    {
+      "id": "cowork-amd-apu-svm-boot-failure-can-depend-on-uma-framebuffer",
+      "title": "Cowork AMD APU SVM boot failures can depend on UMA framebuffer settings.",
+      "category": "Cowork & remote",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82091"
+      ],
+      "date_added": "2026-07-28",
+      "description": "On an AMD APU laptop, enabling SVM so Cowork can run its sandbox caused Windows to black-screen before logs or crash dumps were written when BIOS UMA Frame Buffer Size was pinned manually. Setting UMA Frame Buffer Size to Auto allowed Windows to boot with the hypervisor active, but Cowork guidance only reported generic virtualization-disabled advice.",
+      "workaround": "For AMD APU systems where Cowork reports 0x80370102 or Windows fails to boot after enabling SVM, check BIOS UMA Frame Buffer Size and try Auto before assuming SVM, Hyper-V features, or Windows build are the root cause. Preserve firmware model, Windows build, HypervisorPresent output, and event-log evidence for support."
+    },
+    {
+      "id": "desktop-bootstrap-otlp-can-omit-required-gateway-auth-headers",
+      "title": "Desktop bootstrap OTLP config can omit required gateway auth headers.",
+      "category": "Telemetry & insights",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82092"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A self-hosted Claude gateway with Desktop bootstrap and telemetry forwarding can return an `otlpEndpoint` pointing at its own bearer-gated OTLP ingest but omit `otlpHeaders`. Claude Desktop then posts telemetry without credentials and every metrics or logs flush is rejected as `missing_token`, while CLI telemetry through the same gateway works.",
+      "workaround": "Do not assume Desktop telemetry is reaching the collector just because bootstrap and inference work. Inspect gateway ingest logs for missing-token rejects, and choose between unauthenticated OTLP termination ahead of the gateway, MDM-only Desktop telemetry, or disabling bootstrap telemetry until the gateway returns usable per-user `otlpHeaders`."
+    },
+    {
+      "id": "ultraplan-web-approval-can-trigger-cloud-execution-instead-of-local-return",
+      "title": "Ultraplan web approval can trigger cloud execution instead of local return.",
+      "category": "Remote & cloud",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82093"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A CLI-originated plan sent to Ultraplan for browser refinement can begin executing in the cloud as soon as the user approves it in the web UI. The flow does not clearly separate plan approval from execution venue, so users intending to refine remotely and implement locally can be moved into cloud execution and PR delivery unexpectedly.",
+      "workaround": "Before approving an Ultraplan-refined plan in the web UI, assume approval may execute in the cloud unless the UI explicitly offers a return-to-CLI action. Copy or export the refined plan back to the local session manually when local files, local tests, or IDE context are required."
+    },
+    {
+      "id": "desktop-sidebar-global-filter-can-read-as-project-row-control",
+      "title": "Desktop sidebar global filter can read as a project-row control.",
+      "category": "Desktop & IDE integration",
+      "severity": "LOW",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82094"
+      ],
+      "date_added": "2026-07-28",
+      "description": "In the Desktop Code tab sidebar, the global filter and sort button can render inline with the first visible project group row beside that row's `+` control. As the list scrolls, the button appears to attach to whichever project is topmost, making a global control look project-specific.",
+      "workaround": "When a sliders or tune icon appears beside only the first visible project row, treat it as a sidebar-wide filter/sort control rather than per-project state. If debugging apparent per-project differences, first scroll the list and check whether the icon follows the top row."
+    },
+    {
+      "id": "trusted-devices-can-be-single-enrollment-without-backup-key-support",
+      "title": "Trusted devices can be single-enrollment without backup-key support.",
+      "category": "Auth & accounts",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82095"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A Claude Desktop Windows Trusted devices report says hardware FIDO2 enrollment is replace-only: enrolling a second authenticator requires removing the current trusted device and re-enrolling. That prevents the normal primary-plus-backup hardware-key pattern and can orphan discoverable credentials on physical keys.",
+      "workaround": "Do not assume Claude Trusted devices currently support multiple concurrent hardware authenticators. Keep email magic link or another account recovery path available, document which physical key is enrolled, and avoid repeated key swaps unless you can manage resident credentials with vendor tooling."
+    },
+    {
+      "id": "mcp-oauth-redirect-uri-localhost-can-break-ip-literal-allowlists",
+      "title": "MCP OAuth redirect_uri localhost can break IP-literal allowlists.",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82096"
+      ],
+      "date_added": "2026-07-28",
+      "description": "Claude Code 2.1.220 reportedly emits `http://localhost:<port>/callback` as the MCP OAuth redirect_uri while the callback listener binds to `127.0.0.1`. IdPs that allowlist loopback by IP literal, such as locked-down Atlassian, can block `localhost` before the authorization code returns even though the same server authenticates from clients using `127.0.0.1`.",
+      "workaround": "For MCP OAuth failures where the browser blocks `localhost`, check whether the IdP allowlist permits only `127.0.0.1`. Use another MCP client or a controlled local patch only if acceptable, and preserve Claude Code version, callback port, IdP policy, emitted redirect_uri, and the comparison client that succeeds with the IP literal."
     }
   ],
   "status_summary": {
-    "open": 1417,
+    "open": 1428,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 127,
-    "high": 751,
-    "low": 109,
-    "medium": 444
+    "high": 757,
+    "low": 110,
+    "medium": 448
   },
   "lastUpdated": "2026-07-28",
   "stats": {
-    "total": 1431,
+    "total": 1442,
     "critical": 127,
-    "high": 751,
-    "medium": 444,
-    "low": 109,
-    "open": 1417,
+    "high": 757,
+    "medium": 448,
+    "low": 110,
+    "open": 1428,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-28",
-  "total": 1431
+  "total": 1442
 }
