@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1288,
+  "count": 1291,
   "categories": {
     "Hook behavior & events": 186,
     "Permission system": 127,
     "Hook bypass & evasion": 102,
-    "MCP & plugin issues": 66,
+    "MCP & plugin issues": 67,
     "Subagent & spawned agents": 58,
     "Desktop & IDE integration": 43,
     "TUI & display": 29,
@@ -21,11 +21,11 @@
     "Security & trust boundaries": 16,
     "Core & session management": 14,
     "Data integrity": 14,
+    "Remote & cloud": 14,
     "VS Code extension": 14,
+    "Cowork & remote": 13,
     "MCP integration": 13,
-    "Remote & cloud": 13,
     "Auth & accounts": 12,
-    "Cowork & remote": 12,
     "Plugin & channel system": 11,
     "Worktree": 11,
     "Bash & shell execution": 10,
@@ -183,9 +183,9 @@
   },
   "severity_counts": {
     "CRITICAL": 101,
-    "HIGH": 674,
+    "HIGH": 675,
     "LOW": 105,
-    "MEDIUM": 408
+    "MEDIUM": 410
   },
   "entries": [
     {
@@ -1453,9 +1453,11 @@
       "category": "Hook behavior & events",
       "severity": "MEDIUM",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/42178"
+        "https://github.com/anthropics/claude-code/issues/42178",
+        "https://github.com/anthropics/claude-code/issues/81818"
       ],
-      "description": "The only way to prevent agent invocation from a UserPromptSubmit hook is \"decision\": \"block\", which displays \"operation blocked by hook\" in the transcript with error framing. There is no decision that says \"I handled this, here is the output\" without the blocked label. The alternatives are additionalContext (agent still runs, costing latency and tokens), continue: false (halts the entire session),",
+      "description": "The only way for a UserPromptSubmit hook to prevent work that it has already handled or intentionally skipped is to return a block-style decision. Claude Code renders that as an operation-blocked notice with error framing, and a fresh report confirms suppressOutput does not hide the client-side notice because it is constructed from the reason field rather than hook stdout. There is no quiet \"handled\" or \"skip\" decision for benign cancellations.",
+      "workaround": "Use a visible block reason for policy enforcement and reserve quiet no-op behavior for paths that can safely return allow without triggering the model. For plugins that intentionally cancel routine prompts, batch or rate-limit the cancellations where possible and document that the visible block notice is expected rather than a model or hook failure.",
       "status": "open"
     },
     {
@@ -1477,9 +1479,11 @@
       "issues": [
         "https://github.com/anthropics/claude-code/issues/15813",
         "https://github.com/anthropics/claude-code/issues/25121",
-        "https://github.com/anthropics/claude-code/issues/40655"
+        "https://github.com/anthropics/claude-code/issues/40655",
+        "https://github.com/anthropics/claude-code/issues/81825"
       ],
-      "description": "Stop hooks fire before the transcript JSONL file is fully flushed to disk. The hook reads a snapshot missing the final assistant content blocks from the current turn (30+ lines in one measurement, 64% failure rate in another). Any Stop hook that reads the transcript to inspect the assistant's last output will see stale data. This affects completion-promise detection, audit logging, and any workflo",
+      "description": "Stop hooks can fire before the current assistant message has been written to the transcript JSONL. Reports show transcript snapshots missing final assistant content blocks, and one Claude Code 2.1.220 official-plugin report measured the first Stop hook invocation with zero assistant lines even though the hook input already contained last_assistant_message. Any Stop hook that reads only the transcript to inspect the assistant's last output can see stale data or terminate a loop incorrectly.",
+      "workaround": "Prefer the harness-provided last_assistant_message field when it is present, and treat transcript parsing as a fallback rather than the primary source of the current turn's text. If a Stop hook must parse JSONL, make the missing-current-turn case fail closed or continue deliberately instead of deleting loop state, and test first-turn behavior separately from later iterations.",
       "status": "open"
     },
     {
@@ -16552,30 +16556,69 @@
       "date_added": "2026-07-28",
       "description": "A reported Claude Code CLI setup gave two unrelated interactive sessions in the same project the identical generated name. The name matched a completed spec file under the project directory, and the reporter confirmed the phrase never appeared in at least one session transcript. This suggests the naming heuristic can draw from project filesystem state instead of the live conversation.",
       "workaround": "For projects with many specs, generated docs, or stale planning files, do not rely on Claude Code's auto-generated session names to identify resume targets. Record the session id and task externally, rename important sessions explicitly where possible, and confirm the transcript or cwd before resuming work from a session picker."
+    },
+    {
+      "id": "marketplace-agent-registry-can-drop-agents-during-auto-update",
+      "title": "Marketplace agent registry can drop plugin agents during auto-update resume.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81822"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Linux daemon resume dropped every custom agent from one git-backed marketplace while that marketplace had a fresh auto-update in flight. Built-in agents and another marketplace survived, MCP tools later reconnected, and all agent files remained present on disk, but the process-lifetime agent registry never rescanned the affected marketplace. Workflow agent() calls for the missing agent types then failed with agent type not found.",
+      "workaround": "For workflows that depend on marketplace-provided agents, verify the available agent list after resuming a long-lived or daemon session, especially after marketplace publishes. Keep a degraded fallback path that can run with general-purpose plus the intended system prompt, and restart the session after plugin updates until Claude Code exposes an agent registry rescan or a loud startup scan failure."
+    },
+    {
+      "id": "cowork-home-directory-grant-can-conflict-with-session-storage-guard",
+      "title": "Cowork home-directory grants can be refused by the session-storage guard.",
+      "category": "Cowork & remote",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81823"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Cowork session offered the user's home directory as a trusted or task-start folder, but a mid-session request_cowork_directory call for the same path was refused before a user approval dialog appeared. The guard appears to reject the whole home directory because Claude's internal session storage is a subtree under AppData\\Roaming\\Claude, making the start-time folder picker and mid-task grant path disagree.",
+      "workaround": "Prefer granting the narrowest project, OneDrive, or Google Drive subfolder that does not contain Claude's internal session storage. If broad home access is needed, expect the mid-session grant to fail and mount required folders at task start instead. Before writes, confirm which folders are actually connected rather than trusting the Trusted Cowork folders list alone."
+    },
+    {
+      "id": "desktop-ssh-remote-install-can-fail-before-writing-remote-files",
+      "title": "Desktop SSH remote install can fail before writing any remote files.",
+      "category": "Remote & cloud",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81821"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Claude Desktop Code-tab SSH connection to a Debian container returned NO_INSTALL_RESULT even though SSH authentication succeeded, the remote home directory was writable, the Claude CLI was already installed, and the remote network was reachable. Remote-side diagnostics showed no ~/.claude/remote directory was ever created, and ssh.log was empty, suggesting a client-side install failure before any transfer or remote filesystem activation.",
+      "workaround": "When NO_INSTALL_RESULT appears, verify whether the remote was touched at all before debugging remote permissions. Check Desktop main.log, ssh.log, remote ~/.claude/remote paths, manual ssh, remote claude --version, and remote write/network tests separately. If the remote is clean and healthy, treat it as a Desktop client install path failure and use the standalone CLI or a different remote target while preserving logs for support."
     }
   ],
   "status_summary": {
-    "open": 1274,
+    "open": 1277,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 101,
-    "high": 674,
+    "high": 675,
     "low": 105,
-    "medium": 408
+    "medium": 410
   },
   "lastUpdated": "2026-07-28",
   "stats": {
-    "total": 1288,
+    "total": 1291,
     "critical": 101,
-    "high": 674,
-    "medium": 408,
+    "high": 675,
+    "medium": 410,
     "low": 105,
-    "open": 1274,
+    "open": 1277,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-28",
-  "total": 1288
+  "total": 1291
 }
