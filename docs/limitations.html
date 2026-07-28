@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1312</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-28.</span></p>
+        <p class="subtitle"><span id="total-count">1319</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-28.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -2428,7 +2428,7 @@
             <p>When Opus 4.6 1M is selected, the auto-mode safety classifier sends requests to claude-sonnet-4-6[1m] instead of the correct suffix. If Sonnet 1M is not available in the user&#x27;s API plan, Bash and other execution tools fail entirely. Not hookable; the classifier runs before any tool call reaches hooks.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/38537" target="_blank">#38537</a></div>
         </div>
-        <div class="kl-entry" data-category="Permission system" data-issues="38618" id="safety-classifier-outage-blocks-all-tools" data-severity="medium" data-status="open">
+        <div class="kl-entry" data-category="Permission system" data-issues="38618 81865" id="safety-classifier-outage-blocks-all-tools" data-severity="medium" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#217</span>
                 <span class="kl-cat">Permission system</span>
@@ -2436,7 +2436,7 @@
             </div>
             <h3>Safety classifier outage blocks all tool execution in auto mode.</h3>
             <p>When the Sonnet classifier powering auto-mode safety is unavailable (API errors), all execution tools are blocked and only read-only tools work. This creates a complete enforcement outage. Not hookable; the classifier failure happens at the permission layer before hooks fire.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/38618" target="_blank">#38618</a></div>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/38618" target="_blank">#38618</a>, <a href="https://github.com/anthropics/claude-code/issues/81865" target="_blank">#81865</a></div>
         </div>
         <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="34713" id="false-hook-error-labels-end-turns" data-severity="medium" data-status="open">
             <div class="kl-header">
@@ -14466,6 +14466,90 @@
                         <!-- workaround:assistant-output-can-fabricate-role-turns-that-later-look-like-user-input -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For long listening-style sessions, inspect transcript row types when role markers or unexpected user instructions appear in assistant output. Do not execute, summarize, or quote fabricated `user` blocks as real user requests unless the session JSONL shows a matching user row. If the session starts ingesting assistant-generated role text, stop or fork the session with a clean summary that excludes the fabricated block.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81855" target="_blank">#81855</a></div>
+        </div>
+        <div class="kl-entry" data-category="Telemetry &amp; insights" data-issues="81859" id="typed-prompts-can-disappear-from-otel-user-prompt-events" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1313</span>
+                <span class="kl-cat">Telemetry &amp; insights</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Typed prompts can disappear from OTel `user_prompt` events.</h3>
+            <p>A reported Claude Code 2.1.220 regression emits `claude_code.user_prompt` only for slash-command dispatches, while ordinary typed prompt submissions run normally but produce no event. The reporter verified 2.1.206 as good with the same collector and found no telemetry export errors, so prompt-volume dashboards can silently read slash-command usage instead of real prompt volume.</p>
+                        <!-- workaround:typed-prompts-can-disappear-from-otel-user-prompt-events -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on `claude_code.user_prompt` alone for prompt-count alerts on affected versions. Cross-check prompt volume against transcript rows, request IDs, or other turn events, and test both typed prompts and slash commands after Claude Code upgrades before treating OTel prompt counts as accurate.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81859" target="_blank">#81859</a></div>
+        </div>
+        <div class="kl-entry" data-category="CLI &amp; terminal" data-issues="81860" id="print-mode-can-end-with-unanswerable-interactive-prompts" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1314</span>
+                <span class="kl-cat">CLI &amp; terminal</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Print mode can end with unanswerable interactive prompts.</h3>
+            <p>A reported Claude Code 2.1.207 `claude -p --dangerously-skip-permissions` run finished with exit code 0 while the visible output asked the user whether to commit a follow-up settings change. In non-interactive print mode there is no next turn to answer, leaving scripted callers unable to tell whether the requested edit was complete or whether the command ended in a dead-end proposal.</p>
+                        <!-- workaround:print-mode-can-end-with-unanswerable-interactive-prompts -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat `-p` output as a monologue unless your wrapper enforces a final-state contract. For unattended edits, ask for an explicit machine-checkable completion marker, inspect the target files after exit, and fail the wrapper if the final response ends with a question or unresolved follow-up action.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81860" target="_blank">#81860</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="81862" id="ide-selection-context-can-bypass-deny-rules-on-wsl-style-paths" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1315</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>IDE selection context can bypass deny rules on WSL-style paths.</h3>
+            <p>A reported native Windows Claude Code 2.1.220 session used a `Read(**/.env)` deny rule that blocked the Read tool, but the VS Code extension still attached selected `.env` text when it reported the path as `/mnt/c/...`. Adding an extra WSL-style deny pattern stopped the IDE selection channel, suggesting that deny matching for editor context can compare path spellings literally instead of normalizing equivalent Windows and WSL paths.</p>
+                        <!-- workaround:ide-selection-context-can-bypass-deny-rules-on-wsl-style-paths -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For sensitive files on Windows, test deny rules against both file-tool reads and IDE selection/open-file context. Add explicit patterns for every path spelling your IDE can report, including `/mnt/&lt;drive&gt;/...`, and avoid selecting secret-bearing files in connected editors until readback proves no selection context is attached.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81862" target="_blank">#81862</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="81863" id="stale-mcp-tool-references-can-crash-requests-with-api-400" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1316</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Stale MCP tool references can crash requests with API 400.</h3>
+            <p>A reported Claude Code 2.1.220 Linux VS Code session repeatedly failed requests with API 400 errors naming tool references that were not present in the available tool set, including stale MCP-style names and a plain tool name. The error happened before the user received a recoverable assistant turn, making the session depend on internal tool-reference bookkeeping matching the active MCP registry.</p>
+                        <!-- workaround:stale-mcp-tool-references-can-crash-requests-with-api-400 -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When a turn fails with `Tool reference ... not found in available tools`, restart the session after disabling or refreshing recently changed MCP servers and plugins. Capture the unavailable tool name, active MCP config, and version before retrying, and avoid long-running sessions across MCP registry changes when tool availability is critical.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81863" target="_blank">#81863</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="81864" id="ios-simulator-panel-can-stay-black-after-frame-source-recovers" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1317</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>iOS Simulator panel can stay black after the frame source recovers.</h3>
+            <p>A reported macOS Claude Code iOS Simulator panel stayed black after a host reboot even after the underlying simulator was recovered and direct screenshot/tap operations worked again. Detach and attach did not force a clean stream renegotiation, so the live panel continued to show stale black output while Simulator.app rendered correctly.</p>
+                        <!-- workaround:ios-simulator-panel-can-stay-black-after-frame-source-recovers -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> After macOS or simulator restarts, verify both the Claude Code panel and the underlying Simulator.app view before trusting visual state. If the panel remains black after `detach` and `attach`, bypass it with the native Simulator.app window and restart the Claude Code simulator integration before doing visual inspection or tap-heavy work.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81864" target="_blank">#81864</a></div>
+        </div>
+        <div class="kl-entry" data-category="Core &amp; session management" data-issues="81868" id="dead-sessions-can-be-silently-adopted-as-background-agents" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1318</span>
+                <span class="kl-cat">Core &amp; session management</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Dead sessions can be silently adopted as background agents.</h3>
+            <p>A reported Claude Code 2.1.220 terminal session died mid-turn, then nearly two hours later the daemon silently injected a meta continuation and adopted the dead session as a background agent. The original session then refused `/resume` because it was still running elsewhere, forcing the user toward agent-view recovery or a divergent fork instead of an in-place reclaim.</p>
+                        <!-- workaround:dead-sessions-can-be-silently-adopted-as-background-agents -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For critical long-lived sessions, consider disabling automatic adoption/background task features until the lifecycle is explicit. If a session dies mid-turn, inspect the agent list and transcript metadata before resuming, and prefer a clean fork with a verified summary when the original is daemon-held and cannot be foregrounded.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81868" target="_blank">#81868</a></div>
+        </div>
+        <div class="kl-entry" data-category="Model routing &amp; identity" data-issues="81870" id="auto-restarted-sessions-can-use-exhausted-default-model" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1319</span>
+                <span class="kl-cat">Model routing &amp; identity</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Auto-restarted sessions can use an exhausted default model.</h3>
+            <p>A reported Claude Code 2.1.219 session had been running successfully on Opus 5, but after the CLI auto-restarted it retried under the saved default Fable 5 model, which was usage-limit exhausted. The session stayed down for about 89 minutes until the user manually changed the saved default, even though manual resume paths are documented as preserving the transcript model.</p>
+                        <!-- workaround:auto-restarted-sessions-can-use-exhausted-default-model -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For unattended sessions, make the saved default model match the model the session is expected to use, especially near usage limits. After auto-restarts, check request errors for a model different from the active transcript model, and have supervisors alert on repeated 429s for a non-selected default rather than waiting for manual reconnect.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81870" target="_blank">#81870</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

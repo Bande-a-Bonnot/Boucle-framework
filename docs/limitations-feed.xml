@@ -7,6 +7,62 @@
   <updated>2026-07-28T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Auto-restarted sessions can use an exhausted default model.</title>
+    <id>https://framework.boucle.sh/limitations.html#auto-restarted-sessions-can-use-exhausted-default-model</id>
+    <link href="https://framework.boucle.sh/limitations.html#auto-restarted-sessions-can-use-exhausted-default-model"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.219 session had been running successfully on Opus 5, but after the CLI auto-restarted it retried under the saved default Fable 5 model, which was usage-limit exhausted. The session stayed down for about 89 minutes until the user manually changed the saved default, even though manual resume paths are documented as preserving the transcript model.</summary>
+    <category term="Model routing &amp; identity"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Dead sessions can be silently adopted as background agents.</title>
+    <id>https://framework.boucle.sh/limitations.html#dead-sessions-can-be-silently-adopted-as-background-agents</id>
+    <link href="https://framework.boucle.sh/limitations.html#dead-sessions-can-be-silently-adopted-as-background-agents"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.220 terminal session died mid-turn, then nearly two hours later the daemon silently injected a meta continuation and adopted the dead session as a background agent. The original session then refused `/resume` because it was still running elsewhere, forcing the user toward agent-view recovery or a divergent fork instead of an in-place reclaim.</summary>
+    <category term="Core &amp; session management"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] iOS Simulator panel can stay black after the frame source recovers.</title>
+    <id>https://framework.boucle.sh/limitations.html#ios-simulator-panel-can-stay-black-after-frame-source-recovers</id>
+    <link href="https://framework.boucle.sh/limitations.html#ios-simulator-panel-can-stay-black-after-frame-source-recovers"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported macOS Claude Code iOS Simulator panel stayed black after a host reboot even after the underlying simulator was recovered and direct screenshot/tap operations worked again. Detach and attach did not force a clean stream renegotiation, so the live panel continued to show stale black output while Simulator.app rendered correctly.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Stale MCP tool references can crash requests with API 400.</title>
+    <id>https://framework.boucle.sh/limitations.html#stale-mcp-tool-references-can-crash-requests-with-api-400</id>
+    <link href="https://framework.boucle.sh/limitations.html#stale-mcp-tool-references-can-crash-requests-with-api-400"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.220 Linux VS Code session repeatedly failed requests with API 400 errors naming tool references that were not present in the available tool set, including stale MCP-style names and a plain tool name. The error happened before the user received a recoverable assistant turn, making the session depend on internal tool-reference bookkeeping matching the active MCP registry.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] IDE selection context can bypass deny rules on WSL-style paths.</title>
+    <id>https://framework.boucle.sh/limitations.html#ide-selection-context-can-bypass-deny-rules-on-wsl-style-paths</id>
+    <link href="https://framework.boucle.sh/limitations.html#ide-selection-context-can-bypass-deny-rules-on-wsl-style-paths"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported native Windows Claude Code 2.1.220 session used a `Read(**/.env)` deny rule that blocked the Read tool, but the VS Code extension still attached selected `.env` text when it reported the path as `/mnt/c/...`. Adding an extra WSL-style deny pattern stopped the IDE selection channel, suggesting that deny matching for editor context can compare path spellings literally instead of normalizing equivalent Windows and WSL paths.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Print mode can end with unanswerable interactive prompts.</title>
+    <id>https://framework.boucle.sh/limitations.html#print-mode-can-end-with-unanswerable-interactive-prompts</id>
+    <link href="https://framework.boucle.sh/limitations.html#print-mode-can-end-with-unanswerable-interactive-prompts"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.207 `claude -p --dangerously-skip-permissions` run finished with exit code 0 while the visible output asked the user whether to commit a follow-up settings change. In non-interactive print mode there is no next turn to answer, leaving scripted callers unable to tell whether the requested edit was complete or whether the command ended in a dead-end proposal.</summary>
+    <category term="CLI &amp; terminal"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Typed prompts can disappear from OTel `user_prompt` events.</title>
+    <id>https://framework.boucle.sh/limitations.html#typed-prompts-can-disappear-from-otel-user-prompt-events</id>
+    <link href="https://framework.boucle.sh/limitations.html#typed-prompts-can-disappear-from-otel-user-prompt-events"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.220 regression emits `claude_code.user_prompt` only for slash-command dispatches, while ordinary typed prompt submissions run normally but produce no event. The reporter verified 2.1.206 as good with the same collector and found no telemetry export errors, so prompt-volume dashboards can silently read slash-command usage instead of real prompt volume.</summary>
+    <category term="Telemetry &amp; insights"/>
+  </entry>
+  <entry>
     <title>[CRITICAL] Assistant output can fabricate role turns that later look like user input.</title>
     <id>https://framework.boucle.sh/limitations.html#assistant-output-can-fabricate-role-turns-that-later-look-like-user-input</id>
     <link href="https://framework.boucle.sh/limitations.html#assistant-output-can-fabricate-role-turns-that-later-look-like-user-input"/>
@@ -109,61 +165,5 @@
     <updated>2026-07-28T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.220 subagent that hit `stop_reason: max_tokens` continued its logical final answer in a second assistant message, but the parent received only the final message. Both synchronous Agent tool results and background-agent task notifications reported completed status while silently dropping the earlier chunk; one real extraction lost about 84 percent of the generated content even though it remained present in the subagent transcript.</summary>
     <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows Desktop GPU-process crash can wedge the main process.</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-desktop-gpu-process-crash-can-wedge-main-process</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-desktop-gpu-process-crash-can-wedge-main-process"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Windows Claude Desktop 1.24012.9 MSIX install on a hybrid AMD GPU laptop twice logged `GPU process gone` with the same exit code, then stopped producing heartbeat or shutdown logs for 8 to 18 minutes. Relaunch alone was not enough in either incident; the app needed Windows Settings &gt; Apps &gt; Claude &gt; Repair before it would start cleanly again, and Windows produced no Claude.exe crash report.</summary>
-    <category term="Stability &amp; crashes"/>
-  </entry>
-  <entry>
-    <title>[LOW] Desktop app does not discover valid on-disk CLI transcripts.</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-app-does-not-discover-valid-on-disk-cli-transcripts</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-app-does-not-discover-valid-on-disk-cli-transcripts"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported macOS cross-machine workflow copied valid, readable Claude Code JSONL transcripts into the matching `~/.claude/projects/&lt;project-key&gt;/` directory. The CLI listed all sessions from disk, but the Desktop app only showed conversations indexed in its per-installation Electron IndexedDB store. Valid on-disk transcripts were therefore invisible to Desktop with no import or rescan path.</summary>
-    <category term="Core &amp; session management"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] permissions.ask can skip git after a cross-directory cd prefix.</title>
-    <id>https://framework.boucle.sh/limitations.html#permissions-ask-can-skip-git-after-cross-directory-cd-prefix</id>
-    <link href="https://framework.boucle.sh/limitations.html#permissions-ask-can-skip-git-after-cross-directory-cd-prefix"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.219/2.1.220 Windows Git Bash setup with `permissions.ask` for destructive git commands prompted for `git clean -f -n` in the session cwd, but silently executed `cd /path/to/other-repo &amp;&amp; git clean -f -n` with no prompt. The same `cd` prefix still prompted for non-git binaries, and the non-dry-run form deleted files without the configured approval gate.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Auto-memory can silently miss git-worktree sessions.</title>
-    <id>https://framework.boucle.sh/limitations.html#auto-memory-can-silently-miss-git-worktree-sessions</id>
-    <link href="https://framework.boucle.sh/limitations.html#auto-memory-can-silently-miss-git-worktree-sessions"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>Reported Claude Code Desktop worktree sessions under `&lt;repo&gt;/.claude/worktrees/&lt;name&gt;` inconsistently loaded the origin project&#x27;s auto-memory. Some sessions quoted MEMORY.md-only facts verbatim, while others had no memory content at all despite the same repository and same machine. The missing state was silent, and session metadata exposed originCwd while worktree-path-keyed project directories lacked the origin memory store.</summary>
-    <category term="Context &amp; memory"/>
-  </entry>
-  <entry>
-    <title>[HIGH] macOS sleep-inhibitor handoff can drop all assertions mid-task.</title>
-    <id>https://framework.boucle.sh/limitations.html#macos-sleep-inhibitor-handoff-can-drop-all-assertions-mid-task</id>
-    <link href="https://framework.boucle.sh/limitations.html#macos-sleep-inhibitor-handoff-can-drop-all-assertions-mid-task"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.220 macOS setup renews short-lived `caffeinate -i -t 300` children every 240 seconds by killing the current process before spawning the replacement. Once the display is off and powerd&#x27;s display assertion is gone, that non-overlapped handoff can briefly leave zero sleep assertions, letting the Mac idle-sleep and suspend the CLI process tree during an in-flight response.</summary>
-    <category term="Platform &amp; compatibility"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Claude Code web repo picker can return empty despite GitHub App access.</title>
-    <id>https://framework.boucle.sh/limitations.html#code-web-repo-picker-can-return-empty-despite-github-app-access</id>
-    <link href="https://framework.boucle.sh/limitations.html#code-web-repo-picker-can-return-empty-despite-github-app-access"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported claude.ai/code repository picker returned `No repos match` for every search term, including an empty query, even though repositories had been granted to the Claude GitHub App. The report matches earlier backend repository indexing reset symptoms: the UI provides no local diagnostic and the failure can look like missing app permissions even when the grant exists.</summary>
-    <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Cowork and Code can return account-level 403 while Chat still works.</title>
-    <id>https://framework.boucle.sh/limitations.html#cowork-code-can-return-account-level-403-while-chat-works</id>
-    <link href="https://framework.boucle.sh/limitations.html#cowork-code-can-return-account-level-403-while-chat-works"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Windows Claude Desktop account could use regular Chat but every Cowork or Code start failed for more than ten days with 403 `Invalid authorization` and `VM service not running`. Re-login, regenerating `.claude/.credentials.json`, workspace reinstall, and PC restart did not help, and each attempt reached the server with a fresh request_id, suggesting a server-side Cowork authorization state distinct from normal Chat authentication.</summary>
-    <category term="Auth &amp; accounts"/>
   </entry>
 </feed>
