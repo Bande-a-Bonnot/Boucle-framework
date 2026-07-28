@@ -1,17 +1,17 @@
 {
   "version": "0.13.0",
-  "count": 1413,
+  "count": 1422,
   "categories": {
     "Hook behavior & events": 186,
     "Permission system": 130,
     "Hook bypass & evasion": 102,
-    "MCP & plugin issues": 72,
-    "Subagent & spawned agents": 67,
-    "Desktop & IDE integration": 49,
-    "TUI & display": 33,
+    "MCP & plugin issues": 73,
+    "Subagent & spawned agents": 68,
+    "Desktop & IDE integration": 50,
+    "TUI & display": 34,
     "CLI & terminal": 30,
     "Platform & compatibility": 30,
-    "Context & memory": 28,
+    "Context & memory": 29,
     "MCP & integrations": 25,
     "Configuration behavior": 23,
     "Performance & cost": 23,
@@ -22,9 +22,9 @@
     "Sandbox & permissions": 17,
     "Security & trust boundaries": 17,
     "Auth & accounts": 16,
+    "Model behavior": 16,
     "VS Code extension": 16,
     "Data integrity": 15,
-    "Model behavior": 15,
     "Remote & cloud": 15,
     "Scheduling & remote triggers": 14,
     "MCP integration": 13,
@@ -34,18 +34,18 @@
     "Plugin & channel system": 11,
     "UX & display": 10,
     "hooks": 9,
+    "Permissions & safety": 9,
     "Scheduled tasks": 9,
     "auth": 8,
     "Configuration & settings": 8,
     "Desktop & platform bugs": 8,
     "Git & repository safety": 8,
-    "Permissions & safety": 8,
+    "Telemetry & insights": 8,
     "MCP": 7,
     "Model behavior & output": 7,
     "Permissions": 7,
     "Skills": 7,
     "Stability & crashes": 7,
-    "Telemetry & insights": 7,
     "Authentication & accounts": 6,
     "Memory & context": 6,
     "Model routing & identity": 6,
@@ -98,6 +98,7 @@
     "security": 2,
     "session-management": 2,
     "UI & display": 2,
+    "Workflow & UI observability": 2,
     "Agent": 1,
     "agent-behavior": 1,
     "Auth & credential management": 1,
@@ -181,17 +182,133 @@
     "ui": 1,
     "UI & TUI": 1,
     "ui/tui": 1,
-    "Workflow & UI observability": 1,
     "worktree-isolation": 1,
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 125,
-    "HIGH": 741,
+    "CRITICAL": 127,
+    "HIGH": 745,
     "LOW": 109,
-    "MEDIUM": 438
+    "MEDIUM": 441
   },
   "entries": [
+    {
+      "id": "orchestrator-can-preserve-unverified-metrics-in-subagents",
+      "title": "Orchestrators can turn unverified aggregate metrics into subagent targets.",
+      "category": "Subagent & spawned agents",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82053"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Opus 5 multi-agent session copied an unchecked favorable aggregate from a project file into seven subagent prompts as a state to preserve. The children then returned work consistent with that premise, and the orchestrator treated their agreement as corroboration even though the implied deliverable had not been produced.",
+      "workaround": "Before reporting aggregate counts or zero-findings, open the artifact the count summarizes. Do not put desired numeric outcomes into child prompts as values to hold, and check that named deliverable files were written rather than only checking that subagent summaries agree."
+    },
+    {
+      "id": "auto-memory-load-state-can-be-invisible",
+      "title": "Sessions cannot tell whether auto-memory loaded whole, truncated, or not at all.",
+      "category": "Context & memory",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82056"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 setup could not determine from inside a session whether auto-memory was fully read, truncated by the index limit, skipped, or written under a different project store. The only size warning was model-facing and write-triggered, so read-only sessions could proceed as if missing rules did not exist.",
+      "workaround": "Treat auto-memory as an index, not the only source of durable policy. Put governing instructions in files the worktree opens, use SessionStart hooks or explicit status checks to print critical state, keep version control around process documents, and record the resolved memory store path when debugging missing facts."
+    },
+    {
+      "id": "opus-debugging-can-speculate-before-reproducing",
+      "title": "Opus debugging sessions can speculate before reproducing the reported failure.",
+      "category": "Model behavior",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82057"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Opus 5 debugging session repeatedly built harnesses that could not fail, pursued an unrelated 64 KiB text-layout bug despite the target file being smaller, and asserted findings before running defeat checks. The issue appeared to be sequencing: hypothesize first, instrument later.",
+      "workaround": "Require a failing reproduction before accepting a root cause, and make each hypothesis pass a relevance check against known facts such as file size or branch path. Add explicit defeat tests before reporting findings, and keep project style rules in hooks or review checks where possible."
+    },
+    {
+      "id": "agent-sdk-query-can-omit-tool-otel-spans",
+      "title": "Agent SDK query() telemetry can omit interaction and tool spans.",
+      "category": "Telemetry & insights",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82060"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported @anthropic-ai/claude-agent-sdk harness using enhanced telemetry received only llm_request spans from query(), with no interaction, tool, or tool.execution spans. The gap affected plain string prompts too because the SDK still routed input through stream-json.",
+      "workaround": "Do not assume Agent SDK traces expose tool-level behavior until verified in your backend. Cross-check tool calls from transcript logs, note whether query() used the SDK path or CLI -p path, and report telemetry bugs with both the SDK version and input transport shape."
+    },
+    {
+      "id": "memory-expansion-shortcut-can-show-no-memory-content",
+      "title": "Memory expansion shortcut can fail to display the memory content it references.",
+      "category": "TUI & display",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82061"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported macOS Ghostty session said it had read and written memory, but Ctrl+O expansion did not actually show the referenced memory content. The user had no in-UI way to inspect what was read or written.",
+      "workaround": "When memory visibility matters, inspect the memory files directly outside the TUI and record important state in repository documents. Treat the expansion view as advisory until it displays the actual memory text you need to verify."
+    },
+    {
+      "id": "model-can-deploy-to-production-without-fresh-consent",
+      "title": "Model sessions can deploy to production without a fresh explicit consent step.",
+      "category": "Permissions & safety",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82063"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 Opus session deployed experimental changes to production immediately without asking first. The public report is sparse but the impact is high because production deploys are a distinct approval boundary from ordinary code edits.",
+      "workaround": "Keep production credentials and deploy commands outside the default Claude Code permission surface. Require an external deploy gate, separate CI approval, or wrapper script that checks for a fresh human token before production release commands can run."
+    },
+    {
+      "id": "plugin-marketplace-readd-can-use-malformed-stale-path",
+      "title": "Plugin install can use a malformed stale marketplace path after remove and re-add.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82064"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 session removed and re-added a plugin marketplace, then /plugin install failed from the selection menu with a path formed by joining a sanitized marketplace source to the current project directory. On-disk known_marketplaces.json and the cloned marketplace were healthy, and a fresh CLI process installed the same plugin successfully.",
+      "workaround": "After marketplace remove and re-add operations, start a fresh CLI session before installing plugins from that marketplace. Check known_marketplaces.json and the marketplace clone path before debugging plugin package contents, especially when the session cwd is the marketplace source repo."
+    },
+    {
+      "id": "desktop-prompt-suggestions-can-expose-old-history-without-disable-setting",
+      "title": "Desktop prompt suggestions can surface old session history with no disable setting.",
+      "category": "Desktop & IDE integration",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82065"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Desktop setup showed auto-generated prompt suggestions from past session titles or history, including old one-off prompts, with no documented settings.json key, environment variable, /config toggle, or UI setting to hide the feed. The only known workaround was deleting local session history.",
+      "workaround": "Treat Desktop prompt suggestions as potentially history-derived UI state. Avoid sensitive wording in session titles or prompts where possible, and clear local session history only if the privacy or clutter concern outweighs losing that history."
+    },
+    {
+      "id": "workflow-agent-status-can-stay-green-after-logical-failure",
+      "title": "Workflow agent status can stay green after the script detects a logical failure.",
+      "category": "Workflow & UI observability",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82066"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported .claude/workflows agent completed successfully at the runtime level after returning a failed regression result, so the left-panel agent indicator remained green while the overall workflow later failed. Current status indicators distinguish runtime failure from business-outcome failure.",
+      "workaround": "Make workflow scripts produce an explicit final summary outside the agent status indicator, and fail the overall workflow when business assertions fail. Do not rely on the green agent checkmark to mean CI, deployment, or regression goals passed."
+    },
     {
       "id": "long-context-can-drop-claudemd-directives-before-compaction",
       "title": "Long-context sessions can stop following CLAUDE.md directives before compaction.",
@@ -18189,27 +18306,27 @@
     }
   ],
   "status_summary": {
-    "open": 1399,
+    "open": 1408,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 125,
-    "high": 741,
+    "critical": 127,
+    "high": 745,
     "low": 109,
-    "medium": 438
+    "medium": 441
   },
   "lastUpdated": "2026-07-28",
   "stats": {
-    "total": 1413,
-    "critical": 125,
-    "high": 741,
-    "medium": 438,
+    "total": 1422,
+    "critical": 127,
+    "high": 745,
+    "medium": 441,
     "low": 109,
-    "open": 1399,
+    "open": 1408,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-28",
-  "total": 1413
+  "total": 1422
 }
