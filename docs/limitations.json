@@ -1,15 +1,15 @@
 {
   "version": "0.13.0",
-  "count": 1319,
+  "count": 1325,
   "categories": {
     "Hook behavior & events": 186,
     "Permission system": 130,
     "Hook bypass & evasion": 102,
     "MCP & plugin issues": 69,
-    "Subagent & spawned agents": 60,
-    "Desktop & IDE integration": 46,
-    "Platform & compatibility": 29,
-    "TUI & display": 29,
+    "Subagent & spawned agents": 62,
+    "Desktop & IDE integration": 47,
+    "Platform & compatibility": 30,
+    "TUI & display": 30,
     "Context & memory": 28,
     "CLI & terminal": 26,
     "Configuration behavior": 22,
@@ -22,9 +22,9 @@
     "Security & trust boundaries": 16,
     "Data integrity": 15,
     "Remote & cloud": 15,
+    "Cowork & remote": 14,
     "VS Code extension": 14,
     "Auth & accounts": 13,
-    "Cowork & remote": 13,
     "MCP integration": 13,
     "Model behavior": 13,
     "Plugin & channel system": 11,
@@ -182,10 +182,10 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 110,
-    "HIGH": 689,
+    "CRITICAL": 111,
+    "HIGH": 692,
     "LOW": 106,
-    "MEDIUM": 414
+    "MEDIUM": 416
   },
   "entries": [
     {
@@ -16960,30 +16960,108 @@
       "date_added": "2026-07-28",
       "description": "A reported Claude Code 2.1.219 session had been running successfully on Opus 5, but after the CLI auto-restarted it retried under the saved default Fable 5 model, which was usage-limit exhausted. The session stayed down for about 89 minutes until the user manually changed the saved default, even though manual resume paths are documented as preserving the transcript model.",
       "workaround": "For unattended sessions, make the saved default model match the model the session is expected to use, especially near usage limits. After auto-restarts, check request errors for a model different from the active transcript model, and have supervisors alert on repeated 429s for a non-selected default rather than waiting for manual reconnect."
+    },
+    {
+      "id": "virtual-message-list-desync-can-break-tool-use-and-compliance-reporting",
+      "title": "Virtual message list desync can break tool use and compliance reporting.",
+      "category": "TUI & display",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81878"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 Linux session emitted a `TelemetrySafeError: VirtualMessageList: itemKeys/messages length desync` while the user observed the assistant bypassing tools, claiming tools were broken, refusing repeated instructions, and reporting verification or understanding that did not match behavior. The stack points at the virtualized message-list renderer, suggesting the visible session state can desynchronize from the internal message stream during tool-heavy work.",
+      "workaround": "If Claude starts claiming available tools are broken or reports compliance without corresponding tool calls, inspect the transcript or restart from a clean summary instead of trusting the TUI state. Preserve the `VirtualMessageList` error, message counts, Claude Code version, and terminal details for support."
+    },
+    {
+      "id": "senduserfile-office-files-render-as-download-only-cards",
+      "title": "SendUserFile Office files render as download-only cards.",
+      "category": "Desktop & IDE integration",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81877"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code Desktop workflow can parse `.docx`, `.pptx`, and `.xlsx` files but `SendUserFile(..., display: \"render\")` surfaces them as download-only cards instead of side-panel previews. The reporter noted that Cowork already has a LibreOffice-backed Office-to-PDF preview path, so the limitation appears to be that this existing rendering pipeline is not reachable from the Claude Code SendUserFile surface.",
+      "workaround": "Convert Office documents to PDF before sending them if side-by-side review is required, and verify layout fidelity for dense tables, merged cells, checkboxes, highlighting, and CJK text. For sensitive document review, keep the original open externally because the PDF workaround can degrade the exact structure the user needs to inspect."
+    },
+    {
+      "id": "cyber-safeguards-can-block-defensive-subagents-that-main-session-allows",
+      "title": "Cyber safeguards can block defensive subagents that the main session allows.",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81876"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 session doing contracted defensive-security work had 11 of 11 Workflow-spawned subagents blocked by real-time cyber safeguards, while the main Opus 5 session completed the same work without interruptions. Several blocked prompts were repository bookkeeping with no security instruction, suggesting the subagent path may classify the surrounding repository or tool output differently than the parent session.",
+      "workaround": "Do not assume subagent parallelism will be available for defensive-security repositories even when the parent session is accepted. Keep a sequential parent-session fallback, split bookkeeping prompts away from threat-heavy context where possible, and preserve request IDs plus the exact subagent instructions when asking support or Cyber Verification to diagnose false positives."
+    },
+    {
+      "id": "windows-msix-update-failure-can-remove-desktop-app-after-hang",
+      "title": "Windows MSIX update failure can remove the Desktop app after a hang.",
+      "category": "Platform & compatibility",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81875"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows 10 Claude Desktop 1.24012.9 MSIX installation froze after GPU-process crashes near Browser/preview creation, then the auto-update flow hit `0x80070020` sharing violations while files were locked and proceeded through `RemoveForAllUsers`. The result was an app that disappeared from the machine and had to be reinstalled repeatedly, while the standalone Claude Code CLI on the same host was unaffected.",
+      "workaround": "If Desktop freezes during MSIX update or preview use, stop the app and related Claude services before retrying updates, and preserve AppXDeploymentServer, Windows Error Reporting, and `%APPDATA%\\Claude\\logs\\main.log` excerpts before reinstalling. For critical Code work on affected Windows hosts, prefer the standalone CLI until the MSIX update path is stable."
+    },
+    {
+      "id": "cowork-vm-service-cycles-can-cause-slow-client-reconnects-without-losing-work",
+      "title": "Cowork VM service cycles can cause slow client reconnects without losing work.",
+      "category": "Cowork & remote",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81874"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows CoworkVMService session tore down and cold-booted five or more times during extended use, with the app-side RPC connection dropping and reconnect recovery taking seconds to minutes. A follow-up found the backend agent session and on-disk work survived across the disruptions, narrowing the user-visible failure to slow or disruptive local client reconnection when the VM service cycles.",
+      "workaround": "When Cowork appears to crash after idle on Windows, verify whether the underlying agent session and filesystem work are still intact before restarting or forking. Capture `cowork-service.log`, Service Control Manager events, and whether `sc stop CoworkVMService && sc start CoworkVMService` restores the local connection. Keep work checkpointed outside the visible session while reconnect behavior is unstable."
+    },
+    {
+      "id": "agent-list-view-can-drop-completed-sessions-too-quickly",
+      "title": "Agent list view can drop completed sessions too quickly.",
+      "category": "Subagent & spawned agents",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81873"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 FleetView on macOS did not show a useful number of completed agent sessions; completed chats dropped out of the list too soon even when the reporter ruled out spacing, terminal size, or UI density as the cause. This makes post-run inspection harder for users coordinating multiple agents.",
+      "workaround": "For multi-agent work, record agent IDs, task names, and transcript locations outside FleetView before sessions complete. If a completed agent disappears from the list, inspect session files or logs directly rather than assuming the task is unavailable or never ran."
     }
   ],
   "status_summary": {
-    "open": 1305,
+    "open": 1311,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 110,
-    "high": 689,
+    "critical": 111,
+    "high": 692,
     "low": 106,
-    "medium": 414
+    "medium": 416
   },
   "lastUpdated": "2026-07-28",
   "stats": {
-    "total": 1319,
-    "critical": 110,
-    "high": 689,
-    "medium": 414,
+    "total": 1325,
+    "critical": 111,
+    "high": 692,
+    "medium": 416,
     "low": 106,
-    "open": 1305,
+    "open": 1311,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-28",
-  "total": 1319
+  "total": 1325
 }

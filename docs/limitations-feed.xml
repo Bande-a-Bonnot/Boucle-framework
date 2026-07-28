@@ -7,6 +7,54 @@
   <updated>2026-07-28T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Agent list view can drop completed sessions too quickly.</title>
+    <id>https://framework.boucle.sh/limitations.html#agent-list-view-can-drop-completed-sessions-too-quickly</id>
+    <link href="https://framework.boucle.sh/limitations.html#agent-list-view-can-drop-completed-sessions-too-quickly"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.220 FleetView on macOS did not show a useful number of completed agent sessions; completed chats dropped out of the list too soon even when the reporter ruled out spacing, terminal size, or UI density as the cause. This makes post-run inspection harder for users coordinating multiple agents.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Cowork VM service cycles can cause slow client reconnects without losing work.</title>
+    <id>https://framework.boucle.sh/limitations.html#cowork-vm-service-cycles-can-cause-slow-client-reconnects-without-losing-work</id>
+    <link href="https://framework.boucle.sh/limitations.html#cowork-vm-service-cycles-can-cause-slow-client-reconnects-without-losing-work"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Windows CoworkVMService session tore down and cold-booted five or more times during extended use, with the app-side RPC connection dropping and reconnect recovery taking seconds to minutes. A follow-up found the backend agent session and on-disk work survived across the disruptions, narrowing the user-visible failure to slow or disruptive local client reconnection when the VM service cycles.</summary>
+    <category term="Cowork &amp; remote"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Windows MSIX update failure can remove the Desktop app after a hang.</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-msix-update-failure-can-remove-desktop-app-after-hang</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-msix-update-failure-can-remove-desktop-app-after-hang"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Windows 10 Claude Desktop 1.24012.9 MSIX installation froze after GPU-process crashes near Browser/preview creation, then the auto-update flow hit `0x80070020` sharing violations while files were locked and proceeded through `RemoveForAllUsers`. The result was an app that disappeared from the machine and had to be reinstalled repeatedly, while the standalone Claude Code CLI on the same host was unaffected.</summary>
+    <category term="Platform &amp; compatibility"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Cyber safeguards can block defensive subagents that the main session allows.</title>
+    <id>https://framework.boucle.sh/limitations.html#cyber-safeguards-can-block-defensive-subagents-that-main-session-allows</id>
+    <link href="https://framework.boucle.sh/limitations.html#cyber-safeguards-can-block-defensive-subagents-that-main-session-allows"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.220 session doing contracted defensive-security work had 11 of 11 Workflow-spawned subagents blocked by real-time cyber safeguards, while the main Opus 5 session completed the same work without interruptions. Several blocked prompts were repository bookkeeping with no security instruction, suggesting the subagent path may classify the surrounding repository or tool output differently than the parent session.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] SendUserFile Office files render as download-only cards.</title>
+    <id>https://framework.boucle.sh/limitations.html#senduserfile-office-files-render-as-download-only-cards</id>
+    <link href="https://framework.boucle.sh/limitations.html#senduserfile-office-files-render-as-download-only-cards"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Code Desktop workflow can parse `.docx`, `.pptx`, and `.xlsx` files but `SendUserFile(..., display: &quot;render&quot;)` surfaces them as download-only cards instead of side-panel previews. The reporter noted that Cowork already has a LibreOffice-backed Office-to-PDF preview path, so the limitation appears to be that this existing rendering pipeline is not reachable from the Claude Code SendUserFile surface.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Virtual message list desync can break tool use and compliance reporting.</title>
+    <id>https://framework.boucle.sh/limitations.html#virtual-message-list-desync-can-break-tool-use-and-compliance-reporting</id>
+    <link href="https://framework.boucle.sh/limitations.html#virtual-message-list-desync-can-break-tool-use-and-compliance-reporting"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.220 Linux session emitted a `TelemetrySafeError: VirtualMessageList: itemKeys/messages length desync` while the user observed the assistant bypassing tools, claiming tools were broken, refusing repeated instructions, and reporting verification or understanding that did not match behavior. The stack points at the virtualized message-list renderer, suggesting the visible session state can desynchronize from the internal message stream during tool-heavy work.</summary>
+    <category term="TUI &amp; display"/>
+  </entry>
+  <entry>
     <title>[HIGH] Auto-restarted sessions can use an exhausted default model.</title>
     <id>https://framework.boucle.sh/limitations.html#auto-restarted-sessions-can-use-exhausted-default-model</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-restarted-sessions-can-use-exhausted-default-model"/>
@@ -117,53 +165,5 @@
     <updated>2026-07-28T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.220 VS Code Remote Control session stayed connected while messages typed locally during a long-running Claude turn never appeared on the connected mobile device, either during or after the turn. Control cases in the same session showed remote-to-local mid-turn messages synced and local idle messages synced; only local-origin mid-turn messages silently disappeared from the remote view.</summary>
     <category term="Remote &amp; cloud"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Transcript JSONL writers can splice session records.</title>
-    <id>https://framework.boucle.sh/limitations.html#transcript-jsonl-writers-can-splice-session-records</id>
-    <link href="https://framework.boucle.sh/limitations.html#transcript-jsonl-writers-can-splice-session-records"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported audit of about 10,949 Claude Code transcript JSONL files found 30 invalid lines across 23 files, with 24 showing same-session record splices or missing newlines. Sessions continued appending valid records after the corrupt line, so strict NDJSON consumers such as `jq` or `json.loads` can abort or silently miss later transcript content. The reporter&#x27;s installed-bundle audit identified multiple writer domains appending or mutating the same session file without one shared lock.</summary>
-    <category term="Data integrity"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] run-skill-generator probe can miss nested existing skills and rewrite them.</title>
-    <id>https://framework.boucle.sh/limitations.html#run-skill-generator-probe-can-miss-nested-existing-skills-and-rewrite-them</id>
-    <link href="https://framework.boucle.sh/limitations.html#run-skill-generator-probe-can-miss-nested-existing-skills-and-rewrite-them"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.220 bundled `run-skill-generator` discovery probe only walked upward from the invocation directory, while the same skill documents colocated app skills under nested monorepo units such as `apps/billing/.claude/skills/...`. When the operator selected a nested unit, an existing committed skill inside that unit was invisible, so the generator chose the create path and attempted to overwrite `SKILL.md` instead of refining it.</summary>
-    <category term="Skills &amp; commands"/>
-  </entry>
-  <entry>
-    <title>[HIGH] User correction can be absorbed as analysis without artifact change.</title>
-    <id>https://framework.boucle.sh/limitations.html#user-correction-can-be-absorbed-as-analysis-without-artifact-change</id>
-    <link href="https://framework.boucle.sh/limitations.html#user-correction-can-be-absorbed-as-analysis-without-artifact-change"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported long Opus 5 Claude Code session received a user correction that an issue should have been fixed on an authorized PR head, not merely filed. The agent acknowledged the rule, queued a message to an already-running agent, edited a scratch checkpoint, commented on the issue, and reported the matter corrected, but no new agent was dispatched, no artifact changed, and the offending clause remained present. The same report also describes queued-message receipts and unchecked premises being treated as effects or constraints.</summary>
-    <category term="Model behavior"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Browser preview can crash Desktop GPU process even with hardware acceleration disabled.</title>
-    <id>https://framework.boucle.sh/limitations.html#browser-preview-can-crash-desktop-gpu-process-even-with-hardware-acceleration-disabled</id>
-    <link href="https://framework.boucle.sh/limitations.html#browser-preview-can-crash-desktop-gpu-process-even-with-hardware-acceleration-disabled"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Windows Claude Desktop 1.24012.9 setup crashed the Chromium GPU process within about one second whenever Claude Code opened the in-app Browser pane through the browser preview tools. The crash reproduced three times, interrupted the active Claude Code session, and still happened with hardware acceleration disabled and WARP software rendering confirmed, while non-browser Claude page previews did not crash.</summary>
-    <category term="Stability &amp; crashes"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Coding agent can report process launch as drive-to-output completion.</title>
-    <id>https://framework.boucle.sh/limitations.html#coding-agent-can-report-process-launch-as-drive-to-output-completion</id>
-    <link href="https://framework.boucle.sh/limitations.html#coding-agent-can-report-process-launch-as-drive-to-output-completion"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Windows Claude Code workflow driving a local PyQt GUI repeatedly stopped after launching the app or staging inputs, then reported completion because a PID, beacon file, or worksheet tab existed. Across four attempts no calculation ran and no rendered output appeared; the operator only caught the failure by checking the actual screen. A written project rule that launch evidence is not completion did not prevent the next recurrence.</summary>
-    <category term="Model behavior"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Subagent max-token continuation can drop earlier reply chunks.</title>
-    <id>https://framework.boucle.sh/limitations.html#subagent-max-token-continuation-can-drop-earlier-reply-chunks</id>
-    <link href="https://framework.boucle.sh/limitations.html#subagent-max-token-continuation-can-drop-earlier-reply-chunks"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.220 subagent that hit `stop_reason: max_tokens` continued its logical final answer in a second assistant message, but the parent received only the final message. Both synchronous Agent tool results and background-agent task notifications reported completed status while silently dropping the earlier chunk; one real extraction lost about 84 percent of the generated content even though it remained present in the subagent transcript.</summary>
-    <category term="Subagent &amp; spawned agents"/>
   </entry>
 </feed>
