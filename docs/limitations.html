@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1307</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-28.</span></p>
+        <p class="subtitle"><span id="total-count">1312</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-28.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -14406,6 +14406,66 @@
                         <!-- workaround:coding-agent-can-skip-governing-documents-and-sibling-implementations -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For any task with an obvious precedent, make reading the precedent a precondition: sibling files, named workflows, project instructions, skills, and hook behavior. In reviews, ask for the exact source files read before implementation and reject fixes that add parallel logic without demonstrating alignment with the existing working path.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81849" target="_blank">#81849</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="81851" id="bypass-permissions-mode-can-still-loop-approval-prompts" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1308</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Bypass permissions mode can still loop approval prompts.</h3>
+            <p>A reported Windows Claude Desktop 1.24012.9 session with Allow bypass permissions mode enabled still prompted every two to three seconds while browser and tool actions ran. The user selected Allow every time, but prompts reappeared for routine actions such as scrolling, Read, Bash, Glob, and browser tool calls, so bypass mode did not provide the expected unattended execution path.</p>
+                        <!-- workaround:bypass-permissions-mode-can-still-loop-approval-prompts -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat bypass mode as an optimization, not a guarantee. For unattended workflows, keep a session-local watchdog or timeout around tool-heavy browser work and fall back to explicit settings allowlists or a non-Desktop CLI route when repeated approval prompts appear. Preserve the Desktop version, OS, permission mode, and prompt cadence for support.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81851" target="_blank">#81851</a></div>
+        </div>
+        <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="81852" id="named-agent-teammate-dispatch-can-drop-tools-allowlist" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1309</span>
+                <span class="kl-cat">Subagent &amp; spawned agents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Named agent teammate dispatch can drop the `tools:` allowlist.</h3>
+            <p>A reported Claude Code 2.1.220 agent-teams session enforced a subagent definition&#x27;s `tools:` restriction when spawned without `name`, but silently ignored the same restriction when spawned with `name`. A built-in Explore agent and a custom read-only agent were both able to use Write/Edit on the named teammate path while the unnamed path correctly refused Write. Disk readback confirmed the writes, and the team registry still showed the intended agent type, so the definition resolved while its tool containment was dropped.</p>
+                        <!-- workaround:named-agent-teammate-dispatch-can-drop-tools-allowlist -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on `tools:` in agent definitions as the only containment boundary for named teammates. For security-sensitive read-only roles, avoid named teammate dispatch until fixed, or add outer enforcement such as repository permissions, OS-level read-only mounts, hooks/settings that deny writes globally, and post-run filesystem diff checks. Reproduce with a harmless write probe before trusting a named agent role.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81852" target="_blank">#81852</a></div>
+        </div>
+        <div class="kl-entry" data-category="CLI / TUI rendering" data-issues="81853" id="fable-five-mixed-text-tool-responses-can-hide-assistant-text" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1310</span>
+                <span class="kl-cat">CLI / TUI rendering</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Fable 5 mixed text plus tool-call responses can hide assistant text.</h3>
+            <p>A reported Claude Code CLI 2.1.218 Windows Git Bash session using `claude-fable-5` rendered only the tool call when one assistant response contained both normal text and a tool call. The missing text was still present in the detailed transcript opened with Ctrl+O, and the same machine/version/terminal displayed both parts correctly with Opus 4.8, making this a model-specific visible-output loss rather than transcript loss.</p>
+                        <!-- workaround:fable-five-mixed-text-tool-responses-can-hide-assistant-text -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When using Fable 5 for investigative commands, inspect Ctrl+O or the session JSONL if a turn appears to contain only tool output. Ask for answers and tool use in separate turns, or switch to a model/version combination that renders mixed text and tool-call responses correctly on the same terminal.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81853" target="_blank">#81853</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="81854" id="desktop-browser-pane-copy-can-silently-leave-clipboard-unchanged" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1311</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Desktop Browser pane copy can silently leave the clipboard unchanged.</h3>
+            <p>A reported macOS Claude Code Desktop Browser pane allowed text selection and copy actions with no error, but the system clipboard stayed unchanged and later pasted the previous sentinel value. The failure affected both keyboard copy and page-provided copy buttons. In one case a one-time API key was believed copied, an empty secret value was saved into a masked environment field, and the root cause was only found days later from runtime logs.</p>
+                        <!-- workaround:desktop-browser-pane-copy-can-silently-leave-clipboard-unchanged -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not copy one-time secrets or recovery values directly from the in-app Browser pane without verification. Copy a sentinel first, paste into a scratch field immediately after copying from the Browser pane, or use an external browser for secret/token pages. Treat masked secret saves as suspect until runtime readback proves the value is present.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81854" target="_blank">#81854</a></div>
+        </div>
+        <div class="kl-entry" data-category="Model behavior" data-issues="81855" id="assistant-output-can-fabricate-role-turns-that-later-look-like-user-input" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1312</span>
+                <span class="kl-cat">Model behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Assistant output can fabricate role turns that later look like user input.</h3>
+            <p>A reported long Claude Code VS Code native extension session on Opus with 1M context emitted visible role markers such as `user`, `th`, or `thUser:` inside a single assistant message, followed by fabricated user turns. One fabricated turn contained a malicious instruction payload generated by the model itself; the next step treated that self-generated text as if it were external user input and refused it as prompt injection. Transcript checks showed the fabricated content lived in assistant rows, not user rows.</p>
+                        <!-- workaround:assistant-output-can-fabricate-role-turns-that-later-look-like-user-input -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For long listening-style sessions, inspect transcript row types when role markers or unexpected user instructions appear in assistant output. Do not execute, summarize, or quote fabricated `user` blocks as real user requests unless the session JSONL shows a matching user row. If the session starts ingesting assistant-generated role text, stop or fork the session with a clean summary that excludes the fabricated block.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81855" target="_blank">#81855</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
