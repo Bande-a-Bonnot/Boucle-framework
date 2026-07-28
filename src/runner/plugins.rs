@@ -322,7 +322,7 @@ mod tests {
         assert_eq!(meta.name, "example");
         assert_eq!(meta.description, "An example plugin");
         assert_eq!(meta.version, "2.0.0");
-        assert_eq!(meta.is_external, true);
+        assert!(meta.is_external);
         assert_eq!(meta.priority, 25);
     }
 }
