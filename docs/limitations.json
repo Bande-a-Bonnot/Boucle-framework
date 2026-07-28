@@ -1,34 +1,34 @@
 {
   "version": "0.13.0",
-  "count": 1404,
+  "count": 1413,
   "categories": {
     "Hook behavior & events": 186,
     "Permission system": 130,
     "Hook bypass & evasion": 102,
     "MCP & plugin issues": 72,
-    "Subagent & spawned agents": 66,
+    "Subagent & spawned agents": 67,
     "Desktop & IDE integration": 49,
-    "TUI & display": 32,
+    "TUI & display": 33,
     "CLI & terminal": 30,
     "Platform & compatibility": 30,
     "Context & memory": 28,
-    "MCP & integrations": 24,
+    "MCP & integrations": 25,
     "Configuration behavior": 23,
-    "Performance & cost": 22,
+    "Performance & cost": 23,
     "Tool behavior": 21,
     "Agents & subagents": 19,
     "Cowork & remote": 19,
     "Core & session management": 17,
     "Sandbox & permissions": 17,
     "Security & trust boundaries": 17,
+    "Auth & accounts": 16,
     "VS Code extension": 16,
-    "Auth & accounts": 15,
     "Data integrity": 15,
     "Model behavior": 15,
     "Remote & cloud": 15,
     "Scheduling & remote triggers": 14,
     "MCP integration": 13,
-    "Worktree": 12,
+    "Worktree": 13,
     "Bash & shell execution": 11,
     "File system & paths": 11,
     "Plugin & channel system": 11,
@@ -43,18 +43,18 @@
     "MCP": 7,
     "Model behavior & output": 7,
     "Permissions": 7,
+    "Skills": 7,
     "Stability & crashes": 7,
+    "Telemetry & insights": 7,
     "Authentication & accounts": 6,
     "Memory & context": 6,
     "Model routing & identity": 6,
-    "Skills": 6,
     "Skills & commands": 6,
-    "Telemetry & insights": 6,
     "CLI / TUI rendering": 5,
+    "Cost & usage": 5,
     "Model behavior & compliance": 5,
     "Skills / slash commands": 5,
     "Browser automation": 4,
-    "Cost & usage": 4,
     "MCP & plugins": 4,
     "Model behavior & instructions": 4,
     "Performance & resources": 4,
@@ -187,9 +187,9 @@
   },
   "severity_counts": {
     "CRITICAL": 125,
-    "HIGH": 737,
-    "LOW": 108,
-    "MEDIUM": 434
+    "HIGH": 741,
+    "LOW": 109,
+    "MEDIUM": 438
   },
   "entries": [
     {
@@ -18069,30 +18069,147 @@
       "date_added": "2026-07-28",
       "description": "A reported macOS Claude Code project using `claude-fable-5` hit 216 `Fable 5's safeguards flagged this message` hard blocks across 11 sessions in 22 days while doing legitimate cloud-infrastructure DevOps work such as screenshots, Docker builds, ACR login, and read-only code audits. The same sessions reportedly continued without the flags after switching to `claude-opus-5`.",
       "workaround": "If safeguards repeatedly block benign infrastructure work, preserve timestamps, model name, session transcript paths, and a small set of mundane flagged turns. Switch models only when it is acceptable for cost, capability, and policy needs, and distinguish false-positive mitigation from bypassing safety controls. Avoid retry storms that consume quota without changing the prompt or evidence package."
+    },
+    {
+      "id": "session-delete-can-misread-pushed-work-in-narrow-refspec-clones",
+      "title": "Session delete can misread pushed work in narrow-refspec clones.",
+      "category": "Worktree",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82039"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 agents view refused to delete a finished session with `not deleted \u00b7 worktree has commits that are not pushed anywhere` even though the branch and commit were already present on the remote. The reproduction shows a single-branch clone whose fetch refspec only maps `main`, so `git rev-list --max-count=1 HEAD --not --remotes` treats a pushed feature branch as local-only because no `origin/feature` tracking ref exists.",
+      "workaround": "Before removing the worktree by hand, compare the local branch with the actual remote branch using `git ls-remote --heads origin <branch>` or fetch that specific branch into a tracking ref. If the remote does hold the same commit, record the narrow fetch refspec and the deletion error. Avoid using `git worktree remove --force` until you have independently confirmed where the commits exist."
+    },
+    {
+      "id": "account-session-limits-can-be-opaque-to-local-cli-telemetry",
+      "title": "Account session limits can be opaque to local CLI telemetry.",
+      "category": "Cost & usage",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82040"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Claude Code 2.1.218 user saw Pro session and weekly limits consumed while a fresh local Claude Code session showed 0 input tokens, 0 output tokens, 0 cache activity, and 0 seconds of API duration. The same account-level usage state appeared in Claude.ai, leaving no local session transcript that explained the limit consumption.",
+      "workaround": "When account limits move without visible local activity, capture the Claude Code version, `claude doctor` result, local token counters, Claude.ai usage state, timezone, and the exact reset window. Do not assume an empty new CLI session proves no account-level activity occurred. Escalate with the account-level timestamps and avoid repeatedly starting fresh sessions only to confirm the same limit state."
+    },
+    {
+      "id": "active-streaks-may-ignore-days-spent-in-resumed-sessions",
+      "title": "Active streaks may ignore days spent in resumed sessions.",
+      "category": "Telemetry & insights",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82042"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code Desktop Windows streak reset after a day with typed user messages inside an existing resumed session. The user compared local transcript activity against the UI heatmap and concluded that the active-day counter counted days with new session starts, not all days with actual product use inside continued sessions.",
+      "workaround": "If streaks or heatmaps matter for reporting, do not treat them as the sole activity record. Preserve local transcript timestamps, session IDs, and account usage screenshots for any disputed day. As a practical workaround, starting a new session each day may keep the UI counter aligned, but it should not be required for a product-use metric."
+    },
+    {
+      "id": "batch-skill-upload-can-replace-only-first-conflicting-zip",
+      "title": "Batch skill upload can replace only the first conflicting zip.",
+      "category": "Skills",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82044"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude.ai and Claude Desktop skill upload flow replaced only the first zip in a multi-file batch when all selected skills already existed. After confirming replacement for the first conflict, the remaining files were rejected with an upload-stopped banner and individual `overwrite=false` 400 responses instead of receiving their own confirmations.",
+      "workaround": "When updating multiple existing zipped skills, upload and replace them one at a time until the batch conflict handling is fixed. If a batch update partially succeeds, verify each skill by name before assuming all selected zips were replaced. Preserve the failed upload count and console errors when reporting the issue."
+    },
+    {
+      "id": "local-stdio-mcp-prompts-can-fail-after-valid-prompts-get",
+      "title": "Local stdio MCP prompts can fail after a valid prompts/get result.",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82045"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Claude Desktop 1.24012.9 regression made prompts from local stdio MCP servers fail to attach while tools from the same servers still worked and remote MCP prompts still worked. MCP Inspector and the app's own local server logs showed `prompts/list` and `prompts/get` completing successfully with valid prompt messages, so the failure appears to occur in the desktop app's local prompt-attachment path after a valid result is received.",
+      "workaround": "Test local MCP prompts separately from tools after Desktop updates, using a minimal zero-argument prompt and MCP Inspector. If tools work but prompts fail with `Server not found` or `Failed to attach prompt`, preserve the Desktop version, server config, Inspector result, and local MCP logs. Use remote MCP prompts or manual prompt text as a temporary path for workflows that depend on prompt templates."
+    },
+    {
+      "id": "ultrareview-orchestrator-failures-can-consume-free-runs",
+      "title": "Ultrareview orchestrator failures can consume free runs.",
+      "category": "Performance & cost",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82046"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Claude Code 2.1.220 `/ultrareview` run failed twice on a large diff with `Review failed: all review agents terminated before completing`, returned no findings, and still consumed two of three free runs. The report included session IDs, a 45-46 file diff around 6,000 insertions, and a `VirtualMessageList` length desync telemetry error.",
+      "workaround": "For large diffs, consider splitting the review scope before using quota-limited review features. If a review returns zero findings because all agents terminated, preserve the session IDs, diff size, timestamps, and telemetry errors, then ask support to distinguish orchestrator failure from completed review usage. Do not immediately retry the same large scope if the first failure already consumed quota."
+    },
+    {
+      "id": "clear-may-not-reset-subagent-limit-state",
+      "title": "`/clear` may not reset subagent limit state.",
+      "category": "Subagent & spawned agents",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82048"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported macOS Claude Code 2.1.220 session found that running `/clear` did not clear the subagent limit as expected. The report is sparse, but it identifies a state boundary where conversation clearing and subagent quota or limit tracking may diverge.",
+      "workaround": "If `/clear` does not restore subagent availability, capture the exact limit message before and after clearing, Claude Code version, and whether a fully new session resets the state. Treat `/clear` as a context reset, not proof that all agent scheduler limits have been reset. Start a new session only after preserving enough evidence to compare the two states."
+    },
+    {
+      "id": "magic-link-emails-can-arrive-minutes-after-request",
+      "title": "Magic-link emails can arrive minutes after request.",
+      "category": "Auth & accounts",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82049"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude.ai sign-in path using a Microsoft 365 mailbox saw magic-link emails slow from seconds in June 2026 to 2-5 minutes during July 20-28, with measured delays between send timestamps and mailbox delivery. The user ruled out broad receiver-side delay by comparing other external and SendGrid-originated senders into the same mailbox.",
+      "workaround": "When login links arrive late, wait for the newest requested message rather than repeatedly requesting duplicate links. Preserve message headers, request times, delivery times, mailbox provider, and any support conversation ID. If you depend on Claude Code sessions during auth expiry, factor in login delay and avoid starting sensitive work while auth recovery is uncertain."
+    },
+    {
+      "id": "agents-view-pr-status-colors-can-disappear-on-unfocused-rows",
+      "title": "Agents view PR status colors can disappear on unfocused rows.",
+      "category": "TUI & display",
+      "severity": "LOW",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82052"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported `claude agents` view dims PR number badges on unfocused rows, washing status colors out to grey. Users running many agents have to move focus row by row to read colors that are already shown in the expanded detail pane.",
+      "workaround": "Use the focused row or expanded detail pane when you need a reliable PR status color readout. For accessibility or high-volume monitoring, do not rely on the unfocused list color alone; pair it with text status, sorted filters, or external PR checks until list-row dimming can be configured or adjusted."
     }
   ],
   "status_summary": {
-    "open": 1390,
+    "open": 1399,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 125,
-    "high": 737,
-    "low": 108,
-    "medium": 434
+    "high": 741,
+    "low": 109,
+    "medium": 438
   },
   "lastUpdated": "2026-07-28",
   "stats": {
-    "total": 1404,
+    "total": 1413,
     "critical": 125,
-    "high": 737,
-    "medium": 434,
-    "low": 108,
-    "open": 1390,
+    "high": 741,
+    "medium": 438,
+    "low": 109,
+    "open": 1399,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-28",
-  "total": 1404
+  "total": 1413
 }
