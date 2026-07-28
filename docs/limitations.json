@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1360,
+  "count": 1372,
   "categories": {
     "Hook behavior & events": 186,
     "Permission system": 130,
@@ -10,7 +10,7 @@
     "Desktop & IDE integration": 49,
     "TUI & display": 32,
     "Platform & compatibility": 30,
-    "CLI & terminal": 28,
+    "CLI & terminal": 29,
     "Context & memory": 28,
     "Configuration behavior": 23,
     "MCP & integrations": 21,
@@ -27,10 +27,10 @@
     "VS Code extension": 15,
     "Model behavior": 14,
     "MCP integration": 13,
+    "Scheduling & remote triggers": 13,
     "Worktree": 12,
     "Bash & shell execution": 11,
     "Plugin & channel system": 11,
-    "Scheduling & remote triggers": 11,
     "File system & paths": 10,
     "hooks": 9,
     "Scheduled tasks": 9,
@@ -42,16 +42,17 @@
     "MCP": 7,
     "Permissions": 7,
     "Permissions & safety": 7,
+    "Stability & crashes": 7,
     "Authentication & accounts": 6,
     "Model behavior & output": 6,
+    "Skills": 6,
     "Skills & commands": 6,
-    "Stability & crashes": 6,
     "CLI / TUI rendering": 5,
-    "Skills": 5,
+    "Memory & context": 5,
     "Skills / slash commands": 5,
     "Telemetry & insights": 5,
+    "Cost & usage": 4,
     "MCP & plugins": 4,
-    "Memory & context": 4,
     "Model behavior & instructions": 4,
     "Model routing & identity": 4,
     "Performance & resources": 4,
@@ -60,7 +61,6 @@
     "tui": 4,
     "Browser automation": 3,
     "Context / compaction": 3,
-    "Cost & usage": 3,
     "cowork": 3,
     "Desktop": 3,
     "Hooks": 3,
@@ -83,6 +83,7 @@
     "Configuration": 2,
     "Cowork": 2,
     "Cowork / remote sessions": 2,
+    "Desktop & preview": 2,
     "Hooks & automation": 2,
     "IDE integrations": 2,
     "mcp": 2,
@@ -102,6 +103,7 @@
     "Auth and credentials": 1,
     "authentication": 1,
     "Authentication & credentials": 1,
+    "Automation & CI": 1,
     "Autonomy & destructive actions": 1,
     "Autonomy / model behavior": 1,
     "Bash": 1,
@@ -123,6 +125,7 @@
     "Hooks / extensions": 1,
     "hooks-and-automation": 1,
     "IDE Integration": 1,
+    "Install & update": 1,
     "instruction-following": 1,
     "MCP & plugin integration": 1,
     "MCP & tool infrastructure": 1,
@@ -155,6 +158,7 @@
     "Remote triggers & scheduling": 1,
     "remote-triggers": 1,
     "rendering": 1,
+    "Reporting & observability": 1,
     "rules-compliance": 1,
     "safety": 1,
     "safety-and-permissions": 1,
@@ -182,10 +186,10 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 116,
-    "HIGH": 711,
+    "CRITICAL": 119,
+    "HIGH": 718,
     "LOW": 107,
-    "MEDIUM": 426
+    "MEDIUM": 428
   },
   "entries": [
     {
@@ -17493,30 +17497,186 @@
       "date_added": "2026-07-28",
       "description": "A reported macOS Claude Code 2.1.220 TUI session ignored Ctrl-C when the Apple Korean IME was active in iTerm2 or Ghostty, while switching back to English made Ctrl-C work immediately. Terminal.app did not reproduce, and disabling iTerm2's `Applications can change how keys are reported` option made the issue disappear, pointing at an interaction with modern terminal keyboard protocols.",
       "workaround": "If Ctrl-C appears dead in Claude Code on macOS, switch the input source to English before pressing it again. In iTerm2, try disabling application-controlled key reporting for the profile. For long-running operations, keep a second terminal ready to inspect or terminate the process when the TUI cannot receive SIGINT under the active IME."
+    },
+    {
+      "id": "team-account-usage-window-can-count-other-team-activity",
+      "title": "Team account usage windows can be consumed by activity in another Team account.",
+      "category": "Cost & usage",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81944"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported multi-Team setup on Claude Code 2.1.220 saw one Team account's 5-hour rolling usage window continue to count down while all active work happened under a different Team account. The reporter reproduced it across Claude Desktop, Claude Code CLI, and two physical machines, pointing at server-side accounting rather than one client session.",
+      "workaround": "Do not assume an idle Team session is free while another Team account is active. Close unused Team sessions, check each Team's limit independently before long work, and preserve timestamps showing which account made requests versus which account lost usage window capacity when escalating billing or quota anomalies."
+    },
+    {
+      "id": "project-scoped-skills-can-be-ignored-on-windows",
+      "title": "Project-scoped Skills can be ignored on Windows while global Skills load.",
+      "category": "Skills",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81945"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Claude Code 2.1.220 setup did not show project-scoped Skills from `.claude/skills/<name>/SKILL.md` in `/context`, even when placed at the git repository root or a parent directory of the startup cwd. The reporter byte-compared frontmatter, BOM, and line endings against a working global Skill; only `~/.claude/skills/` appeared immediately.",
+      "workaround": "After adding a project Skill on Windows, verify it appears in `/context` before relying on it. If it is missing, install the Skill globally as a temporary workaround and document the project path, cwd, git root, and exact file bytes so the project-scope discovery failure can be reproduced."
+    },
+    {
+      "id": "desktop-browser-pane-can-brick-windows-msix-package",
+      "title": "Desktop browser pane can brick the Windows MSIX package after an update.",
+      "category": "Stability & crashes",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81947"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Desktop for Windows 1.24012.9 regression destroyed the MSIX package registration after opening the in-app browser pane on `localhost`. The app then showed the Windows repair dialog on every launch, Repair/Reset failed against a deleted `%TEMP%\\Claude-<random>.msix`, and only full reinstall recovered, losing app state. The reporter reproduced the trigger three times, including an attach-only localhost browse with the dev server already running outside the app.",
+      "workaround": "On affected Windows Desktop builds, avoid the in-app browser pane for localhost and open the dev server in an external browser until the package-state bug is fixed. If it happens, preserve AppModel/AppXDeploymentServer events, the missing temp MSIX path, and the Desktop version before reinstalling, because repair may not preserve state."
+    },
+    {
+      "id": "scheduled-routines-can-reprompt-for-allowlisted-actions",
+      "title": "Scheduled Routines can re-prompt for already-allowlisted actions on every run.",
+      "category": "Scheduling & remote triggers",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81948"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported macOS scheduled Routine created a fresh session on each cron fire and asked again for identical `Write` or `Edit` actions that already matched global `~/.claude/settings.json` `permissions.allow` rules and had previously been clicked as Always allow. The unattended run then stalls waiting for a prompt, defeating the purpose of scheduled automation.",
+      "workaround": "Treat scheduled Routine permissions as untrusted until each run proves it can complete without prompts. Add an external witness file or notification, keep actions narrow and idempotent, and avoid unattended writes or edits unless a recent scheduled fire completed without manual approval."
+    },
+    {
+      "id": "scheduled-computer-use-cannot-request-macos-app-access-headlessly",
+      "title": "Scheduled computer-use runs cannot request macOS app access headlessly.",
+      "category": "Scheduling & remote triggers",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81949"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Desktop Cowork scheduled task on macOS failed `mcp__computer-use__request_access` for Calendar, Mail, and Finder on every unattended run. No approval dialog appeared, retrying returned the same hard error, and an interactive Run now approval did not carry over to the next scheduled fire. The error text suggested adding the app to scheduled-task settings, but the reporter could not find such a setting in the tool schema or Desktop UI.",
+      "workaround": "Do not design unattended scheduled tasks that require fresh computer-use access to native macOS apps. Preflight them interactively, add graceful skips for Calendar/Mail/Finder steps, and prefer OAuth-backed connectors where available until scheduled tasks expose a real preauthorization path."
+    },
+    {
+      "id": "mobile-attached-cli-sessions-can-show-stale-effort-label",
+      "title": "Mobile-attached CLI sessions can show a stale effort label.",
+      "category": "CLI & terminal",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81950"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Linux CLI session attached from the mobile app showed effort `high` after mobile page switches even though `~/.claude/settings.json` set `xhigh` and the session transcript recorded only `xhigh` or `max`. The bug appears cosmetic in the captured session, but the live UI provides no `/effort` read-back, so users cannot tell during the run whether the label is stale or the effective setting changed.",
+      "workaround": "When a remote or mobile UI shows an unexpected effort level, inspect the session JSONL `effort` fields before assuming the model actually dropped to `high`. For critical sessions, reissue `/effort <level>` after reconnecting and record the transcript evidence until Claude Code exposes a read-only effective-effort command."
+    },
+    {
+      "id": "insights-report-can-fail-under-custom-anthropic-base-url",
+      "title": "`/insights` reports can render empty or broken under a custom Anthropic base URL.",
+      "category": "Reporting & observability",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81953"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported `/insights` report generated HTML whose table-of-contents anchors did not match emitted section ids and whose narrative sections were empty. A follow-up narrowed the empty narrative and missing facets to runs made with `ANTHROPIC_BASE_URL` pointed at a corporate LiteLLM gateway; unsetting the override made facets and narrative sections populate. A separate nav issue remained for solo reports where Team Feedback is linked but not rendered.",
+      "workaround": "If `/insights` produces empty narratives or missing facets, retry once with `ANTHROPIC_BASE_URL` unset before assuming the session has no analyzable data. Validate generated report links locally, and treat Team Feedback anchors in solo reports as optional until the template suppresses links for absent sections."
+    },
+    {
+      "id": "agent-authored-meta-turns-can-reenter-context-as-user-authority",
+      "title": "Agent-authored meta turns can re-enter context as user-authority instructions.",
+      "category": "Memory & context",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81955"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported long Claude Code session showed scheduled self-prompts stored as `type:\"user\", isMeta:true` and compaction summaries stored as `type:\"user\"` with no provenance flag. In measured transcript text volume, agent-authored user-role material dominated genuine human text and later preserved model-inferred authorization language as if it were user instruction, weakening escalation boundaries.",
+      "workaround": "For long-running or self-scheduled sessions, treat user-role transcript text as mixed provenance. Audit JSONL for `isMeta:true`, quote only genuine human turns when reconstructing authorization, and keep explicit operator approvals outside model-authored summaries. Restart or compact deliberately when self-prompts begin to dominate the apparent instruction history."
+    },
+    {
+      "id": "github-rate-limit-hint-can-prescribe-misleading-diagnostic",
+      "title": "GitHub rate-limit hints can prescribe a misleading diagnostic endpoint.",
+      "category": "Automation & CI",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81959"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 `ghRateLimitHint` told agents to run `gh api rate_limit --jq .resources`, but the reporter found that endpoint could show a nearly full core bucket while REST calls using the same token were blocked with response headers showing the enforced core bucket exhausted. The same hint can also fire when a successful `gh` command prints the phrase from issue text, sending agents toward unnecessary retry or login flows.",
+      "workaround": "When a `gh` call is rate-limited, trust the failing response headers over `gh api rate_limit`: rerun the same call with `-i` and read `X-Ratelimit-Resource`, `X-Ratelimit-Remaining`, and `X-Ratelimit-Reset`. Do not rotate credentials or run `gh auth login` for a 403 without first checking whether the token is merely rate-limited."
+    },
+    {
+      "id": "preview-start-can-ignore-project-pnpm-pin",
+      "title": "`preview_start` can ignore the project pnpm pin and fail before launching.",
+      "category": "Desktop & preview",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81960"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Desktop browser-pane `preview_start` run invoked a bundled pnpm 11.17.0 preflight even though the project `packageManager` pinned pnpm 10.33.0 and the configured launch command no longer used pnpm at all. Normal terminal and Bash-tool commands resolved the correct pnpm and started the Next.js dev server, isolating the failure to the preview harness's package-manager preflight or environment resolution.",
+      "workaround": "If `preview_start` fails with a pnpm version mismatch, start the dev server from a normal terminal or Claude Code Bash tool and open localhost in an external browser. Capture `packageManager`, `corepack pnpm --version` inside the repo, and the `.claude/launch.json` command to distinguish project config from preview-harness preflight behavior."
+    },
+    {
+      "id": "desktop-cache-can-trap-windows-update-screen-loop",
+      "title": "Desktop cache can trap Windows users in the update screen loop.",
+      "category": "Desktop & preview",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81961"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Claude Desktop 1.24012.9 install repeatedly showed `A new version of Claude is available` with error `1XAF0WC` after an update. Logs showed failed dynamic imports from `assets-proxy.anthropic.com`; full process termination and reboot did not help, but renaming `%APPDATA%\\Claude\\Cache`, `Code Cache`, and `GPUCache` let the app recreate them and load normally without deleting account or session state.",
+      "workaround": "If Windows Desktop is stuck on the 1XAF0WC update screen, fully close Claude and preserve logs first, then try renaming only the Electron Cache, Code Cache, and GPUCache directories under `%APPDATA%\\Claude` so they are regenerated. Avoid deleting Local Storage, IndexedDB, Session Storage, Network data, or local Claude Code sessions unless support specifically asks."
+    },
+    {
+      "id": "native-install-can-append-path-export-to-bashrc-repeatedly",
+      "title": "Native install can append the same PATH export to `.bashrc` repeatedly.",
+      "category": "Install & update",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81962"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported macOS native Claude Code 2.1.220 install launched from a GUI repeatedly appended `export PATH=\"$HOME/.local/bin:$PATH\"` to `~/.bashrc`, producing 921 duplicate lines and a PATH with 1,853 entries. The likely failure is checking the GUI process PATH rather than checking whether the rc file already contains the line; GUI launches never source `.bashrc`, so the condition never clears.",
+      "workaround": "Audit `~/.bashrc` for duplicate Claude Code PATH exports after native installs or GUI launches, deduplicate the file, and watch whether it regrows. Until the installer checks file contents idempotently, avoid assuming PATH setup helpers are one-time writes and keep shell rc files under version control or backups."
     }
   ],
   "status_summary": {
-    "open": 1346,
+    "open": 1358,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 116,
-    "high": 711,
+    "critical": 119,
+    "high": 718,
     "low": 107,
-    "medium": 426
+    "medium": 428
   },
   "lastUpdated": "2026-07-28",
   "stats": {
-    "total": 1360,
-    "critical": 116,
-    "high": 711,
-    "medium": 426,
+    "total": 1372,
+    "critical": 119,
+    "high": 718,
+    "medium": 428,
     "low": 107,
-    "open": 1346,
+    "open": 1358,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-28",
-  "total": 1360
+  "total": 1372
 }
