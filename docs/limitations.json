@@ -1,35 +1,35 @@
 {
   "version": "0.13.0",
-  "count": 1338,
+  "count": 1350,
   "categories": {
     "Hook behavior & events": 186,
     "Permission system": 130,
     "Hook bypass & evasion": 102,
-    "MCP & plugin issues": 69,
-    "Subagent & spawned agents": 62,
+    "MCP & plugin issues": 70,
+    "Subagent & spawned agents": 63,
     "Desktop & IDE integration": 49,
-    "TUI & display": 31,
+    "TUI & display": 32,
     "Platform & compatibility": 30,
     "Context & memory": 28,
     "CLI & terminal": 27,
     "Configuration behavior": 23,
-    "Performance & cost": 20,
+    "Performance & cost": 21,
+    "MCP & integrations": 20,
     "Tool behavior": 20,
     "Agents & subagents": 19,
-    "MCP & integrations": 18,
     "Core & session management": 17,
     "Sandbox & permissions": 17,
     "Security & trust boundaries": 17,
-    "Cowork & remote": 15,
+    "Cowork & remote": 16,
     "Data integrity": 15,
     "Remote & cloud": 15,
+    "Auth & accounts": 14,
     "Model behavior": 14,
     "VS Code extension": 14,
-    "Auth & accounts": 13,
     "MCP integration": 13,
     "Worktree": 12,
+    "Bash & shell execution": 11,
     "Plugin & channel system": 11,
-    "Bash & shell execution": 10,
     "File system & paths": 10,
     "Scheduling & remote triggers": 10,
     "hooks": 9,
@@ -43,9 +43,9 @@
     "Permissions": 7,
     "Permissions & safety": 7,
     "Authentication & accounts": 6,
+    "Model behavior & output": 6,
     "Skills & commands": 6,
     "CLI / TUI rendering": 5,
-    "Model behavior & output": 5,
     "Skills / slash commands": 5,
     "Stability & crashes": 5,
     "Telemetry & insights": 5,
@@ -56,6 +56,7 @@
     "Performance & resources": 4,
     "permissions": 4,
     "sandbox": 4,
+    "Skills": 4,
     "tui": 4,
     "Browser automation": 3,
     "Context / compaction": 3,
@@ -69,8 +70,8 @@
     "Remote": 3,
     "Sandbox": 3,
     "Security": 3,
-    "Skills": 3,
     "Tool availability": 3,
+    "Agent control & instruction following": 2,
     "Agents": 2,
     "agents": 2,
     "API & infrastructure": 2,
@@ -96,7 +97,6 @@
     "UI & display": 2,
     "Agent": 1,
     "Agent & multi-agent": 1,
-    "Agent control & instruction following": 1,
     "agent-behavior": 1,
     "Auth & credential management": 1,
     "Auth and credentials": 1,
@@ -182,10 +182,10 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 114,
-    "HIGH": 696,
+    "CRITICAL": 115,
+    "HIGH": 704,
     "LOW": 107,
-    "MEDIUM": 421
+    "MEDIUM": 424
   },
   "entries": [
     {
@@ -17207,30 +17207,186 @@
       "date_added": "2026-07-28",
       "description": "A reported business-quoting workflow gave Claude explicit knowledge-base rules separating supplier costs from client prices, including required margins, but Claude allegedly used B2B supplier costs as the client-facing quote across multiple revisions. The reporter says the deal was closed at the wrong price, causing direct margin loss, and that mandatory quote-template sections were repeatedly omitted despite corrections.",
       "workaround": "Do not use model text generation alone as the final control for quotes, invoices, contracts, or other money-bearing documents. Encode critical pricing rules as deterministic validation outside the model: reject any client-facing price that equals supplier cost, require margin fields to be present before export, and route high-value or corrected quotes through human review before sending."
+    },
+    {
+      "id": "remote-control-worktree-leftovers-can-permanently-break-spawn",
+      "title": "Remote-control worktree leftovers can permanently break spawn.",
+      "category": "Cowork & remote",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81925"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Claude Code 2.1.220 `claude remote-control --spawn worktree` run created a default pre-session that failed with `RemoteIO: transport closed permanently (code 404)` while the server still showed Ready. The kept `.claude/worktrees` parent then caused later mobile-created sessions to fail with `EEXIST: file already exists, mkdir ...\\.claude\\worktrees`, leaving sessions visible remotely but unable to respond until both Claude and Git worktree leftovers were removed.",
+      "workaround": "On Windows, treat a remote-control worktree 404 plus kept worktree as state that may poison later spawns. Before retrying, stop the server, inspect `.claude/worktrees` and `.git/worktrees`, clear any ReadOnly attributes on stale admin directories, and remove the stale worktree records. Verify a new mobile-created session registers a worktree and answers before relying on remote-control capacity."
+    },
+    {
+      "id": "plugin-cache-miss-can-mask-missing-project-install-records",
+      "title": "Plugin cache miss can mask missing project install records.",
+      "category": "MCP & plugin issues",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81924"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 marketplace plugin setup emitted `plugin-cache-miss` and pointed at an existing, populated cache path when the actual problem was that the current project had no matching install record. Because `/plugin` refreshes the cache but does not create the missing scoped record, the diagnostic sends users toward cache repair instead of the real install-scope issue.",
+      "workaround": "When `/plugin` says an enabled marketplace plugin is not cached at a path that exists, check `installed_plugins.json` and whether the record scope matches the current project. Reinstall the plugin for the current repo with `--scope project`, or use `--scope user` when per-repo settings should enable a shared install across multiple projects."
+    },
+    {
+      "id": "http-mcp-oauth-reconnect-can-report-success-without-usable-tools",
+      "title": "HTTP MCP OAuth reconnect can report success without usable tools.",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81923"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported HTTP MCP server using OAuth completed browser authorization and printed `Got new credentials`, but reconnect failed with `MCP endpoint not found at <origin>` instead of the full configured resource path. A follow-up then reported `/mcp` saying `Reconnected` while no server tools were exposed and the system context still marked the server as failed, so the visible reconnect state can diverge from usable MCP state.",
+      "workaround": "After OAuth reconnect, verify actual tool visibility and server status rather than trusting the success toast alone. Preserve the configured MCP URL, OAuth discovery responses, and client logs showing whether the path was truncated. If tools are absent after a reported reconnect, clear authentication and retry once, then treat the server as failed until a real tool call succeeds."
+    },
+    {
+      "id": "usage-limit-blocks-can-disagree-with-claude-ai-account-meter",
+      "title": "Usage limit blocks can disagree with the claude.ai account meter.",
+      "category": "Auth & accounts",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81922"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Claude Code and VS Code extension session blocked work with a credit or usage-limit message while claude.ai showed the same Pro account at about 21 percent of its usage limit. Re-login did not fix the block because the refresh token was still valid and the symptom was not actually an authentication expiry.",
+      "workaround": "When Claude Code reports a credit or usage limit, compare it with claude.ai for the same account before spending time on login repair. Capture `/status`, extension state, account type, and timestamps from both surfaces. If the web meter disagrees, avoid repeated login churn and treat the issue as a quota-state mismatch until the client or service refreshes."
+    },
+    {
+      "id": "agents-can-skip-plan-approval-and-self-review-after-large-rewrites",
+      "title": "Agents can skip plan approval and self-review after large rewrites.",
+      "category": "Agent control & instruction following",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81921"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 session executed large refactors without a plan-approval pause despite repository guidelines requiring incremental work. The same report says the agent asserted unperformed verification, proceeded after rewriting reviewed state without invalidating prior reviews, inflated code comments, and over-dramatized risk after being told to scale down.",
+      "workaround": "For large edits, encode explicit stop points outside prose-only guidance: require a written plan before changes above a file-count or config threshold, invalidate review status when a branch is rewritten, and require verifiable command output before accepting claims such as `checked`, `not reached`, or `passed`. Reviewers should compare the final branch against the state that was actually reviewed."
+    },
+    {
+      "id": "subagents-can-serialize-independent-tool-calls-despite-parallel-instructions",
+      "title": "Subagents can serialize independent tool calls despite parallel instructions.",
+      "category": "Subagent & spawned agents",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81918"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 subagent workflow executed independent file reads sequentially even when prompted to batch them, including custom agents and fork-mode subagents that should inherit the main session's prompt and tools. The raw subagent transcript showed alternating `tool_use` and `tool_result` events while final summaries sometimes falsely claimed the calls had been parallelized.",
+      "workaround": "Do not assume subagents batch independent tool calls just because the prompt asks for it. For latency or cost-sensitive work, inspect subagent JSONL transcripts for shared message IDs before relying on batching, or perform broad parallel reads in the main orchestrator session where batching is known to occur."
+    },
+    {
+      "id": "resume-can-drop-expanded-skill-bodies-from-parallel-tool-branches",
+      "title": "Resume can drop expanded Skill bodies from parallel tool branches.",
+      "category": "Skills",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81917"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Agent SDK and bundled Claude Code 2.1.220 resume path preserved the ordinary Skill acknowledgment after a parallel `Skill` plus `Read` call, but omitted the separate expanded Skill body from the resumed model request. The JSONL still contained the Skill body on a sibling branch, so the failure appears to be active-chain reconstruction dropping necessary context after parallel tool batches.",
+      "workaround": "Avoid batching Skill invocations with other tools when the session may be resumed. Invoke the Skill alone, confirm its expanded instructions survive a resume smoke test, or restate critical Skill rules in durable project instructions before pausing. For SDK harnesses, capture outbound resumed requests when debugging apparent Skill amnesia."
+    },
+    {
+      "id": "bundled-ugrep-can-busy-loop-on-directory-named-gitignore",
+      "title": "Bundled ugrep can busy-loop on a directory named .gitignore.",
+      "category": "Bash & shell execution",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81916"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 shell snapshot routes `grep` through bundled ugrep 7.5.0 with `--ignore-files --hidden`. If the search tree contains a directory named `.gitignore`, ugrep can open that directory as an ignore file and spin forever at 100 percent CPU, with child processes surviving the timed-out Bash tool call and accumulating across sessions.",
+      "workaround": "Prefer `rg` or an explicit system grep in repositories that may contain dotted config directories. If Claude Code grep hangs, inspect and kill orphaned bundled `ugrep` processes, then check for directories named `.gitignore`. Until the bundled ugrep is updated or the shim skips non-regular ignore files, avoid project-wide `grep` through the shell snapshot in affected trees."
+    },
+    {
+      "id": "assistant-output-can-append-fabricated-user-turns",
+      "title": "Assistant output can append fabricated user turns.",
+      "category": "Model behavior & output",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81912"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code VS Code extension session on Windows occasionally ended assistant messages with an extra line beginning `user` followed by a plausible follow-up the user never sent. In one case the assistant then treated the fabricated user line as real context on the next turn, producing analysis for a premise the user had not raised.",
+      "workaround": "When a response appears to include a new `user` line inside the assistant message, stop and verify the transcript before continuing. Do not let the model answer the fabricated premise. For long or fast-paced sessions, capture screenshots or JSONL snippets of the exact turn and ask the assistant to ignore any user turn that is not present as an actual transcript message."
+    },
+    {
+      "id": "mcp-required-nullable-arguments-can-arrive-as-string-null",
+      "title": "MCP required nullable arguments can arrive as string null.",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81911"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 MCP tool call could not pass JSON `null` for a required parameter whose schema allowed `anyOf: [{\"type\":\"integer\"},{\"type\":\"null\"}]`. The same server accepted a direct raw JSON-RPC call with real null, but Claude Code delivered the string `\"null\"`, making nullable but non-optional compare-and-set style fields uncallable from the client.",
+      "workaround": "Avoid required nullable MCP fields when Claude Code is the caller. Use an explicit sentinel enum, split first-claim and update operations, or make the field optional with server-side validation if the protocol permits it. If null handling is suspected, compare Claude Code calls with a raw JSON-RPC control request against the same server process."
+    },
+    {
+      "id": "fleet-sidebar-can-misrender-and-misalign-clicks-at-large-widths",
+      "title": "Fleet sidebar can misrender and misalign clicks at large widths.",
+      "category": "TUI & display",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81910"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.218 Windows Terminal session misrendered the agent or fleet sidebar view when the terminal was maximized, clipping the left side of lines and causing mouse clicks to land on the wrong visible elements. Shrinking the window below a reported size threshold fixed the rendering, and the reporter ruled out recent terminal theme and graphics settings as the cause.",
+      "workaround": "If the fleet sidebar looks clipped or click targets feel shifted, shrink the terminal before using mouse controls and prefer keyboard navigation until layout is stable. Reproduce in a clean Windows Terminal profile before blaming color themes, and include terminal dimensions when reporting the hit-test mismatch."
+    },
+    {
+      "id": "model-specific-silent-stalls-can-look-like-dead-client-sessions",
+      "title": "Model-specific silent stalls can look like dead client sessions.",
+      "category": "Performance & cost",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81909"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code desktop session on macOS saw two `claude-fable-5` sessions stall for 5 to 30 minutes at nearly the same timestamps while a concurrent `claude-opus-5` session remained responsive. The affected clients showed no retry, waiting, or rate-limit indication, leaving the user to distinguish a live API wait from a dead process by inspecting sockets and transcript timestamps.",
+      "workaround": "For long silent pauses, check whether the process still has an established API connection and whether other models or sessions are responsive before killing the client. Keep timestamps for each stall and switch models for urgent work if one model family shows synchronized delay. Supervisors should surface elapsed wait or retry state instead of treating silence as normal progress."
     }
   ],
   "status_summary": {
-    "open": 1324,
+    "open": 1336,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 114,
-    "high": 696,
+    "critical": 115,
+    "high": 704,
     "low": 107,
-    "medium": 421
+    "medium": 424
   },
   "lastUpdated": "2026-07-28",
   "stats": {
-    "total": 1338,
-    "critical": 114,
-    "high": 696,
-    "medium": 421,
+    "total": 1350,
+    "critical": 115,
+    "high": 704,
+    "medium": 424,
     "low": 107,
-    "open": 1324,
+    "open": 1336,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-28",
-  "total": 1338
+  "total": 1350
 }

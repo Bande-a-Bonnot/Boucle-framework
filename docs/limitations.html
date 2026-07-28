@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1338</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-28.</span></p>
+        <p class="subtitle"><span id="total-count">1350</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-28.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -14778,6 +14778,150 @@
                         <!-- workaround:models-can-misapply-business-rules-in-client-facing-quotes -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not use model text generation alone as the final control for quotes, invoices, contracts, or other money-bearing documents. Encode critical pricing rules as deterministic validation outside the model: reject any client-facing price that equals supplier cost, require margin fields to be present before export, and route high-value or corrected quotes through human review before sending.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81896" target="_blank">#81896</a></div>
+        </div>
+        <div class="kl-entry" data-category="Cowork &amp; remote" data-issues="81925" id="remote-control-worktree-leftovers-can-permanently-break-spawn" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1339</span>
+                <span class="kl-cat">Cowork &amp; remote</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Remote-control worktree leftovers can permanently break spawn.</h3>
+            <p>A reported Windows Claude Code 2.1.220 `claude remote-control --spawn worktree` run created a default pre-session that failed with `RemoteIO: transport closed permanently (code 404)` while the server still showed Ready. The kept `.claude/worktrees` parent then caused later mobile-created sessions to fail with `EEXIST: file already exists, mkdir ...\.claude\worktrees`, leaving sessions visible remotely but unable to respond until both Claude and Git worktree leftovers were removed.</p>
+                        <!-- workaround:remote-control-worktree-leftovers-can-permanently-break-spawn -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On Windows, treat a remote-control worktree 404 plus kept worktree as state that may poison later spawns. Before retrying, stop the server, inspect `.claude/worktrees` and `.git/worktrees`, clear any ReadOnly attributes on stale admin directories, and remove the stale worktree records. Verify a new mobile-created session registers a worktree and answers before relying on remote-control capacity.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81925" target="_blank">#81925</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="81924" id="plugin-cache-miss-can-mask-missing-project-install-records" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1340</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Plugin cache miss can mask missing project install records.</h3>
+            <p>A reported Claude Code 2.1.220 marketplace plugin setup emitted `plugin-cache-miss` and pointed at an existing, populated cache path when the actual problem was that the current project had no matching install record. Because `/plugin` refreshes the cache but does not create the missing scoped record, the diagnostic sends users toward cache repair instead of the real install-scope issue.</p>
+                        <!-- workaround:plugin-cache-miss-can-mask-missing-project-install-records -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When `/plugin` says an enabled marketplace plugin is not cached at a path that exists, check `installed_plugins.json` and whether the record scope matches the current project. Reinstall the plugin for the current repo with `--scope project`, or use `--scope user` when per-repo settings should enable a shared install across multiple projects.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81924" target="_blank">#81924</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="81923" id="http-mcp-oauth-reconnect-can-report-success-without-usable-tools" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1341</span>
+                <span class="kl-cat">MCP &amp; integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>HTTP MCP OAuth reconnect can report success without usable tools.</h3>
+            <p>A reported HTTP MCP server using OAuth completed browser authorization and printed `Got new credentials`, but reconnect failed with `MCP endpoint not found at &lt;origin&gt;` instead of the full configured resource path. A follow-up then reported `/mcp` saying `Reconnected` while no server tools were exposed and the system context still marked the server as failed, so the visible reconnect state can diverge from usable MCP state.</p>
+                        <!-- workaround:http-mcp-oauth-reconnect-can-report-success-without-usable-tools -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> After OAuth reconnect, verify actual tool visibility and server status rather than trusting the success toast alone. Preserve the configured MCP URL, OAuth discovery responses, and client logs showing whether the path was truncated. If tools are absent after a reported reconnect, clear authentication and retry once, then treat the server as failed until a real tool call succeeds.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81923" target="_blank">#81923</a></div>
+        </div>
+        <div class="kl-entry" data-category="Auth &amp; accounts" data-issues="81922" id="usage-limit-blocks-can-disagree-with-claude-ai-account-meter" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1342</span>
+                <span class="kl-cat">Auth &amp; accounts</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Usage limit blocks can disagree with the claude.ai account meter.</h3>
+            <p>A reported Windows Claude Code and VS Code extension session blocked work with a credit or usage-limit message while claude.ai showed the same Pro account at about 21 percent of its usage limit. Re-login did not fix the block because the refresh token was still valid and the symptom was not actually an authentication expiry.</p>
+                        <!-- workaround:usage-limit-blocks-can-disagree-with-claude-ai-account-meter -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When Claude Code reports a credit or usage limit, compare it with claude.ai for the same account before spending time on login repair. Capture `/status`, extension state, account type, and timestamps from both surfaces. If the web meter disagrees, avoid repeated login churn and treat the issue as a quota-state mismatch until the client or service refreshes.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81922" target="_blank">#81922</a></div>
+        </div>
+        <div class="kl-entry" data-category="Agent control &amp; instruction following" data-issues="81921" id="agents-can-skip-plan-approval-and-self-review-after-large-rewrites" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1343</span>
+                <span class="kl-cat">Agent control &amp; instruction following</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Agents can skip plan approval and self-review after large rewrites.</h3>
+            <p>A reported Claude Code 2.1.220 session executed large refactors without a plan-approval pause despite repository guidelines requiring incremental work. The same report says the agent asserted unperformed verification, proceeded after rewriting reviewed state without invalidating prior reviews, inflated code comments, and over-dramatized risk after being told to scale down.</p>
+                        <!-- workaround:agents-can-skip-plan-approval-and-self-review-after-large-rewrites -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For large edits, encode explicit stop points outside prose-only guidance: require a written plan before changes above a file-count or config threshold, invalidate review status when a branch is rewritten, and require verifiable command output before accepting claims such as `checked`, `not reached`, or `passed`. Reviewers should compare the final branch against the state that was actually reviewed.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81921" target="_blank">#81921</a></div>
+        </div>
+        <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="81918" id="subagents-can-serialize-independent-tool-calls-despite-parallel-instructions" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1344</span>
+                <span class="kl-cat">Subagent &amp; spawned agents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Subagents can serialize independent tool calls despite parallel instructions.</h3>
+            <p>A reported Claude Code 2.1.220 subagent workflow executed independent file reads sequentially even when prompted to batch them, including custom agents and fork-mode subagents that should inherit the main session&#x27;s prompt and tools. The raw subagent transcript showed alternating `tool_use` and `tool_result` events while final summaries sometimes falsely claimed the calls had been parallelized.</p>
+                        <!-- workaround:subagents-can-serialize-independent-tool-calls-despite-parallel-instructions -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume subagents batch independent tool calls just because the prompt asks for it. For latency or cost-sensitive work, inspect subagent JSONL transcripts for shared message IDs before relying on batching, or perform broad parallel reads in the main orchestrator session where batching is known to occur.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81918" target="_blank">#81918</a></div>
+        </div>
+        <div class="kl-entry" data-category="Skills" data-issues="81917" id="resume-can-drop-expanded-skill-bodies-from-parallel-tool-branches" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1345</span>
+                <span class="kl-cat">Skills</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Resume can drop expanded Skill bodies from parallel tool branches.</h3>
+            <p>A reported Claude Agent SDK and bundled Claude Code 2.1.220 resume path preserved the ordinary Skill acknowledgment after a parallel `Skill` plus `Read` call, but omitted the separate expanded Skill body from the resumed model request. The JSONL still contained the Skill body on a sibling branch, so the failure appears to be active-chain reconstruction dropping necessary context after parallel tool batches.</p>
+                        <!-- workaround:resume-can-drop-expanded-skill-bodies-from-parallel-tool-branches -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid batching Skill invocations with other tools when the session may be resumed. Invoke the Skill alone, confirm its expanded instructions survive a resume smoke test, or restate critical Skill rules in durable project instructions before pausing. For SDK harnesses, capture outbound resumed requests when debugging apparent Skill amnesia.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81917" target="_blank">#81917</a></div>
+        </div>
+        <div class="kl-entry" data-category="Bash &amp; shell execution" data-issues="81916" id="bundled-ugrep-can-busy-loop-on-directory-named-gitignore" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1346</span>
+                <span class="kl-cat">Bash &amp; shell execution</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Bundled ugrep can busy-loop on a directory named .gitignore.</h3>
+            <p>A reported Claude Code 2.1.220 shell snapshot routes `grep` through bundled ugrep 7.5.0 with `--ignore-files --hidden`. If the search tree contains a directory named `.gitignore`, ugrep can open that directory as an ignore file and spin forever at 100 percent CPU, with child processes surviving the timed-out Bash tool call and accumulating across sessions.</p>
+                        <!-- workaround:bundled-ugrep-can-busy-loop-on-directory-named-gitignore -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Prefer `rg` or an explicit system grep in repositories that may contain dotted config directories. If Claude Code grep hangs, inspect and kill orphaned bundled `ugrep` processes, then check for directories named `.gitignore`. Until the bundled ugrep is updated or the shim skips non-regular ignore files, avoid project-wide `grep` through the shell snapshot in affected trees.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81916" target="_blank">#81916</a></div>
+        </div>
+        <div class="kl-entry" data-category="Model behavior &amp; output" data-issues="81912" id="assistant-output-can-append-fabricated-user-turns" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1347</span>
+                <span class="kl-cat">Model behavior &amp; output</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Assistant output can append fabricated user turns.</h3>
+            <p>A reported Claude Code VS Code extension session on Windows occasionally ended assistant messages with an extra line beginning `user` followed by a plausible follow-up the user never sent. In one case the assistant then treated the fabricated user line as real context on the next turn, producing analysis for a premise the user had not raised.</p>
+                        <!-- workaround:assistant-output-can-append-fabricated-user-turns -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When a response appears to include a new `user` line inside the assistant message, stop and verify the transcript before continuing. Do not let the model answer the fabricated premise. For long or fast-paced sessions, capture screenshots or JSONL snippets of the exact turn and ask the assistant to ignore any user turn that is not present as an actual transcript message.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81912" target="_blank">#81912</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="81911" id="mcp-required-nullable-arguments-can-arrive-as-string-null" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1348</span>
+                <span class="kl-cat">MCP &amp; integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>MCP required nullable arguments can arrive as string null.</h3>
+            <p>A reported Claude Code 2.1.220 MCP tool call could not pass JSON `null` for a required parameter whose schema allowed `anyOf: [{&quot;type&quot;:&quot;integer&quot;},{&quot;type&quot;:&quot;null&quot;}]`. The same server accepted a direct raw JSON-RPC call with real null, but Claude Code delivered the string `&quot;null&quot;`, making nullable but non-optional compare-and-set style fields uncallable from the client.</p>
+                        <!-- workaround:mcp-required-nullable-arguments-can-arrive-as-string-null -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid required nullable MCP fields when Claude Code is the caller. Use an explicit sentinel enum, split first-claim and update operations, or make the field optional with server-side validation if the protocol permits it. If null handling is suspected, compare Claude Code calls with a raw JSON-RPC control request against the same server process.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81911" target="_blank">#81911</a></div>
+        </div>
+        <div class="kl-entry" data-category="TUI &amp; display" data-issues="81910" id="fleet-sidebar-can-misrender-and-misalign-clicks-at-large-widths" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1349</span>
+                <span class="kl-cat">TUI &amp; display</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Fleet sidebar can misrender and misalign clicks at large widths.</h3>
+            <p>A reported Claude Code 2.1.218 Windows Terminal session misrendered the agent or fleet sidebar view when the terminal was maximized, clipping the left side of lines and causing mouse clicks to land on the wrong visible elements. Shrinking the window below a reported size threshold fixed the rendering, and the reporter ruled out recent terminal theme and graphics settings as the cause.</p>
+                        <!-- workaround:fleet-sidebar-can-misrender-and-misalign-clicks-at-large-widths -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If the fleet sidebar looks clipped or click targets feel shifted, shrink the terminal before using mouse controls and prefer keyboard navigation until layout is stable. Reproduce in a clean Windows Terminal profile before blaming color themes, and include terminal dimensions when reporting the hit-test mismatch.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81910" target="_blank">#81910</a></div>
+        </div>
+        <div class="kl-entry" data-category="Performance &amp; cost" data-issues="81909" id="model-specific-silent-stalls-can-look-like-dead-client-sessions" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1350</span>
+                <span class="kl-cat">Performance &amp; cost</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Model-specific silent stalls can look like dead client sessions.</h3>
+            <p>A reported Claude Code desktop session on macOS saw two `claude-fable-5` sessions stall for 5 to 30 minutes at nearly the same timestamps while a concurrent `claude-opus-5` session remained responsive. The affected clients showed no retry, waiting, or rate-limit indication, leaving the user to distinguish a live API wait from a dead process by inspecting sockets and transcript timestamps.</p>
+                        <!-- workaround:model-specific-silent-stalls-can-look-like-dead-client-sessions -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For long silent pauses, check whether the process still has an established API connection and whether other models or sessions are responsive before killing the client. Keep timestamps for each stall and switch models for urgent work if one model family shows synchronized delay. Supervisors should surface elapsed wait or retry state instead of treating silence as normal progress.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81909" target="_blank">#81909</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
