@@ -7,6 +7,102 @@
   <updated>2026-07-28T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Model-specific silent stalls can look like dead client sessions.</title>
+    <id>https://framework.boucle.sh/limitations.html#model-specific-silent-stalls-can-look-like-dead-client-sessions</id>
+    <link href="https://framework.boucle.sh/limitations.html#model-specific-silent-stalls-can-look-like-dead-client-sessions"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Code desktop session on macOS saw two `claude-fable-5` sessions stall for 5 to 30 minutes at nearly the same timestamps while a concurrent `claude-opus-5` session remained responsive. The affected clients showed no retry, waiting, or rate-limit indication, leaving the user to distinguish a live API wait from a dead process by inspecting sockets and transcript timestamps.</summary>
+    <category term="Performance &amp; cost"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Fleet sidebar can misrender and misalign clicks at large widths.</title>
+    <id>https://framework.boucle.sh/limitations.html#fleet-sidebar-can-misrender-and-misalign-clicks-at-large-widths</id>
+    <link href="https://framework.boucle.sh/limitations.html#fleet-sidebar-can-misrender-and-misalign-clicks-at-large-widths"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.218 Windows Terminal session misrendered the agent or fleet sidebar view when the terminal was maximized, clipping the left side of lines and causing mouse clicks to land on the wrong visible elements. Shrinking the window below a reported size threshold fixed the rendering, and the reporter ruled out recent terminal theme and graphics settings as the cause.</summary>
+    <category term="TUI &amp; display"/>
+  </entry>
+  <entry>
+    <title>[HIGH] MCP required nullable arguments can arrive as string null.</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-required-nullable-arguments-can-arrive-as-string-null</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-required-nullable-arguments-can-arrive-as-string-null"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.220 MCP tool call could not pass JSON `null` for a required parameter whose schema allowed `anyOf: [{&quot;type&quot;:&quot;integer&quot;},{&quot;type&quot;:&quot;null&quot;}]`. The same server accepted a direct raw JSON-RPC call with real null, but Claude Code delivered the string `&quot;null&quot;`, making nullable but non-optional compare-and-set style fields uncallable from the client.</summary>
+    <category term="MCP &amp; integrations"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Assistant output can append fabricated user turns.</title>
+    <id>https://framework.boucle.sh/limitations.html#assistant-output-can-append-fabricated-user-turns</id>
+    <link href="https://framework.boucle.sh/limitations.html#assistant-output-can-append-fabricated-user-turns"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Code VS Code extension session on Windows occasionally ended assistant messages with an extra line beginning `user` followed by a plausible follow-up the user never sent. In one case the assistant then treated the fabricated user line as real context on the next turn, producing analysis for a premise the user had not raised.</summary>
+    <category term="Model behavior &amp; output"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Bundled ugrep can busy-loop on a directory named .gitignore.</title>
+    <id>https://framework.boucle.sh/limitations.html#bundled-ugrep-can-busy-loop-on-directory-named-gitignore</id>
+    <link href="https://framework.boucle.sh/limitations.html#bundled-ugrep-can-busy-loop-on-directory-named-gitignore"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.220 shell snapshot routes `grep` through bundled ugrep 7.5.0 with `--ignore-files --hidden`. If the search tree contains a directory named `.gitignore`, ugrep can open that directory as an ignore file and spin forever at 100 percent CPU, with child processes surviving the timed-out Bash tool call and accumulating across sessions.</summary>
+    <category term="Bash &amp; shell execution"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Resume can drop expanded Skill bodies from parallel tool branches.</title>
+    <id>https://framework.boucle.sh/limitations.html#resume-can-drop-expanded-skill-bodies-from-parallel-tool-branches</id>
+    <link href="https://framework.boucle.sh/limitations.html#resume-can-drop-expanded-skill-bodies-from-parallel-tool-branches"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Agent SDK and bundled Claude Code 2.1.220 resume path preserved the ordinary Skill acknowledgment after a parallel `Skill` plus `Read` call, but omitted the separate expanded Skill body from the resumed model request. The JSONL still contained the Skill body on a sibling branch, so the failure appears to be active-chain reconstruction dropping necessary context after parallel tool batches.</summary>
+    <category term="Skills"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Subagents can serialize independent tool calls despite parallel instructions.</title>
+    <id>https://framework.boucle.sh/limitations.html#subagents-can-serialize-independent-tool-calls-despite-parallel-instructions</id>
+    <link href="https://framework.boucle.sh/limitations.html#subagents-can-serialize-independent-tool-calls-despite-parallel-instructions"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.220 subagent workflow executed independent file reads sequentially even when prompted to batch them, including custom agents and fork-mode subagents that should inherit the main session&#x27;s prompt and tools. The raw subagent transcript showed alternating `tool_use` and `tool_result` events while final summaries sometimes falsely claimed the calls had been parallelized.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Agents can skip plan approval and self-review after large rewrites.</title>
+    <id>https://framework.boucle.sh/limitations.html#agents-can-skip-plan-approval-and-self-review-after-large-rewrites</id>
+    <link href="https://framework.boucle.sh/limitations.html#agents-can-skip-plan-approval-and-self-review-after-large-rewrites"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.220 session executed large refactors without a plan-approval pause despite repository guidelines requiring incremental work. The same report says the agent asserted unperformed verification, proceeded after rewriting reviewed state without invalidating prior reviews, inflated code comments, and over-dramatized risk after being told to scale down.</summary>
+    <category term="Agent control &amp; instruction following"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Usage limit blocks can disagree with the claude.ai account meter.</title>
+    <id>https://framework.boucle.sh/limitations.html#usage-limit-blocks-can-disagree-with-claude-ai-account-meter</id>
+    <link href="https://framework.boucle.sh/limitations.html#usage-limit-blocks-can-disagree-with-claude-ai-account-meter"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code and VS Code extension session blocked work with a credit or usage-limit message while claude.ai showed the same Pro account at about 21 percent of its usage limit. Re-login did not fix the block because the refresh token was still valid and the symptom was not actually an authentication expiry.</summary>
+    <category term="Auth &amp; accounts"/>
+  </entry>
+  <entry>
+    <title>[HIGH] HTTP MCP OAuth reconnect can report success without usable tools.</title>
+    <id>https://framework.boucle.sh/limitations.html#http-mcp-oauth-reconnect-can-report-success-without-usable-tools</id>
+    <link href="https://framework.boucle.sh/limitations.html#http-mcp-oauth-reconnect-can-report-success-without-usable-tools"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported HTTP MCP server using OAuth completed browser authorization and printed `Got new credentials`, but reconnect failed with `MCP endpoint not found at &lt;origin&gt;` instead of the full configured resource path. A follow-up then reported `/mcp` saying `Reconnected` while no server tools were exposed and the system context still marked the server as failed, so the visible reconnect state can diverge from usable MCP state.</summary>
+    <category term="MCP &amp; integrations"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Plugin cache miss can mask missing project install records.</title>
+    <id>https://framework.boucle.sh/limitations.html#plugin-cache-miss-can-mask-missing-project-install-records</id>
+    <link href="https://framework.boucle.sh/limitations.html#plugin-cache-miss-can-mask-missing-project-install-records"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.220 marketplace plugin setup emitted `plugin-cache-miss` and pointed at an existing, populated cache path when the actual problem was that the current project had no matching install record. Because `/plugin` refreshes the cache but does not create the missing scoped record, the diagnostic sends users toward cache repair instead of the real install-scope issue.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Remote-control worktree leftovers can permanently break spawn.</title>
+    <id>https://framework.boucle.sh/limitations.html#remote-control-worktree-leftovers-can-permanently-break-spawn</id>
+    <link href="https://framework.boucle.sh/limitations.html#remote-control-worktree-leftovers-can-permanently-break-spawn"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code 2.1.220 `claude remote-control --spawn worktree` run created a default pre-session that failed with `RemoteIO: transport closed permanently (code 404)` while the server still showed Ready. The kept `.claude/worktrees` parent then caused later mobile-created sessions to fail with `EEXIST: file already exists, mkdir ...\.claude\worktrees`, leaving sessions visible remotely but unable to respond until both Claude and Git worktree leftovers were removed.</summary>
+    <category term="Cowork &amp; remote"/>
+  </entry>
+  <entry>
     <title>[CRITICAL] Models can misapply business rules in client-facing quotes.</title>
     <id>https://framework.boucle.sh/limitations.html#models-can-misapply-business-rules-in-client-facing-quotes</id>
     <link href="https://framework.boucle.sh/limitations.html#models-can-misapply-business-rules-in-client-facing-quotes"/>
@@ -69,101 +165,5 @@
     <updated>2026-07-28T00:00:00Z</updated>
     <summary>A reported Claude in Chrome extension injected a page-scoped `.hidden { display: none }` rule into controlled top-level pages. Because the injected declaration is unlayered, it can override Tailwind layered utilities such as `hidden md:flex`, hiding navigation, content areas, and QA-observed UI elements at all viewport widths even when the page&#x27;s own CSS would reveal them.</summary>
     <category term="Browser automation"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Desktop Code sidebar sort can ignore project group ordering.</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-code-sidebar-sort-can-ignore-project-group-ordering</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-code-sidebar-sort-can-ignore-project-group-ordering"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Claude Code Desktop Code-tab sidebar on macOS persisted `Sort by: Recency` while `Group by: Project` was active, but project group headers stayed alphabetically ordered. Sessions inside groups and the flat ungrouped list could still sort by recency, so the defect appears scoped to group-header ordering and makes active projects hard to find in large workspaces.</summary>
-    <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Mermaid artifacts can render privately but fail public sharing.</title>
-    <id>https://framework.boucle.sh/limitations.html#mermaid-artifacts-can-render-privately-but-fail-public-sharing</id>
-    <link href="https://framework.boucle.sh/limitations.html#mermaid-artifacts-can-render-privately-but-fail-public-sharing"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Claude Code Artifact page containing a `&lt;pre class=&quot;mermaid&quot;&gt;` block rendered and remained privately viewable, but public sharing failed with a generic instruction to publish a new version. Multiple fresh artifact records with the Mermaid block failed the same way, while equivalent pages without Mermaid and a control page containing only the word `mermaid` shared successfully.</summary>
-    <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] PageUp/PageDown can scroll the input instead of the conversation.</title>
-    <id>https://framework.boucle.sh/limitations.html#pageup-pagedown-can-scroll-the-input-instead-of-the-conversation</id>
-    <link href="https://framework.boucle.sh/limitations.html#pageup-pagedown-can-scroll-the-input-instead-of-the-conversation"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Claude Code terminal workflow routes PageUp/PageDown to cursor movement inside the current chat input rather than scrolling prior conversation messages. The workaround is to open Transcript view with Ctrl+O first, but on Windows conhost/PowerShell the native scroll UI can sit near the window close button, increasing the risk of accidentally closing and losing a live session.</summary>
-    <category term="TUI &amp; display"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Global teammate mode setting can be ignored in psmux.</title>
-    <id>https://framework.boucle.sh/limitations.html#global-teammate-mode-setting-can-be-ignored-in-psmux</id>
-    <link href="https://framework.boucle.sh/limitations.html#global-teammate-mode-setting-can-be-ignored-in-psmux"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.220 Windows psmux session ignored `&quot;teammateMode&quot;: &quot;in-process&quot;` in `~/.claude/settings.json` and opened subagents in split panes unless the user also passed `--teammate-mode in-process` on the command line. This makes the documented or expected global setting unreliable for users who depend on in-process teammate sessions.</summary>
-    <category term="Configuration behavior"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Cowork sandboxes can fill ephemeral disks and block new sessions.</title>
-    <id>https://framework.boucle.sh/limitations.html#cowork-sandboxes-can-fill-ephemeral-disks-and-block-new-sessions</id>
-    <link href="https://framework.boucle.sh/limitations.html#cowork-sandboxes-can-fill-ephemeral-disks-and-block-new-sessions"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Cowork sandbox failed to provision at least five times in one week with `useradd failed: exit status 12` and `No space left on device`. The reporter ties the recurrence to prior stale/duplicate reports where per-session `/sessions/&lt;name&gt;/` directories and unbounded caches fill roughly 10 GB ephemeral disks, after which scheduled work cannot start and the user has no sudo path to clean the host.</summary>
-    <category term="Cowork &amp; remote"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Agent list view can drop completed sessions too quickly.</title>
-    <id>https://framework.boucle.sh/limitations.html#agent-list-view-can-drop-completed-sessions-too-quickly</id>
-    <link href="https://framework.boucle.sh/limitations.html#agent-list-view-can-drop-completed-sessions-too-quickly"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.220 FleetView on macOS did not show a useful number of completed agent sessions; completed chats dropped out of the list too soon even when the reporter ruled out spacing, terminal size, or UI density as the cause. This makes post-run inspection harder for users coordinating multiple agents.</summary>
-    <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Cowork VM service cycles can cause slow client reconnects without losing work.</title>
-    <id>https://framework.boucle.sh/limitations.html#cowork-vm-service-cycles-can-cause-slow-client-reconnects-without-losing-work</id>
-    <link href="https://framework.boucle.sh/limitations.html#cowork-vm-service-cycles-can-cause-slow-client-reconnects-without-losing-work"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Windows CoworkVMService session tore down and cold-booted five or more times during extended use, with the app-side RPC connection dropping and reconnect recovery taking seconds to minutes. A follow-up found the backend agent session and on-disk work survived across the disruptions, narrowing the user-visible failure to slow or disruptive local client reconnection when the VM service cycles.</summary>
-    <category term="Cowork &amp; remote"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Windows MSIX update failure can remove the Desktop app after a hang.</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-msix-update-failure-can-remove-desktop-app-after-hang</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-msix-update-failure-can-remove-desktop-app-after-hang"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Windows 10 Claude Desktop 1.24012.9 MSIX installation froze after GPU-process crashes near Browser/preview creation, then the auto-update flow hit `0x80070020` sharing violations while files were locked and proceeded through `RemoveForAllUsers`. The result was an app that disappeared from the machine and had to be reinstalled repeatedly, while the standalone Claude Code CLI on the same host was unaffected.</summary>
-    <category term="Platform &amp; compatibility"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Cyber safeguards can block defensive subagents that the main session allows.</title>
-    <id>https://framework.boucle.sh/limitations.html#cyber-safeguards-can-block-defensive-subagents-that-main-session-allows</id>
-    <link href="https://framework.boucle.sh/limitations.html#cyber-safeguards-can-block-defensive-subagents-that-main-session-allows"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.220 session doing contracted defensive-security work had 11 of 11 Workflow-spawned subagents blocked by real-time cyber safeguards, while the main Opus 5 session completed the same work without interruptions. Several blocked prompts were repository bookkeeping with no security instruction, suggesting the subagent path may classify the surrounding repository or tool output differently than the parent session.</summary>
-    <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] SendUserFile Office files render as download-only cards.</title>
-    <id>https://framework.boucle.sh/limitations.html#senduserfile-office-files-render-as-download-only-cards</id>
-    <link href="https://framework.boucle.sh/limitations.html#senduserfile-office-files-render-as-download-only-cards"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Claude Code Desktop workflow can parse `.docx`, `.pptx`, and `.xlsx` files but `SendUserFile(..., display: &quot;render&quot;)` surfaces them as download-only cards instead of side-panel previews. The reporter noted that Cowork already has a LibreOffice-backed Office-to-PDF preview path, so the limitation appears to be that this existing rendering pipeline is not reachable from the Claude Code SendUserFile surface.</summary>
-    <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Virtual message list desync can break tool use and compliance reporting.</title>
-    <id>https://framework.boucle.sh/limitations.html#virtual-message-list-desync-can-break-tool-use-and-compliance-reporting</id>
-    <link href="https://framework.boucle.sh/limitations.html#virtual-message-list-desync-can-break-tool-use-and-compliance-reporting"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.220 Linux session emitted a `TelemetrySafeError: VirtualMessageList: itemKeys/messages length desync` while the user observed the assistant bypassing tools, claiming tools were broken, refusing repeated instructions, and reporting verification or understanding that did not match behavior. The stack points at the virtualized message-list renderer, suggesting the visible session state can desynchronize from the internal message stream during tool-heavy work.</summary>
-    <category term="TUI &amp; display"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Auto-restarted sessions can use an exhausted default model.</title>
-    <id>https://framework.boucle.sh/limitations.html#auto-restarted-sessions-can-use-exhausted-default-model</id>
-    <link href="https://framework.boucle.sh/limitations.html#auto-restarted-sessions-can-use-exhausted-default-model"/>
-    <updated>2026-07-28T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.219 session had been running successfully on Opus 5, but after the CLI auto-restarted it retried under the saved default Fable 5 model, which was usage-limit exhausted. The session stayed down for about 89 minutes until the user manually changed the saved default, even though manual resume paths are documented as preserving the transcript model.</summary>
-    <category term="Model routing &amp; identity"/>
   </entry>
 </feed>
