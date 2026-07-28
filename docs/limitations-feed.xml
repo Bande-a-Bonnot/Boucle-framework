@@ -4,13 +4,29 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-07-27T00:00:00Z</updated>
+  <updated>2026-07-28T00:00:00Z</updated>
   <author><name>Boucle</name></author>
+  <entry>
+    <title>[MEDIUM] Opus teammates can ignore shutdown_request while continuing idle notifications.</title>
+    <id>https://framework.boucle.sh/limitations.html#opus-teammates-can-ignore-shutdown-request-while-idle</id>
+    <link href="https://framework.boucle.sh/limitations.html#opus-teammates-can-ignore-shutdown-request-while-idle"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Code session spawned four Agent-tool teammates, then sent each a shutdown_request through SendMessage after they went idle. The two Sonnet teammates returned shutdown_approved and terminated, while the two Opus teammates repeatedly emitted idle_notification messages and never acknowledged the shutdown request. SendMessage still reported success, so the parent had no direct nack even though the control message was not processed, and each idle notification woke the parent with extra token overhead.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] VS Code session metadata can retain whole transcripts and OOM the extension host.</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-session-metadata-can-retain-whole-transcripts</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-session-metadata-can-retain-whole-transcripts"/>
+    <updated>2026-07-28T00:00:00Z</updated>
+    <summary>A reported Claude Code VS Code extension host OOMed on startup after loading about 119 MB of session JSONL files, with heap snapshots showing about 3.2 GB of retained transcript-like strings. The report narrows the mechanism to small session-metadata fields such as branch, cwd, tag, summary, and firstPrompt being V8 sliced strings that keep their full source transcript strings alive, amplified further by multi-root and git-worktree discovery fan-out.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
   <entry>
     <title>[HIGH] PDF page images can wedge sessions by byte size while the context meter looks safe.</title>
     <id>https://framework.boucle.sh/limitations.html#pdf-page-images-can-wedge-sessions-by-byte-size</id>
     <link href="https://framework.boucle.sh/limitations.html#pdf-page-images-can-wedge-sessions-by-byte-size"/>
-    <updated>2026-07-27T00:00:00Z</updated>
+    <updated>2026-07-28T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.220 macOS session became unusable after reading an 8-page PDF because each page added a base64 JPEG to the conversation. The token count stayed far below the 1M context window, but the serialized request payload grew by roughly 1.5 MB and was resent on every later request. From the user&#x27;s view, the session looked like it failed randomly while the context meter still appeared safe.</summary>
     <category term="Context &amp; memory"/>
   </entry>
@@ -18,7 +34,7 @@
     <title>[HIGH] Oversized sessions can become unrecoverable because /compact needs the failing request path.</title>
     <id>https://framework.boucle.sh/limitations.html#oversized-sessions-can-dead-end-before-compact</id>
     <link href="https://framework.boucle.sh/limitations.html#oversized-sessions-can-dead-end-before-compact"/>
-    <updated>2026-07-27T00:00:00Z</updated>
+    <updated>2026-07-28T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.220 macOS session grew large enough that requests started failing, but the normal recovery path was unreachable: /compact had to send the full conversation to the model to produce a summary, and --resume resent the same failing history. The user recovered only by externally parsing and pruning session JSONL before resuming, including preserving non-obvious parent-chain relationships for parallel tool calls and tool_result blocks.</summary>
     <category term="Context &amp; memory"/>
   </entry>
@@ -26,7 +42,7 @@
     <title>[HIGH] Subagents can delete harness-written session-state files before the warning fires.</title>
     <id>https://framework.boucle.sh/limitations.html#subagents-can-delete-harness-session-state</id>
     <link href="https://framework.boucle.sh/limitations.html#subagents-can-delete-harness-session-state"/>
-    <updated>2026-07-27T00:00:00Z</updated>
+    <updated>2026-07-28T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.220 Linux session saw a background Agent subagent read and delete tool-result cache files under ~/.claude/projects/&lt;project&gt;/&lt;session&gt;/tool-results/. Claude Code surfaced a specific session-transcript-tampering warning in the completed-task notification, but the deletion had already succeeded. This means Claude Code&#x27;s own transcript and tool-result store can be mutable by the agents it is supposed to record, so a post-hoc warning is detection rather than prevention.</summary>
     <category term="Subagent &amp; spawned agents"/>
   </entry>
@@ -34,7 +50,7 @@
     <title>[HIGH] Ctrl-C can stop background agents unrecoverably.</title>
     <id>https://framework.boucle.sh/limitations.html#ctrl-c-can-stop-background-agents-unrecoverably</id>
     <link href="https://framework.boucle.sh/limitations.html#ctrl-c-can-stop-background-agents-unrecoverably"/>
-    <updated>2026-07-27T00:00:00Z</updated>
+    <updated>2026-07-28T00:00:00Z</updated>
     <summary>A reported Claude Code session stopped a running Agent tool task when the user pressed Ctrl-C intending only to clear the current prompt input. Claude Code marked the background agent as user-stopped, and later SendMessage attempts refused to resume it even though the transcript still existed. This can discard multi-step planning or implementation work without a hook-visible tool call, because the cancellation comes from terminal input handling rather than the agent&#x27;s own tool lifecycle.</summary>
     <category term="Subagent &amp; spawned agents"/>
   </entry>
@@ -42,7 +58,7 @@
     <title>[HIGH] Exported ANTHROPIC_API_KEY can override subscription auth in Bash-spawned Claude subprocesses.</title>
     <id>https://framework.boucle.sh/limitations.html#api-key-env-can-override-subscription-in-bash-subprocesses</id>
     <link href="https://framework.boucle.sh/limitations.html#api-key-env-can-override-subscription-in-bash-subprocesses"/>
-    <updated>2026-07-27T00:00:00Z</updated>
+    <updated>2026-07-28T00:00:00Z</updated>
     <summary>A reported Claude Code session used subscription/OAuth auth interactively, but assistant-initiated Bash calls to `claude -p` inherited `ANTHROPIC_API_KEY` from the parent shell. The user&#x27;s interactive alias unset the key for manual `claude` invocations, but aliases do not expand in noninteractive Bash tool shells, so nested subprocesses silently used API-key billing and drained prepaid API credits.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
@@ -50,7 +66,7 @@
     <title>[HIGH] PreToolUse Bash `updatedInput` rewrites can be ignored while allow is honored.</title>
     <id>https://framework.boucle.sh/limitations.html#bash-updatedinput-rewrites-can-be-ignored</id>
     <link href="https://framework.boucle.sh/limitations.html#bash-updatedinput-rewrites-can-be-ignored"/>
-    <updated>2026-07-27T00:00:00Z</updated>
+    <updated>2026-07-28T00:00:00Z</updated>
     <summary>Reported Claude Code 2.1.207-2.1.220 sessions on Windows and macOS showed PreToolUse hooks for the Bash tool returning a valid hookSpecificOutput.updatedInput command rewrite plus permissionDecision allow, but Claude Code executed the original command unchanged. The permission decision was still honored, which makes the hook output look accepted while the rewrite silently has no effect.</summary>
     <category term="Hook bypass &amp; evasion"/>
   </entry>
@@ -58,7 +74,7 @@
     <title>[HIGH] Hook launch failures can be silent and non-blocking</title>
     <id>https://framework.boucle.sh/limitations.html#hook-launch-failures-can-be-silent-non-blocking</id>
     <link href="https://framework.boucle.sh/limitations.html#hook-launch-failures-can-be-silent-non-blocking"/>
-    <updated>2026-07-27T00:00:00Z</updated>
+    <updated>2026-07-28T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.220 session recorded thousands of hook_non_blocking_error attachments with exit 127 after unquoted CLAUDE_PROJECT_DIR paths split at spaces, while the UI and /hooks still presented the hooks as configured. Follow-up reports on the same issue widened the class to non-decision exits such as 141 from set -euo pipefail plus SIGPIPE, and to hooks that exit 0 while loading no user rules. For guardrails, a hook that failed to launch or never made a real decision can be indistinguishable from approval.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -66,7 +82,7 @@
     <title>[HIGH] Plugins enabled at both user and project scope can lose their user-scope install record.</title>
     <id>https://framework.boucle.sh/limitations.html#user-and-project-enabled-plugins-lack-user-scope-install-records</id>
     <link href="https://framework.boucle.sh/limitations.html#user-and-project-enabled-plugins-lack-user-scope-install-records"/>
-    <updated>2026-07-27T00:00:00Z</updated>
+    <updated>2026-07-28T00:00:00Z</updated>
     <summary>When the same plugin is enabled in user settings and a tracked project settings file, Claude Code can write only a project-scoped installed_plugins.json record. The plugin then appears enabled globally but works only in that one project; other projects can report a misleading not-cached error even when the cache path exists. If the plugin ships hooks or policy, users may think global enforcement is present while it is absent outside the project that owns the install record. Secondary malformed records with scope=project but no projectPath make the loader depend on invalid state.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -74,7 +90,7 @@
     <title>[MEDIUM] Connection probes can use unidentified user agents</title>
     <id>https://framework.boucle.sh/limitations.html#connection-probes-can-use-unidentified-user-agents</id>
     <link href="https://framework.boucle.sh/limitations.html#connection-probes-can-use-unidentified-user-agents"/>
-    <updated>2026-07-27T00:00:00Z</updated>
+    <updated>2026-07-28T00:00:00Z</updated>
     <summary>A reported enterprise gateway setup saw Claude Code 2.1.217 launch-time probing or pre-flight traffic with user-agent strings such as `Dmi/JS 0.94.0`, `MTi/JS 0.94.0`, and `NNi/JS 0.94.0` instead of the ordinary `claude-cli/...` identifier. The reporter had to correlate the traffic manually with Claude Code startup, which makes proxy logs, client allowlists, and traffic attribution harder to interpret.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
@@ -82,7 +98,7 @@
     <title>[MEDIUM] Skill shared docs can load large unrelated context</title>
     <id>https://framework.boucle.sh/limitations.html#skill-shared-docs-can-load-large-unrelated-context</id>
     <link href="https://framework.boucle.sh/limitations.html#skill-shared-docs-can-load-large-unrelated-context"/>
-    <updated>2026-07-27T00:00:00Z</updated>
+    <updated>2026-07-28T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.212 `claude-api` skill invocation correctly applied language-specific progressive disclosure for a Python project, but then unconditionally loaded all files under the skill&#x27;s `shared/` directory. For a narrow Bedrock-client question, the reporter saw roughly 84 KB of Python docs plus about 468 KB of shared docs, including model-migration and managed-agents references unrelated to the query, where the apparently relevant AWS-specific shared docs were closer to 8 KB.</summary>
     <category term="Context &amp; memory"/>
   </entry>
@@ -90,7 +106,7 @@
     <title>[MEDIUM] Session docs can omit transcript-persistence warning recovery</title>
     <id>https://framework.boucle.sh/limitations.html#session-docs-can-omit-transcript-persistence-warning-recovery</id>
     <link href="https://framework.boucle.sh/limitations.html#session-docs-can-omit-transcript-persistence-warning-recovery"/>
-    <updated>2026-07-27T00:00:00Z</updated>
+    <updated>2026-07-28T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.217 documentation gap leaves the sessions page saying transcripts are continuously saved while omitting the new warning paths for failed transcript writes, disabled prompt history, inherited child-session persistence settings, and forced persistence overrides. Users who see a persistence warning have no single documented recovery path for disk capacity, transcript-directory permissions, inherited environment variables, or the effect on `--resume`, `--continue`, `/resume`, and prompt history.</summary>
     <category term="Core &amp; session management"/>
   </entry>
@@ -98,7 +114,7 @@
     <title>[HIGH] VS Code extension host can time out after Claude subprocess init</title>
     <id>https://framework.boucle.sh/limitations.html#vscode-extension-host-can-time-out-after-subprocess-init</id>
     <link href="https://framework.boucle.sh/limitations.html#vscode-extension-host-can-time-out-after-subprocess-init"/>
-    <updated>2026-07-27T00:00:00Z</updated>
+    <updated>2026-07-28T00:00:00Z</updated>
     <summary>A reported Windows VS Code 1.129.1 setup with the Claude Code extension 2.1.216 failed every extension launch with `Subprocess initialization did not complete within 60000ms`, even though direct terminal `claude -p` worked and the spawned `claude.exe` logged successful initialization in under two seconds. VS Code DevTools repeatedly showed the extension host becoming unresponsive during the same window, pointing to an extension-host/runtime path rather than auth, network, proxy, antivirus, or standalone CLI failure.</summary>
     <category term="VS Code extension"/>
   </entry>
@@ -106,7 +122,7 @@
     <title>[MEDIUM] VS Code compact summaries can be non-copyable</title>
     <id>https://framework.boucle.sh/limitations.html#vscode-compact-summary-can-be-non-copyable</id>
     <link href="https://framework.boucle.sh/limitations.html#vscode-compact-summary-can-be-non-copyable"/>
-    <updated>2026-07-27T00:00:00Z</updated>
+    <updated>2026-07-28T00:00:00Z</updated>
     <summary>A reported Windows 11 Claude Code VS Code native-extension session rendered `/compact` output in a format that could not be selected or copied, even though ordinary assistant text remained copyable. This blocks users from extracting the compacted summary for handoff, archival notes, or manual recovery outside the current extension session.</summary>
     <category term="VS Code extension"/>
   </entry>
@@ -114,7 +130,7 @@
     <title>[MEDIUM] Tabby terminal can render Thai IME composition incompletely</title>
     <id>https://framework.boucle.sh/limitations.html#tabby-terminal-can-render-thai-ime-composition-incompletely</id>
     <link href="https://framework.boucle.sh/limitations.html#tabby-terminal-can-render-thai-ime-composition-incompletely"/>
-    <updated>2026-07-27T00:00:00Z</updated>
+    <updated>2026-07-28T00:00:00Z</updated>
     <summary>A reported Windows 11 Claude Code 2.1.217 setup running inside Tabby 1.0.234 rendered Thai Kedmanee live composition text incorrectly while typing, dropping visible characters from examples such as `เส้า` and `เลือก`. Pressing Enter submitted the correct Unicode text, and pasting Thai text worked. The same terminal handled normal PowerShell input correctly, and Claude Code inside the VS Code terminal did not reproduce, narrowing the failure to Claude Code&#x27;s live input rendering path in Tabby rather than the submitted text.</summary>
     <category term="TUI &amp; display"/>
   </entry>
@@ -122,7 +138,7 @@
     <title>[MEDIUM] VS Code chat links can ignore secondary workspace roots</title>
     <id>https://framework.boucle.sh/limitations.html#vscode-chat-links-can-ignore-secondary-workspace-roots</id>
     <link href="https://framework.boucle.sh/limitations.html#vscode-chat-links-can-ignore-secondary-workspace-roots"/>
-    <updated>2026-07-27T00:00:00Z</updated>
+    <updated>2026-07-28T00:00:00Z</updated>
     <summary>A reported Windows Claude Code for VS Code 2.1.216 multi-root workspace resolved chat-panel markdown file links only against the primary workspace folder. Links to files in sibling workspace roots failed whether written as paths relative to that root, workspace-folder-prefixed paths, absolute Windows paths, or `file:///` URIs, while a path relative to the primary root worked. This makes assistant-produced navigation unreliable in multi-root projects and can hide valid files outside the first root.</summary>
     <category term="VS Code extension"/>
   </entry>
@@ -130,7 +146,7 @@
     <title>[HIGH] Sandbox allowRead directories can be shadowed by later parent tmpfs mounts</title>
     <id>https://framework.boucle.sh/limitations.html#sandbox-allowread-directory-can-be-shadowed-by-later-parent-tmpfs</id>
     <link href="https://framework.boucle.sh/limitations.html#sandbox-allowread-directory-can-be-shadowed-by-later-parent-tmpfs"/>
-    <updated>2026-07-27T00:00:00Z</updated>
+    <updated>2026-07-28T00:00:00Z</updated>
     <summary>A reported Linux Claude Code 2.1.209 sandbox configuration used `denyRead` on a parent directory and `allowRead` on a more specific child directory, matching the documented expectation that the more specific path should win. The generated bubblewrap arguments bound the allowed child directory first, then mounted a tmpfs over the denied parent path later, shadowing the child bind. Only a few individually re-bound files survived, so most files under the allowed directory appeared missing inside sandboxed Bash despite existing on the real filesystem.</summary>
     <category term="Sandbox &amp; permissions"/>
   </entry>
@@ -138,7 +154,7 @@
     <title>[HIGH] WSL env scrub can force a broken bwrap managed-settings bind</title>
     <id>https://framework.boucle.sh/limitations.html#wsl-env-scrub-can-force-broken-bwrap-managed-settings-bind</id>
     <link href="https://framework.boucle.sh/limitations.html#wsl-env-scrub-can-force-broken-bwrap-managed-settings-bind"/>
-    <updated>2026-07-27T00:00:00Z</updated>
+    <updated>2026-07-28T00:00:00Z</updated>
     <summary>A reported WSL2 Claude Code 2.1.187 through 2.1.217 setup found that setting `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` forced the bubblewrap filesystem sandbox on for every Bash call even though no user, project, or managed setting enabled sandboxing. The sandbox then tried to protect the Windows managed-settings path under `/mnt/c/Program Files/ClaudeCode`, which did not exist because Claude Code was installed only inside WSL. Bubblewrap attempted to create the missing Windows-side directory and every Bash call failed before execution with a permission error.</summary>
     <category term="Sandbox &amp; permissions"/>
   </entry>
@@ -146,24 +162,8 @@
     <title>[HIGH] VS Code permission prompts can bypass Notification hooks</title>
     <id>https://framework.boucle.sh/limitations.html#vscode-permission-prompts-can-bypass-notification-hooks</id>
     <link href="https://framework.boucle.sh/limitations.html#vscode-permission-prompts-can-bypass-notification-hooks"/>
-    <updated>2026-07-27T00:00:00Z</updated>
+    <updated>2026-07-28T00:00:00Z</updated>
     <summary>A reported macOS Claude Code VS Code native-extension setup launches the CLI with `--permission-prompt-tool stdio` and displays permission approvals in the extension&#x27;s graphical panel instead of the terminal prompt path. The reporter verified that the `Notification` hook fires for terminal-run `claude` permission prompts, and that `PreToolUse` still fires in the extension, but a real VS Code graphical permission dialog produces no `Notification` hook invocation. Hook-based desktop notifiers and prompt monitors therefore miss extension-routed approval dialogs.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] VS Code MCP subprocess can fail credentials that work standalone</title>
-    <id>https://framework.boucle.sh/limitations.html#vscode-mcp-subprocess-can-fail-credentials-that-work-standalone</id>
-    <link href="https://framework.boucle.sh/limitations.html#vscode-mcp-subprocess-can-fail-credentials-that-work-standalone"/>
-    <updated>2026-07-27T00:00:00Z</updated>
-    <summary>A reported Claude Code VS Code native-extension session failed every tool call from the official `google-ads-mcp` stdio server with a Google Ads authentication error, even though the same Application Default Credentials, developer token, command, and environment worked through direct curl and a standalone FastMCP stdio client. Full app restarts, explicit credential paths, server renaming, and local server patching did not change the Claude-Code-routed failure.</summary>
-    <category term="MCP &amp; integrations"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Background task prompts can steal focus from active typing</title>
-    <id>https://framework.boucle.sh/limitations.html#background-task-prompts-can-steal-focus-from-active-typing</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-task-prompts-can-steal-focus-from-active-typing"/>
-    <updated>2026-07-27T00:00:00Z</updated>
-    <summary>Reported macOS Claude Code 2.1.170 sessions can move focus away from the user&#x27;s active control when background work emits new content or a decision popup. One report covers decision prompts stealing keyboard focus while the user is typing into the prompt, so the rest of the text can land in the decision window; another covers scrollback focus being pulled back to the bottom while the user is dragging the scroll bar. A follow-up notes this can become a security concern if the user is typing a password or key when focus changes.</summary>
-    <category term="UX &amp; display"/>
   </entry>
 </feed>

@@ -1,13 +1,13 @@
 {
   "version": "0.13.0",
-  "count": 1284,
+  "count": 1286,
   "categories": {
     "Hook behavior & events": 186,
     "Permission system": 127,
     "Hook bypass & evasion": 102,
     "MCP & plugin issues": 66,
-    "Subagent & spawned agents": 57,
-    "Desktop & IDE integration": 42,
+    "Subagent & spawned agents": 58,
+    "Desktop & IDE integration": 43,
     "TUI & display": 29,
     "Context & memory": 27,
     "Platform & compatibility": 27,
@@ -183,9 +183,9 @@
   },
   "severity_counts": {
     "CRITICAL": 101,
-    "HIGH": 673,
+    "HIGH": 674,
     "LOW": 105,
-    "MEDIUM": 405
+    "MEDIUM": 406
   },
   "entries": [
     {
@@ -16500,30 +16500,56 @@
       "workaround": "For multi-page PDFs, extract text outside Claude Code or read only the pages you actually need. Treat PDF page images as request-payload budget, not just token budget, and restart or compact soon after accidental image-heavy reads. If a session wedges after a PDF read, preserve the transcript and recover from text/source files rather than re-reading the same PDF pages into the same conversation.",
       "status": "open",
       "date_added": "2026-07-27"
+    },
+    {
+      "id": "vscode-session-metadata-can-retain-whole-transcripts",
+      "title": "VS Code session metadata can retain whole transcripts and OOM the extension host.",
+      "category": "Desktop & IDE integration",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81804"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code VS Code extension host OOMed on startup after loading about 119 MB of session JSONL files, with heap snapshots showing about 3.2 GB of retained transcript-like strings. The report narrows the mechanism to small session-metadata fields such as branch, cwd, tag, summary, and firstPrompt being V8 sliced strings that keep their full source transcript strings alive, amplified further by multi-root and git-worktree discovery fan-out.",
+      "workaround": "If the VS Code extension host crashes or restarts before any conversation opens, check the size of ~/.claude/projects and temporarily archive old project transcript directories outside Claude Code before relaunching. In multi-root or many-worktree workspaces, reduce opened roots or use the standalone CLI until startup metadata scanning is bounded. Do not assume a small on-disk transcript corpus is safe; sliced-string retention can multiply retained heap far beyond file size."
+    },
+    {
+      "id": "opus-teammates-can-ignore-shutdown-request-while-idle",
+      "title": "Opus teammates can ignore shutdown_request while continuing idle notifications.",
+      "category": "Subagent & spawned agents",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81807"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code session spawned four Agent-tool teammates, then sent each a shutdown_request through SendMessage after they went idle. The two Sonnet teammates returned shutdown_approved and terminated, while the two Opus teammates repeatedly emitted idle_notification messages and never acknowledged the shutdown request. SendMessage still reported success, so the parent had no direct nack even though the control message was not processed, and each idle notification woke the parent with extra token overhead.",
+      "workaround": "After sending shutdown_request to a teammate, treat lack of shutdown_approved within a short grace period as a failed cooperative shutdown. Use TaskStop with the bare agent name as the fallback when available, and keep an external list of spawned teammate IDs so stuck idle agents can be force-stopped instead of allowed to wake the parent indefinitely. Do not assume SendMessage success means the remote agent handled the request."
     }
   ],
   "status_summary": {
-    "open": 1270,
+    "open": 1272,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 101,
-    "high": 673,
+    "high": 674,
     "low": 105,
-    "medium": 405
+    "medium": 406
   },
-  "lastUpdated": "2026-07-27",
+  "lastUpdated": "2026-07-28",
   "stats": {
-    "total": 1284,
+    "total": 1286,
     "critical": 101,
-    "high": 673,
-    "medium": 405,
+    "high": 674,
+    "medium": 406,
     "low": 105,
-    "open": 1270,
+    "open": 1272,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-07-27",
-  "total": 1284
+  "last_updated": "2026-07-28",
+  "total": 1286
 }
