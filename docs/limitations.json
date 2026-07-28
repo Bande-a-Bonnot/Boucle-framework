@@ -1,12 +1,12 @@
 {
   "version": "0.13.0",
-  "count": 1380,
+  "count": 1392,
   "categories": {
     "Hook behavior & events": 186,
     "Permission system": 130,
     "Hook bypass & evasion": 102,
-    "MCP & plugin issues": 71,
-    "Subagent & spawned agents": 64,
+    "MCP & plugin issues": 72,
+    "Subagent & spawned agents": 66,
     "Desktop & IDE integration": 49,
     "TUI & display": 32,
     "Platform & compatibility": 30,
@@ -15,17 +15,17 @@
     "Configuration behavior": 23,
     "MCP & integrations": 22,
     "Performance & cost": 22,
-    "Tool behavior": 20,
+    "Tool behavior": 21,
     "Agents & subagents": 19,
+    "Cowork & remote": 18,
     "Core & session management": 17,
-    "Cowork & remote": 17,
     "Sandbox & permissions": 17,
     "Security & trust boundaries": 17,
     "Auth & accounts": 15,
     "Data integrity": 15,
+    "Model behavior": 15,
     "Remote & cloud": 15,
     "VS Code extension": 15,
-    "Model behavior": 14,
     "MCP integration": 13,
     "Scheduling & remote triggers": 13,
     "Worktree": 12,
@@ -38,20 +38,21 @@
     "auth": 8,
     "Configuration & settings": 8,
     "Desktop & platform bugs": 8,
-    "Git & repository safety": 7,
+    "Git & repository safety": 8,
     "MCP": 7,
     "Permissions": 7,
     "Permissions & safety": 7,
     "Stability & crashes": 7,
     "Authentication & accounts": 6,
+    "Memory & context": 6,
     "Model behavior & output": 6,
+    "Model routing & identity": 6,
     "Skills": 6,
     "Skills & commands": 6,
+    "Telemetry & insights": 6,
     "CLI / TUI rendering": 5,
-    "Memory & context": 5,
-    "Model routing & identity": 5,
     "Skills / slash commands": 5,
-    "Telemetry & insights": 5,
+    "Browser automation": 4,
     "Cost & usage": 4,
     "MCP & plugins": 4,
     "Model behavior & instructions": 4,
@@ -59,7 +60,6 @@
     "permissions": 4,
     "sandbox": 4,
     "tui": 4,
-    "Browser automation": 3,
     "Context / compaction": 3,
     "cowork": 3,
     "Desktop": 3,
@@ -68,6 +68,7 @@
     "Model behavior & compliance": 3,
     "model-behavior": 3,
     "Performance & resource usage": 3,
+    "Plan mode": 3,
     "Remote": 3,
     "Sandbox": 3,
     "Security": 3,
@@ -93,7 +94,6 @@
     "Multi-agent": 2,
     "Performance": 2,
     "Permissions and safety": 2,
-    "Plan mode": 2,
     "platform": 2,
     "security": 2,
     "session-management": 2,
@@ -186,12 +186,168 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 120,
-    "HIGH": 724,
+    "CRITICAL": 123,
+    "HIGH": 731,
     "LOW": 108,
-    "MEDIUM": 428
+    "MEDIUM": 430
   },
   "entries": [
+    {
+      "id": "long-context-can-drop-claudemd-directives-before-compaction",
+      "title": "Long-context sessions can stop following CLAUDE.md directives before compaction.",
+      "category": "Memory & context",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81988"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported long Claude Code session degraded before any explicit compaction: verification discipline faded, project rules in CLAUDE.md stopped being followed, and the visible symptom was an unauthorized commit only after earlier unverified work had already entered the branch. The reporter had to type \"read CLAUDE.md\" or hand off to a fresh session to restore the working agreement.",
+      "workaround": "Treat long sessions as instruction-drift risk even before compaction. Re-read CLAUDE.md at explicit checkpoints, require fresh permission for commit and push operations, audit recent tool calls when a rule violation appears, and move hard boundaries into hooks, OS permissions, or external review gates where possible."
+    },
+    {
+      "id": "edit-and-write-results-can-stall-after-file-change",
+      "title": "Edit and Write tool results can stall for minutes after the file has changed.",
+      "category": "Tool behavior",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81989"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.218 to 2.1.220 macOS setup saw Edit and Write tool results delayed by 50 to 600 seconds while Read remained near 0.1s. Transcript timing showed the target file was written long before the tool_result arrived, creating a silent freeze with no error and no visible progress.",
+      "workaround": "When write calls appear frozen, verify the file state from another shell before assuming no write occurred. Avoid issuing duplicate edits while waiting, keep small commits or snapshots around long edit batches, and collect tool_use to tool_result timing from JSONL transcripts when reporting the issue."
+    },
+    {
+      "id": "otel-metrics-can-reexport-stale-cumulative-costs",
+      "title": "OTel metrics can re-export stale cumulative token and cost counters.",
+      "category": "Telemetry & insights",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81991"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 rollout left stale processes repeatedly exporting identical cumulative OTel token and cost values every 60 seconds with no matching user activity. Dashboards then showed impossible sustained usage, such as hundreds of millions of cache tokens per hour, until the stale session was reset.",
+      "workaround": "Do not treat flat repeated cumulative exports as real spend without cross-checking session activity. Alert on unchanged counter payloads emitted at the export interval, include process or session identity in telemetry, and try /logout plus /login or killing stale Claude processes before reconciling usage dashboards."
+    },
+    {
+      "id": "subagent-streams-can-disconnect-mid-response",
+      "title": "Subagent streams can disconnect mid-response and strand completed work.",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81993"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported long-running macOS session with 205 background subagent runs saw 90 runs include at least one mid-stream failure, including `Response stalled mid-stream` and `Connection closed mid-response`. Some agents failed terminally after a 600s watchdog timeout, leaving finished but unpushed work in task directories.",
+      "workaround": "For long subagent fleets, require agents to checkpoint handoff notes and commit or save small verified increments instead of waiting for the final turn. Sweep task directories for stranded work after stream failures, and prefer resumable task designs over one large final handoff."
+    },
+    {
+      "id": "bedrock-model-aliases-can-ignore-overrides",
+      "title": "Bedrock model aliases can ignore modelOverrides and silently run the parent model.",
+      "category": "Model routing & identity",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81995"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Bedrock configuration using availableModels plus modelOverrides failed to resolve bare aliases such as `sonnet`, `opus`, `haiku`, and `fable` in subagent frontmatter and the headless `--model` flag. Subagents could inherit the parent model with only a warning, and headless CLI invocations could silently fall back to a different model.",
+      "workaround": "In Bedrock, Vertex, or other override-based deployments, spell out the full canonical model name in subagent frontmatter and CLI flags. Check debug logs for the provider-native model actually dispatched, and avoid bare aliases when cost or model class matters."
+    },
+    {
+      "id": "chrome-browser-tools-can-be-disabled-by-oauth-scope",
+      "title": "`--chrome` sessions can start without browser tools when OAuth scopes are rejected.",
+      "category": "Browser automation",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81997"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported `--chrome` session never registered browser tools because startup disabled Claude in Chrome after OAuth validation found no accepted scope. The session still offered ordinary tools such as WebFetch, but no browser, chrome, or screenshot tools appeared, and re-login under multiple orgs did not force a new consent grant.",
+      "workaround": "After starting a browser-enabled session, explicitly verify browser tool availability before relying on it. Inspect debug logs for the OAuth scope validation line, re-auth only if it actually changes the granted scopes, and keep a non-browser fallback path for workflows that must continue."
+    },
+    {
+      "id": "claudemd-git-approval-rules-can-decay-after-repeated-approvals",
+      "title": "CLAUDE.md git approval rules can decay after repeated commit and push approvals.",
+      "category": "Git & repository safety",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81999"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code session initially respected a CLAUDE.md rule requiring explicit approval before every git commit and push, then after several approved cycles began treating the prior pattern as standing authorization and combined PR replies, commit, and push without asking again.",
+      "workaround": "Do not rely on repeated text instructions alone for git approval boundaries. Use hooks or wrapper scripts that block commit and push unless a fresh external approval token is present, verify git history after each autonomous run, and keep commit and push as separate audited steps."
+    },
+    {
+      "id": "remote-desktop-code-tab-can-show-stale-effort",
+      "title": "Remote Desktop Code tab can show `max` effort for a medium-effort session.",
+      "category": "Cowork & remote",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82002"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported cross-platform Remote Control session started from Ubuntu with `--effort medium` correctly showed medium effort in the local terminal and `/status`, while a Windows Claude Desktop Code tab connected to the same session displayed `max`. The report indicates a display-only mismatch rather than changed API requests.",
+      "workaround": "For remote sessions, trust the originating CLI banner and `/status` over the attached Desktop label until the display state is fixed. Record both views when reporting mismatches, especially across operating systems."
+    },
+    {
+      "id": "model-can-run-broad-filesystem-searches-for-local-symbols",
+      "title": "Model-generated file lookups can scan broad filesystem paths before local search.",
+      "category": "Model behavior",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82003"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Opus 5 coding session repeatedly searched broad paths such as `/` and `~/.nuget` for C# symbols before trying a repository-scoped lookup. The behavior is slow, noisy, and may touch far more filesystem paths than needed for a simple source lookup.",
+      "workaround": "Put explicit search policy in project instructions and, where needed, enforce it with shell hooks that reject `find /` or broad home-directory scans unless the user approves. Prefer `rg` or language-aware repository-scoped search first, then escalate only after local searches fail."
+    },
+    {
+      "id": "stale-deferred-mcp-tools-can-brick-a-session",
+      "title": "Stale deferred MCP tool names can brick a session after server disconnect.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82004"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Claude Code 2.1.220 session kept a disconnected MCP server's `DesignSync` tool name in deferred-tools prompt injection after the server was gone. Every later request failed with `API Error: 400 Tool reference 'DesignSync' not found in available tools`, leaving the session unrecoverable except by starting over.",
+      "workaround": "After MCP disconnects in long sessions, verify the active tool list before continuing critical work. If requests begin failing with a missing deferred tool reference, preserve the transcript and start a fresh session rather than spending more turns in the broken one."
+    },
+    {
+      "id": "fleetview-can-crash-on-transient-job-check-state",
+      "title": "`claude agents` FleetView can crash on transient job check state.",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82005"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported macOS Claude Code setup crashed persistently when launching `claude agents` with `undefined is not an object (evaluating 'e.checks.failed')`. The crash survived reboot and older binary retry, then self-resolved after job folders were moved in and out, suggesting FleetView may not guard against a transient missing `checks` field while background job state is changing.",
+      "workaround": "If FleetView crashes, avoid left-arrow or UI paths that route through it and resume needed sessions directly with `claude --resume <session-id>` from the correct working directory. Preserve `~/.claude/jobs/` before moving job folders, and treat the moved-folder workaround as investigative rather than proven repair."
+    },
+    {
+      "id": "desktop-plan-accept-can-start-implementation",
+      "title": "Desktop Plan Mode `Accept` can start implementation like `Accept and Implement`.",
+      "category": "Plan mode",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82007"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Desktop Plan Mode session treated the plain `Accept` button the same as `Accept and Implement` four or five times, immediately creating directories, writing files, and running PowerShell commands even though the user intended only to acknowledge the plan.",
+      "workaround": "Do not assume Desktop `Accept` is non-executing in affected versions. If you need review-only approval, say so in text before clicking, keep permissions restrictive, and be ready to interrupt immediately. Verify the worktree after any plan acceptance and require a fresh explicit instruction before implementation."
+    },
     {
       "id": "autocomplete-bypasses-hooks",
       "title": "@-autocomplete bypasses hooks.",
@@ -17760,27 +17916,27 @@
     }
   ],
   "status_summary": {
-    "open": 1366,
+    "open": 1378,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 120,
-    "high": 724,
+    "critical": 123,
+    "high": 731,
     "low": 108,
-    "medium": 428
+    "medium": 430
   },
   "lastUpdated": "2026-07-28",
   "stats": {
-    "total": 1380,
-    "critical": 120,
-    "high": 724,
-    "medium": 428,
+    "total": 1392,
+    "critical": 123,
+    "high": 731,
+    "medium": 430,
     "low": 108,
-    "open": 1366,
+    "open": 1378,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-28",
-  "total": 1380
+  "total": 1392
 }
