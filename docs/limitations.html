@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1422</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-28.</span></p>
+        <p class="subtitle"><span id="total-count">1431</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-28.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -4346,15 +4346,17 @@
             <p>When launched as a macOS GUI app, Claude Code Desktop generates a shell snapshot that writes `export PATH=&lt;JavaScript process.env.PATH&gt;` rather than the PATH resolved by sourcing the user&#x27;s shell dotfiles (`.zshenv`, `.zshrc`, etc.). The GUI process PATH is minimal (`/usr/bin:/bin:/usr/sbin:/sbin`) and omits Homebrew (`/opt/homebrew/bin`), `/usr/local/bin`, and any user-configured PATH entries. As a result, tools installed via Homebrew (e.g. `node`, `npm`, `gh`, `python3`) return &#x27;command not found&#x27; when invoked via the Bash tool, while they work correctly in a terminal session. Workaround: launch Claude Code from the terminal instead of the GUI, or set `ANTHROPIC_SHELL_SNAPSHOT_PATH` to a pre-built snapshot generated from a terminal session. Root cause identified in snapshot generation code (`gW7`/`G31` functions). Confirmed on macOS Apple Silicon, CC Desktop v2.1.87. See #43800.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43800" target="_blank">#43800</a></div>
         </div>
-        <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="43801" id="oauth-token-revocation-via-claude-ai-does-not-invalidate-tokens" data-severity="critical" data-status="open">
+        <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="43801 82074" id="oauth-token-revocation-via-claude-ai-does-not-invalidate-tokens" data-severity="critical" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#398</span>
                 <span class="kl-cat">Security &amp; trust boundaries</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
             </div>
             <h3>OAuth token revocation via claude.ai (&#x27;Log out all sessions&#x27; / &#x27;Revoke all Claude Code instances&#x27;) does not actually invalidate tokens, leaving stolen tokens usable for days.</h3>
-            <p>Revoking all Claude Code sessions through the claude.ai web UI (Account &gt; Security &gt; &#x27;Log out all sessions&#x27; and &#x27;Revoke all Claude Code instances&#x27;) has no effect on active OAuth tokens. Tokens remain valid 3-4 days after revocation, even after a VM cold boot. This means if a token is leaked or stolen, the user has no working mechanism to invalidate it. The only incident response path (server-side revocation) is completely broken. Confirmed on CC v2.1.92, tested with multiple revocation attempts. See #43801.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43801" target="_blank">#43801</a></div>
+            <p>Revoking Claude Code sessions through the claude.ai web UI has been reported not to invalidate active OAuth token families. The original report showed tokens remaining valid after revocation. A later public incident report describes stolen macOS keychain credentials continuing to consume quota after password changes, global logout, session deletion, connector cleanup, and local containment. Users cannot verify or revoke the invisible token family from the product UI.</p>
+                        <!-- workaround:oauth-token-revocation-via-claude-ai-does-not-invalidate-tokens -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat Claude Code OAuth credentials as high-value secrets and assume global logout may not be enough after theft. If compromise is suspected, remove local credentials, secure the SSO account, cap extra usage or billing exposure, preserve usage timestamps and forensic evidence, and request server-side token-family revocation from support or security.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43801" target="_blank">#43801</a>, <a href="https://github.com/anthropics/claude-code/issues/82074" target="_blank">#82074</a></div>
         </div>
         <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="43802" id="remote-trigger-tool-returns-401-in-desktop-app-while-ui-triggers-work" data-severity="medium" data-status="open">
             <div class="kl-header">
@@ -14803,17 +14805,17 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For unattended sessions, make the saved default model match the model the session is expected to use, especially near usage limits. After auto-restarts, check request errors for a model different from the active transcript model, and have supervisors alert on repeated 429s for a non-selected default rather than waiting for manual reconnect.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81870" target="_blank">#81870</a></div>
         </div>
-        <div class="kl-entry" data-category="TUI &amp; display" data-issues="81878" id="virtual-message-list-desync-can-break-tool-use-and-compliance-reporting" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="TUI &amp; display" data-issues="81878 82075 82083" id="virtual-message-list-desync-can-break-tool-use-and-compliance-reporting" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1341</span>
                 <span class="kl-cat">TUI &amp; display</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
             <h3>Virtual message list desync can break tool use and compliance reporting.</h3>
-            <p>A reported Claude Code 2.1.220 Linux session emitted a `TelemetrySafeError: VirtualMessageList: itemKeys/messages length desync` while the user observed the assistant bypassing tools, claiming tools were broken, refusing repeated instructions, and reporting verification or understanding that did not match behavior. The stack points at the virtualized message-list renderer, suggesting the visible session state can desynchronize from the internal message stream during tool-heavy work.</p>
+            <p>Multiple Claude Code 2.1.220 reports show `TelemetrySafeError: VirtualMessageList: itemKeys/messages length desync` during ordinary TUI work. Observed effects include the assistant claiming tool behavior that did not match the transcript, task output not matching visible state, and the agent silently stopping after announcing it was starting. The stack points at the virtualized message-list renderer, so users should treat visible TUI state as suspect when this error appears.</p>
                         <!-- workaround:virtual-message-list-desync-can-break-tool-use-and-compliance-reporting -->
-            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If Claude starts claiming available tools are broken or reports compliance without corresponding tool calls, inspect the transcript or restart from a clean summary instead of trusting the TUI state. Preserve the `VirtualMessageList` error, message counts, Claude Code version, and terminal details for support.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81878" target="_blank">#81878</a></div>
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If Claude claims available tools are broken, reports compliance without matching tool calls, or stops silently while this error is present, inspect the transcript or restart from a clean summary instead of trusting the visible TUI. Preserve the error, message counts, Claude Code version, platform, terminal, and session transcript for support.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81878" target="_blank">#81878</a>, <a href="https://github.com/anthropics/claude-code/issues/82075" target="_blank">#82075</a>, <a href="https://github.com/anthropics/claude-code/issues/82083" target="_blank">#82083</a></div>
         </div>
         <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="81877" id="senduserfile-office-files-render-as-download-only-cards" data-severity="medium" data-status="open">
             <div class="kl-header">
@@ -15786,6 +15788,114 @@
                         <!-- workaround:agents-view-pr-status-colors-can-disappear-on-unfocused-rows -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Use the focused row or expanded detail pane when you need a reliable PR status color readout. For accessibility or high-volume monitoring, do not rely on the unfocused list color alone; pair it with text status, sorted filters, or external PR checks until list-row dimming can be configured or adjusted.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82052" target="_blank">#82052</a></div>
+        </div>
+        <div class="kl-entry" data-category="Context &amp; memory" data-issues="82067" id="manual-compact-can-fail-at-very-large-context" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1423</span>
+                <span class="kl-cat">Context &amp; memory</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Manual /compact can fail at very large context sizes.</h3>
+            <p>A Claude Code 2.1.220 macOS VS Code session reportedly failed when `/compact` was invoked around 435K context tokens. The report says the session became effectively unrecoverable and continuing in the same session led to more unproductive work.</p>
+                        <!-- workaround:manual-compact-can-fail-at-very-large-context -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before long sessions approach the compaction boundary, export or write a handoff summary outside the live session. If `/compact` fails at very high context, start a fresh session with the exported handoff rather than repeatedly retrying compaction in the damaged session. Preserve the session ID, context size, platform, version, and compact command timing.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82067" target="_blank">#82067</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="82068" id="plugins-lack-stable-current-path-for-versioned-claudemd-imports" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1424</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Plugins lack a stable current path for versioned CLAUDE.md imports.</h3>
+            <p>Installed plugins live under version-suffixed cache paths, while `@import` lines in CLAUDE.md do not expand plugin-root variables. Teams that want to ship shared instructions inside a versioned plugin must either hard-code a stale version path or import from the unversioned marketplace clone.</p>
+                        <!-- workaround:plugins-lack-stable-current-path-for-versioned-claudemd-imports -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Until the installer exposes a stable current path, variable expansion, or native plugin memory, keep shared instruction imports pointed at a deliberately managed location and test that location after every plugin update. Avoid silent stale imports by adding a version marker to the imported file and checking it during onboarding or SessionStart.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82068" target="_blank">#82068</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="82070" id="headershelper-can-fall-into-oauth-registration-after-token-expiry" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1425</span>
+                <span class="kl-cat">MCP &amp; integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>headersHelper can fall into OAuth registration after token expiry.</h3>
+            <p>For HTTP MCP servers configured with `headersHelper` and no OAuth block, a post-expiry 401 can reportedly bypass helper re-execution and surface `Incompatible auth server: does not support dynamic client registration`. The helper works on manual reconnect, but automatic recovery never fires after expiry.</p>
+                        <!-- workaround:headershelper-can-fall-into-oauth-registration-after-token-expiry -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Instrument headers helpers with timestamp-only logging so token refresh attempts are observable. If tools fail after bearer expiry, reconnect the MCP server manually via `/mcp` or configure a pre-registered OAuth client when available. Preserve helper invocation logs, token expiry times, server metadata, and the exact Claude Code version.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82070" target="_blank">#82070</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="82071" id="desktop-build-can-hang-at-dyld-start-while-gatekeeper-reports-damaged" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1426</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Desktop build can hang at _dyld_start while Gatekeeper reports damaged.</h3>
+            <p>Claude Desktop 1.24012.9 on macOS 26.5 arm64 was reported to pass checksum, codesign, notarization, and Gatekeeper checks, yet hang indefinitely at `_dyld_start` before loading application libraries. macOS presents this as a damaged-app dialog, which can lead users into repeated delete and reinstall loops.</p>
+                        <!-- workaround:desktop-build-can-hang-at-dyld-start-while-gatekeeper-reports-damaged -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before assuming a corrupt download, verify the DMG and app signature, launch `Contents/MacOS/Claude` directly, and sample the process. If all samples sit at `_dyld_start`, preserve the sample, macOS build, app build, and signing evidence. Use a known working prior Desktop build only if that is acceptable for your security and update policy.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82071" target="_blank">#82071</a></div>
+        </div>
+        <div class="kl-entry" data-category="TUI &amp; display" data-issues="82072" id="background-terminal-view-can-drop-visible-assistant-message-on-new-turn" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1427</span>
+                <span class="kl-cat">TUI &amp; display</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Background terminal view can drop a visible assistant message when a new turn arrives.</h3>
+            <p>In background or daemon-managed sessions, a newly arriving user turn such as a scheduled prompt can reportedly remove the assistant message currently being read from the main terminal viewport. The transcript and ctrl+o view still contain the message, so this is a rendering loss rather than confirmed data loss.</p>
+                        <!-- workaround:background-terminal-view-can-drop-visible-assistant-message-on-new-turn -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For scheduled or externally triggered sessions, do not rely only on the main viewport as the record of what happened. Check ctrl+o or the `.jsonl` transcript when a new turn arrives while reading a long assistant reply. Preserve timestamps for the wiped message and incoming turn so the renderer state can be compared with the transcript.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82072" target="_blank">#82072</a></div>
+        </div>
+        <div class="kl-entry" data-category="Cowork &amp; remote" data-issues="82073" id="cowork-vm-can-fail-hcs-create-vm-config-after-desktop-update" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1428</span>
+                <span class="kl-cat">Cowork &amp; remote</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Cowork VM can fail HCS create_vm_config after a Desktop update.</h3>
+            <p>A Windows 11 25H2 MSIX report describes Cowork failing every VM start with HCS 0x80070005 at `create_vm_config` after updating from Desktop 1.24012.0 to 1.24012.9. The reporter ruled out common SYSTEM ACL, VM identity ACL, Hyper-V group, WDAC, service, and bundle-file workarounds, and noted a separate MSIX-virtualized bundlePath leak.</p>
+                        <!-- workaround:cowork-vm-can-fail-hcs-create-vm-config-after-desktop-update -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When this HCS error persists, preserve the Desktop version, MSIX package path, `bundlePath`, HCS logs, Windows build, VBS/WDAC state, and which ACL remedies were tested. Do not keep repeating workspace reinstall after `.auto_reinstall_attempted` is recreated; it may only buy one retry without fixing the underlying VM construction denial.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82073" target="_blank">#82073</a></div>
+        </div>
+        <div class="kl-entry" data-category="File system &amp; paths" data-issues="82076" id="cowork-windows-export-can-fail-on-transcript-paths-over-260-chars" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1429</span>
+                <span class="kl-cat">File system &amp; paths</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Cowork Windows export can fail on transcript paths over 260 characters.</h3>
+            <p>Windows Cowork session export can fail with `Transcript could not be read` even though the `.jsonl` transcript exists. The reported structural path formula can exceed 260 characters, and the native file reader path appears not to use an extended-length prefix even though other APIs can stat or copy the file.</p>
+                        <!-- workaround:cowork-windows-export-can-fail-on-transcript-paths-over-260-chars -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If export fails on Windows Cowork, locate the transcript path and test reading it with a long-path-aware method such as PowerShell using a `\\?\` prefix. Preserve the full path length, app version, export archive contents, and logs. Avoid treating retry as recovery when every session path remains structurally over 260 characters.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82076" target="_blank">#82076</a></div>
+        </div>
+        <div class="kl-entry" data-category="CLI &amp; terminal" data-issues="82078" id="terminal-hyperlink-clicks-can-double-dispatch-on-linux" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1430</span>
+                <span class="kl-cat">CLI &amp; terminal</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Terminal hyperlink clicks can double-dispatch on Linux.</h3>
+            <p>On native Linux with gnome-terminal/VTE, Ctrl-clicking Claude Code OSC 8 hyperlinks can trigger both the terminal handler and Claude Code internal `onHyperlinkClick` handling. File links may open once in the editor and once in the file manager; a follow-up says web URLs can open two browser tabs.</p>
+                        <!-- workaround:terminal-hyperlink-clicks-can-double-dispatch-on-linux -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If Ctrl-click opens duplicate windows or tabs, test whether the terminal already handles OSC 8 hyperlinks and capture terminal, file manager, and Claude Code versions. Prefer copying the link manually or disabling terminal hyperlink handling where possible until Claude Code can delegate to the terminal or dedupe internal dispatch.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82078" target="_blank">#82078</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="82082" id="undefined-hook-control-response-can-crash-headless-stdin-reader" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1431</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Undefined hook control_response can crash the headless stdin reader.</h3>
+            <p>Headless Claude Code subprocesses with hooks registered can reportedly throw an unhandled ZodError when a hook callback round trip delivers `undefined` where `control_response` expects an object. The subprocess can die before its first turn with zero cost and no session ID, and some fully headless paths surface a misleading user-aborted message.</p>
+                        <!-- workaround:undefined-hook-control-response-can-crash-headless-stdin-reader -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Guard hook callback code against undefined input, log callback payload shapes, and add one-shot retries around zero-cost headless spawn deaths. For upstream reports, preserve the hook event type, stream-json mode, ZodError stack, cost/session fields, and whether subagent Stop hooks were involved.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82082" target="_blank">#82082</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

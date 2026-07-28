@@ -2238,7 +2238,7 @@ mod tests {
         // Note: These constants verify the logic is correct
         assert_eq!(SLEEP_START_HOUR, 21); // 9pm
         assert_eq!(SLEEP_END_HOUR, 6); // 6am
-        assert!(SLEEP_START_HOUR > SLEEP_END_HOUR); // Sleep period spans midnight
+        const { assert!(SLEEP_START_HOUR > SLEEP_END_HOUR) }; // Sleep period spans midnight
     }
 
     #[test]
