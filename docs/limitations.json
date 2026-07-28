@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1392,
+  "count": 1404,
   "categories": {
     "Hook behavior & events": 186,
     "Permission system": 130,
@@ -9,48 +9,49 @@
     "Subagent & spawned agents": 66,
     "Desktop & IDE integration": 49,
     "TUI & display": 32,
+    "CLI & terminal": 30,
     "Platform & compatibility": 30,
-    "CLI & terminal": 29,
     "Context & memory": 28,
+    "MCP & integrations": 24,
     "Configuration behavior": 23,
-    "MCP & integrations": 22,
     "Performance & cost": 22,
     "Tool behavior": 21,
     "Agents & subagents": 19,
-    "Cowork & remote": 18,
+    "Cowork & remote": 19,
     "Core & session management": 17,
     "Sandbox & permissions": 17,
     "Security & trust boundaries": 17,
+    "VS Code extension": 16,
     "Auth & accounts": 15,
     "Data integrity": 15,
     "Model behavior": 15,
     "Remote & cloud": 15,
-    "VS Code extension": 15,
+    "Scheduling & remote triggers": 14,
     "MCP integration": 13,
-    "Scheduling & remote triggers": 13,
     "Worktree": 12,
     "Bash & shell execution": 11,
     "File system & paths": 11,
     "Plugin & channel system": 11,
+    "UX & display": 10,
     "hooks": 9,
     "Scheduled tasks": 9,
-    "UX & display": 9,
     "auth": 8,
     "Configuration & settings": 8,
     "Desktop & platform bugs": 8,
     "Git & repository safety": 8,
+    "Permissions & safety": 8,
     "MCP": 7,
+    "Model behavior & output": 7,
     "Permissions": 7,
-    "Permissions & safety": 7,
     "Stability & crashes": 7,
     "Authentication & accounts": 6,
     "Memory & context": 6,
-    "Model behavior & output": 6,
     "Model routing & identity": 6,
     "Skills": 6,
     "Skills & commands": 6,
     "Telemetry & insights": 6,
     "CLI / TUI rendering": 5,
+    "Model behavior & compliance": 5,
     "Skills / slash commands": 5,
     "Browser automation": 4,
     "Cost & usage": 4,
@@ -60,12 +61,12 @@
     "permissions": 4,
     "sandbox": 4,
     "tui": 4,
+    "API & infrastructure": 3,
     "Context / compaction": 3,
     "cowork": 3,
     "Desktop": 3,
     "Hooks": 3,
     "IDE integration": 3,
-    "Model behavior & compliance": 3,
     "model-behavior": 3,
     "Performance & resource usage": 3,
     "Plan mode": 3,
@@ -77,7 +78,6 @@
     "Agent control & instruction following": 2,
     "Agents": 2,
     "agents": 2,
-    "API & infrastructure": 2,
     "Auth": 2,
     "Auth and login": 2,
     "auth/bedrock": 2,
@@ -186,10 +186,10 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 123,
-    "HIGH": 731,
+    "CRITICAL": 125,
+    "HIGH": 737,
     "LOW": 108,
-    "MEDIUM": 430
+    "MEDIUM": 434
   },
   "entries": [
     {
@@ -17913,30 +17913,186 @@
       "date_added": "2026-07-28",
       "description": "A reported Claude Desktop documentation table for transcript view modes listed Normal, Verbose, and Summary, while the current Desktop UI also showed a Thinking option in the transcript-view dropdown. The missing row can confuse users because this display mode is separate from the model setting that controls whether extended thinking is used.",
       "workaround": "Inspect the actual Desktop transcript-view dropdown when explaining or documenting display behavior, and do not equate the Thinking transcript view with the separate extended-thinking model setting. If a support note depends on transcript visibility, name the exact UI mode observed in the app version being used."
+    },
+    {
+      "id": "remote-control-new-sessions-can-stall-before-local-work-queue",
+      "title": "Remote Control new sessions can stall before reaching the local work queue.",
+      "category": "Cowork & remote",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82020"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 Remote Control setup on macOS registered an environment successfully and ran the pre-created default session, but client-initiated new sessions from Claude mobile or `claude.ai/code` stayed on `Allocating sandbox` forever. The local bridge poll loop kept returning no work, so the client request appeared not to reach the registered environment queue even after fresh environment registrations.",
+      "workaround": "Verify Remote Control with a debug log instead of relying on the client loading state. If new sessions never produce a `workId` in the local poll loop, keep using the pre-created attached session or restart with a fresh registration only as a diagnostic. On macOS launchd, avoid iCloud/File Provider working directories for the daemon because they can produce separate `getcwd` permission failures that look similar."
+    },
+    {
+      "id": "rules-and-verified-facts-can-be-ignored-within-same-session",
+      "title": "Rules and verified facts can be ignored within the same session.",
+      "category": "Model behavior & compliance",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82021"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 session at roughly 50 percent context repeatedly failed to apply explicit rules, verified facts, and freshly corrected instructions while preparing a short handoff. The failures included stale PR status claims, broad filesystem searches after being told the project scope, missed primary-source alerts, and repeating a formatting violation immediately after identifying it.",
+      "workaround": "Do not assume a correction was internalized just because the model acknowledged it. For handoffs or operational work, require primary-source checks for live status, constrain search roots in commands, and verify the final artifact against a short checklist before using it. Keep standing formatting and approval rules in enforceable tooling where possible rather than relying only on conversational memory."
+    },
+    {
+      "id": "scheduled-task-sessions-can-rearm-idle-timeout-indefinitely",
+      "title": "Scheduled-task sessions can re-arm idle timeout indefinitely.",
+      "category": "Scheduling & remote triggers",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82023"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Desktop 1.24012.9 scheduled-task session completed its work, logged a healthy cycle, then never terminated. Each `WarmLifecycle:session` idle timeout logged `disconnecting` and immediately started another 900 second timer, leaving the `claude` process and 11 MCP servers resident. A 4-hour cron cadence accumulated 23 leaked session trees over about three days, driving the machine into swap.",
+      "workaround": "Audit scheduled-task hosts for old `claude` session trees and MCP children instead of assuming a completed task exited. Until lifecycle teardown is fixed, use a conservative cleanup guard that only kills sessions matching the scheduled-task argv profile, no active non-helper descendants, and an age greater than the task interval. Capture `WarmLifecycle:session` log lines and process ages when reporting leaks."
+    },
+    {
+      "id": "fullscreen-mouse-capture-can-approve-permission-prompts",
+      "title": "Fullscreen mouse capture can approve permission prompts on focus click.",
+      "category": "Permissions & safety",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82026"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Terminal PowerShell setup using Claude Code fullscreen TUI with mouse capture enabled can treat a click used only to focus the terminal as a menu selection. On permission prompts, the highlighted default row is `Yes`, so a stray focus click can approve a tool action even in Manual permission mode.",
+      "workaround": "Avoid mouse interaction around permission prompts in fullscreen TUI mode until click activation and menu selection are separated. Use keyboard navigation deliberately, disable fullscreen or mouse handling if available for the session, and review recent tool approvals after refocusing the terminal. Treat unexpected prompt dismissal as a possible approval, not as a harmless UI event."
+    },
+    {
+      "id": "apify-mcp-connector-can-reject-valid-tokens",
+      "title": "Apify MCP connector can reject valid tokens on every tool call.",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82027"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 Windows WSL setup found the Apify MCP connector failed every tool call with `User was not found or authentication token is not valid`, even after testing two accounts, fresh tokens, reinstalling the connector, and confirming the same token worked against the Apify API directly. The evidence points to the connector path not forwarding authentication correctly.",
+      "workaround": "Validate the Apify token outside Claude Code before rotating credentials or changing accounts. If direct API calls work but connector tools fail, preserve the connector logs and token test result, then use direct Apify API calls or another integration path until the connector is fixed. Avoid repeatedly regenerating tokens as the only diagnostic once direct validation has passed."
+    },
+    {
+      "id": "healthy-network-can-still-see-repeated-api-econnreset",
+      "title": "Healthy local network checks can still see repeated API ECONNRESET failures.",
+      "category": "API & infrastructure",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82028"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows setup reproduced Claude Code API `ECONNRESET` failures on both CLI 2.1.100 and the VS Code extension bundled binary 2.1.220. The user ruled out packet loss, TLS reachability, Windows Defender, router firewall features, MTU, DNS order, VPN/proxy, OneDrive paths, and Wi-Fi power management while debug logs showed streams starting and then socket resets across retry cycles.",
+      "workaround": "Do not stop at ping or curl success when diagnosing repeated Claude Code connection resets. Capture `~/.claude/debug` request IDs, CLI and extension versions, platform, network path, and the list of local mitigations already tried. If retries sometimes recover, preserve both recovered and exhausted retry examples so support can distinguish transient network loss from client or service reset behavior."
+    },
+    {
+      "id": "m365-docs-can-omit-teams-write-scope-path",
+      "title": "M365 connector docs can omit the Teams write scope path.",
+      "category": "MCP & integrations",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82029"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported documentation mismatch says the Cowork changelog advertises Microsoft Teams write operations in v1.24012.0 and later, while the M365 connector configuration reference has no Teams row in its write-scope table. Users following the changelog to enable Teams write tools can reach a dead end with no documented permission path.",
+      "workaround": "Before promising Teams write access, compare the changelog, connector reference, and the actual connector manifest or tool list. If Teams write tools do not appear after granting documented scopes, report the docs mismatch and include the Desktop version plus the scopes granted. Treat missing write tools as a documentation or rollout ambiguity, not necessarily an operator setup mistake."
+    },
+    {
+      "id": "interactive-prompts-can-freeze-in-ghostty",
+      "title": "Interactive prompts can freeze in Ghostty and require Ctrl-C.",
+      "category": "CLI & terminal",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82031"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 Linux session in Ghostty often froze when asking interactive questions. The user could not navigate options or select an answer and had to press Ctrl-C to exit the prompt, then ask for the questions again.",
+      "workaround": "If prompt navigation freezes, capture the terminal emulator, shell, Claude Code version, and whether the failure occurs only on select menus or all interactive prompts. Use Ctrl-C as a recovery only after noting whether the prompt state was lost, and retry in another terminal when the blocked prompt gates important permission or planning choices."
+    },
+    {
+      "id": "model-can-add-stale-session-specific-comments-to-code",
+      "title": "Model can add stale session-specific comments to code.",
+      "category": "Model behavior & output",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82032"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 Sonnet edit added verbose comments to a CSS file that referenced the current session plan rather than durable code semantics. The user reported this happened reproducibly and that a later session treated the low-quality comment as meaningful context, making cleanup harder.",
+      "workaround": "Review auto-accepted edits for comments that describe the chat session, plan state, or temporary rationale instead of the code. Remove those comments before starting a new session, and prefer project rules that require comments only for durable behavior or non-obvious constraints. For high-risk files, turn off auto-accept until generated comments have been checked."
+    },
+    {
+      "id": "accessibility-formatting-may-require-custom-output-style",
+      "title": "Accessibility formatting may require a custom output style.",
+      "category": "UX & display",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82033"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 user with a reading disability needed short, numbered, complete sentences with the answer first, but CLAUDE.md formatting instructions decayed across sessions. The user also found `/output-style` unavailable on their install and had to discover the setting through `/config`, then patch failure modes like fragment compression and restarted numbering.",
+      "workaround": "For accessibility-critical response shape, use output styles or configuration where available rather than relying only on CLAUDE.md prose. Test the style on a fresh session, include explicit rules against fragments if needed, and document the configuration path for teammates. If `/output-style` is unavailable, check `/config` before assuming output styles are unsupported."
+    },
+    {
+      "id": "vscode-extension-hosts-can-pin-mcp-processes-for-days",
+      "title": "VS Code extension hosts can pin MCP subprocesses for days.",
+      "category": "VS Code extension",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82034"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows 11 VS Code extension setup kept long-lived `claude.exe` hosts and their stdio MCP server trees running for the full host lifetime. With several workspaces open for days, a census found 12 `claude.exe` processes under 6 Code parents pinning 52 MCP launchers plus 52 backend children, with earlier counts near 60 hosts before a reload cleared many stale processes.",
+      "workaround": "Periodically inspect VS Code, `claude.exe`, and MCP child process trees on machines with multi-day editor uptime. Reloading windows may clear stale hosts, but avoid killing processes blindly because external process trees may not distinguish an abandoned host from an active workspace. MCP launchers should still implement parent-death reaping, but that cannot solve hosts that stay alive indefinitely."
+    },
+    {
+      "id": "fable-safeguards-can-hard-block-legitimate-devops-work",
+      "title": "Fable safeguards can hard-block legitimate DevOps work.",
+      "category": "Model behavior & compliance",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82036"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported macOS Claude Code project using `claude-fable-5` hit 216 `Fable 5's safeguards flagged this message` hard blocks across 11 sessions in 22 days while doing legitimate cloud-infrastructure DevOps work such as screenshots, Docker builds, ACR login, and read-only code audits. The same sessions reportedly continued without the flags after switching to `claude-opus-5`.",
+      "workaround": "If safeguards repeatedly block benign infrastructure work, preserve timestamps, model name, session transcript paths, and a small set of mundane flagged turns. Switch models only when it is acceptable for cost, capability, and policy needs, and distinguish false-positive mitigation from bypassing safety controls. Avoid retry storms that consume quota without changing the prompt or evidence package."
     }
   ],
   "status_summary": {
-    "open": 1378,
+    "open": 1390,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 123,
-    "high": 731,
+    "critical": 125,
+    "high": 737,
     "low": 108,
-    "medium": 430
+    "medium": 434
   },
   "lastUpdated": "2026-07-28",
   "stats": {
-    "total": 1392,
-    "critical": 123,
-    "high": 731,
-    "medium": 430,
+    "total": 1404,
+    "critical": 125,
+    "high": 737,
+    "medium": 434,
     "low": 108,
-    "open": 1378,
+    "open": 1390,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-28",
-  "total": 1392
+  "total": 1404
 }
