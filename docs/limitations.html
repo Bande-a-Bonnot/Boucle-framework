@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1372</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-28.</span></p>
+        <p class="subtitle"><span id="total-count">1380</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-28.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -15186,6 +15186,102 @@
                         <!-- workaround:native-install-can-append-path-export-to-bashrc-repeatedly -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Audit `~/.bashrc` for duplicate Claude Code PATH exports after native installs or GUI launches, deduplicate the file, and watch whether it regrows. Until the installer checks file contents idempotently, avoid assuming PATH setup helpers are one-time writes and keep shell rc files under version control or backups.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81962" target="_blank">#81962</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="81965" id="business-central-mcp-can-lose-header-bound-company-context" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1373</span>
+                <span class="kl-cat">MCP &amp; integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Business Central MCP tool calls can lose header-bound company context.</h3>
+            <p>A reported Claude Code 2.1.220 setup using Microsoft&#x27;s hosted Business Central MCP server could authenticate and run metadata tools, but every data-returning `bc_actions_invoke` call failed with `Internal_CompanyNotFound`. The report ties the break to Business Central&#x27;s move toward stateless MCP request handling, where custom `Company` and environment headers may need to be present on each HTTP POST rather than only at initialization.</p>
+                        <!-- workaround:business-central-mcp-can-lose-header-bound-company-context -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat Business Central MCP data tools as unverified after protocol or server rollouts until a harmless invoke succeeds. Capture the exact Claude MCP config, server version, failing `Internal_CompanyNotFound` response, and whether metadata tools still work. Avoid write actions through the connector when company context is ambiguous, and test whether the same config works in a client that is known to send custom headers on every request.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81965" target="_blank">#81965</a></div>
+        </div>
+        <div class="kl-entry" data-category="Cowork &amp; remote" data-issues="81966" id="remote-host-install-fails-on-termux-android" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1374</span>
+                <span class="kl-cat">Cowork &amp; remote</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Remote Host install can fail on Termux because Android CLI binaries are unavailable.</h3>
+            <p>A reported Claude Desktop Remote Host setup against Termux on Android aarch64 connected over SSH and installed the small remote connector, but then failed at the `claude` CLI archive step. Manual npm postinstall reported that native binaries for `linux-arm64-android` were not available on the release channel; forcing glibc or musl Linux packages did not run under stock Termux&#x27;s Bionic filesystem layout.</p>
+                        <!-- workaround:remote-host-install-fails-on-termux-android -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Use a supported Linux remote host or run Claude Code inside a proot/chroot userland that provides the expected glibc environment. Do not assume Remote Host will reuse an existing `claude` on PATH on Termux until the installer explicitly checks it; verify with `ssh host claude --version` and expect the Desktop installer to fail its own archive step anyway.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81966" target="_blank">#81966</a></div>
+        </div>
+        <div class="kl-entry" data-category="Performance &amp; cost" data-issues="81967" id="prompt-cache-can-break-when-tools-or-ttl-change-mid-session" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1375</span>
+                <span class="kl-cat">Performance &amp; cost</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Prompt cache can break when tools or cache TTL change mid-session.</h3>
+            <p>A reported mitmproxy capture of 1,821 Claude Code 2.1.220 API requests found large cache-prefix breaks when the LSP tool was added or removed within one conversation and when a long session switched from 1h ephemeral cache TTL to the 5m default around compaction. The measured tool-array mutation invalidated larger prefixes than a normal one-hour idle expiry in that capture.</p>
+                        <!-- workaround:prompt-cache-can-break-when-tools-or-ttl-change-mid-session -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before starting long or expensive sessions, make language servers available so the tool list is stable from the first turn. Watch `cache_read_input_tokens` and `cache_creation_input_tokens` after compaction or idle periods, and restart at a deliberate boundary if the tool inventory changed. Avoid walking away from long sessions immediately after compaction if the client may have downgraded cache TTL.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81967" target="_blank">#81967</a></div>
+        </div>
+        <div class="kl-entry" data-category="Model routing &amp; identity" data-issues="81973" id="desktop-code-opus-five-can-stay-at-200k-on-team-premium" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1376</span>
+                <span class="kl-cat">Model routing &amp; identity</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Desktop Code tab can keep Opus 5 at 200K context on a Team Premium seat.</h3>
+            <p>A reported Claude Desktop Code-tab session on a Team Premium seat showed `claude-opus-5` capped at `52.8k / 200.0k` and persisted `tengu_hawthorn_window` as `200000`, despite documentation saying Team and Enterprise Opus sessions are automatically upgraded to 1M context. The report also notes that Desktop injects `ANTHROPIC_BASE_URL=https://api.anthropic.com` and that no `claude-opus-5[1m]` catalog row is available as a manual escape hatch.</p>
+                        <!-- workaround:desktop-code-opus-five-can-stay-at-200k-on-team-premium -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Check the context meter and `~/.claude.json` instead of assuming subscription entitlement selected a 1M window. If the session is capped at 200K, capture the model name, plan seat, `tengu_hawthorn_window`, and injected environment before filing support data. Use an available `[1m]` model row or a non-Desktop entrypoint only if it matches the work and preserves the intended model.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81973" target="_blank">#81973</a></div>
+        </div>
+        <div class="kl-entry" data-category="File system &amp; paths" data-issues="81974" id="background-sessions-can-mangle-windows-unc-cwd" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1377</span>
+                <span class="kl-cat">File system &amp; paths</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Background sessions can mangle Windows UNC working directories.</h3>
+            <p>A reported Windows Claude Code 2.1.220 background session launched from a UNC path like `\\server\share\project` persisted the working directory with only one leading backslash, then failed with `working directory no longer exists or is not accessible`. The same network share worked when reached through a mapped drive letter, and `state.json` showed the mangled cwd before access checks ran.</p>
+                        <!-- workaround:background-sessions-can-mangle-windows-unc-cwd -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid starting background sessions from raw UNC paths until the cwd normalizer preserves the UNC prefix. Use a mapped drive letter or local path for background work, and inspect `~/.claude/jobs/&lt;id&gt;/state.json` if a job claims the working directory disappeared. When reporting, include both the inherited `node -e &quot;console.log(process.cwd())&quot;` value and the stored job cwd.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81974" target="_blank">#81974</a></div>
+        </div>
+        <div class="kl-entry" data-category="Plan mode" data-issues="81976" id="interrupted-exitplanmode-can-authorize-unapproved-work" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1378</span>
+                <span class="kl-cat">Plan mode</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Interrupted ExitPlanMode approval can authorize unapproved work.</h3>
+            <p>A reported Claude Code 2.1.195 plan-mode flow exited plan mode when the user interrupted an ExitPlanMode approval request instead of approving it. The next retry failed with `You are not in plan mode`, and the harness told the model it could now make edits and run tools, even though approval had not been granted.</p>
+                        <!-- workaround:interrupted-exitplanmode-can-authorize-unapproved-work -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If you interrupt an ExitPlanMode approval prompt, assume plan mode may have been lost rather than denied. Stop the session or reset permissions before continuing, verify that no edits or commands ran after the interruption, and require a fresh plan review before allowing implementation. Do not treat the harness message as evidence of human approval.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81976" target="_blank">#81976</a></div>
+        </div>
+        <div class="kl-entry" data-category="Agent &amp; multi-agent" data-issues="81977" id="btw-escape-can-kill-focused-background-agent" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1379</span>
+                <span class="kl-cat">Agent &amp; multi-agent</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Escape from a `/btw` response view can kill the focused background agent.</h3>
+            <p>A reported Claude Code 2.1.220 Windows session used `/btw` to inspect a running background agent, then pressing Escape to close the response view killed that agent with a `status: killed` notification. The user-visible action looked like dismissing an overlay, but it propagated as a stop request to the focused background task.</p>
+                        <!-- workaround:btw-escape-can-kill-focused-background-agent -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat Escape inside `/btw` background-agent views as potentially destructive until confirmed otherwise. Avoid checking long-running agents through `/btw` if there is no separate close affordance, or save intermediate work before opening the view. After closing any background-agent overlay, read task status back before assuming the agent is still running.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81977" target="_blank">#81977</a></div>
+        </div>
+        <div class="kl-entry" data-category="UX &amp; display" data-issues="81979" id="desktop-transcript-docs-can-omit-thinking-view-mode" data-severity="low" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1380</span>
+                <span class="kl-cat">UX &amp; display</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
+            </div>
+            <h3>Desktop transcript docs can omit the Thinking view mode.</h3>
+            <p>A reported Claude Desktop documentation table for transcript view modes listed Normal, Verbose, and Summary, while the current Desktop UI also showed a Thinking option in the transcript-view dropdown. The missing row can confuse users because this display mode is separate from the model setting that controls whether extended thinking is used.</p>
+                        <!-- workaround:desktop-transcript-docs-can-omit-thinking-view-mode -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Inspect the actual Desktop transcript-view dropdown when explaining or documenting display behavior, and do not equate the Thinking transcript view with the separate extended-thinking model setting. If a support note depends on transcript visibility, name the exact UI mode observed in the app version being used.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81979" target="_blank">#81979</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

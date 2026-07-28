@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1372,
+  "count": 1380,
   "categories": {
     "Hook behavior & events": 186,
     "Permission system": 130,
@@ -13,14 +13,14 @@
     "CLI & terminal": 29,
     "Context & memory": 28,
     "Configuration behavior": 23,
-    "MCP & integrations": 21,
-    "Performance & cost": 21,
+    "MCP & integrations": 22,
+    "Performance & cost": 22,
     "Tool behavior": 20,
     "Agents & subagents": 19,
     "Core & session management": 17,
+    "Cowork & remote": 17,
     "Sandbox & permissions": 17,
     "Security & trust boundaries": 17,
-    "Cowork & remote": 16,
     "Auth & accounts": 15,
     "Data integrity": 15,
     "Remote & cloud": 15,
@@ -30,14 +30,14 @@
     "Scheduling & remote triggers": 13,
     "Worktree": 12,
     "Bash & shell execution": 11,
+    "File system & paths": 11,
     "Plugin & channel system": 11,
-    "File system & paths": 10,
     "hooks": 9,
     "Scheduled tasks": 9,
+    "UX & display": 9,
     "auth": 8,
     "Configuration & settings": 8,
     "Desktop & platform bugs": 8,
-    "UX & display": 8,
     "Git & repository safety": 7,
     "MCP": 7,
     "Permissions": 7,
@@ -49,12 +49,12 @@
     "Skills & commands": 6,
     "CLI / TUI rendering": 5,
     "Memory & context": 5,
+    "Model routing & identity": 5,
     "Skills / slash commands": 5,
     "Telemetry & insights": 5,
     "Cost & usage": 4,
     "MCP & plugins": 4,
     "Model behavior & instructions": 4,
-    "Model routing & identity": 4,
     "Performance & resources": 4,
     "permissions": 4,
     "sandbox": 4,
@@ -72,6 +72,7 @@
     "Sandbox": 3,
     "Security": 3,
     "Tool availability": 3,
+    "Agent & multi-agent": 2,
     "Agent control & instruction following": 2,
     "Agents": 2,
     "agents": 2,
@@ -92,12 +93,12 @@
     "Multi-agent": 2,
     "Performance": 2,
     "Permissions and safety": 2,
+    "Plan mode": 2,
     "platform": 2,
     "security": 2,
     "session-management": 2,
     "UI & display": 2,
     "Agent": 1,
-    "Agent & multi-agent": 1,
     "agent-behavior": 1,
     "Auth & credential management": 1,
     "Auth and credentials": 1,
@@ -140,7 +141,6 @@
     "Permissions & sandbox": 1,
     "Permissions & security": 1,
     "permissions/safety": 1,
-    "Plan mode": 1,
     "platform-macos": 1,
     "Platform-specific": 1,
     "platform-windows": 1,
@@ -186,9 +186,9 @@
     "Worktrees & isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 119,
-    "HIGH": 718,
-    "LOW": 107,
+    "CRITICAL": 120,
+    "HIGH": 724,
+    "LOW": 108,
     "MEDIUM": 428
   },
   "entries": [
@@ -17653,30 +17653,134 @@
       "date_added": "2026-07-28",
       "description": "A reported macOS native Claude Code 2.1.220 install launched from a GUI repeatedly appended `export PATH=\"$HOME/.local/bin:$PATH\"` to `~/.bashrc`, producing 921 duplicate lines and a PATH with 1,853 entries. The likely failure is checking the GUI process PATH rather than checking whether the rc file already contains the line; GUI launches never source `.bashrc`, so the condition never clears.",
       "workaround": "Audit `~/.bashrc` for duplicate Claude Code PATH exports after native installs or GUI launches, deduplicate the file, and watch whether it regrows. Until the installer checks file contents idempotently, avoid assuming PATH setup helpers are one-time writes and keep shell rc files under version control or backups."
+    },
+    {
+      "id": "business-central-mcp-can-lose-header-bound-company-context",
+      "title": "Business Central MCP tool calls can lose header-bound company context.",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81965"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 setup using Microsoft's hosted Business Central MCP server could authenticate and run metadata tools, but every data-returning `bc_actions_invoke` call failed with `Internal_CompanyNotFound`. The report ties the break to Business Central's move toward stateless MCP request handling, where custom `Company` and environment headers may need to be present on each HTTP POST rather than only at initialization.",
+      "workaround": "Treat Business Central MCP data tools as unverified after protocol or server rollouts until a harmless invoke succeeds. Capture the exact Claude MCP config, server version, failing `Internal_CompanyNotFound` response, and whether metadata tools still work. Avoid write actions through the connector when company context is ambiguous, and test whether the same config works in a client that is known to send custom headers on every request."
+    },
+    {
+      "id": "remote-host-install-fails-on-termux-android",
+      "title": "Remote Host install can fail on Termux because Android CLI binaries are unavailable.",
+      "category": "Cowork & remote",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81966"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Desktop Remote Host setup against Termux on Android aarch64 connected over SSH and installed the small remote connector, but then failed at the `claude` CLI archive step. Manual npm postinstall reported that native binaries for `linux-arm64-android` were not available on the release channel; forcing glibc or musl Linux packages did not run under stock Termux's Bionic filesystem layout.",
+      "workaround": "Use a supported Linux remote host or run Claude Code inside a proot/chroot userland that provides the expected glibc environment. Do not assume Remote Host will reuse an existing `claude` on PATH on Termux until the installer explicitly checks it; verify with `ssh host claude --version` and expect the Desktop installer to fail its own archive step anyway."
+    },
+    {
+      "id": "prompt-cache-can-break-when-tools-or-ttl-change-mid-session",
+      "title": "Prompt cache can break when tools or cache TTL change mid-session.",
+      "category": "Performance & cost",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81967"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported mitmproxy capture of 1,821 Claude Code 2.1.220 API requests found large cache-prefix breaks when the LSP tool was added or removed within one conversation and when a long session switched from 1h ephemeral cache TTL to the 5m default around compaction. The measured tool-array mutation invalidated larger prefixes than a normal one-hour idle expiry in that capture.",
+      "workaround": "Before starting long or expensive sessions, make language servers available so the tool list is stable from the first turn. Watch `cache_read_input_tokens` and `cache_creation_input_tokens` after compaction or idle periods, and restart at a deliberate boundary if the tool inventory changed. Avoid walking away from long sessions immediately after compaction if the client may have downgraded cache TTL."
+    },
+    {
+      "id": "desktop-code-opus-five-can-stay-at-200k-on-team-premium",
+      "title": "Desktop Code tab can keep Opus 5 at 200K context on a Team Premium seat.",
+      "category": "Model routing & identity",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81973"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Desktop Code-tab session on a Team Premium seat showed `claude-opus-5` capped at `52.8k / 200.0k` and persisted `tengu_hawthorn_window` as `200000`, despite documentation saying Team and Enterprise Opus sessions are automatically upgraded to 1M context. The report also notes that Desktop injects `ANTHROPIC_BASE_URL=https://api.anthropic.com` and that no `claude-opus-5[1m]` catalog row is available as a manual escape hatch.",
+      "workaround": "Check the context meter and `~/.claude.json` instead of assuming subscription entitlement selected a 1M window. If the session is capped at 200K, capture the model name, plan seat, `tengu_hawthorn_window`, and injected environment before filing support data. Use an available `[1m]` model row or a non-Desktop entrypoint only if it matches the work and preserves the intended model."
+    },
+    {
+      "id": "background-sessions-can-mangle-windows-unc-cwd",
+      "title": "Background sessions can mangle Windows UNC working directories.",
+      "category": "File system & paths",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81974"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Windows Claude Code 2.1.220 background session launched from a UNC path like `\\\\server\\share\\project` persisted the working directory with only one leading backslash, then failed with `working directory no longer exists or is not accessible`. The same network share worked when reached through a mapped drive letter, and `state.json` showed the mangled cwd before access checks ran.",
+      "workaround": "Avoid starting background sessions from raw UNC paths until the cwd normalizer preserves the UNC prefix. Use a mapped drive letter or local path for background work, and inspect `~/.claude/jobs/<id>/state.json` if a job claims the working directory disappeared. When reporting, include both the inherited `node -e \"console.log(process.cwd())\"` value and the stored job cwd."
+    },
+    {
+      "id": "interrupted-exitplanmode-can-authorize-unapproved-work",
+      "title": "Interrupted ExitPlanMode approval can authorize unapproved work.",
+      "category": "Plan mode",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81976"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.195 plan-mode flow exited plan mode when the user interrupted an ExitPlanMode approval request instead of approving it. The next retry failed with `You are not in plan mode`, and the harness told the model it could now make edits and run tools, even though approval had not been granted.",
+      "workaround": "If you interrupt an ExitPlanMode approval prompt, assume plan mode may have been lost rather than denied. Stop the session or reset permissions before continuing, verify that no edits or commands ran after the interruption, and require a fresh plan review before allowing implementation. Do not treat the harness message as evidence of human approval."
+    },
+    {
+      "id": "btw-escape-can-kill-focused-background-agent",
+      "title": "Escape from a `/btw` response view can kill the focused background agent.",
+      "category": "Agent & multi-agent",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81977"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Code 2.1.220 Windows session used `/btw` to inspect a running background agent, then pressing Escape to close the response view killed that agent with a `status: killed` notification. The user-visible action looked like dismissing an overlay, but it propagated as a stop request to the focused background task.",
+      "workaround": "Treat Escape inside `/btw` background-agent views as potentially destructive until confirmed otherwise. Avoid checking long-running agents through `/btw` if there is no separate close affordance, or save intermediate work before opening the view. After closing any background-agent overlay, read task status back before assuming the agent is still running."
+    },
+    {
+      "id": "desktop-transcript-docs-can-omit-thinking-view-mode",
+      "title": "Desktop transcript docs can omit the Thinking view mode.",
+      "category": "UX & display",
+      "severity": "LOW",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81979"
+      ],
+      "date_added": "2026-07-28",
+      "description": "A reported Claude Desktop documentation table for transcript view modes listed Normal, Verbose, and Summary, while the current Desktop UI also showed a Thinking option in the transcript-view dropdown. The missing row can confuse users because this display mode is separate from the model setting that controls whether extended thinking is used.",
+      "workaround": "Inspect the actual Desktop transcript-view dropdown when explaining or documenting display behavior, and do not equate the Thinking transcript view with the separate extended-thinking model setting. If a support note depends on transcript visibility, name the exact UI mode observed in the app version being used."
     }
   ],
   "status_summary": {
-    "open": 1358,
+    "open": 1366,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 119,
-    "high": 718,
-    "low": 107,
+    "critical": 120,
+    "high": 724,
+    "low": 108,
     "medium": 428
   },
   "lastUpdated": "2026-07-28",
   "stats": {
-    "total": 1372,
-    "critical": 119,
-    "high": 718,
+    "total": 1380,
+    "critical": 120,
+    "high": 724,
     "medium": 428,
-    "low": 107,
-    "open": 1358,
+    "low": 108,
+    "open": 1366,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-07-28",
-  "total": 1372
+  "total": 1380
 }
