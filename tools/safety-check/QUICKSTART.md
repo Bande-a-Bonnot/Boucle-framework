@@ -4,6 +4,10 @@ Use this when you want to know whether a Claude Code setup can actually block
 dangerous tool calls. The goal is not a perfect grade. The goal is a verified
 trust boundary before you let Claude edit a real project.
 
+If you want to try the checker without reading your real Claude Code settings
+first, run the [temporary first test](FIRST_TEST.md), then come back here for the
+real audit and install path.
+
 ## 1. Run the audit
 
 Prerequisites:

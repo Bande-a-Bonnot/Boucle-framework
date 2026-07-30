@@ -38,6 +38,10 @@ when launched from the subdirectory.
 New to the tool? Start with the [safety-check quickstart](QUICKSTART.md) for the
 short audit, install, verify, and repair loop.
 
+Want to try it before it reads your real Claude Code settings? Use the
+[temporary first test](FIRST_TEST.md). It runs with a temporary `HOME`, installs
+nothing, and shows the unconfigured summary boundary.
+
 Need help with a result? Use `--summary-only` or the
 [safe support evidence guide](SUPPORT_EVIDENCE.md) to share the copy/paste
 summary without exposing private settings or secrets. Use
