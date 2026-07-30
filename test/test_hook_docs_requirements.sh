@@ -149,6 +149,9 @@ docs = {
         "tools/install.sh | bash -s -- recommended <span class=\"prompt-char\">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
         "tools/install.sh | bash -s -- all <span class=\"prompt-char\">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
     ],
+    repo / "docs" / "recipes.html": [
+        "tools/enforce/install.sh | bash",
+    ],
 }
 
 missing = []
@@ -193,6 +196,9 @@ banned = {
     ],
     repo / "docs" / "index.html": [
         "218 Rust tests",
+    ],
+    repo / "docs" / "recipes.html": [
+        "tools/install.sh | bash -s -- enforce",
     ],
 }
 
