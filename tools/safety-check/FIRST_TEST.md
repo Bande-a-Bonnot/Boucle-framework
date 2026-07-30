@@ -11,13 +11,20 @@ unconfigured baseline looks like.
 ## macOS, Linux, WSL, or Git Bash
 
 ```sh
-tmp_home="$(mktemp -d)"
-tmp_project="$(mktemp -d)"
 (
+  tmp_home="$(mktemp -d)"
+  tmp_project="$(mktemp -d)"
+  cleanup() {
+    if [ "${KEEP_BOUCLE_FIRST_TEST:-0}" != "1" ]; then
+      rm -rf "$tmp_home" "$tmp_project"
+    fi
+  }
+  trap cleanup EXIT
+
   cd "$tmp_project"
   curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | HOME="$tmp_home" bash -s -- --verify --summary-only
+  printf 'Temporary HOME: %s\nTemporary project: %s\n' "$tmp_home" "$tmp_project"
 )
-printf 'Temporary HOME: %s\nTemporary project: %s\n' "$tmp_home" "$tmp_project"
 ```
 
 Expected shape:
@@ -32,9 +39,9 @@ Boundary: install hooks before trusting the hook layer.
 
 The exact grade can vary because the checker may still detect whether
 `claude`, `python3`, or other local tools are available on `PATH`.
-The printed temporary directories contain only this isolated test state; remove
-them with your normal temp-file cleanup process if you want to inspect them
-first.
+The temporary directories contain only this isolated test state and are removed
+automatically when the command finishes. To keep them for inspection, run
+`export KEEP_BOUCLE_FIRST_TEST=1` in the same shell before pasting the command.
 
 ## What this proves
 
