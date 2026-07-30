@@ -1,5 +1,6 @@
 # Boucle hooks installer for Windows (PowerShell)
-# Native PowerShell hooks for Claude Code — no bash, no jq, no WSL required.
+# Native PowerShell hooks for Claude Code. Install, verify, and doctor need no
+# bash, no jq, and no WSL; the optional safety-check audit delegates to bash.
 #
 # Usage:
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) }"
@@ -96,9 +97,18 @@ function Strip-JsonComments {
     return $result.ToString()
 }
 
+$PrimaryCommand = ""
+if ($Hooks -and $Hooks.Count -gt 0) {
+    $PrimaryCommand = $Hooks[0]
+}
+
 Write-Host ""
 Write-Host "Boucle Hooks for Claude Code (PowerShell)" -ForegroundColor White
-Write-Host "Native Windows hooks - no bash or jq required" -ForegroundColor DarkGray
+if ($PrimaryCommand -eq 'check') {
+    Write-Host "Safety-check audit - requires bash (Git Bash, WSL, or similar)" -ForegroundColor DarkGray
+} else {
+    Write-Host "Native Windows hooks - no bash or jq required for install, verify, or doctor" -ForegroundColor DarkGray
+}
 Write-Host ""
 
 # Show available hooks and their status
@@ -301,7 +311,7 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
     Write-Host "  restore               Restore the most recent backup"
     Write-Host "  restore <file>        Restore a specific backup"
     Write-Host "  check [--verify] [--summary-only] [--strict]"
-    Write-Host "                        Run safety audit on your Claude Code setup"
+    Write-Host "                        Run bash-based safety audit (requires Git Bash/WSL bash)"
     Write-Host "  doctor                Diagnose installation health (files, settings, permissions)"
     Write-Host "  help                  Show this help message"
     Write-Host ""
@@ -325,9 +335,10 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
     Write-Host "  install.ps1 uninstall read-once    # Remove one hook"
     Write-Host "  install.ps1 backup                 # Snapshot before updating Claude Code"
     Write-Host "  install.ps1 restore                # Restore after a wipe"
-    Write-Host "  install.ps1 check                  # Run safety audit"
+    Write-Host "  install.ps1 check                  # Run bash-based safety audit"
     Write-Host "  install.ps1 check --verify --summary-only # Public support summary"
     Write-Host "  install.ps1 check --verify --strict # Strict safety audit"
+    Write-Host "  install.ps1 doctor                 # Check installation health"
     exit 0
 }
 
