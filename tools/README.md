@@ -115,6 +115,7 @@ python3 /tmp/enforce-hooks.py --install-plugin
 After installing, test the hook:
 
 ```bash
+python3 .claude/hooks/enforce-hooks.py --verify
 python3 .claude/hooks/enforce-hooks.py --smoke-test
 python3 .claude/hooks/enforce-hooks.py --audit
 ```
