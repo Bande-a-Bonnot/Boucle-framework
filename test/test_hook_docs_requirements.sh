@@ -176,6 +176,8 @@ docs = {
     ],
     repo / "docs" / "recipes.html": [
         "tools/enforce/install.sh | bash",
+        "python3 .claude/hooks/enforce-hooks.py --verify",
+        "python3 .claude/hooks/enforce-hooks.py --smoke-test",
     ],
 }
 
