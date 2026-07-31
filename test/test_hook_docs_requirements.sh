@@ -178,6 +178,8 @@ docs = {
         "tools/enforce/install.sh | bash",
         "python3 .claude/hooks/enforce-hooks.py --verify",
         "python3 .claude/hooks/enforce-hooks.py --smoke-test",
+        "tools/install.sh | bash -s -- all <span class=\"prompt-char\">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
+        "start a fresh Claude Code session from the same project root",
     ],
 }
 
