@@ -23,7 +23,9 @@ unconfigured baseline looks like.
 
   cd "$tmp_project"
   curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | HOME="$tmp_home" bash -s -- --verify --summary-only
-  printf 'Temporary HOME: %s\nTemporary project: %s\n' "$tmp_home" "$tmp_project"
+  if [ "${KEEP_BOUCLE_FIRST_TEST:-0}" = "1" ]; then
+    printf 'Temporary HOME: %s\nTemporary project: %s\n' "$tmp_home" "$tmp_project"
+  fi
 )
 ```
 
@@ -42,6 +44,7 @@ The exact grade can vary because the checker may still detect whether
 The temporary directories contain only this isolated test state and are removed
 automatically when the command finishes. To keep them for inspection, run
 `export KEEP_BOUCLE_FIRST_TEST=1` in the same shell before pasting the command.
+Temporary paths are printed only in that keep-for-inspection mode.
 
 ## What this proves
 
