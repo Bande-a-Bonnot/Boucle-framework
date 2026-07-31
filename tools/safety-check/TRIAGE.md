@@ -55,16 +55,19 @@ Do not trust a good letter grade by itself. A setup with Grade A and
 | Windows hook warning | Medium | Native Windows hook behavior varies by Claude Code version and shell. | Prefer WSL or verify with the native PowerShell path. |
 
 If you see the ancestor project settings warning and you are in a git checkout,
-this usually gets you to the right directory:
+this usually gets you to the right directory. Outside git, it leaves you in the
+current directory:
 
 ```sh
-cd "$(git rev-parse --show-toplevel)"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 ```
 
 On native Windows PowerShell:
 
 ```powershell
-Set-Location (git rev-parse --show-toplevel)
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
 ```
 
 ## Fast repair commands

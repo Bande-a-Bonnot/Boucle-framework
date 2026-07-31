@@ -55,10 +55,13 @@ Temporary paths are printed only in that keep-for-inspection mode.
 
 ## Next real check
 
-Run the real audit from the same project root where you start Claude Code:
+Run the real audit from the same project root where you start Claude Code. If
+you are inside a git checkout, move to the repo root first; otherwise stay in
+the current project directory:
 
 ```sh
-cd "$(git rev-parse --show-toplevel)"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
 ```
 

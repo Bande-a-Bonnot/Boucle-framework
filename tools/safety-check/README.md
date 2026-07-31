@@ -19,16 +19,19 @@ iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework
 ```
 
 Run it from the same project root you use to start Claude Code. If you are
-already inside a git checkout, move to the repo root first:
+inside a git checkout, move to the repo root first; otherwise stay in the
+directory you use to launch Claude Code:
 
 ```sh
-cd "$(git rev-parse --show-toplevel)"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 ```
 
 On native Windows PowerShell:
 
 ```powershell
-Set-Location (git rev-parse --show-toplevel)
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
 ```
 
 If a parent directory has `.claude/settings.json` and the current directory

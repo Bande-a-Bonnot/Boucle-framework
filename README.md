@@ -31,11 +31,13 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Run this from the same project root where you start Claude Code. Project hooks
 are resolved from the current directory, so a subdirectory launch can miss
-`.claude/settings.json` at the repo root. If you are already somewhere inside a
-git checkout:
+`.claude/settings.json` at the repo root. If you are inside a git checkout,
+move to the repo root first; otherwise stay in the project directory you use for
+Claude Code:
 
 ```sh
-cd "$(git rev-parse --show-toplevel)"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
 ```
 
@@ -684,9 +686,13 @@ in `.claude/settings.json` at the repo root, start Claude Code and run
 `safety-check` from that same root. Launching from a subdirectory can make
 Claude treat that subdirectory as the project root and skip the ancestor
 project hooks without warning. `safety-check` reports this as an ancestor
-project settings warning. On native Windows PowerShell, run
-`Set-Location (git rev-parse --show-toplevel)` from inside the checkout before
-running `install.ps1 verify`.
+project settings warning. On native Windows PowerShell, run the same root
+fallback from inside the checkout before `install.ps1 verify`:
+
+```powershell
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
+```
 
 **Permission bypass resets with hooks installed**: If you use `--dangerously-skip-permissions` (common in autonomous setups), PreToolUse hooks can [cause the permission state to reset mid-session](https://github.com/anthropics/claude-code/issues/37745), reverting all tools to manual approval. This is a platform bug, not a hooks bug. If tools suddenly require approval 30-120 minutes into a session, this is why.
 
