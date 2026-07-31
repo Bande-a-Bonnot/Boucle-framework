@@ -178,6 +178,8 @@ docs = {
         "tools/enforce/install.sh | bash",
         "python3 .claude/hooks/enforce-hooks.py --verify",
         "python3 .claude/hooks/enforce-hooks.py --smoke-test",
+        "In default write-protect mode it blocks Edit, Write, MultiEdit, NotebookEdit, and modifying Bash commands",
+        "Put patterns under a <code>[deny]</code> section when Claude must not read, search, list, or reference those paths at all",
         "tools/install.sh | bash -s -- all <span class=\"prompt-char\">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
         "start a fresh Claude Code session from the same project root",
     ],
@@ -218,6 +220,9 @@ banned = {
         "Boucle-framework has 96 stars",
         "not yet in the official docs",
         "real payloads",
+    ],
+    repo / "docs" / "recipes.html": [
+        "Blocks Read, Edit, Write, and Bash access to matching paths",
     ],
     repo / "tools" / "enforce" / "README.md": [
         "The current docs still describe",
