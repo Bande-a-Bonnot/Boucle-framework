@@ -1,6 +1,6 @@
 # enforce-hooks
 
-Turn CLAUDE.md rules into enforced boundaries that Claude cannot bypass.
+Turn CLAUDE.md rules into PreToolUse boundaries for covered tool calls.
 
 Claude Code's CLAUDE.md lets you write project rules, but Claude follows them on a best-effort basis. enforce-hooks reads your rules and generates hooks that deterministically block violations before they happen.
 
@@ -242,7 +242,7 @@ smoke-test, and removal steps, see [Read-only audit mode](READ_ONLY_AUDIT.md).
 - Never run git commit, git push, or git merge
 ```
 
-CLAUDE.md instructions alone will not prevent violations ([#41063](https://github.com/anthropics/claude-code/issues/41063), [#40537](https://github.com/anthropics/claude-code/issues/40537), [#40867](https://github.com/anthropics/claude-code/issues/40867)). Run `enforce-hooks.py --install-plugin` to convert these into PreToolUse hooks that hard-block at the runtime level. `Never modify any files` blocks Write, Edit, MultiEdit, and NotebookEdit. The shell-write rule blocks common Bash write paths such as redirects, `tee`, `touch`, `mkdir`, `rm`, in-place edits, moves, copies, and permission/ownership changes. The model cannot bypass a hook block. For additional protection, install bash-guard (`install.sh recommended`) which catches destructive commands even when they are wrapped in compound shell expressions.
+CLAUDE.md instructions alone will not prevent violations ([#41063](https://github.com/anthropics/claude-code/issues/41063), [#40537](https://github.com/anthropics/claude-code/issues/40537), [#40867](https://github.com/anthropics/claude-code/issues/40867)). Run `enforce-hooks.py --install-plugin` to convert these into PreToolUse hooks that hard-block covered tool calls at the runtime level. `Never modify any files` blocks Write, Edit, MultiEdit, and NotebookEdit. The shell-write rule blocks common Bash write paths such as redirects, `tee`, `touch`, `mkdir`, `rm`, in-place edits, moves, copies, and permission/ownership changes. This is not a sandbox: verify the hook, start a fresh session, and review known limitations for non-tool-call paths. For additional protection, install bash-guard (`install.sh recommended`) which catches destructive commands even when they are wrapped in compound shell expressions.
 
 ### Cost control
 
@@ -319,7 +319,7 @@ Skills and workflows can include instructions that contradict your CLAUDE.md. Wh
 - Never run git add with plan or implementation in the filename
 ```
 
-The `file-guard` rules block Write/Edit to plan documents regardless of what a skill workflow requests. The `bash-guard` rules block `git commit` and `git add` commands that target plan files. Together, they create a deterministic boundary that no skill, workflow, or prompt injection can cross.
+The `file-guard` rules block Write/Edit to plan documents regardless of what a skill workflow requests. The `bash-guard` rules block `git commit` and `git add` commands that target plan files. Together, they create a deterministic boundary for those covered Write/Edit/Bash operations.
 
 **Why this works when CLAUDE.md alone does not:** Skills inject their instructions into the conversation alongside (or after) CLAUDE.md content. The model resolves the conflict by following whichever instruction is more specific or more recent — usually the skill. Hooks do not participate in this priority resolution. They fire on the tool call itself, after the model has already decided what to do. A skill can tell the model to commit; the hook blocks the commit before it executes.
 

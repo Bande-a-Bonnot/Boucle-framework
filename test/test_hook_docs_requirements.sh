@@ -35,6 +35,7 @@ docs = {
         "start a fresh Claude Code session from that same project root",
         "existing session may have loaded the previous settings or hook files",
         "Test all installed hooks with representative payloads",
+        "This is not a sandbox: verify the hook, start a fresh session, and review the known limitations",
     ],
     repo / "tools" / "README.md": [
         "**macOS / Linux:** bash, python3, and jq",
@@ -58,6 +59,12 @@ docs = {
         "tools/install.sh | bash -s -- recommended curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
         "tools/install.sh | bash -s -- read-once git-safe file-guard curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
         "Test installed hooks with representative payloads",
+    ],
+    repo / "tools" / "enforce" / "README.md": [
+        "PreToolUse boundaries for covered tool calls",
+        "hard-block covered tool calls at the runtime level",
+        "This is not a sandbox: verify the hook, start a fresh session, and review known limitations",
+        "deterministic boundary for those covered Write/Edit/Bash operations",
     ],
     repo / "tools" / "safety-check" / "README.md": [
         "No hook installation required for the audit",
