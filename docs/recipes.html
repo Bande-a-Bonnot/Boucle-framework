@@ -108,7 +108,18 @@
                     </div>
                     <p class="brief">Setting up the boundary intentionally edits <code>CLAUDE.md</code> and project-level <code>.claude/settings.json</code>. Use a disposable branch or worktree when the main checkout must stay untouched, and keep the settings backup until the audit is done.</p>
                     <p class="brief">After verification, start a fresh Claude Code session from the same project root and use a narrow prompt such as: <code>Audit this repository. Do not edit files, run migrations, restart services, or commit. Report findings only.</code></p>
-                    <p class="brief">To leave read-only mode, remove or rename the <code>Read-only mode @enforced</code> section. If you also remove the hook registration, re-run the strict audit and safety check so you know which policies are still covered.</p>
+                    <p class="brief">To leave read-only mode, remove or rename the <code>Read-only mode @enforced</code> section, then verify from the same project root. Plugin mode reads <code>CLAUDE.md</code> dynamically, so the read-only rule stops applying on the next tool call after the section is gone.</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> cd "$(git rev-parse --show-toplevel)"
+<span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify</code>
+                    </div>
+                    <p class="brief">If you also want to remove the hook registration, restore the settings snapshot only when you want <code>.claude/settings.json</code> returned to its pre-audit state, or remove <code>enforce-pretooluse.sh</code> from Claude Code's hooks UI. Then run the checks again. A strict audit should fail if the read-only section still exists without an active hook, or if restored settings contain broken hook references.</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> test ! -f .claude/settings.json.pre-read-only.bak || cp .claude/settings.json.pre-read-only.bak .claude/settings.json
+<span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify</code>
+                    </div>
                     <p class="brief" style="color: var(--muted-color);">This is not a sandbox. Hooks cover Claude Code tool calls, not every way a process can affect a system. For production data or secrets, combine this with OS permissions, backups, containers, or a disposable clone. Full copy-paste guide: <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/enforce/READ_ONLY_AUDIT.md">read-only audit mode</a>.</p>
                 </div>
 
