@@ -124,6 +124,7 @@ docs = {
         "does not install hooks",
         "does not prove your real Claude Code setup is safe",
         "HOME=\"$tmp_home\" bash -s -- --verify --summary-only",
+        "Temporary paths are printed only in that keep-for-inspection mode.",
         "Verify: not run | no hooks found | 0 payload checks",
         "Boundary: install hooks before trusting the hook layer.",
         "Verification mode does not execute dangerous shell or git commands.",
