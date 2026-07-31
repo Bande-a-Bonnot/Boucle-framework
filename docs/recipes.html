@@ -33,6 +33,7 @@
                         <a href="#git-disasters">Git disasters</a> &middot;
                         <a href="#token-waste">Token waste</a> &middot;
                         <a href="#tool-switching">Tool switching bypass</a> &middot;
+                        <a href="#support-evidence">Safe support evidence</a> &middot;
                         <a href="#after-update">After Claude Code updates</a>
                     </p>
                 </nav>
@@ -136,6 +137,29 @@
                     <p class="brief"><strong>Partial fix: bash-guard + enforce-hooks</strong></p>
                     <p class="brief">bash-guard catches common equivalences (blocks <code>rm</code> in both shell and Python patterns). enforce-hooks can define broader rules that span multiple tools. But goal-level enforcement is a <a href="/limitations.html">known limitation</a> of the hook architecture: hooks gate tool calls, not intentions.</p>
                     <p class="brief" style="color: var(--muted-color);">For critical paths, combine hooks with OS-level controls (file permissions, network policy, containerization). See the <a href="/limitations.html">full searchable list of known gaps</a>.</p>
+                </div>
+
+                <div class="recipe" id="support-evidence">
+                    <h2>"I need help without leaking private settings"</h2>
+                    <p class="brief">Do not paste raw Claude Code settings, hook commands, hook stderr, transcripts, screenshots, or private <code>CLAUDE.md</code> rules into a public issue. The support path is to run the verifier from the affected project root and share only the bounded summary block.</p>
+                    <p class="brief"><strong>Fix path: rerun from the project root, print the public summary, then add short environment context</strong></p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> cd "$(git rev-parse --show-toplevel)"
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only</code>
+                    </div>
+                    <p class="brief">Post the output from <code>--- Safety Summary (copy/paste) ---</code> through <code>--- End Safety Summary ---</code>, plus only these short fields:</p>
+                    <div class="code-block">
+                        <code>OS:
+Shell:
+Claude Code version:
+Where hooks are installed:
+What changed recently:</code>
+                    </div>
+                    <p class="brief">If native PowerShell verification is the only available path, copy the final count line and any <code>WARN</code> or <code>SKIP</code> lines instead of the startup hook table:</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"</code>
+                    </div>
+                    <p class="brief" style="color: var(--muted-color);">If someone asks for raw files, build a temporary reproduction with throwaway settings first. The <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/SUPPORT_EVIDENCE.md">safe support evidence guide</a> and <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/SUPPORT_EXAMPLES.md">safe support examples</a> show what is safe to paste and what to redact.</p>
                 </div>
 
                 <div class="recipe" id="after-update">
