@@ -53,6 +53,20 @@ WARN: git-safe did not block force push payload.
 SKIP: branch-guard needs git repo context to verify.
 ```
 
+If no native hooks are installed yet, share only the short result.
+Do not paste the startup hook table if it includes local paths.
+
+```text
+OS: native Windows
+Shell: PowerShell 7
+Claude Code version: 1.0.93
+Where hooks are installed: none detected
+What changed recently: checking before first install
+
+PowerShell verifier:
+No hooks installed. Run: install.ps1 recommended
+```
+
 If Git Bash or WSL is available, prefer the bash `--summary-only` command when
 asking in public. It produces a smaller redacted block.
 
