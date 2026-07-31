@@ -16,13 +16,16 @@ unconfigured baseline looks like.
   tmp_project="$(mktemp -d)"
   cleanup() {
     if [ "${KEEP_BOUCLE_FIRST_TEST:-0}" != "1" ]; then
-      rm -rf "$tmp_home" "$tmp_project"
+      rmdir "$tmp_home" "$tmp_project" 2>/dev/null || {
+        printf 'Temporary directories were not empty; inspect and remove manually:\n'
+        printf '  %s\n  %s\n' "$tmp_home" "$tmp_project"
+      }
     fi
   }
   trap cleanup EXIT
 
   cd "$tmp_project"
-  curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | HOME="$tmp_home" bash -s -- --verify --summary-only
+  curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | PYTHONDONTWRITEBYTECODE=1 HOME="$tmp_home" bash -s -- --verify --summary-only
   if [ "${KEEP_BOUCLE_FIRST_TEST:-0}" = "1" ]; then
     printf 'Temporary HOME: %s\nTemporary project: %s\n' "$tmp_home" "$tmp_project"
   fi
@@ -41,10 +44,13 @@ Boundary: install hooks before trusting the hook layer.
 
 The exact grade can vary because the checker may still detect whether
 `claude`, `python3`, or other local tools are available on `PATH`.
-The temporary directories contain only this isolated test state and are removed
-automatically when the command finishes. To keep them for inspection, run
-`export KEEP_BOUCLE_FIRST_TEST=1` in the same shell before pasting the command.
-Temporary paths are printed only in that keep-for-inspection mode.
+The temporary directories should contain only this isolated test state.
+`PYTHONDONTWRITEBYTECODE=1` prevents Python cache files from making the
+temporary `HOME` non-empty on macOS. The cleanup uses `rmdir` when the command
+finishes; if something unexpected writes files there, it prints both paths
+instead of recursively deleting them. To keep the directories for inspection,
+run `export KEEP_BOUCLE_FIRST_TEST=1` in the same shell before pasting the
+command. Temporary paths are printed only in that keep-for-inspection mode.
 
 ## What this proves
 
