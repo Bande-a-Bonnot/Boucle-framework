@@ -6,6 +6,13 @@ not enough for this boundary. The model can still call Write, Edit, Bash
 redirects, database mutations, Docker rebuilds, or git commands unless a hook
 blocks those tool calls before execution.
 
+This is read-only for the audited Claude Code session after the hook is
+installed. Setting up the boundary intentionally edits project files first: you
+add an `@enforced` rule to `CLAUDE.md` and register a project-level hook in
+`.claude/settings.json`. If you need the main workspace untouched, do the setup
+on a disposable branch or worktree and keep the settings backup below until the
+audit is finished.
+
 ## 1. Add the policy
 
 Paste this into your project's `CLAUDE.md`:
