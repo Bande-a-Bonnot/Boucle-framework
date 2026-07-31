@@ -24,10 +24,12 @@ Run it from the project root you use to start Claude Code, especially when the
 repository has `.claude/settings.json`. Running from a subdirectory can miss
 project-level hooks that live at the repo root.
 
-If you are already inside a git checkout, move to the repo root first:
+If you are inside a git checkout, move to the repo root first. If not, stay in
+the directory you use to launch Claude Code:
 
 ```sh
-cd "$(git rev-parse --show-toplevel)"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 ```
 
 ```sh
@@ -179,7 +181,7 @@ Use the first matching row from the summary as your next repair:
 | `Verify: not run`, `no hooks found`, or `0 payload checks` | Install the recommended hooks or replace dynamic hook snippets with direct script paths, then rerun from the same project root. |
 | `FAIL-OPEN` | Run `install.sh doctor`, inspect or reinstall the named hook, then rerun `--verify` before trusting the session. |
 | `skipped PreToolUse` | Point the hook command at a verifiable script path such as `bash ./hooks/name.sh` or `python ./hooks/name.py`. |
-| Ancestor project settings warning | `cd "$(git rev-parse --show-toplevel)"`, or start Claude Code from the directory that owns `.claude/settings.json`. |
+| Ancestor project settings warning | `repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"` then `cd "$repo_root"`, or start Claude Code from the directory that owns `.claude/settings.json`. |
 | `Verify: 0 FAIL-OPEN` with a Grade C or warnings | Keep the verified hook boundary and document the residual platform warnings. Do not reinstall hooks just to chase an A. |
 
 ## 4. Fix the common blockers
@@ -236,7 +238,8 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 On native Windows, use the native PowerShell hook verifier:
 
 ```powershell
-Set-Location (git rev-parse --show-toplevel)
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } upgrade"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
@@ -257,7 +260,8 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 On native Windows:
 
 ```powershell
-Set-Location (git rev-parse --show-toplevel)
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"

@@ -42,10 +42,11 @@
 
                 <div class="recipe" id="first-audit">
                     <h2>"I want to know if my Claude Code setup is safe"</h2>
-                    <p class="brief">Start with the audit before installing or changing hooks. Run it from the same project root where you launch Claude Code, so user-level and project-level settings are both visible.</p>
+                    <p class="brief">Start with the audit before installing or changing hooks. Run it from the same project root where you launch Claude Code, so user-level and project-level settings are both visible. In a git checkout, move to the repo root first; outside git, stay in the project directory you use for Claude Code.</p>
                     <p class="brief"><strong>Fix path: audit, install the essentials, verify, then restart Claude Code</strong></p>
                     <div class="code-block">
-                        <code><span class="prompt-char">$</span> cd "$(git rev-parse --show-toplevel)"
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
 <span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
 <span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- recommended
 <span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict</code>
@@ -57,7 +58,8 @@
                     </div>
                     <p class="brief">On native Windows, use PowerShell 7 for the native hooks:</p>
                     <div class="code-block">
-                        <code><span class="prompt-char">PS&gt;</span> Set-Location (git rev-parse --show-toplevel)
+                        <code><span class="prompt-char">PS&gt;</span> $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2&gt;$null }
+<span class="prompt-char">PS&gt;</span> if ($root) { Set-Location $root }
 <span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"
 <span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"</code>
                     </div>
@@ -96,7 +98,8 @@
 - Never run git commit, git push, or git merge</code>
                     </div>
                     <div class="code-block">
-                        <code><span class="prompt-char">$</span> cd "$(git rev-parse --show-toplevel)"
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
 <span class="prompt-char">$</span> mkdir -p .claude
 <span class="prompt-char">$</span> test ! -f .claude/settings.json || cp .claude/settings.json .claude/settings.json.pre-read-only.bak
 <span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/enforce-hooks.py -o /tmp/enforce-hooks.py
@@ -110,7 +113,8 @@
                     <p class="brief">After verification, start a fresh Claude Code session from the same project root and use a narrow prompt such as: <code>Audit this repository. Do not edit files, run migrations, restart services, or commit. Report findings only.</code></p>
                     <p class="brief">To leave read-only mode, remove or rename the <code>Read-only mode @enforced</code> section, then verify from the same project root. Plugin mode reads <code>CLAUDE.md</code> dynamically, so the read-only rule stops applying on the next tool call after the section is gone.</p>
                     <div class="code-block">
-                        <code><span class="prompt-char">$</span> cd "$(git rev-parse --show-toplevel)"
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
 <span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
 <span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify</code>
                     </div>
@@ -188,7 +192,8 @@
                     <p class="brief">Do not paste raw Claude Code settings, hook commands, hook stderr, transcripts, screenshots, or private <code>CLAUDE.md</code> rules into a public issue. The support path is to run the verifier from the affected project root and share only the bounded summary block.</p>
                     <p class="brief"><strong>Fix path: rerun from the project root, print the public summary, then add short environment context</strong></p>
                     <div class="code-block">
-                        <code><span class="prompt-char">$</span> cd "$(git rev-parse --show-toplevel)"
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
 <span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only</code>
                     </div>
                     <p class="brief">Post the output from <code>--- Safety Summary (copy/paste) ---</code> through <code>--- End Safety Summary ---</code>, plus only these short fields:</p>
@@ -211,7 +216,8 @@ What changed recently:</code>
                     <p class="brief">Before a long, unattended, or high-trust session, verify the hooks from the exact project root Claude Code will use. This preflight catches missing hook files, stale settings, failed payload checks, direct commits to protected branches, and missing audit logs before the session starts.</p>
                     <p class="brief"><strong>Fix path: install the session guard set, verify strictly, snapshot state, then restart Claude Code</strong></p>
                     <div class="code-block">
-                        <code><span class="prompt-char">$</span> cd "$(git rev-parse --show-toplevel)"
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
 <span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- bash-guard git-safe file-guard branch-guard worktree-guard session-log
 <span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
 <span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
@@ -220,7 +226,8 @@ What changed recently:</code>
                     <p class="brief">The guard set blocks dangerous shell and git commands, protects sensitive files, prevents direct commits to protected branches, prevents losing work when exiting Claude Code worktrees, and writes a JSONL tool-call audit trail. The final <code>git status --short</code> is a human checkpoint: start from a state you can explain, or commit/stash intentionally before turning the session loose.</p>
                     <p class="brief">On native Windows, use PowerShell 7 and the native verifier:</p>
                     <div class="code-block">
-                        <code><span class="prompt-char">PS&gt;</span> Set-Location (git rev-parse --show-toplevel)
+                        <code><span class="prompt-char">PS&gt;</span> $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2&gt;$null }
+<span class="prompt-char">PS&gt;</span> if ($root) { Set-Location $root }
 <span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } bash-guard git-safe file-guard branch-guard worktree-guard session-log"
 <span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 <span class="prompt-char">PS&gt;</span> git status --short</code>
@@ -234,7 +241,8 @@ What changed recently:</code>
                     <p class="brief"><strong>Fix: upgrade, doctor, and strict verification from the same project root</strong></p>
                     <p class="brief">Run the update check before trusting Claude Code with destructive commands, repo writes, or autonomous work after a version change. The strict verifier sends representative hook payloads; it does not execute the dangerous shell or git commands named in those payloads.</p>
                     <div class="code-block">
-                        <code><span class="prompt-char">$</span> cd "$(git rev-parse --show-toplevel)"
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
 <span class="prompt-char">$</span> unset IS_DEMO CLAUDE_CODE_SIMPLE
 <span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- upgrade
 <span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- doctor
@@ -242,7 +250,8 @@ What changed recently:</code>
                     </div>
                     <p class="brief">On native Windows, use PowerShell 7 and verify the native hooks:</p>
                     <div class="code-block">
-                        <code><span class="prompt-char">PS&gt;</span> Set-Location (git rev-parse --show-toplevel)
+                        <code><span class="prompt-char">PS&gt;</span> $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2&gt;$null }
+<span class="prompt-char">PS&gt;</span> if ($root) { Set-Location $root }
 <span class="prompt-char">PS&gt;</span> Remove-Item Env:IS_DEMO -ErrorAction SilentlyContinue
 <span class="prompt-char">PS&gt;</span> Remove-Item Env:CLAUDE_CODE_SIMPLE -ErrorAction SilentlyContinue
 <span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } upgrade"

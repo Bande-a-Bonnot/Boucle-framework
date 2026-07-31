@@ -40,10 +40,12 @@ if (Test-Path .claude/settings.json) { Copy-Item .claude/settings.json .claude/s
 ## After updating
 
 Run these from the same project root you use to start Claude Code. If this is a
-git checkout, get there first:
+git checkout, get there first; otherwise stay in the directory you use for
+Claude Code:
 
 ```sh
-cd "$(git rev-parse --show-toplevel)"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 ```
 
 Then verify the updated hook boundary:
@@ -58,7 +60,8 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 On native Windows:
 
 ```powershell
-Set-Location (git rev-parse --show-toplevel)
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
 Remove-Item Env:IS_DEMO -ErrorAction SilentlyContinue
 Remove-Item Env:CLAUDE_CODE_SIMPLE -ErrorAction SilentlyContinue
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } upgrade"

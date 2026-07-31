@@ -57,21 +57,24 @@ After installing, verify that the hooks actually block payloads and then run the
 doctor if anything looks wrong:
 
 ```bash
-root="$(git rev-parse --show-toplevel 2>/dev/null)" && cd "$root"
+root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- doctor
 ```
 
 Run verification from the same project root where you start Claude Code. The
-first line assumes you are already inside a git checkout. If Claude starts from
-a subdirectory, root project hooks in `.claude/settings.json` can be skipped;
-safety-check reports this as an ancestor project settings warning.
+first line moves to the repo root when you are inside a git checkout and stays
+in the current directory otherwise. If Claude starts from a subdirectory, root
+project hooks in `.claude/settings.json` can be skipped; safety-check reports
+this as an ancestor project settings warning.
 After a clean verification, start a fresh Claude Code session from that same
 root before trusting newly installed or upgraded hooks; an existing session may
 have loaded the previous settings or hook files.
 
 ```powershell
-Set-Location (git rev-parse --show-toplevel)
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
 ```
