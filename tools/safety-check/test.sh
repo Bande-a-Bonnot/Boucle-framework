@@ -2968,6 +2968,9 @@ BPA_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert "bypass agent warning present" "bypassPermissions ignore" "$BPA_OUTPUT"
 assert "bypass agent cites issue" "40343" "$BPA_OUTPUT"
 assert "bypass agent shows name" "my-agent" "$BPA_OUTPUT"
+assert "bypass agent uses covered-tool-call wording" "covered tool-call enforcement" "$BPA_OUTPUT"
+assert "bypass agent warns hook coverage is not sandbox" "hook coverage is not a sandbox" "$BPA_OUTPUT"
+assert_not "bypass agent avoids absolute bypass claim" "cannot be bypassed by agent mode" "$BPA_OUTPUT"
 rm -rf "$TMPDIR_BPA"
 
 # === Test: No bypass agent warning without bypassPermissions agents ===
