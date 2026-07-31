@@ -28,6 +28,7 @@
                     <p class="brief" style="color: var(--muted-color);">Jump to:
                         <a href="#first-audit">First safety audit</a> &middot;
                         <a href="#rules-ignored">Rules ignored</a> &middot;
+                        <a href="#read-only-audit">Read-only audit</a> &middot;
                         <a href="#files-deleted">Files deleted</a> &middot;
                         <a href="#dangerous-commands">Dangerous commands</a> &middot;
                         <a href="#git-disasters">Git disasters</a> &middot;
@@ -78,6 +79,37 @@
                     </div>
                     <p class="brief" style="color: var(--muted-color);">For audit-only sessions, use the <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/enforce/READ_ONLY_AUDIT.md">read-only audit recipe</a>, which includes setup, strict verification, smoke testing, fresh-session guidance, and removal steps.</p>
                     <p class="brief" style="color: var(--muted-color);">Also helps: fewer rules placed more prominently, shorter sessions, and accepting that CLAUDE.md is guidance while hooks are enforcement.</p>
+                </div>
+
+                <div class="recipe" id="read-only-audit">
+                    <h2>"I need Claude to inspect the repo, not change it"</h2>
+                    <p class="brief">Use this when Claude Code should review, test, and report without writing files, mutating data, restarting services, or committing. A prompt that says "do not edit" is guidance. The enforced rule below blocks covered tool calls before they execute.</p>
+                    <p class="brief"><strong>Fix path: add an enforced read-only rule, install the dynamic hook, verify, smoke test, then start a fresh session</strong></p>
+                    <div class="code-block">
+                        <code>## Read-only mode @enforced
+- Never modify any files
+- Never run rm -rf
+- Never run `&gt;`, `&gt;&gt;`, `tee`, `touch`, `mkdir`, `rm`, `sed -i`, `perl -pi`, `mv`, `cp`, `unlink`, `chmod`, or `chown`
+- Never run ALTER, DROP, TRUNCATE, INSERT, UPDATE, or DELETE
+- Never run docker restart, docker stop, docker build, or docker rm
+- Never run sudo
+- Never run git commit, git push, or git merge</code>
+                    </div>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> cd "$(git rev-parse --show-toplevel)"
+<span class="prompt-char">$</span> mkdir -p .claude
+<span class="prompt-char">$</span> test ! -f .claude/settings.json || cp .claude/settings.json .claude/settings.json.pre-read-only.bak
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/enforce-hooks.py -o /tmp/enforce-hooks.py
+<span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --scan
+<span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --install-plugin
+<span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
+<span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --verify --strict
+<span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --smoke-test --strict</code>
+                    </div>
+                    <p class="brief">Setting up the boundary intentionally edits <code>CLAUDE.md</code> and project-level <code>.claude/settings.json</code>. Use a disposable branch or worktree when the main checkout must stay untouched, and keep the settings backup until the audit is done.</p>
+                    <p class="brief">After verification, start a fresh Claude Code session from the same project root and use a narrow prompt such as: <code>Audit this repository. Do not edit files, run migrations, restart services, or commit. Report findings only.</code></p>
+                    <p class="brief">To leave read-only mode, remove or rename the <code>Read-only mode @enforced</code> section. If you also remove the hook registration, re-run the strict audit and safety check so you know which policies are still covered.</p>
+                    <p class="brief" style="color: var(--muted-color);">This is not a sandbox. Hooks cover Claude Code tool calls, not every way a process can affect a system. For production data or secrets, combine this with OS permissions, backups, containers, or a disposable clone. Full copy-paste guide: <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/enforce/READ_ONLY_AUDIT.md">read-only audit mode</a>.</p>
                 </div>
 
                 <div class="recipe" id="files-deleted">
@@ -221,6 +253,10 @@ What changed recently:</code>
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">CLAUDE.md rules ignored</td>
                             <td style="padding: 0.5em 0;"><code>enforce</code></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Read-only review or audit</td>
+                            <td style="padding: 0.5em 0;"><code>enforce</code> + <code>@enforced</code> read-only policy</td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">Files deleted or overwritten</td>
