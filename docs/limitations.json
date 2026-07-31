@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1451,
+  "count": 1454,
   "categories": {
     "Hook behavior & events": 187,
     "Permission system": 130,
@@ -33,8 +33,8 @@
     "Bash & shell execution": 11,
     "Plugin & channel system": 11,
     "UX & display": 11,
+    "Permissions & safety": 10,
     "hooks": 9,
-    "Permissions & safety": 9,
     "Scheduled tasks": 9,
     "Telemetry & insights": 9,
     "auth": 8,
@@ -65,6 +65,7 @@
     "Context / compaction": 3,
     "cowork": 3,
     "Desktop": 3,
+    "Hook execution & lifecycle": 3,
     "Hooks": 3,
     "IDE integration": 3,
     "model-behavior": 3,
@@ -126,7 +127,6 @@
     "Error handling & recovery": 1,
     "File system": 1,
     "filesystem": 1,
-    "Hook execution & lifecycle": 1,
     "Hooks / extensions": 1,
     "hooks-and-automation": 1,
     "IDE Integration": 1,
@@ -187,9 +187,9 @@
   },
   "severity_counts": {
     "CRITICAL": 128,
-    "HIGH": 761,
+    "HIGH": 763,
     "LOW": 111,
-    "MEDIUM": 451
+    "MEDIUM": 452
   },
   "entries": [
     {
@@ -18685,30 +18685,69 @@
       "date_added": "2026-07-28",
       "description": "On macOS with sandboxing enabled, `sandbox.excludedCommands` reportedly matches the whole Bash command string rather than commands inside compound shell syntax. With `gh *` excluded, a bare `gh --version` runs outside Seatbelt, but the same `gh` call inside a `for` loop remains sandboxed and can hit the Go TLS failure the docs tell users to avoid via exclusions.",
       "workaround": "For excluded Go-based CLIs such as `gh`, `gcloud`, or `terraform`, avoid wrapping the excluded command inside shell loops or compound Bash when sandbox behavior matters. Run the excluded command as a separate top-level tool call, or verify sandbox placement with a harmless probe before relying on the documented TLS workaround."
+    },
+    {
+      "id": "binary-read-rejection-skips-pretooluse-hooks",
+      "title": "Binary Read validation can skip PreToolUse hooks.",
+      "category": "Hook execution & lifecycle",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82442"
+      ],
+      "date_added": "2026-07-31",
+      "description": "A Claude Code macOS report says a PreToolUse hook registered with matcher `Read` never runs when the Read tool targets binary files such as `.docx` or `.pdf`. The tool rejects the binary file before hook execution, so hook-based conversion or redirection workflows cannot deny the original read and point the model at a generated Markdown copy.",
+      "workaround": "Do not rely on Read hooks to intercept binary file reads. Convert binary documents explicitly before asking Claude to read them, use a dedicated skill or wrapper command for conversion, and verify the conversion path in the actual session instead of only testing the hook script on stdin."
+    },
+    {
+      "id": "malformed-userpromptsubmit-entry-can-disable-sibling-hooks",
+      "title": "Malformed UserPromptSubmit entries can disable sibling hooks silently.",
+      "category": "Hook execution & lifecycle",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82618"
+      ],
+      "date_added": "2026-07-31",
+      "description": "A Claude Desktop 2.1.217-2.1.219 report says placing one malformed command object directly in the `hooks.UserPromptSubmit` array, instead of wrapping it in an entry with a `hooks` list, disabled every UserPromptSubmit hook for that event. Previously valid sibling hooks stopped firing for more than 150 turns with no visible warning until the malformed entry was fixed.",
+      "workaround": "Validate the full hooks array after any settings edit, especially when scripts modify `settings.json`. Prefer atomic writes, keep a known-good backup, and add a small live marker hook or transcript check for UserPromptSubmit if that event carries important context. If one hook stops firing, compare every sibling entry shape rather than only debugging the hook script."
+    },
+    {
+      "id": "auto-sandbox-sessions-can-skip-deny-rules-and-pretooluse",
+      "title": "Auto+sandbox sessions can skip deny rules and PreToolUse hooks.",
+      "category": "Permissions & safety",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82143"
+      ],
+      "date_added": "2026-07-31",
+      "description": "A WSL2 Claude Code report says project-level `permissions.deny` rules and a matching PreToolUse hook were both bypassed in sessions using global `permissions.defaultMode: \"auto\"` with sandboxing enabled. Bash and Read calls reached a denied path, and debug logging showed the hook process was never invoked.",
+      "workaround": "Do not treat auto mode plus sandboxing as proof that deny rules or hooks are active. Test the exact protected path inside the same project session, log hook entry before pattern matching, and use OS or filesystem permissions for data that must not be read. If a protected path is reachable, restart from a minimal settings file and remove broad auto-approval until hooks are visibly firing."
     }
   ],
   "status_summary": {
-    "open": 1437,
+    "open": 1440,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 128,
-    "high": 761,
+    "high": 763,
     "low": 111,
-    "medium": 451
+    "medium": 452
   },
-  "lastUpdated": "2026-07-28",
+  "lastUpdated": "2026-07-31",
   "stats": {
-    "total": 1451,
+    "total": 1454,
     "critical": 128,
-    "high": 761,
-    "medium": 451,
+    "high": 763,
+    "medium": 452,
     "low": 111,
-    "open": 1437,
+    "open": 1440,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-07-28",
-  "total": 1451
+  "last_updated": "2026-07-31",
+  "total": 1454
 }
