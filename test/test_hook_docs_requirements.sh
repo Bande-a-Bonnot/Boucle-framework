@@ -90,6 +90,10 @@ docs = {
         "working-directory: ${{ github.workspace }}",
         "Run it from the project root that contains `.claude/settings.json`",
         "does not execute the dangerous shell or git commands",
+        "run `safety-check --verify --strict` on a runner that has both `bash` and `pwsh`",
+        "Do not use `install.ps1 verify` as proof for repo-local hooks",
+        "installed under the CI user's `~/.claude` directory",
+        "not a repo-local CI contract",
     ],
     repo / "tools" / "safety-check" / "check.sh": [
         "No hook installation required for the audit",
@@ -233,6 +237,11 @@ banned = {
     ],
     repo / "docs" / "recipes.html": [
         "tools/install.sh | bash -s -- enforce",
+    ],
+    repo / "tools" / "safety-check" / "CI.md": [
+        "repository settings point to native `.ps1` hook scripts, either add PowerShell to the runner",
+        "PowerShell installer verification path",
+        "shell: pwsh run: | iex \"& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify\"",
     ],
 }
 
