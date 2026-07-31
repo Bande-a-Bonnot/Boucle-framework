@@ -34,6 +34,7 @@
                         <a href="#token-waste">Token waste</a> &middot;
                         <a href="#tool-switching">Tool switching bypass</a> &middot;
                         <a href="#support-evidence">Safe support evidence</a> &middot;
+                        <a href="#autonomous-session">Autonomous session preflight</a> &middot;
                         <a href="#after-update">After Claude Code updates</a>
                     </p>
                 </nav>
@@ -162,6 +163,28 @@ What changed recently:</code>
                     <p class="brief" style="color: var(--muted-color);">If someone asks for raw files, build a temporary reproduction with throwaway settings first. The <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/SUPPORT_EVIDENCE.md">safe support evidence guide</a> and <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/SUPPORT_EXAMPLES.md">safe support examples</a> show what is safe to paste and what to redact.</p>
                 </div>
 
+                <div class="recipe" id="autonomous-session">
+                    <h2>"I am about to let Claude Code work for a while"</h2>
+                    <p class="brief">Before a long, unattended, or high-trust session, verify the hooks from the exact project root Claude Code will use. This preflight catches missing hook files, stale settings, failed payload checks, direct commits to protected branches, and missing audit logs before the session starts.</p>
+                    <p class="brief"><strong>Fix path: install the session guard set, verify strictly, snapshot state, then restart Claude Code</strong></p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> cd "$(git rev-parse --show-toplevel)"
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- bash-guard git-safe file-guard branch-guard worktree-guard session-log
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
+<span class="prompt-char">$</span> git status --short</code>
+                    </div>
+                    <p class="brief">The guard set blocks dangerous shell and git commands, protects sensitive files, prevents direct commits to protected branches, prevents losing work when exiting Claude Code worktrees, and writes a JSONL tool-call audit trail. The final <code>git status --short</code> is a human checkpoint: start from a state you can explain, or commit/stash intentionally before turning the session loose.</p>
+                    <p class="brief">On native Windows, use PowerShell 7 and the native verifier:</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">PS&gt;</span> Set-Location (git rev-parse --show-toplevel)
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } bash-guard git-safe file-guard branch-guard worktree-guard session-log"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+<span class="prompt-char">PS&gt;</span> git status --short</code>
+                    </div>
+                    <p class="brief" style="color: var(--muted-color);">After a clean preflight, start a fresh Claude Code session from that same root. Existing sessions may still have old hook settings loaded. If the session will touch secrets, production data, cloud resources, or customer files, combine hooks with OS permissions, containers, network policy, and backups.</p>
+                </div>
+
                 <div class="recipe" id="after-update">
                     <h2>"Claude Code updated. Are my hooks still working?"</h2>
                     <p class="brief">Claude Code, IDE integrations, terminal profiles, and settings files can all change the hook boundary. A clean install from last week does not prove the current session is protected.</p>
@@ -234,6 +257,10 @@ What changed recently:</code>
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">Audit all tool calls</td>
                             <td style="padding: 0.5em 0;"><code>session-log</code></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Long unattended session</td>
+                            <td style="padding: 0.5em 0;"><code>bash-guard</code> + <code>git-safe</code> + <code>file-guard</code> + <code>branch-guard</code> + <code>worktree-guard</code> + <code>session-log</code></td>
                         </tr>
                         <tr>
                             <td style="padding: 0.5em 1em 0.5em 0;">Stale cache after compaction</td>
