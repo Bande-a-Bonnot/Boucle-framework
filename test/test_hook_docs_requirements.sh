@@ -111,6 +111,14 @@ docs = {
         "--summary-only",
         "--- End Safety Summary ---",
     ],
+    repo / "tools" / "safety-check" / "SUPPORT_EXAMPLES.md": [
+        "FAIL-OPEN public report",
+        "Hook source: framework git-safe hook, not custom",
+        "Verify: 1 FAIL-OPEN | 6 payload checks | 0 skipped",
+        "Boundary: fix FAIL-OPEN hooks before trusting the hook layer.",
+        "Do not paste raw hook stderr from the Claude Code session.",
+        "temporary directory with throwaway hook paths",
+    ],
     repo / "tools" / "safety-check" / "QUICKSTART.md": [
         "Do not paste raw hook stderr from a live Claude Code session",
         "platform can prefix it with the hook command path",
