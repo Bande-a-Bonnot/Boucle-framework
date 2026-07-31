@@ -134,6 +134,9 @@ docs = {
         "See the [quickstart](QUICKSTART.md)",
     ],
     repo / "tools" / "enforce" / "READ_ONLY_AUDIT.md": [
+        "This is read-only for the audited Claude Code session after the hook is installed",
+        "Setting up the boundary intentionally edits project files first",
+        "do the setup on a disposable branch or worktree",
         "cd \"$(git rev-parse --show-toplevel)\"",
         "cp .claude/settings.json .claude/settings.json.pre-read-only.bak",
         "snapshots the project-level `.claude/settings.json` before",
