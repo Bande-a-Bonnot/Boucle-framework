@@ -186,6 +186,9 @@ docs = {
         "Put patterns under a <code>[deny]</code> section when Claude must not read, search, list, or reference those paths at all",
         "tools/install.sh | bash -s -- all <span class=\"prompt-char\">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
         "start a fresh Claude Code session from the same project root",
+        "Claude Code updated. Are my hooks still working?",
+        "safety-check/check.sh | bash -s -- --verify --strict",
+        "tools/safety-check/UPDATE_CHECKLIST.md",
     ],
 }
 
