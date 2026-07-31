@@ -69,6 +69,17 @@ checks = [
         ],
     ),
     (
+        repo / "tools" / "safety-check" / "SUPPORT_EXAMPLES.md",
+        [
+            "Native Windows report",
+            "PowerShell verifier:",
+            "2 passed, 1 warnings, 1 skipped.",
+            "WARN: git-safe did not block force push payload.",
+            "SKIP: branch-guard needs git repo context to verify.",
+            "No hooks installed. Run: install.ps1 recommended",
+        ],
+    ),
+    (
         repo / "tools" / "safety-check" / "TRIAGE.md",
         [
             "install.ps1 verify` does not print the `--- Safety Summary (copy/paste) ---`",
