@@ -90,13 +90,13 @@ iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework
 | | | |
 | [safety-check](safety-check/) | Audits your Claude Code setup for common misconfigurations | CLI tool |
 | [diagnose](diagnose/) | Analyzes loop logs for drift, stagnation, feedback loops | CLI tool |
-| [enforce](enforce/) | Generates hooks from your CLAUDE.md rules (Claude Code skill) | Skill |
+| [enforce](enforce/) | Turns tagged CLAUDE.md rules into hook checks | Skill |
 
 ## Generate Hooks from CLAUDE.md
 
 The [enforce](enforce/) tool reads your CLAUDE.md, identifies rules that can be
-enforced at tool-call time, and generates hook scripts for each one. Tag rules
-with `@enforced` to activate them.
+checked at tool-call time, and installs one dynamic PreToolUse hook that
+re-reads those rules on every call. Tag rules with `@enforced` to activate them.
 
 Install the dynamic hook from any git project:
 
@@ -112,7 +112,7 @@ python3 /tmp/enforce-hooks.py --scan
 python3 /tmp/enforce-hooks.py --install-plugin
 ```
 
-After installing, test the generated hook:
+After installing, test the hook:
 
 ```bash
 python3 .claude/hooks/enforce-hooks.py --smoke-test

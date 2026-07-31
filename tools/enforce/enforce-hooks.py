@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""enforce-hooks: Generate PreToolUse hook scripts from CLAUDE.md directives.
+"""enforce-hooks: Enforce CLAUDE.md directives with PreToolUse hooks.
 
-Reads a CLAUDE.md file, identifies enforceable rules, and generates
-standalone bash hook scripts that block tool calls violating those rules.
+Reads a CLAUDE.md file, identifies enforceable rules, and installs either one
+dynamic hook (recommended) or per-rule bash hook scripts that block covered tool
+calls violating those rules.
 
 Usage:
     enforce-hooks.py [CLAUDE.md path] [options]
     enforce-hooks.py --scan                    # scan and show what's enforceable
-    enforce-hooks.py --generate                # generate hook scripts to stdout
-    enforce-hooks.py --install                 # generate and install hooks
+    enforce-hooks.py --install-plugin          # install one dynamic hook
+    enforce-hooks.py --generate                # generate per-rule scripts to stdout
+    enforce-hooks.py --install                 # install per-rule hooks
     enforce-hooks.py --test                    # run self-tests
 
 Zero dependencies beyond Python 3.6+ stdlib.
@@ -4881,7 +4883,7 @@ TEMPLATES = {
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Generate PreToolUse hook scripts from CLAUDE.md directives.',
+        description='Install or generate PreToolUse hooks from CLAUDE.md directives.',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''Examples:
   %(prog)s --scan                     Show enforceable directives
