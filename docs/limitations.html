@@ -219,7 +219,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1451</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-28.</span></p>
+        <p class="subtitle"><span id="total-count">1454</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-07-31.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -16136,6 +16136,42 @@
                         <!-- workaround:sandbox-excludedcommands-can-be-skipped-inside-shell-loops -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For excluded Go-based CLIs such as `gh`, `gcloud`, or `terraform`, avoid wrapping the excluded command inside shell loops or compound Bash when sandbox behavior matters. Run the excluded command as a separate top-level tool call, or verify sandbox placement with a harmless probe before relying on the documented TLS workaround.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82109" target="_blank">#82109</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook execution &amp; lifecycle" data-issues="82442" id="binary-read-rejection-skips-pretooluse-hooks" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1452</span>
+                <span class="kl-cat">Hook execution &amp; lifecycle</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Binary Read validation can skip PreToolUse hooks.</h3>
+            <p>A Claude Code macOS report says a PreToolUse hook registered with matcher `Read` never runs when the Read tool targets binary files such as `.docx` or `.pdf`. The tool rejects the binary file before hook execution, so hook-based conversion or redirection workflows cannot deny the original read and point the model at a generated Markdown copy.</p>
+                        <!-- workaround:binary-read-rejection-skips-pretooluse-hooks -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on Read hooks to intercept binary file reads. Convert binary documents explicitly before asking Claude to read them, use a dedicated skill or wrapper command for conversion, and verify the conversion path in the actual session instead of only testing the hook script on stdin.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82442" target="_blank">#82442</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook execution &amp; lifecycle" data-issues="82618" id="malformed-userpromptsubmit-entry-can-disable-sibling-hooks" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1453</span>
+                <span class="kl-cat">Hook execution &amp; lifecycle</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Malformed UserPromptSubmit entries can disable sibling hooks silently.</h3>
+            <p>A Claude Desktop 2.1.217-2.1.219 report says placing one malformed command object directly in the `hooks.UserPromptSubmit` array, instead of wrapping it in an entry with a `hooks` list, disabled every UserPromptSubmit hook for that event. Previously valid sibling hooks stopped firing for more than 150 turns with no visible warning until the malformed entry was fixed.</p>
+                        <!-- workaround:malformed-userpromptsubmit-entry-can-disable-sibling-hooks -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Validate the full hooks array after any settings edit, especially when scripts modify `settings.json`. Prefer atomic writes, keep a known-good backup, and add a small live marker hook or transcript check for UserPromptSubmit if that event carries important context. If one hook stops firing, compare every sibling entry shape rather than only debugging the hook script.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82618" target="_blank">#82618</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permissions &amp; safety" data-issues="82143" id="auto-sandbox-sessions-can-skip-deny-rules-and-pretooluse" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1454</span>
+                <span class="kl-cat">Permissions &amp; safety</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Auto+sandbox sessions can skip deny rules and PreToolUse hooks.</h3>
+            <p>A WSL2 Claude Code report says project-level `permissions.deny` rules and a matching PreToolUse hook were both bypassed in sessions using global `permissions.defaultMode: &quot;auto&quot;` with sandboxing enabled. Bash and Read calls reached a denied path, and debug logging showed the hook process was never invoked.</p>
+                        <!-- workaround:auto-sandbox-sessions-can-skip-deny-rules-and-pretooluse -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat auto mode plus sandboxing as proof that deny rules or hooks are active. Test the exact protected path inside the same project session, log hook entry before pattern matching, and use OS or filesystem permissions for data that must not be read. If a protected path is reachable, restart from a minimal settings file and remove broad auto-approval until hooks are visibly firing.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82143" target="_blank">#82143</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
