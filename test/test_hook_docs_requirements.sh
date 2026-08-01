@@ -233,6 +233,14 @@ docs = {
         "tools/install.sh | bash -s -- recommended <span class=\"prompt-char\">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
         "tools/install.sh | bash -s -- all <span class=\"prompt-char\">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify",
     ],
+    repo / "docs" / "sitemap.xml": [
+        "https://framework.boucle.sh/",
+        "https://framework.boucle.sh/recipes.html",
+        "https://framework.boucle.sh/limitations.html",
+        "https://framework.boucle.sh/llms.txt",
+        "https://framework.boucle.sh/limitations.json",
+        "https://framework.boucle.sh/limitations-feed.xml",
+    ],
     repo / "docs" / "llms.txt": [
         "Boucle Framework is a public, open-source project for Claude Code safety hooks",
         "curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash",
