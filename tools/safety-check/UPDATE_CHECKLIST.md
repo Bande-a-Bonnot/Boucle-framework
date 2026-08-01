@@ -118,6 +118,7 @@ To restore a specific backup from that list:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore settings.20260101_120000.json
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
 ```
 
 On native Windows:
@@ -132,6 +133,7 @@ To restore a specific backup in PowerShell:
 
 ```powershell
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore settings.20260101_120000.json"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
 
 If the project backup is needed, restore it manually:
@@ -139,6 +141,11 @@ If the project backup is needed, restore it manually:
 ```sh
 cp .claude/settings.json.bak .claude/settings.json
 ```
+
+After any restore, run the same strict verification again from the project root
+and start a fresh Claude Code session before trusting the hook layer. Restored
+settings only prove the file is back on disk; they do not prove the updated
+Claude Code process loaded it or that hooks still block representative payloads.
 
 ## Safe support evidence
 
