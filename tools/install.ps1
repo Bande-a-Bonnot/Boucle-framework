@@ -16,7 +16,9 @@
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } upgrade"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } uninstall read-once"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup"
+#   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup list"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore"
+#   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore settings.20260101_120000.json"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } help"
 
 param(
@@ -334,7 +336,9 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
     Write-Host "  install.ps1 upgrade                # Update to latest"
     Write-Host "  install.ps1 uninstall read-once    # Remove one hook"
     Write-Host "  install.ps1 backup                 # Snapshot before updating Claude Code"
-    Write-Host "  install.ps1 restore                # Restore after a wipe"
+    Write-Host "  install.ps1 backup list            # Inspect available backups before restore"
+    Write-Host "  install.ps1 restore                # Restore the most recent backup"
+    Write-Host "  install.ps1 restore settings.20260101_120000.json # Restore a specific backup"
     Write-Host "  install.ps1 check                  # Run bash-based safety audit"
     Write-Host "  install.ps1 check --verify --summary-only # Public support summary"
     Write-Host "  install.ps1 check --verify --strict # Strict safety audit"
