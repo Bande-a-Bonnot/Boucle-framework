@@ -260,6 +260,10 @@ docs = {
         "Keep the backup until the fresh session proves the hook boundary still works.",
         "safety-check/check.sh | bash -s -- --verify --strict",
         "tools/safety-check/UPDATE_CHECKLIST.md",
+        "application/atom+xml",
+        "Claude Code Hook Limitations Feed",
+        "/limitations-feed.xml",
+        "Limitations Feed",
     ],
 }
 
