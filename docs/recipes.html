@@ -35,6 +35,7 @@
                         <a href="#token-waste">Token waste</a> &middot;
                         <a href="#tool-switching">Tool switching bypass</a> &middot;
                         <a href="#support-evidence">Safe support evidence</a> &middot;
+                        <a href="#team-handoff">Team handoff</a> &middot;
                         <a href="#autonomous-session">Autonomous session preflight</a> &middot;
                         <a href="#after-update">After Claude Code updates</a>
                     </p>
@@ -209,6 +210,39 @@ What changed recently:</code>
                         <code><span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"</code>
                     </div>
                     <p class="brief" style="color: var(--muted-color);">If someone asks for raw files, build a temporary reproduction with throwaway settings first. The <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/SUPPORT_EVIDENCE.md">safe support evidence guide</a> and <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/SUPPORT_EXAMPLES.md">safe support examples</a> show what is safe to paste and what to redact.</p>
+                </div>
+
+                <div class="recipe" id="team-handoff">
+                    <h2>"I need to leave a PR or incident handoff"</h2>
+                    <p class="brief">Use this when a teammate, reviewer, or incident owner needs to know exactly what hook boundary was checked. Keep the note short: root, command, result, residual warnings, and the trigger for the next recheck.</p>
+                    <p class="brief"><strong>Fix path: run the bounded summary, paste the handoff record, and mark whether a fresh Claude Code session was started</strong></p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only</code>
+                    </div>
+                    <div class="code-block">
+                        <code>Claude Code hook boundary checked:
+- Project/root:
+- OS and shell:
+- Claude Code version:
+- Hooks installed in: user settings / project settings / both / not sure
+- Command used:
+- Fresh Claude Code session started after verification: yes / no
+- Result:
+
+--- Safety Summary (copy/paste) ---
+...
+--- End Safety Summary ---
+
+Residual platform warnings:
+- ...
+
+Next recheck trigger:
+- Claude Code update / settings edit / hook edit / launch directory change / before risky automation</code>
+                    </div>
+                    <p class="brief">Treat this as a boundary statement, not a certificate. <code>Verify: 0 FAIL-OPEN</code> means representative payload checks did not find a configured hook that failed open; it does not prove every possible path is blocked.</p>
+                    <p class="brief" style="color: var(--muted-color);">Full template and Windows notes: <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/TEAM_HANDOFF.md">team handoff reports</a>.</p>
                 </div>
 
                 <div class="recipe" id="autonomous-session">
