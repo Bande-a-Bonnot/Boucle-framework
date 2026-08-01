@@ -843,6 +843,13 @@ else
   fail "help missing examples"
 fi
 
+if grep -q "install.sh backup list.*Inspect available backups before restore" <<< "$output" &&
+   grep -q "install.sh restore settings.20260101_120000.json.*Restore a specific backup" <<< "$output"; then
+  pass "help examples show backup listing and specific restore"
+else
+  fail "help examples omit backup listing or specific restore"
+fi
+
 # Test 32: --help flag
 echo "--- --help flag ---"
 output2=$(bash "$SCRIPT_DIR/install.sh" --help 2>&1)

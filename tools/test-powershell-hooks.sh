@@ -156,10 +156,12 @@ else
 fi
 
 if grep -q 'install.ps1 backup.*Snapshot before updating Claude Code' "$SCRIPT_DIR/install.ps1" &&
-   grep -q 'install.ps1 restore.*Restore after a wipe' "$SCRIPT_DIR/install.ps1"; then
-    pass "PowerShell installer: help examples include backup and restore"
+   grep -q 'install.ps1 backup list.*Inspect available backups before restore' "$SCRIPT_DIR/install.ps1" &&
+   grep -q 'install.ps1 restore.*Restore the most recent backup' "$SCRIPT_DIR/install.ps1" &&
+   grep -q 'install.ps1 restore settings\.20260101_120000\.json.*Restore a specific backup' "$SCRIPT_DIR/install.ps1"; then
+    pass "PowerShell installer: help examples include backup listing and restore"
 else
-    fail "PowerShell installer: help examples omit backup or restore"
+    fail "PowerShell installer: help examples omit backup listing or restore"
 fi
 
 echo ""
