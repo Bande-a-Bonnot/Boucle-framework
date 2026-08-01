@@ -75,14 +75,14 @@ if ($root) { Set-Location $root }
 Use this section when you have the summary line in front of you and need the
 next command.
 
-| Summary line | macOS, Linux, WSL, or Git Bash | Native Windows PowerShell 7 |
-|--------------|--------------------------------|-----------------------------|
-| `no hooks found` | `curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh \| bash -s -- recommended` | `iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"` |
-| `missing` or `not executable` hook file | `curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh \| bash -s -- upgrade` | `iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } upgrade"` |
-| `Issue: invalid settings JSON` | `python3 -m json.tool ~/.claude/settings.json >/dev/null` and repeat for `.claude/settings.json` if present. | `Get-Content $HOME/.claude/settings.json \| ConvertFrom-Json \| Out-Null` and repeat for `.claude/settings.json` if present. |
-| `Issue: IS_DEMO is set` | `unset IS_DEMO` | `Remove-Item Env:IS_DEMO -ErrorAction SilentlyContinue` |
-| `Issue: CLAUDE_CODE_SIMPLE is set` | `unset CLAUDE_CODE_SIMPLE` | `Remove-Item Env:CLAUDE_CODE_SIMPLE -ErrorAction SilentlyContinue` |
-| `FAIL-OPEN` | `curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh \| bash -s -- doctor` | `iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"` |
+| Summary line | macOS, Linux, WSL, or Git Bash | Native Windows PowerShell 7 | Proof point after repair |
+|--------------|--------------------------------|-----------------------------|--------------------------|
+| `no hooks found` | `curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh \| bash -s -- recommended` | `iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"` | Verification reports payload checks instead of `no hooks found`. |
+| `missing` or `not executable` hook file | `curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh \| bash -s -- upgrade` | `iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } upgrade"` | `doctor` no longer reports the named file as missing or not executable. |
+| `Issue: invalid settings JSON` | `python3 -m json.tool ~/.claude/settings.json >/dev/null` and repeat for `.claude/settings.json` if present. | `Get-Content $HOME/.claude/settings.json \| ConvertFrom-Json \| Out-Null` and repeat for `.claude/settings.json` if present. | The JSON parser exits cleanly, then `doctor` no longer reports invalid settings. |
+| `Issue: IS_DEMO is set` | `unset IS_DEMO` | `Remove-Item Env:IS_DEMO -ErrorAction SilentlyContinue` | A fresh shell no longer prints the `IS_DEMO` issue. |
+| `Issue: CLAUDE_CODE_SIMPLE is set` | `unset CLAUDE_CODE_SIMPLE` | `Remove-Item Env:CLAUDE_CODE_SIMPLE -ErrorAction SilentlyContinue` | A fresh shell no longer prints the `CLAUDE_CODE_SIMPLE` issue. |
+| `FAIL-OPEN` | `curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh \| bash -s -- doctor` | `iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"` | Rerun verification and confirm the named hook no longer fails open. |
 
 After any repair, start a fresh Claude Code session from the same project root
 and rerun verification:
