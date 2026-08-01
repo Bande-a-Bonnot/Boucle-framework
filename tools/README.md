@@ -168,11 +168,14 @@ On Windows, use the same commands through `install.ps1`, including
 installing or upgrading hooks.
 
 If you installed hooks only for a trial on a borrowed machine, client
-repository, or CI runner, run `uninstall all`, then verify cleanup before
-leaving the environment. On macOS/Linux, the expected `check --verify
---summary-only` result is no Boucle hook inventory and `Verify: not run | no
-hooks found | 0 payload checks`. On native Windows, `install.ps1 verify` should
-report that no hooks are installed.
+repository, or CI runner, snapshot settings first, run `uninstall all` when the
+trial is over, inspect the backup list before any exact restore, then verify
+cleanup before leaving the environment. Use the same sequence through
+`install.ps1 backup`, `install.ps1 uninstall all`, `install.ps1 backup list`,
+and `install.ps1 verify` on native Windows. On macOS/Linux, the expected
+`check --verify --summary-only` result is no Boucle hook inventory and
+`Verify: not run | no hooks found | 0 payload checks`. On native Windows,
+`install.ps1 verify` should report that no hooks are installed.
 
 ## Doctor First Aid
 
