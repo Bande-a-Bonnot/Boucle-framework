@@ -167,6 +167,13 @@ On Windows, use the same commands through `install.ps1`, including
 `install.ps1 verify` to re-run the native PowerShell hook payload checks after
 installing or upgrading hooks.
 
+If you installed hooks only for a trial on a borrowed machine, client
+repository, or CI runner, run `uninstall all`, then verify cleanup before
+leaving the environment. On macOS/Linux, the expected `check --verify
+--summary-only` result is no Boucle hook inventory and `Verify: not run | no
+hooks found | 0 payload checks`. On native Windows, `install.ps1 verify` should
+report that no hooks are installed.
+
 ## Doctor First Aid
 
 Use `verify` to prove hooks block representative payloads. Use `doctor` when
