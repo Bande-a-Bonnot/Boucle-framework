@@ -102,7 +102,21 @@ The native PowerShell installer covers the standalone hooks. The `enforce-hooks`
 installer is a bash/Python tool; run it from WSL or Git Bash on Windows.
 
 If you are only testing the hook suite, keep the rollback command handy. It
-removes Boucle hook files and their `settings.json` registrations:
+removes Boucle hook files and their `settings.json` registrations. If you want
+the trial to be fully reversible, snapshot your Claude Code user settings before
+installing hooks:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup
+```
+
+On native Windows:
+
+```powershell
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup"
+```
+
+Then remove the hooks when the trial is over:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- uninstall all
@@ -115,7 +129,20 @@ iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework
 ```
 
 On a borrowed machine, client repository, CI runner, or any other temporary
-environment, verify cleanup before you leave it:
+environment, inspect the backup list and restore the pre-trial snapshot if you
+want the exact previous settings file, then verify cleanup before you leave it:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup list
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore
+```
+
+On native Windows:
+
+```powershell
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup list"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore"
+```
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
