@@ -249,12 +249,20 @@ the final verifier count plus any `WARN` or `SKIP` lines.
 
 If verification fails after the update, run `doctor` before reinstalling. If
 hooks disappeared or `doctor` reports that `settings.json` was wiped, restore
-the most recent backup, then run the strict audit again:
+the most recent backup, then run the strict audit again. Use `backup list`
+first when you need to inspect which snapshot will be restored:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- doctor
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup list
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- check --verify --strict
+```
+
+To restore a specific backup from that list, pass the filename:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore settings.20260101_120000.json
 ```
 
 On native Windows:
@@ -263,8 +271,15 @@ On native Windows:
 $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
 if ($root) { Set-Location $root }
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup list"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+```
+
+Specific backup restore works the same way in PowerShell:
+
+```powershell
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore settings.20260101_120000.json"
 ```
 
 ## 6. Recheck after risky changes
