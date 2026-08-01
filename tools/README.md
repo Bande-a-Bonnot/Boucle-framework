@@ -57,21 +57,24 @@ After installing, verify that the hooks actually block payloads and then run the
 doctor if anything looks wrong:
 
 ```bash
-root="$(git rev-parse --show-toplevel 2>/dev/null)" && cd "$root"
+root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- doctor
 ```
 
 Run verification from the same project root where you start Claude Code. The
-first line assumes you are already inside a git checkout. If Claude starts from
-a subdirectory, root project hooks in `.claude/settings.json` can be skipped;
-safety-check reports this as an ancestor project settings warning.
+first line moves to the repo root when you are inside a git checkout and stays
+in the current directory otherwise. If Claude starts from a subdirectory, root
+project hooks in `.claude/settings.json` can be skipped; safety-check reports
+this as an ancestor project settings warning.
 After a clean verification, start a fresh Claude Code session from that same
 root before trusting newly installed or upgraded hooks; an existing session may
 have loaded the previous settings or hook files.
 
 ```powershell
-Set-Location (git rev-parse --show-toplevel)
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
 ```
@@ -90,13 +93,13 @@ iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework
 | | | |
 | [safety-check](safety-check/) | Audits your Claude Code setup for common misconfigurations | CLI tool |
 | [diagnose](diagnose/) | Analyzes loop logs for drift, stagnation, feedback loops | CLI tool |
-| [enforce](enforce/) | Generates hooks from your CLAUDE.md rules (Claude Code skill) | Skill |
+| [enforce](enforce/) | Turns tagged CLAUDE.md rules into hook checks | Skill |
 
 ## Generate Hooks from CLAUDE.md
 
 The [enforce](enforce/) tool reads your CLAUDE.md, identifies rules that can be
-enforced at tool-call time, and generates hook scripts for each one. Tag rules
-with `@enforced` to activate them.
+checked at tool-call time, and installs one dynamic PreToolUse hook that
+re-reads those rules on every call. Tag rules with `@enforced` to activate them.
 
 Install the dynamic hook from any git project:
 
@@ -112,9 +115,10 @@ python3 /tmp/enforce-hooks.py --scan
 python3 /tmp/enforce-hooks.py --install-plugin
 ```
 
-After installing, test the generated hook:
+After installing, test the hook:
 
 ```bash
+python3 .claude/hooks/enforce-hooks.py --verify
 python3 .claude/hooks/enforce-hooks.py --smoke-test
 python3 .claude/hooks/enforce-hooks.py --audit
 ```
@@ -162,6 +166,16 @@ install.sh restore <file>        # Restore a specific backup
 On Windows, use the same commands through `install.ps1`, including
 `install.ps1 verify` to re-run the native PowerShell hook payload checks after
 installing or upgrading hooks.
+
+If you installed hooks only for a trial on a borrowed machine, client
+repository, or CI runner, snapshot settings first, run `uninstall all` when the
+trial is over, inspect the backup list before any exact restore, then verify
+cleanup before leaving the environment. Use the same sequence through
+`install.ps1 backup`, `install.ps1 uninstall all`, `install.ps1 backup list`,
+and `install.ps1 verify` on native Windows. On macOS/Linux, the expected
+`check --verify --summary-only` result is no Boucle hook inventory and
+`Verify: not run | no hooks found | 0 payload checks`. On native Windows,
+`install.ps1 verify` should report that no hooks are installed.
 
 ## Doctor First Aid
 

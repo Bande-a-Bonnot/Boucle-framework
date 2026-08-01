@@ -55,16 +55,19 @@ Do not trust a good letter grade by itself. A setup with Grade A and
 | Windows hook warning | Medium | Native Windows hook behavior varies by Claude Code version and shell. | Prefer WSL or verify with the native PowerShell path. |
 
 If you see the ancestor project settings warning and you are in a git checkout,
-this usually gets you to the right directory:
+this usually gets you to the right directory. Outside git, it leaves you in the
+current directory:
 
 ```sh
-cd "$(git rev-parse --show-toplevel)"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 ```
 
 On native Windows PowerShell:
 
 ```powershell
-Set-Location (git rev-parse --show-toplevel)
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
 ```
 
 ## Fast repair commands
@@ -72,14 +75,14 @@ Set-Location (git rev-parse --show-toplevel)
 Use this section when you have the summary line in front of you and need the
 next command.
 
-| Summary line | macOS, Linux, WSL, or Git Bash | Native Windows PowerShell 7 |
-|--------------|--------------------------------|-----------------------------|
-| `no hooks found` | `curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh \| bash -s -- recommended` | `iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"` |
-| `missing` or `not executable` hook file | `curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh \| bash -s -- upgrade` | `iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } upgrade"` |
-| `Issue: invalid settings JSON` | `python3 -m json.tool ~/.claude/settings.json >/dev/null` and repeat for `.claude/settings.json` if present. | `Get-Content $HOME/.claude/settings.json \| ConvertFrom-Json \| Out-Null` and repeat for `.claude/settings.json` if present. |
-| `Issue: IS_DEMO is set` | `unset IS_DEMO` | `Remove-Item Env:IS_DEMO -ErrorAction SilentlyContinue` |
-| `Issue: CLAUDE_CODE_SIMPLE is set` | `unset CLAUDE_CODE_SIMPLE` | `Remove-Item Env:CLAUDE_CODE_SIMPLE -ErrorAction SilentlyContinue` |
-| `FAIL-OPEN` | `curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh \| bash -s -- doctor` | `iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"` |
+| Summary line | macOS, Linux, WSL, or Git Bash | Native Windows PowerShell 7 | Proof point after repair |
+|--------------|--------------------------------|-----------------------------|--------------------------|
+| `no hooks found` | `curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh \| bash -s -- recommended` | `iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"` | Verification reports payload checks instead of `no hooks found`. |
+| `missing` or `not executable` hook file | `curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh \| bash -s -- upgrade` | `iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } upgrade"` | `doctor` no longer reports the named file as missing or not executable. |
+| `Issue: invalid settings JSON` | `python3 -m json.tool ~/.claude/settings.json >/dev/null` and repeat for `.claude/settings.json` if present. | `Get-Content $HOME/.claude/settings.json \| ConvertFrom-Json \| Out-Null` and repeat for `.claude/settings.json` if present. | The JSON parser exits cleanly, then `doctor` no longer reports invalid settings. |
+| `Issue: IS_DEMO is set` | `unset IS_DEMO` | `Remove-Item Env:IS_DEMO -ErrorAction SilentlyContinue` | A fresh shell no longer prints the `IS_DEMO` issue. |
+| `Issue: CLAUDE_CODE_SIMPLE is set` | `unset CLAUDE_CODE_SIMPLE` | `Remove-Item Env:CLAUDE_CODE_SIMPLE -ErrorAction SilentlyContinue` | A fresh shell no longer prints the `CLAUDE_CODE_SIMPLE` issue. |
+| `FAIL-OPEN` | `curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh \| bash -s -- doctor` | `iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"` | Rerun verification and confirm the named hook no longer fails open. |
 
 After any repair, start a fresh Claude Code session from the same project root
 and rerun verification:

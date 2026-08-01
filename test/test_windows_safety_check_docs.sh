@@ -17,7 +17,7 @@ checks = [
             "install.ps1 verify` and `install.ps1 doctor` use native PowerShell hooks",
             "install.ps1 check` command runs the bash-based safety-check audit",
             "Git Bash, WSL, or another `bash` on PATH",
-            "Set-Location (git rev-parse --show-toplevel)",
+            'if ($root) { Set-Location $root }',
             "tools/install.ps1) } recommended\"\niex \"& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify",
         ],
     ),
@@ -29,7 +29,7 @@ checks = [
             "similar. The safety-check summary",
             "Git Bash or WSL for safety-check",
             "Safe Support Evidence",
-            "Set-Location (git rev-parse --show-toplevel)",
+            'if ($root) { Set-Location $root }',
             "through\n`--- End Safety Summary ---`",
             "For native `install.ps1 verify`, which does not\nprint that summary block",
             "final verifier count plus any `WARN` or\n`SKIP` lines",
@@ -56,7 +56,7 @@ checks = [
             "For native `install.ps1 verify`, there is no safety summary block",
             "On native Windows with `install.ps1 verify`, copy only the final verifier count",
             "The PowerShell verifier does not print the\n`--- Safety Summary (copy/paste) ---` block",
-            "Set-Location (git rev-parse --show-toplevel)",
+            'if ($root) { Set-Location $root }',
         ],
     ),
     (
@@ -69,13 +69,24 @@ checks = [
         ],
     ),
     (
+        repo / "tools" / "safety-check" / "SUPPORT_EXAMPLES.md",
+        [
+            "Native Windows report",
+            "PowerShell verifier:",
+            "2 passed, 1 warnings, 1 skipped.",
+            "WARN: git-safe did not block force push payload.",
+            "SKIP: branch-guard needs git repo context to verify.",
+            "No hooks installed. Run: install.ps1 recommended",
+        ],
+    ),
+    (
         repo / "tools" / "safety-check" / "TRIAGE.md",
         [
             "install.ps1 verify` does not print the `--- Safety Summary (copy/paste) ---`",
             "final count line plus any `WARN` or `SKIP` lines",
             "Native `install.ps1 verify` warning count",
             "Native `install.ps1 verify` skipped count",
-            "Set-Location (git rev-parse --show-toplevel)",
+            'if ($root) { Set-Location $root }',
         ],
     ),
     (

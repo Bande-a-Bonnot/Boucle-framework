@@ -1479,7 +1479,8 @@ PYEOF_BPA
             printf "       ${YELLOW}→${NC} %s\n" "$agent_name"
         done <<< "$HAS_BYPASS_AGENTS"
         printf "     bypassPermissions skips per-tool prompts AND the project allowlist.\n"
-        printf "     Use PreToolUse hooks for enforcement that cannot be bypassed by agent mode.\n"
+        printf "     Use PreToolUse hooks for covered tool-call enforcement instead of relying on agent mode.\n"
+        printf "     Verify hooks after install; hook coverage is not a sandbox.\n"
         printf "     ${DIM}See: claude-code#40343${NC}\n"
     fi
 fi

@@ -6,6 +6,13 @@ not enough for this boundary. The model can still call Write, Edit, Bash
 redirects, database mutations, Docker rebuilds, or git commands unless a hook
 blocks those tool calls before execution.
 
+This is read-only for the audited Claude Code session after the hook is
+installed. Setting up the boundary intentionally edits project files first: you
+add an `@enforced` rule to `CLAUDE.md` and register a project-level hook in
+`.claude/settings.json`. If you need the main workspace untouched, do the setup
+on a disposable branch or worktree and keep the settings backup below until the
+audit is finished.
+
 ## 1. Add the policy
 
 Paste this into your project's `CLAUDE.md`:
@@ -116,8 +123,18 @@ the enforcement layer that stops tool calls when the model drifts.
 ## 7. Remove or relax it
 
 To leave read-only mode, remove or rename the `Read-only mode @enforced` section
-in `CLAUDE.md`. Plugin mode will stop enforcing those rules on the next tool
-call because it reads the file dynamically.
+in `CLAUDE.md`, then verify the boundary from the same project root:
+
+```sh
+cd "$(git rev-parse --show-toplevel)"
+python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
+```
+
+Plugin mode reads `CLAUDE.md` dynamically, so it stops enforcing the read-only
+rules on the next tool call after the section is removed or renamed. The audit
+should pass with `0/0 classifiable rules enforced` if there are no other
+`@enforced` rules in the file.
 
 If you want warnings instead of hard blocks, change the heading to:
 
@@ -129,16 +146,19 @@ Warnings are useful for dry runs, but they do not provide a read-only boundary.
 Use `@enforced` for real audits.
 
 If you want to remove the plugin registration entirely, restore the project
-settings snapshot or remove the `enforce-pretooluse.sh` hook from Claude Code's
-hooks UI. Then run:
+settings snapshot only when you want `.claude/settings.json` returned to its
+pre-audit state, or remove the `enforce-pretooluse.sh` hook from Claude Code's
+hooks UI. Then re-run the same checks:
 
 ```sh
 cd "$(git rev-parse --show-toplevel)"
+test ! -f .claude/settings.json.pre-read-only.bak || cp .claude/settings.json.pre-read-only.bak .claude/settings.json
 python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
 Expect the strict audit to exit non-zero if `CLAUDE.md` still contains the
 `Read-only mode @enforced` section, because the policy is no longer covered by
-an active hook. The safety-check summary should still show zero `FAIL-OPEN`
-results for any remaining hooks you intend to keep.
+an active hook. Also expect it to fail if the restored settings snapshot
+contains broken hook references. The safety-check summary should still show
+zero `FAIL-OPEN` results for any remaining hooks you intend to keep.

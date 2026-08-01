@@ -128,9 +128,12 @@ where `pwsh` is available. The Ubuntu workflow above does not install
 PowerShell, so use it as-is for bash, sh, zsh, Python, or executable hook
 scripts.
 
-If your repository settings point to native `.ps1` hook scripts, either add
-PowerShell to the runner before calling `--verify --strict`, or run a Windows
-job and use the PowerShell installer verification path:
+If your repository settings point to native `.ps1` hook scripts, run
+`safety-check --verify --strict` on a runner that has both `bash` and `pwsh`.
+This verifies the checked-in `.claude/settings.json` and hook scripts. Do not
+use `install.ps1 verify` as proof for repo-local hooks; it tests Boucle hooks
+installed under the CI user's `~/.claude` directory, not the hook commands in
+the checked-out repository.
 
 ```yaml
 jobs:
@@ -139,13 +142,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Verify native PowerShell hooks
-        shell: pwsh
+        shell: bash
+        working-directory: ${{ github.workspace }}
         run: |
-          iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+          curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh -o /tmp/safety-check.sh
+          SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 bash /tmp/safety-check.sh --verify --strict
 ```
 
-For native Windows installs, `install.ps1 verify` tests the `.ps1` hooks without
-bash or jq. Use Git Bash, WSL, or a runner with bash when you need the full
+For native Windows user-level installs, `install.ps1 verify` tests Boucle's
+installed `.ps1` hooks without bash or jq. That is useful after running
+`install.ps1 recommended` or `install.ps1 all`; it is not a repo-local CI
+contract. Use Git Bash, WSL, or a runner with bash when you need the full
 safety-check audit and its `--strict` exit behavior.
 
 ## Expected outcomes

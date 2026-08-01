@@ -19,16 +19,19 @@ iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework
 ```
 
 Run it from the same project root you use to start Claude Code. If you are
-already inside a git checkout, move to the repo root first:
+inside a git checkout, move to the repo root first; otherwise stay in the
+directory you use to launch Claude Code:
 
 ```sh
-cd "$(git rev-parse --show-toplevel)"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 ```
 
 On native Windows PowerShell:
 
 ```powershell
-Set-Location (git rev-parse --show-toplevel)
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
 ```
 
 If a parent directory has `.claude/settings.json` and the current directory
@@ -38,11 +41,18 @@ when launched from the subdirectory.
 New to the tool? Start with the [safety-check quickstart](QUICKSTART.md) for the
 short audit, install, verify, and repair loop.
 
+Want to try it before it reads your real Claude Code settings? Use the
+[temporary first test](FIRST_TEST.md). It runs with a temporary `HOME`, installs
+nothing, and shows the unconfigured summary boundary.
+
 Need help with a result? Use `--summary-only` or the
 [safe support evidence guide](SUPPORT_EVIDENCE.md) to share the copy/paste
 summary without exposing private settings or secrets. Use
 [safe support examples](SUPPORT_EXAMPLES.md) to compare a safe public report
 with snippets that should stay private.
+Handing a verified boundary to a teammate or reviewer? Use the
+[team handoff report](TEAM_HANDOFF.md) so the root checked, command used,
+verification result, residual warnings, and next recheck trigger stay together.
 To interpret the summary and choose the first repair, use the
 [safety summary triage guide](TRIAGE.md).
 

@@ -1,8 +1,8 @@
 # enforce-hooks
 
-Turn CLAUDE.md rules into enforced boundaries that Claude cannot bypass.
+Turn CLAUDE.md rules into PreToolUse boundaries for covered tool calls.
 
-Claude Code's CLAUDE.md lets you write project rules, but Claude follows them on a best-effort basis. enforce-hooks reads your rules and generates hooks that deterministically block violations before they happen.
+Claude Code's CLAUDE.md lets you write project rules, but Claude follows them on a best-effort basis. enforce-hooks reads your rules and generates hooks that block covered tool-call violations before they happen.
 
 ## Quick Start
 
@@ -33,11 +33,11 @@ CLAUDE.md rules rely on the model choosing to comply. That breaks down in severa
 5. **Negative context spiral**: Adding more rules to compensate for violations makes compliance worse, not better. More instructions consume context budget without improving behavior, and can push relevant task context out of the window. Users with [extensive guardrails](https://github.com/anthropics/claude-code/issues/40289) report the model acknowledges rules then violates them in the same response. One user [documented this across 68 sessions](https://github.com/anthropics/claude-code/issues/29795).
 6. **Permission prompt bypass**: Even the interactive permission prompt can fail. Users report that after [explicitly selecting "No"](https://github.com/anthropics/claude-code/issues/40302) on a bash command, the model executes the command anyway. The built-in permission UI is another form of model-mediated enforcement, and it breaks in the same ways text rules do.
 
-PreToolUse hooks solve all six in the parent session. They run as code before every tool call, they return a hard block that the model cannot override, and they fire deterministically regardless of prompt content. In subagents, hooks still fire but [exit codes may be silently ignored](https://github.com/anthropics/claude-code/issues/40580) — see Known Limitations.
+PreToolUse hooks address these failures for covered tool calls in the parent session. They run as code before the tool executes, and a verified block does not depend on the model remembering the rule. In subagents, hooks still fire but [exit codes may be silently ignored](https://github.com/anthropics/claude-code/issues/40580) — see Known Limitations. Always run the verifier after install and after Claude Code updates.
 
 ## Design Tradeoff
 
-enforce-hooks is deliberately deterministic. Every hook is a bash script with pattern matching. No LLM in the loop, no API key, no network call after install. Same tool call plus same rules equals the same decision, every time. You can read every generated hook (`cat .claude/hooks/*.sh`) and understand exactly what it blocks.
+enforce-hooks is deliberately inspectable. Every hook is a bash script with pattern matching. No LLM in the loop, no API key, no network call after install. Same covered tool call plus same rules should produce the same decision. You can read every generated hook (`cat .claude/hooks/*.sh`) and verify exactly what it blocks.
 
 The tradeoff: hooks have no conversation context. "User asked for a discussion but Claude started coding" has no tool-call signal to match. Rules that require understanding intent need a different approach. enforce-hooks handles structural violations where the tool call itself is the signal.
 
@@ -166,7 +166,7 @@ People hit the same enforcement gaps repeatedly. Here is what each looks like an
 | All hooks silently disabled | Non-empty `CLAUDE_CODE_SIMPLE`, `IS_DEMO=1`, or `--bare` flag silently disables every hook, MCP tool, and CLAUDE.md loading | `safety-check` warns when env vars are detected. For `--bare`/`-p`, use OS-level controls instead of hooks. |
 | Automated session stalls on `~/.claude/` write | Edit/Write to `~/.claude/` triggers hardcoded prompt that `bypassPermissions`, `permissions.allow`, and hooks cannot suppress ([#41615](https://github.com/anthropics/claude-code/issues/41615)) | Use Bash tool (`echo`, `cat`, `jq`) to write config files directly instead of Edit/Write. |
 | `claude -w` hangs with WorktreeCreate hooks | Any `WorktreeCreate` hook causes indefinite hang regardless of hook content ([#41614](https://github.com/anthropics/claude-code/issues/41614)) | Remove all `WorktreeCreate` hooks if you need `claude -w`. |
-| CLAUDE.md prohibition ignored by fallback logic | Explicit "never fall back" directive in CLAUDE.md is overridden by built-in fallback behavior ([#41957](https://github.com/anthropics/claude-code/issues/41957)) | `bash-guard` or `file-guard` blocks the fallback action at tool level. CLAUDE.md directives cannot override built-in fallback logic; hooks can. |
+| CLAUDE.md prohibition ignored by fallback logic | Explicit "never fall back" directive in CLAUDE.md is overridden by built-in fallback behavior ([#41957](https://github.com/anthropics/claude-code/issues/41957)) | `bash-guard` or `file-guard` can block covered fallback actions at tool level. CLAUDE.md directives cannot override built-in fallback logic. |
 | Memory files read but not applied in long sessions | Files in `~/.claude/projects/.../memory/` are loaded into context but instructions drift as the session extends ([#41951](https://github.com/anthropics/claude-code/issues/41951)) | Hooks enforce rules regardless of context length. For critical rules, use `file-guard` or `bash-guard` instead of relying on memory file instructions alone. |
 
 ## Recipes
@@ -242,7 +242,7 @@ smoke-test, and removal steps, see [Read-only audit mode](READ_ONLY_AUDIT.md).
 - Never run git commit, git push, or git merge
 ```
 
-CLAUDE.md instructions alone will not prevent violations ([#41063](https://github.com/anthropics/claude-code/issues/41063), [#40537](https://github.com/anthropics/claude-code/issues/40537), [#40867](https://github.com/anthropics/claude-code/issues/40867)). Run `enforce-hooks.py --install-plugin` to convert these into PreToolUse hooks that hard-block at the runtime level. `Never modify any files` blocks Write, Edit, MultiEdit, and NotebookEdit. The shell-write rule blocks common Bash write paths such as redirects, `tee`, `touch`, `mkdir`, `rm`, in-place edits, moves, copies, and permission/ownership changes. The model cannot bypass a hook block. For additional protection, install bash-guard (`install.sh recommended`) which catches destructive commands even when they are wrapped in compound shell expressions.
+CLAUDE.md instructions alone will not prevent violations ([#41063](https://github.com/anthropics/claude-code/issues/41063), [#40537](https://github.com/anthropics/claude-code/issues/40537), [#40867](https://github.com/anthropics/claude-code/issues/40867)). Run `enforce-hooks.py --install-plugin` to convert these into PreToolUse hooks that hard-block covered tool calls at the runtime level. `Never modify any files` blocks Write, Edit, MultiEdit, and NotebookEdit. The shell-write rule blocks common Bash write paths such as redirects, `tee`, `touch`, `mkdir`, `rm`, in-place edits, moves, copies, and permission/ownership changes. This is not a sandbox: verify the hook, start a fresh session, and review known limitations for non-tool-call paths. For additional protection, install bash-guard (`install.sh recommended`) which catches destructive commands even when they are wrapped in compound shell expressions.
 
 ### Cost control
 
@@ -294,7 +294,7 @@ Force the model to use a specific tool by blocking alternatives. Addresses [#412
 - Don't use WebFetch @enforced
 ```
 
-The block message includes your rule text, so the model sees "Tool WebSearch is blocked. (CLAUDE.md: Don't use WebSearch, use XURL instead)" and knows what to use. This is deterministic: the model cannot call blocked tools regardless of other hooks or prompt content.
+The block message includes your rule text, so the model sees "Tool WebSearch is blocked. (CLAUDE.md: Don't use WebSearch, use XURL instead)" and knows what to use. After verification, this blocks covered calls to those tools regardless of prompt content.
 
 For temporary per-session preferences, combine with `@enforced(warn)` for tools you want to discourage but not hard-block:
 
@@ -319,7 +319,7 @@ Skills and workflows can include instructions that contradict your CLAUDE.md. Wh
 - Never run git add with plan or implementation in the filename
 ```
 
-The `file-guard` rules block Write/Edit to plan documents regardless of what a skill workflow requests. The `bash-guard` rules block `git commit` and `git add` commands that target plan files. Together, they create a deterministic boundary that no skill, workflow, or prompt injection can cross.
+The `file-guard` rules block Write/Edit to plan documents regardless of what a skill workflow requests. The `bash-guard` rules block `git commit` and `git add` commands that target plan files. Together, they create a deterministic boundary for those covered Write/Edit/Bash operations.
 
 **Why this works when CLAUDE.md alone does not:** Skills inject their instructions into the conversation alongside (or after) CLAUDE.md content. The model resolves the conflict by following whichever instruction is more specific or more recent — usually the skill. Hooks do not participate in this priority resolution. They fire on the tool call itself, after the model has already decided what to do. A skill can tell the model to commit; the hook blocks the commit before it executes.
 

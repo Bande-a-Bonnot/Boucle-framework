@@ -4,6 +4,10 @@ Use this when you want to know whether a Claude Code setup can actually block
 dangerous tool calls. The goal is not a perfect grade. The goal is a verified
 trust boundary before you let Claude edit a real project.
 
+If you want to try the checker without reading your real Claude Code settings
+first, run the [temporary first test](FIRST_TEST.md), then come back here for the
+real audit and install path.
+
 ## 1. Run the audit
 
 Prerequisites:
@@ -20,10 +24,12 @@ Run it from the project root you use to start Claude Code, especially when the
 repository has `.claude/settings.json`. Running from a subdirectory can miss
 project-level hooks that live at the repo root.
 
-If you are already inside a git checkout, move to the repo root first:
+If you are inside a git checkout, move to the repo root first. If not, stay in
+the directory you use to launch Claude Code:
 
 ```sh
-cd "$(git rev-parse --show-toplevel)"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 ```
 
 ```sh
@@ -96,7 +102,21 @@ The native PowerShell installer covers the standalone hooks. The `enforce-hooks`
 installer is a bash/Python tool; run it from WSL or Git Bash on Windows.
 
 If you are only testing the hook suite, keep the rollback command handy. It
-removes Boucle hook files and their `settings.json` registrations:
+removes Boucle hook files and their `settings.json` registrations. If you want
+the trial to be fully reversible, snapshot your Claude Code user settings before
+installing hooks:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup
+```
+
+On native Windows:
+
+```powershell
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup"
+```
+
+Then remove the hooks when the trial is over:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- uninstall all
@@ -107,6 +127,31 @@ On native Windows:
 ```powershell
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } uninstall all"
 ```
+
+On a borrowed machine, client repository, CI runner, or any other temporary
+environment, inspect the backup list and restore the pre-trial snapshot if you
+want the exact previous settings file, then verify cleanup before you leave it:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup list
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore
+```
+
+On native Windows:
+
+```powershell
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup list"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore"
+```
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
+```
+
+The expected cleanup result is no Boucle hook inventory and a summary such as
+`Verify: not run | no hooks found | 0 payload checks`. On native Windows, run
+`install.ps1 verify` and expect `No hooks installed. Run: install.ps1
+recommended` when only the native user-level hooks were present.
 
 ## 3. Verify the hooks fire
 
@@ -175,7 +220,7 @@ Use the first matching row from the summary as your next repair:
 | `Verify: not run`, `no hooks found`, or `0 payload checks` | Install the recommended hooks or replace dynamic hook snippets with direct script paths, then rerun from the same project root. |
 | `FAIL-OPEN` | Run `install.sh doctor`, inspect or reinstall the named hook, then rerun `--verify` before trusting the session. |
 | `skipped PreToolUse` | Point the hook command at a verifiable script path such as `bash ./hooks/name.sh` or `python ./hooks/name.py`. |
-| Ancestor project settings warning | `cd "$(git rev-parse --show-toplevel)"`, or start Claude Code from the directory that owns `.claude/settings.json`. |
+| Ancestor project settings warning | `repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"` then `cd "$repo_root"`, or start Claude Code from the directory that owns `.claude/settings.json`. |
 | `Verify: 0 FAIL-OPEN` with a Grade C or warnings | Keep the verified hook boundary and document the residual platform warnings. Do not reinstall hooks just to chase an A. |
 
 ## 4. Fix the common blockers
@@ -232,7 +277,8 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 On native Windows, use the native PowerShell hook verifier:
 
 ```powershell
-Set-Location (git rev-parse --show-toplevel)
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } upgrade"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
@@ -242,21 +288,37 @@ the final verifier count plus any `WARN` or `SKIP` lines.
 
 If verification fails after the update, run `doctor` before reinstalling. If
 hooks disappeared or `doctor` reports that `settings.json` was wiped, restore
-the most recent backup, then run the strict audit again:
+the most recent backup, then run the strict audit again. Use `backup list`
+first when you need to inspect which snapshot will be restored:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- doctor
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup list
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- check --verify --strict
+```
+
+To restore a specific backup from that list, pass the filename:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore settings.20260101_120000.json
 ```
 
 On native Windows:
 
 ```powershell
-Set-Location (git rev-parse --show-toplevel)
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup list"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+```
+
+Specific backup restore works the same way in PowerShell:
+
+```powershell
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore settings.20260101_120000.json"
 ```
 
 ## 6. Recheck after risky changes
@@ -276,6 +338,9 @@ the verified boundary: no bypass flags, valid JSON, healthy hook files, and zero
 `FAIL-OPEN` payload checks.
 Use the [safety summary triage guide](TRIAGE.md) when the summary has multiple
 issues and you need a repair order.
+When a teammate, reviewer, or incident owner needs the result, use the
+[team handoff report](TEAM_HANDOFF.md) to record the root checked, command
+used, verification result, residual warnings, and next recheck trigger.
 
 ## 7. Share safe support evidence
 
@@ -318,4 +383,5 @@ public threads. Do not paste raw hook stderr from a live Claude Code session,
 because the platform can prefix it with the hook command path. Use the
 [safe support evidence guide](SUPPORT_EVIDENCE.md) when you need a copy/paste
 report format or a temporary-directory reproduction instead of real workspace
-files.
+files. For team handoffs that are not public support requests, use the
+[team handoff report](TEAM_HANDOFF.md).

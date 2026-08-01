@@ -13,6 +13,8 @@
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="Common Problems & Solutions - Boucle Safety Hooks">
     <meta name="twitter:description" content="Fix common Claude Code problems: rules ignored, files deleted, dangerous commands, force pushes. Each problem mapped to the specific hook.">
+    <link rel="alternate" type="application/atom+xml" title="Claude Code Hook Limitations Feed" href="/limitations-feed.xml">
+    <link rel="alternate" type="application/json" title="Claude Code Hook Limitations JSON" href="/limitations.json">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -26,34 +28,148 @@
             <main>
                 <nav class="recipe-nav">
                     <p class="brief" style="color: var(--muted-color);">Jump to:
+                        <a href="#first-audit">First safety audit</a> &middot;
+                        <a href="#temporary-trial">Temporary hook trial</a> &middot;
                         <a href="#rules-ignored">Rules ignored</a> &middot;
+                        <a href="#read-only-audit">Read-only audit</a> &middot;
                         <a href="#files-deleted">Files deleted</a> &middot;
                         <a href="#dangerous-commands">Dangerous commands</a> &middot;
                         <a href="#git-disasters">Git disasters</a> &middot;
                         <a href="#token-waste">Token waste</a> &middot;
-                        <a href="#tool-switching">Tool switching bypass</a>
+                        <a href="#tool-switching">Tool switching bypass</a> &middot;
+                        <a href="#support-evidence">Safe support evidence</a> &middot;
+                        <a href="#ci-verification">CI verification</a> &middot;
+                        <a href="#team-handoff">Team handoff</a> &middot;
+                        <a href="#autonomous-session">Autonomous session preflight</a> &middot;
+                        <a href="#after-update">After Claude Code updates</a>
                     </p>
                 </nav>
+
+                <div class="recipe" id="first-audit">
+                    <h2>"I want to know if my Claude Code setup is safe"</h2>
+                    <p class="brief">Start with the audit before installing or changing hooks. Run it from the same project root where you launch Claude Code, so user-level and project-level settings are both visible. In a git checkout, move to the repo root first; outside git, stay in the project directory you use for Claude Code.</p>
+                    <p class="brief"><strong>Fix path: audit, install the essentials, verify, then restart Claude Code</strong></p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- recommended
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict</code>
+                    </div>
+                    <p class="brief">Trust the hook layer only after verification reports zero <code>FAIL-OPEN</code> results. The verifier sends representative Claude-style hook payloads; it does not execute the dangerous shell or git commands named inside those payloads.</p>
+                    <p class="brief">When asking for help, share only the bounded summary block, not raw settings files, hook source, paths, tokens, or private <code>CLAUDE.md</code> rules:</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only</code>
+                    </div>
+                    <p class="brief">On native Windows, use PowerShell 7 for the native hooks:</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">PS&gt;</span> $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2&gt;$null }
+<span class="prompt-char">PS&gt;</span> if ($root) { Set-Location $root }
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"</code>
+                    </div>
+                    <p class="brief" style="color: var(--muted-color);">After a clean verification, start a fresh Claude Code session from the same root. A running session may still have old hook settings loaded. For a longer walkthrough, use the <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/QUICKSTART.md">safety-check quickstart</a>.</p>
+                </div>
+
+                <div class="recipe" id="temporary-trial">
+                    <h2>"I want to try the hooks without keeping them installed"</h2>
+                    <p class="brief">Use this when you are on a borrowed machine, a client repo, a CI runner, or any place where the hook boundary should be tested and then removed. The trial still edits user-level Claude Code settings while it is active, so snapshot first and verify both installation and cleanup.</p>
+                    <p class="brief"><strong>Fix path: back up settings, install the smallest useful set, verify, optionally run one fresh Claude Code session, uninstall, then rerun the audit</strong></p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- recommended
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- uninstall all
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only</code>
+                    </div>
+                    <p class="brief">If the trial is only a configuration check, do not start Claude Code between install and uninstall. If you want to test behavior in Claude Code itself, start a fresh session from the same root after strict verification, run one bounded task, then uninstall before leaving the machine or handing the repo back.</p>
+                    <p class="brief">After uninstall, the summary should no longer claim a verified hook boundary. A result such as <code>Verify: not run</code>, <code>no hooks found</code>, or <code>0 payload checks</code> is expected after cleanup. That means the trial hooks are gone; it does not mean the current setup is protected.</p>
+                    <p class="brief">Use <code>restore</code> only when you need to return <code>~/.claude/settings.json</code> to the saved snapshot exactly. If the machine has other Claude Code changes after the backup, run <code>backup list</code> first and inspect before restoring.</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup list
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore settings.20260101_120000.json</code>
+                    </div>
+                    <p class="brief">On native Windows, use the same shape with PowerShell 7 and the native verifier:</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } uninstall all"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup list"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore settings.20260101_120000.json"</code>
+                    </div>
+                    <p class="brief" style="color: var(--muted-color);">For a no-install dry run before touching real settings, use the <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/FIRST_TEST.md">temporary first test</a>. It uses a temporary <code>HOME</code> and does not prove your real setup is safe.</p>
+                </div>
 
                 <div class="recipe" id="rules-ignored">
                     <h2>"Claude ignores my CLAUDE.md rules"</h2>
                     <p class="brief">CLAUDE.md instructions are text appended to the context window. The model reads them and usually follows them, but nothing prevents deviation. As context grows, rule-following degrades. This is documented behavior (<a href="https://github.com/anthropics/claude-code/issues/37599">#37599</a>, <a href="https://github.com/anthropics/claude-code/issues/38065">#38065</a>, <a href="https://github.com/anthropics/claude-code/issues/40425">#40425</a>).</p>
                     <p class="brief"><strong>Fix: enforce-hooks</strong></p>
-                    <p class="brief">Tag rules in CLAUDE.md with <code>@enforced</code>, then run the enforce skill. It generates PreToolUse hooks that block violations at the tool-call level. The model cannot override <code>exit 2</code>.</p>
+                    <p class="brief">Tag rules in CLAUDE.md with <code>@enforced</code>, then install the dynamic enforce hook. It re-reads CLAUDE.md on every tool call and blocks covered violations at the tool-call level. Verify the hook after install, run the runtime smoke test, and use OS-level controls for anything outside tool calls.</p>
                     <div class="code-block">
                         <code><span class="prompt-char">#</span> Install enforce, then ask Claude: "Enforce my CLAUDE.md rules"</code>
                     </div>
                     <div class="code-block">
-                        <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- enforce</code>
+                        <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/install.sh | bash
+<span class="prompt-char">$</span> python3 .claude/hooks/enforce-hooks.py --verify
+<span class="prompt-char">$</span> python3 .claude/hooks/enforce-hooks.py --smoke-test</code>
                     </div>
+                    <p class="brief" style="color: var(--muted-color);">For audit-only sessions, use the <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/enforce/READ_ONLY_AUDIT.md">read-only audit recipe</a>, which includes setup, strict verification, smoke testing, fresh-session guidance, and removal steps.</p>
                     <p class="brief" style="color: var(--muted-color);">Also helps: fewer rules placed more prominently, shorter sessions, and accepting that CLAUDE.md is guidance while hooks are enforcement.</p>
+                </div>
+
+                <div class="recipe" id="read-only-audit">
+                    <h2>"I need Claude to inspect the repo, not change it"</h2>
+                    <p class="brief">Use this when Claude Code should review, test, and report without writing files, mutating data, restarting services, or committing. A prompt that says "do not edit" is guidance. The enforced rule below blocks covered tool calls before they execute.</p>
+                    <p class="brief"><strong>Fix path: add an enforced read-only rule, install the dynamic hook, verify, smoke test, then start a fresh session</strong></p>
+                    <div class="code-block">
+                        <code>## Read-only mode @enforced
+- Never modify any files
+- Never run rm -rf
+- Never run `&gt;`, `&gt;&gt;`, `tee`, `touch`, `mkdir`, `rm`, `sed -i`, `perl -pi`, `mv`, `cp`, `unlink`, `chmod`, or `chown`
+- Never run ALTER, DROP, TRUNCATE, INSERT, UPDATE, or DELETE
+- Never run docker restart, docker stop, docker build, or docker rm
+- Never run sudo
+- Never run git commit, git push, or git merge</code>
+                    </div>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> mkdir -p .claude
+<span class="prompt-char">$</span> test ! -f .claude/settings.json || cp .claude/settings.json .claude/settings.json.pre-read-only.bak
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/enforce-hooks.py -o /tmp/enforce-hooks.py
+<span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --scan
+<span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --install-plugin
+<span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
+<span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --verify --strict
+<span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --smoke-test --strict</code>
+                    </div>
+                    <p class="brief">Setting up the boundary intentionally edits <code>CLAUDE.md</code> and project-level <code>.claude/settings.json</code>. Use a disposable branch or worktree when the main checkout must stay untouched, and keep the settings backup until the audit is done.</p>
+                    <p class="brief">After verification, start a fresh Claude Code session from the same project root and use a narrow prompt such as: <code>Audit this repository. Do not edit files, run migrations, restart services, or commit. Report findings only.</code></p>
+                    <p class="brief">To leave read-only mode, remove or rename the <code>Read-only mode @enforced</code> section, then verify from the same project root. Plugin mode reads <code>CLAUDE.md</code> dynamically, so the read-only rule stops applying on the next tool call after the section is gone.</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify</code>
+                    </div>
+                    <p class="brief">If you also want to remove the hook registration, restore the settings snapshot only when you want <code>.claude/settings.json</code> returned to its pre-audit state, or remove <code>enforce-pretooluse.sh</code> from Claude Code's hooks UI. Then run the checks again. A strict audit should fail if the read-only section still exists without an active hook, or if restored settings contain broken hook references.</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> test ! -f .claude/settings.json.pre-read-only.bak || cp .claude/settings.json.pre-read-only.bak .claude/settings.json
+<span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify</code>
+                    </div>
+                    <p class="brief" style="color: var(--muted-color);">This is not a sandbox. Hooks cover Claude Code tool calls, not every way a process can affect a system. For production data or secrets, combine this with OS permissions, backups, containers, or a disposable clone. Full copy-paste guide: <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/enforce/READ_ONLY_AUDIT.md">read-only audit mode</a>.</p>
                 </div>
 
                 <div class="recipe" id="files-deleted">
                     <h2>"Claude deleted/overwrote my files"</h2>
                     <p class="brief">Users have lost <a href="https://github.com/anthropics/claude-code/issues/37984">87GB of personal data</a>, had <a href="https://github.com/anthropics/claude-code/issues/37888">30+ files destroyed</a>, and seen <a href="https://github.com/anthropics/claude-code/issues/38193">explicit "don't touch" instructions ignored</a>. The permission system has known bypass patterns (<a href="https://github.com/anthropics/claude-code/issues/38119">#38119</a>).</p>
                     <p class="brief"><strong>Fix: file-guard</strong></p>
-                    <p class="brief">Protects files matching patterns you define in <code>.file-guard</code>. Blocks Read, Edit, Write, and Bash access to matching paths. Works on absolute and relative paths.</p>
+                    <p class="brief">Protects files matching patterns you define in <code>.file-guard</code>. In default write-protect mode it blocks Edit, Write, MultiEdit, NotebookEdit, and modifying Bash commands for matching paths. Put patterns under a <code>[deny]</code> section when Claude must not read, search, list, or reference those paths at all. Works on absolute and relative paths.</p>
                     <div class="code-block">
                         <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- file-guard</code>
                     </div>
@@ -63,6 +179,7 @@
                         <code>*.pem</code><br>
                         <code>credentials.*</code><br>
                         <code>/etc/*</code><br>
+                        <code>[deny]</code><br>
                         <code>~/.ssh/*</code>
                     </div>
                     <p class="brief"><strong>Also: bash-guard</strong> blocks <code>rm -rf /</code>, <code>rm -rf ~</code>, and recursive deletion of system paths, even inside compound commands and pipes.</p>
@@ -108,6 +225,149 @@
                     <p class="brief" style="color: var(--muted-color);">For critical paths, combine hooks with OS-level controls (file permissions, network policy, containerization). See the <a href="/limitations.html">full searchable list of known gaps</a>.</p>
                 </div>
 
+                <div class="recipe" id="support-evidence">
+                    <h2>"I need help without leaking private settings"</h2>
+                    <p class="brief">Do not paste raw Claude Code settings, hook commands, hook stderr, transcripts, screenshots, or private <code>CLAUDE.md</code> rules into a public issue. The support path is to run the verifier from the affected project root and share only the bounded summary block.</p>
+                    <p class="brief"><strong>Fix path: rerun from the project root, print the public summary, then add short environment context</strong></p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only</code>
+                    </div>
+                    <p class="brief">Post the output from <code>--- Safety Summary (copy/paste) ---</code> through <code>--- End Safety Summary ---</code>, plus only these short fields:</p>
+                    <div class="code-block">
+                        <code>OS:
+Shell:
+Claude Code version:
+Where hooks are installed:
+What changed recently:</code>
+                    </div>
+                    <p class="brief">If native PowerShell verification is the only available path, copy the final count line and any <code>WARN</code> or <code>SKIP</code> lines instead of the startup hook table:</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"</code>
+                    </div>
+                    <p class="brief" style="color: var(--muted-color);">If someone asks for raw files, build a temporary reproduction with throwaway settings first. The <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/SUPPORT_EVIDENCE.md">safe support evidence guide</a> and <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/SUPPORT_EXAMPLES.md">safe support examples</a> show what is safe to paste and what to redact.</p>
+                </div>
+
+                <div class="recipe" id="ci-verification">
+                    <h2>"I want CI to fail when repo hooks stop blocking"</h2>
+                    <p class="brief">Use this when a repository commits Claude Code hook settings or hook scripts and you want pull requests to prove that boundary still works. CI can verify checked-in project hooks. It cannot prove every developer's global <code>~/.claude/settings.json</code> is safe.</p>
+                    <p class="brief"><strong>Fix path: commit repo-local settings and hook scripts, run strict safety-check from the repository root, and skip only the optional Claude Code version probe</strong></p>
+                    <div class="code-block">
+                        <code>name: claude-code-safety
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  safety-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Claude Code hooks
+        working-directory: ${{ github.workspace }}
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh -o /tmp/safety-check.sh
+          SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 bash /tmp/safety-check.sh --verify --strict</code>
+                    </div>
+                    <p class="brief">Do not treat <code>install.sh recommended</code> in CI as proof that repo-local policy is protected. That installs user-level hooks under the runner's temporary <code>HOME</code>. It is useful as an installer smoke test, but it does not prove the checked-out <code>.claude/settings.json</code> or repository hook files protect developers.</p>
+                    <p class="brief">For native PowerShell hook scripts, use a runner where both <code>bash</code> and <code>pwsh</code> are available so <code>safety-check --verify --strict</code> can execute the checked-in <code>.ps1</code> commands. Do not use <code>install.ps1 verify</code> as proof for repo-local hooks; it verifies Boucle hooks installed under the CI user's home directory.</p>
+                    <p class="brief" style="color: var(--muted-color);">Full workflow examples and expected failure modes: <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/CI.md">scripted safety-check checks</a>.</p>
+                </div>
+
+                <div class="recipe" id="team-handoff">
+                    <h2>"I need to leave a PR or incident handoff"</h2>
+                    <p class="brief">Use this when a teammate, reviewer, or incident owner needs to know exactly what hook boundary was checked. Keep the note short: root, command, result, residual warnings, and the trigger for the next recheck.</p>
+                    <p class="brief"><strong>Fix path: run the bounded summary, paste the handoff record, and mark whether a fresh Claude Code session was started</strong></p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only</code>
+                    </div>
+                    <div class="code-block">
+                        <code>Claude Code hook boundary checked:
+- Project/root:
+- OS and shell:
+- Claude Code version:
+- Hooks installed in: user settings / project settings / both / not sure
+- Command used:
+- Fresh Claude Code session started after verification: yes / no
+- Result:
+
+--- Safety Summary (copy/paste) ---
+...
+--- End Safety Summary ---
+
+Residual platform warnings:
+- ...
+
+Next recheck trigger:
+- Claude Code update / settings edit / hook edit / launch directory change / before risky automation</code>
+                    </div>
+                    <p class="brief">Treat this as a boundary statement, not a certificate. <code>Verify: 0 FAIL-OPEN</code> means representative payload checks did not find a configured hook that failed open; it does not prove every possible path is blocked.</p>
+                    <p class="brief" style="color: var(--muted-color);">Full template and Windows notes: <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/TEAM_HANDOFF.md">team handoff reports</a>.</p>
+                </div>
+
+                <div class="recipe" id="autonomous-session">
+                    <h2>"I am about to let Claude Code work for a while"</h2>
+                    <p class="brief">Before a long, unattended, or high-trust session, verify the hooks from the exact project root Claude Code will use. This preflight catches missing hook files, stale settings, failed payload checks, direct commits to protected branches, and missing audit logs before the session starts.</p>
+                    <p class="brief"><strong>Fix path: install the session guard set, verify strictly, snapshot state, then restart Claude Code</strong></p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- bash-guard git-safe file-guard branch-guard worktree-guard session-log
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
+<span class="prompt-char">$</span> git status --short</code>
+                    </div>
+                    <p class="brief">The guard set blocks dangerous shell and git commands, protects sensitive files, prevents direct commits to protected branches, prevents losing work when exiting Claude Code worktrees, and writes a JSONL tool-call audit trail. The final <code>git status --short</code> is a human checkpoint: start from a state you can explain, or commit/stash intentionally before turning the session loose.</p>
+                    <p class="brief">On native Windows, use PowerShell 7 and the native verifier:</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">PS&gt;</span> $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2&gt;$null }
+<span class="prompt-char">PS&gt;</span> if ($root) { Set-Location $root }
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } bash-guard git-safe file-guard branch-guard worktree-guard session-log"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+<span class="prompt-char">PS&gt;</span> git status --short</code>
+                    </div>
+                    <p class="brief" style="color: var(--muted-color);">After a clean preflight, start a fresh Claude Code session from that same root. Existing sessions may still have old hook settings loaded. If the session will touch secrets, production data, cloud resources, or customer files, combine hooks with OS permissions, containers, network policy, and backups.</p>
+                </div>
+
+                <div class="recipe" id="after-update">
+                    <h2>"Claude Code updated. Are my hooks still working?"</h2>
+                    <p class="brief">Claude Code, IDE integrations, terminal profiles, and settings files can all change the hook boundary. A clean install from last week does not prove the current session is protected.</p>
+                    <p class="brief"><strong>Fix path: back up settings, upgrade, doctor, then strictly verify from the same project root</strong></p>
+                    <p class="brief">Run the update check before trusting Claude Code with destructive commands, repo writes, or autonomous work after a version change. The strict verifier sends representative hook payloads; it does not execute the dangerous shell or git commands named in those payloads.</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> unset IS_DEMO CLAUDE_CODE_SIMPLE
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- upgrade
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- doctor
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict</code>
+                    </div>
+                    <p class="brief">On native Windows, use PowerShell 7 and verify the native hooks:</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">PS&gt;</span> $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2&gt;$null }
+<span class="prompt-char">PS&gt;</span> if ($root) { Set-Location $root }
+<span class="prompt-char">PS&gt;</span> Remove-Item Env:IS_DEMO -ErrorAction SilentlyContinue
+<span class="prompt-char">PS&gt;</span> Remove-Item Env:CLAUDE_CODE_SIMPLE -ErrorAction SilentlyContinue
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } upgrade"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"</code>
+                    </div>
+                    <p class="brief" style="color: var(--muted-color);">Keep the backup until the fresh session proves the hook boundary still works. If restore is needed, run <code>backup list</code> first and restore the named snapshot you intend to use. After a clean verification, start a fresh Claude Code session from that same project root. For restore steps and failure triage, use the <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/UPDATE_CHECKLIST.md">Claude Code update checklist</a>.</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup list
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore settings.20260101_120000.json
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup list"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore settings.20260101_120000.json"</code>
+                    </div>
+                </div>
+
                 <h2 style="margin-top: 3em;">Quick reference</h2>
                 <table style="width: 100%; border-collapse: collapse; margin-top: 1em;">
                     <thead>
@@ -120,6 +380,10 @@
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">CLAUDE.md rules ignored</td>
                             <td style="padding: 0.5em 0;"><code>enforce</code></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Read-only review or audit</td>
+                            <td style="padding: 0.5em 0;"><code>enforce</code> + <code>@enforced</code> read-only policy</td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">Files deleted or overwritten</td>
@@ -150,8 +414,24 @@
                             <td style="padding: 0.5em 0;"><code>worktree-guard</code></td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Claude Code update changed hook behavior</td>
+                            <td style="padding: 0.5em 0;"><code>safety-check --verify --strict</code> + <code>doctor</code></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Temporary trial before handing back a machine</td>
+                            <td style="padding: 0.5em 0;"><code>backup</code> + <code>recommended</code> + <code>uninstall all</code> + recheck</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">Audit all tool calls</td>
                             <td style="padding: 0.5em 0;"><code>session-log</code></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Long unattended session</td>
+                            <td style="padding: 0.5em 0;"><code>bash-guard</code> + <code>git-safe</code> + <code>file-guard</code> + <code>branch-guard</code> + <code>worktree-guard</code> + <code>session-log</code></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Repo-local hooks drift in CI</td>
+                            <td style="padding: 0.5em 0;"><code>safety-check --verify --strict</code> from the repository root</td>
                         </tr>
                         <tr>
                             <td style="padding: 0.5em 1em 0.5em 0;">Stale cache after compaction</td>
@@ -162,14 +442,16 @@
 
                 <h2>Install everything</h2>
                 <div class="code-block">
-                    <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- all</code>
+                    <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- all
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify</code>
                 </div>
-                <p class="brief">Or start with the safety essentials: <code>bash -s -- recommended</code> installs bash-guard + git-safe + file-guard.</p>
+                <p class="brief">Or start with the safety essentials: <code>bash -s -- recommended</code> installs bash-guard + git-safe + file-guard. After verification, start a fresh Claude Code session from the same project root before relying on the new hook boundary.</p>
 
                 <div style="margin-top: 3em; padding-top: 1.5em; border-top: 1px solid rgba(255,255,255,0.1);">
                     <p class="brief" style="color: var(--muted-color);">
                         <a href="/">Home</a> &middot;
                         <a href="/limitations.html">Known Limitations</a> &middot;
+                        <a href="/limitations-feed.xml">Limitations Feed</a> &middot;
                         <a href="https://github.com/Bande-a-Bonnot/Boucle-framework">GitHub</a>
                     </p>
                 </div>

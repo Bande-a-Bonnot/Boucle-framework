@@ -5,11 +5,11 @@
 
 Claude Code hooks that actually enforce your rules. 7 standalone hooks, plus `enforce-hooks` for CLAUDE.md policy, audit tooling, 1,900+ tests, and a [searchable Claude Code gaps corpus](https://framework.boucle.sh/limitations.html) with severity ratings and workarounds.
 
-> **Quick links:** [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Known limitations](https://framework.boucle.sh/limitations.html) · [JSON export](https://framework.boucle.sh/limitations.json) · [Quickstart](tools/safety-check/QUICKSTART.md) · [Triage](tools/safety-check/TRIAGE.md) · [Update checklist](tools/safety-check/UPDATE_CHECKLIST.md) · [Safe support evidence](tools/safety-check/SUPPORT_EVIDENCE.md) · [Support examples](tools/safety-check/SUPPORT_EXAMPLES.md) · [Read-only audits](tools/enforce/READ_ONLY_AUDIT.md) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
+> **Quick links:** [First test](tools/safety-check/FIRST_TEST.md) · [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Known limitations](https://framework.boucle.sh/limitations.html) · [JSON export](https://framework.boucle.sh/limitations.json) · [Quickstart](tools/safety-check/QUICKSTART.md) · [Triage](tools/safety-check/TRIAGE.md) · [CI checks](tools/safety-check/CI.md) · [Team handoff](tools/safety-check/TEAM_HANDOFF.md) · [Update checklist](tools/safety-check/UPDATE_CHECKLIST.md) · [Safe support evidence](tools/safety-check/SUPPORT_EVIDENCE.md) · [Support examples](tools/safety-check/SUPPORT_EXAMPLES.md) · [Read-only audits](tools/enforce/READ_ONLY_AUDIT.md) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
 
 ## Claude Code Hooks
 
-Claude Code's CLAUDE.md rules are [read but not enforced](https://github.com/anthropics/claude-code/issues/37550) — they work at session start and degrade as context grows. Its [permission system has known gaps](https://github.com/anthropics/claude-code/issues/30519) — wildcards don't match compound commands, deny rules [don't check pipe segments](https://github.com/anthropics/claude-code/issues/41559) and can be [bypassed with multi-line comments](https://github.com/anthropics/claude-code/issues/38119). These hooks enforce boundaries that text rules and permissions can't.
+Claude Code's CLAUDE.md rules are [read but not enforced](https://github.com/anthropics/claude-code/issues/37550) — they work at session start and degrade as context grows. Its [permission system has known gaps](https://github.com/anthropics/claude-code/issues/30519) — wildcards don't match compound commands, deny rules [don't check pipe segments](https://github.com/anthropics/claude-code/issues/41559) and can be [bypassed with multi-line comments](https://github.com/anthropics/claude-code/issues/38119). These hooks enforce covered tool-call boundaries that text rules and permissions often miss.
 
 **What happens when a hook blocks a dangerous command:**
 
@@ -31,11 +31,13 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Run this from the same project root where you start Claude Code. Project hooks
 are resolved from the current directory, so a subdirectory launch can miss
-`.claude/settings.json` at the repo root. If you are already somewhere inside a
-git checkout:
+`.claude/settings.json` at the repo root. If you are inside a git checkout,
+move to the repo root first; otherwise stay in the project directory you use for
+Claude Code:
 
 ```sh
-cd "$(git rev-parse --show-toplevel)"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
 ```
 
@@ -59,6 +61,8 @@ developer workstation checks, exit codes, and the limits of what CI can prove.
 Checks hook installation, hook health (missing/non-executable scripts), live verification (builds Claude-style JSON payloads for cases such as `rm -rf /` and `git push --force`, invokes the configured hook scripts, and confirms they block), enforce-hooks and CLAUDE.md `@enforced` rules, environment issues (IS_DEMO, JSONC settings, jq/python3 dependencies, Windows hook reliability), and known CLI version regressions. Scans both user-level (`~/.claude/settings.json`) and project-level (`.claude/settings.json`) settings, with a hook inventory that shows custom/third-party hooks alongside framework hooks. The summary counts 8 framework hook slots because it includes the `enforce-hooks` policy hook; `install.sh all` installs the 7 standalone hooks listed below. Also warns when deny rules are configured without bash-guard, since deny patterns [can be bypassed](https://github.com/anthropics/claude-code/issues/38119) by compound commands and multi-line scripts. No hook installation required for the audit. Covered by hundreds of tests.
 
 For a 10-minute path from audit to verified hooks, see the [safety-check quickstart](tools/safety-check/QUICKSTART.md).
+If you want to try the checker before it reads your real Claude Code settings,
+use the [temporary first test](tools/safety-check/FIRST_TEST.md).
 If you need to ask for help, use the [safe support evidence guide](tools/safety-check/SUPPORT_EVIDENCE.md)
 to share the summary block without exposing private settings or secrets. To
 print only that bounded public block, run:
@@ -69,6 +73,9 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 For examples of safe public reports and unsafe snippets to avoid, see
 [safe support examples](tools/safety-check/SUPPORT_EXAMPLES.md).
+For PR comments, incident notes, or teammate reviews, use the
+[team handoff report](tools/safety-check/TEAM_HANDOFF.md) to record the command
+used, root checked, verification result, residual warnings, and recheck trigger.
 
 For upstream Claude Code hook and permission gaps, use the
 [searchable limitations page](https://framework.boucle.sh/limitations.html),
@@ -139,17 +146,26 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 # Upgrade all installed hooks to latest
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- upgrade
 
+# Snapshot settings.json before updating Claude Code or starting a reversible trial
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup
+
 # Remove a hook (files + settings.json)
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- uninstall read-once
 
 # Remove all hooks
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- uninstall all
 
-# Snapshot settings.json before updating Claude Code
-curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup
+# See available settings.json backups before restoring after an update or trial
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup list
 
 # Restore after an auto-update wipes your hooks
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore
+
+# Restore a specific backup after inspecting the list, for example after a trial
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore settings.20260101_120000.json
+
+# Verify cleanup on borrowed machines, client repos, or CI runners
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
 
 # Run safety audit on your Claude Code setup
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- check
@@ -174,19 +190,25 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } list"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } upgrade"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } check"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } check --verify --summary-only"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } check --verify --strict"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } uninstall read-once"
-iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } uninstall all"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup list"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore settings.20260101_120000.json"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } help"
 ```
 
 `install.ps1 verify` and `install.ps1 doctor` use native PowerShell hooks. The
 `install.ps1 check` command runs the bash-based safety-check audit, so it needs
 Git Bash, WSL, or another `bash` on PATH.
+After `uninstall all`, `install.ps1 verify` should report that no hooks are
+installed.
 
 <a id="individual-hooks"></a>
 
@@ -268,9 +290,9 @@ Logs every tool call to `~/.claude/session-logs/YYYY-MM-DD.jsonl`. See exactly w
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/install.sh | bash
 ```
 
-Your CLAUDE.md says "never edit .env" but Claude edits it anyway. This tool reads your CLAUDE.md, finds rules marked `@enforced`, and generates hooks that block violations deterministically. Rules in prompts are suggestions; hooks are laws.
+Your CLAUDE.md says "never edit .env" but Claude edits it anyway. This tool reads your CLAUDE.md, finds rules marked `@enforced`, and generates hooks that block covered tool-call violations. Rules in prompts are suggestions; hooks are runtime checks you can verify.
 
-Scan first to preview: `enforce-hooks.py --scan`. Generate a starter CLAUDE.md: `enforce-hooks.py --template` (also `--template strict` or `--template minimal`). Installs as one dynamic hook that re-reads CLAUDE.md on every call, so enforcement updates when your rules change. Supports file-guard, bash-guard, branch-guard, tool-block, require-prior-tool, content-guard, scoped-content-guard, bare filename protection, flag blocking (`--no-verify`, `--no-gpg-sign`), system/device commands (`shutdown`, `reboot`, `systemctl`), and command substitution patterns. Subjective rules ("write clean code") are skipped. Self-protection mode (`--armor`) prevents Claude from deleting its own hooks. Hook health-check (`--verify`) catches silent fail-open bugs like wrong field names. Smoke test (`--smoke-test`) runs hooks with representative payloads to verify they respond correctly at runtime. ~70 tests.
+Scan first to preview: `enforce-hooks.py --scan`. Generate a starter CLAUDE.md: `enforce-hooks.py --template` (also `--template strict` or `--template minimal`). Installs as one dynamic hook that re-reads CLAUDE.md on every call, so enforcement updates when your rules change. Supports file-guard, bash-guard, branch-guard, tool-block, require-prior-tool, content-guard, scoped-content-guard, bare filename protection, flag blocking (`--no-verify`, `--no-gpg-sign`), system/device commands (`shutdown`, `reboot`, `systemctl`), and command substitution patterns. Subjective rules ("write clean code") are skipped. Self-protection mode (`--armor`) protects configured hook files from covered file-write paths. Hook health-check (`--verify`) catches silent fail-open bugs like wrong field names. Smoke test (`--smoke-test`) runs hooks with representative payloads to verify they respond correctly at runtime. ~70 tests.
 
 ### [test-hook](tools/test-hook.sh) — Dry-run any hook without a live session
 
@@ -305,7 +327,7 @@ Claude [ignores explicit "do not edit" instructions](https://github.com/anthropi
 - Never run git commit, git push, or git merge
 ```
 
-The hook blocks at the runtime level before the tool executes. The model cannot bypass it. See the [copy-paste read-only audit guide](tools/enforce/READ_ONLY_AUDIT.md) or [more recipes](tools/enforce/#recipes).
+For covered tool calls, the hook blocks at the runtime level before the tool executes. This is not a sandbox: verify the hook, start a fresh session, and review the known limitations for non-tool-call paths. See the [copy-paste read-only audit guide](tools/enforce/READ_ONLY_AUDIT.md) or [more recipes](tools/enforce/#recipes).
 The file-modification rule covers Write, Edit, MultiEdit, and NotebookEdit. The shell-write rule blocks common Bash write paths such as redirects, `tee`, `touch`, `mkdir`, `rm`, in-place edits, moves, copies, and permission/ownership changes.
 
 ---
@@ -682,9 +704,13 @@ in `.claude/settings.json` at the repo root, start Claude Code and run
 `safety-check` from that same root. Launching from a subdirectory can make
 Claude treat that subdirectory as the project root and skip the ancestor
 project hooks without warning. `safety-check` reports this as an ancestor
-project settings warning. On native Windows PowerShell, run
-`Set-Location (git rev-parse --show-toplevel)` from inside the checkout before
-running `install.ps1 verify`.
+project settings warning. On native Windows PowerShell, run the same root
+fallback from inside the checkout before `install.ps1 verify`:
+
+```powershell
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
+```
 
 **Permission bypass resets with hooks installed**: If you use `--dangerously-skip-permissions` (common in autonomous setups), PreToolUse hooks can [cause the permission state to reset mid-session](https://github.com/anthropics/claude-code/issues/37745), reverting all tools to manual approval. This is a platform bug, not a hooks bug. If tools suddenly require approval 30-120 minutes into a session, this is why.
 

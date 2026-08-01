@@ -13,6 +13,8 @@
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="Boucle - Safety Hooks for Claude Code">
     <meta name="twitter:description" content="Prevent Claude Code from deleting files, running dangerous commands, or ignoring your rules. 7 installable safety hooks plus enforcement and audit tooling.">
+    <link rel="alternate" type="application/atom+xml" title="Claude Code Hook Limitations Feed" href="/limitations-feed.xml">
+    <link rel="alternate" type="application/json" title="Claude Code Hook Limitations JSON" href="/limitations.json">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -26,17 +28,19 @@
             <main>
                 <h2>The problem</h2>
                 <p class="brief">Claude Code's CLAUDE.md rules are <a href="https://github.com/anthropics/claude-code/issues/37550">probabilistic, not deterministic</a>. Its permission system has <a href="https://github.com/anthropics/claude-code/issues/38119">known bypass patterns</a>. Users have lost <a href="https://github.com/anthropics/claude-code/issues/37984">87GB of personal data</a>, had <a href="https://github.com/anthropics/claude-code/issues/37888">30+ files destroyed</a> despite 100+ rules, and seen <a href="https://github.com/anthropics/claude-code/issues/38193">explicit instructions ignored</a>.</p>
-                <p class="brief">These hooks enforce boundaries that text rules and permissions can't. On macOS and Linux, use bash, python3, and jq. 1,900+ tests. <a href="/limitations.html">Searchable Claude Code gaps</a> documented with severity ratings and workarounds.</p>
+                <p class="brief">These hooks enforce covered tool-call boundaries that text rules and permissions often miss. On macOS and Linux, use bash, python3, and jq. 1,900+ tests. <a href="/limitations.html">Searchable Claude Code gaps</a> documented with severity ratings and workarounds.</p>
 
                 <h2>Check your setup</h2>
-                <p class="brief">Run the audit from the same project root where you start Claude Code. If you are already inside a git checkout, move to the repo root first so project hooks in <code>.claude/settings.json</code> are visible:</p>
+                <p class="brief">Run the audit from the same project root where you start Claude Code. If you are inside a git checkout, move to the repo root first so project hooks in <code>.claude/settings.json</code> are visible. Outside git, stay in the project directory you use for Claude Code:</p>
                 <div class="code-block">
-                    <code><span class="prompt-char">$</span> cd "$(git rev-parse --show-toplevel)"</code>
+                    <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"</code>
                 </div>
                 <div class="code-block">
                     <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash</code>
                 </div>
                 <p class="brief">Scores your Claude Code safety configuration from A to F. Shows one-liner fixes for each gap. No hook installation required for the audit. Its summary counts the 7 standalone hooks plus enforce-hooks as 8 hook slots. For the 10-minute path from audit to verified hooks, follow the <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/QUICKSTART.md">safety-check quickstart</a>.</p>
+                <p class="brief">If you want to try the checker before it reads your real Claude Code settings, use the <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/FIRST_TEST.md">temporary first test</a>. It runs in an isolated temporary <code>HOME</code>, installs nothing, and cleans up the temporary directories automatically unless you set <code>KEEP_BOUCLE_FIRST_TEST=1</code>.</p>
                 <p class="brief">After installing hooks, verify that they actually block representative hook payloads. Safety-check invokes the hook scripts with Claude-style JSON input; it does not execute the dangerous shell or git commands named in those payloads. Add <code>--strict</code> when a fail-open, skipped, or inconclusive hook check should return a failing exit code:</p>
                 <div class="code-block">
                     <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict</code>
@@ -64,7 +68,27 @@
                     <code><span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"
 <span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"</code>
                 </div>
-                <p class="brief">After a clean verification, start a fresh Claude Code session from that same project root before relying on the new hook boundary.</p>
+                <p class="brief">After a clean verification, start a fresh Claude Code session from that same project root before relying on the new hook boundary. When Claude Code updates or starts behaving differently, use the <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/UPDATE_CHECKLIST.md">update checklist</a> to back up settings, refresh hooks, and re-run strict verification before trusting a session with real work.</p>
+
+                <p class="brief">For a borrowed machine, client repository, CI runner, or any other temporary trial, snapshot settings before installing, remove the hooks when done, restore only after inspecting backups, and verify cleanup before leaving the environment:</p>
+                <div class="code-block">
+                    <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- recommended
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- uninstall all
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup list
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only</code>
+                </div>
+                <p class="brief">On native Windows, use the same order with PowerShell 7:</p>
+                <div class="code-block">
+                    <code><span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } uninstall all"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup list"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"</code>
+                </div>
+                <p class="brief" style="color: var(--muted-color);">Use <code>install.sh restore</code> only when you need the exact saved <code>~/.claude/settings.json</code> back. The complete walkthrough is in the <a href="/recipes.html#temporary-trial">temporary hook trial recipe</a>.</p>
 
                 <h2>Install all hooks</h2>
                 <div class="code-block">
@@ -75,9 +99,11 @@
 
                 <ul>
                     <li id="enforce-hooks">
-                        <strong>enforce-hooks</strong> — turn CLAUDE.md rules into actual enforcement. Your rules say "never edit .env" but Claude edits it anyway. This reads your rules and blocks violations deterministically. One dynamic hook, re-reads CLAUDE.md on every tool call. Self-protection mode (<code>--armor</code>) prevents Claude from deleting its own hooks. ~71 tests. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce">Details</a>.<br>
+                        <strong>enforce-hooks</strong> — turn CLAUDE.md rules into verified runtime checks. Your rules say "never edit .env" but Claude edits it anyway. This reads your rules and blocks covered tool-call violations. One dynamic hook, re-reads CLAUDE.md on every tool call. Self-protection mode (<code>--armor</code>) protects configured hook files from covered file-write paths. ~71 tests. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/enforce">Details</a>.<br>
                         <div class="code-block">
-                            <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/install.sh | bash</code>
+                            <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/install.sh | bash
+<span class="prompt-char">$</span> python3 .claude/hooks/enforce-hooks.py --verify
+<span class="prompt-char">$</span> python3 .claude/hooks/enforce-hooks.py --smoke-test</code>
                         </div>
                     </li>
                     <li id="safety-check">
@@ -134,7 +160,7 @@
                 <p class="brief" style="color: var(--muted-color);"><a href="/recipes.html">Detailed recipes with issue references and install commands &rarr;</a></p>
                 <ul>
                     <li><strong>Claude deleted my files</strong> — install <a href="#bash-guard">bash-guard</a> + <a href="#git-safe">git-safe</a>. They block <code>rm -rf</code>, <code>git checkout .</code>, <code>git reset --hard</code>, and 25+ other destructive patterns.</li>
-                    <li><strong>Claude ignores my CLAUDE.md rules</strong> — install <a href="#enforce-hooks">enforce-hooks</a>. Turns text rules into deterministic code-level enforcement.</li>
+                    <li><strong>Claude ignores my CLAUDE.md rules</strong> — install <a href="#enforce-hooks">enforce-hooks</a>. Turns text rules into verified checks for covered tool calls.</li>
                     <li><strong>Claude runs commands I told it not to</strong> — install <a href="#bash-guard">bash-guard</a>. Evaluates every command segment, catches compound commands and multi-line bypass.</li>
                     <li><strong>I want to see what Claude is doing</strong> — install <a href="#session-log">session-log</a>. Logs every tool call with timestamps to JSONL.</li>
                     <li><strong>Claude edits sensitive files</strong> — install <a href="#file-guard">file-guard</a>. Protects .env, certificates, SSH keys. Write-protect or full deny.</li>
@@ -167,13 +193,63 @@
                 <h2>Links</h2>
                 <ul class="links-list">
                     <li>
+                        <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/FIRST_TEST.md">
+                            First Test <span class="url">try safety-check safely</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/QUICKSTART.md">
+                            Quickstart <span class="url">audit to verified hooks</span>
+                        </a>
+                    </li>
+                    <li>
                         <a href="recipes.html">
                             Recipes <span class="url">common problems &amp; solutions</span>
                         </a>
                     </li>
                     <li>
+                        <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/enforce/READ_ONLY_AUDIT.md">
+                            Read-only Audit <span class="url">inspect without edits</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/SUPPORT_EVIDENCE.md">
+                            Safe Support Evidence <span class="url">ask for help without leaks</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/UPDATE_CHECKLIST.md">
+                            Update Checklist <span class="url">after Claude Code changes</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/CI.md">
+                            CI Checks <span class="url">verify hooks in automation</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/TEAM_HANDOFF.md">
+                            Team Handoff <span class="url">PR and incident reports</span>
+                        </a>
+                    </li>
+                    <li>
                         <a href="limitations.html">
                             Known Limitations <span class="url">searchable, severity-rated</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="limitations-feed.xml">
+                            Limitations Feed <span class="url">Atom updates</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="limitations.json">
+                            Limitations JSON <span class="url">machine-readable export</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="llms.txt">
+                            LLM Summary <span class="url">compact machine-readable guide</span>
                         </a>
                     </li>
                     <li>

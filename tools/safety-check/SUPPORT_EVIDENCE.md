@@ -9,10 +9,12 @@ secrets.
 
 Run the checker from the project where Claude Code will work. If you are inside
 a git checkout, move to the repo root first so the summary matches the
-project-level `.claude/settings.json` Claude Code can load:
+project-level `.claude/settings.json` Claude Code can load. Outside git, stay
+in the current project directory:
 
 ```sh
-cd "$(git rev-parse --show-toplevel)"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 ```
 
 ```sh
@@ -22,7 +24,8 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 On native Windows PowerShell:
 
 ```powershell
-Set-Location (git rev-parse --show-toplevel)
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
 ```
 
 Use the project root that contains `.claude/settings.json` when one exists. If

@@ -40,10 +40,12 @@ if (Test-Path .claude/settings.json) { Copy-Item .claude/settings.json .claude/s
 ## After updating
 
 Run these from the same project root you use to start Claude Code. If this is a
-git checkout, get there first:
+git checkout, get there first; otherwise stay in the directory you use for
+Claude Code:
 
 ```sh
-cd "$(git rev-parse --show-toplevel)"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 ```
 
 Then verify the updated hook boundary:
@@ -58,7 +60,8 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 On native Windows:
 
 ```powershell
-Set-Location (git rev-parse --show-toplevel)
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
 Remove-Item Env:IS_DEMO -ErrorAction SilentlyContinue
 Remove-Item Env:CLAUDE_CODE_SIMPLE -ErrorAction SilentlyContinue
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } upgrade"
@@ -102,17 +105,34 @@ Common fixes:
 - If native Windows hook firing is inconsistent, verify in WSL before relying on
   hooks for destructive or autonomous work.
 
-Restore the user-level settings backup:
+Restore the user-level settings backup. Use `backup list` first when you need
+to inspect the available snapshots before restoring:
 
 ```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup list
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
+```
+
+To restore a specific backup from that list:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore settings.20260101_120000.json
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
 ```
 
 On native Windows:
 
 ```powershell
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup list"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+```
+
+To restore a specific backup in PowerShell:
+
+```powershell
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore settings.20260101_120000.json"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
 
@@ -121,6 +141,11 @@ If the project backup is needed, restore it manually:
 ```sh
 cp .claude/settings.json.bak .claude/settings.json
 ```
+
+After any restore, run the same strict verification again from the project root
+and start a fresh Claude Code session before trusting the hook layer. Restored
+settings only prove the file is back on disk; they do not prove the updated
+Claude Code process loaded it or that hooks still block representative payloads.
 
 ## Safe support evidence
 

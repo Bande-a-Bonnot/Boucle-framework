@@ -35,6 +35,34 @@ That is enough for triage because it includes the OS, shell, recent change,
 summary issues, verification counts, and boundary line. The summary should
 redact the home directory as `~` and the current checkout as `<project>`.
 
+## FAIL-OPEN public report
+
+When `--verify` reports a `FAIL-OPEN` hook, post the bounded summary and one
+short note about whether the hook is custom or installed by this framework.
+Do not paste raw hook stderr from the Claude Code session.
+
+```text
+OS: Linux
+Shell: bash
+Claude Code version: 1.0.93
+Where hooks are installed: project settings
+What changed recently: moved the repository to a new checkout path
+Hook source: framework git-safe hook, not custom
+
+--- Safety Summary (copy/paste) ---
+Grade D | 62% | 4/8 hooks
+[OK] bash-guard  [OK] git-safe  [OK] file-guard  [--] read-once
+[--] branch-guard  [--] session-log  [--] enforce  [OK] worktree-guard
+Verify: 1 FAIL-OPEN | 6 payload checks | 0 skipped
+Boundary: fix FAIL-OPEN hooks before trusting the hook layer.
+github.com/Bande-a-Bonnot/Boucle-framework
+--- End Safety Summary ---
+```
+
+That report is enough to start triage. If a maintainer needs to know which
+payload failed, reproduce it in a temporary directory with throwaway hook paths
+instead of pasting private settings or live session output.
+
 ## Native Windows report
 
 Native `install.ps1 verify` does not print the copy/paste safety summary. Use
@@ -51,6 +79,20 @@ PowerShell verifier:
 2 passed, 1 warnings, 1 skipped.
 WARN: git-safe did not block force push payload.
 SKIP: branch-guard needs git repo context to verify.
+```
+
+If no native hooks are installed yet, share only the short result.
+Do not paste the startup hook table if it includes local paths.
+
+```text
+OS: native Windows
+Shell: PowerShell 7
+Claude Code version: 1.0.93
+Where hooks are installed: none detected
+What changed recently: checking before first install
+
+PowerShell verifier:
+No hooks installed. Run: install.ps1 recommended
 ```
 
 If Git Bash or WSL is available, prefer the bash `--summary-only` command when
