@@ -284,6 +284,9 @@ the verified boundary: no bypass flags, valid JSON, healthy hook files, and zero
 `FAIL-OPEN` payload checks.
 Use the [safety summary triage guide](TRIAGE.md) when the summary has multiple
 issues and you need a repair order.
+When a teammate, reviewer, or incident owner needs the result, use the
+[team handoff report](TEAM_HANDOFF.md) to record the root checked, command
+used, verification result, residual warnings, and next recheck trigger.
 
 ## 7. Share safe support evidence
 
@@ -326,4 +329,5 @@ public threads. Do not paste raw hook stderr from a live Claude Code session,
 because the platform can prefix it with the hook command path. Use the
 [safe support evidence guide](SUPPORT_EVIDENCE.md) when you need a copy/paste
 report format or a temporary-directory reproduction instead of real workspace
-files.
+files. For team handoffs that are not public support requests, use the
+[team handoff report](TEAM_HANDOFF.md).
