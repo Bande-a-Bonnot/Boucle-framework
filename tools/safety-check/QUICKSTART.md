@@ -114,6 +114,18 @@ On native Windows:
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } uninstall all"
 ```
 
+On a borrowed machine, client repository, CI runner, or any other temporary
+environment, verify cleanup before you leave it:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
+```
+
+The expected cleanup result is no Boucle hook inventory and a summary such as
+`Verify: not run | no hooks found | 0 payload checks`. On native Windows, run
+`install.ps1 verify` and expect `No hooks installed. Run: install.ps1
+recommended` when only the native user-level hooks were present.
+
 ## 3. Verify the hooks fire
 
 The basic audit can confirm that hooks are registered. Verification mode sends
