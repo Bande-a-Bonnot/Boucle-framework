@@ -50,6 +50,9 @@ Need help with a result? Use `--summary-only` or the
 summary without exposing private settings or secrets. Use
 [safe support examples](SUPPORT_EXAMPLES.md) to compare a safe public report
 with snippets that should stay private.
+Handing a verified boundary to a teammate or reviewer? Use the
+[team handoff report](TEAM_HANDOFF.md) so the root checked, command used,
+verification result, residual warnings, and next recheck trigger stay together.
 To interpret the summary and choose the first repair, use the
 [safety summary triage guide](TRIAGE.md).
 
