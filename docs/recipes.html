@@ -27,6 +27,7 @@
                 <nav class="recipe-nav">
                     <p class="brief" style="color: var(--muted-color);">Jump to:
                         <a href="#first-audit">First safety audit</a> &middot;
+                        <a href="#temporary-trial">Temporary hook trial</a> &middot;
                         <a href="#rules-ignored">Rules ignored</a> &middot;
                         <a href="#read-only-audit">Read-only audit</a> &middot;
                         <a href="#files-deleted">Files deleted</a> &middot;
@@ -65,6 +66,36 @@
 <span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"</code>
                     </div>
                     <p class="brief" style="color: var(--muted-color);">After a clean verification, start a fresh Claude Code session from the same root. A running session may still have old hook settings loaded. For a longer walkthrough, use the <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/QUICKSTART.md">safety-check quickstart</a>.</p>
+                </div>
+
+                <div class="recipe" id="temporary-trial">
+                    <h2>"I want to try the hooks without keeping them installed"</h2>
+                    <p class="brief">Use this when you are on a borrowed machine, a client repo, a CI runner, or any place where the hook boundary should be tested and then removed. The trial still edits user-level Claude Code settings while it is active, so snapshot first and verify both installation and cleanup.</p>
+                    <p class="brief"><strong>Fix path: back up settings, install the smallest useful set, verify, optionally run one fresh Claude Code session, uninstall, then rerun the audit</strong></p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- recommended
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- uninstall all
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only</code>
+                    </div>
+                    <p class="brief">If the trial is only a configuration check, do not start Claude Code between install and uninstall. If you want to test behavior in Claude Code itself, start a fresh session from the same root after strict verification, run one bounded task, then uninstall before leaving the machine or handing the repo back.</p>
+                    <p class="brief">After uninstall, the summary should no longer claim a verified hook boundary. A result such as <code>Verify: not run</code>, <code>no hooks found</code>, or <code>0 payload checks</code> is expected after cleanup. That means the trial hooks are gone; it does not mean the current setup is protected.</p>
+                    <p class="brief">Use <code>restore</code> only when you need to return <code>~/.claude/settings.json</code> to the saved snapshot exactly. If the machine has other Claude Code changes after the backup, inspect before restoring.</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore</code>
+                    </div>
+                    <p class="brief">On native Windows, use the same shape with PowerShell 7 and the native verifier:</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } uninstall all"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"</code>
+                    </div>
+                    <p class="brief" style="color: var(--muted-color);">For a no-install dry run before touching real settings, use the <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/FIRST_TEST.md">temporary first test</a>. It uses a temporary <code>HOME</code> and does not prove your real setup is safe.</p>
                 </div>
 
                 <div class="recipe" id="rules-ignored">
@@ -343,6 +374,10 @@ Next recheck trigger:
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">Claude Code update changed hook behavior</td>
                             <td style="padding: 0.5em 0;"><code>safety-check --verify --strict</code> + <code>doctor</code></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Temporary trial before handing back a machine</td>
+                            <td style="padding: 0.5em 0;"><code>backup</code> + <code>recommended</code> + <code>uninstall all</code> + recheck</td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">Audit all tool calls</td>
