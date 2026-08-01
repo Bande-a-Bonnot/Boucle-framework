@@ -36,6 +36,7 @@
                         <a href="#token-waste">Token waste</a> &middot;
                         <a href="#tool-switching">Tool switching bypass</a> &middot;
                         <a href="#support-evidence">Safe support evidence</a> &middot;
+                        <a href="#ci-verification">CI verification</a> &middot;
                         <a href="#team-handoff">Team handoff</a> &middot;
                         <a href="#autonomous-session">Autonomous session preflight</a> &middot;
                         <a href="#after-update">After Claude Code updates</a>
@@ -243,6 +244,34 @@ What changed recently:</code>
                     <p class="brief" style="color: var(--muted-color);">If someone asks for raw files, build a temporary reproduction with throwaway settings first. The <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/SUPPORT_EVIDENCE.md">safe support evidence guide</a> and <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/SUPPORT_EXAMPLES.md">safe support examples</a> show what is safe to paste and what to redact.</p>
                 </div>
 
+                <div class="recipe" id="ci-verification">
+                    <h2>"I want CI to fail when repo hooks stop blocking"</h2>
+                    <p class="brief">Use this when a repository commits Claude Code hook settings or hook scripts and you want pull requests to prove that boundary still works. CI can verify checked-in project hooks. It cannot prove every developer's global <code>~/.claude/settings.json</code> is safe.</p>
+                    <p class="brief"><strong>Fix path: commit repo-local settings and hook scripts, run strict safety-check from the repository root, and skip only the optional Claude Code version probe</strong></p>
+                    <div class="code-block">
+                        <code>name: claude-code-safety
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  safety-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Claude Code hooks
+        working-directory: ${{ github.workspace }}
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh -o /tmp/safety-check.sh
+          SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 bash /tmp/safety-check.sh --verify --strict</code>
+                    </div>
+                    <p class="brief">Do not treat <code>install.sh recommended</code> in CI as proof that repo-local policy is protected. That installs user-level hooks under the runner's temporary <code>HOME</code>. It is useful as an installer smoke test, but it does not prove the checked-out <code>.claude/settings.json</code> or repository hook files protect developers.</p>
+                    <p class="brief">For native PowerShell hook scripts, use a runner where both <code>bash</code> and <code>pwsh</code> are available so <code>safety-check --verify --strict</code> can execute the checked-in <code>.ps1</code> commands. Do not use <code>install.ps1 verify</code> as proof for repo-local hooks; it verifies Boucle hooks installed under the CI user's home directory.</p>
+                    <p class="brief" style="color: var(--muted-color);">Full workflow examples and expected failure modes: <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/CI.md">scripted safety-check checks</a>.</p>
+                </div>
+
                 <div class="recipe" id="team-handoff">
                     <h2>"I need to leave a PR or incident handoff"</h2>
                     <p class="brief">Use this when a teammate, reviewer, or incident owner needs to know exactly what hook boundary was checked. Keep the note short: root, command, result, residual warnings, and the trigger for the next recheck.</p>
@@ -386,6 +415,10 @@ Next recheck trigger:
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">Long unattended session</td>
                             <td style="padding: 0.5em 0;"><code>bash-guard</code> + <code>git-safe</code> + <code>file-guard</code> + <code>branch-guard</code> + <code>worktree-guard</code> + <code>session-log</code></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Repo-local hooks drift in CI</td>
+                            <td style="padding: 0.5em 0;"><code>safety-check --verify --strict</code> from the repository root</td>
                         </tr>
                         <tr>
                             <td style="padding: 0.5em 1em 0.5em 0;">Stale cache after compaction</td>
