@@ -268,6 +268,18 @@ docs = {
         "/limitations-feed.xml",
         "Limitations Feed",
     ],
+    repo / "docs" / "limitations.html": [
+        "https://framework.boucle.sh/limitations.html",
+        "Claude Code Hook Limitations Feed",
+        "limitations-feed.xml",
+        "Source data",
+        "title=\"Machine-readable JSON",
+        "<a href=\"/\">Home</a>",
+        "<a href=\"/recipes.html\">Recipes</a>",
+        "<a href=\"/limitations-feed.xml\">Limitations Feed</a>",
+        "<a href=\"/limitations.json\">JSON</a>",
+        "<a href=\"https://github.com/Bande-a-Bonnot/Boucle-framework\">GitHub</a>",
+    ],
 }
 
 missing = []
