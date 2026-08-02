@@ -32,5 +32,12 @@ if f'<span id="total-count">{len(data["entries"])}</span>' not in html:
 if 'https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>' not in html:
     raise SystemExit("limitations page source link does not point to docs/limitations.json")
 
+if 'class="limitation-entry"' in html:
+    raise SystemExit("legacy static limitation entries remain after generated list")
+
+after_script = html.split("</script>", 1)[1]
+if "<div" in after_script.split("</body>", 1)[0]:
+    raise SystemExit("unexpected rendered content remains between the script and body close")
+
 print(f"HTML sync OK: {len(html_ids)} entries")
 PY

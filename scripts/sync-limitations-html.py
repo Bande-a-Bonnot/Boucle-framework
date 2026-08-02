@@ -121,6 +121,16 @@ def render_entries(entries: list[dict]) -> str:
     return "\n".join(rendered)
 
 
+def remove_legacy_tail(html_text: str) -> str:
+    """Remove old static limitation cards that were left after the page script."""
+    return re.sub(
+        r"(</script>)\s*<div class=\"limitation-entry\".*?(?=</body>)",
+        r"\1\n",
+        html_text,
+        flags=re.DOTALL,
+    )
+
+
 def main() -> None:
     data = json.loads(JSON_PATH.read_text())
     entries = data["entries"]
@@ -146,6 +156,7 @@ def main() -> None:
         updated,
         count=1,
     )
+    updated = remove_legacy_tail(updated)
 
     HTML_PATH.write_text(updated)
     print(f"Synced limitations.html with {len(entries)} entries")
