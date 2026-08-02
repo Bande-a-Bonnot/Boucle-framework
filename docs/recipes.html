@@ -38,6 +38,7 @@
                         <a href="#git-disasters">Git disasters</a> &middot;
                         <a href="#token-waste">Token waste</a> &middot;
                         <a href="#tool-switching">Tool switching bypass</a> &middot;
+                        <a href="#custom-hook-test">Custom hook test</a> &middot;
                         <a href="#support-evidence">Safe support evidence</a> &middot;
                         <a href="#ci-verification">CI verification</a> &middot;
                         <a href="#team-handoff">Team handoff</a> &middot;
@@ -253,6 +254,34 @@
                     <p class="brief" style="color: var(--muted-color);">For critical paths, combine hooks with OS-level controls (file permissions, network policy, containerization). See the <a href="/limitations.html">full searchable list of known gaps</a>.</p>
                 </div>
 
+                <div class="recipe" id="custom-hook-test">
+                    <h2>"I wrote a hook and want to test it before Claude Code runs it"</h2>
+                    <p class="brief">Use this when a custom or third-party hook needs a repeatable dry run. The harness feeds synthetic Claude-style <code>PreToolUse</code> payloads to the hook command and reports whether it allows, denies, errors, or crashes. It does not require a live Claude Code session.</p>
+                    <p class="brief"><strong>Fix path: download the test harness, run one allow and one deny case, then keep the command in CI for hook changes</strong></p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/test-hook.sh -o /tmp/test-hook.sh
+<span class="prompt-char">$</span> chmod +x /tmp/test-hook.sh
+<span class="prompt-char">$</span> /tmp/test-hook.sh "bash .claude/hooks/my-hook.sh" --command "echo hello" --expect-allow
+<span class="prompt-char">$</span> /tmp/test-hook.sh "bash .claude/hooks/my-hook.sh" --command "rm -rf /" --expect-deny</code>
+                    </div>
+                    <p class="brief">For non-Bash tools, set the tool name and payload fields explicitly:</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> /tmp/test-hook.sh "bash .claude/hooks/my-hook.sh" --tool Write --file ".env" --content "SECRET=x" --expect-deny
+<span class="prompt-char">$</span> /tmp/test-hook.sh "python3 .claude/hooks/my-hook.py" --tool Read --input '{"file_path":"secrets/api-key.txt"}' --expect-deny</code>
+                    </div>
+                    <p class="brief">When a hook has more than a few cases, commit a small JSONL fixture and run it in batch mode. Each line is one case with <code>tool</code>, <code>input</code>, <code>expect</code>, and <code>label</code>:</p>
+                    <div class="code-block">
+                        <code>{"tool":"Bash","input":{"command":"echo hello"},"expect":"allow","label":"safe echo"}
+{"tool":"Bash","input":{"command":"rm -rf /"},"expect":"deny","label":"block root delete"}
+{"tool":"Write","input":{"file_path":".env","content":"SECRET=x"},"expect":"deny","label":"block secret write"}</code>
+                    </div>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> /tmp/test-hook.sh "bash .claude/hooks/my-hook.sh" --batch .claude/hooks/my-hook-tests.jsonl</code>
+                    </div>
+                    <p class="brief">A passing dry run proves only the hook command's stdin behavior for those payloads. Before relying on the boundary, also verify the hook is registered in the settings file Claude Code will load, use a command-type hook for enforcement, start a fresh session, and run <code>safety-check --verify --strict</code> from the same project root.</p>
+                    <p class="brief" style="color: var(--muted-color);">For ready-made examples, see <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/test-hook-examples.jsonl">test-hook examples</a> and the <a href="https://github.com/Bande-a-Bonnot/Boucle-framework#test-hook">README test-hook section</a>.</p>
+                </div>
+
                 <div class="recipe" id="support-evidence">
                     <h2>"I need help without leaking private settings"</h2>
                     <p class="brief">Do not paste raw Claude Code settings, hook commands, hook stderr, transcripts, screenshots, or private <code>CLAUDE.md</code> rules into a public issue. The support path is to run the verifier from the affected project root and share only the bounded summary block.</p>
@@ -452,6 +481,10 @@ Next recheck trigger:
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">Native Windows hook setup</td>
                             <td style="padding: 0.5em 0;"><code>install.ps1 recommended</code> + <code>verify</code> + <code>doctor</code></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Custom hook dry run</td>
+                            <td style="padding: 0.5em 0;"><code>test-hook.sh</code></td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">Audit all tool calls</td>
