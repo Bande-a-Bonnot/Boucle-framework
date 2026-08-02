@@ -98,6 +98,20 @@ Read the result as a repair list, not as a badge. Fix these before trusting the 
 5. Ancestor project settings warnings. Rerun from the root that contains
    `.claude/settings.json`.
 
+## Read the result
+
+The letter grade is an inventory score. The trust boundary comes from the
+verification and boundary lines in the copy/paste summary:
+
+| Summary evidence | What to do |
+|------------------|------------|
+| `Verify: not run` | Treat this as a registration audit only. Run `--verify` before trusting hooks. |
+| `no hooks found` or `0 payload checks` | Install the recommended hooks or replace dynamic hook snippets with direct script paths, then rerun verification. |
+| `FAIL-OPEN` | Fix the named hook before starting the risky Claude Code session. |
+| `skipped PreToolUse` | Treat that hook as unproven for its boundary until safety-check can execute it. |
+| `Verify: 0 FAIL-OPEN` with `0 skipped` | Start a fresh Claude Code session from the same project root, then document residual warnings instead of reinstalling repeatedly. |
+| Grade C with `Verify: 0 FAIL-OPEN` | The covered hooks may be working while platform warnings remain. Do not chase an A by reinstalling hooks. |
+
 ## Repair loop
 
 Use this order after any failing audit:
