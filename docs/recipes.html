@@ -31,6 +31,7 @@
                         <a href="#isolated-first-test">Isolated first test</a> &middot;
                         <a href="#first-audit">First safety audit</a> &middot;
                         <a href="#verification-failed">Failed verification</a> &middot;
+                        <a href="#manual-settings-edit">Manual settings edit</a> &middot;
                         <a href="#temporary-trial">Temporary hook trial</a> &middot;
                         <a href="#windows-native">Windows native setup</a> &middot;
                         <a href="#rules-ignored">Rules ignored</a> &middot;
@@ -144,6 +145,34 @@ Boundary: install hooks before trusting the hook layer.
                     </div>
                     <p class="brief">A useful baseline is <code>Verify: 0 FAIL-OPEN</code> with payload checks actually run and no skipped <code>PreToolUse</code> checks for hooks that enforce your boundary. After repairs pass, start a fresh Claude Code session from the same project root.</p>
                     <p class="brief" style="color: var(--muted-color);">Full repair table: <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/TRIAGE.md">safety summary triage</a>. If you need public help, share only the bounded summary from <code>--verify --summary-only</code> plus OS, shell, Claude Code version, where hooks are installed, and what changed recently.</p>
+                </div>
+
+                <div class="recipe" id="manual-settings-edit">
+                    <h2>"I edited Claude settings or hook files by hand"</h2>
+                    <p class="brief">Use this after editing <code>~/.claude/settings.json</code>, project <code>.claude/settings.json</code>, hook commands, or hook scripts. Also use it after changing the directory where Claude Code starts. One valid hook file is not enough. A malformed sibling entry, stale settings cache, or launch from the wrong root can leave the boundary unverified.</p>
+                    <p class="brief"><strong>Fix path: snapshot settings, validate both settings files, run doctor, strictly verify payloads, then start a fresh Claude Code session</strong></p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup
+<span class="prompt-char">$</span> test ! -f ~/.claude/settings.json || python3 -m json.tool ~/.claude/settings.json &gt;/dev/null
+<span class="prompt-char">$</span> test ! -f .claude/settings.json || python3 -m json.tool .claude/settings.json &gt;/dev/null
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- doctor
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict</code>
+                    </div>
+                    <p class="brief">Strict verification should show that payload checks ran. It should also show no <code>FAIL-OPEN</code> result for hooks that enforce your boundary. Treat the current session as unprotected if the report says <code>no hooks found</code>, <code>no payload checks ran</code>, invalid JSON, missing files, or skipped <code>PreToolUse</code> checks. Fix the named issue first.</p>
+                    <p class="brief">On native Windows, use PowerShell 7 and verify the native hook set:</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">PS&gt;</span> $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2&gt;$null }
+<span class="prompt-char">PS&gt;</span> if ($root) { Set-Location $root }
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup"
+<span class="prompt-char">PS&gt;</span> if (Test-Path "$HOME/.claude/settings.json") { Get-Content "$HOME/.claude/settings.json" | ConvertFrom-Json | Out-Null }
+<span class="prompt-char">PS&gt;</span> if (Test-Path ".claude/settings.json") { Get-Content ".claude/settings.json" | ConvertFrom-Json | Out-Null }
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"</code>
+                    </div>
+                    <p class="brief">After a clean check, start a fresh Claude Code session from the same root. Running sessions can keep old settings or permission state in memory even when the files on disk are correct. If the edit was only a hook test, keep the backup until the fresh session proves the boundary still works.</p>
+                    <p class="brief" style="color: var(--muted-color);">If verification fails, use the <a href="#verification-failed">failed verification recipe</a> and <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/TRIAGE.md">triage table</a> before reinstalling repeatedly.</p>
                 </div>
 
                 <div class="recipe" id="temporary-trial">
@@ -580,6 +609,10 @@ Next recheck trigger:
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">Verification failed or skipped checks</td>
                             <td style="padding: 0.5em 0;"><code>doctor</code> + safety summary triage</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Settings or hook files edited by hand</td>
+                            <td style="padding: 0.5em 0;"><code>backup</code> + JSON validation + <code>doctor</code> + strict verification</td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">Temporary trial before handing back a machine</td>
