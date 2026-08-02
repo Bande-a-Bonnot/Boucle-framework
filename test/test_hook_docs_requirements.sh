@@ -306,6 +306,9 @@ docs = {
     ],
     repo / "docs" / "limitations.html": [
         "https://framework.boucle.sh/limitations.html",
+        "Boucle LLM Summary",
+        "type=\"text/plain\"",
+        "/llms.txt",
         "Claude Code Hook Limitations Feed",
         "application/json",
         "Claude Code Hook Limitations JSON",
@@ -315,6 +318,7 @@ docs = {
         "title=\"Machine-readable JSON",
         "<a href=\"/\">Home</a>",
         "<a href=\"/recipes.html\">Recipes</a>",
+        "<a href=\"/llms.txt\">LLM Summary</a>",
         "<a href=\"/limitations-feed.xml\">Limitations Feed</a>",
         "<a href=\"/limitations.json\">JSON</a>",
         "<a href=\"https://github.com/Bande-a-Bonnot/Boucle-framework\">GitHub</a>",
