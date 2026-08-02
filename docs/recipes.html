@@ -39,6 +39,7 @@
                         <a href="#token-waste">Token waste</a> &middot;
                         <a href="#tool-switching">Tool switching bypass</a> &middot;
                         <a href="#custom-hook-test">Custom hook test</a> &middot;
+                        <a href="#audit-trail">Audit trail</a> &middot;
                         <a href="#support-evidence">Safe support evidence</a> &middot;
                         <a href="#ci-verification">CI verification</a> &middot;
                         <a href="#team-handoff">Team handoff</a> &middot;
@@ -280,6 +281,32 @@
                     </div>
                     <p class="brief">A passing dry run proves only the hook command's stdin behavior for those payloads. Before relying on the boundary, also verify the hook is registered in the settings file Claude Code will load, use a command-type hook for enforcement, start a fresh session, and run <code>safety-check --verify --strict</code> from the same project root.</p>
                     <p class="brief" style="color: var(--muted-color);">For ready-made examples, see <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/test-hook-examples.jsonl">test-hook examples</a> and the <a href="https://github.com/Bande-a-Bonnot/Boucle-framework#test-hook">README test-hook section</a>.</p>
+                </div>
+
+                <div class="recipe" id="audit-trail">
+                    <h2>"I need to prove what Claude Code actually did"</h2>
+                    <p class="brief">Use this after an unattended session, a confusing change, or a disputed agent claim. <code>session-log</code> records every Claude Code tool call to daily JSONL files, then <code>session-report.sh</code> summarizes calls, errors, files touched, commands run, and multi-day trends.</p>
+                    <p class="brief"><strong>Fix path: install the PostToolUse logger, start a fresh session, then inspect the report before trusting claims</strong></p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- session-log
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
+<span class="prompt-char">$</span> bash ~/.claude/hooks/session-report.sh
+<span class="prompt-char">$</span> bash ~/.claude/hooks/session-report.sh --week</code>
+                    </div>
+                    <p class="brief">The raw logs live at <code>~/.claude/session-logs/YYYY-MM-DD.jsonl</code>. They are local audit records, so review them before sharing. Paths, commands, and file names may reveal private project structure or secrets in command arguments.</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> today="$(date -u +%Y-%m-%d)"
+<span class="prompt-char">$</span> grep '"tool":"Bash"' ~/.claude/session-logs/"$today".jsonl
+<span class="prompt-char">$</span> grep '"git push' ~/.claude/session-logs/*.jsonl</code>
+                    </div>
+                    <p class="brief">When Claude says "I pushed", "I ran tests", or "I only read files", check the log for the actual tool call and, for Bash, its recorded exit code. A claimed action without a matching log entry should be treated as unverified.</p>
+                    <p class="brief">On native Windows, install and verify the PowerShell hook with PowerShell 7. The native hook writes the same JSONL format, but the report helper is a Bash script, so use Git Bash or WSL for the summary report if needed.</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } session-log"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+<span class="prompt-char">PS&gt;</span> Get-Content "$HOME/.claude/session-logs/$((Get-Date).ToUniversalTime().ToString('yyyy-MM-dd')).jsonl" | Select-Object -Last 20</code>
+                    </div>
+                    <p class="brief" style="color: var(--muted-color);">The audit trail begins after installation and a fresh Claude Code session. It cannot reconstruct earlier sessions, and it records tool calls rather than model reasoning. Full documentation: <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/session-log/">session-log</a>.</p>
                 </div>
 
                 <div class="recipe" id="support-evidence">
