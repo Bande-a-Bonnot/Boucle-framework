@@ -30,6 +30,7 @@
                     <p class="brief" style="color: var(--muted-color);">Jump to:
                         <a href="#first-audit">First safety audit</a> &middot;
                         <a href="#temporary-trial">Temporary hook trial</a> &middot;
+                        <a href="#windows-native">Windows native setup</a> &middot;
                         <a href="#rules-ignored">Rules ignored</a> &middot;
                         <a href="#read-only-audit">Read-only audit</a> &middot;
                         <a href="#files-deleted">Files deleted</a> &middot;
@@ -102,6 +103,33 @@
 <span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore settings.20260101_120000.json"</code>
                     </div>
                     <p class="brief" style="color: var(--muted-color);">For a no-install dry run before touching real settings, use the <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/FIRST_TEST.md">temporary first test</a>. It uses a temporary <code>HOME</code> and does not prove your real setup is safe.</p>
+                </div>
+
+                <div class="recipe" id="windows-native">
+                    <h2>"I am on Windows and do not want Git Bash or WSL"</h2>
+                    <p class="brief">Use this path for native PowerShell hooks. It installs and verifies the seven standalone <code>.ps1</code> hooks from PowerShell 7 (<code>pwsh</code>) without bash or jq. Run from the same project root where you start Claude Code so project-level settings are visible.</p>
+                    <p class="brief"><strong>Fix path: use PowerShell 7, install the recommended native hooks, verify, doctor, then start a fresh Claude Code session</strong></p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">PS&gt;</span> $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2&gt;$null }
+<span class="prompt-char">PS&gt;</span> if ($root) { Set-Location $root }
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"</code>
+                    </div>
+                    <p class="brief">After a clean verification, start a fresh Claude Code session from that same root. A running session may still have old hook settings loaded.</p>
+                    <p class="brief">Use native verification to prove the PowerShell hooks installed under Claude Code settings block representative payloads. Use Git Bash or WSL only when you need the broader bash-based safety-check report with the bounded copy/paste summary:</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } check --verify --summary-only"</code>
+                    </div>
+                    <p class="brief">For a temporary Windows trial, snapshot settings first and verify cleanup after removal:</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } uninstall all"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"</code>
+                    </div>
+                    <p class="brief" style="color: var(--muted-color);">Native Windows verification is narrower than the full bash safety-check audit. It proves the native PowerShell hooks it checks; it does not prove every developer's global settings, WSL settings, Git Bash path, or checked-in bash hooks are protected.</p>
                 </div>
 
                 <div class="recipe" id="rules-ignored">
@@ -420,6 +448,10 @@ Next recheck trigger:
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">Temporary trial before handing back a machine</td>
                             <td style="padding: 0.5em 0;"><code>backup</code> + <code>recommended</code> + <code>uninstall all</code> + recheck</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Native Windows hook setup</td>
+                            <td style="padding: 0.5em 0;"><code>install.ps1 recommended</code> + <code>verify</code> + <code>doctor</code></td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">Audit all tool calls</td>
