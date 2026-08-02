@@ -125,6 +125,11 @@ docs = {
         "temporary directory with throwaway hook paths",
     ],
     repo / "tools" / "safety-check" / "QUICKSTART.md": [
+        "## 0. Choose the path",
+        "You have never run safety-check on this machine",
+        "minimal personal workstation baseline",
+        "proof before a risky session, CI job, or team handoff",
+        "preparing a public support request",
         "Do not paste raw hook stderr from a live Claude Code session",
         "platform can prefix it with the hook command path",
         "safe support evidence guide",
