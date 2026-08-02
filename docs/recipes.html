@@ -28,6 +28,7 @@
             <main>
                 <nav class="recipe-nav">
                     <p class="brief" style="color: var(--muted-color);">Jump to:
+                        <a href="#isolated-first-test">Isolated first test</a> &middot;
                         <a href="#first-audit">First safety audit</a> &middot;
                         <a href="#verification-failed">Failed verification</a> &middot;
                         <a href="#temporary-trial">Temporary hook trial</a> &middot;
@@ -48,6 +49,49 @@
                         <a href="#after-update">After Claude Code updates</a>
                     </p>
                 </nav>
+
+                <div class="recipe" id="isolated-first-test">
+                    <h2>"I want to try safety-check without reading my real settings"</h2>
+                    <p class="brief">Use this before the real audit when you want to see the checker run on your machine without touching your real Claude Code settings. It creates a temporary <code>HOME</code> and a temporary project, runs the bounded summary command there, and removes the empty temporary directories afterward.</p>
+                    <p class="brief"><strong>Fix path: run the isolated baseline, confirm the setup is unprotected, then run the real project audit</strong></p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> (
+  tmp_home="$(mktemp -d)"
+  tmp_project="$(mktemp -d)"
+  cleanup() {
+    if [ "${KEEP_BOUCLE_FIRST_TEST:-0}" != "1" ]; then
+      rmdir "$tmp_home" "$tmp_project" 2&gt;/dev/null || {
+        printf 'Temporary directories were not empty; inspect and remove manually:\n'
+        printf '  %s\n  %s\n' "$tmp_home" "$tmp_project"
+      }
+    fi
+  }
+  trap cleanup EXIT
+
+  cd "$tmp_project"
+  curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | PYTHONDONTWRITEBYTECODE=1 HOME="$tmp_home" bash -s -- --verify --summary-only
+  if [ "${KEEP_BOUCLE_FIRST_TEST:-0}" = "1" ]; then
+    printf 'Temporary HOME: %s\nTemporary project: %s\n' "$tmp_home" "$tmp_project"
+  fi
+)</code>
+                    </div>
+                    <p class="brief">Expected shape:</p>
+                    <div class="code-block">
+                        <code>--- Safety Summary (copy/paste) ---
+...
+Verify: not run | no hooks found | 0 payload checks
+Boundary: install hooks before trusting the hook layer.
+--- End Safety Summary ---</code>
+                    </div>
+                    <p class="brief">This does not install hooks and does not prove your real Claude Code setup is safe. It proves the checker can start, the support summary is bounded, and an empty temporary setup is reported as unverified instead of safe.</p>
+                    <p class="brief">After the isolated test, run the real audit from the same project root where you start Claude Code:</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only</code>
+                    </div>
+                    <p class="brief" style="color: var(--muted-color);">Full copy-paste guide and cleanup notes: <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/FIRST_TEST.md">safety-check first test</a>.</p>
+                </div>
 
                 <div class="recipe" id="first-audit">
                     <h2>"I want to know if my Claude Code setup is safe"</h2>
@@ -492,6 +536,10 @@ Next recheck trigger:
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">CLAUDE.md rules ignored</td>
                             <td style="padding: 0.5em 0;"><code>enforce</code></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Try safety-check before it reads real settings</td>
+                            <td style="padding: 0.5em 0;"><code>safety-check</code> isolated first test</td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">Read-only review or audit</td>
