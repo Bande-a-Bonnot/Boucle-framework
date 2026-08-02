@@ -5,7 +5,7 @@
 
 Claude Code hooks that actually enforce your rules. 7 standalone hooks, plus `enforce-hooks` for CLAUDE.md policy, audit tooling, 1,900+ tests, and a [searchable Claude Code gaps corpus](https://framework.boucle.sh/limitations.html) with severity ratings and workarounds.
 
-> **Quick links:** [First test](tools/safety-check/FIRST_TEST.md) · [Isolated first-test recipe](https://framework.boucle.sh/recipes.html#isolated-first-test) · [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Known limitations](https://framework.boucle.sh/limitations.html) · [JSON export](https://framework.boucle.sh/limitations.json) · [Quickstart](tools/safety-check/QUICKSTART.md) · [Triage](tools/safety-check/TRIAGE.md) · [Failed verification](https://framework.boucle.sh/recipes.html#verification-failed) · [CI checks](tools/safety-check/CI.md) · [Team handoff](tools/safety-check/TEAM_HANDOFF.md) · [Update checklist](tools/safety-check/UPDATE_CHECKLIST.md) · [Safe support evidence](tools/safety-check/SUPPORT_EVIDENCE.md) · [Support examples](tools/safety-check/SUPPORT_EXAMPLES.md) · [Read-only audits](tools/enforce/READ_ONLY_AUDIT.md) · [Audit trail](https://framework.boucle.sh/recipes.html#audit-trail) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
+> **Quick links:** [First test](tools/safety-check/FIRST_TEST.md) · [Isolated first-test recipe](https://framework.boucle.sh/recipes.html#isolated-first-test) · [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Known limitations](https://framework.boucle.sh/limitations.html) · [JSON export](https://framework.boucle.sh/limitations.json) · [Quickstart](tools/safety-check/QUICKSTART.md) · [Triage](tools/safety-check/TRIAGE.md) · [Failed verification](https://framework.boucle.sh/recipes.html#verification-failed) · [Manual settings edit](https://framework.boucle.sh/recipes.html#manual-settings-edit) · [CI checks](tools/safety-check/CI.md) · [Team handoff](tools/safety-check/TEAM_HANDOFF.md) · [Update checklist](tools/safety-check/UPDATE_CHECKLIST.md) · [Safe support evidence](tools/safety-check/SUPPORT_EVIDENCE.md) · [Support examples](tools/safety-check/SUPPORT_EXAMPLES.md) · [Read-only audits](tools/enforce/READ_ONLY_AUDIT.md) · [Audit trail](https://framework.boucle.sh/recipes.html#audit-trail) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
 
 ## Claude Code Hooks
 
@@ -64,6 +64,10 @@ For a 10-minute path from audit to verified hooks, see the [safety-check quickst
 If verification fails, use the [failed verification recipe](https://framework.boucle.sh/recipes.html#verification-failed)
 or the detailed [safety summary triage](tools/safety-check/TRIAGE.md) table
 before trusting the current session.
+After manual settings or hook edits, use the
+[manual settings edit recipe](https://framework.boucle.sh/recipes.html#manual-settings-edit)
+to validate both settings files, run doctor, and strictly re-verify from the
+same project root before restarting Claude Code.
 If you want to try the checker before it reads your real Claude Code settings,
 use the [temporary first test](tools/safety-check/FIRST_TEST.md) or the
 [isolated first-test recipe](https://framework.boucle.sh/recipes.html#isolated-first-test).
