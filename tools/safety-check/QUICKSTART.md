@@ -6,7 +6,9 @@ trust boundary before you let Claude edit a real project.
 
 If you want to try the checker without reading your real Claude Code settings
 first, run the [temporary first test](FIRST_TEST.md), then come back here for the
-real audit and install path.
+real audit and install path. On native Windows, use WSL or Git Bash for that
+isolated first test; `install.ps1 verify` inspects hooks under your real
+`$HOME/.claude` directory.
 
 ## 0. Choose the path
 
