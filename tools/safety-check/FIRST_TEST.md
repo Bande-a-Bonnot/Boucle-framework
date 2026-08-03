@@ -59,6 +59,19 @@ command. Temporary paths are printed only in that keep-for-inspection mode.
 - Verification mode does not execute dangerous shell or git commands.
 - An empty temporary setup is reported as unverified instead of safe.
 
+## Native Windows note
+
+The isolated no-read first test above is for WSL, Git Bash, or another Bash
+that respects the temporary `HOME` passed to the checker. On native Windows
+PowerShell, `install.ps1 verify` is the right verifier for installed `.ps1`
+hooks, but it inspects hooks under your real `$HOME/.claude` directory. Do not
+use it as the "try without reading my real settings" path.
+
+If you want an isolated first test on Windows before touching real Claude Code
+settings, run the Bash command above from WSL or Git Bash. Then use the native
+PowerShell verifier only when you are ready to inspect or verify the hooks
+installed for your real Windows user.
+
 ## Next real check
 
 Run the real audit from the same project root where you start Claude Code. If
