@@ -110,10 +110,17 @@ Shell: bash / zsh / PowerShell 7 / Git Bash
 Claude Code version: output of claude --version, if it returns quickly
 Where hooks are installed: user settings / project settings / both / not sure
 What changed recently: fresh install / Claude Code update / settings edit / moved hook files
+Pre-update baseline: summary/version captured / not captured / not an update issue
 ```
 
 If `claude --version` hangs, write `Claude Code version: version probe hangs`.
 Do not paste a full terminal transcript.
+
+When the issue appeared after a Claude Code update, say whether you captured
+the pre-update version and bounded summary from the update checklist. Do not
+paste both full command outputs. A maintainer usually needs to know whether the
+new strict verification result is a regression from a known baseline or the
+first verified result for an already-untrusted setup.
 
 ## 4. Read the summary before posting
 
@@ -172,6 +179,7 @@ Shell:
 Claude Code version:
 Where hooks are installed:
 What changed recently:
+Pre-update baseline:
 
 --- Safety Summary (copy/paste) ---
 ...
