@@ -181,6 +181,11 @@ docs = {
     repo / "tools" / "safety-check" / "FIRST_TEST.md": [
         "temporary `HOME`",
         "temporary project",
+        "## Network and upload boundary",
+        "downloads `tools/safety-check/check.sh` from this repository through",
+        "It does not upload your",
+        "Claude Code settings, hook files, shell history, repository contents, or summary",
+        "If your environment blocks `curl` to GitHub raw content",
         "does not install hooks",
         "does not prove your real Claude Code setup is safe",
         "HOME=\"$tmp_home\" bash -s -- --verify --summary-only",
