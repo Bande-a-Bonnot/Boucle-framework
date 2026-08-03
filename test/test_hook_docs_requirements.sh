@@ -295,6 +295,8 @@ docs = {
         "instead of reinstalling repeatedly to chase an A",
         "They are not a sandbox",
         "start a fresh Claude Code session from the same project root",
+        "Pre-update baseline: summary/version captured / not captured / not an update issue",
+        "regression from a known baseline or a first verified result",
         "https://framework.boucle.sh/limitations.json",
         "https://framework.boucle.sh/limitations-feed.xml",
         "https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/QUICKSTART.md",
