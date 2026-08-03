@@ -184,5 +184,16 @@ private paths, tokens, `.env` contents, or proprietary `CLAUDE.md` rules in
 public threads. The [safe support evidence guide](SUPPORT_EVIDENCE.md) gives a
 short public-report template and explains the common summary lines.
 
+Include the support template's pre-update baseline line:
+
+```text
+Pre-update baseline: summary/version captured / not captured / not an update issue
+```
+
+For an update failure, set this to `summary/version captured` only when you
+recorded both the old Claude Code version and the bounded summary before the
+update. Otherwise say `not captured`, so maintainers know the new strict result
+may be the first verified result for an already-untrusted setup.
+
 For native Windows `install.ps1 verify`, there is no safety summary block.
 Share only the final verifier count plus any `WARN` or `SKIP` lines.

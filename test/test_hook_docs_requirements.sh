@@ -152,6 +152,8 @@ docs = {
         "does not execute the dangerous shell or git commands",
         "temporary-directory reproduction instead of real workspace",
         "team handoff report",
+        "Pre-update baseline: summary/version captured / not captured / not an update issue",
+        "first verified result for an already-untrusted setup",
         "git rev-parse --show-toplevel",
         'if ($root) { Set-Location $root }',
         "tools/install.sh | bash -s -- backup list",
@@ -198,6 +200,8 @@ docs = {
         "record the Claude Code version and the native verifier count",
         "Then verify the updated hook boundary",
         "Compare the new version and verification result with the pre-update notes",
+        "Pre-update baseline: summary/version captured / not captured / not an update issue",
+        "first verified result for an already-untrusted setup",
     ],
     repo / "tools" / "safety-check" / "TEAM_HANDOFF.md": [
         "Use this when one person has verified a Claude Code hook boundary",
