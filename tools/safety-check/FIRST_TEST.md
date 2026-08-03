@@ -8,6 +8,17 @@ It does not install hooks. It does not prove your real Claude Code setup is
 safe. It only proves the checker can run on this machine and shows what an
 unconfigured baseline looks like.
 
+## Network and upload boundary
+
+The command downloads `tools/safety-check/check.sh` from this repository through
+GitHub raw content, then runs it locally. The checker reads only the temporary
+`HOME` and temporary project created in the snippet. It does not upload your
+Claude Code settings, hook files, shell history, repository contents, or summary
+output.
+
+If your environment blocks `curl` to GitHub raw content, stop here and inspect
+the script from a trusted network before running it another way.
+
 ## macOS, Linux, WSL, or Git Bash
 
 ```sh
