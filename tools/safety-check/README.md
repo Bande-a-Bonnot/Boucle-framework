@@ -120,6 +120,8 @@ verification and boundary lines in the copy/paste summary:
 Use this order after any failing audit:
 
 ```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 unset IS_DEMO CLAUDE_CODE_SIMPLE
 test ! -f ~/.claude/settings.json || python3 -m json.tool ~/.claude/settings.json >/dev/null
 test -f .claude/settings.json && cp .claude/settings.json .claude/settings.json.bak
@@ -218,6 +220,8 @@ The basic check only confirms hooks are registered. Use `--verify` to send
 representative test payloads and confirm hooks actually block the covered cases:
 
 ```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
