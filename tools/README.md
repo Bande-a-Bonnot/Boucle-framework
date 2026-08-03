@@ -12,6 +12,8 @@ defaults to this set.
 **macOS / Linux:**
 
 ```bash
+root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
 ```
@@ -19,6 +21,8 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 Or be explicit:
 
 ```bash
+root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- recommended
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
 ```
@@ -26,6 +30,8 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 Pick specific hooks when you already know what you need:
 
 ```bash
+root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- read-once git-safe file-guard
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
 ```
