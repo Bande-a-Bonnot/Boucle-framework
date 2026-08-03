@@ -23,11 +23,7 @@ No prompts, no "are you sure" dialogs. The command never runs.
 
 <a id="check-your-setup"></a>
 
-**Check your current setup:**
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
-```
+**Check your current setup from the project root:**
 
 Run this from the same project root where you start Claude Code. Project hooks
 are resolved from the current directory, so a subdirectory launch can miss
@@ -44,6 +40,8 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 Scores your Claude Code safety configuration from A to F and shows one-liner fixes for each gap. Add `--verify` to send representative hook payloads to each hook and confirm they actually block covered cases. Verification invokes the hook scripts with Claude-style JSON input; it does not execute the dangerous shell or git commands named in those payloads:
 
 ```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
@@ -52,6 +50,8 @@ For CI or a scripted workstation check, fail when verification finds a
 no payload checks:
 
 ```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
 ```
 
@@ -85,6 +85,8 @@ to share the summary block without exposing private settings or secrets. To
 print only that bounded public block, run:
 
 ```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
 ```
 

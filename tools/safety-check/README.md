@@ -6,10 +6,6 @@ The audit bounds the `claude --version` probe, so a stuck Claude CLI cannot bloc
 
 ## Run it
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
-```
-
 On native Windows, run the Bash checker from WSL or Git Bash. If you installed
 the native PowerShell hooks, use `install.ps1 verify` for payload checks that do
 not require bash:
@@ -25,6 +21,7 @@ directory you use to launch Claude Code:
 ```sh
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$repo_root"
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
 ```
 
 On native Windows PowerShell:
@@ -65,6 +62,8 @@ disappear.
 The default audit checks whether hooks are configured. Verification mode checks whether installed `PreToolUse` hooks actually block representative Claude-style JSON payloads:
 
 ```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
@@ -75,12 +74,16 @@ Use `--help` to check supported flags. Unknown flags fail closed instead of fall
 To print only the bounded public support summary:
 
 ```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
 ```
 
 For CI or scripted checks, add `--strict`:
 
 ```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
 ```
 
