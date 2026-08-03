@@ -36,6 +36,9 @@ That is enough for triage because it includes the OS, shell, recent change,
 whether there is a pre-update baseline, summary issues, verification counts,
 and boundary line. The summary should redact the home directory as `~` and the
 current checkout as `<project>`.
+In this example, `summary/version captured` means both the old Claude Code
+version and the bounded safety summary were recorded before the update. If only
+one was captured, say `not captured`.
 
 ## FAIL-OPEN public report
 

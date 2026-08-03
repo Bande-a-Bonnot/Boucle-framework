@@ -130,6 +130,8 @@ docs = {
         "Do not paste raw hook stderr from the Claude Code session.",
         "temporary directory with throwaway hook paths",
         "Pre-update baseline: summary/version captured",
+        "both the old Claude Code version and the bounded safety summary",
+        "If only one was captured, say `not captured`",
     ],
     repo / "tools" / "safety-check" / "QUICKSTART.md": [
         "## 0. Choose the path",
