@@ -297,6 +297,7 @@ docs = {
         "start a fresh Claude Code session from the same project root",
         "Pre-update baseline: summary/version captured / not captured / not an update issue",
         "regression from a known baseline or a first verified result",
+        "Use `summary/version captured` only when both the old Claude Code version",
         "https://framework.boucle.sh/limitations.json",
         "https://framework.boucle.sh/limitations-feed.xml",
         "https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/QUICKSTART.md",
