@@ -169,6 +169,11 @@ install.sh restore               # Restore the most recent backup
 install.sh restore <file>        # Restore a specific backup
 ```
 
+Run `verify`, `check`, and `doctor` from the same project root where you start
+Claude Code. The installer-managed hooks live in user settings, but safety-check
+and root-sensitive hook tests need the same working directory as the Claude Code
+session so project `.claude/settings.json` entries are visible.
+
 On Windows, use the same commands through `install.ps1`, including
 `install.ps1 verify` to re-run the native PowerShell hook payload checks after
 installing or upgrading hooks.
