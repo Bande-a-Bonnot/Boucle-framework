@@ -369,6 +369,17 @@ support block:
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
 ```
 
+Add the short context fields from the safe support evidence guide above the
+summary block, including:
+
+```text
+Pre-update baseline: summary/version captured / not captured / not an update issue
+```
+
+For failures after a Claude Code update, this tells a maintainer whether the
+new strict result is a regression from a known baseline or the first verified
+result for an already-untrusted setup.
+
 Copy the block that starts with:
 
 ```text
