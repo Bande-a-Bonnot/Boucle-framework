@@ -20,6 +20,7 @@ Shell: zsh
 Claude Code version: 1.0.93
 Where hooks are installed: user settings
 What changed recently: Claude Code update, then install.sh upgrade
+Pre-update baseline: summary/version captured
 
 --- Safety Summary (copy/paste) ---
 Grade: C
@@ -32,8 +33,9 @@ Boundary: resolve skipped PreToolUse hook checks before trusting strict verifica
 ```
 
 That is enough for triage because it includes the OS, shell, recent change,
-summary issues, verification counts, and boundary line. The summary should
-redact the home directory as `~` and the current checkout as `<project>`.
+whether there is a pre-update baseline, summary issues, verification counts,
+and boundary line. The summary should redact the home directory as `~` and the
+current checkout as `<project>`.
 
 ## FAIL-OPEN public report
 
@@ -47,6 +49,7 @@ Shell: bash
 Claude Code version: 1.0.93
 Where hooks are installed: project settings
 What changed recently: moved the repository to a new checkout path
+Pre-update baseline: not an update issue
 Hook source: framework git-safe hook, not custom
 
 --- Safety Summary (copy/paste) ---
@@ -74,6 +77,7 @@ Shell: PowerShell 7
 Claude Code version: 1.0.93
 Where hooks are installed: user settings
 What changed recently: fresh recommended install
+Pre-update baseline: not an update issue
 
 PowerShell verifier:
 2 passed, 1 warnings, 1 skipped.
@@ -90,6 +94,7 @@ Shell: PowerShell 7
 Claude Code version: 1.0.93
 Where hooks are installed: none detected
 What changed recently: checking before first install
+Pre-update baseline: not an update issue
 
 PowerShell verifier:
 No hooks installed. Run: install.ps1 recommended

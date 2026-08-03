@@ -118,6 +118,8 @@ docs = {
         "git rev-parse --show-toplevel",
         'if ($root) { Set-Location $root }',
         "--summary-only",
+        "Pre-update baseline: summary/version captured / not captured / not an update issue",
+        "first verified result for an already-untrusted setup",
         "--- End Safety Summary ---",
     ],
     repo / "tools" / "safety-check" / "SUPPORT_EXAMPLES.md": [
@@ -127,6 +129,7 @@ docs = {
         "Boundary: fix FAIL-OPEN hooks before trusting the hook layer.",
         "Do not paste raw hook stderr from the Claude Code session.",
         "temporary directory with throwaway hook paths",
+        "Pre-update baseline: summary/version captured",
     ],
     repo / "tools" / "safety-check" / "QUICKSTART.md": [
         "## 0. Choose the path",
@@ -321,6 +324,8 @@ docs = {
         "Do not treat <code>install.sh recommended</code> in CI as proof",
         "it does not prove the checked-out <code>.claude/settings.json</code> or repository hook files protect developers",
         "scripted safety-check checks",
+        "Pre-update baseline: summary/version captured / not captured / not an update issue",
+        "first verified result for an already-untrusted setup",
         "Fresh Claude Code session started after verification: yes / no",
         "Treat this as a boundary statement, not a certificate.",
         "team handoff reports",
