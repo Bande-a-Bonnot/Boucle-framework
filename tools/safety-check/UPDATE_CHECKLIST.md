@@ -18,7 +18,22 @@ the session you are about to trust.
 
 ## Before updating
 
-Snapshot the user-level settings file:
+Capture the current version and bounded summary before changing anything. Those
+two lines make post-update regressions easier to compare or report:
+
+```sh
+claude --version 2>/dev/null || printf 'claude CLI not found on PATH\n'
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
+```
+
+On native Windows, record the Claude Code version and the native verifier count:
+
+```powershell
+claude --version 2>$null
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+```
+
+Then snapshot the user-level settings file:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup
@@ -71,6 +86,9 @@ iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework
 
 Start a fresh Claude Code session after the check. Updated settings and hook
 files are not enough if an existing session already loaded the old boundary.
+Compare the new version and verification result with the pre-update notes
+before deciding whether a failure is a new regression or an old unverified
+setup.
 
 Trust the hook layer only if all of these are true:
 
