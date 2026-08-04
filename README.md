@@ -332,6 +332,14 @@ Logs every tool call to `~/.claude/session-logs/YYYY-MM-DD.jsonl`. See exactly w
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/install.sh | bash
 ```
 
+Install boundary: this downloads `tools/enforce/install.sh` and
+`tools/enforce/enforce-hooks.py` from GitHub raw content, then runs them
+locally in the current project. It may create `CLAUDE.md`, install
+`.claude/hooks/enforce-hooks.py`, update project `.claude/settings.json`, and
+add armor rules for the generated hook files. It does not upload your
+`CLAUDE.md`, settings, hook files, shell history, repository contents, or audit
+output.
+
 Your CLAUDE.md says "never edit .env" but Claude edits it anyway. This tool reads your CLAUDE.md, finds rules marked `@enforced`, and generates hooks that block covered tool-call violations. Rules in prompts are suggestions; hooks are runtime checks you can verify.
 
 Scan first to preview: `enforce-hooks.py --scan`. Generate a starter CLAUDE.md: `enforce-hooks.py --template` (also `--template strict` or `--template minimal`). Installs as one dynamic hook that re-reads CLAUDE.md on every call, so enforcement updates when your rules change. Supports file-guard, bash-guard, branch-guard, tool-block, require-prior-tool, content-guard, scoped-content-guard, bare filename protection, flag blocking (`--no-verify`, `--no-gpg-sign`), system/device commands (`shutdown`, `reboot`, `systemctl`), and command substitution patterns. Subjective rules ("write clean code") are skipped. Self-protection mode (`--armor`) protects configured hook files from covered file-write paths. Hook health-check (`--verify`) catches silent fail-open bugs like wrong field names. Smoke test (`--smoke-test`) runs hooks with representative payloads to verify they respond correctly at runtime. ~70 tests.

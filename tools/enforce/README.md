@@ -12,6 +12,14 @@ Claude Code's CLAUDE.md lets you write project rules, but Claude follows them on
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/install.sh | bash
 ```
 
+Install boundary: this downloads `tools/enforce/install.sh` and
+`tools/enforce/enforce-hooks.py` from GitHub raw content, then runs them locally
+in the current project. It may create `CLAUDE.md`, install
+`.claude/hooks/enforce-hooks.py`, update project `.claude/settings.json`, and
+add armor rules for the generated hook files. It does not upload your
+`CLAUDE.md`, settings, hook files, shell history, repository contents, or audit
+output.
+
 This installs enforcement hooks, armor (self-protection), and creates a sensible CLAUDE.md if you don't have one. Works in any git repo.
 
 **Or manually (inspect before installing):**
