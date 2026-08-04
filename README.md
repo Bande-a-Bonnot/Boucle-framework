@@ -75,6 +75,9 @@ trusting hooks in a fresh session.
 If you want to try the checker before it reads your real Claude Code settings,
 use the [temporary first test](tools/safety-check/FIRST_TEST.md) or the
 [isolated first-test recipe](https://framework.boucle.sh/recipes.html#isolated-first-test).
+That path downloads `check.sh` from GitHub raw content, runs locally inside a
+temporary `HOME` and temporary project, and uploads no settings, hook files,
+shell history, repository contents, or summary output.
 If you are trying hooks on a borrowed machine, client repository, CI runner, or
 other temporary environment, use the
 [temporary hook trial recipe](https://framework.boucle.sh/recipes.html#temporary-trial)
