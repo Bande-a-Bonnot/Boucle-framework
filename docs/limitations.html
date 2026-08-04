@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1470</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-04.</span></p>
+        <p class="subtitle"><span id="total-count">1473</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-04.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -16366,6 +16366,42 @@
                         <!-- workaround:hook-settings-lack-runtime-artifact-receipts -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat hook configuration as a claim, not proof of enforcement. Have installers write explicit receipts with owned markers, source scope, resolved command path, and content hashes; compare installed hook artifacts against the source copy tested in the repository; and include positive and negative smoke payloads that force each critical hook to block. Re-run those checks after plugin, branch, worktree, or Claude Code updates.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/83952" target="_blank">#83952</a>, <a href="https://github.com/anthropics/claude-code/issues/81458" target="_blank">#81458</a>, <a href="https://github.com/anthropics/claude-code/issues/17361" target="_blank">#17361</a>, <a href="https://github.com/anthropics/claude-code/issues/74942" target="_blank">#74942</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="83800 83801 83802" id="hook-test-helper-does-not-prove-policy-or-matcher" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1471</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>The plugin hook test helper can pass without proving the hook denies the target action or is matched by runtime config.</h3>
+            <p>Recent Claude Code plugin-development reports describe `plugin-dev/skills/hook-development/scripts/test-hook.sh` executing a hook handler directly and treating both exit 0 and exit 2 as successful test completion. That means a PreToolUse guard can allow the exact payload it exists to block and still pass the shipped test helper. A separate report says the helper never evaluates the configured event or matcher, so a handler scoped to the wrong tool can pass direct-handler tests while never firing in production. On systems without `jq`, the same helper can also report valid JSON as invalid input, sending users toward the payload instead of the missing dependency.</p>
+                        <!-- workaround:hook-test-helper-does-not-prove-policy-or-matcher -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat a green direct-handler hook test as proof of enforcement. Add tests that assert an expected decision (`allow`, `deny`, or `ask`), exercise the real event and matcher configuration, and include at least one negative control that must be allowed. Check helper dependencies such as `jq` before parsing fixtures, especially on Windows and Git Bash.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/83800" target="_blank">#83800</a>, <a href="https://github.com/anthropics/claude-code/issues/83801" target="_blank">#83801</a>, <a href="https://github.com/anthropics/claude-code/issues/83802" target="_blank">#83802</a></div>
+        </div>
+        <div class="kl-entry" data-category="Git &amp; repository safety" data-issues="83490 83924 69586 82624" id="remote-stop-git-hook-can-target-published-commits" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1472</span>
+                <span class="kl-cat">Git &amp; repository safety</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Claude Code Remote&#x27;s Stop git hook can mistake published commits for local commits and recommend destructive git actions.</h3>
+            <p>Reports against Claude Code Remote&#x27;s `stop-hook-git-check.sh` show it computing local work from `$upstream..HEAD`, where `$upstream` can be a stale same-named remote-tracking branch. After a PR merge, repointing the working branch at the updated default branch can place GitHub&#x27;s merge commit inside that range. The hook may then ask the agent to amend a published merge commit or push a branch that is already represented on `origin/main`, even though the commit is not local unpublished work.</p>
+                        <!-- workaround:remote-stop-git-hook-can-target-published-commits -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before following Stop-hook git advice, verify whether the reported commits are absent from every remote ref with `git rev-list HEAD --not --remotes --count` and inspect the commit author/committer. Do not amend, reset-author, force-push, or recreate a deleted PR branch solely because the Stop hook reported `$upstream..HEAD` output after a merge. Prefer checks that scope to commits reachable from HEAD and from no remote ref.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/83490" target="_blank">#83490</a>, <a href="https://github.com/anthropics/claude-code/issues/83924" target="_blank">#83924</a>, <a href="https://github.com/anthropics/claude-code/issues/69586" target="_blank">#69586</a>, <a href="https://github.com/anthropics/claude-code/issues/82624" target="_blank">#82624</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="83915 29881 3113" id="stop-hooks-do-not-cover-tool-terminated-turns" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1473</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Stop hooks do not fire for turns that end on a tool call.</h3>
+            <p>A current measurement report counted Stop-hook behavior only after a transcript had already shown Stop activity, then corrected the methodology using `system/turn_duration` transcript entries as the turn-end ground truth. Under that stricter pass, text-terminated turns fired Stop thousands of times, while tool-use-terminated turns fired Stop 0/133 times. This makes Stop-based supervision structurally absent for a class of turn endings that often matters to automation, including sessions that appear to stall after a tool result.</p>
+                        <!-- workaround:stop-hooks-do-not-cover-tool-terminated-turns -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on Stop hooks as the only end-of-turn watchdog. Pair them with transcript or process-level witnesses that detect tool-result stalls, long gaps after tool calls, and missing final text. For blocking supervision, treat a turn ending on `tool_use` as a separate state that needs its own timeout or external monitor until Claude Code exposes a hook event for that boundary.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/83915" target="_blank">#83915</a>, <a href="https://github.com/anthropics/claude-code/issues/29881" target="_blank">#29881</a>, <a href="https://github.com/anthropics/claude-code/issues/3113" target="_blank">#3113</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
