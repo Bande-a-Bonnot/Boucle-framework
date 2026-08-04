@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1468</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-04.</span></p>
+        <p class="subtitle"><span id="total-count">1470</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-04.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -16342,6 +16342,30 @@
                         <!-- workaround:project-hooks-trust-gate-is-undocumented-for-print-mode -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not run `claude -p` over untrusted repositories while relying on undocumented project-hook trust behavior. Keep enforcement hooks in user- or managed-scope settings you control, smoke-test whether project hooks fire before trusting headless automation, and treat project hooks in third-party repos as untrusted code until Anthropic documents or exposes the exact trust decision.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/83502" target="_blank">#83502</a>, <a href="https://github.com/anthropics/claude-code/issues/20253" target="_blank">#20253</a>, <a href="https://github.com/anthropics/claude-code/issues/31242" target="_blank">#31242</a></div>
+        </div>
+        <div class="kl-entry" data-category="Project configuration &amp; memory" data-issues="83953 28041 70466 76897 83411" id="project-hooks-can-disappear-in-linked-worktrees" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1469</span>
+                <span class="kl-cat">Project configuration &amp; memory</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Project-scope hooks can disappear in linked worktrees.</h3>
+            <p>A current Claude Code worktree report describes two structural ways project `.claude/settings.json` hooks fail to reach linked worktrees. If the hook settings file is tracked, each worktree sees only the branch-local copy, so a newly added guard is absent until every worktree branch merges it. If `.claude/` is gitignored, `git worktree add` cannot deliver the project settings file at all, and `.worktreeinclude` only helps creation paths that Claude Code itself processes. The resulting worktree has no project hook coverage, while `/hooks` cannot distinguish a project with no hooks from a worktree that failed to receive the project&#x27;s hooks.</p>
+                        <!-- workaround:project-hooks-can-disappear-in-linked-worktrees -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume project-scope hooks cover sibling worktrees. For guardrails that must apply across all linked worktrees, install and test a user- or managed-scope hook that is outside every branch checkout, or explicitly seed each worktree and verify the project settings file before starting agents there. After creating or switching a worktree, trigger a harmless denied action and inspect hook events so missing project scope is visible before real work begins.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/83953" target="_blank">#83953</a>, <a href="https://github.com/anthropics/claude-code/issues/28041" target="_blank">#28041</a>, <a href="https://github.com/anthropics/claude-code/issues/70466" target="_blank">#70466</a>, <a href="https://github.com/anthropics/claude-code/issues/76897" target="_blank">#76897</a>, <a href="https://github.com/anthropics/claude-code/issues/83411" target="_blank">#83411</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="83952 81458 17361 74942" id="hook-settings-lack-runtime-artifact-receipts" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1470</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Hook settings do not prove which hook artifact will execute.</h3>
+            <p>A feature request reports that Claude Code can show that a hook entry is configured, but cannot show the source settings file, the resolved hook command target, or a stable fingerprint of the artifact that will actually execute. Reported failures include a same-named user-scope hook script from another project occupying the shared path, tests exercising the repository copy while enforcement ran from a stale installed copy, and inline shim commands resolving nothing while exiting 0. Each case leaves `settings.json` and `/hooks` looking healthy even though the intended guardrail is absent or stale.</p>
+                        <!-- workaround:hook-settings-lack-runtime-artifact-receipts -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat hook configuration as a claim, not proof of enforcement. Have installers write explicit receipts with owned markers, source scope, resolved command path, and content hashes; compare installed hook artifacts against the source copy tested in the repository; and include positive and negative smoke payloads that force each critical hook to block. Re-run those checks after plugin, branch, worktree, or Claude Code updates.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/83952" target="_blank">#83952</a>, <a href="https://github.com/anthropics/claude-code/issues/81458" target="_blank">#81458</a>, <a href="https://github.com/anthropics/claude-code/issues/17361" target="_blank">#17361</a>, <a href="https://github.com/anthropics/claude-code/issues/74942" target="_blank">#74942</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
