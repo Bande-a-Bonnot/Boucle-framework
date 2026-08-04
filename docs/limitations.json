@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1459,
+  "count": 1460,
   "categories": {
     "Hook behavior & events": 187,
     "Permission system": 130,
@@ -30,8 +30,8 @@
     "MCP integration": 13,
     "Worktree": 13,
     "File system & paths": 12,
+    "Permissions & safety": 12,
     "Bash & shell execution": 11,
-    "Permissions & safety": 11,
     "Plugin & channel system": 11,
     "UX & display": 11,
     "hooks": 9,
@@ -187,7 +187,7 @@
   },
   "severity_counts": {
     "CRITICAL": 129,
-    "HIGH": 766,
+    "HIGH": 767,
     "LOW": 111,
     "MEDIUM": 453
   },
@@ -18789,30 +18789,43 @@
       "date_added": "2026-08-04",
       "description": "A reported Claude Code 2.1.220 macOS setup found that, after switching to auto permission mode, PreToolUse Bash hooks registered from a project on an external APFS volume with a space in its path failed for newly spawned subagents with `MODULE_NOT_FOUND` before the hook script ran. Claude Code treated the hook process failure as non-blocking, so Bash commands continued in the same mode where commands were being auto-approved. Older subagents from before the mode switch and non-Bash matchers in the same hook directory reportedly kept working, narrowing the failure to the auto-mode Bash hook execution path rather than a missing script dependency.",
       "workaround": "Do not rely on Bash PreToolUse hooks as the only enforcement boundary for auto-mode subagents until you have smoke-tested that exact launch shape. Keep protected projects on internal paths without spaces when possible, prefer hard deny rules outside the hook for operations such as `git push` or public writes, and run an artifact-based hook verification from freshly spawned subagents after changing permission mode. Treat any `PreToolUse:Bash hook error` or `MODULE_NOT_FOUND` line as a fail-open incident, not a harmless warning."
+    },
+    {
+      "id": "allowlisted-mcp-tool-can-be-denied-before-server",
+      "title": "Allow-listed MCP tools can be denied before the server sees the call.",
+      "category": "Permissions & safety",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/83611"
+      ],
+      "date_added": "2026-08-04",
+      "description": "A reported Linux Claude Code 2.1.220 auto-mode session denied an MCP tool even though that exact tool name was present in `permissions.allow`, the settings files parsed cleanly, and no deny or ask rule matched it. Earlier in the same session the same call reached the MCP server and received a server-level approval error, so the later failures happened in a layer before the server. The classifier denial text also suggested adding a Bash permission rule even though the blocked action was an MCP tool and the relevant allow entry already existed.",
+      "workaround": "Do not treat `permissions.allow` as final authorization for MCP tools in auto mode. For critical MCP workflows, keep server-side approval checks, log whether each call reached the MCP server, and smoke-test allow-listed tools after Claude Code updates or settings changes. If the classifier denies an allow-listed MCP tool, preserve the transcript and settings snapshot and avoid broadening unrelated Bash rules as a workaround."
     }
   ],
   "status_summary": {
-    "open": 1445,
+    "open": 1446,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 129,
-    "high": 766,
+    "high": 767,
     "low": 111,
     "medium": 453
   },
   "lastUpdated": "2026-08-04",
   "stats": {
-    "total": 1459,
+    "total": 1460,
     "critical": 129,
-    "high": 766,
+    "high": 767,
     "medium": 453,
     "low": 111,
-    "open": 1445,
+    "open": 1446,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-04",
-  "total": 1459
+  "total": 1460
 }
