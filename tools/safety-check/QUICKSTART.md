@@ -69,6 +69,11 @@ template and a list of fields to redact. To print only that bounded block:
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
 ```
 
+Command boundary: this downloads `tools/safety-check/check.sh` from GitHub raw
+content and runs it locally on your current project and Claude Code settings.
+The checker does not upload your `settings.json`, hook files, shell history,
+repository contents, session logs, or safety summary output.
+
 ## 2. Install the baseline hooks
 
 Pick the smallest hook layer that matches the boundary you need:
