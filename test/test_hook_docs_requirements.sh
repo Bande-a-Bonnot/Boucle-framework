@@ -62,6 +62,9 @@ docs = {
         "existing session may have loaded the previous settings or hook files",
         "Test all installed hooks with representative payloads",
         "This is not a sandbox: verify the hook, start a fresh session, and review the known limitations",
+        "This is read-only for the audited Claude Code session after the hook is installed",
+        "Setting up the boundary intentionally edits project files first",
+        "Use a disposable branch or worktree when the main checkout must stay untouched",
     ],
     repo / "tools" / "README.md": [
         "**macOS / Linux:** bash, python3, and jq",
@@ -105,6 +108,9 @@ docs = {
         "PreToolUse boundaries for covered tool calls",
         "hard-block covered tool calls at the runtime level",
         "This is not a sandbox: verify the hook, start a fresh session, and review known limitations",
+        "This is read-only for the audited Claude Code session after the hook is installed",
+        "Setting up the boundary intentionally edits project files first",
+        "Use a disposable branch or worktree when the main checkout must stay untouched",
         "deterministic boundary for those covered Write/Edit/Bash operations",
     ],
     repo / "tools" / "safety-check" / "README.md": [
