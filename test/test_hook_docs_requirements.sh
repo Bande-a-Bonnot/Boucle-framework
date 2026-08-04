@@ -348,6 +348,8 @@ docs = {
         "tools/install.ps1) } uninstall all",
         "tools/install.ps1) } backup list",
         "temporary first test",
+        "Network boundary: this downloads <code>tools/safety-check/check.sh</code> from GitHub raw content",
+        "It does not upload your Claude Code settings, hook files, shell history, repository contents, or summary output.",
         "Read-only review or audit",
         "python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict",
         "python3 /tmp/enforce-hooks.py CLAUDE.md --smoke-test --strict",
