@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1461,
+  "count": 1462,
   "categories": {
-    "Hook behavior & events": 187,
+    "Hook behavior & events": 188,
     "Permission system": 130,
     "Hook bypass & evasion": 102,
     "MCP & plugin issues": 74,
@@ -189,7 +189,7 @@
     "CRITICAL": 129,
     "HIGH": 768,
     "LOW": 111,
-    "MEDIUM": 453
+    "MEDIUM": 454
   },
   "entries": [
     {
@@ -18815,10 +18815,23 @@
       "date_added": "2026-08-04",
       "description": "A reported Claude Code 2.1.221 macOS daemon-hosted background agent can hang indefinitely when opened from `claude agents` while the job is parked inside an unanswered `AskUserQuestion`. The job record can show `state: \"working\"` while `tempo: \"blocked\"`, `needs`, and `block.questions` indicate a user-answer block. The attach guard reportedly checks only `state`, falls through to the held-screen attach path, gates stdin, and never renders a first frame, so the user cannot answer the question from that surface.",
       "workaround": "Before attaching to a background job that may be waiting on `AskUserQuestion`, inspect `~/.claude/jobs/*/state.json` for `tempo: \"blocked\"` with a non-`blocked` state. If affected, edit that job's state to `\"blocked\"` so the list-view guard bounces instead of attaching, then answer the question from the agents list. For critical background automation, avoid relying on AskUserQuestion as the only recovery path; prefer external status artifacts or approval mechanisms that can be answered outside the thread view."
+    },
+    {
+      "id": "hooks-browser-omits-managed-hooks-that-execute",
+      "title": "`/hooks` can omit managed hooks that still execute.",
+      "category": "Hook behavior & events",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/79318"
+      ],
+      "date_added": "2026-08-04",
+      "description": "A reported Claude Code 2.1.215 macOS setup loaded a `PreToolUse` Bash hook from `/Library/Application Support/ClaudeCode/managed-settings.json` and executed it successfully, but the interactive `/hooks` browser still reported `0 hooks configured` and showed no `PreToolUse` hook. The runtime hook event showed `PreToolUse:Bash` success, narrowing the issue to UI discovery and audit visibility rather than hook execution. This is distinct from older managed-settings reports where managed hooks did not fire at all.",
+      "workaround": "Do not use `/hooks` alone to audit organization-managed hook coverage. After adding managed hooks, trigger a harmless matching tool call and inspect hook events with `--include-hook-events` or another runtime log. For enterprise deployments, keep the managed settings file under configuration management and run a smoke test that proves each managed hook both loads and executes after Claude Code updates."
     }
   ],
   "status_summary": {
-    "open": 1447,
+    "open": 1448,
     "fixed": 13,
     "mitigated": 1
   },
@@ -18826,19 +18839,19 @@
     "critical": 129,
     "high": 768,
     "low": 111,
-    "medium": 453
+    "medium": 454
   },
   "lastUpdated": "2026-08-04",
   "stats": {
-    "total": 1461,
+    "total": 1462,
     "critical": 129,
     "high": 768,
-    "medium": 453,
+    "medium": 454,
     "low": 111,
-    "open": 1447,
+    "open": 1448,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-04",
-  "total": 1461
+  "total": 1462
 }
