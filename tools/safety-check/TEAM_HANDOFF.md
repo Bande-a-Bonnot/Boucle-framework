@@ -16,6 +16,11 @@ cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
 ```
 
+Command boundary: this downloads `tools/safety-check/check.sh` from GitHub raw
+content and runs it locally on your current project and Claude Code settings.
+The checker does not upload your `settings.json`, hook files, shell history,
+repository contents, session logs, or safety summary output.
+
 On native Windows with PowerShell hooks, use the native verifier:
 
 ```powershell
