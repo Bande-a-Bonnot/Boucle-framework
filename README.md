@@ -111,6 +111,14 @@ python3 to manage Claude Code `settings.json`, safety-check uses python3 for
 its audit, and most standalone shell hooks use jq to parse Claude Code hook
 payloads.
 
+Install boundary: these commands download `tools/install.sh` or
+`tools/install.ps1` from GitHub raw content and run it locally. Installing adds
+managed hook files under `~/.claude/hooks` and updates
+`~/.claude/settings.json`; project settings are inspected from the project root
+when you verify, check, or run doctor. The installer does not upload your
+settings, hook files, shell history, repository contents, or safety summary
+output.
+
 **Start with the essentials** (bash-guard + git-safe + file-guard):
 
 ```sh
