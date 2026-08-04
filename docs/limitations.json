@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1468,
+  "count": 1470,
   "categories": {
-    "Hook behavior & events": 191,
+    "Hook behavior & events": 192,
     "Permission system": 130,
     "Hook bypass & evasion": 102,
     "MCP & plugin issues": 75,
@@ -96,6 +96,7 @@
     "Performance": 2,
     "Permissions and safety": 2,
     "platform": 2,
+    "Project configuration & memory": 2,
     "security": 2,
     "session-management": 2,
     "TUI & interface": 2,
@@ -156,7 +157,6 @@
     "Plugins & MCP": 1,
     "Plugins & MCP tools": 1,
     "plugins-and-skills": 1,
-    "Project configuration & memory": 1,
     "remote": 1,
     "Remote & trigger issues": 1,
     "Remote and agents": 1,
@@ -188,7 +188,7 @@
   },
   "severity_counts": {
     "CRITICAL": 129,
-    "HIGH": 774,
+    "HIGH": 776,
     "LOW": 111,
     "MEDIUM": 454
   },
@@ -18909,30 +18909,63 @@
       "date_added": "2026-08-04",
       "description": "Claude Code documentation states that workspace trust verification is disabled in non-interactive `--print` mode and that project `permissions.allow` rules stay ignored until a workspace is trusted. A current docs report notes that the hooks reference does not say whether project `.claude/settings.json` hooks follow the same workspace-trust gate, whether they fail closed when `--print` cannot show a trust dialog, or whether the trust gate is skipped. Older closed reports asked for headless trust warnings and safer project-hook handling, so users still have no documented rule for a project-scoped capability that can execute shell commands.",
       "workaround": "Do not run `claude -p` over untrusted repositories while relying on undocumented project-hook trust behavior. Keep enforcement hooks in user- or managed-scope settings you control, smoke-test whether project hooks fire before trusting headless automation, and treat project hooks in third-party repos as untrusted code until Anthropic documents or exposes the exact trust decision."
+    },
+    {
+      "id": "project-hooks-can-disappear-in-linked-worktrees",
+      "title": "Project-scope hooks can disappear in linked worktrees.",
+      "category": "Project configuration & memory",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/83953",
+        "https://github.com/anthropics/claude-code/issues/28041",
+        "https://github.com/anthropics/claude-code/issues/70466",
+        "https://github.com/anthropics/claude-code/issues/76897",
+        "https://github.com/anthropics/claude-code/issues/83411"
+      ],
+      "date_added": "2026-08-04",
+      "description": "A current Claude Code worktree report describes two structural ways project `.claude/settings.json` hooks fail to reach linked worktrees. If the hook settings file is tracked, each worktree sees only the branch-local copy, so a newly added guard is absent until every worktree branch merges it. If `.claude/` is gitignored, `git worktree add` cannot deliver the project settings file at all, and `.worktreeinclude` only helps creation paths that Claude Code itself processes. The resulting worktree has no project hook coverage, while `/hooks` cannot distinguish a project with no hooks from a worktree that failed to receive the project's hooks.",
+      "workaround": "Do not assume project-scope hooks cover sibling worktrees. For guardrails that must apply across all linked worktrees, install and test a user- or managed-scope hook that is outside every branch checkout, or explicitly seed each worktree and verify the project settings file before starting agents there. After creating or switching a worktree, trigger a harmless denied action and inspect hook events so missing project scope is visible before real work begins."
+    },
+    {
+      "id": "hook-settings-lack-runtime-artifact-receipts",
+      "title": "Hook settings do not prove which hook artifact will execute.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/83952",
+        "https://github.com/anthropics/claude-code/issues/81458",
+        "https://github.com/anthropics/claude-code/issues/17361",
+        "https://github.com/anthropics/claude-code/issues/74942"
+      ],
+      "date_added": "2026-08-04",
+      "description": "A feature request reports that Claude Code can show that a hook entry is configured, but cannot show the source settings file, the resolved hook command target, or a stable fingerprint of the artifact that will actually execute. Reported failures include a same-named user-scope hook script from another project occupying the shared path, tests exercising the repository copy while enforcement ran from a stale installed copy, and inline shim commands resolving nothing while exiting 0. Each case leaves `settings.json` and `/hooks` looking healthy even though the intended guardrail is absent or stale.",
+      "workaround": "Treat hook configuration as a claim, not proof of enforcement. Have installers write explicit receipts with owned markers, source scope, resolved command path, and content hashes; compare installed hook artifacts against the source copy tested in the repository; and include positive and negative smoke payloads that force each critical hook to block. Re-run those checks after plugin, branch, worktree, or Claude Code updates."
     }
   ],
   "status_summary": {
-    "open": 1454,
+    "open": 1456,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 129,
-    "high": 774,
+    "high": 776,
     "low": 111,
     "medium": 454
   },
   "lastUpdated": "2026-08-04",
   "stats": {
-    "total": 1468,
+    "total": 1470,
     "critical": 129,
-    "high": 774,
+    "high": 776,
     "medium": 454,
     "low": 111,
-    "open": 1454,
+    "open": 1456,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-04",
-  "total": 1468
+  "total": 1470
 }
