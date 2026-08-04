@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1458,
+  "count": 1459,
   "categories": {
     "Hook behavior & events": 187,
     "Permission system": 130,
@@ -55,6 +55,7 @@
     "Model behavior & compliance": 5,
     "Skills / slash commands": 5,
     "Browser automation": 4,
+    "Hook execution & lifecycle": 4,
     "MCP & plugins": 4,
     "Model behavior & instructions": 4,
     "Performance & resources": 4,
@@ -65,7 +66,6 @@
     "Context / compaction": 3,
     "cowork": 3,
     "Desktop": 3,
-    "Hook execution & lifecycle": 3,
     "Hooks": 3,
     "IDE integration": 3,
     "model-behavior": 3,
@@ -187,7 +187,7 @@
   },
   "severity_counts": {
     "CRITICAL": 129,
-    "HIGH": 765,
+    "HIGH": 766,
     "LOW": 111,
     "MEDIUM": 453
   },
@@ -18776,30 +18776,43 @@
       "date_added": "2026-08-04",
       "description": "A reported Claude Code 2.1.220 regression says a PreToolUse hook returning `hookSpecificOutput.permissionDecision: \"allow\"` no longer overrides a matching `permissions.ask` Bash glob. With the ask rule present, the same sentinel command was denied in headless `-p` runs or stopped at an interactive permission menu, while removing only the ask rule let the hook allow take effect.",
       "workaround": "Do not use hook `allow` as the only way to clear a command that also matches `permissions.ask` until your installed Claude Code version proves the documented precedence order. For unattended runs, avoid overlapping ask globs for commands a hook must auto-approve, or replace the workflow with explicit narrow allow rules plus a hook that hard-denies unsafe variants. Keep an artifact-based smoke test for each auto-approved command shape."
+    },
+    {
+      "id": "auto-mode-bash-hooks-can-fail-open-on-external-volumes",
+      "title": "Auto-mode Bash hooks can fail open on external volumes.",
+      "category": "Hook execution & lifecycle",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82882"
+      ],
+      "date_added": "2026-08-04",
+      "description": "A reported Claude Code 2.1.220 macOS setup found that, after switching to auto permission mode, PreToolUse Bash hooks registered from a project on an external APFS volume with a space in its path failed for newly spawned subagents with `MODULE_NOT_FOUND` before the hook script ran. Claude Code treated the hook process failure as non-blocking, so Bash commands continued in the same mode where commands were being auto-approved. Older subagents from before the mode switch and non-Bash matchers in the same hook directory reportedly kept working, narrowing the failure to the auto-mode Bash hook execution path rather than a missing script dependency.",
+      "workaround": "Do not rely on Bash PreToolUse hooks as the only enforcement boundary for auto-mode subagents until you have smoke-tested that exact launch shape. Keep protected projects on internal paths without spaces when possible, prefer hard deny rules outside the hook for operations such as `git push` or public writes, and run an artifact-based hook verification from freshly spawned subagents after changing permission mode. Treat any `PreToolUse:Bash hook error` or `MODULE_NOT_FOUND` line as a fail-open incident, not a harmless warning."
     }
   ],
   "status_summary": {
-    "open": 1444,
+    "open": 1445,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 129,
-    "high": 765,
+    "high": 766,
     "low": 111,
     "medium": 453
   },
   "lastUpdated": "2026-08-04",
   "stats": {
-    "total": 1458,
+    "total": 1459,
     "critical": 129,
-    "high": 765,
+    "high": 766,
     "medium": 453,
     "low": 111,
-    "open": 1444,
+    "open": 1445,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-04",
-  "total": 1458
+  "total": 1459
 }
