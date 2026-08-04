@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1466,
+  "count": 1467,
   "categories": {
     "Hook behavior & events": 190,
     "Permission system": 130,
     "Hook bypass & evasion": 102,
-    "MCP & plugin issues": 74,
+    "MCP & plugin issues": 75,
     "Subagent & spawned agents": 69,
     "Desktop & IDE integration": 53,
     "TUI & display": 35,
@@ -188,7 +188,7 @@
   },
   "severity_counts": {
     "CRITICAL": 129,
-    "HIGH": 772,
+    "HIGH": 773,
     "LOW": 111,
     "MEDIUM": 454
   },
@@ -18881,30 +18881,43 @@
       "date_added": "2026-08-04",
       "description": "A reported Claude Code cloud Routine using a DesignSync MCP tool found that calls annotated with `_meta[\"anthropic/requiresUserInteraction\"]` still raise a human approval prompt inside an otherwise unattended Routine. The reporter's PreToolUse hook returned `allow` for both `finalize_plan` and `write_files`, and `permissions.allow` covered the MCP server name, but the annotated `finalize_plan` call prompted anyway while the unannotated write call did not. The behavior is consistent with the MCP annotation, but it contradicts a common reading of Routines as fully unattended sessions.",
       "workaround": "Do not assume a Routine can complete unattended just because hooks or `permissions.allow` approve an MCP tool. Check whether each required MCP operation carries `anthropic/requiresUserInteraction`, run a fresh unattended canary after cloud-runner updates, and design workflows so any annotated approval is satisfied by a present human or moved into a separately reviewed manual step. Keep an external witness for Routine completion so a mid-run approval stall is detected quickly."
+    },
+    {
+      "id": "mcp-tool-annotations-are-hidden-from-tool-hooks",
+      "title": "MCP tool annotations are not surfaced to PreToolUse hooks.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/83886"
+      ],
+      "date_added": "2026-08-04",
+      "description": "Claude Code PreToolUse hooks receive `tool_name` and `tool_input` for MCP tools, but reported hook payloads do not include MCP tool annotations such as `readOnlyHint`, `destructiveHint`, or `openWorldHint`. A hook that wants to allow read-only MCP tools while gating write-capable ones must therefore rely on tool-name regexes or hand-maintained deny lists. A second report described maintaining matcher rules, deny-list files, hardcoded hook branches, and a monthly diff job solely to keep destructive Google Workspace MCP operations from slipping past stale name-based policy.",
+      "workaround": "Treat MCP tool names as an incomplete security boundary. For MCP servers used in gated phases, keep a reviewed catalog of tool names and argument-level destructive cases, run a drift check against the live server catalog after updates, and default unknown or unannotated MCP tools to manual review until Claude Code exposes trustworthy capability metadata in hook input."
     }
   ],
   "status_summary": {
-    "open": 1452,
+    "open": 1453,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 129,
-    "high": 772,
+    "high": 773,
     "low": 111,
     "medium": 454
   },
   "lastUpdated": "2026-08-04",
   "stats": {
-    "total": 1466,
+    "total": 1467,
     "critical": 129,
-    "high": 772,
+    "high": 773,
     "medium": 454,
     "low": 111,
-    "open": 1452,
+    "open": 1453,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-04",
-  "total": 1466
+  "total": 1467
 }
