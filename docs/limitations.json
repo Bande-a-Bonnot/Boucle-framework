@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1464,
+  "count": 1465,
   "categories": {
-    "Hook behavior & events": 189,
+    "Hook behavior & events": 190,
     "Permission system": 130,
     "Hook bypass & evasion": 102,
     "MCP & plugin issues": 74,
@@ -188,7 +188,7 @@
   },
   "severity_counts": {
     "CRITICAL": 129,
-    "HIGH": 770,
+    "HIGH": 771,
     "LOW": 111,
     "MEDIUM": 454
   },
@@ -18855,30 +18855,43 @@
       "date_added": "2026-08-04",
       "description": "A reported Claude Code 2.1.219 macOS desktop-app setup kept launching new sessions against an old project root after the directory was renamed. The per-session registry recorded the dead cwd, Claude Code silently failed to load the `.claude/settings.json` file at the real renamed root, project-scoped hooks and permissions did not intercept gated tool calls, project memory appeared empty because it was keyed by the old path, and the harness recreated the deleted old directory with `.claude/scheduled_tasks.lock`.",
       "workaround": "After renaming or moving a project, start Claude Code from the real new path and verify the session cwd, project settings, hooks, and memory before trusting project-scoped guardrails. Trigger a harmless hook smoke test and inspect `~/.claude/sessions/*` or runtime hook events for the expected root. If a session still points at the old path, close old sessions, remove recreated stubs only after they are no longer held, and re-establish or migrate any project-scoped memory and settings under the new root."
+    },
+    {
+      "id": "windows-hook-file-path-backslashes-can-fail-open",
+      "title": "Windows hook `file_path` values use backslashes, so POSIX-style path guards can fail open.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/83877"
+      ],
+      "date_added": "2026-08-04",
+      "description": "A reported Claude Code 2.1.221 Windows Git Bash setup delivered file-tool hook input as absolute Windows paths with backslash separators, while common hook examples and POSIX shell guards often compare against forward-slash or `$PWD`-relative paths. A guard such as `[[ \"$FILE_PATH\" =~ ^src/ ]]` or `${FILE_PATH#\"$PWD\"/}` can therefore never match, exit 0, and silently allow writes that the hook author expected to deny.",
+      "workaround": "For path-sensitive hooks, treat `tool_input.file_path` as platform-specific input. Normalize backslashes to forward slashes and normalize drive-letter paths before matching, then add Windows fixture payloads to hook tests so fail-open path comparisons are caught before production use."
     }
   ],
   "status_summary": {
-    "open": 1450,
+    "open": 1451,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 129,
-    "high": 770,
+    "high": 771,
     "low": 111,
     "medium": 454
   },
   "lastUpdated": "2026-08-04",
   "stats": {
-    "total": 1464,
+    "total": 1465,
     "critical": 129,
-    "high": 770,
+    "high": 771,
     "medium": 454,
     "low": 111,
-    "open": 1450,
+    "open": 1451,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-04",
-  "total": 1464
+  "total": 1465
 }
