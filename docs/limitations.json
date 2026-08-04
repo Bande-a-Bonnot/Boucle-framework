@@ -1,12 +1,12 @@
 {
   "version": "0.13.0",
-  "count": 1460,
+  "count": 1461,
   "categories": {
     "Hook behavior & events": 187,
     "Permission system": 130,
     "Hook bypass & evasion": 102,
     "MCP & plugin issues": 74,
-    "Subagent & spawned agents": 68,
+    "Subagent & spawned agents": 69,
     "Desktop & IDE integration": 53,
     "TUI & display": 35,
     "CLI & terminal": 31,
@@ -187,7 +187,7 @@
   },
   "severity_counts": {
     "CRITICAL": 129,
-    "HIGH": 767,
+    "HIGH": 768,
     "LOW": 111,
     "MEDIUM": 453
   },
@@ -18802,30 +18802,43 @@
       "date_added": "2026-08-04",
       "description": "A reported Linux Claude Code 2.1.220 auto-mode session denied an MCP tool even though that exact tool name was present in `permissions.allow`, the settings files parsed cleanly, and no deny or ask rule matched it. Earlier in the same session the same call reached the MCP server and received a server-level approval error, so the later failures happened in a layer before the server. The classifier denial text also suggested adding a Bash permission rule even though the blocked action was an MCP tool and the relevant allow entry already existed.",
       "workaround": "Do not treat `permissions.allow` as final authorization for MCP tools in auto mode. For critical MCP workflows, keep server-side approval checks, log whether each call reached the MCP server, and smoke-test allow-listed tools after Claude Code updates or settings changes. If the classifier denies an allow-listed MCP tool, preserve the transcript and settings snapshot and avoid broadening unrelated Bash rules as a workaround."
+    },
+    {
+      "id": "background-agent-askuserquestion-attach-can-hang",
+      "title": "Background agent attach can hang on AskUserQuestion blocks.",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/83705"
+      ],
+      "date_added": "2026-08-04",
+      "description": "A reported Claude Code 2.1.221 macOS daemon-hosted background agent can hang indefinitely when opened from `claude agents` while the job is parked inside an unanswered `AskUserQuestion`. The job record can show `state: \"working\"` while `tempo: \"blocked\"`, `needs`, and `block.questions` indicate a user-answer block. The attach guard reportedly checks only `state`, falls through to the held-screen attach path, gates stdin, and never renders a first frame, so the user cannot answer the question from that surface.",
+      "workaround": "Before attaching to a background job that may be waiting on `AskUserQuestion`, inspect `~/.claude/jobs/*/state.json` for `tempo: \"blocked\"` with a non-`blocked` state. If affected, edit that job's state to `\"blocked\"` so the list-view guard bounces instead of attaching, then answer the question from the agents list. For critical background automation, avoid relying on AskUserQuestion as the only recovery path; prefer external status artifacts or approval mechanisms that can be answered outside the thread view."
     }
   ],
   "status_summary": {
-    "open": 1446,
+    "open": 1447,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 129,
-    "high": 767,
+    "high": 768,
     "low": 111,
     "medium": 453
   },
   "lastUpdated": "2026-08-04",
   "stats": {
-    "total": 1460,
+    "total": 1461,
     "critical": 129,
-    "high": 767,
+    "high": 768,
     "medium": 453,
     "low": 111,
-    "open": 1446,
+    "open": 1447,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-04",
-  "total": 1460
+  "total": 1461
 }
