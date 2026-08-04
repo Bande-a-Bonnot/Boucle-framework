@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1462,
+  "count": 1463,
   "categories": {
-    "Hook behavior & events": 188,
+    "Hook behavior & events": 189,
     "Permission system": 130,
     "Hook bypass & evasion": 102,
     "MCP & plugin issues": 74,
@@ -187,7 +187,7 @@
   },
   "severity_counts": {
     "CRITICAL": 129,
-    "HIGH": 768,
+    "HIGH": 769,
     "LOW": 111,
     "MEDIUM": 454
   },
@@ -18828,30 +18828,43 @@
       "date_added": "2026-08-04",
       "description": "A reported Claude Code 2.1.215 macOS setup loaded a `PreToolUse` Bash hook from `/Library/Application Support/ClaudeCode/managed-settings.json` and executed it successfully, but the interactive `/hooks` browser still reported `0 hooks configured` and showed no `PreToolUse` hook. The runtime hook event showed `PreToolUse:Bash` success, narrowing the issue to UI discovery and audit visibility rather than hook execution. This is distinct from older managed-settings reports where managed hooks did not fire at all.",
       "workaround": "Do not use `/hooks` alone to audit organization-managed hook coverage. After adding managed hooks, trigger a harmless matching tool call and inspect hook events with `--include-hook-events` or another runtime log. For enterprise deployments, keep the managed settings file under configuration management and run a smoke test that proves each managed hook both loads and executes after Claude Code updates."
+    },
+    {
+      "id": "windows-hook-runner-can-execute-git-instead-of-configured-command",
+      "title": "Windows hook runner can execute git instead of the configured command.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/72636"
+      ],
+      "date_added": "2026-08-04",
+      "description": "A reported Claude Code 2.1.197 Windows setup showed every configured hook command failing in both Desktop and standalone CLI sessions. The session transcript recorded `hook_non_blocking_error` attachments whose `command` field matched the configured `.cmd` hook, but whose stdout was git's usage banner and exit code 1, so the configured hook never ran while Claude Code treated the event as non-blocking and continued without a visible warning.",
+      "workaround": "On Windows, do not assume hook enforcement is active just because settings.json lists hooks. Start a fresh session with a marker hook, confirm the marker file changes, and inspect the session transcript for `hook_non_blocking_error` entries or unexpected git output. Keep critical enforcement outside Claude Code hooks, or run from a platform/build where the exact hook command path has been proven to execute."
     }
   ],
   "status_summary": {
-    "open": 1448,
+    "open": 1449,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 129,
-    "high": 768,
+    "high": 769,
     "low": 111,
     "medium": 454
   },
   "lastUpdated": "2026-08-04",
   "stats": {
-    "total": 1462,
+    "total": 1463,
     "critical": 129,
-    "high": 768,
+    "high": 769,
     "medium": 454,
     "low": 111,
-    "open": 1448,
+    "open": 1449,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-04",
-  "total": 1462
+  "total": 1463
 }
