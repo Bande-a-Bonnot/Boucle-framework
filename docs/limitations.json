@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1463,
+  "count": 1464,
   "categories": {
     "Hook behavior & events": 189,
     "Permission system": 130,
@@ -156,6 +156,7 @@
     "Plugins & MCP": 1,
     "Plugins & MCP tools": 1,
     "plugins-and-skills": 1,
+    "Project configuration & memory": 1,
     "remote": 1,
     "Remote & trigger issues": 1,
     "Remote and agents": 1,
@@ -187,7 +188,7 @@
   },
   "severity_counts": {
     "CRITICAL": 129,
-    "HIGH": 769,
+    "HIGH": 770,
     "LOW": 111,
     "MEDIUM": 454
   },
@@ -18841,30 +18842,43 @@
       "date_added": "2026-08-04",
       "description": "A reported Claude Code 2.1.197 Windows setup showed every configured hook command failing in both Desktop and standalone CLI sessions. The session transcript recorded `hook_non_blocking_error` attachments whose `command` field matched the configured `.cmd` hook, but whose stdout was git's usage banner and exit code 1, so the configured hook never ran while Claude Code treated the event as non-blocking and continued without a visible warning.",
       "workaround": "On Windows, do not assume hook enforcement is active just because settings.json lists hooks. Start a fresh session with a marker hook, confirm the marker file changes, and inspect the session transcript for `hook_non_blocking_error` entries or unexpected git output. Keep critical enforcement outside Claude Code hooks, or run from a platform/build where the exact hook command path has been proven to execute."
+    },
+    {
+      "id": "renamed-project-root-can-drop-project-scoped-hooks-settings-and-memory",
+      "title": "Renamed project roots can drop project-scoped hooks, settings, and memory.",
+      "category": "Project configuration & memory",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/83146"
+      ],
+      "date_added": "2026-08-04",
+      "description": "A reported Claude Code 2.1.219 macOS desktop-app setup kept launching new sessions against an old project root after the directory was renamed. The per-session registry recorded the dead cwd, Claude Code silently failed to load the `.claude/settings.json` file at the real renamed root, project-scoped hooks and permissions did not intercept gated tool calls, project memory appeared empty because it was keyed by the old path, and the harness recreated the deleted old directory with `.claude/scheduled_tasks.lock`.",
+      "workaround": "After renaming or moving a project, start Claude Code from the real new path and verify the session cwd, project settings, hooks, and memory before trusting project-scoped guardrails. Trigger a harmless hook smoke test and inspect `~/.claude/sessions/*` or runtime hook events for the expected root. If a session still points at the old path, close old sessions, remove recreated stubs only after they are no longer held, and re-establish or migrate any project-scoped memory and settings under the new root."
     }
   ],
   "status_summary": {
-    "open": 1449,
+    "open": 1450,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 129,
-    "high": 769,
+    "high": 770,
     "low": 111,
     "medium": 454
   },
   "lastUpdated": "2026-08-04",
   "stats": {
-    "total": 1463,
+    "total": 1464,
     "critical": 129,
-    "high": 769,
+    "high": 770,
     "medium": 454,
     "low": 111,
-    "open": 1449,
+    "open": 1450,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-04",
-  "total": 1463
+  "total": 1464
 }
