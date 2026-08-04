@@ -14144,14 +14144,14 @@
     },
     {
       "id": "windows-ask-permission-decisions-can-fail-open-for-tools",
-      "title": "Windows ask permission decisions can fail open for tools",
+      "title": "Ask permission decisions can fail open for tools across platforms",
       "category": "Permission system",
       "severity": "CRITICAL",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/79356"
       ],
-      "description": "A reported Windows Claude Code 2.1.215 session in default permission mode ran tool calls immediately even when `permissions.ask` listed those tools and a PreToolUse hook returned `permissionDecision: \"ask\"` for a dangerous PowerShell command. The reporter also found Windows hook commands written in PowerShell syntax can be executed through bash unless wrapped explicitly, but fixing that hook invocation issue did not restore ask enforcement.",
-      "workaround": "On Windows, verify ask-mode enforcement with a disposable file before trusting `permissions.ask` or hook-returned `ask` decisions. Wrap PowerShell hooks with an explicit `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File ...` command, and make destructive guards fail closed by blocking rather than merely asking when practical. Keep OS-level backups or deny-by-default wrappers for commands that must not run without confirmation.",
+      "description": "A reported Claude Code 2.1.215 Windows session in default permission mode ran tool calls immediately even when `permissions.ask` listed those tools and a PreToolUse hook returned `permissionDecision: \"ask\"` for a dangerous PowerShell command. Follow-up reports on Claude Code 2.1.220 reproduced the same silent fail-open path on Windows and Linux/WSL2: the hook executed, changing only `ask` to `deny` blocked correctly, and settings-level `ask` rules appeared in `/permissions` but did not prompt.",
+      "workaround": "Treat `ask` as advisory until the installed Claude Code version passes a live smoke test on each platform and tool type you rely on. For destructive operations, prefer fail-closed `deny` hooks, OS-level permissions, git hooks, or external wrappers instead of `permissions.ask` or hook-returned `ask`. On Windows, also wrap PowerShell hooks with an explicit `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File ...` command so hook invocation failures are not mistaken for permission enforcement.",
       "status": "open",
       "date_added": "2026-07-20"
     },
