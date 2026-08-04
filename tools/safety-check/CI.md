@@ -18,6 +18,14 @@ The bash safety-check script needs `bash` and `python3` on the runner. The
 GitHub-hosted Ubuntu runner already provides both, and the example below also
 uses `curl` to download the checker.
 
+Network boundary: the workflow downloads
+`tools/safety-check/check.sh` from GitHub raw content, then runs it locally on
+the checked-out repository and CI user's home directory. The checker does not
+upload `settings.json`, hook files, shell history, repository contents, or
+safety summary output. Treat CI logs as the only publication surface: hook
+commands can print paths or stderr, so redact or minimize logs before sharing
+them outside the repository.
+
 Strict payload verification runs the hook commands from the checked settings.
 Install any interpreter those hooks name before calling `--verify --strict`,
 for example `jq` for framework shell hooks, `python3` for Python hooks, or
