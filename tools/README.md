@@ -11,6 +11,14 @@ defaults to this set.
 
 **macOS / Linux:**
 
+Install boundary: these commands download `tools/install.sh` or
+`tools/install.ps1` from GitHub raw content and run it locally. Installing adds
+managed hook files under `~/.claude/hooks` and updates
+`~/.claude/settings.json`; project settings are inspected from the project root
+when you verify, check, or run doctor. The installer does not upload your
+settings, hook files, shell history, repository contents, or safety summary
+output.
+
 ```bash
 root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$root"
