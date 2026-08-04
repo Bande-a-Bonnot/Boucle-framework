@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1457,
+  "count": 1458,
   "categories": {
     "Hook behavior & events": 187,
     "Permission system": 130,
@@ -31,9 +31,9 @@
     "Worktree": 13,
     "File system & paths": 12,
     "Bash & shell execution": 11,
+    "Permissions & safety": 11,
     "Plugin & channel system": 11,
     "UX & display": 11,
-    "Permissions & safety": 10,
     "hooks": 9,
     "Scheduled tasks": 9,
     "Telemetry & insights": 9,
@@ -187,7 +187,7 @@
   },
   "severity_counts": {
     "CRITICAL": 129,
-    "HIGH": 764,
+    "HIGH": 765,
     "LOW": 111,
     "MEDIUM": 453
   },
@@ -18763,30 +18763,43 @@
       "date_added": "2026-07-31",
       "description": "A WSL2 Claude Code report says project-level `permissions.deny` rules and a matching PreToolUse hook were both bypassed in sessions using global `permissions.defaultMode: \"auto\"` with sandboxing enabled. Bash and Read calls reached a denied path, and debug logging showed the hook process was never invoked.",
       "workaround": "Do not treat auto mode plus sandboxing as proof that deny rules or hooks are active. Test the exact protected path inside the same project session, log hook entry before pattern matching, and use OS or filesystem permissions for data that must not be read. If a protected path is reachable, restart from a minimal settings file and remove broad auto-approval until hooks are visibly firing."
+    },
+    {
+      "id": "pretooluse-allow-can-lose-to-matching-permissions-ask",
+      "title": "PreToolUse allow can lose to matching permissions.ask rules.",
+      "category": "Permissions & safety",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82451"
+      ],
+      "date_added": "2026-08-04",
+      "description": "A reported Claude Code 2.1.220 regression says a PreToolUse hook returning `hookSpecificOutput.permissionDecision: \"allow\"` no longer overrides a matching `permissions.ask` Bash glob. With the ask rule present, the same sentinel command was denied in headless `-p` runs or stopped at an interactive permission menu, while removing only the ask rule let the hook allow take effect.",
+      "workaround": "Do not use hook `allow` as the only way to clear a command that also matches `permissions.ask` until your installed Claude Code version proves the documented precedence order. For unattended runs, avoid overlapping ask globs for commands a hook must auto-approve, or replace the workflow with explicit narrow allow rules plus a hook that hard-denies unsafe variants. Keep an artifact-based smoke test for each auto-approved command shape."
     }
   ],
   "status_summary": {
-    "open": 1443,
+    "open": 1444,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 129,
-    "high": 764,
+    "high": 765,
     "low": 111,
     "medium": 453
   },
-  "lastUpdated": "2026-07-31",
+  "lastUpdated": "2026-08-04",
   "stats": {
-    "total": 1457,
+    "total": 1458,
     "critical": 129,
-    "high": 764,
+    "high": 765,
     "medium": 453,
     "low": 111,
-    "open": 1443,
+    "open": 1444,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-07-31",
-  "total": 1457
+  "last_updated": "2026-08-04",
+  "total": 1458
 }
