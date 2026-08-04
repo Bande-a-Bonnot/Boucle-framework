@@ -120,6 +120,10 @@ docs = {
     repo / "tools" / "safety-check" / "CI.md": [
         "cd \"$(git rev-parse --show-toplevel)\"",
         "working-directory: ${{ github.workspace }}",
+        "downloads `tools/safety-check/check.sh` from GitHub raw content",
+        "runs it locally on the checked-out repository and CI user's home directory",
+        "does not upload `settings.json`, hook files, shell history, repository contents, or safety summary output",
+        "Treat CI logs as the only publication surface",
         "Run it from the project root that contains `.claude/settings.json`",
         "does not execute the dangerous shell or git commands",
         "run `safety-check --verify --strict` on a runner that has both `bash` and `pwsh`",
