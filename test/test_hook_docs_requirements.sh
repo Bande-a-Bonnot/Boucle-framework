@@ -32,6 +32,8 @@ docs = {
         "ancestor project settings warning",
         "If you use `claude -w`, also install [worktree-guard]",
         "delete unmerged or unpushed commits",
+        "That path downloads `check.sh` from GitHub raw content",
+        "uploads no settings, hook files, shell history, repository contents, or summary output",
         "tools/install.sh | bash -s -- backup list",
         "tools/install.sh | bash -s -- restore settings.20260101_120000.json",
         "Run management commands from the same project root where you start Claude Code",
