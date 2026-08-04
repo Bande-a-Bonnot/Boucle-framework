@@ -371,6 +371,13 @@ Feeds synthetic `PreToolUse` payloads to any hook script and reports whether it 
 
 Claude [ignores explicit "do not edit" instructions](https://github.com/anthropics/claude-code/issues/41063) and edits files, runs ALTER TABLE, rebuilds Docker. CLAUDE.md rules alone cannot prevent this. Add to your CLAUDE.md and run `enforce-hooks.py --install-plugin`:
 
+This is read-only for the audited Claude Code session after the hook is
+installed. Setting up the boundary intentionally edits project files first: you
+add an `@enforced` rule to `CLAUDE.md` and register a project-level hook in
+`.claude/settings.json`. Use a disposable branch or worktree when the main
+checkout must stay untouched, and keep the settings backup until the audit is
+done.
+
 ```markdown
 ## Read-only mode @enforced
 - Never modify any files

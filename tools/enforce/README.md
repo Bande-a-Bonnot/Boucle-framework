@@ -236,6 +236,13 @@ The minimum for any project. Prevents the operations that cause the most damage 
 
 For sessions where Claude should analyze, test, and report without modifying anything. Addresses [#41063](https://github.com/anthropics/claude-code/issues/41063) (Claude ignores explicit read-only instructions and edits code, runs ALTER TABLE on staging, rebuilds Docker services).
 
+This is read-only for the audited Claude Code session after the hook is
+installed. Setting up the boundary intentionally edits project files first: you
+add an `@enforced` rule to `CLAUDE.md` and register a project-level hook in
+`.claude/settings.json`. Use a disposable branch or worktree when the main
+checkout must stay untouched, and keep the settings backup until the audit is
+done.
+
 For a copy-paste workflow with install, audit, full-boundary safety-check,
 smoke-test, and removal steps, see [Read-only audit mode](READ_ONLY_AUDIT.md).
 
