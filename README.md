@@ -37,6 +37,11 @@ cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash
 ```
 
+Audit boundary: this downloads `tools/safety-check/check.sh` from GitHub raw
+content and runs it locally on your current project and Claude Code settings.
+The checker does not upload your `settings.json`, hook files, shell history,
+repository contents, session logs, or safety summary output.
+
 Scores your Claude Code safety configuration from A to F and shows one-liner fixes for each gap. Add `--verify` to send representative hook payloads to each hook and confirm they actually block covered cases. Verification invokes the hook scripts with Claude-style JSON input; it does not execute the dangerous shell or git commands named in those payloads:
 
 ```sh
