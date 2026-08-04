@@ -38,6 +38,11 @@ To print only the bounded public support block, add `--summary-only`:
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
 ```
 
+Command boundary: this downloads `tools/safety-check/check.sh` from GitHub raw
+content, then runs it locally on your current project and Claude Code settings.
+The checker does not upload your `settings.json`, hook files, shell history,
+repository contents, session logs, or safety summary output.
+
 On native Windows, use the PowerShell installer verification path when you
 installed native `.ps1` hooks:
 

@@ -12,6 +12,10 @@ Run the bounded summary command first:
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
 ```
 
+That command downloads `tools/safety-check/check.sh` from GitHub raw content and
+runs it locally. It does not upload your `settings.json`, hook files, shell
+history, repository contents, session logs, or safety summary output.
+
 Then post a report shaped like this:
 
 ```text
