@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1465,
+  "count": 1466,
   "categories": {
     "Hook behavior & events": 190,
     "Permission system": 130,
@@ -34,8 +34,8 @@
     "Bash & shell execution": 11,
     "Plugin & channel system": 11,
     "UX & display": 11,
+    "Scheduled tasks": 10,
     "hooks": 9,
-    "Scheduled tasks": 9,
     "Telemetry & insights": 9,
     "auth": 8,
     "Configuration & settings": 8,
@@ -188,7 +188,7 @@
   },
   "severity_counts": {
     "CRITICAL": 129,
-    "HIGH": 771,
+    "HIGH": 772,
     "LOW": 111,
     "MEDIUM": 454
   },
@@ -18868,30 +18868,43 @@
       "date_added": "2026-08-04",
       "description": "A reported Claude Code 2.1.221 Windows Git Bash setup delivered file-tool hook input as absolute Windows paths with backslash separators, while common hook examples and POSIX shell guards often compare against forward-slash or `$PWD`-relative paths. A guard such as `[[ \"$FILE_PATH\" =~ ^src/ ]]` or `${FILE_PATH#\"$PWD\"/}` can therefore never match, exit 0, and silently allow writes that the hook author expected to deny.",
       "workaround": "For path-sensitive hooks, treat `tool_input.file_path` as platform-specific input. Normalize backslashes to forward slashes and normalize drive-letter paths before matching, then add Windows fixture payloads to hook tests so fail-open path comparisons are caught before production use."
+    },
+    {
+      "id": "mcp-requires-user-interaction-can-stall-unattended-routines",
+      "title": "MCP `requiresUserInteraction` tools can stall unattended Routines despite hook allow decisions.",
+      "category": "Scheduled tasks",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/83894"
+      ],
+      "date_added": "2026-08-04",
+      "description": "A reported Claude Code cloud Routine using a DesignSync MCP tool found that calls annotated with `_meta[\"anthropic/requiresUserInteraction\"]` still raise a human approval prompt inside an otherwise unattended Routine. The reporter's PreToolUse hook returned `allow` for both `finalize_plan` and `write_files`, and `permissions.allow` covered the MCP server name, but the annotated `finalize_plan` call prompted anyway while the unannotated write call did not. The behavior is consistent with the MCP annotation, but it contradicts a common reading of Routines as fully unattended sessions.",
+      "workaround": "Do not assume a Routine can complete unattended just because hooks or `permissions.allow` approve an MCP tool. Check whether each required MCP operation carries `anthropic/requiresUserInteraction`, run a fresh unattended canary after cloud-runner updates, and design workflows so any annotated approval is satisfied by a present human or moved into a separately reviewed manual step. Keep an external witness for Routine completion so a mid-run approval stall is detected quickly."
     }
   ],
   "status_summary": {
-    "open": 1451,
+    "open": 1452,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 129,
-    "high": 771,
+    "high": 772,
     "low": 111,
     "medium": 454
   },
   "lastUpdated": "2026-08-04",
   "stats": {
-    "total": 1465,
+    "total": 1466,
     "critical": 129,
-    "high": 771,
+    "high": 772,
     "medium": 454,
     "low": 111,
-    "open": 1451,
+    "open": 1452,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-04",
-  "total": 1465
+  "total": 1466
 }
