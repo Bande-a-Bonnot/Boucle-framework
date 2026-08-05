@@ -581,6 +581,7 @@ banned = {
     ],
     repo / "docs" / "recipes.html": [
         "Blocks Read, Edit, Write, and Bash access to matching paths",
+        "installs and verifies the seven standalone <code>.ps1</code> hooks",
     ],
     repo / "tools" / "enforce" / "README.md": [
         "The current docs still describe",
