@@ -4403,6 +4403,65 @@ assert "MCP warning included in copy-paste summary" "Issue: PreToolUse hooks tar
 export HOME="$SAVE_HOME"
 rm -rf "$TMPDIR_MCP_HOOK"
 
+# === Test: Agent/Task PreToolUse hooks warn at user and project scope ===
+TMPDIR_AGENT_TASK_HOOK=$(mktemp -d)
+SAVE_HOME="$HOME"
+export HOME="$TMPDIR_AGENT_TASK_HOOK"
+mkdir -p "$TMPDIR_AGENT_TASK_HOOK/.claude" "$TMPDIR_AGENT_TASK_HOOK/project/.claude"
+cat > "$TMPDIR_AGENT_TASK_HOOK/.claude/settings.json" << 'AGENTTASKUSER'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Agent|Task",
+        "hooks": [{"type": "command", "command": "echo deny"}]
+      }
+    ]
+  }
+}
+AGENTTASKUSER
+cat > "$TMPDIR_AGENT_TASK_HOOK/project/.claude/settings.json" << 'AGENTTASKPROJECT'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "echo deny"}]
+      }
+    ]
+  }
+}
+AGENTTASKPROJECT
+AGENT_TASK_USER_OUTPUT=$(cd "$TMPDIR_AGENT_TASK_HOOK/project" && bash "$CHECK_SCRIPT" 2>&1) || true
+assert "Agent/Task warning shown" "PreToolUse hooks target Agent or Task" "$AGENT_TASK_USER_OUTPUT"
+assert "Agent/Task warning mentions async dispatch" "async PreToolUse decisions can arrive after Agent or Task dispatch" "$AGENT_TASK_USER_OUTPUT"
+assert "Agent/Task warning includes limitation guidance" "pretooluse-agent-task-async-results-can-arrive-after-dispatch" "$AGENT_TASK_USER_OUTPUT"
+assert "Agent/Task warning included in copy-paste summary" "Issue: PreToolUse hooks target Agent or Task" "$AGENT_TASK_USER_OUTPUT"
+export HOME="$SAVE_HOME"
+rm -rf "$TMPDIR_AGENT_TASK_HOOK"
+
+# === Test: Bash-only PreToolUse matcher does not trigger Agent/Task warning ===
+TMPDIR_BASH_ONLY_HOOK=$(mktemp -d)
+SAVE_HOME="$HOME"
+export HOME="$TMPDIR_BASH_ONLY_HOOK"
+mkdir -p "$TMPDIR_BASH_ONLY_HOOK/.claude"
+cat > "$TMPDIR_BASH_ONLY_HOOK/.claude/settings.json" << 'BASHONLY'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "echo deny"}]
+      }
+    ]
+  }
+}
+BASHONLY
+BASH_ONLY_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "Bash-only matcher has no Agent/Task warning" "PreToolUse hooks target Agent or Task" "$BASH_ONLY_OUTPUT"
+export HOME="$SAVE_HOME"
+rm -rf "$TMPDIR_BASH_ONLY_HOOK"
+
 # === Results ===
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━"
