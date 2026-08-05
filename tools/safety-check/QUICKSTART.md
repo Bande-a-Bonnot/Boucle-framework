@@ -184,6 +184,8 @@ checks whether they block. It invokes the hook scripts; it does not execute the
 dangerous shell or git commands named inside those payloads:
 
 ```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
@@ -191,6 +193,8 @@ For CI or a scripted workstation check, fail the command when verification is
 inconclusive:
 
 ```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
 ```
 
@@ -251,6 +255,8 @@ Use the first matching row from the summary as your next repair:
 Run these checks before reinstalling hooks repeatedly:
 
 ```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 unset IS_DEMO CLAUDE_CODE_SIMPLE
 command -v python3 >/dev/null || { echo "Install python3 before validating settings.json"; exit 1; }
 test ! -f ~/.claude/settings.json || python3 -m json.tool ~/.claude/settings.json >/dev/null
@@ -374,6 +380,8 @@ used, verification result, residual warnings, and next recheck trigger.
 Run verification before asking for help:
 
 ```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
@@ -381,6 +389,8 @@ To avoid copying from the full local report, print only the bounded public
 support block:
 
 ```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
 ```
 
