@@ -39,7 +39,8 @@ Run this after installing hooks, updating Claude Code, or changing
 `~/.claude/settings.json`:
 
 ```sh
-cd "$(git rev-parse --show-toplevel)"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
 ```
 
@@ -47,9 +48,10 @@ A passing workstation check means the installed `PreToolUse` hooks blocked their
 representative payloads in the current shell environment. Re-run it from the
 same shell or terminal profile you use to start Claude Code, because environment
 flags such as `IS_DEMO` and `CLAUDE_CODE_SIMPLE` can change hook behavior.
-Run it from the project root that contains `.claude/settings.json`; a
-subdirectory run can miss project hooks that Claude Code also skips when started
-from that subdirectory.
+The fallback above moves to the git root when there is one and otherwise stays
+in the directory you use for Claude Code. Run it from the project root that
+contains `.claude/settings.json`; a subdirectory run can miss project hooks
+that Claude Code also skips when started from that subdirectory.
 Safety-check invokes the configured hook scripts with Claude-style JSON payloads;
 it does not execute the dangerous shell or git commands named inside those
 payloads.

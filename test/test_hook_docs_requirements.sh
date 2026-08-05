@@ -168,7 +168,9 @@ docs = {
         "parameter value triggered stricter matching before widening allow rules",
     ],
     repo / "tools" / "safety-check" / "CI.md": [
-        "cd \"$(git rev-parse --show-toplevel)\"",
+        "repo_root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"",
+        "cd \"$repo_root\"",
+        "The fallback above moves to the git root when there is one and otherwise stays",
         "working-directory: ${{ github.workspace }}",
         "downloads `tools/safety-check/check.sh` from GitHub raw content",
         "runs it locally on the checked-out repository and CI user's home directory",
