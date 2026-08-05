@@ -286,6 +286,7 @@ Beyond the scored checks, safety-check detects platform bugs and configuration p
 | Spaces in HOME | Hook commands word-split when user profile path has spaces ([#40084](https://github.com/anthropics/claude-code/issues/40084)) |
 | Stop hook isolation | Stop/PostToolUse hooks fire across all parallel sessions ([#39530](https://github.com/anthropics/claude-code/issues/39530)) |
 | updatedInput + Agent | `updatedInput` silently ignored for Agent tool calls ([#39814](https://github.com/anthropics/claude-code/issues/39814)) |
+| Agent/Task PreToolUse | Async `PreToolUse` decisions for Agent or Task may arrive after spawned work dispatches. Treat those hooks as advisory, and put hard enforcement on child-visible tools such as Bash, Write, or Edit. |
 | Worktree isolation | Agent `isolation: "worktree"` silently runs in main repo ([#39886](https://github.com/anthropics/claude-code/issues/39886)) |
 | Subagent hook bypass | Hooks may be skipped or their block decisions ignored in subagent tool calls ([#40580](https://github.com/anthropics/claude-code/issues/40580), [#78970](https://github.com/anthropics/claude-code/issues/78970)) |
 | WorktreeCreate ignored | EnterWorktree tool does not fire WorktreeCreate/WorktreeRemove hooks ([#36205](https://github.com/anthropics/claude-code/issues/36205)) |
