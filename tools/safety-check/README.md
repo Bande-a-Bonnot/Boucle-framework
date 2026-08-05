@@ -307,7 +307,7 @@ safety-check detects hooks across all Claude Code event types: PreToolUse, PostT
 
 ## Requirements
 
-- Bash 4+
+- Bash 3.2+ (the default `/bin/bash` on macOS is enough for the audit)
 - Python 3 (for JSON parsing of settings.json)
 - Works on macOS and Linux
 - On Windows, run under WSL or Git Bash. The PowerShell installer can install,
