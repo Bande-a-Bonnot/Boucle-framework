@@ -592,6 +592,60 @@ if [ -n "$MCP_HOOK_MATCHERS" ]; then
     summary_issue "$_WARN"
 fi
 
+# Async PreToolUse decisions cannot reliably block Agent or Task dispatch.
+# Keep this detector narrow so ordinary Bash and other tool matchers are not
+# reported as affected by the Agent/Task limitation.
+detect_agent_task_pretooluse_matchers() {
+    local file="$1"
+    local source_label="$2"
+    [ -f "$file" ] || return 0
+    python3 - "$file" "$source_label" << 'PYEOF_AGENT_TASK'
+import json
+import re
+import sys
+
+try:
+    with open(sys.argv[1]) as f:
+        settings = json.load(f)
+except Exception:
+    sys.exit(0)
+
+source = sys.argv[2]
+matches = []
+
+def sanitize_matcher(value):
+    # Keep the matcher readable while preventing terminal control characters
+    # from affecting warning or summary output.
+    return "".join(
+        ch if (ord(ch) >= 0x20 and ord(ch) != 0x7F) else f"\\x{ord(ch):02x}"
+        for ch in value
+    )
+
+for entry in settings.get("hooks", {}).get("PreToolUse", []):
+    raw_matcher = str(entry.get("matcher", ""))
+    if re.search(r"(?i)(?<![A-Za-z])(Agent|Task)(?![A-Za-z])", raw_matcher):
+        matches.append(sanitize_matcher(raw_matcher) or "<empty matcher>")
+
+if matches:
+    print(f"{source}:{', '.join(matches[:3])}")
+PYEOF_AGENT_TASK
+}
+
+AGENT_TASK_HOOK_MATCHERS=""
+AGENT_TASK_USER_MATCHERS=$(detect_agent_task_pretooluse_matchers "$SETTINGS_FILE" "user" 2>/dev/null || true)
+AGENT_TASK_PROJECT_MATCHERS=$(detect_agent_task_pretooluse_matchers "$PROJECT_SETTINGS" "project" 2>/dev/null || true)
+if [ -n "$AGENT_TASK_USER_MATCHERS" ]; then
+    AGENT_TASK_HOOK_MATCHERS="$AGENT_TASK_HOOK_MATCHERS $AGENT_TASK_USER_MATCHERS"
+fi
+if [ -n "$AGENT_TASK_PROJECT_MATCHERS" ]; then
+    AGENT_TASK_HOOK_MATCHERS="$AGENT_TASK_HOOK_MATCHERS $AGENT_TASK_PROJECT_MATCHERS"
+fi
+if [ -n "$AGENT_TASK_HOOK_MATCHERS" ]; then
+    _WARN="PreToolUse hooks target Agent or Task:${AGENT_TASK_HOOK_MATCHERS}. Claude Code has reported that async PreToolUse decisions can arrive after Agent or Task dispatch, so they may not reliably block spawned work. Treat this as an advisory and use the known limitation guidance for enforcement boundaries. (see https://framework.boucle.sh/limitations.html#pretooluse-agent-task-async-results-can-arrive-after-dispatch)"
+    WARNINGS+=("$_WARN")
+    summary_issue "$_WARN"
+fi
+
 # Hooks using exit code 2 for deny may be silently ignored (claude-code#37210)
 # Exit 2 can be treated as a hook crash, causing Claude to proceed despite the deny.
 # Correct pattern: exit 0 with hookSpecificOutput JSON on stdout.
