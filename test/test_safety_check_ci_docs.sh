@@ -19,6 +19,8 @@ snippets = [
     "The Ubuntu workflow above does not install",
     "install.ps1 verify",
     "Git Bash, WSL, or a runner with bash",
+    "Keep the same repo-policy guard here as in the",
+    "unless the job is intentionally testing user-level hooks installed",
     "Do not add `install.sh recommended` to a repository CI job",
     "The installer writes user-level hooks under the CI",
     "installer smoke test",
