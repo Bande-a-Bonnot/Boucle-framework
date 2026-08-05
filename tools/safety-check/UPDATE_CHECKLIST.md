@@ -16,10 +16,26 @@ Use the same terminal profile and project root you use for real Claude Code
 sessions. A clean check from a different shell or subdirectory does not prove
 the session you are about to trust.
 
+If this is a git checkout, move to the repo root first; otherwise stay in the
+directory you use for Claude Code:
+
+```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
+```
+
+On native Windows:
+
+```powershell
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
+```
+
 ## Before updating
 
-Capture the current version and bounded summary before changing anything. Those
-two lines make post-update regressions easier to compare or report:
+Capture the current version and bounded summary before changing anything from
+that same root. Those two lines make post-update regressions easier to compare
+or report:
 
 ```sh
 claude --version 2>/dev/null || printf 'claude CLI not found on PATH\n'
