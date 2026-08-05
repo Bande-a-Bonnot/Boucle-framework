@@ -47,6 +47,8 @@ On native Windows, use the PowerShell installer verification path when you
 installed native `.ps1` hooks:
 
 ```powershell
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
 

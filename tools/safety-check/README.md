@@ -11,6 +11,8 @@ the native PowerShell hooks, use `install.ps1 verify` for payload checks that do
 not require bash:
 
 ```powershell
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
 
@@ -139,6 +141,8 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 On native Windows:
 
 ```powershell
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
 Remove-Item Env:IS_DEMO -ErrorAction SilentlyContinue
 Remove-Item Env:CLAUDE_CODE_SIMPLE -ErrorAction SilentlyContinue
 if (Test-Path "$HOME/.claude/settings.json") { Get-Content "$HOME/.claude/settings.json" | ConvertFrom-Json | Out-Null }
