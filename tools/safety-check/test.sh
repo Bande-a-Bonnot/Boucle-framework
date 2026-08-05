@@ -4425,7 +4425,7 @@ cat > "$TMPDIR_AGENT_TASK_HOOK/project/.claude/settings.json" << 'AGENTTASKPROJE
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Task",
+        "matcher": "Task\u001b[31m",
         "hooks": [{"type": "command", "command": "echo deny"}]
       }
     ]
@@ -4434,7 +4434,9 @@ cat > "$TMPDIR_AGENT_TASK_HOOK/project/.claude/settings.json" << 'AGENTTASKPROJE
 AGENTTASKPROJECT
 AGENT_TASK_USER_OUTPUT=$(cd "$TMPDIR_AGENT_TASK_HOOK/project" && bash "$CHECK_SCRIPT" 2>&1) || true
 assert "Agent/Task warning shown" "PreToolUse hooks target Agent or Task" "$AGENT_TASK_USER_OUTPUT"
+assert "user-level Agent/Task warning shown" "user:Agent|Task" "$AGENT_TASK_USER_OUTPUT"
 assert "project-level Agent/Task warning shown" "project:Task" "$AGENT_TASK_USER_OUTPUT"
+assert "control character escaped in matcher output" "\\x1b[31m" "$AGENT_TASK_USER_OUTPUT"
 assert "Agent/Task warning mentions async dispatch" "async PreToolUse decisions can arrive after Agent or Task dispatch" "$AGENT_TASK_USER_OUTPUT"
 assert "Agent/Task warning includes limitation guidance" "pretooluse-agent-task-async-results-can-arrive-after-dispatch" "$AGENT_TASK_USER_OUTPUT"
 assert "Agent/Task warning included in copy-paste summary" "Issue: PreToolUse hooks target Agent or Task" "$AGENT_TASK_USER_OUTPUT"

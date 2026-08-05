@@ -612,10 +612,19 @@ except Exception:
 
 source = sys.argv[2]
 matches = []
+
+def sanitize_matcher(value):
+    # Keep the matcher readable while preventing terminal control characters
+    # from affecting warning or summary output.
+    return "".join(
+        ch if (ord(ch) >= 0x20 and ord(ch) != 0x7F) else f"\\x{ord(ch):02x}"
+        for ch in value
+    )
+
 for entry in settings.get("hooks", {}).get("PreToolUse", []):
-    matcher = str(entry.get("matcher", ""))
-    if re.search(r"(?i)(?<![A-Za-z])(Agent|Task)(?![A-Za-z])", matcher):
-        matches.append(matcher or "<empty matcher>")
+    raw_matcher = str(entry.get("matcher", ""))
+    if re.search(r"(?i)(?<![A-Za-z])(Agent|Task)(?![A-Za-z])", raw_matcher):
+        matches.append(sanitize_matcher(raw_matcher) or "<empty matcher>")
 
 if matches:
     print(f"{source}:{', '.join(matches[:3])}")
