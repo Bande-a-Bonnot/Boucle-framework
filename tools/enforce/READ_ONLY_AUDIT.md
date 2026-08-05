@@ -166,6 +166,48 @@ python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
+If there was no pre-audit settings file, there will be no
+`.claude/settings.json.pre-read-only.bak` to restore. In that case, remove only
+the temporary enforce hook entry and generated plugin files:
+
+```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
+python3 - <<'PY'
+import json
+from pathlib import Path
+
+path = Path(".claude/settings.json")
+if not path.exists():
+    raise SystemExit(0)
+settings = json.loads(path.read_text())
+hooks = settings.get("hooks", {})
+pre_tool = hooks.get("PreToolUse", [])
+for entry in pre_tool:
+    entry["hooks"] = [
+        hook for hook in entry.get("hooks", [])
+        if not hook.get("command", "").endswith("enforce-pretooluse.sh")
+    ]
+hooks["PreToolUse"] = [
+    entry for entry in pre_tool
+    if entry.get("hooks") or entry.get("matcher", "") != ""
+]
+if not hooks["PreToolUse"]:
+    hooks.pop("PreToolUse")
+if not hooks:
+    settings.pop("hooks", None)
+path.write_text(json.dumps(settings, indent=2) + "\n")
+PY
+rm -f .claude/hooks/enforce-hooks.py .claude/hooks/enforce-pretooluse.sh
+rmdir .claude/hooks .claude 2>/dev/null || true
+python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
+```
+
+Use the cleanup snippet above only for the temporary plugin files created by
+this recipe. If `.claude/settings.json` contains other project settings, keep
+the file and remove only the `enforce-pretooluse.sh` hook entry.
+
 Expect the strict audit to exit non-zero if `CLAUDE.md` still contains the
 `Read-only mode @enforced` section, because the policy is no longer covered by
 an active hook. Also expect it to fail if the restored settings snapshot

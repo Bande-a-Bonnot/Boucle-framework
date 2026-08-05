@@ -303,6 +303,38 @@ Boundary: install hooks before trusting the hook layer.
 <span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
 <span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify</code>
                     </div>
+                    <p class="brief">If there was no pre-audit settings file, remove only the temporary enforce hook entry and generated plugin files. Keep <code>.claude/settings.json</code> if it contains other project settings.</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> python3 - &lt;&lt;'PY'
+import json
+from pathlib import Path
+
+path = Path(".claude/settings.json")
+if not path.exists():
+    raise SystemExit(0)
+settings = json.loads(path.read_text())
+hooks = settings.get("hooks", {})
+pre_tool = hooks.get("PreToolUse", [])
+for entry in pre_tool:
+    entry["hooks"] = [
+        hook for hook in entry.get("hooks", [])
+        if not hook.get("command", "").endswith("enforce-pretooluse.sh")
+    ]
+hooks["PreToolUse"] = [
+    entry for entry in pre_tool
+    if entry.get("hooks") or entry.get("matcher", "") != ""
+]
+if not hooks["PreToolUse"]:
+    hooks.pop("PreToolUse")
+if not hooks:
+    settings.pop("hooks", None)
+path.write_text(json.dumps(settings, indent=2) + "\n")
+PY
+<span class="prompt-char">$</span> rm -f .claude/hooks/enforce-hooks.py .claude/hooks/enforce-pretooluse.sh
+<span class="prompt-char">$</span> rmdir .claude/hooks .claude 2&gt;/dev/null || true
+<span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify</code>
+                    </div>
                     <p class="brief" style="color: var(--muted-color);">This is not a sandbox. Hooks cover Claude Code tool calls, not every way a process can affect a system. For production data or secrets, combine this with OS permissions, backups, containers, or a disposable clone. Full copy-paste guide: <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/enforce/READ_ONLY_AUDIT.md">read-only audit mode</a>.</p>
                 </div>
 
