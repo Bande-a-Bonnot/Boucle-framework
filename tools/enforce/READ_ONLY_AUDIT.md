@@ -33,10 +33,13 @@ rules but will not activate them.
 
 ## 2. Install the dynamic hook
 
-Run these commands from the project root, next to the `CLAUDE.md` you edited:
+Run these commands from the project root, next to the `CLAUDE.md` you edited.
+If the directory is in a git checkout, the first two lines move to the repo
+root. Outside git, they keep you in the current project directory:
 
 ```sh
-cd "$(git rev-parse --show-toplevel)"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 mkdir -p .claude
 test ! -f .claude/settings.json || cp .claude/settings.json .claude/settings.json.pre-read-only.bak
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/enforce-hooks.py -o /tmp/enforce-hooks.py
@@ -126,7 +129,8 @@ To leave read-only mode, remove or rename the `Read-only mode @enforced` section
 in `CLAUDE.md`, then verify the boundary from the same project root:
 
 ```sh
-cd "$(git rev-parse --show-toplevel)"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
@@ -151,7 +155,8 @@ pre-audit state, or remove the `enforce-pretooluse.sh` hook from Claude Code's
 hooks UI. Then re-run the same checks:
 
 ```sh
-cd "$(git rev-parse --show-toplevel)"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 test ! -f .claude/settings.json.pre-read-only.bak || cp .claude/settings.json.pre-read-only.bak .claude/settings.json
 python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
