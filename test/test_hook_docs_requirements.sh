@@ -288,6 +288,7 @@ docs = {
         "same project root you use to start Claude Code",
         "git rev-parse --show-toplevel",
         'if ($root) { Set-Location $root }',
+        "before changing anything from",
         "Capture the current version and bounded summary before changing anything",
         "Command boundary: this downloads `tools/safety-check/check.sh` from GitHub raw",
         "runs it locally on your current project and Claude Code settings",
