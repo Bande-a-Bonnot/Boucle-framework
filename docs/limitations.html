@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1473</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-04.</span></p>
+        <p class="subtitle"><span id="total-count">1477</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-05.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -16391,9 +16391,57 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before following Stop-hook git advice, verify whether the reported commits are absent from every remote ref with `git rev-list HEAD --not --remotes --count` and inspect the commit author/committer. Do not amend, reset-author, force-push, or recreate a deleted PR branch solely because the Stop hook reported `$upstream..HEAD` output after a merge. Prefer checks that scope to commits reachable from HEAD and from no remote ref.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/83490" target="_blank">#83490</a>, <a href="https://github.com/anthropics/claude-code/issues/83924" target="_blank">#83924</a>, <a href="https://github.com/anthropics/claude-code/issues/69586" target="_blank">#69586</a>, <a href="https://github.com/anthropics/claude-code/issues/82624" target="_blank">#82624</a></div>
         </div>
-        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="83915 29881 3113" id="stop-hooks-do-not-cover-tool-terminated-turns" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="83353 66203 15897" id="pretooluse-updatedinput-conflicts-are-latency-races" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1473</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Conflicting PreToolUse updatedInput rewrites can resolve by hook latency.</h3>
+            <p>A Claude Code 2.1.220 report with a published probe harness says that when multiple PreToolUse hooks return `updatedInput` for the same tool call, the rewrite that executes is the one from the hook that finishes last. Skewed sleep probes ruled out both registration order and scope precedence, and each hook reportedly receives the original `tool_input`, so a guard can approve one command while a slower sibling hook rewrites the call to another command it never inspected.</p>
+                        <!-- workaround:pretooluse-updatedinput-conflicts-are-latency-races -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not stack multiple rewriting PreToolUse hooks for the same matcher unless their conflict behavior is explicitly tested on the installed Claude Code version. Prefer one canonical rewrite hook per tool, make sibling hooks deny-only or observe-only, and add latency-skewed probes that prove which rewritten command actually executes before relying on hook composition for safety.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/83353" target="_blank">#83353</a>, <a href="https://github.com/anthropics/claude-code/issues/66203" target="_blank">#66203</a>, <a href="https://github.com/anthropics/claude-code/issues/15897" target="_blank">#15897</a></div>
+        </div>
+        <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="83195 73380" id="pretooluse-agent-task-async-results-can-arrive-after-dispatch" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1474</span>
+                <span class="kl-cat">Subagent &amp; spawned agents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Async PreToolUse Agent/Task decisions can arrive after subagent dispatch completes.</h3>
+            <p>A Claude Code 2.1.220 debug-log report says an async PreToolUse hook matching Agent/Task was registered before an Agent call, but the subagent model request started immediately and completed before the harness checked the hook&#x27;s stdout about 140 ms after `tool_dispatch_end`. A deny or exit-2 decision from that hook shape therefore cannot prevent the already-completed subagent dispatch.</p>
+                        <!-- workaround:pretooluse-agent-task-async-results-can-arrive-after-dispatch -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on async PreToolUse hooks to block Task or Agent dispatch. Put subagent allowlists, cost routing, and data-access gates in a synchronous path that is proven to delay `tool_dispatch_start`, or avoid spawning the subagent until an external policy check has already approved the request. Verify with `--debug hooks` timing, not only by testing the hook script in isolation.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/83195" target="_blank">#83195</a>, <a href="https://github.com/anthropics/claude-code/issues/73380" target="_blank">#73380</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook execution &amp; lifecycle" data-issues="83396" id="async-stop-hooks-can-be-killed-at-session-teardown" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1475</span>
+                <span class="kl-cat">Hook execution &amp; lifecycle</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Async Stop hooks can be killed at session teardown before finishing.</h3>
+            <p>A Windows headless Claude Code 2.1.220 report says a Stop hook configured with `async: true` writes a start marker, sleeps for eight seconds, and never writes its completion marker because the process is killed when the session tears down. The reported sleep is far below the documented async budget, so the budget alone does not prove background Stop-hook work will finish after `claude -p` exits.</p>
+                        <!-- workaround:async-stop-hooks-can-be-killed-at-session-teardown -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not put critical cleanup, audit upload, or durable notification work only in an async Stop hook that must outlive the session. If post-session work must finish, spawn and supervise a detached worker yourself, write a receipt before returning, and verify the receipt from outside Claude Code rather than assuming the async hook budget was honored.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/83396" target="_blank">#83396</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="83266 82546 59584" id="goal-stop-hook-can-unregister-while-background-work-runs" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1476</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>`/goal` Stop hooks can unregister while background work is live and never re-evaluate.</h3>
+            <p>A Claude Code 2.1.220 report says `/goal` installs a session Stop hook that skipped 24 of 28 stops while background tasks were live, then never re-evaluated when those tasks later terminated, leaving an autonomous session idle for more than four hours. A follow-up comment inspecting the shipped bundle narrowed the mechanism to removing the session Stop hook when the task registry has running or pending work, with no corresponding re-add after the registry drains.</p>
+                        <!-- workaround:goal-stop-hook-can-unregister-while-background-work-runs -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat the `/goal active` display as proof that the goal Stop hook is still registered. Avoid long-lived background tasks in sessions whose progress depends on `/goal`, reissue `/goal` after any background monitor or subagent task runs, and keep an external idle watchdog that checks transcripts for goal evaluations rather than trusting the statusline alone.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/83266" target="_blank">#83266</a>, <a href="https://github.com/anthropics/claude-code/issues/82546" target="_blank">#82546</a>, <a href="https://github.com/anthropics/claude-code/issues/59584" target="_blank">#59584</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="83915 29881 3113" id="stop-hooks-do-not-cover-tool-terminated-turns" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1477</span>
                 <span class="kl-cat">Hook behavior &amp; events</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>

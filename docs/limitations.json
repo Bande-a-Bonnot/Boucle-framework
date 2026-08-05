@@ -1,12 +1,12 @@
 {
   "version": "0.13.0",
-  "count": 1473,
+  "count": 1477,
   "categories": {
-    "Hook behavior & events": 194,
+    "Hook behavior & events": 196,
     "Permission system": 130,
     "Hook bypass & evasion": 102,
     "MCP & plugin issues": 75,
-    "Subagent & spawned agents": 69,
+    "Subagent & spawned agents": 70,
     "Desktop & IDE integration": 53,
     "TUI & display": 35,
     "CLI & terminal": 31,
@@ -52,10 +52,10 @@
     "Model routing & identity": 6,
     "CLI / TUI rendering": 5,
     "Cost & usage": 5,
+    "Hook execution & lifecycle": 5,
     "Model behavior & compliance": 5,
     "Skills / slash commands": 5,
     "Browser automation": 4,
-    "Hook execution & lifecycle": 4,
     "MCP & plugins": 4,
     "Model behavior & instructions": 4,
     "Performance & resources": 4,
@@ -188,9 +188,9 @@
   },
   "severity_counts": {
     "CRITICAL": 129,
-    "HIGH": 779,
+    "HIGH": 782,
     "LOW": 111,
-    "MEDIUM": 454
+    "MEDIUM": 455
   },
   "entries": [
     {
@@ -18975,6 +18975,63 @@
       "workaround": "Before following Stop-hook git advice, verify whether the reported commits are absent from every remote ref with `git rev-list HEAD --not --remotes --count` and inspect the commit author/committer. Do not amend, reset-author, force-push, or recreate a deleted PR branch solely because the Stop hook reported `$upstream..HEAD` output after a merge. Prefer checks that scope to commits reachable from HEAD and from no remote ref."
     },
     {
+      "id": "pretooluse-updatedinput-conflicts-are-latency-races",
+      "title": "Conflicting PreToolUse updatedInput rewrites can resolve by hook latency.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/83353",
+        "https://github.com/anthropics/claude-code/issues/66203",
+        "https://github.com/anthropics/claude-code/issues/15897"
+      ],
+      "date_added": "2026-08-05",
+      "description": "A Claude Code 2.1.220 report with a published probe harness says that when multiple PreToolUse hooks return `updatedInput` for the same tool call, the rewrite that executes is the one from the hook that finishes last. Skewed sleep probes ruled out both registration order and scope precedence, and each hook reportedly receives the original `tool_input`, so a guard can approve one command while a slower sibling hook rewrites the call to another command it never inspected.",
+      "workaround": "Do not stack multiple rewriting PreToolUse hooks for the same matcher unless their conflict behavior is explicitly tested on the installed Claude Code version. Prefer one canonical rewrite hook per tool, make sibling hooks deny-only or observe-only, and add latency-skewed probes that prove which rewritten command actually executes before relying on hook composition for safety."
+    },
+    {
+      "id": "pretooluse-agent-task-async-results-can-arrive-after-dispatch",
+      "title": "Async PreToolUse Agent/Task decisions can arrive after subagent dispatch completes.",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/83195",
+        "https://github.com/anthropics/claude-code/issues/73380"
+      ],
+      "date_added": "2026-08-05",
+      "description": "A Claude Code 2.1.220 debug-log report says an async PreToolUse hook matching Agent/Task was registered before an Agent call, but the subagent model request started immediately and completed before the harness checked the hook's stdout about 140 ms after `tool_dispatch_end`. A deny or exit-2 decision from that hook shape therefore cannot prevent the already-completed subagent dispatch.",
+      "workaround": "Do not rely on async PreToolUse hooks to block Task or Agent dispatch. Put subagent allowlists, cost routing, and data-access gates in a synchronous path that is proven to delay `tool_dispatch_start`, or avoid spawning the subagent until an external policy check has already approved the request. Verify with `--debug hooks` timing, not only by testing the hook script in isolation."
+    },
+    {
+      "id": "async-stop-hooks-can-be-killed-at-session-teardown",
+      "title": "Async Stop hooks can be killed at session teardown before finishing.",
+      "category": "Hook execution & lifecycle",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/83396"
+      ],
+      "date_added": "2026-08-05",
+      "description": "A Windows headless Claude Code 2.1.220 report says a Stop hook configured with `async: true` writes a start marker, sleeps for eight seconds, and never writes its completion marker because the process is killed when the session tears down. The reported sleep is far below the documented async budget, so the budget alone does not prove background Stop-hook work will finish after `claude -p` exits.",
+      "workaround": "Do not put critical cleanup, audit upload, or durable notification work only in an async Stop hook that must outlive the session. If post-session work must finish, spawn and supervise a detached worker yourself, write a receipt before returning, and verify the receipt from outside Claude Code rather than assuming the async hook budget was honored."
+    },
+    {
+      "id": "goal-stop-hook-can-unregister-while-background-work-runs",
+      "title": "`/goal` Stop hooks can unregister while background work is live and never re-evaluate.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/83266",
+        "https://github.com/anthropics/claude-code/issues/82546",
+        "https://github.com/anthropics/claude-code/issues/59584"
+      ],
+      "date_added": "2026-08-05",
+      "description": "A Claude Code 2.1.220 report says `/goal` installs a session Stop hook that skipped 24 of 28 stops while background tasks were live, then never re-evaluated when those tasks later terminated, leaving an autonomous session idle for more than four hours. A follow-up comment inspecting the shipped bundle narrowed the mechanism to removing the session Stop hook when the task registry has running or pending work, with no corresponding re-add after the registry drains.",
+      "workaround": "Do not treat the `/goal active` display as proof that the goal Stop hook is still registered. Avoid long-lived background tasks in sessions whose progress depends on `/goal`, reissue `/goal` after any background monitor or subagent task runs, and keep an external idle watchdog that checks transcripts for goal evaluations rather than trusting the statusline alone."
+    },
+    {
       "id": "stop-hooks-do-not-cover-tool-terminated-turns",
       "title": "Stop hooks do not fire for turns that end on a tool call.",
       "category": "Hook behavior & events",
@@ -18991,27 +19048,27 @@
     }
   ],
   "status_summary": {
-    "open": 1459,
+    "open": 1463,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 129,
-    "high": 779,
+    "high": 782,
     "low": 111,
-    "medium": 454
+    "medium": 455
   },
-  "lastUpdated": "2026-08-04",
+  "lastUpdated": "2026-08-05",
   "stats": {
-    "total": 1473,
+    "total": 1477,
     "critical": 129,
-    "high": 779,
-    "medium": 454,
+    "high": 782,
+    "medium": 455,
     "low": 111,
-    "open": 1459,
+    "open": 1463,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-08-04",
-  "total": 1473
+  "last_updated": "2026-08-05",
+  "total": 1477
 }
