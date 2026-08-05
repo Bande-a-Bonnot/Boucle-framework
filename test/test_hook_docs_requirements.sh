@@ -352,6 +352,8 @@ docs = {
         "Read-only Audit",
         "tools/safety-check/SUPPORT_EVIDENCE.md",
         "Safe Support Evidence",
+        "tools/safety-check/TRIAGE.md",
+        "Safety Summary Triage",
         "tools/safety-check/TEAM_HANDOFF.md",
         "Team Handoff",
         "application/atom+xml",
