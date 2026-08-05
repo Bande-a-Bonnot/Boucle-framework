@@ -153,7 +153,10 @@ If your repository settings point to native `.ps1` hook scripts, run
 This verifies the checked-in `.claude/settings.json` and hook scripts. Do not
 use `install.ps1 verify` as proof for repo-local hooks; it tests Boucle hooks
 installed under the CI user's `~/.claude` directory, not the hook commands in
-the checked-out repository.
+the checked-out repository. Keep the same repo-policy guard here as in the
+Ubuntu example: require checked-in `.claude/settings.json` and isolate `HOME`
+unless the job is intentionally testing user-level hooks installed during that
+same run.
 
 ```yaml
 jobs:
@@ -165,8 +168,11 @@ jobs:
         shell: bash
         working-directory: ${{ github.workspace }}
         run: |
+          test -f .claude/settings.json
+          tmp_home="$(mktemp -d)"
+          trap 'rm -rf "$tmp_home"' EXIT
           curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh -o /tmp/safety-check.sh
-          SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 bash /tmp/safety-check.sh --verify --strict
+          SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 HOME="$tmp_home" bash /tmp/safety-check.sh --verify --strict
 ```
 
 For native Windows user-level installs, `install.ps1 verify` tests Boucle's
