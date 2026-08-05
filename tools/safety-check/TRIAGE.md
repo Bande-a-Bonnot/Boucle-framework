@@ -49,6 +49,7 @@ Do not trust a good letter grade by itself. A setup with Grade A and
 | `FAIL-OPEN` | High | A configured hook did not block its representative dangerous payload. | Inspect or reinstall that hook before trusting the session. |
 | `skipped PreToolUse` | High | Safety-check could not prove that hook blocks anything. | Point the hook command at a script path that can be executed directly. |
 | `missing` or `not executable` hook file | High | Claude Code can call a hook command that no longer exists or cannot run. | Run `install.sh doctor`, then repair or reinstall the hook. |
+| `Issue: PreToolUse hooks target Agent or Task` | High | Async `PreToolUse` decisions for spawned work may arrive after `Agent` or `Task` dispatch, so they are not a reliable hard block for that boundary. | Treat those hooks as advisory for spawned work. Put hard enforcement on the child-visible tool boundary, such as `Bash`, `Write`, or `Edit`, and verify that boundary separately. |
 | Native `install.ps1 verify` warning count | High | A native PowerShell hook verifier warning means at least one installed hook did not pass its representative payload check. | Run `install.ps1 doctor`, then repair or reinstall the named hook. |
 | Native `install.ps1 verify` skipped count | Medium | Some native PowerShell hooks need repo context or a lifecycle event before they can be fully verified. | Treat the skipped hook as unproven for that boundary, or verify it in the relevant repo/session context. |
 | Ancestor project settings warning | Medium | Starting Claude Code from a subdirectory can miss project hooks. | Rerun from the directory that owns `.claude/settings.json`. |
@@ -83,6 +84,7 @@ next command.
 | `Issue: IS_DEMO is set` | `unset IS_DEMO` | `Remove-Item Env:IS_DEMO -ErrorAction SilentlyContinue` | A fresh shell no longer prints the `IS_DEMO` issue. |
 | `Issue: CLAUDE_CODE_SIMPLE is set` | `unset CLAUDE_CODE_SIMPLE` | `Remove-Item Env:CLAUDE_CODE_SIMPLE -ErrorAction SilentlyContinue` | A fresh shell no longer prints the `CLAUDE_CODE_SIMPLE` issue. |
 | `FAIL-OPEN` | `curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh \| bash -s -- doctor` | `iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"` | Rerun verification and confirm the named hook no longer fails open. |
+| `Issue: PreToolUse hooks target Agent or Task` | Rerun `--verify --summary-only` after moving hard blocks to child-visible tools such as `Bash`, `Write`, or `Edit`. | Rerun `install.ps1 verify` after moving native hooks to the child-visible tool boundary. | The summary no longer treats `Agent` or `Task` matcher hooks as the hard enforcement boundary. |
 
 After any repair, start a fresh Claude Code session from the same project root
 and rerun verification:
