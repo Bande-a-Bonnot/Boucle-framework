@@ -71,6 +71,25 @@ $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --sho
 if ($root) { Set-Location $root }
 ```
 
+## Full-report warning map
+
+Some warnings appear in the full `safety-check --verify` report but not in the
+compact copy/paste summary. Treat them as operational risk notes after you have
+handled critical hook-disabling issues, invalid settings, and `FAIL-OPEN`
+checks.
+
+| Full-report warning starts with | What to do first |
+|---------------------------------|------------------|
+| `ANTHROPIC_API_KEY is set` | Start Claude Code from a shell where billing-sensitive API keys are unset, or put a real wrapper executable earlier in `PATH` that unsets them before nested `claude` calls. |
+| `GIT_INDEX_FILE is set` | Start Claude Code outside git hook processes, or unset `GIT_INDEX_FILE` before launch so plugin initialization cannot write through a hook-provided index file. |
+| `Sandbox mode enabled` | Do not rely on repeated approval prompts for sensitive commands. Put those commands behind `PreToolUse` hooks instead. |
+| `Skills/workflows can override CLAUDE.md directives` | Move must-enforce rules from prompt text into hooks for the specific covered tools. |
+| `Running non-interactively` | Add an outer timeout or process supervisor before long headless runs; usage-limit prompts can hang when no terminal can answer. |
+| `Your global settings.json contains keys` | Back up `~/.claude/settings.json` before plugin install, update, or marketplace commands that may rewrite settings. |
+| `Background agents spawned via the Agent tool` | Avoid unsupervised background agents in bypass mode, or monitor token and process usage outside Claude Code. |
+| `Project-scoped plugins detected` | Audit `~/.claude/plugins.json` and remove project plugins that should not run outside their declared project. |
+| `MCP tools in your permission allow list` | If an MCP call is rejected without a prompt, test whether a parameter value triggered stricter matching before widening allow rules. |
+
 ## Fast repair commands
 
 Use this section when you have the summary line in front of you and need the
