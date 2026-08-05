@@ -21,6 +21,8 @@ checks = [
             "$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }\nif ($root) { Set-Location $root }\niex \"& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended",
             "$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }\nif ($root) { Set-Location $root }\niex \"& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } all",
             "tools/install.ps1) } recommended\"\niex \"& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify",
+            "Install them from the project root and verify them with",
+            "tools/install.ps1) } all\"\niex \"& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify",
         ],
     ),
     (
