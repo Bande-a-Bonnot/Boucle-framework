@@ -70,7 +70,9 @@ for an installer smoke test, but it does not prove the repository's checked-in
 
 Use this when your repository includes `.claude/settings.json` with direct hook
 script paths, or interpreter-wrapped paths such as `bash ./hooks/check.sh` or
-`python ./hooks/check.py`:
+`python ./hooks/check.py`. For a repository-policy check, isolate `HOME` so a
+self-hosted runner's global `~/.claude/settings.json` cannot make the job pass
+when the checked-out repository has no working hook layer:
 
 Minimal repo-local example:
 
@@ -122,13 +124,21 @@ jobs:
       - name: Verify Claude Code hooks
         working-directory: ${{ github.workspace }}
         run: |
+          test -f .claude/settings.json
+          tmp_home="$(mktemp -d)"
+          trap 'rm -rf "$tmp_home"' EXIT
           curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh -o /tmp/safety-check.sh
-          SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 bash /tmp/safety-check.sh --verify --strict
+          SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 HOME="$tmp_home" bash /tmp/safety-check.sh --verify --strict
 ```
 
 `SAFETY_CHECK_SKIP_CLAUDE_VERSION=1` skips the optional `claude --version` probe
 for CI runners that do not have Claude Code installed. It does not skip hook
 inventory, hook file health, or payload verification.
+The `test -f .claude/settings.json` line makes the job fail before verification
+if the repository policy file is missing, and the temporary `HOME` prevents
+global Claude Code settings on self-hosted runners from masking that mistake.
+Drop the temporary `HOME` only when the job is intentionally testing hooks
+installed into the CI user's home directory during the same run.
 
 ## Native PowerShell hooks in CI
 
