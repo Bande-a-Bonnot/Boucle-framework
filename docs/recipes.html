@@ -486,8 +486,8 @@ Pre-update baseline: summary/version captured / not captured / not an update iss
                 <div class="recipe" id="ci-verification">
                     <h2>"I want CI to fail when repo hooks stop blocking"</h2>
                     <p class="brief">Use this when a repository commits Claude Code hook settings or hook scripts and you want pull requests to prove that boundary still works. CI can verify checked-in project hooks. It cannot prove every developer's global <code>~/.claude/settings.json</code> is safe.</p>
-                    <p class="brief">Network boundary: the workflow downloads <code>tools/safety-check/check.sh</code> from GitHub raw content, then runs it locally on the checked-out repository and CI user's home directory. The checker does not upload <code>settings.json</code>, hook files, shell history, repository contents, or safety summary output. Treat CI logs as the only publication surface, because hook commands can print paths or stderr.</p>
-                    <p class="brief"><strong>Fix path: commit repo-local settings and hook scripts, run strict safety-check from the repository root, and skip only the optional Claude Code version probe</strong></p>
+                    <p class="brief">Network boundary: the workflow downloads <code>tools/safety-check/check.sh</code> from GitHub raw content, then runs it locally on the checked-out repository and a temporary CI home directory. The checker does not upload <code>settings.json</code>, hook files, shell history, repository contents, or safety summary output. Treat CI logs as the only publication surface, because hook commands can print paths or stderr.</p>
+                    <p class="brief"><strong>Fix path: commit repo-local settings and hook scripts, require the checked-in settings file, isolate <code>HOME</code>, run strict safety-check from the repository root, and skip only the optional Claude Code version probe</strong></p>
                     <div class="code-block">
                         <code>name: claude-code-safety
 
@@ -504,9 +504,13 @@ jobs:
       - name: Verify Claude Code hooks
         working-directory: ${{ github.workspace }}
         run: |
+          test -f .claude/settings.json
+          tmp_home="$(mktemp -d)"
+          trap 'rm -rf "$tmp_home"' EXIT
           curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh -o /tmp/safety-check.sh
-          SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 bash /tmp/safety-check.sh --verify --strict</code>
+          SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 HOME="$tmp_home" bash /tmp/safety-check.sh --verify --strict</code>
                     </div>
+                    <p class="brief">The <code>test -f .claude/settings.json</code> line fails early when the repository policy file is absent. The temporary <code>HOME</code> prevents a self-hosted runner's global Claude Code settings from making the job pass when the checked-out repository has no working hook layer.</p>
                     <p class="brief">Do not treat <code>install.sh recommended</code> in CI as proof that repo-local policy is protected. That installs user-level hooks under the runner's temporary <code>HOME</code>. It is useful as an installer smoke test, but it does not prove the checked-out <code>.claude/settings.json</code> or repository hook files protect developers.</p>
                     <p class="brief">For native PowerShell hook scripts, use a runner where both <code>bash</code> and <code>pwsh</code> are available so <code>safety-check --verify --strict</code> can execute the checked-in <code>.ps1</code> commands. Do not use <code>install.ps1 verify</code> as proof for repo-local hooks; it verifies Boucle hooks installed under the CI user's home directory.</p>
                     <p class="brief" style="color: var(--muted-color);">Full workflow examples and expected failure modes: <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/CI.md">scripted safety-check checks</a>.</p>
