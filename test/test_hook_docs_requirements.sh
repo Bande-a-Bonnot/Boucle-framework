@@ -113,6 +113,11 @@ docs = {
         "Use a disposable branch or worktree when the main checkout must stay untouched",
         "deterministic boundary for those covered Write/Edit/Bash operations",
     ],
+    repo / "tools" / "enforce" / "READ_ONLY_AUDIT.md": [
+        "Run the safety check from the same project root",
+        "cd \"$repo_root\" curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify",
+        "cd \"$repo_root\" curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict",
+    ],
     repo / "tools" / "safety-check" / "README.md": [
         "No hook installation required for the audit",
         "## Requirements",
@@ -514,6 +519,11 @@ docs = {
         "<a href=\"/limitations-feed.xml\">Limitations Feed</a>",
         "<a href=\"/limitations.json\">JSON</a>",
         "<a href=\"https://github.com/Bande-a-Bonnot/Boucle-framework\">GitHub</a>",
+    ],
+    repo / "docs" / "recipes.html": [
+        "python3 /tmp/enforce-hooks.py CLAUDE.md --verify --strict",
+        "tools/safety-check/check.sh | bash -s -- --verify",
+        "python3 /tmp/enforce-hooks.py CLAUDE.md --smoke-test --strict",
     ],
 }
 

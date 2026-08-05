@@ -71,6 +71,8 @@ bit, and common fail-open mistakes.
 Run the safety check from the same project root:
 
 ```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
@@ -81,6 +83,8 @@ files, non-executable shell hooks, and other installed hooks that fail open.
 For CI or a scripted workstation check, make those findings fail the command:
 
 ```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
 ```
 
