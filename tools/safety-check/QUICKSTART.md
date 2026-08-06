@@ -159,12 +159,13 @@ iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework
 ```
 
 On a borrowed machine, client repository, CI runner, or any other temporary
-environment, inspect the backup list and restore the pre-trial snapshot if you
-want the exact previous settings file, then verify cleanup before you leave it:
+environment, inspect the backup list and restore the named pre-trial snapshot
+if you want the exact previous settings file, then verify cleanup before you
+leave it:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup list
-curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore settings.20260101_120000.json
 ```
 
 On native Windows:
@@ -173,7 +174,7 @@ On native Windows:
 $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
 if ($root) { Set-Location $root }
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup list"
-iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore settings.20260101_120000.json"
 ```
 
 ```sh
