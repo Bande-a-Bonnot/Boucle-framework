@@ -330,23 +330,24 @@ For native `install.ps1 verify`, there is no safety summary block. Share only
 the final verifier count plus any `WARN` or `SKIP` lines.
 
 If verification fails after the update, run `doctor` before reinstalling. If
-hooks disappeared or `doctor` reports that `settings.json` was wiped, restore
-the most recent backup, then run the strict audit again. Use `backup list`
-first when you need to inspect which snapshot will be restored:
+hooks disappeared or `doctor` reports that `settings.json` was wiped, inspect
+the backup list, restore the named snapshot you meant to use, then run the strict audit again.
+Use bare `restore` only when the most recent backup is the exact snapshot you
+want back:
 
 ```sh
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- doctor
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup list
-curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore settings.20260101_120000.json
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- check --verify --strict
 ```
 
-To restore a specific backup from that list, pass the filename:
+To restore the most recent backup only if you meant it:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore settings.20260101_120000.json
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore
 ```
 
 On native Windows:
@@ -356,14 +357,15 @@ $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --sho
 if ($root) { Set-Location $root }
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup list"
-iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore settings.20260101_120000.json"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
 
-Specific backup restore works the same way in PowerShell:
+Bare restore is also available in PowerShell for the exact most recent
+snapshot:
 
 ```powershell
-iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore settings.20260101_120000.json"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore"
 ```
 
 ## 6. Recheck after risky changes
