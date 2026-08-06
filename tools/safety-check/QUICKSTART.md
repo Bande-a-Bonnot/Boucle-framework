@@ -26,8 +26,9 @@ Use the first row that matches why you are here:
 
 Prerequisites:
 
-- macOS, Linux, WSL, or Git Bash: `bash`, `python3`, and either `curl` or
-  `wget` for the audit command.
+- macOS, Linux, WSL, or Git Bash: Bash 3.2+ (the default `/bin/bash` on
+  macOS is enough), `python3`, and either `curl` or `wget` for the audit
+  command.
 - Shell hooks on macOS, Linux, WSL, or Git Bash: install `jq` before trusting
   hook enforcement. Most standalone shell hooks need it to parse Claude Code
   hook payloads.
