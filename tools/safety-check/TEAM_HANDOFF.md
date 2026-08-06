@@ -90,19 +90,22 @@ instead of sharing your real workspace:
 
 ```sh
 tmpdir="$(mktemp -d)"
+tmp_home="$(mktemp -d)"
+mkdir -p "$tmpdir/.claude/hooks"
+printf '{"hooks":{}}\n' > "$tmpdir/.claude/settings.json"
 cd "$tmpdir"
-mkdir -p .claude/hooks
-printf '{"hooks":{}}\n' > .claude/settings.json
 ```
 
 Then run the bounded summary there:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | HOME="$tmp_home" bash -s -- --verify --summary-only
 ```
 
 Replace the sample settings with the smallest redacted file that reproduces the
-problem. Keep only throwaway hook scripts and placeholder paths.
+problem. Keep only throwaway hook scripts and placeholder paths. The temporary
+`HOME` prevents your real user-level Claude Code hooks from making the
+reproduction look safer or noisier than the redacted project settings.
 
 ## 5. Recheck triggers
 

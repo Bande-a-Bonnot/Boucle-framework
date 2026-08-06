@@ -166,17 +166,20 @@ zip. Build a minimal reproduction in a temporary directory, then run
 
 ```sh
 tmpdir="$(mktemp -d)"
+tmp_home="$(mktemp -d)"
+mkdir -p "$tmpdir/.claude/hooks"
+printf '{"hooks":{}}\n' > "$tmpdir/.claude/settings.json"
 cd "$tmpdir"
-mkdir -p .claude/hooks
-printf '{"hooks":{}}\n' > .claude/settings.json
-curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | HOME="$tmp_home" bash -s -- --verify --summary-only
 ```
 
 Replace the sample `.claude/settings.json` with the smallest redacted settings
 file that reproduces the issue. Keep only throwaway hook scripts and placeholder
-paths in the temporary directory. If the problem does not reproduce there, say
-that; it usually means the remaining signal is in local paths, environment
-variables, shell startup files, or private hook code that should not be posted.
+paths in the temporary directory. The temporary `HOME` keeps your real
+user-level Claude Code hooks out of the reproduction. If the problem does not
+reproduce there, say that; it usually means the remaining signal is in local
+paths, environment variables, shell startup files, or private hook code that
+should not be posted.
 
 ## 6. Minimal public report template
 
