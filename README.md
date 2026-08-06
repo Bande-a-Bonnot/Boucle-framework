@@ -397,7 +397,7 @@ done.
 - Never run git commit, git push, or git merge
 ```
 
-For covered tool calls, the hook blocks at the runtime level before the tool executes. This is not a sandbox: verify the hook, start a fresh session, and review the known limitations for non-tool-call paths. See the [copy-paste read-only audit guide](tools/enforce/READ_ONLY_AUDIT.md) or [more recipes](tools/enforce/#recipes).
+For covered tool calls, the hook blocks at the runtime level before the tool executes. This is not a sandbox: verify the hook, start a fresh session, and review the known limitations for non-tool-call paths. See the [copy-paste read-only audit guide](tools/enforce/READ_ONLY_AUDIT.md) or [more recipes](tools/enforce/README.md#recipes).
 The file-modification rule covers Write, Edit, MultiEdit, and NotebookEdit. The shell-write rule blocks common Bash write paths such as redirects, `tee`, `touch`, `mkdir`, `rm`, in-place edits, moves, copies, and permission/ownership changes.
 
 ---
