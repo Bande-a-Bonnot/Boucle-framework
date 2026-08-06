@@ -160,7 +160,23 @@ suite. The recommended set is the smallest default safety boundary:
 `install.sh backup` protects the user-level `~/.claude/settings.json` only. If
 this project has repo-local settings, keep the timestamped
 `.claude/settings.json.<timestamp>.bak` copy until the update or hook test is
-done. To restore a project-local snapshot, copy the selected backup back to
+done. For user-level settings, inspect the installer backup list and restore the
+named snapshot you intend to use:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup list
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore settings.20260101_120000.json
+```
+
+On native Windows:
+
+```powershell
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup list"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } restore settings.20260101_120000.json"
+```
+
+Use bare `restore` only when the most recent backup is the exact snapshot you
+want back. To restore a project-local snapshot, copy the selected backup back to
 `.claude/settings.json` and rerun strict verification from the same root.
 
 If either `json.tool` command fails, remove comments or trailing commas from that settings file before installing hooks. A broken project `.claude/settings.json` can change hook behavior even when the user-level settings file is valid. If `--verify` still reports `FAIL-OPEN`, inspect that hook before trusting it.
