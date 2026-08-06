@@ -136,14 +136,16 @@ Build a temporary reproduction with throwaway paths:
 
 ```sh
 tmpdir="$(mktemp -d)"
+tmp_home="$(mktemp -d)"
+mkdir -p "$tmpdir/.claude/hooks"
+printf '{"hooks":{}}\n' > "$tmpdir/.claude/settings.json"
 cd "$tmpdir"
-mkdir -p .claude/hooks
-printf '{"hooks":{}}\n' > .claude/settings.json
-curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | HOME="$tmp_home" bash -s -- --verify --summary-only
 ```
 
 Replace that settings file with the smallest redacted configuration that still
-reproduces the issue. If the problem disappears in the temporary directory, the
-remaining signal is probably in private paths, environment variables, shell
-startup files, or custom hook code. Say that instead of posting the private
-workspace.
+reproduces the issue. The temporary `HOME` keeps real user-level Claude Code
+hooks out of the reproduction. If the problem disappears in the temporary
+directory, the remaining signal is probably in private paths, environment
+variables, shell startup files, or custom hook code. Say that instead of posting
+the private workspace.
