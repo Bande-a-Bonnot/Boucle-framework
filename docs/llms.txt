@@ -5,8 +5,28 @@ and autonomous-agent loop infrastructure.
 
 Primary user path:
 
-- Try safety-check without reading real Claude Code settings:
-  `tmp_home="$(mktemp -d)"; tmp_project="$(mktemp -d)"; (cd "$tmp_project" && curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | PYTHONDONTWRITEBYTECODE=1 HOME="$tmp_home" bash -s -- --verify --summary-only); rmdir "$tmp_home" "$tmp_project" 2>/dev/null || true`
+- Try safety-check without reading real Claude Code settings (Bash 3.2+; the
+  default `/bin/bash` on macOS works):
+  ```sh
+  (
+    tmp_home="$(mktemp -d)"
+    tmp_project="$(mktemp -d)"
+    cleanup() {
+      if [ "${KEEP_BOUCLE_FIRST_TEST:-0}" != "1" ]; then
+        rmdir "$tmp_home" "$tmp_project" 2>/dev/null || {
+          printf 'Temporary directories were not empty; inspect and remove manually:\n'
+          printf '  %s\n  %s\n' "$tmp_home" "$tmp_project"
+        }
+      fi
+    }
+    trap cleanup EXIT
+    cd "$tmp_project"
+    curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | PYTHONDONTWRITEBYTECODE=1 HOME="$tmp_home" bash -s -- --verify --summary-only
+    if [ "${KEEP_BOUCLE_FIRST_TEST:-0}" = "1" ]; then
+      printf 'Temporary HOME: %s\nTemporary project: %s\n' "$tmp_home" "$tmp_project"
+    fi
+  )
+  ```
 - Audit a Claude Code setup from the project root:
   `repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"; cd "$repo_root"; curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash`
 - Install the recommended hook set:
