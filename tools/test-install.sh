@@ -843,8 +843,10 @@ else
   fail "help missing examples"
 fi
 
-if grep -q "install.sh backup list.*Inspect available backups before restore" <<< "$output" &&
-   grep -q "install.sh restore settings.20260101_120000.json.*Restore a specific backup" <<< "$output"; then
+if grep -q "restore \\[file\\].*without file, use the most recent backup" <<< "$output" &&
+   grep -q "install.sh backup list.*Inspect backups and choose the filename to restore" <<< "$output" &&
+   grep -q "install.sh restore settings.20260101_120000.json.*Restore a named backup from backup list" <<< "$output" &&
+   grep -q "install.sh restore.*only if you meant it" <<< "$output"; then
   pass "help examples show backup listing and specific restore"
 else
   fail "help examples omit backup listing or specific restore"
