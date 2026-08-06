@@ -65,14 +65,16 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 If this repository has project-local settings, keep a project backup too:
 
 ```sh
-test -f .claude/settings.json && cp .claude/settings.json .claude/settings.json.bak
+backup_stamp="$(date +%Y%m%d_%H%M%S)"
+test -f .claude/settings.json && cp -p .claude/settings.json ".claude/settings.json.${backup_stamp}.bak"
 ```
 
 On native Windows with PowerShell 7:
 
 ```powershell
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } backup"
-if (Test-Path .claude/settings.json) { Copy-Item .claude/settings.json .claude/settings.json.bak }
+$stamp = Get-Date -Format yyyyMMdd_HHmmss
+if (Test-Path .claude/settings.json) { Copy-Item .claude/settings.json ".claude/settings.json.$stamp.bak" }
 ```
 
 ## After updating
@@ -181,10 +183,16 @@ iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
 
-If the project backup is needed, restore it manually:
+If a project-local backup is needed, restore the exact snapshot you selected:
 
 ```sh
-cp .claude/settings.json.bak .claude/settings.json
+cp .claude/settings.json.20260101_120000.bak .claude/settings.json
+```
+
+On native Windows:
+
+```powershell
+Copy-Item .claude/settings.json.20260101_120000.bak .claude/settings.json
 ```
 
 After any restore, run the same strict verification again from the project root
