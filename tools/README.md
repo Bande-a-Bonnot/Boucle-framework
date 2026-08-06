@@ -203,7 +203,10 @@ repository, or CI runner, snapshot settings first, run `uninstall all` when the
 trial is over, inspect the backup list before any exact restore, then verify
 cleanup before leaving the environment. Use the same sequence through
 `install.ps1 backup`, `install.ps1 uninstall all`, `install.ps1 backup list`,
-and `install.ps1 verify` on native Windows. On macOS/Linux, the expected
+`install.ps1 restore settings.20260101_120000.json`, and `install.ps1 verify`
+on native Windows. Replace `settings.20260101_120000.json` with the backup name
+you selected; use bare `restore` only when the most recent backup is the exact
+snapshot you want back. On macOS/Linux, the expected
 `check --verify --summary-only` result is no Boucle hook inventory and
 `Verify: not run | no hooks found | 0 payload checks`. On native Windows,
 `install.ps1 verify` should report that no hooks are installed.
