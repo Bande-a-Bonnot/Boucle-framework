@@ -264,7 +264,7 @@ Boundary: install hooks before trusting the hook layer.
                 <div class="recipe" id="read-only-audit">
                     <h2>"I need Claude to inspect the repo, not change it"</h2>
                     <p class="brief">Use this when Claude Code should review, test, and report without writing files, mutating data, restarting services, or committing. A prompt that says "do not edit" is guidance. The enforced rule below blocks covered tool calls before they execute.</p>
-                    <p class="brief">This is read-only for the audited Claude Code session after the hook is installed. Setting up the boundary intentionally edits project files first: you add an <code>@enforced</code> rule to <code>CLAUDE.md</code> and register a project-level hook in <code>.claude/settings.json</code>. Use a disposable branch or worktree when the main checkout must stay untouched, and keep the settings backup until the audit is done.</p>
+                    <p class="brief">This is read-only for the audited Claude Code session after the hook is installed. Setting up the boundary intentionally edits project files first: you add an <code>@enforced</code> rule to <code>CLAUDE.md</code> and register a project-level hook in <code>.claude/settings.json</code>. Use a disposable branch or worktree when the main checkout must stay untouched, and keep the timestamped settings backup until the audit is done.</p>
                     <p class="brief"><strong>Fix path: add an enforced read-only rule, install the dynamic hook, verify, smoke test, then start a fresh session</strong></p>
                     <div class="code-block">
                         <code>## Read-only mode @enforced
@@ -280,7 +280,8 @@ Boundary: install hooks before trusting the hook layer.
                         <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
 <span class="prompt-char">$</span> cd "$repo_root"
 <span class="prompt-char">$</span> mkdir -p .claude
-<span class="prompt-char">$</span> test ! -f .claude/settings.json || cp .claude/settings.json .claude/settings.json.pre-read-only.bak
+<span class="prompt-char">$</span> backup_stamp="$(date +%Y%m%d_%H%M%S)"
+<span class="prompt-char">$</span> test -f .claude/settings.json &amp;&amp; cp -p .claude/settings.json ".claude/settings.json.read-only-${backup_stamp}.bak"
 <span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/enforce-hooks.py -o /tmp/enforce-hooks.py
 <span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --scan
 <span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --install-plugin
@@ -299,7 +300,8 @@ Boundary: install hooks before trusting the hook layer.
                     </div>
                     <p class="brief">If you also want to remove the hook registration, restore the settings snapshot only when you want <code>.claude/settings.json</code> returned to its pre-audit state, or remove <code>enforce-pretooluse.sh</code> from Claude Code's hooks UI. Then run the checks again. A strict audit should fail if the read-only section still exists without an active hook, or if restored settings contain broken hook references.</p>
                     <div class="code-block">
-                        <code><span class="prompt-char">$</span> test ! -f .claude/settings.json.pre-read-only.bak || cp .claude/settings.json.pre-read-only.bak .claude/settings.json
+                        <code><span class="prompt-char">$</span> ls -1t .claude/settings.json.read-only-*.bak 2&gt;/dev/null || true
+<span class="prompt-char">$</span> cp -p .claude/settings.json.read-only-20260101_120000.bak .claude/settings.json
 <span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
 <span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify</code>
                     </div>

@@ -41,7 +41,8 @@ root. Outside git, they keep you in the current project directory:
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$repo_root"
 mkdir -p .claude
-test ! -f .claude/settings.json || cp .claude/settings.json .claude/settings.json.pre-read-only.bak
+backup_stamp="$(date +%Y%m%d_%H%M%S)"
+test -f .claude/settings.json && cp -p .claude/settings.json ".claude/settings.json.read-only-${backup_stamp}.bak"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/enforce-hooks.py -o /tmp/enforce-hooks.py
 python3 /tmp/enforce-hooks.py CLAUDE.md --scan
 python3 /tmp/enforce-hooks.py CLAUDE.md --install-plugin
@@ -51,7 +52,9 @@ Plugin mode installs one `PreToolUse` hook that re-reads `CLAUDE.md` on every
 tool call. If you edit the read-only policy later, you do not need to reinstall
 the hook.
 The backup command snapshots the project-level `.claude/settings.json` before
-`--install-plugin` registers the hook. Keep it until the audit is finished.
+`--install-plugin` registers the hook. The timestamp keeps repeated audit setup
+runs from overwriting the previous snapshot. Keep the intended snapshot until
+the audit is finished.
 
 ## 3. Verify the hook is registered
 
@@ -161,14 +164,15 @@ hooks UI. Then re-run the same checks:
 ```sh
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$repo_root"
-test ! -f .claude/settings.json.pre-read-only.bak || cp .claude/settings.json.pre-read-only.bak .claude/settings.json
+ls -1t .claude/settings.json.read-only-*.bak 2>/dev/null || true
+cp -p .claude/settings.json.read-only-20260101_120000.bak .claude/settings.json
 python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
 If there was no pre-audit settings file, there will be no
-`.claude/settings.json.pre-read-only.bak` to restore. In that case, remove only
-the temporary enforce hook entry and generated plugin files:
+`.claude/settings.json.read-only-*.bak` snapshot to restore. In that case,
+remove only the temporary enforce hook entry and generated plugin files:
 
 ```sh
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
