@@ -258,6 +258,7 @@ docs = {
         "team handoff report",
         "Pre-update baseline: summary/version captured / not captured / not an update issue",
         "first verified result for an already-untrusted setup",
+        "restore the named pre-trial snapshot",
         "git rev-parse --show-toplevel",
         'if ($root) { Set-Location $root }',
         "tools/install.sh | bash -s -- backup list",
