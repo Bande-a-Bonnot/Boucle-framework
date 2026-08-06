@@ -850,6 +850,8 @@ For the long tail, use the [searchable limitations page](https://framework.boucl
 
 **`ConfigChange` hook event enables settings audit trail.** Starting in v2.1.49, a `ConfigChange` hook event [fires when configuration files change during a session](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md). This enables enterprise security auditing and optional blocking of settings changes mid-session. If the model or a plugin modifies `.claude/settings.json`, `.claude/settings.local.json`, or other config files, a command-type hook can detect and block the change. This partially addresses the supply-chain risk in [#38319](https://github.com/anthropics/claude-code/issues/38319) for runtime changes (but not for pre-existing malicious configs in cloned repos). enforce-hooks does not yet generate ConfigChange hooks but may in future versions.
 
+<a id="pretooluse-hook-allow-no-longer-bypasses-deny-rules"></a>
+
 **PreToolUse hook "allow" no longer bypasses deny rules.** Fixed in v2.1.77: a PreToolUse hook returning `"allow"` could previously override `deny` permission rules, including enterprise managed settings. A misconfigured or malicious hook could bypass security controls. This is now fixed. If you are on v2.1.76 or earlier, any hook returning "allow" silently overrides deny rules. Update to v2.1.77+.
 
 **Managed policy `ask` rules no longer bypassed by user `allow` rules.** Fixed in v2.1.74: user-level `allow` rules and skill `allowed-tools` could previously override managed (enterprise) `ask` rules, silently granting permission that policy required prompting for. This is now fixed. If you are on v2.1.73 or earlier, user allow rules can bypass managed ask policies. Update to v2.1.74+.
