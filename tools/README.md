@@ -184,9 +184,9 @@ install.sh check --verify --summary-only # Print public support summary only
 install.sh check --verify --strict # Run strict safety audit with payload checks
 install.sh doctor                # Diagnose files, settings, permissions
 install.sh backup                # Snapshot settings.json before Claude Code updates
-install.sh backup list           # Show available backups
-install.sh restore               # Restore the most recent backup
-install.sh restore <file>        # Restore a specific backup
+install.sh backup list           # Inspect backups and choose the filename to restore
+install.sh restore <file>        # Restore a named backup from backup list
+install.sh restore               # Restore the most recent backup only if you meant it
 ```
 
 Run `verify`, `check`, and `doctor` from the same project root where you start

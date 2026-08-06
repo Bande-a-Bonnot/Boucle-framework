@@ -12,7 +12,6 @@
 # Or:    curl ... | bash -s -- uninstall all
 # Or:    curl ... | bash -s -- backup
 # Or:    curl ... | bash -s -- backup list
-# Or:    curl ... | bash -s -- restore
 # Or:    curl ... | bash -s -- restore <file>
 # Or:    curl ... | bash -s -- help
 set -euo pipefail
@@ -102,8 +101,7 @@ if [ $# -gt 0 ] && { [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]
   echo "  uninstall all         Remove all hooks"
   echo "  backup                Snapshot settings.json (protects against auto-update wipes)"
   echo "  backup list           Show available backups"
-  echo "  restore               Restore the most recent backup"
-  echo "  restore <file>        Restore a specific backup"
+  echo "  restore [file]        Restore a named backup; without file, use the most recent backup"
   echo "  check [--verify] [--summary-only] [--strict]"
   echo "                        Run safety audit on your Claude Code setup"
   echo "  doctor                Diagnose installation health (files, settings, permissions)"
@@ -128,9 +126,9 @@ if [ $# -gt 0 ] && { [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]
   echo "  install.sh upgrade                # Update to latest"
   echo "  install.sh uninstall read-once    # Remove one hook"
   echo "  install.sh backup                 # Snapshot before updating Claude Code"
-  echo "  install.sh backup list            # Inspect available backups before restore"
-  echo "  install.sh restore                # Restore the most recent backup"
-  echo "  install.sh restore settings.20260101_120000.json # Restore a specific backup"
+  echo "  install.sh backup list            # Inspect backups and choose the filename to restore"
+  echo "  install.sh restore settings.20260101_120000.json # Restore a named backup from backup list"
+  echo "  install.sh restore                # Restore the most recent backup only if you meant it"
   echo "  install.sh check                  # Run safety audit"
   echo "  install.sh check --verify --summary-only # Public support summary"
   echo "  install.sh check --verify --strict # Strict safety audit"
