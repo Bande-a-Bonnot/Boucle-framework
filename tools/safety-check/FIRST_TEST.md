@@ -21,6 +21,9 @@ the script from a trusted network before running it another way.
 
 ## macOS, Linux, WSL, or Git Bash
 
+Bash 3.2+ is enough for this isolated test; the default `/bin/bash` on macOS
+works.
+
 ```sh
 (
   tmp_home="$(mktemp -d)"
