@@ -275,7 +275,7 @@ Or pick individual hooks:
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/read-once/install.sh | bash
 ```
 
-Saves ~2000 tokens per prevented re-read. Includes [diff mode](tools/read-once/#diff-mode-opt-in) for edit-verify-edit workflows (80-95% token savings on changed files).
+Saves ~2000 tokens per prevented re-read. Includes [diff mode](tools/read-once/README.md#diff-mode-opt-in) for edit-verify-edit workflows (80-95% token savings on changed files).
 
 ### [file-guard](tools/file-guard/) — Protect files from AI access or modification
 
