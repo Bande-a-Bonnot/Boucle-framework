@@ -357,6 +357,8 @@ Your CLAUDE.md says "never edit .env" but Claude edits it anyway. This tool read
 
 Scan first to preview: `enforce-hooks.py --scan`. Generate a starter CLAUDE.md: `enforce-hooks.py --template` (also `--template strict` or `--template minimal`). Installs as one dynamic hook that re-reads CLAUDE.md on every call, so enforcement updates when your rules change. Supports file-guard, bash-guard, branch-guard, tool-block, require-prior-tool, content-guard, scoped-content-guard, bare filename protection, flag blocking (`--no-verify`, `--no-gpg-sign`), system/device commands (`shutdown`, `reboot`, `systemctl`), and command substitution patterns. Subjective rules ("write clean code") are skipped. Self-protection mode (`--armor`) protects configured hook files from covered file-write paths. Hook health-check (`--verify`) catches silent fail-open bugs like wrong field names. Smoke test (`--smoke-test`) runs hooks with representative payloads to verify they respond correctly at runtime. ~70 tests.
 
+<a id="test-hook"></a>
+
 ### [test-hook](tools/test-hook.sh) — Dry-run any hook without a live session
 
 ```sh

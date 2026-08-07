@@ -67,6 +67,7 @@ docs = {
         "This is read-only for the audited Claude Code session after the hook is installed",
         "Setting up the boundary intentionally edits project files first",
         "Use a disposable branch or worktree when the main checkout must stay untouched",
+        "<a id=\"test-hook\"></a>",
     ],
     repo / "tools" / "README.md": [
         "**macOS / Linux:** bash, python3, and jq",
@@ -520,6 +521,7 @@ docs = {
         "Put patterns under a <code>[deny]</code> section when Claude must not read, search, list, or reference those paths at all",
         "I need to leave a PR or incident handoff",
         "I want CI to fail when repo hooks stop blocking",
+        "Bande-a-Bonnot/Boucle-framework#test-hook",
         "test -f .claude/settings.json",
         'tmp_home="$(mktemp -d)"',
         "SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 HOME=\"$tmp_home\" bash /tmp/safety-check.sh --verify --strict",
