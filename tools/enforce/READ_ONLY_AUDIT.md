@@ -95,7 +95,43 @@ Do not treat the boundary as verified if the summary says `Verify: not run`,
 `no hooks found`, `no payload checks ran`, or reports any `FAIL-OPEN` result.
 Fix those first, then re-run the check from the project root.
 
-## 5. Smoke test the runtime boundary
+## 5. Read the result
+
+The safety-check summary is the trust boundary for the next Claude Code
+session. Do not use the letter grade alone.
+
+Stop and fix the setup first when the summary says:
+
+- `Verify: not run`
+- `no hooks found`
+- `0 payload checks`
+- any `FAIL-OPEN` hook
+- skipped <code>PreToolUse</code> checks for hooks you expected to enforce the
+  read-only policy
+- broken hook files or invalid user/project settings JSON
+
+The minimum useful read-only result is `Verify: 0 FAIL-OPEN` with at least one
+payload check for the project-level `PreToolUse` hook. A Grade C with clean
+verification can be good enough for an audit session when remaining warnings
+are platform limitations or unrelated hygiene. Record the residual warnings
+instead of reinstalling repeatedly to chase an A.
+
+For result interpretation, use the safety summary triage guide before asking a
+tester or teammate to copy what is safe to share:
+
+- [First Test](../safety-check/FIRST_TEST.md)
+- [Quickstart](../safety-check/QUICKSTART.md)
+- [Read-only Audit](READ_ONLY_AUDIT.md)
+- [Safe Support Evidence](../safety-check/SUPPORT_EVIDENCE.md)
+- [Safe Support Examples](../safety-check/SUPPORT_EXAMPLES.md)
+- [Triage](../safety-check/TRIAGE.md)
+
+The docs path above is backed by the safety-check shell tests and the
+framework's 200+ Rust tests, but those tests do not prove your local hook
+registration. Your local proof is the fresh `--verify` output from the same
+project root where the audited Claude Code session will start.
+
+## 6. Smoke test the runtime boundary
 
 After a clean verification, start a fresh Claude Code session from that same
 project root before relying on read-only mode. The hook registration and
@@ -119,7 +155,7 @@ For a direct manual probe, start Claude Code in the project and ask it to read a
 file, then ask it to create a temporary file. The read should be allowed. The
 write should be blocked by the hook before any file is created.
 
-## 6. Use the mode
+## 7. Use the mode
 
 Start sessions with a narrow prompt, for example:
 
@@ -130,7 +166,7 @@ Audit this repository. Do not edit files, do not run migrations, do not restart 
 The prompt still matters because it tells the model what work to do. The hook is
 the enforcement layer that stops tool calls when the model drifts.
 
-## 7. Remove or relax it
+## 8. Remove or relax it
 
 To leave read-only mode, remove or rename the `Read-only mode @enforced` section
 in `CLAUDE.md`, then verify the boundary from the same project root:
