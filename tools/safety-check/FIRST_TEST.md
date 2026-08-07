@@ -53,11 +53,14 @@ Expected shape:
 ...
 Verify: not run | no hooks found | 0 payload checks
 Boundary: install hooks before trusting the hook layer.
+github.com/Bande-a-Bonnot/Boucle-framework
 --- End Safety Summary ---
 ```
 
 The exact grade can vary because the checker may still detect whether
 `claude`, `python3`, or other local tools are available on `PATH`.
+The `github.com/Bande-a-Bonnot/Boucle-framework` line is the support URL printed
+inside the bounded block; it is not evidence that the checker uploaded output.
 The temporary directories should contain only this isolated test state.
 `PYTHONDONTWRITEBYTECODE=1` prevents Python cache files from making the
 temporary `HOME` non-empty on macOS. The cleanup uses `rmdir` when the command
