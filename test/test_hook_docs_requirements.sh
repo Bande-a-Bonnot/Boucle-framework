@@ -312,6 +312,7 @@ docs = {
         "Boundary: install hooks before trusting the hook layer.",
         "Verification mode does not execute dangerous shell or git commands.",
         "repo_root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"",
+        "cd \"$repo_root\" curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- recommended",
         "curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- recommended",
         "tools/install.ps1) } recommended",
         "See the [quickstart](QUICKSTART.md)",
