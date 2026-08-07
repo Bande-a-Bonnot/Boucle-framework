@@ -36,13 +36,14 @@ Issue: invalid project settings JSON in <project>/.claude/settings.json
 Issue: 1 skipped PreToolUse hook check
 Verify: 0 FAIL-OPEN | 6 payload checks | 1 skipped
 Boundary: resolve skipped PreToolUse hook checks before trusting strict verification.
+github.com/Bande-a-Bonnot/Boucle-framework
 --- End Safety Summary ---
 ```
 
 That is enough for triage because it includes the OS, shell, recent change,
 whether there is a pre-update baseline, summary issues, verification counts,
-and boundary line. The summary should redact the home directory as `~` and the
-current checkout as `<project>`.
+boundary line, and support URL. The summary should redact the home directory as
+`~` and the current checkout as `<project>`.
 In this example, `summary/version captured` means both the old Claude Code
 version and the bounded safety summary were recorded before the update. If only
 one was captured, say `not captured`.

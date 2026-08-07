@@ -243,6 +243,8 @@ docs = {
         "Hook source: framework git-safe hook, not custom",
         "Verify: 1 FAIL-OPEN | 6 payload checks | 0 skipped",
         "Boundary: fix FAIL-OPEN hooks before trusting the hook layer.",
+        "github.com/Bande-a-Bonnot/Boucle-framework",
+        "boundary line, and support URL",
         "Do not paste raw hook stderr from the Claude Code session.",
         "temporary directory with throwaway hook paths",
         "Pre-update baseline: summary/version captured",
