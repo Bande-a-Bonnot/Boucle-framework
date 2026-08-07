@@ -598,6 +598,8 @@ docs = {
         "python3 /tmp/enforce-hooks.py CLAUDE.md --verify --strict",
         "tools/safety-check/check.sh | bash -s -- --verify",
         "python3 /tmp/enforce-hooks.py CLAUDE.md --smoke-test --strict",
+        "endswith(\"enforce-pretooluse.sh\")",
+        "if entry.get(\"hooks\")",
     ],
 }
 
@@ -663,6 +665,8 @@ banned = {
     repo / "docs" / "recipes.html": [
         "Blocks Read, Edit, Write, and Bash access to matching paths",
         "installs and verifies the seven standalone <code>.ps1</code> hooks",
+        "tools/install.sh | bash -s -- enforce",
+        'if entry.get("hooks") or entry.get("matcher", "") != ""',
     ],
     repo / "tools" / "enforce" / "README.md": [
         "The current docs still describe",
@@ -670,9 +674,6 @@ banned = {
     ],
     repo / "docs" / "index.html": [
         "218 Rust tests",
-    ],
-    repo / "docs" / "recipes.html": [
-        "tools/install.sh | bash -s -- enforce",
     ],
     repo / "tools" / "safety-check" / "CI.md": [
         "repository settings point to native `.ps1` hook scripts, either add PowerShell to the runner",
