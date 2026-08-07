@@ -285,6 +285,7 @@ docs = {
         "Use bare `restore` only when the most recent backup is the exact snapshot you want back",
         "tools/install.ps1) } backup list",
         "tools/install.ps1) } restore settings.20260101_120000.json",
+        "cd \"$repo_root\" curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash",
         "cd \"$repo_root\" curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify",
         "cd \"$repo_root\" curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict",
         "cd \"$repo_root\" curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only",
