@@ -230,7 +230,7 @@ for entry in pre_tool:
     ]
 hooks["PreToolUse"] = [
     entry for entry in pre_tool
-    if entry.get("hooks") or entry.get("matcher", "") != ""
+    if entry.get("hooks")
 ]
 if not hooks["PreToolUse"]:
     hooks.pop("PreToolUse")

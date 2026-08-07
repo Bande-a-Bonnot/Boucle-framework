@@ -335,6 +335,7 @@ docs = {
         "If there was no pre-audit settings file",
         "remove only the temporary enforce hook entry and generated plugin files",
         "endswith(\"enforce-pretooluse.sh\")",
+        "if entry.get(\"hooks\")",
         "rmdir .claude/hooks .claude",
         "remove the `enforce-pretooluse.sh` hook from Claude Code's",
         "Expect the strict audit to exit non-zero",
