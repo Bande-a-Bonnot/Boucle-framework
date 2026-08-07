@@ -7,6 +7,8 @@ first item that proves hooks could be skipped or fail open, then rerun
 verification from the same project root.
 
 ```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
@@ -111,6 +113,8 @@ After any repair, start a fresh Claude Code session from the same project root
 and rerun verification:
 
 ```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
@@ -128,6 +132,8 @@ Run the common repair sequence before reinstalling repeatedly:
 
 ```sh
 unset IS_DEMO CLAUDE_CODE_SIMPLE
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 command -v python3 >/dev/null || { echo "Install python3 before validating settings.json"; exit 1; }
 test ! -f ~/.claude/settings.json || python3 -m json.tool ~/.claude/settings.json >/dev/null
 test ! -f .claude/settings.json || python3 -m json.tool .claude/settings.json >/dev/null

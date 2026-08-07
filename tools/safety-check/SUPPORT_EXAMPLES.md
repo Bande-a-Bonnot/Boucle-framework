@@ -6,9 +6,12 @@ secrets.
 
 ## Safe public report
 
-Run the bounded summary command first:
+Run the bounded summary command from the same project root where Claude Code
+will work:
 
 ```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
 ```
 

@@ -242,6 +242,8 @@ only the final block from `--- Safety Summary (copy/paste) ---` through
 `safety-check --verify --summary-only` or:
 
 ```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
 ```
 

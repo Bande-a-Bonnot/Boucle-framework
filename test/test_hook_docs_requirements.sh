@@ -166,6 +166,8 @@ docs = {
     ],
     repo / "tools" / "safety-check" / "TRIAGE.md": [
         "## Full-report warning map",
+        "repo_root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"",
+        "cd \"$repo_root\"",
         "Some warnings appear in the full `safety-check --verify` report but not in the",
         "compact copy/paste summary",
         "`ANTHROPIC_API_KEY is set`",
@@ -217,6 +219,8 @@ docs = {
         "Command boundary: this downloads `tools/safety-check/check.sh` from GitHub raw",
         "runs it locally on your current project and Claude Code settings",
         "does not upload your `settings.json`, hook files, shell history, repository contents, session logs, or safety summary output",
+        "repo_root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"",
+        "cd \"$repo_root\"",
         "Do not paste raw hook stderr from a live Claude Code session",
         "prefix hook stderr with the hook command path",
         "safety-check summary is the safer public artifact",
@@ -232,6 +236,9 @@ docs = {
     repo / "tools" / "safety-check" / "SUPPORT_EXAMPLES.md": [
         "downloads `tools/safety-check/check.sh` from GitHub raw content",
         "does not upload your `settings.json`, hook files, shell history, repository contents, session logs, or safety summary output",
+        "Run the bounded summary command from the same project root",
+        "repo_root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"",
+        "cd \"$repo_root\"",
         "FAIL-OPEN public report",
         "Hook source: framework git-safe hook, not custom",
         "Verify: 1 FAIL-OPEN | 6 payload checks | 0 skipped",
