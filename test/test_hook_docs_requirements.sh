@@ -293,6 +293,8 @@ docs = {
         "cd \"$repo_root\" curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict",
         "cd \"$repo_root\" curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only",
         "cd \"$repo_root\" unset IS_DEMO CLAUDE_CODE_SIMPLE",
+        "Run the native repair commands from the same project root where you start",
+        "so `doctor` sees project-level `.claude/settings.json`",
     ],
     repo / "tools" / "safety-check" / "FIRST_TEST.md": [
         "temporary `HOME`",

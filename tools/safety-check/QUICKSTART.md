@@ -280,10 +280,15 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 On native Windows:
 
 ```powershell
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
 Remove-Item Env:IS_DEMO -ErrorAction SilentlyContinue
 Remove-Item Env:CLAUDE_CODE_SIMPLE -ErrorAction SilentlyContinue
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
 ```
+
+Run the native repair commands from the same project root where you start
+Claude Code so `doctor` sees project-level `.claude/settings.json`.
 
 If JSON validation fails, remove comments or trailing commas from the reported
 settings file. If `python3` is missing, safety-check cannot validate
