@@ -750,9 +750,15 @@ boucle --version                 # Show version
 
 **Use the latest Claude Code release.** Claude Code changes quickly; check
 Anthropic's [release feed](https://github.com/anthropics/claude-code/releases)
-before pinning a version, then run `safety-check` with `--verify` to confirm
-hooks fire correctly in your environment. The versions below are historical
-hook-related breakpoints, not a current-release tracker:
+and the npm package tags before pinning a version:
+
+```sh
+npm view @anthropic-ai/claude-code version dist-tags
+```
+
+Then run `safety-check` with `--verify` to confirm hooks fire correctly in your
+environment. The versions below are historical hook-related breakpoints, not a
+current-release tracker:
 
 | Version | Issue |
 |---|---|

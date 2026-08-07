@@ -67,6 +67,7 @@ docs = {
         "This is read-only for the audited Claude Code session after the hook is installed",
         "Setting up the boundary intentionally edits project files first",
         "Use a disposable branch or worktree when the main checkout must stay untouched",
+        "npm view @anthropic-ai/claude-code version dist-tags",
         "<a id=\"test-hook\"></a>",
     ],
     repo / "tools" / "README.md": [
