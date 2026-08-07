@@ -110,7 +110,9 @@ Boundary: install hooks before trusting the hook layer.
                     <p class="brief">Trust the hook layer only after verification reports zero <code>FAIL-OPEN</code> results. The verifier sends representative Claude-style hook payloads; it does not execute the dangerous shell or git commands named inside those payloads.</p>
                     <p class="brief">When asking for help, share only the bounded summary block, not raw settings files, hook source, paths, tokens, or private <code>CLAUDE.md</code> rules:</p>
                     <div class="code-block">
-                        <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only</code>
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only</code>
                     </div>
                     <p class="brief">On native Windows, use PowerShell 7 for the native hooks:</p>
                     <div class="code-block">
@@ -300,14 +302,18 @@ Boundary: install hooks before trusting the hook layer.
                     </div>
                     <p class="brief">If you also want to remove the hook registration, restore the settings snapshot only when you want <code>.claude/settings.json</code> returned to its pre-audit state, or remove <code>enforce-pretooluse.sh</code> from Claude Code's hooks UI. Then run the checks again. A strict audit should fail if the read-only section still exists without an active hook, or if restored settings contain broken hook references.</p>
                     <div class="code-block">
-                        <code><span class="prompt-char">$</span> ls -1t .claude/settings.json.read-only-*.bak 2&gt;/dev/null || true
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> ls -1t .claude/settings.json.read-only-*.bak 2&gt;/dev/null || true
 <span class="prompt-char">$</span> cp -p .claude/settings.json.read-only-20260101_120000.bak .claude/settings.json
 <span class="prompt-char">$</span> python3 /tmp/enforce-hooks.py CLAUDE.md --audit --strict
 <span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify</code>
                     </div>
                     <p class="brief">If there was no pre-audit settings file, remove only the temporary enforce hook entry and generated plugin files. Keep <code>.claude/settings.json</code> if it contains other project settings.</p>
                     <div class="code-block">
-                        <code><span class="prompt-char">$</span> python3 - &lt;&lt;'PY'
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> python3 - &lt;&lt;'PY'
 import json
 from pathlib import Path
 

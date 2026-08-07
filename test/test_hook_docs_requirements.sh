@@ -603,6 +603,29 @@ for path, snippets in docs.items():
 if missing:
     raise SystemExit("Hook requirements docs drifted:\n" + "\n".join(missing))
 
+recipes = repo / "docs" / "recipes.html"
+recipes_text = recipes.read_text()
+unsafe_recipe_blocks = []
+for block in recipes_text.split('<div class="code-block">')[1:]:
+    block = block.split("</div>", 1)[0]
+    if "tools/safety-check/check.sh" not in block:
+        continue
+    if any(marker in block for marker in (
+        "repo_root",
+        "tmp_project",
+        "github.workspace",
+        "working-directory",
+    )):
+        continue
+    line = recipes_text[:recipes_text.find(block)].count("\n") + 1
+    unsafe_recipe_blocks.append(line)
+
+if unsafe_recipe_blocks:
+    raise SystemExit(
+        "docs/recipes.html safety-check snippets need a project-root or "
+        f"isolation prelude near line(s): {unsafe_recipe_blocks}"
+    )
+
 hook_files = sorted((repo / "tools").glob("*/hook.sh"))
 jq_hooks = [path for path in hook_files if "jq" in path.read_text()]
 expected_count = f"{len(jq_hooks)} of the {len(hook_files)} standalone shell hooks use jq"
