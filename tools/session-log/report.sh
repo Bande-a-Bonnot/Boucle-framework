@@ -3,11 +3,11 @@
 # Reads ~/.claude/session-logs/*.jsonl and produces a human-readable report
 #
 # Usage:
-#   session-report.sh              # Today's activity
-#   session-report.sh 2026-03-07   # Specific date
-#   session-report.sh --all        # All time
-#   session-report.sh --week       # Last 7 days trend comparison
-#   session-report.sh --days 14    # Last N days trend comparison
+#   report.sh              # Today's activity
+#   report.sh 2026-03-07   # Specific date
+#   report.sh --all        # All time
+#   report.sh --week       # Last 7 days trend comparison
+#   report.sh --days 14    # Last N days trend comparison
 #
 # MIT License - https://github.com/Bande-a-Bonnot/Boucle-framework
 

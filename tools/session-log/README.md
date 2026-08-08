@@ -107,29 +107,31 @@ for f in sorted(files):
 
 ## Session report
 
-A companion script that summarizes your session logs:
+A companion script in this repository summarizes your session logs:
 
 ```sh
 # Today's activity
-bash ~/.claude/hooks/session-report.sh
+bash tools/session-log/report.sh
 
 # Specific date
-bash ~/.claude/hooks/session-report.sh 2026-03-07
+bash tools/session-log/report.sh 2026-03-07
 
 # All time
-bash ~/.claude/hooks/session-report.sh --all
+bash tools/session-log/report.sh --all
 
 # Last 7 days trend comparison
-bash ~/.claude/hooks/session-report.sh --week
+bash tools/session-log/report.sh --week
 
 # Last N days trend comparison
-bash ~/.claude/hooks/session-report.sh --days 14
+bash tools/session-log/report.sh --days 14
 ```
 
-Or run directly from the repo:
+If you installed with the one-line installer and do not have a checkout, run the
+same helper from GitHub raw content:
 
 ```sh
-bash tools/session-log/report.sh
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/session-log/report.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/session-log/report.sh | bash -s -- --week
 ```
 
 **Single-day mode** shows: tool calls by type, error rate with failed operations listed, files read/written, commands run with frequency, and hourly activity distribution.
