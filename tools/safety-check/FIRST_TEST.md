@@ -101,6 +101,13 @@ cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
 ```
 
+If someone asked for a support report, send only the `Safety Summary
+(copy/paste)` block plus OS, shell, and Claude Code version when quick. Do not
+send raw settings, hook source, transcripts, session logs, repository access,
+tokens, private URLs, or proprietary `CLAUDE.md` rules. See
+[safe support evidence](SUPPORT_EVIDENCE.md) for the full public-report
+boundary.
+
 If the summary says `Verify: not run`, `no hooks found`, or
 `0 payload checks`, install the recommended hooks and verify again:
 
