@@ -19,6 +19,39 @@ output.
 If your environment blocks `curl` to GitHub raw content, stop here and inspect
 the script from a trusted network before running it another way.
 
+If you do not want to pipe downloaded content directly into Bash, clone the
+repository first and run the checked-out script from the same temporary
+boundary:
+
+```sh
+(
+  tmp_home="$(mktemp -d)"
+  tmp_project="$(mktemp -d)"
+  tmp_repo="$(mktemp -d)"
+  cleanup() {
+    if [ "${KEEP_BOUCLE_FIRST_TEST:-0}" != "1" ]; then
+      rm -rf "$tmp_repo"
+      rmdir "$tmp_home" "$tmp_project" 2>/dev/null || {
+        printf 'Temporary directories were not empty; inspect and remove manually:\n'
+        printf '  %s\n  %s\n' "$tmp_home" "$tmp_project"
+      }
+    fi
+  }
+  trap cleanup EXIT
+
+  git clone --depth 1 https://github.com/Bande-a-Bonnot/Boucle-framework.git "$tmp_repo"
+  cd "$tmp_project"
+  PYTHONDONTWRITEBYTECODE=1 HOME="$tmp_home" bash "$tmp_repo/tools/safety-check/check.sh" --verify --summary-only
+  if [ "${KEEP_BOUCLE_FIRST_TEST:-0}" = "1" ]; then
+    printf 'Temporary HOME: %s\nTemporary project: %s\nTemporary repo: %s\n' "$tmp_home" "$tmp_project" "$tmp_repo"
+  fi
+)
+```
+
+This clone path downloads the repository metadata and files through Git instead
+of GitHub raw content. It still runs locally against only the temporary `HOME`
+and temporary project.
+
 ## macOS, Linux, WSL, or Git Bash
 
 Bash 3.2+ is enough for this isolated test; the default `/bin/bash` on macOS
