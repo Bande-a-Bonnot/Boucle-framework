@@ -20,9 +20,11 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 ### Manual
 
-1. Download `hook.sh` to `~/.claude/hooks/file-guard.sh`
-2. Make it executable: `chmod +x ~/.claude/hooks/file-guard.sh`
-3. Add to `~/.claude/settings.json`:
+1. Download `hook.sh` to `~/.claude/file-guard/hook.sh`
+2. Make it executable: `chmod +x ~/.claude/file-guard/hook.sh`
+3. If you want auto-detect, download `init.sh` to
+   `~/.claude/file-guard/init.sh` and make it executable.
+4. Add to `~/.claude/settings.json`:
 
 ```json
 {
@@ -30,14 +32,14 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
     "PreToolUse": [
       {
         "type": "command",
-        "command": "~/.claude/hooks/file-guard.sh"
+        "command": "~/.claude/file-guard/hook.sh"
       }
     ]
   }
 }
 ```
 
-4. Create `.file-guard` in your project root (see "Auto-detect" below, or create manually):
+5. Create `.file-guard` in your project root (see "Auto-detect" below, or create manually):
 
 ```
 .env
@@ -53,13 +55,13 @@ Instead of writing `.file-guard` manually, scan your project for common sensitiv
 
 ```bash
 # Preview what would be protected (no files written)
-bash init.sh --dry-run
+bash ~/.claude/file-guard/init.sh --dry-run
 
 # Generate .file-guard from detected files
-bash init.sh
+bash ~/.claude/file-guard/init.sh
 
 # Add newly detected patterns to an existing .file-guard
-bash init.sh --append
+bash ~/.claude/file-guard/init.sh --append
 ```
 
 Detects: `.env` files, certificates (`*.pem`, `*.key`, `*.p12`), SSH keys, credentials files, framework secrets (Rails `master.key`, WordPress `wp-config.php`, Django `local_settings.py`), Terraform state, secret directories, and more.
