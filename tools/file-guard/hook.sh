@@ -309,6 +309,181 @@ matches_any() {
   return 1
 }
 
+bash_path_candidates() {
+  local command="$1"
+
+  python3 - "$command" <<'PY'
+import os
+import re
+import shlex
+import sys
+
+command = sys.argv[1]
+
+READ_COMMANDS = {
+    "cat", "head", "tail", "less", "more", "nl", "wc", "sort", "uniq",
+    "cut", "ls", "file", "stat", "du",
+}
+FILTER_COMMANDS = {"sed", "awk"}
+WRITE_COMMANDS = {
+    "rm", "mv", "cp", "chmod", "chown", "truncate", "shred", "touch",
+    "mkdir", "rmdir", "install", "tee",
+}
+GREP_COMMANDS = {"grep", "egrep", "fgrep", "rg", "ripgrep"}
+FIND_COMMANDS = {"find"}
+JQ_COMMANDS = {"jq"}
+PYTHON_COMMANDS = {"python", "python3"}
+SEPARATORS = {";", "&&", "||", "|", "&"}
+REDIRECTS = {">", ">>", "<>", ">|"}
+GREP_PATTERN_VALUE_OPTIONS = {
+    "-e", "--regexp", "-f", "--file",
+    "--include", "--exclude", "--exclude-dir", "--glob", "-g",
+}
+
+
+def tokens_for(command):
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
+    lexer.whitespace_split = True
+    lexer.commenters = ""
+    return list(lexer)
+
+
+def split_segments(tokens):
+    segment = []
+    for token in tokens:
+        if token in SEPARATORS:
+            if segment:
+                yield segment
+                segment = []
+            continue
+        segment.append(token)
+    if segment:
+        yield segment
+
+
+def command_name(token):
+    return os.path.basename(token)
+
+
+def strip_env_assignments(segment):
+    out = list(segment)
+    while out and re.match(r"^[A-Za-z_][A-Za-z0-9_]*=", out[0]):
+        out.pop(0)
+    return out
+
+
+def emit(kind, value):
+    if value and value not in {"-", "--"}:
+        print(f"{kind}\t{value}")
+
+
+def emit_redirects(segment):
+    i = 0
+    while i < len(segment):
+        token = segment[i]
+        if token in REDIRECTS or re.match(r"^\d*(?:>>?|<>)$", token):
+            if i + 1 < len(segment):
+                emit("write", segment[i + 1])
+                i += 2
+                continue
+        i += 1
+
+
+def non_option_args(args, options_with_values=()):
+    i = 0
+    while i < len(args):
+        arg = args[i]
+        if arg == "--":
+            yield from args[i + 1:]
+            return
+        if arg in options_with_values:
+            i += 2
+            continue
+        if any(arg.startswith(opt + "=") for opt in options_with_values if opt.startswith("--")):
+            i += 1
+            continue
+        if arg.startswith("-") and arg != "-":
+            i += 1
+            continue
+        yield arg
+        i += 1
+
+
+def emit_grep_paths(args):
+    saw_pattern = False
+    for arg in non_option_args(args, GREP_PATTERN_VALUE_OPTIONS):
+        if not saw_pattern:
+            saw_pattern = True
+            continue
+        emit("read", arg)
+
+
+def emit_find_paths(args):
+    for arg in args:
+        if arg == "--":
+            continue
+        if arg.startswith("-") or arg in {"!", "(", ")"}:
+            break
+        emit("read", arg)
+
+
+def emit_jq_paths(args):
+    positional = list(non_option_args(args, {"-f", "--from-file", "-L"}))
+    if len(positional) <= 1:
+        return
+    for arg in positional[1:]:
+        emit("read", arg)
+
+
+def emit_filter_paths(args):
+    positional = list(non_option_args(args, {"-f", "--file"}))
+    if len(positional) <= 1:
+        return
+    for arg in positional[1:]:
+        emit("read", arg)
+
+
+def emit_python_inline_paths(args):
+    for i, arg in enumerate(args):
+        if arg != "-c" or i + 1 >= len(args):
+            continue
+        code = args[i + 1]
+        for match in re.finditer(r"(?:open|read_text|write_text)\s*\(\s*(['\"])(.*?)\1", code):
+            kind = "write" if match.group(0).startswith("write_text") else "read"
+            emit(kind, match.group(2))
+
+
+try:
+    tokens = tokens_for(command)
+except ValueError:
+    sys.exit(1)
+
+for segment in split_segments(tokens):
+    emit_redirects(segment)
+    segment = strip_env_assignments(segment)
+    if not segment:
+        continue
+    name = command_name(segment[0])
+    args = segment[1:]
+    if name in WRITE_COMMANDS:
+        for arg in non_option_args(args):
+            emit("write", arg)
+    elif name in READ_COMMANDS:
+        for arg in non_option_args(args):
+            emit("read", arg)
+    elif name in GREP_COMMANDS:
+        emit_grep_paths(args)
+    elif name in FIND_COMMANDS:
+        emit_find_paths(args)
+    elif name in JQ_COMMANDS:
+        emit_jq_paths(args)
+    elif name in FILTER_COMMANDS:
+        emit_filter_paths(args)
+    elif name in PYTHON_COMMANDS:
+        emit_python_inline_paths(args)
+PY
+}
+
 # Extract target path based on tool and check against patterns
 case "$TOOL_NAME" in
   Write|Edit|MultiEdit|NotebookEdit)
@@ -448,49 +623,67 @@ case "$TOOL_NAME" in
       exit 0
     fi
 
-    # Check deny patterns: ANY reference to denied paths blocks the command
-    for pattern in "${DENY_PATTERNS[@]+"${DENY_PATTERNS[@]}"}"; do
-      pattern="${pattern#./}"
-
-      if [[ "$pattern" == */ ]]; then
-        # Directory pattern: check if dir name appears in command
-        dir="${pattern%/}"
-        if echo "$COMMAND" | grep -qF "$dir" 2>/dev/null; then
-          log "BASH DENY: command references denied directory '$pattern'"
-          jq -cn --arg p "$pattern" \
-            '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: command references denied path \"" + $p + "\" (matches [deny] in .file-guard). Check .file-guard config.")}}'
-          exit 0
-        fi
-      else
-        # File pattern: check if it appears in command
-        if echo "$COMMAND" | grep -qF "$pattern" 2>/dev/null; then
+    if ! command -v python3 >/dev/null 2>&1; then
+      # Conservative fallback for hosts without python3: preserve the legacy
+      # substring behavior instead of silently allowing Bash path access.
+      for pattern in "${DENY_PATTERNS[@]+"${DENY_PATTERNS[@]}"}"; do
+        pattern="${pattern#./}"
+        if [[ "$pattern" == */ ]]; then
+          dir="${pattern%/}"
+          if echo "$COMMAND" | grep -qF "$dir" 2>/dev/null; then
+            log "BASH DENY: command references denied directory '$pattern'"
+            jq -cn --arg p "$pattern" \
+              '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: command references denied path \"" + $p + "\" (matches [deny] in .file-guard). Check .file-guard config.")}}'
+            exit 0
+          fi
+        elif echo "$COMMAND" | grep -qF "$pattern" 2>/dev/null; then
           log "BASH DENY: command references denied file '$pattern'"
           jq -cn --arg p "$pattern" \
             '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: command references denied path \"" + $p + "\" (matches [deny] in .file-guard). Check .file-guard config.")}}'
           exit 0
         fi
+      done
+
+      MODIFY_PATTERNS='(rm|mv|cp|chmod|chown|truncate|shred)\s|>\s*|>>'
+      for pattern in "${WRITE_PATTERNS[@]+"${WRITE_PATTERNS[@]}"}"; do
+        pattern="${pattern#./}"
+        [[ "$pattern" == */ ]] && continue
+        if echo "$COMMAND" | grep -qE "$MODIFY_PATTERNS" 2>/dev/null; then
+          if echo "$COMMAND" | grep -qF "$pattern" 2>/dev/null; then
+            log "BASH MATCH: command contains modifier + pattern '$pattern'"
+            jq -cn --arg p "$pattern" \
+              '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: command may modify protected path \"" + $p + "\" (matches .file-guard config). Use FILE_GUARD_DISABLED=1 to override.")}}'
+            exit 0
+          fi
+        fi
+      done
+      exit 0
+    fi
+
+    # Parse shell-like command words and only match path-bearing arguments.
+    # This keeps real quoted paths such as cat ".env" protected, while quoted
+    # data such as jq '.env' package.json is not treated as a file path.
+    while IFS=$'\t' read -r CANDIDATE_KIND CANDIDATE_PATH; do
+      [ -z "${CANDIDATE_PATH:-}" ] && continue
+
+      if [ ${#DENY_PATTERNS[@]} -gt 0 ]; then
+        if matched=$(matches_any "$CANDIDATE_PATH" "${DENY_PATTERNS[@]}"); then
+          log "BASH DENY: command $CANDIDATE_KIND references denied path '$matched'"
+          jq -cn --arg p "$matched" \
+            '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: command references denied path \"" + $p + "\" (matches [deny] in .file-guard). Check .file-guard config.")}}'
+          exit 0
+        fi
       fi
-    done
 
-    # Check write-protect patterns: only modifying operations (existing behavior)
-    MODIFY_PATTERNS='(rm|mv|cp|chmod|chown|truncate|shred)\s|>\s*|>>'
-
-    for pattern in "${WRITE_PATTERNS[@]+"${WRITE_PATTERNS[@]}"}"; do
-      pattern="${pattern#./}"
-
-      # Skip directory patterns for bash check (too many false positives)
-      [[ "$pattern" == */ ]] && continue
-
-      # Check if the command contains both a modify operator AND a protected filename
-      if echo "$COMMAND" | grep -qE "$MODIFY_PATTERNS" 2>/dev/null; then
-        if echo "$COMMAND" | grep -qF "$pattern" 2>/dev/null; then
-          log "BASH MATCH: command contains modifier + pattern '$pattern'"
-          jq -cn --arg p "$pattern" \
+      if [ "$CANDIDATE_KIND" = "write" ] && [ ${#WRITE_PATTERNS[@]} -gt 0 ]; then
+        if matched=$(matches_any "$CANDIDATE_PATH" "${WRITE_PATTERNS[@]}"); then
+          log "BASH MATCH: command may modify protected path '$matched'"
+          jq -cn --arg p "$matched" \
             '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("file-guard: command may modify protected path \"" + $p + "\" (matches .file-guard config). Use FILE_GUARD_DISABLED=1 to override.")}}'
           exit 0
         fi
       fi
-    done
+    done < <(bash_path_candidates "$COMMAND" || true)
     ;;
 esac
 

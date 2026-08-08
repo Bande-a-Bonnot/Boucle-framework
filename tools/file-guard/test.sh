@@ -136,14 +136,26 @@ EOF
 assert_blocked "Bash rm .env is blocked" \
   '{"tool_name":"Bash","tool_input":{"command":"rm .env"}}'
 
+assert_blocked "Bash rm quoted .env is blocked" \
+  '{"tool_name":"Bash","tool_input":{"command":"rm \".env\""}}'
+
 assert_blocked "Bash with redirect to .env is blocked" \
   '{"tool_name":"Bash","tool_input":{"command":"echo SECRET=x > .env"}}'
+
+assert_blocked "Bash with redirect to quoted .env is blocked" \
+  '{"tool_name":"Bash","tool_input":{"command":"echo SECRET=x > \".env\""}}'
 
 assert_blocked "Bash mv secrets.json is blocked" \
   '{"tool_name":"Bash","tool_input":{"command":"mv secrets.json /tmp/"}}'
 
 assert_allowed "Bash cat .env is allowed (read-only, write-protect mode)" \
   '{"tool_name":"Bash","tool_input":{"command":"cat .env"}}'
+
+assert_allowed "Bash grep pattern mentioning .env is allowed (write-protect)" \
+  '{"tool_name":"Bash","tool_input":{"command":"grep -R \".env\" src/"}}'
+
+assert_allowed "Bash jq filter mentioning .env is allowed (write-protect)" \
+  '{"tool_name":"Bash","tool_input":{"command":"jq '"'"'.env = \"x\"'"'"' package.json > filtered.json"}}'
 
 assert_allowed "Bash git status is allowed" \
   '{"tool_name":"Bash","tool_input":{"command":"git status"}}'
@@ -406,8 +418,17 @@ EOF
 assert_blocked "Bash cat of denied file is blocked" \
   '{"tool_name":"Bash","tool_input":{"command":"cat secret-data.bin"}}'
 
+assert_blocked "Bash cat of quoted denied file is blocked" \
+  '{"tool_name":"Bash","tool_input":{"command":"cat \"secret-data.bin\""}}'
+
 assert_blocked "Bash grep in denied directory is blocked" \
   '{"tool_name":"Bash","tool_input":{"command":"grep -r import codegen/"}}'
+
+assert_blocked "Bash grep with quoted denied directory is blocked" \
+  '{"tool_name":"Bash","tool_input":{"command":"grep secret \"codegen/\""}}'
+
+assert_allowed "Bash grep pattern mentioning denied directory is allowed" \
+  '{"tool_name":"Bash","tool_input":{"command":"grep -R \"codegen/\" src/"}}'
 
 assert_blocked "Bash head of denied file is blocked" \
   '{"tool_name":"Bash","tool_input":{"command":"head -20 codegen/models.ts"}}'
@@ -426,6 +447,20 @@ assert_allowed "Bash git status is allowed" \
 
 assert_allowed "Bash command not referencing denied paths is allowed" \
   '{"tool_name":"Bash","tool_input":{"command":"npm run build"}}'
+
+cat > "$CONFIG" <<'EOF'
+[deny]
+.env
+EOF
+
+assert_allowed "Bash jq filter mentioning denied .env is allowed" \
+  '{"tool_name":"Bash","tool_input":{"command":"jq '"'"'.env'"'"' package.json"}}'
+
+assert_allowed "Bash sed script mentioning denied .env is allowed" \
+  '{"tool_name":"Bash","tool_input":{"command":"sed '"'"'s/.env/ENV/g'"'"' README.md"}}'
+
+assert_blocked "Bash cat quoted denied .env is blocked" \
+  '{"tool_name":"Bash","tool_input":{"command":"cat \".env\""}}'
 
 # --- Test: Mixed config (write-protect + deny) ---
 echo ""
