@@ -21,6 +21,17 @@ Claude sees:   ⚠ Hook blocked this action. Suggesting safer alternative...
 
 No prompts, no "are you sure" dialogs. The command never runs.
 
+**First 10 minutes:**
+
+1. If you want to avoid reading your real Claude Code settings first, run the
+   [temporary first test](tools/safety-check/FIRST_TEST.md).
+2. Run the audit from the same project root where you start Claude Code.
+3. If the summary says `no hooks found`, `0 payload checks`, or `FAIL-OPEN`,
+   install the recommended hook set.
+4. Run verification with `--verify --strict`.
+5. Start a fresh Claude Code session from that same root. If you need help,
+   share only the bounded `Safety Summary (copy/paste)` block.
+
 <a id="check-your-setup"></a>
 
 **Check your current setup from the project root:**
