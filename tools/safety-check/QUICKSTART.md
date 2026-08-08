@@ -9,6 +9,9 @@ first, run the [temporary first test](FIRST_TEST.md), then come back here for th
 real audit and install path. On native Windows, use WSL or Git Bash for that
 isolated first test; `install.ps1 verify` inspects hooks under your real
 `$HOME/.claude` directory.
+The first-test guide also includes a clone-and-run variant if you prefer to
+inspect the checked-out script before running it instead of piping GitHub raw
+content into Bash.
 
 ## 0. Choose the path
 
