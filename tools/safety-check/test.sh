@@ -1996,7 +1996,7 @@ TMPDIR_EXIT2=$(mktemp -d)
 mkdir -p "$TMPDIR_EXIT2/.claude/hooks"
 cat > "$TMPDIR_EXIT2/.claude/hooks/my-hook.sh" << 'HOOKEOF'
 #!/bin/bash
-echo '{"decision":"block","reason":"blocked"}'
+echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"blocked"}}'
 exit 2
 HOOKEOF
 cat > "$TMPDIR_EXIT2/.claude/settings.json" << 'SETTINGSEOF'
@@ -2009,7 +2009,8 @@ SETTINGSEOF
 EXIT2_OUTPUT=$(cd "$TMPDIR_EXIT2" && bash "$CHECK_SCRIPT" 2>&1) || true
 assert "exit 2 warning present" "exit code 2" "$EXIT2_OUTPUT"
 assert "exit 2 warning references #37210" "37210" "$EXIT2_OUTPUT"
-assert "exit 2 warning mentions block JSON" "decision" "$EXIT2_OUTPUT"
+assert "exit 2 warning mentions hookSpecificOutput" "hookSpecificOutput" "$EXIT2_OUTPUT"
+assert "exit 2 warning recommends permissionDecision deny" "permissionDecision.*deny" "$EXIT2_OUTPUT"
 rm -rf "$TMPDIR_EXIT2"
 
 TMPDIR_NOEXIT2=$(mktemp -d)
@@ -3080,6 +3081,25 @@ DEPBLK_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert "deprecated block warning present" "deprecated decision:block format" "$DEPBLK_OUTPUT"
 assert "deprecated block cites issue" "15486" "$DEPBLK_OUTPUT"
 rm -rf "$TMPDIR_DEPBLK"
+
+# === Test: Deprecated decision:block warning lists JavaScript object literals ===
+TMPDIR_DEPBLK_MULTI=$(mktemp -d)
+export HOME="$TMPDIR_DEPBLK_MULTI"
+mkdir -p "$TMPDIR_DEPBLK_MULTI/.claude/hooks"
+
+for hook in guard-bash-substitutes.js guard-git-push.js guard-write.js; do
+  cat > "$TMPDIR_DEPBLK_MULTI/.claude/hooks/$hook" << 'MULTIDEPBLK'
+#!/usr/bin/env node
+console.log(JSON.stringify({ decision: 'block', reason }))
+MULTIDEPBLK
+  chmod +x "$TMPDIR_DEPBLK_MULTI/.claude/hooks/$hook"
+done
+
+DEPBLK_MULTI_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "deprecated block lists first js hook" "guard-bash-substitutes.js" "$DEPBLK_MULTI_OUTPUT"
+assert "deprecated block lists second js hook" "guard-git-push.js" "$DEPBLK_MULTI_OUTPUT"
+assert "deprecated block lists third js hook" "guard-write.js" "$DEPBLK_MULTI_OUTPUT"
+rm -rf "$TMPDIR_DEPBLK_MULTI"
 
 # === Test: Hook with hookSpecificOutput does NOT trigger deprecated warning ===
 TMPDIR_NEWBLK=$(mktemp -d)

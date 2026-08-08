@@ -663,7 +663,7 @@ for hookdir in "${HOME}/.claude/hooks" ".claude/hooks"; do
     if [ -n "$EXIT2_HOOKS" ]; then
         scope="Hook(s)"
         [ "$hookdir" = ".claude/hooks" ] && scope="Project hook(s)"
-        WARNINGS+=("${scope} use exit code 2 for deny:${EXIT2_HOOKS}. Exit 2 is treated as a hook crash and may be silently ignored, especially for Edit/Write tools. Use exit 0 with {\"decision\":\"block\",\"reason\":\"...\"} JSON on stdout instead. (see claude-code#37210)")
+        WARNINGS+=("${scope} use exit code 2 for deny:${EXIT2_HOOKS}. Exit 2 is treated as a hook crash and may be silently ignored, especially for Edit/Write tools. For PreToolUse, use exit 0 with {\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"...\"}} JSON on stdout instead. For other hook events, use that event's supported block or continue response; do not rely on exit 2. (see claude-code#37210)")
     fi
 done
 
@@ -1169,13 +1169,29 @@ done
 # The old format {"decision":"block","reason":"..."} still works but is deprecated.
 # New format: {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"..."}}
 # Migration avoids breakage if the old format is removed in a future CLI version.
+_hook_contains_bare_decision_block() {
+    python3 - "$1" << 'PYEOF_BARE_BLOCK_FILE'
+import re
+import sys
+
+try:
+    text = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+except Exception:
+    sys.exit(1)
+
+pattern = re.compile("\"decision\"\\s*:\\s*\"block\"|decision\\s*:\\s*[\"" + chr(39) + "]block[\"" + chr(39) + "]|\"block\".*\"decision\"", re.S)
+sys.exit(0 if pattern.search(text) else 1)
+PYEOF_BARE_BLOCK_FILE
+}
+
 for hookdir in "${HOME}/.claude/hooks" ".claude/hooks"; do
     [ -d "$hookdir" ] || continue
     DEPRECATED_HOOKS=""
     for hookfile in "$hookdir"/*; do
         [ -f "$hookfile" ] || continue
-        # Detect hooks that output decision:block but don't use hookSpecificOutput
-        if grep -qlE '"decision".*"block"|"block".*"decision"' "$hookfile" 2>/dev/null; then
+        # Detect hooks that output decision:block but don't use hookSpecificOutput.
+        # Include JavaScript object literals such as { decision: 'block', reason }.
+        if _hook_contains_bare_decision_block "$hookfile"; then
             if ! grep -qlE 'hookSpecificOutput' "$hookfile" 2>/dev/null; then
                 DEPRECATED_HOOKS="${DEPRECATED_HOOKS} $(basename "$hookfile")"
             fi
@@ -1195,13 +1211,14 @@ import json, sys, re
 try:
     s = json.load(open(sys.argv[1]))
     hooks = s.get("hooks", {})
+    pattern = re.compile("\"decision\"\\s*:\\s*\"block\"|decision\\s*:\\s*[\"" + chr(39) + "]block[\"" + chr(39) + "]|\"block\".*\"decision\"")
     for hook_type in hooks:
         for entry in hooks[hook_type]:
             cmd = ""
             for h in entry.get("hooks", []):
                 cmd += h.get("command", "") + " "
             cmd += entry.get("command", "")
-            if re.search(r'"decision".*"block"|"block".*"decision"', cmd):
+            if pattern.search(cmd):
                 if "hookSpecificOutput" not in cmd:
                     print("true")
                     sys.exit(0)
