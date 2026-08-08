@@ -447,9 +447,34 @@ cat > "$TMPDIR_HEALTH/.claude/settings.json" << HEALTH
 HEALTH
 HEALTH_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert "missing hook detected" "file not found" "$HEALTH_OUTPUT"
+assert "missing hook path shown" "~/.claude/hooks/nonexistent.sh - file not found" "$HEALTH_OUTPUT"
 assert "has hook health section" "Hook Health" "$HEALTH_OUTPUT"
 assert "missing hook health included in copy-paste summary" "Issue: 1 hook(s) are broken" "$HEALTH_OUTPUT"
 rm -rf "$TMPDIR_HEALTH"
+
+# === Test 15b: Hook health disambiguates repeated hook.sh filenames ===
+TMPDIR_AMBIG_HEALTH=$(mktemp -d)
+export HOME="$TMPDIR_AMBIG_HEALTH"
+mkdir -p "$TMPDIR_AMBIG_HEALTH/.claude"
+cat > "$TMPDIR_AMBIG_HEALTH/.claude/settings.json" << AMBIGHEALTH
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {"type": "command", "command": "$TMPDIR_AMBIG_HEALTH/.claude/bash-guard/hook.sh"},
+          {"type": "command", "command": "$TMPDIR_AMBIG_HEALTH/.claude/git-safe/hook.sh"}
+        ]
+      }
+    ]
+  }
+}
+AMBIGHEALTH
+AMBIG_HEALTH_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert "ambiguous bash hook path shown" "~/.claude/bash-guard/hook.sh - file not found" "$AMBIG_HEALTH_OUTPUT"
+assert "ambiguous git hook path shown" "~/.claude/git-safe/hook.sh - file not found" "$AMBIG_HEALTH_OUTPUT"
+assert_not "ambiguous hook basename only hidden" "✗ hook.sh - file not found" "$AMBIG_HEALTH_OUTPUT"
+rm -rf "$TMPDIR_AMBIG_HEALTH"
 
 # === Test 16: Hook health checks - non-executable hook ===
 TMPDIR_NOEXEC=$(mktemp -d)

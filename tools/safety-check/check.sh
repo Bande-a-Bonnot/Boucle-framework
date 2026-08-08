@@ -1979,6 +1979,18 @@ if first in {"bash", "sh", "zsh", "python", "python3", "pwsh", "powershell", "po
 PYEOF_HOOKINTERP
 }
 
+_hook_display_path() {
+    local path="$1"
+    local display="$path"
+    if [ -n "${HOME:-}" ] && [ "$HOME" != "/" ]; then
+        display="${display//"$HOME"/~}"
+    fi
+    if [ -n "${PWD:-}" ] && [ "$PWD" != "/" ]; then
+        display="${display//"$PWD"/<project>}"
+    fi
+    printf "%s" "$display" | cut -c1-120
+}
+
 _run_hook_with_timeout() {
     local interpreter="$1"
     local script_path="$2"
@@ -2141,15 +2153,15 @@ if [ -n "$HOOK_PATHS" ]; then
             printf "  ${DIM}- %s - custom command, not file-checked${NC}\n" "$hook_basename"
             continue
         fi
-        hook_basename=$(basename "$expanded_path")
+        hook_label=$(_hook_display_path "$expanded_path")
         if [ ! -f "$expanded_path" ]; then
-            printf "  ${RED}✗${NC} %s - file not found\n" "$hook_basename"
+            printf "  ${RED}✗${NC} %s - file not found\n" "$hook_label"
             HOOK_HEALTH_ISSUES=$((HOOK_HEALTH_ISSUES + 1))
         elif [ ! -x "$expanded_path" ] && [ -z "$(_hook_interpreter_name "$hook_path" 2>/dev/null || true)" ]; then
-            printf "  ${RED}✗${NC} %s - not executable (run: chmod +x %s)\n" "$hook_basename" "$hook_path"
+            printf "  ${RED}✗${NC} %s - not executable (run chmod +x on this file)\n" "$hook_label"
             HOOK_HEALTH_ISSUES=$((HOOK_HEALTH_ISSUES + 1))
         else
-            printf "  ${GREEN}✓${NC} %s\n" "$hook_basename"
+            printf "  ${GREEN}✓${NC} %s\n" "$hook_label"
         fi
     done <<< "$HOOK_PATHS"
     if [ "$HOOK_HEALTH_ISSUES" -gt 0 ]; then
