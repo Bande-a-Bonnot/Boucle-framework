@@ -243,6 +243,24 @@ def main():
         assert_allowed("allow empty command",
                        make_input("Bash", ""))
 
+        # --- False-positive avoidance ---
+        print("\nFalse-positive avoidance (issue #449):")
+        assert_allowed("allow commit message mentioning reset --hard",
+                       make_input("Bash", 'git commit -m "avoid git reset --hard"'))
+        assert_allowed("allow git log grep for reset --hard",
+                       make_input("Bash", 'git log --grep="reset --hard"'))
+        assert_allowed("allow JSON payload mentioning git push -f",
+                       make_input("Bash", 'node probe.js "{\\"command\\":\\"git push -f\\"}"'))
+        assert_allowed("allow echo mentioning git reset --hard",
+                       make_input("Bash", "echo git reset --hard"))
+        heredoc_message = """git commit -F - <<'EOF'
+document git reset --hard in the commit message
+EOF"""
+        assert_allowed("allow heredoc commit message mentioning reset --hard",
+                       make_input("Bash", heredoc_message))
+        assert_blocked("block real destructive git after harmless mention",
+                       make_input("Bash", 'echo "git reset --hard"; git reset --hard'))
+
         # --- Disabled ---
         print("\nDisabled:")
         assert_allowed("GIT_SAFE_DISABLED=1 allows destructive op",

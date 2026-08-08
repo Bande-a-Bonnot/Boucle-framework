@@ -65,9 +65,179 @@ log() {
   fi
 }
 
-# Check if command contains git
-if ! echo "$COMMAND" | grep -q 'git\b' 2>/dev/null; then
-  log "SKIP: no git command"
+# Print command segments split on unquoted shell separators. Quoted text and
+# here-doc bodies are replaced with spaces so commit messages, grep filters, and
+# JSON payloads that mention destructive git commands are not treated as
+# executable git operations.
+command_segments() {
+  awk '
+    function reset_heredoc(delim) {
+      heredoc = delim
+    }
+
+    function maybe_heredoc(line,    i, c, n, q, delim) {
+      for (i = 1; i <= length(line); i++) {
+        c = substr(line, i, 1)
+        n = substr(line, i + 1, 1)
+        if (c == "<" && n == "<") {
+          i += 2
+          if (substr(line, i, 1) == "-") {
+            i++
+          }
+          while (substr(line, i, 1) ~ /[ \t]/) {
+            i++
+          }
+          q = substr(line, i, 1)
+          delim = ""
+          if (q == "\"" || q == "'\''") {
+            i++
+            while (i <= length(line) && substr(line, i, 1) != q) {
+              delim = delim substr(line, i, 1)
+              i++
+            }
+          } else {
+            while (i <= length(line) && substr(line, i, 1) !~ /[ \t;&|]/) {
+              delim = delim substr(line, i, 1)
+              i++
+            }
+          }
+          if (delim != "") {
+            reset_heredoc(delim)
+            return
+          }
+        }
+      }
+    }
+
+    {
+      if (heredoc != "") {
+        if ($0 == heredoc) {
+          heredoc = ""
+        }
+        print ""
+        next
+      }
+
+      out = ""
+      sq = 0
+      dq = 0
+      esc = 0
+      for (i = 1; i <= length($0); i++) {
+        c = substr($0, i, 1)
+        n = substr($0, i + 1, 1)
+
+        if (esc) {
+          out = out ((sq || dq) ? " " : c)
+          esc = 0
+          continue
+        }
+
+        if (c == "\\" && !sq) {
+          out = out (dq ? " " : c)
+          esc = 1
+          continue
+        }
+
+        if (c == "'\''" && !dq) {
+          sq = !sq
+          out = out " "
+          continue
+        }
+
+        if (c == "\"" && !sq) {
+          dq = !dq
+          out = out " "
+          continue
+        }
+
+        if (sq || dq) {
+          out = out " "
+          continue
+        }
+
+        if (c == ";" || c == "|") {
+          print out
+          out = ""
+          if (c == "|" && n == "|") {
+            i++
+          }
+          continue
+        }
+
+        if (c == "&" && n == "&") {
+          print out
+          out = ""
+          i++
+          continue
+        }
+
+        out = out c
+      }
+      print out
+      maybe_heredoc($0)
+    }
+  ' <<< "$COMMAND"
+}
+
+is_git_binary_token() {
+  local token="$1"
+  token="${token##*/}"
+  token="${token%.exe}"
+  [ "$token" = "git" ]
+}
+
+is_assignment_token() {
+  [[ "$1" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]
+}
+
+is_git_command_segment() {
+  local segment="$1"
+  local words=()
+  local i=0
+  local token=""
+
+  read -r -a words <<< "$segment"
+  [ ${#words[@]} -gt 0 ] || return 1
+
+  while [ $i -lt ${#words[@]} ]; do
+    token="${words[$i]}"
+    if [ "$token" = "env" ] || [ "$token" = "command" ] || [ "$token" = "exec" ]; then
+      i=$((i + 1))
+      continue
+    fi
+    if is_assignment_token "$token"; then
+      i=$((i + 1))
+      continue
+    fi
+    break
+  done
+
+  [ $i -lt ${#words[@]} ] || return 1
+  is_git_binary_token "${words[$i]}"
+}
+
+GIT_COMMANDS=""
+while IFS= read -r segment; do
+  if is_git_command_segment "$segment"; then
+    if [ -z "$GIT_COMMANDS" ]; then
+      GIT_COMMANDS="$segment"
+    else
+      GIT_COMMANDS="$GIT_COMMANDS
+$segment"
+    fi
+  fi
+done < <(command_segments)
+
+matches_git_command() {
+  printf '%s\n' "$GIT_COMMANDS" | grep -qE "$1" 2>/dev/null
+}
+
+contains_git_text() {
+  printf '%s\n' "$GIT_COMMANDS" | grep -q "$1" 2>/dev/null
+}
+
+if [ -z "$GIT_COMMANDS" ]; then
+  log "SKIP: no executable git command"
   exit 0
 fi
 
@@ -112,41 +282,41 @@ block() {
 
 # git commit/merge/push --no-verify / -n (skips safety hooks like pre-commit, pre-push)
 # See: https://github.com/anthropics/claude-code/issues/40117
-if echo "$COMMAND" | grep -qE 'git\s+(commit|merge|push|cherry-pick|revert|am)\s.*--no-verify' 2>/dev/null; then
+if matches_git_command 'git\s+(commit|merge|push|cherry-pick|revert|am)\s.*--no-verify'; then
   is_allowed "no-verify" || block "git --no-verify skips pre-commit/pre-push hooks, bypassing safety checks like linting, tests, and secret scanning." "Remove --no-verify and let hooks run. Fix any issues they report. Add 'allow: no-verify' to .git-safe only if you understand the risk."
 fi
 # Also catch -n shorthand for commit (git commit -n is --no-verify)
-if echo "$COMMAND" | grep -qE 'git\s+commit\s+(-[a-zA-Z]*n[a-zA-Z]*\b|.*\s-[a-zA-Z]*n[a-zA-Z]*\b)' 2>/dev/null; then
+if matches_git_command 'git\s+commit\s+(-[a-zA-Z]*n[a-zA-Z]*\b|.*\s-[a-zA-Z]*n[a-zA-Z]*\b)'; then
   # Don't false-positive on --dry-run (-n for some commands) — commit's -n IS --no-verify
-  if ! echo "$COMMAND" | grep -q '\-\-no-verify' 2>/dev/null; then
+  if ! contains_git_text '\-\-no-verify'; then
     is_allowed "no-verify" || block "git commit -n skips pre-commit hooks (same as --no-verify)." "Remove -n and let pre-commit hooks run. Add 'allow: no-verify' to .git-safe only if you understand the risk."
   fi
 fi
 
 # git push --force / -f (but not --force-with-lease which is safer)
-if echo "$COMMAND" | grep -qE 'git\s+push\s.*--force(\s|$)' 2>/dev/null; then
-  if echo "$COMMAND" | grep -q '\-\-force-with-lease' 2>/dev/null; then
+if matches_git_command 'git\s+push\s.*--force(\s|$)'; then
+  if contains_git_text '\-\-force-with-lease'; then
     log "ALLOW: --force-with-lease is safe"
   else
     is_allowed "push --force" || block "Force push can rewrite remote history and lose commits for other collaborators." "Use --force-with-lease instead, or add 'allow: push --force' to .git-safe."
   fi
 fi
-if echo "$COMMAND" | grep -qE 'git\s+push\s+(-[a-zA-Z]*f\b|.*\s-[a-zA-Z]*f\b)' 2>/dev/null; then
-  if ! echo "$COMMAND" | grep -q '\-\-force' 2>/dev/null; then
+if matches_git_command 'git\s+push\s+(-[a-zA-Z]*f\b|.*\s-[a-zA-Z]*f\b)'; then
+  if ! contains_git_text '\-\-force'; then
     is_allowed "push --force" || block "Force push (-f) can rewrite remote history and lose commits." "Use --force-with-lease instead, or add 'allow: push --force' to .git-safe."
   fi
 fi
 
 # git reset --hard
-if echo "$COMMAND" | grep -qE 'git\s+reset\s.*--hard' 2>/dev/null; then
+if matches_git_command 'git\s+reset\s.*--hard'; then
   is_allowed "reset --hard" || block "git reset --hard discards all uncommitted changes permanently." "Commit or stash changes first, or add 'allow: reset --hard' to .git-safe."
 fi
 
 # git checkout . / git checkout -- (discards working tree changes)
-if echo "$COMMAND" | grep -qE 'git\s+checkout\s+\.\s*$' 2>/dev/null; then
+if matches_git_command 'git\s+checkout\s+\.\s*$'; then
   is_allowed "checkout ." || block "git checkout . discards all uncommitted changes in the working tree." "Commit or stash changes first, or add 'allow: checkout .' to .git-safe."
 fi
-if echo "$COMMAND" | grep -qE 'git\s+checkout\s+--\s' 2>/dev/null; then
+if matches_git_command 'git\s+checkout\s+--\s'; then
   is_allowed "checkout --" || block "git checkout -- discards uncommitted changes to specified files." "Commit or stash first, or add 'allow: checkout --' to .git-safe."
 fi
 
@@ -154,53 +324,53 @@ fi
 # Catches: git checkout HEAD -- src/, git checkout main -- file.js, git checkout abc123 -- .
 # Does NOT catch: git checkout -- file (no ref; already caught above)
 # Does NOT catch: git checkout -b branch (flag, not ref)
-if echo "$COMMAND" | grep -qE 'git\s+checkout\s+[^-][^ ]*\s+--\s' 2>/dev/null; then
+if matches_git_command 'git\s+checkout\s+[^-][^ ]*\s+--\s'; then
   is_allowed "checkout ref --" || block "git checkout <ref> -- <path> overwrites working tree files with the version from that ref, discarding local changes." "Commit or stash changes first, or add 'allow: checkout ref --' to .git-safe."
 fi
 
 # git restore (various destructive forms)
-if echo "$COMMAND" | grep -qE 'git\s+restore\s' 2>/dev/null; then
+if matches_git_command 'git\s+restore\s'; then
   # Always block --source/-s (restoring from arbitrary ref)
-  if echo "$COMMAND" | grep -qE '(--source|-s\s)' 2>/dev/null; then
+  if matches_git_command '(--source|-s\s)'; then
     is_allowed "restore --source" || block "git restore --source overwrites files from a specific ref, discarding local changes." "Commit or stash first, or add 'allow: restore --source' to .git-safe."
   # Block --worktree/-W (explicitly discards working tree)
-  elif echo "$COMMAND" | grep -qE '(--worktree|-W\b)' 2>/dev/null; then
+  elif matches_git_command '(--worktree|-W\b)'; then
     is_allowed "restore" || block "git restore --worktree discards uncommitted working tree changes." "Commit or stash first, or add 'allow: restore' to .git-safe."
   # Block if no --staged flag (default = working tree restore = destructive)
-  elif ! echo "$COMMAND" | grep -qE '\-\-staged' 2>/dev/null; then
+  elif ! matches_git_command '\-\-staged'; then
     is_allowed "restore" || block "git restore without --staged discards uncommitted working tree changes." "Use git restore --staged to unstage only, or commit/stash first. Add 'allow: restore' to .git-safe."
   fi
 fi
 
 # git clean -f (deletes untracked files)
-if echo "$COMMAND" | grep -qE 'git\s+clean\s.*-[a-zA-Z]*f' 2>/dev/null; then
+if matches_git_command 'git\s+clean\s.*-[a-zA-Z]*f'; then
   is_allowed "clean -f" || block "git clean -f permanently deletes untracked files." "Use git clean -n (dry run) first, or add 'allow: clean -f' to .git-safe."
 fi
 
 # git branch -D (force-delete unmerged branch)
-if echo "$COMMAND" | grep -qE 'git\s+branch\s.*-[a-zA-Z]*D' 2>/dev/null; then
+if matches_git_command 'git\s+branch\s.*-[a-zA-Z]*D'; then
   is_allowed "branch -D" || block "git branch -D force-deletes a branch even if not fully merged." "Use -d (lowercase) which only deletes merged branches, or add 'allow: branch -D' to .git-safe."
 fi
 
 # git stash drop / clear
-if echo "$COMMAND" | grep -qE 'git\s+stash\s+drop' 2>/dev/null; then
+if matches_git_command 'git\s+stash\s+drop'; then
   is_allowed "stash drop" || block "git stash drop permanently deletes stashed changes." "Add 'allow: stash drop' to .git-safe to permit this."
 fi
-if echo "$COMMAND" | grep -qE 'git\s+stash\s+clear' 2>/dev/null; then
+if matches_git_command 'git\s+stash\s+clear'; then
   is_allowed "stash clear" || block "git stash clear permanently deletes all stashed changes." "Add 'allow: stash clear' to .git-safe to permit this."
 fi
 
 # git reflog expire / delete
-if echo "$COMMAND" | grep -qE 'git\s+reflog\s+(expire|delete)' 2>/dev/null; then
+if matches_git_command 'git\s+reflog\s+(expire|delete)'; then
   is_allowed "reflog expire" || block "git reflog expire/delete destroys recovery data." "This is almost never needed. Add 'allow: reflog expire' to .git-safe if you really need it."
 fi
 
 # git push --delete (removes remote branches/tags)
-if echo "$COMMAND" | grep -qE 'git\s+push\s.*--delete\s' 2>/dev/null; then
+if matches_git_command 'git\s+push\s.*--delete\s'; then
   is_allowed "push --delete" || block "git push --delete permanently removes remote branches or tags." "Use 'git branch -d' for local cleanup instead, or add 'allow: push --delete' to .git-safe."
 fi
 # git push origin :branch (alternate delete syntax)
-if echo "$COMMAND" | grep -qE 'git\s+push\s+\S+\s+:[^/\s]' 2>/dev/null; then
+if matches_git_command 'git\s+push\s+\S+\s+:[^/\s]'; then
   is_allowed "push --delete" || block "git push origin :branch permanently removes a remote branch." "Use 'git branch -d' for local cleanup instead, or add 'allow: push --delete' to .git-safe."
 fi
 
@@ -208,10 +378,10 @@ fi
 # Allow: --abort, --continue, --skip, --quit (recovery operations)
 # Uses ([[:space:]]|$) to catch bare "git rebase" with no args
 # Checks -i/--interactive anywhere in command to catch "git rebase --autosquash -i"
-if echo "$COMMAND" | grep -qE 'git[[:space:]]+rebase([[:space:]]|$)' 2>/dev/null; then
-  if echo "$COMMAND" | grep -qE 'git[[:space:]]+rebase[[:space:]]+.*--(abort|continue|skip|quit)([[:space:]]|$)' 2>/dev/null; then
+if matches_git_command 'git[[:space:]]+rebase([[:space:]]|$)'; then
+  if matches_git_command 'git[[:space:]]+rebase[[:space:]]+.*--(abort|continue|skip|quit)([[:space:]]|$)'; then
     log "ALLOW: rebase recovery operation"
-  elif echo "$COMMAND" | grep -qE '(^|[[:space:]])(-i|--interactive)([[:space:]]|$)' 2>/dev/null; then
+  elif matches_git_command '(^|[[:space:]])(-i|--interactive)([[:space:]]|$)'; then
     is_allowed "rebase -i" || block "Interactive rebase can rewrite, squash, drop, or reorder commits, permanently altering history." "Use non-interactive rebase if you just need to replay commits, or add 'allow: rebase -i' to .git-safe."
   else
     is_allowed "rebase" || block "git rebase replays commits onto a new base, which can lose work during conflict resolution and rewrites history." "Prefer git merge to preserve history, or add 'allow: rebase' to .git-safe."
@@ -220,12 +390,12 @@ fi
 
 # git merge to protected branches (main/master/production/release)
 # Can't detect current branch from command alone, so check for explicit patterns
-if echo "$COMMAND" | grep -qE 'git\s+merge\s' 2>/dev/null; then
+if matches_git_command 'git\s+merge\s'; then
   # Allow recovery: --abort, --continue, --quit
-  if echo "$COMMAND" | grep -qE 'git\s+merge\s+.*--(abort|continue|quit)' 2>/dev/null; then
+  if matches_git_command 'git\s+merge\s+.*--(abort|continue|quit)'; then
     log "ALLOW: merge recovery operation"
   # Block --no-verify on merge (skips hooks)
-  elif echo "$COMMAND" | grep -qE 'git\s+merge\s.*--no-verify' 2>/dev/null; then
+  elif matches_git_command 'git\s+merge\s.*--no-verify'; then
     is_allowed "no-verify" || block "git merge --no-verify skips pre-merge hooks." "Remove --no-verify and let hooks run, or add 'allow: no-verify' to .git-safe."
   fi
 fi
@@ -238,11 +408,11 @@ fi
 #   - Multiple refspecs: git push origin feature:dev hotfix:main
 #   - Full ref format: git push origin feature:refs/heads/main
 #   - Avoids false positives on hyphenated names: release-candidate is allowed
-if echo "$COMMAND" | grep -qE 'git[[:space:]]+push[[:space:]]' 2>/dev/null; then
+if matches_git_command 'git[[:space:]]+push[[:space:]]'; then
   _gs_seen_git=0
   _gs_seen_push=0
   _gs_seen_repo=0
-  for _gs_tok in $COMMAND; do
+  for _gs_tok in $GIT_COMMANDS; do
     # Skip until we see 'git' then 'push'
     if [ "$_gs_seen_git" = "0" ]; then
       [ "$_gs_tok" = "git" ] && _gs_seen_git=1
@@ -277,57 +447,57 @@ if echo "$COMMAND" | grep -qE 'git[[:space:]]+push[[:space:]]' 2>/dev/null; then
 fi
 
 # git filter-branch / git filter-repo (rewrites entire repository history)
-if echo "$COMMAND" | grep -qE 'git\s+filter-(branch|repo)([[:space:]]|$)' 2>/dev/null; then
+if matches_git_command 'git\s+filter-(branch|repo)([[:space:]]|$)'; then
   is_allowed "filter-branch" || block "git filter-branch/filter-repo rewrites entire repository history at scale." "This is rarely needed. Add 'allow: filter-branch' to .git-safe only if you understand the impact."
 fi
 
 # git push --mirror (overwrites ALL remote refs to match local)
-if echo "$COMMAND" | grep -qE 'git\s+push\s+.*--mirror' 2>/dev/null; then
+if matches_git_command 'git\s+push\s+.*--mirror'; then
   is_allowed "push --mirror" || block "git push --mirror overwrites all remote refs to match local, destroying remote branches and tags." "Push specific branches instead, or add 'allow: push --mirror' to .git-safe."
 fi
 
 # git update-ref -d (low-level ref deletion, bypasses branch safeguards)
-if echo "$COMMAND" | grep -qE 'git\s+update-ref\s+.*-d\b' 2>/dev/null; then
+if matches_git_command 'git\s+update-ref\s+.*-d\b'; then
   is_allowed "update-ref -d" || block "git update-ref -d deletes refs directly, bypassing normal branch/tag deletion safeguards." "Use git branch -d or git tag -d instead, or add 'allow: update-ref -d' to .git-safe."
 fi
 
 # git gc --prune=now (immediately garbage-collects unreachable objects)
-if echo "$COMMAND" | grep -qE 'git\s+gc\s+.*--prune=(now|all)' 2>/dev/null; then
+if matches_git_command 'git\s+gc\s+.*--prune=(now|all)'; then
   is_allowed "gc --prune" || block "git gc --prune=now immediately garbage-collects unreachable objects before reflog can save them." "Use git gc without --prune=now to respect reflog expiry, or add 'allow: gc --prune' to .git-safe."
 fi
 
 # git remote remove/rm (removes remote configuration)
-if echo "$COMMAND" | grep -qE 'git\s+remote\s+(remove|rm)\s' 2>/dev/null; then
+if matches_git_command 'git\s+remote\s+(remove|rm)\s'; then
   is_allowed "remote remove" || block "git remote remove deletes remote configuration, losing track of upstream." "Add 'allow: remote remove' to .git-safe to permit this."
 fi
 
 # git submodule deinit --force (force-removes submodule working tree)
-if echo "$COMMAND" | grep -qE 'git\s+submodule\s+deinit\s+.*--force' 2>/dev/null; then
+if matches_git_command 'git\s+submodule\s+deinit\s+.*--force'; then
   is_allowed "submodule deinit" || block "git submodule deinit --force removes submodule working tree data." "Use without --force, or add 'allow: submodule deinit' to .git-safe."
 fi
 
 # git worktree remove --force (force-removes worktree with uncommitted changes)
-if echo "$COMMAND" | grep -qE 'git\s+worktree\s+remove\s+.*--force' 2>/dev/null; then
+if matches_git_command 'git\s+worktree\s+remove\s+.*--force'; then
   is_allowed "worktree remove --force" || block "git worktree remove --force removes a worktree even with uncommitted changes." "Commit or stash changes first, or add 'allow: worktree remove --force' to .git-safe."
 fi
 
 # git tag -d / --delete (deletes local tags, including release tags)
-if echo "$COMMAND" | grep -qE 'git\s+tag([[:space:]]+.*)?([[:space:]]|^)(-d|--delete)([[:space:]]|$)' 2>/dev/null; then
+if matches_git_command 'git\s+tag([[:space:]]+.*)?([[:space:]]|^)(-d|--delete)([[:space:]]|$)'; then
   is_allowed "tag -d" || block "git tag -d deletes local tags which may include release infrastructure." "Add 'allow: tag -d' to .git-safe to permit this."
 fi
 
 # git config --system / --global (modifies git config beyond this repo)
-if echo "$COMMAND" | grep -qE 'git\s+config\s+.*--system([[:space:]]|$)' 2>/dev/null; then
+if matches_git_command 'git\s+config\s+.*--system([[:space:]]|$)'; then
   is_allowed "config --system" || block "git config --system modifies machine-wide git configuration." "Use --local for repo-specific config, or add 'allow: config --system' to .git-safe."
-elif echo "$COMMAND" | grep -qE 'git\s+config\s+.*--global([[:space:]]|$)' 2>/dev/null; then
+elif matches_git_command 'git\s+config\s+.*--global([[:space:]]|$)'; then
   is_allowed "config --global" || block "git config --system/--global modifies git configuration beyond this repository." "Use --local for repo-specific config, or add 'allow: config --global' to .git-safe."
 fi
 
 # Force push to main/master (extra protection)
-if echo "$COMMAND" | grep -qE 'git\s+push\s.*--force.*\s(main|master)(\s|$)' 2>/dev/null; then
+if matches_git_command 'git\s+push\s.*--force.*\s(main|master)(\s|$)'; then
   block "Force push to main/master is extremely dangerous." "This is blocked even with 'allow: push --force'. Never force push to main."
 fi
-if echo "$COMMAND" | grep -qE 'git\s+push\s.*\s(main|master)\s.*--force' 2>/dev/null; then
+if matches_git_command 'git\s+push\s.*\s(main|master)\s.*--force'; then
   block "Force push to main/master is extremely dangerous." "This is blocked even with 'allow: push --force'. Never force push to main."
 fi
 

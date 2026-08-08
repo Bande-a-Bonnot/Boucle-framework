@@ -13,6 +13,10 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 
+hook_input() {
+  jq -cn --arg command "$1" '{"tool_name":"Bash","tool_input":{"command":$command}}'
+}
+
 assert_blocked() {
   local desc="$1"
   local input="$2"
@@ -319,6 +323,28 @@ assert_allowed "git in non-git context" \
   '{"tool_name":"Bash","tool_input":{"command":"echo git is great"}}'
 assert_allowed "piped git command (safe)" \
   '{"tool_name":"Bash","tool_input":{"command":"git log --oneline | head -5"}}'
+
+echo ""
+echo "False-positive avoidance (issue #449):"
+assert_allowed "git commit message can mention git reset --hard" \
+  "$(hook_input 'git commit -m "avoid git reset --hard"')"
+assert_allowed "git log --grep can search for reset --hard" \
+  "$(hook_input 'git log --grep="reset --hard"')"
+assert_allowed "non-git command can pass JSON payload mentioning git push -f" \
+  "$(hook_input 'node probe.js "{\"command\":\"git push -f\"}"')"
+assert_allowed "echo can mention git reset --hard without executing git" \
+  "$(hook_input 'echo git reset --hard')"
+
+HEREDOC_COMMIT_MESSAGE=$(cat <<'CMD'
+git commit -F - <<'EOF'
+document git reset --hard in the commit message
+EOF
+CMD
+)
+assert_allowed "git commit -F heredoc body can mention git reset --hard" \
+  "$(hook_input "$HEREDOC_COMMIT_MESSAGE")"
+assert_blocked "real destructive git command after harmless mention still blocks" \
+  "$(hook_input 'echo "git reset --hard"; git reset --hard')"
 
 # --- Results ---
 echo ""
