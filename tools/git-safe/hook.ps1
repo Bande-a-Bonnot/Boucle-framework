@@ -92,18 +92,126 @@ function Test-Allowed {
     return $false
 }
 
+function Split-CommandSegments {
+    param([string]$Command)
+
+    $segments = New-Object System.Collections.Generic.List[string]
+    $hereDoc = $null
+
+    foreach ($rawLine in ($Command -split '\r?\n')) {
+        $line = $rawLine.TrimEnd("`r")
+        if ($hereDoc) {
+            if ($line -eq $hereDoc) { $hereDoc = $null }
+            continue
+        }
+
+        $out = New-Object System.Text.StringBuilder
+        $sq = $false
+        $dq = $false
+        $esc = $false
+
+        for ($i = 0; $i -lt $line.Length; $i++) {
+            $c = $line[$i]
+            $n = if ($i + 1 -lt $line.Length) { $line[$i + 1] } else { [char]0 }
+
+            if ($esc) {
+                [void]$out.Append($(if ($sq -or $dq) { ' ' } else { $c }))
+                $esc = $false
+                continue
+            }
+            if ($c -eq '\' -and -not $sq) {
+                [void]$out.Append($(if ($dq) { ' ' } else { $c }))
+                $esc = $true
+                continue
+            }
+            if ($c -eq "'" -and -not $dq) {
+                $sq = -not $sq
+                [void]$out.Append(' ')
+                continue
+            }
+            if ($c -eq '"' -and -not $sq) {
+                $dq = -not $dq
+                [void]$out.Append(' ')
+                continue
+            }
+            if ($sq -or $dq) {
+                [void]$out.Append(' ')
+                continue
+            }
+            if ($c -eq ';' -or $c -eq '|') {
+                $segments.Add($out.ToString())
+                $out.Clear() | Out-Null
+                if ($c -eq '|' -and $n -eq '|') { $i++ }
+                continue
+            }
+            if ($c -eq '&' -and $n -eq '&') {
+                $segments.Add($out.ToString())
+                $out.Clear() | Out-Null
+                $i++
+                continue
+            }
+            [void]$out.Append($c)
+        }
+
+        $segments.Add($out.ToString())
+
+        if ($line -match '<<-?\s*(?:"([^"]+)"|''([^'']+)''|(\S+))') {
+            $hereDoc = @($Matches[1], $Matches[2], $Matches[3]) | Where-Object { $_ } | Select-Object -First 1
+        }
+    }
+
+    return $segments
+}
+
+function Test-GitSegment {
+    param([string]$Segment)
+    $tokens = @($Segment -split '\s+' | Where-Object { $_ })
+    if ($tokens.Count -eq 0) { return $false }
+
+    $i = 0
+    while ($i -lt $tokens.Count) {
+        $token = $tokens[$i]
+        if ($token -in 'env', 'command', 'exec') {
+            $i++
+            continue
+        }
+        if ($token -match '^[A-Za-z_][A-Za-z0-9_]*=') {
+            $i++
+            continue
+        }
+        break
+    }
+
+    if ($i -ge $tokens.Count) { return $false }
+    $binary = Split-Path $tokens[$i] -Leaf
+    $binary = $binary -replace '\.exe$', ''
+    return $binary -eq 'git'
+}
+
+function Get-GitCommandText {
+    param([string]$Command)
+    $segments = @(Split-CommandSegments $Command | Where-Object { Test-GitSegment $_ })
+    return ($segments -join "`n")
+}
+
+$gitCommandText = Get-GitCommandText $command
+if (-not $gitCommandText) {
+    Write-Log "SKIP: no executable git command"
+    exit 0
+}
+
 # --- Destructive operation checks ---
 
 # git commit/merge/push --no-verify / -n (skips safety hooks like pre-commit, pre-push)
 # See: https://github.com/anthropics/claude-code/issues/40117
-if ($command -match 'git\s+(commit|merge|push|cherry-pick|revert|am)\s.*--no-verify') {
+if ($gitCommandText -match 'git\s+(commit|merge|push|cherry-pick|revert|am)\s.*--no-verify') {
     if (-not (Test-Allowed 'no-verify')) {
         Block-Tool "git-safe: git --no-verify skips pre-commit/pre-push hooks, bypassing safety checks like linting, tests, and secret scanning. Suggestion: Remove --no-verify and let hooks run. Fix any issues they report. Add 'allow: no-verify' to .git-safe only if you understand the risk."
     }
 }
 # Also catch -n shorthand for commit (git commit -n is --no-verify)
-if ($command -match 'git\s+commit\s+(-[a-zA-Z]*n[a-zA-Z]*\b|.*\s-[a-zA-Z]*n[a-zA-Z]*\b)') {
-    if ($command -notmatch '--no-verify') {
+if ($gitCommandText -match 'git\s+commit\s+(-[a-zA-Z]*n[a-zA-Z]*\b|.*\s-[a-zA-Z]*n[a-zA-Z]*\b)') {
+    if ($gitCommandText -notmatch '--no-verify') {
         if (-not (Test-Allowed 'no-verify')) {
             Block-Tool "git-safe: git commit -n skips pre-commit hooks (same as --no-verify). Suggestion: Remove -n and let pre-commit hooks run. Add 'allow: no-verify' to .git-safe only if you understand the risk."
         }
@@ -111,15 +219,15 @@ if ($command -match 'git\s+commit\s+(-[a-zA-Z]*n[a-zA-Z]*\b|.*\s-[a-zA-Z]*n[a-zA
 }
 
 # git push --force / -f (but not --force-with-lease which is safer)
-if ($command -match 'git\s+push\s.*--force(\s|$)') {
-    if ($command -match '--force-with-lease') {
+if ($gitCommandText -match 'git\s+push\s.*--force(\s|$)') {
+    if ($gitCommandText -match '--force-with-lease') {
         Write-Log "ALLOW: --force-with-lease is safe"
     } elseif (-not (Test-Allowed 'push --force')) {
         Block-Tool "git-safe: Force push can rewrite remote history and lose commits for other collaborators. Suggestion: Use --force-with-lease instead, or add 'allow: push --force' to .git-safe."
     }
 }
-if ($command -match 'git\s+push\s+(-[a-zA-Z]*f\b|.*\s-[a-zA-Z]*f\b)') {
-    if ($command -notmatch '--force') {
+if ($gitCommandText -match 'git\s+push\s+(-[a-zA-Z]*f\b|.*\s-[a-zA-Z]*f\b)') {
+    if ($gitCommandText -notmatch '--force') {
         if (-not (Test-Allowed 'push --force')) {
             Block-Tool "git-safe: Force push (-f) can rewrite remote history and lose commits. Suggestion: Use --force-with-lease instead, or add 'allow: push --force' to .git-safe."
         }
@@ -128,56 +236,56 @@ if ($command -match 'git\s+push\s+(-[a-zA-Z]*f\b|.*\s-[a-zA-Z]*f\b)') {
 
 # Force push to main/master (extra protection - blocked even with allowlist)
 # But --force-with-lease is safe and should be allowed
-if ($command -cmatch 'git\s+push\s.*--force.*\s(main|master)(\s|$)') {
-    if ($command -notmatch '--force-with-lease') {
+if ($gitCommandText -cmatch 'git\s+push\s.*--force.*\s(main|master)(\s|$)') {
+    if ($gitCommandText -notmatch '--force-with-lease') {
         Block-Tool "git-safe: Force push to main/master is extremely dangerous. Suggestion: This is blocked even with 'allow: push --force'. Never force push to main."
     }
 }
-if ($command -cmatch 'git\s+push\s.*\s(main|master)\s.*--force') {
-    if ($command -notmatch '--force-with-lease') {
+if ($gitCommandText -cmatch 'git\s+push\s.*\s(main|master)\s.*--force') {
+    if ($gitCommandText -notmatch '--force-with-lease') {
         Block-Tool "git-safe: Force push to main/master is extremely dangerous. Suggestion: This is blocked even with 'allow: push --force'. Never force push to main."
     }
 }
 
 # git reset --hard
-if ($command -match 'git\s+reset\s.*--hard') {
+if ($gitCommandText -match 'git\s+reset\s.*--hard') {
     if (-not (Test-Allowed 'reset --hard')) {
         Block-Tool "git-safe: git reset --hard discards all uncommitted changes permanently. Suggestion: Commit or stash changes first, or add 'allow: reset --hard' to .git-safe."
     }
 }
 
 # git checkout . (discards working tree changes)
-if ($command -match 'git\s+checkout\s+\.\s*$') {
+if ($gitCommandText -match 'git\s+checkout\s+\.\s*$') {
     if (-not (Test-Allowed 'checkout .')) {
         Block-Tool "git-safe: git checkout . discards all uncommitted changes in the working tree. Suggestion: Commit or stash changes first, or add 'allow: checkout .' to .git-safe."
     }
 }
 
 # git checkout -- (discards changes to files)
-if ($command -match 'git\s+checkout\s+--\s') {
+if ($gitCommandText -match 'git\s+checkout\s+--\s') {
     if (-not (Test-Allowed 'checkout --')) {
         Block-Tool "git-safe: git checkout -- discards uncommitted changes to specified files. Suggestion: Commit or stash first, or add 'allow: checkout --' to .git-safe."
     }
 }
 
 # git checkout <ref> -- <path> (overwrites files from ref)
-if ($command -match 'git\s+checkout\s+[^-][^ ]*\s+--\s') {
+if ($gitCommandText -match 'git\s+checkout\s+[^-][^ ]*\s+--\s') {
     if (-not (Test-Allowed 'checkout ref --')) {
         Block-Tool "git-safe: git checkout <ref> -- <path> overwrites working tree files with the version from that ref, discarding local changes. Suggestion: Commit or stash changes first, or add 'allow: checkout ref --' to .git-safe."
     }
 }
 
 # git restore (various destructive forms)
-if ($command -match 'git\s+restore\s') {
-    if ($command -match '(--source|-s\s)') {
+if ($gitCommandText -match 'git\s+restore\s') {
+    if ($gitCommandText -match '(--source|-s\s)') {
         if (-not (Test-Allowed 'restore --source')) {
             Block-Tool "git-safe: git restore --source overwrites files from a specific ref, discarding local changes. Suggestion: Commit or stash first, or add 'allow: restore --source' to .git-safe."
         }
-    } elseif ($command -match '(--worktree|-W\b)') {
+    } elseif ($gitCommandText -match '(--worktree|-W\b)') {
         if (-not (Test-Allowed 'restore')) {
             Block-Tool "git-safe: git restore --worktree discards uncommitted working tree changes. Suggestion: Commit or stash first, or add 'allow: restore' to .git-safe."
         }
-    } elseif ($command -notmatch '--staged') {
+    } elseif ($gitCommandText -notmatch '--staged') {
         if (-not (Test-Allowed 'restore')) {
             Block-Tool "git-safe: git restore without --staged discards uncommitted working tree changes. Suggestion: Use git restore --staged to unstage only, or commit/stash first. Add 'allow: restore' to .git-safe."
         }
@@ -185,46 +293,46 @@ if ($command -match 'git\s+restore\s') {
 }
 
 # git clean -f (deletes untracked files)
-if ($command -match 'git\s+clean\s.*-[a-zA-Z]*f') {
+if ($gitCommandText -match 'git\s+clean\s.*-[a-zA-Z]*f') {
     if (-not (Test-Allowed 'clean -f')) {
         Block-Tool "git-safe: git clean -f permanently deletes untracked files. Suggestion: Use git clean -n (dry run) first, or add 'allow: clean -f' to .git-safe."
     }
 }
 
 # git branch -D (force-delete unmerged branch) — case-sensitive: -D not -d
-if ($command -cmatch 'git\s+branch\s.*-[a-zA-Z]*D') {
+if ($gitCommandText -cmatch 'git\s+branch\s.*-[a-zA-Z]*D') {
     if (-not (Test-Allowed 'branch -D')) {
         Block-Tool "git-safe: git branch -D force-deletes a branch even if not fully merged. Suggestion: Use -d (lowercase) which only deletes merged branches, or add 'allow: branch -D' to .git-safe."
     }
 }
 
 # git stash drop / clear
-if ($command -match 'git\s+stash\s+drop') {
+if ($gitCommandText -match 'git\s+stash\s+drop') {
     if (-not (Test-Allowed 'stash drop')) {
         Block-Tool "git-safe: git stash drop permanently deletes stashed changes. Suggestion: Add 'allow: stash drop' to .git-safe to permit this."
     }
 }
-if ($command -match 'git\s+stash\s+clear') {
+if ($gitCommandText -match 'git\s+stash\s+clear') {
     if (-not (Test-Allowed 'stash clear')) {
         Block-Tool "git-safe: git stash clear permanently deletes all stashed changes. Suggestion: Add 'allow: stash clear' to .git-safe to permit this."
     }
 }
 
 # git reflog expire / delete
-if ($command -match 'git\s+reflog\s+(expire|delete)') {
+if ($gitCommandText -match 'git\s+reflog\s+(expire|delete)') {
     if (-not (Test-Allowed 'reflog expire')) {
         Block-Tool "git-safe: git reflog expire/delete destroys recovery data. Suggestion: This is almost never needed. Add 'allow: reflog expire' to .git-safe if you really need it."
     }
 }
 
 # git push --delete (removes remote branches/tags)
-if ($command -match 'git\s+push\s.*--delete\s') {
+if ($gitCommandText -match 'git\s+push\s.*--delete\s') {
     if (-not (Test-Allowed 'push --delete')) {
         Block-Tool "git-safe: git push --delete permanently removes remote branches or tags. Suggestion: Use 'git branch -d' for local cleanup instead, or add 'allow: push --delete' to .git-safe."
     }
 }
 # git push origin :branch (alternate delete syntax)
-if ($command -match 'git\s+push\s+\S+\s+:[^/\s]') {
+if ($gitCommandText -match 'git\s+push\s+\S+\s+:[^/\s]') {
     if (-not (Test-Allowed 'push --delete')) {
         Block-Tool "git-safe: git push origin :branch permanently removes a remote branch. Suggestion: Use 'git branch -d' for local cleanup instead, or add 'allow: push --delete' to .git-safe."
     }
