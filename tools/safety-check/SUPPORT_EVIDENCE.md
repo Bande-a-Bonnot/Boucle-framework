@@ -18,7 +18,9 @@ cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
-On native Windows PowerShell:
+On native Windows PowerShell, use this root-selection prefix before native
+installer commands. It only changes to the project root; use the
+`install.ps1 verify` command below for the actual native hook verification:
 
 ```powershell
 $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }

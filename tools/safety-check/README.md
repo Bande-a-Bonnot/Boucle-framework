@@ -31,7 +31,10 @@ content and runs it locally on your current project and Claude Code settings.
 The checker does not upload your `settings.json`, hook files, shell history,
 repository contents, session logs, or safety summary output.
 
-On native Windows PowerShell:
+On native Windows PowerShell, use this root-selection prefix before native
+installer commands. It only changes to the project root; append the
+`install.ps1 verify` command from the Windows verifier block above when you
+want to run payload checks:
 
 ```powershell
 $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
