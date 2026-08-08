@@ -566,6 +566,41 @@ assert_not "sh-wrapped hook not marked non-executable" "not executable" "$SH_HEA
 assert_not "sh-wrapped hook not a broken hook issue" "hook(s) are broken" "$SH_HEALTH_OUTPUT"
 rm -rf "$TMPDIR_SH_HEALTH"
 
+# === Test 17d: Hook health expands defaulted config-dir variables ===
+TMPDIR_CONFIG_EXPAND=$(mktemp -d)
+export HOME="$TMPDIR_CONFIG_EXPAND"
+mkdir -p "$HOME/.claude/gh-softwrap" "$HOME/.claude/read-once"
+for hook_file in "$HOME/.claude/gh-softwrap/hook.sh" "$HOME/.claude/read-once/hook.sh" "$HOME/.claude/read-once/compact.sh"; do
+    printf '#!/bin/sh\nexit 0\n' > "$hook_file"
+    chmod +x "$hook_file"
+done
+cat > "$HOME/.claude/settings.json" << 'CONFIGEXPAND'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {"type": "command", "command": "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/gh-softwrap/hook.sh"},
+          {"type": "command", "command": "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/read-once/hook.sh"}
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [{"type": "command", "command": "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/read-once/compact.sh"}]
+      }
+    ]
+  }
+}
+CONFIGEXPAND
+CONFIG_EXPAND_OUTPUT=$(unset CLAUDE_CONFIG_DIR; bash "$CHECK_SCRIPT" 2>&1) || true
+assert "config-dir default hook shown healthy" "✓.*gh-softwrap/hook.sh" "$CONFIG_EXPAND_OUTPUT"
+assert "config-dir default read-once hook shown healthy" "✓.*read-once/hook.sh" "$CONFIG_EXPAND_OUTPUT"
+assert "config-dir default compact hook shown healthy" "✓.*read-once/compact.sh" "$CONFIG_EXPAND_OUTPUT"
+assert_not "config-dir default hooks not missing" "file not found" "$CONFIG_EXPAND_OUTPUT"
+assert_not "config-dir default hooks not broken" "hook(s) are broken" "$CONFIG_EXPAND_OUTPUT"
+rm -rf "$TMPDIR_CONFIG_EXPAND"
+
 # === Test 18: enforce-hooks detection in user-level settings ===
 TMPDIR_ENFORCE=$(mktemp -d)
 export HOME="$TMPDIR_ENFORCE"
@@ -4180,6 +4215,17 @@ NOANCESTOR_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
 assert_not "current project settings no ancestor warning" "Ancestor project settings found above the current directory" "$NOANCESTOR_OUTPUT"
 cd "$ORIG_DIR"
 rm -rf "$TMPDIR_NOANCESTOR"
+
+# Test: running from ~/.claude should not report the user settings file as an ancestor project
+TMPDIR_USERCLAUDE=$(mktemp -d)
+export HOME="$TMPDIR_USERCLAUDE/home"
+mkdir -p "$HOME/.claude"
+echo '{}' > "$HOME/.claude/settings.json"
+cd "$HOME/.claude"
+USERCLAUDE_OUTPUT=$(bash "$CHECK_SCRIPT" 2>&1) || true
+assert_not "user .claude cwd no ancestor warning" "Ancestor project settings found above the current directory" "$USERCLAUDE_OUTPUT"
+cd "$ORIG_DIR"
+rm -rf "$TMPDIR_USERCLAUDE"
 
 stage "version warning fixtures"
 # Test: v2.1.88 version warning
