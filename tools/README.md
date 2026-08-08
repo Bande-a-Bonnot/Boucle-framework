@@ -234,7 +234,8 @@ verified boundary and document the remaining Claude Code platform risk.
 
 When a verification result looks wrong, share only the smallest public evidence
 needed for triage. Do not paste raw `settings.json`, full hook stderr, session
-logs, shell history, or screenshots that expose local paths.
+logs, transcripts, shell history, screenshots with paths, repository access,
+tokens, private URLs, or proprietary `CLAUDE.md` rules.
 
 For `install.sh check --verify` or direct `safety-check --verify` output, copy
 only the final block from `--- Safety Summary (copy/paste) ---` through

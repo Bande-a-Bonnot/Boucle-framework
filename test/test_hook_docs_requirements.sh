@@ -93,6 +93,7 @@ docs = {
         'JSON `permissionDecision: "deny"`',
         "not a universal hard-block contract",
         "Ancestor project settings warning",
+        "Do not paste raw `settings.json`, full hook stderr, session logs, transcripts, shell history, screenshots with paths, repository access, tokens, private URLs, or proprietary `CLAUDE.md` rules",
         "subdirectory launches can skip root project hooks",
         "root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"",
         "Run `verify`, `check`, and `doctor` from the same project root where you start Claude Code",
