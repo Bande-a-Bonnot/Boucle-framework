@@ -415,6 +415,8 @@ docs = {
         "Verify: 0 FAIL-OPEN",
         "instead of reinstalling repeatedly to chase an A",
         "safety summary triage guide",
+        "Share only that block plus OS, shell, Claude Code version, and what changed recently",
+        "Do not send raw settings, hook source, transcripts, session logs, repository access, tokens, private URLs, or proprietary <code>CLAUDE.md</code> rules",
         "200+ Rust tests",
         "tools/safety-check/FIRST_TEST.md",
         "First Test",
