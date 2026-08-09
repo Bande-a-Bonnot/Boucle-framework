@@ -142,12 +142,21 @@ HOOK_SOURCES=""   # Track where hooks come from
 find_ancestor_project_settings() {
     local dir
     dir="$(pwd -P 2>/dev/null || pwd)"
+    local current_settings_real=""
+    if [ -f "$SETTINGS_FILE" ]; then
+        current_settings_real="$(cd "$(dirname "$SETTINGS_FILE")" 2>/dev/null && printf "%s/%s" "$(pwd -P)" "$(basename "$SETTINGS_FILE")")"
+    fi
     local parent
     parent="$(dirname "$dir")"
     while [ "$parent" != "$dir" ]; do
-        if [ -f "$parent/.claude/settings.json" ]; then
-            printf "%s/.claude/settings.json\n" "$parent"
-            return 0
+        local candidate="$parent/.claude/settings.json"
+        if [ -f "$candidate" ]; then
+            local candidate_real
+            candidate_real="$(cd "$(dirname "$candidate")" 2>/dev/null && printf "%s/%s" "$(pwd -P)" "$(basename "$candidate")")"
+            if [ "$candidate_real" != "$current_settings_real" ]; then
+                printf "%s\n" "$candidate"
+                return 0
+            fi
         fi
         dir="$parent"
         parent="$(dirname "$dir")"
@@ -1933,6 +1942,7 @@ HOOK_VERIFY_TIMEOUT_SECONDS="${HOOK_VERIFY_TIMEOUT_SECONDS:-5}"
 _hook_script_path() {
     python3 - "$1" << 'PYEOF_HOOKPATH'
 import os
+import re
 import shlex
 import sys
 
@@ -1970,7 +1980,34 @@ else:
 if not path:
     sys.exit(0)
 
-path = os.path.expanduser(os.path.expandvars(path))
+def expand_shell_vars(value):
+    """Expand common shell path vars without executing shell syntax."""
+    pattern = re.compile(
+        r"\$\{([A-Za-z_][A-Za-z0-9_]*)(:-([^}]*))?\}|\$([A-Za-z_][A-Za-z0-9_]*)"
+    )
+
+    def repl(match):
+        braced_name = match.group(1)
+        default = match.group(3)
+        simple_name = match.group(4)
+        name = braced_name or simple_name
+        current = os.environ.get(name, "")
+        if braced_name and default is not None and not current:
+            return expand_shell_vars(default)
+        if name not in os.environ:
+            return match.group(0)
+        return current
+
+    previous = None
+    current = value
+    for _ in range(10):
+        if current == previous:
+            break
+        previous = current
+        current = pattern.sub(repl, current)
+    return current
+
+path = os.path.expanduser(expand_shell_vars(path))
 if "/" in path or "\\" in path or path.endswith((".sh", ".py", ".ps1")):
     print(path)
 PYEOF_HOOKPATH
