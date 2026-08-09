@@ -745,21 +745,33 @@ case "$HOME" in
 esac
 
 # Stop hooks blocking parallel sessions (claude-code#39530)
-for _stop_cfg in "$SETTINGS_FILE" "$PROJECT_SETTINGS"; do
-    [ -f "$_stop_cfg" ] || continue
-    _HAS_STOP=$(python3 -c "
-import json,sys
-try:
-    s=json.load(open(sys.argv[1]))
-    stops = s.get('hooks',{}).get('PostToolUse',[]) + s.get('hooks',{}).get('SessionEnd',[])
-    print('true' if stops else 'false')
-except: print('false')
-" "$_stop_cfg" 2>/dev/null)
-    if [ "$_HAS_STOP" = "true" ]; then
-        WARNINGS+=("Stop/PostToolUse hooks detected. Stop hooks fire across ALL parallel Claude sessions sharing this settings file, not just the session that triggered them. If you run multiple Claude instances, a stop hook from one session can affect others. Use separate project directories or check \$CLAUDE_SESSION_ID in your hook. (see claude-code#39530)")
-        break
-    fi
-done
+_STOP_LIFECYCLE_HOOKS=$(python3 - "$ALL_HOOK_CMDS" << 'PYEOF_STOP_LIFECYCLE'
+import sys
+
+events = {"Stop", "PostToolUse", "SessionEnd"}
+details = []
+for line in sys.argv[1].splitlines():
+    if not line:
+        continue
+    parts = line.split(":", 2)
+    if len(parts) != 3:
+        continue
+    hook_type, source, command = parts
+    if hook_type not in events:
+        continue
+    command = " ".join(command.split())
+    if len(command) > 160:
+        command = command[:157] + "..."
+    details.append(f"{hook_type}/{source}: {command}")
+
+for item in sorted(set(details)):
+    print(item)
+PYEOF_STOP_LIFECYCLE
+)
+if [ -n "$_STOP_LIFECYCLE_HOOKS" ]; then
+    _STOP_LIFECYCLE_COUNT=$(printf "%s\n" "$_STOP_LIFECYCLE_HOOKS" | awk 'NF { count++ } END { print count + 0 }')
+    WARNINGS+=("${_STOP_LIFECYCLE_COUNT} Stop/PostToolUse lifecycle hook command(s) detected: ${_STOP_LIFECYCLE_HOOKS//$'\n'/, }. Stop-style hooks fire across ALL parallel Claude sessions sharing this settings file, not just the session that triggered them. If you run multiple Claude instances, a stop hook from one session can affect others. Use separate project directories or check \$CLAUDE_SESSION_ID in your hook. (see claude-code#39530)")
+fi
 
 # SessionEnd hooks killed before completion (claude-code#41577)
 for _se_cfg in "$SETTINGS_FILE" "$PROJECT_SETTINGS"; do
