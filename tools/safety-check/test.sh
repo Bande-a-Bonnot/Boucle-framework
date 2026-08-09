@@ -2192,13 +2192,16 @@ mkdir -p "$TMPDIR_STOPHOOK/.claude"
 cat > "$TMPDIR_STOPHOOK/.claude/settings.json" << 'SETTINGSEOF'
 {
   "hooks": {
-    "PostToolUse": [{"type":"command","command":"bash cleanup.sh"}]
+    "PostToolUse": [{"type":"command","command":"bash cleanup.sh"}],
+    "Stop": [{"type":"command","command":"bash stop.sh"}]
   }
 }
 SETTINGSEOF
 STOPHOOK_OUTPUT=$(cd "$TMPDIR_STOPHOOK" && bash "$CHECK_SCRIPT" 2>&1) || true
 assert "stop hook parallel warning present" "39530" "$STOPHOOK_OUTPUT"
 assert "stop hook warning mentions parallel" "parallel" "$STOPHOOK_OUTPUT"
+assert "stop hook warning identifies PostToolUse command" "PostToolUse/project: bash cleanup.sh" "$STOPHOOK_OUTPUT"
+assert "stop hook warning identifies Stop command" "Stop/project: bash stop.sh" "$STOPHOOK_OUTPUT"
 rm -rf "$TMPDIR_STOPHOOK"
 
 TMPDIR_NOSTOPHOOK=$(mktemp -d)
