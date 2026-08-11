@@ -1,6 +1,6 @@
 # session-log
 
-Audit trail for Claude Code sessions. Logs every tool call so you can see exactly what Claude did.
+Audit trail for Claude Code sessions. Logs the tool events Claude Code routes through the installed PostToolUse hook, so you can inspect covered file operations, commands, timestamps, and errors.
 
 ## Install
 
@@ -33,7 +33,7 @@ Same output format, same environment variables. See `hook.ps1` for details.
 
 ## What it does
 
-Hooks into PostToolUse and appends one JSON line per tool call to `~/.claude/session-logs/YYYY-MM-DD.jsonl`.
+Hooks into PostToolUse and appends one JSON line per routed tool event to `~/.claude/session-logs/YYYY-MM-DD.jsonl`.
 
 Each entry records:
 - **ts** — UTC timestamp
@@ -49,7 +49,7 @@ Each entry records:
 - **Audit**: Review what Claude Code did while you were away
 - **Debug**: Trace which files were read/written during a broken change
 - **Cost insight**: See how many tool calls a task actually takes
-- **Autonomous agents**: Full audit trail for unattended sessions
+- **Autonomous agents**: Local audit trail for covered unattended-session tool events
 
 ## Example output
 
