@@ -139,17 +139,31 @@ summary instead.
 Build a temporary reproduction with throwaway paths:
 
 ```sh
-tmpdir="$(mktemp -d)"
-tmp_home="$(mktemp -d)"
-mkdir -p "$tmpdir/.claude/hooks"
-printf '{"hooks":{}}\n' > "$tmpdir/.claude/settings.json"
-cd "$tmpdir"
-curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | HOME="$tmp_home" bash -s -- --verify --summary-only
+(
+  tmpdir="$(mktemp -d)"
+  tmp_home="$(mktemp -d)"
+  cleanup() {
+    if [ "${KEEP_BOUCLE_REPRO:-0}" != "1" ]; then
+      rm -rf "$tmpdir" "$tmp_home"
+    fi
+  }
+  trap cleanup EXIT
+
+  mkdir -p "$tmpdir/.claude/hooks"
+  printf '{"hooks":{}}\n' > "$tmpdir/.claude/settings.json"
+  cd "$tmpdir"
+  curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | HOME="$tmp_home" bash -s -- --verify --summary-only
+  if [ "${KEEP_BOUCLE_REPRO:-0}" = "1" ]; then
+    printf 'Temporary HOME: %s\nTemporary project: %s\n' "$tmp_home" "$tmpdir"
+  fi
+)
 ```
 
 Replace that settings file with the smallest redacted configuration that still
 reproduces the issue. The temporary `HOME` keeps real user-level Claude Code
-hooks out of the reproduction. If the problem disappears in the temporary
-directory, the remaining signal is probably in private paths, environment
-variables, shell startup files, or custom hook code. Say that instead of posting
-the private workspace.
+hooks out of the reproduction. The snippet removes the temporary directories
+when it finishes; set `KEEP_BOUCLE_REPRO=1` in the same shell before running it
+if you need to inspect them afterward. If the problem disappears in the
+temporary directory, the remaining signal is probably in private paths,
+environment variables, shell startup files, or custom hook code. Say that
+instead of posting the private workspace.
