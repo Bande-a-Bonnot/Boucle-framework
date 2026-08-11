@@ -110,6 +110,20 @@ confirms the expected blocks. The full safety-check verification in the next
 section adds the copy/paste summary, strict mode, environment warnings, and
 project-settings inventory.
 
+Before trusting the new hook boundary, check all three layers:
+
+| Layer | Command | Trust signal |
+|-------|---------|--------------|
+| Installed hook scripts | `install.sh verify` or `install.ps1 verify` | The recommended hooks block their representative payloads. |
+| Current project and environment | `install.sh check --verify --strict` or `safety-check --verify --strict` | Zero `FAIL-OPEN` checks, no skipped boundary hooks, and no missing payload checks. |
+| Claude Code session | Start Claude Code again from the same project root | The new session loads the settings and hook files you just verified. |
+
+The first row proves the installed Boucle hook files respond correctly. The
+second row proves the project root, settings files, environment variables, and
+hook inventory are coherent. The third row matters because a running Claude
+Code session may have loaded old settings before you installed or repaired the
+hooks.
+
 Both `recommended` and `all` install user-level hooks under
 `~/.claude/<hook-name>/` and register them in `~/.claude/settings.json`. They do
 not create repo-local `.claude/settings.json` policy for the current project.
