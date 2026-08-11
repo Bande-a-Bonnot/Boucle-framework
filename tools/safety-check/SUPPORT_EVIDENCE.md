@@ -58,9 +58,12 @@ or the bash checker directly to get the full safety-check summary block. The
 native PowerShell verifier does not emit that block; it prints hook-by-hook
 verification plus a final count line.
 
-If the command hangs, rerun with the default timeout. Do not raise
-`HOOK_VERIFY_TIMEOUT_SECONDS` for a public support report unless you know a
-local hook is intentionally slow.
+Each verified hook payload has a 5-second default timeout. If a hook exceeds
+that bound, the summary reports it as an `Issue:` line, for example
+`hook payload check(s) timed out after 5 seconds`. For a public support report,
+keep the default timeout and share that summary line. Do not raise
+`HOOK_VERIFY_TIMEOUT_SECONDS` unless you know a local hook is intentionally
+slow, and say so in the report if you changed it.
 
 ## 2. Copy only the summary block
 
