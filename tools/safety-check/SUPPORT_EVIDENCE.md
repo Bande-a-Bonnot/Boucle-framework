@@ -166,21 +166,35 @@ zip. Build a minimal reproduction in a temporary directory, then run
 `safety-check` there:
 
 ```sh
-tmpdir="$(mktemp -d)"
-tmp_home="$(mktemp -d)"
-mkdir -p "$tmpdir/.claude/hooks"
-printf '{"hooks":{}}\n' > "$tmpdir/.claude/settings.json"
-cd "$tmpdir"
-curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | HOME="$tmp_home" bash -s -- --verify --summary-only
+(
+  tmpdir="$(mktemp -d)"
+  tmp_home="$(mktemp -d)"
+  cleanup() {
+    if [ "${KEEP_BOUCLE_REPRO:-0}" != "1" ]; then
+      rm -rf "$tmpdir" "$tmp_home"
+    fi
+  }
+  trap cleanup EXIT
+
+  mkdir -p "$tmpdir/.claude/hooks"
+  printf '{"hooks":{}}\n' > "$tmpdir/.claude/settings.json"
+  cd "$tmpdir"
+  curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | HOME="$tmp_home" bash -s -- --verify --summary-only
+  if [ "${KEEP_BOUCLE_REPRO:-0}" = "1" ]; then
+    printf 'Temporary HOME: %s\nTemporary project: %s\n' "$tmp_home" "$tmpdir"
+  fi
+)
 ```
 
 Replace the sample `.claude/settings.json` with the smallest redacted settings
 file that reproduces the issue. Keep only throwaway hook scripts and placeholder
 paths in the temporary directory. The temporary `HOME` keeps your real
-user-level Claude Code hooks out of the reproduction. If the problem does not
-reproduce there, say that; it usually means the remaining signal is in local
-paths, environment variables, shell startup files, or private hook code that
-should not be posted.
+user-level Claude Code hooks out of the reproduction. The snippet removes the
+temporary directories when it finishes; set `KEEP_BOUCLE_REPRO=1` in the same
+shell before running it if you need to inspect them afterward. If the problem
+does not reproduce there, say that; it usually means the remaining signal is in
+local paths, environment variables, shell startup files, or private hook code
+that should not be posted.
 
 ## 6. Minimal public report template
 

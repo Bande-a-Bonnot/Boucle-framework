@@ -86,26 +86,37 @@ full terminal transcripts, screenshots with paths, `.env` contents, tokens,
 SSH keys, private URLs, or proprietary `CLAUDE.md` rules.
 
 If a teammate needs to reproduce the issue, build a temporary reproduction
-instead of sharing your real workspace:
+instead of sharing your real workspace, then run the bounded summary there:
 
 ```sh
-tmpdir="$(mktemp -d)"
-tmp_home="$(mktemp -d)"
-mkdir -p "$tmpdir/.claude/hooks"
-printf '{"hooks":{}}\n' > "$tmpdir/.claude/settings.json"
-cd "$tmpdir"
-```
+(
+  tmpdir="$(mktemp -d)"
+  tmp_home="$(mktemp -d)"
+  cleanup() {
+    if [ "${KEEP_BOUCLE_REPRO:-0}" != "1" ]; then
+      rm -rf "$tmpdir" "$tmp_home"
+    fi
+  }
+  trap cleanup EXIT
 
-Then run the bounded summary there:
+  mkdir -p "$tmpdir/.claude/hooks"
+  printf '{"hooks":{}}\n' > "$tmpdir/.claude/settings.json"
+  cd "$tmpdir"
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | HOME="$tmp_home" bash -s -- --verify --summary-only
+  curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | HOME="$tmp_home" bash -s -- --verify --summary-only
+  if [ "${KEEP_BOUCLE_REPRO:-0}" = "1" ]; then
+    printf 'Temporary HOME: %s\nTemporary project: %s\n' "$tmp_home" "$tmpdir"
+  fi
+)
 ```
 
 Replace the sample settings with the smallest redacted file that reproduces the
 problem. Keep only throwaway hook scripts and placeholder paths. The temporary
 `HOME` prevents your real user-level Claude Code hooks from making the
-reproduction look safer or noisier than the redacted project settings.
+reproduction look safer or noisier than the redacted project settings. The
+snippet removes the temporary directories when it finishes; set
+`KEEP_BOUCLE_REPRO=1` in the same shell before running it if you need to inspect
+them afterward.
 
 ## 5. Recheck triggers
 
