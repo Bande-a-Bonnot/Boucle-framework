@@ -50,7 +50,7 @@ hook_desc() {
     bash-guard)    echo "Block dangerous bash commands (rm -rf /, sudo, curl|bash)" ;;
     branch-guard)    echo "Prevent direct commits to main/master (feature-branch workflow)" ;;
     worktree-guard)  echo "Prevent data loss when exiting worktrees (unmerged commits)" ;;
-    session-log)     echo "Audit trail — log every tool call to JSONL" ;;
+    session-log)     echo "Audit trail — log routed PostToolUse events to JSONL" ;;
     *)               echo "Unknown hook" ;;
   esac
 }
@@ -225,7 +225,7 @@ hook_descs = {
     "bash-guard": "Block dangerous bash commands (rm -rf /, sudo, curl|bash)",
     "branch-guard": "Prevent direct commits to main/master (feature-branch workflow)",
     "worktree-guard": "Prevent data loss when exiting worktrees (unmerged commits)",
-    "session-log": "Audit trail — log every tool call to JSONL",
+    "session-log": "Audit trail — log routed PostToolUse events to JSONL",
 }
 
 errors = 0

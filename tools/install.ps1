@@ -54,7 +54,7 @@ $HookCatalog = [ordered]@{
     'branch-guard'   = @{ Desc = 'Prevent direct commits to main/master (feature-branch workflow)'; Event = 'PreToolUse' }
     'read-once'      = @{ Desc = 'Prevent redundant file reads, save tokens (~2000/read)'; Event = 'PreToolUse'; Matcher = 'Read' }
     'worktree-guard' = @{ Desc = 'Prevent worktree exit with uncommitted/unmerged changes'; Event = 'PreToolUse'; Matcher = 'ExitWorktree' }
-    'session-log'    = @{ Desc = 'Audit trail - log every tool call to JSONL'; Event = 'PostToolUse' }
+    'session-log'    = @{ Desc = 'Audit trail - log routed PostToolUse events to JSONL'; Event = 'PostToolUse' }
 }
 
 $AllHookNames = @($HookCatalog.Keys)

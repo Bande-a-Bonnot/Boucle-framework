@@ -348,7 +348,7 @@ When you use `claude -w`, exiting the session [silently deletes](https://github.
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/session-log/install.sh | bash
 ```
 
-Logs every tool call to `~/.claude/session-logs/YYYY-MM-DD.jsonl`. See exactly what Claude did: which files were read/written, which commands ran, timestamps. Includes `--week` trend comparison across days. Useful for auditing autonomous sessions and debugging. ~105 tests (bash + PowerShell).
+Logs routed PostToolUse events to `~/.claude/session-logs/YYYY-MM-DD.jsonl`: covered files read/written, commands run, and timestamps. Includes `--week` trend comparison across days. Useful for auditing autonomous sessions and debugging within the hook surfaces Claude Code actually emits. ~105 tests (bash + PowerShell).
 
 ### [enforce-hooks](tools/enforce/) — Turn CLAUDE.md rules into enforceable hooks
 

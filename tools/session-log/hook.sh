@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # session-log: Audit trail for Claude Code sessions
-# Logs every tool call with timestamp, tool name, and key parameters
+# Logs routed PostToolUse events with timestamp, tool name, and key parameters
 # Helps answer "what did Claude do while I was away?"
 #
-# Hook type: PostToolUse (fires after every tool call)
+# Hook type: PostToolUse (fires after tool calls Claude Code routes to hooks)
 # Output: ~/.claude/session-logs/YYYY-MM-DD.jsonl
 #
 # MIT License - https://github.com/Bande-a-Bonnot/Boucle-framework

@@ -1,10 +1,10 @@
 # session-log: PostToolUse hook for Claude Code (PowerShell)
 # Windows-native equivalent of hook.sh — no external dependencies needed.
 #
-# Logs every tool call with timestamp, tool name, and key parameters.
+# Logs routed PostToolUse events with timestamp, tool name, and key parameters.
 # Helps answer "what did Claude do while I was away?"
 #
-# Hook type: PostToolUse (fires after every tool call)
+# Hook type: PostToolUse (fires after tool calls Claude Code routes to hooks)
 # Output: ~/.claude/session-logs/YYYY-MM-DD.jsonl
 #
 # Install:
