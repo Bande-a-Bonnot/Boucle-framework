@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1484,
+  "count": 1485,
   "categories": {
     "Hook behavior & events": 200,
     "Permission system": 130,
@@ -136,6 +136,7 @@
     "MCP & plugin integration": 1,
     "MCP & tool infrastructure": 1,
     "MCP servers": 1,
+    "MCP tools": 1,
     "Memory & state": 1,
     "memory/performance": 1,
     "Model Behavior": 1,
@@ -188,7 +189,7 @@
   },
   "severity_counts": {
     "CRITICAL": 129,
-    "HIGH": 785,
+    "HIGH": 786,
     "LOW": 111,
     "MEDIUM": 459
   },
@@ -19137,30 +19138,41 @@
       ],
       "description": "A reported Claude Code 2.1.226 VS Code Extension session recorded `/goal clear` typed while the assistant was actively working as a human `queued_command` with `commandMode: \"prompt\"` rather than dispatching it through the slash-command handler. The raw `/goal clear` text later surfaced to the model, which interpreted it as if the user had completed the command and falsely confirmed success, while the `/goal` Stop hook stayed armed for later turns.",
       "workaround": "Do not type critical slash commands into a session while the assistant is still actively working. Interrupt or wait until the session is idle, run the slash command, and verify a real command result or transcript command block before trusting that state changed. For `/goal clear` specifically, run `/goal` afterward or inspect the relevant hook state rather than relying on the assistant's natural-language confirmation."
+    },
+    {
+      "id": "mcp-list-parameters-can-stringify-mid-session",
+      "title": "MCP list parameters can be stringified mid-session.",
+      "severity": "HIGH",
+      "category": "MCP tools",
+      "description": "A reported Claude Code 1.28929.0 Desktop session on macOS intermittently converted MCP tool arguments that were sent as JSON arrays into string values before the server-side validator received them. The affected Plane connector calls succeeded earlier in the same session with assignees as an array, then later failed with Pydantic list_type errors showing input_type=str for the same field. The reporter saw this cluster around auto-mode classifier denials and temporary-unavailable states on other tool calls, but the confirmed limitation is argument marshalling instability: list-typed MCP parameters such as assignees, labels, tags, or IDs can fail mid-session even when the outgoing tool call shape is a real JSON array.",
+      "issue": "86459",
+      "status": "open",
+      "date_added": "2026-08-13",
+      "workaround": "For critical MCP writes with list-valued parameters, verify the external side effect after each call instead of trusting a successful-looking client request. If list_type or stringified-array validation errors appear, restart the Claude Code session and, where safe, call the underlying service API directly with a captured JSON request body. MCP server authors should publish explicit array schemas for list fields, but users should still treat mid-session marshalling drift as a client-side risk until the client is fixed."
     }
   ],
   "status_summary": {
-    "open": 1470,
+    "open": 1471,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 129,
-    "high": 785,
+    "high": 786,
     "low": 111,
     "medium": 459
   },
   "lastUpdated": "2026-08-13",
   "stats": {
-    "total": 1484,
+    "total": 1485,
     "critical": 129,
-    "high": 785,
+    "high": 786,
     "medium": 459,
     "low": 111,
-    "open": 1470,
+    "open": 1471,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-13",
-  "total": 1484
+  "total": 1485
 }
