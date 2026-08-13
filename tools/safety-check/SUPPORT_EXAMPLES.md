@@ -48,6 +48,35 @@ In this example, `summary/version captured` means both the old Claude Code
 version and the bounded safety summary were recorded before the update. If only
 one was captured, say `not captured`.
 
+## First-test handoff
+
+Use this shape when someone asked you to try safety-check, but you only ran the
+isolated first test from [FIRST_TEST.md](FIRST_TEST.md). This proves the checker
+can start and print a bounded report on your machine. It does not inspect your
+real Claude Code settings and it does not prove your real hook boundary.
+
+```text
+OS: macOS
+Shell: zsh
+Claude Code version: not checked
+Where hooks are installed: not inspected
+What changed recently: first look at safety-check
+Pre-update baseline: not an update issue
+Scope: isolated first test with temporary HOME and temporary project
+
+--- Safety Summary (copy/paste) ---
+Grade: F
+Hooks: 0/8 framework hook slots detected
+Verify: not run | no hooks found | 0 payload checks
+Boundary: install hooks before trusting the hook layer.
+github.com/Bande-a-Bonnot/Boucle-framework
+--- End Safety Summary ---
+```
+
+This is useful as a low-trust first reply because it says the command ran
+without asking the user to expose real settings. The next useful report is the
+real project-root `--verify --summary-only` result from the quickstart.
+
 ## FAIL-OPEN public report
 
 When `--verify` reports a `FAIL-OPEN` hook, post the bounded summary and one
