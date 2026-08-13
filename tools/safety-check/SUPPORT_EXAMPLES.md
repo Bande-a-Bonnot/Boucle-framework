@@ -26,6 +26,7 @@ OS: macOS
 Shell: zsh
 Claude Code version: 1.0.93
 Where hooks are installed: user settings
+Command/scope: real project-root --verify --summary-only
 What changed recently: Claude Code update, then install.sh upgrade
 Pre-update baseline: summary/version captured
 
@@ -60,6 +61,7 @@ OS: macOS
 Shell: zsh
 Claude Code version: not checked
 Where hooks are installed: not inspected
+Command/scope: isolated first test
 What changed recently: first look at safety-check
 Pre-update baseline: not an update issue
 Scope: isolated first test with temporary HOME and temporary project
@@ -88,6 +90,7 @@ OS: Linux
 Shell: bash
 Claude Code version: 1.0.93
 Where hooks are installed: project settings
+Command/scope: real project-root --verify
 What changed recently: moved the repository to a new checkout path
 Pre-update baseline: not an update issue
 Hook source: framework git-safe hook, not custom
@@ -116,6 +119,7 @@ OS: native Windows
 Shell: PowerShell 7
 Claude Code version: 1.0.93
 Where hooks are installed: user settings
+Command/scope: native install.ps1 verify
 What changed recently: fresh recommended install
 Pre-update baseline: not an update issue
 
@@ -133,6 +137,7 @@ OS: native Windows
 Shell: PowerShell 7
 Claude Code version: 1.0.93
 Where hooks are installed: none detected
+Command/scope: native install.ps1 verify
 What changed recently: checking before first install
 Pre-update baseline: not an update issue
 

@@ -120,6 +120,7 @@ OS: macOS / Linux / WSL / native Windows
 Shell: bash / zsh / PowerShell 7 / Git Bash
 Claude Code version: output of claude --version, if it returns quickly
 Where hooks are installed: user settings / project settings / both / not sure
+Command/scope: real project-root --verify / isolated first test / native install.ps1 verify
 What changed recently: fresh install / Claude Code update / settings edit / moved hook files
 Pre-update baseline: summary/version captured / not captured / not an update issue
 ```
@@ -132,6 +133,12 @@ the pre-update version and bounded summary from the update checklist. Do not
 paste both full command outputs. A maintainer usually needs to know whether the
 new strict verification result is a regression from a known baseline or the
 first verified result for an already-untrusted setup.
+
+The command/scope line keeps a first-test report from being mistaken for a real
+hook-boundary check. If you ran the temporary first test, write
+`Command/scope: isolated first test` and treat the result as startup evidence
+only. The next useful support report is a real project-root `--verify
+--summary-only` run from the directory where Claude Code will work.
 
 ## 4. Read the summary before posting
 
@@ -206,6 +213,7 @@ OS:
 Shell:
 Claude Code version:
 Where hooks are installed:
+Command/scope:
 What changed recently:
 Pre-update baseline:
 
