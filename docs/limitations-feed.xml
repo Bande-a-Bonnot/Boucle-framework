@@ -4,13 +4,21 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-08-05T00:00:00Z</updated>
+  <updated>2026-08-13T00:00:00Z</updated>
   <author><name>Boucle</name></author>
+  <entry>
+    <title>[HIGH] managed-settings.d hooks can be suppressed by server-managed settings.</title>
+    <id>https://framework.boucle.sh/limitations.html#managed-settings-dropin-hooks-suppressed-by-remote-settings</id>
+    <link href="https://framework.boucle.sh/limitations.html#managed-settings-dropin-hooks-suppressed-by-remote-settings"/>
+    <updated>2026-08-13T00:00:00Z</updated>
+    <summary>A reported macOS Team-plan setup found that hooks deployed through /Library/Application Support/ClaudeCode/managed-settings.d run only when the signed-in organization has no server-managed settings. When the remote managed settings fetch succeeds, /status switches from Enterprise managed settings (drop-ins) to Enterprise managed settings (remote), the local drop-in hook is not registered, and its audit log never records the deactivation.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
   <entry>
     <title>[HIGH] Stop hooks do not fire for turns that end on a tool call.</title>
     <id>https://framework.boucle.sh/limitations.html#stop-hooks-do-not-cover-tool-terminated-turns</id>
     <link href="https://framework.boucle.sh/limitations.html#stop-hooks-do-not-cover-tool-terminated-turns"/>
-    <updated>2026-08-05T00:00:00Z</updated>
+    <updated>2026-08-13T00:00:00Z</updated>
     <summary>A current measurement report counted Stop-hook behavior only after a transcript had already shown Stop activity, then corrected the methodology using `system/turn_duration` transcript entries as the turn-end ground truth. Under that stricter pass, text-terminated turns fired Stop thousands of times, while tool-use-terminated turns fired Stop 0/133 times. This makes Stop-based supervision structurally absent for a class of turn endings that often matters to automation, including sessions that appear to stall after a tool result.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -18,7 +26,7 @@
     <title>[HIGH] `/goal` Stop hooks can unregister while background work is live and never re-evaluate.</title>
     <id>https://framework.boucle.sh/limitations.html#goal-stop-hook-can-unregister-while-background-work-runs</id>
     <link href="https://framework.boucle.sh/limitations.html#goal-stop-hook-can-unregister-while-background-work-runs"/>
-    <updated>2026-08-05T00:00:00Z</updated>
+    <updated>2026-08-13T00:00:00Z</updated>
     <summary>A Claude Code 2.1.220 report says `/goal` installs a session Stop hook that skipped 24 of 28 stops while background tasks were live, then never re-evaluated when those tasks later terminated, leaving an autonomous session idle for more than four hours. A follow-up comment inspecting the shipped bundle narrowed the mechanism to removing the session Stop hook when the task registry has running or pending work, with no corresponding re-add after the registry drains.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -26,7 +34,7 @@
     <title>[MEDIUM] Async Stop hooks can be killed at session teardown before finishing.</title>
     <id>https://framework.boucle.sh/limitations.html#async-stop-hooks-can-be-killed-at-session-teardown</id>
     <link href="https://framework.boucle.sh/limitations.html#async-stop-hooks-can-be-killed-at-session-teardown"/>
-    <updated>2026-08-05T00:00:00Z</updated>
+    <updated>2026-08-13T00:00:00Z</updated>
     <summary>A Windows headless Claude Code 2.1.220 report says a Stop hook configured with `async: true` writes a start marker, sleeps for eight seconds, and never writes its completion marker because the process is killed when the session tears down. The reported sleep is far below the documented async budget, so the budget alone does not prove background Stop-hook work will finish after `claude -p` exits.</summary>
     <category term="Hook execution &amp; lifecycle"/>
   </entry>
@@ -34,7 +42,7 @@
     <title>[HIGH] Async PreToolUse Agent/Task decisions can arrive after subagent dispatch completes.</title>
     <id>https://framework.boucle.sh/limitations.html#pretooluse-agent-task-async-results-can-arrive-after-dispatch</id>
     <link href="https://framework.boucle.sh/limitations.html#pretooluse-agent-task-async-results-can-arrive-after-dispatch"/>
-    <updated>2026-08-05T00:00:00Z</updated>
+    <updated>2026-08-13T00:00:00Z</updated>
     <summary>A Claude Code 2.1.220 debug-log report says an async PreToolUse hook matching Agent/Task was registered before an Agent call, but the subagent model request started immediately and completed before the harness checked the hook&#x27;s stdout about 140 ms after `tool_dispatch_end`. A deny or exit-2 decision from that hook shape therefore cannot prevent the already-completed subagent dispatch.</summary>
     <category term="Subagent &amp; spawned agents"/>
   </entry>
@@ -42,7 +50,7 @@
     <title>[HIGH] Conflicting PreToolUse updatedInput rewrites can resolve by hook latency.</title>
     <id>https://framework.boucle.sh/limitations.html#pretooluse-updatedinput-conflicts-are-latency-races</id>
     <link href="https://framework.boucle.sh/limitations.html#pretooluse-updatedinput-conflicts-are-latency-races"/>
-    <updated>2026-08-05T00:00:00Z</updated>
+    <updated>2026-08-13T00:00:00Z</updated>
     <summary>A Claude Code 2.1.220 report with a published probe harness says that when multiple PreToolUse hooks return `updatedInput` for the same tool call, the rewrite that executes is the one from the hook that finishes last. Skewed sleep probes ruled out both registration order and scope precedence, and each hook reportedly receives the original `tool_input`, so a guard can approve one command while a slower sibling hook rewrites the call to another command it never inspected.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -50,7 +58,7 @@
     <title>[HIGH] Claude Code Remote&#x27;s Stop git hook can mistake published commits for local commits and recommend destructive git actions.</title>
     <id>https://framework.boucle.sh/limitations.html#remote-stop-git-hook-can-target-published-commits</id>
     <link href="https://framework.boucle.sh/limitations.html#remote-stop-git-hook-can-target-published-commits"/>
-    <updated>2026-08-05T00:00:00Z</updated>
+    <updated>2026-08-13T00:00:00Z</updated>
     <summary>Reports against Claude Code Remote&#x27;s `stop-hook-git-check.sh` show it computing local work from `$upstream..HEAD`, where `$upstream` can be a stale same-named remote-tracking branch. After a PR merge, repointing the working branch at the updated default branch can place GitHub&#x27;s merge commit inside that range. The hook may then ask the agent to amend a published merge commit or push a branch that is already represented on `origin/main`, even though the commit is not local unpublished work.</summary>
     <category term="Git &amp; repository safety"/>
   </entry>
@@ -58,7 +66,7 @@
     <title>[HIGH] The plugin hook test helper can pass without proving the hook denies the target action or is matched by runtime config.</title>
     <id>https://framework.boucle.sh/limitations.html#hook-test-helper-does-not-prove-policy-or-matcher</id>
     <link href="https://framework.boucle.sh/limitations.html#hook-test-helper-does-not-prove-policy-or-matcher"/>
-    <updated>2026-08-05T00:00:00Z</updated>
+    <updated>2026-08-13T00:00:00Z</updated>
     <summary>Recent Claude Code plugin-development reports describe `plugin-dev/skills/hook-development/scripts/test-hook.sh` executing a hook handler directly and treating both exit 0 and exit 2 as successful test completion. That means a PreToolUse guard can allow the exact payload it exists to block and still pass the shipped test helper. A separate report says the helper never evaluates the configured event or matcher, so a handler scoped to the wrong tool can pass direct-handler tests while never firing in production. On systems without `jq`, the same helper can also report valid JSON as invalid input, sending users toward the payload instead of the missing dependency.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -66,7 +74,7 @@
     <title>[HIGH] Hook settings do not prove which hook artifact will execute.</title>
     <id>https://framework.boucle.sh/limitations.html#hook-settings-lack-runtime-artifact-receipts</id>
     <link href="https://framework.boucle.sh/limitations.html#hook-settings-lack-runtime-artifact-receipts"/>
-    <updated>2026-08-05T00:00:00Z</updated>
+    <updated>2026-08-13T00:00:00Z</updated>
     <summary>A feature request reports that Claude Code can show that a hook entry is configured, but cannot show the source settings file, the resolved hook command target, or a stable fingerprint of the artifact that will actually execute. Reported failures include a same-named user-scope hook script from another project occupying the shared path, tests exercising the repository copy while enforcement ran from a stale installed copy, and inline shim commands resolving nothing while exiting 0. Each case leaves `settings.json` and `/hooks` looking healthy even though the intended guardrail is absent or stale.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -74,7 +82,7 @@
     <title>[HIGH] Project-scope hooks can disappear in linked worktrees.</title>
     <id>https://framework.boucle.sh/limitations.html#project-hooks-can-disappear-in-linked-worktrees</id>
     <link href="https://framework.boucle.sh/limitations.html#project-hooks-can-disappear-in-linked-worktrees"/>
-    <updated>2026-08-05T00:00:00Z</updated>
+    <updated>2026-08-13T00:00:00Z</updated>
     <summary>A current Claude Code worktree report describes two structural ways project `.claude/settings.json` hooks fail to reach linked worktrees. If the hook settings file is tracked, each worktree sees only the branch-local copy, so a newly added guard is absent until every worktree branch merges it. If `.claude/` is gitignored, `git worktree add` cannot deliver the project settings file at all, and `.worktreeinclude` only helps creation paths that Claude Code itself processes. The resulting worktree has no project hook coverage, while `/hooks` cannot distinguish a project with no hooks from a worktree that failed to receive the project&#x27;s hooks.</summary>
     <category term="Project configuration &amp; memory"/>
   </entry>
@@ -82,7 +90,7 @@
     <title>[HIGH] Project-scope hook trust behavior is undocumented for `--print` mode.</title>
     <id>https://framework.boucle.sh/limitations.html#project-hooks-trust-gate-is-undocumented-for-print-mode</id>
     <link href="https://framework.boucle.sh/limitations.html#project-hooks-trust-gate-is-undocumented-for-print-mode"/>
-    <updated>2026-08-05T00:00:00Z</updated>
+    <updated>2026-08-13T00:00:00Z</updated>
     <summary>Claude Code documentation states that workspace trust verification is disabled in non-interactive `--print` mode and that project `permissions.allow` rules stay ignored until a workspace is trusted. A current docs report notes that the hooks reference does not say whether project `.claude/settings.json` hooks follow the same workspace-trust gate, whether they fail closed when `--print` cannot show a trust dialog, or whether the trust gate is skipped. Older closed reports asked for headless trust warnings and safer project-hook handling, so users still have no documented rule for a project-scoped capability that can execute shell commands.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -90,7 +98,7 @@
     <title>[HIGH] MCP tool annotations are not surfaced to PreToolUse hooks.</title>
     <id>https://framework.boucle.sh/limitations.html#mcp-tool-annotations-are-hidden-from-tool-hooks</id>
     <link href="https://framework.boucle.sh/limitations.html#mcp-tool-annotations-are-hidden-from-tool-hooks"/>
-    <updated>2026-08-05T00:00:00Z</updated>
+    <updated>2026-08-13T00:00:00Z</updated>
     <summary>Claude Code PreToolUse hooks receive `tool_name` and `tool_input` for MCP tools, but reported hook payloads do not include MCP tool annotations such as `readOnlyHint`, `destructiveHint`, or `openWorldHint`. A hook that wants to allow read-only MCP tools while gating write-capable ones must therefore rely on tool-name regexes or hand-maintained deny lists. A second report described maintaining matcher rules, deny-list files, hardcoded hook branches, and a monthly diff job solely to keep destructive Google Workspace MCP operations from slipping past stale name-based policy.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -98,7 +106,7 @@
     <title>[HIGH] MCP `requiresUserInteraction` tools can stall unattended Routines despite hook allow decisions.</title>
     <id>https://framework.boucle.sh/limitations.html#mcp-requires-user-interaction-can-stall-unattended-routines</id>
     <link href="https://framework.boucle.sh/limitations.html#mcp-requires-user-interaction-can-stall-unattended-routines"/>
-    <updated>2026-08-05T00:00:00Z</updated>
+    <updated>2026-08-13T00:00:00Z</updated>
     <summary>A reported Claude Code cloud Routine using a DesignSync MCP tool found that calls annotated with `_meta[&quot;anthropic/requiresUserInteraction&quot;]` still raise a human approval prompt inside an otherwise unattended Routine. The reporter&#x27;s PreToolUse hook returned `allow` for both `finalize_plan` and `write_files`, and `permissions.allow` covered the MCP server name, but the annotated `finalize_plan` call prompted anyway while the unannotated write call did not. The behavior is consistent with the MCP annotation, but it contradicts a common reading of Routines as fully unattended sessions.</summary>
     <category term="Scheduled tasks"/>
   </entry>
@@ -106,7 +114,7 @@
     <title>[HIGH] Windows hook `file_path` values use backslashes, so POSIX-style path guards can fail open.</title>
     <id>https://framework.boucle.sh/limitations.html#windows-hook-file-path-backslashes-can-fail-open</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-hook-file-path-backslashes-can-fail-open"/>
-    <updated>2026-08-05T00:00:00Z</updated>
+    <updated>2026-08-13T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.221 Windows Git Bash setup delivered file-tool hook input as absolute Windows paths with backslash separators, while common hook examples and POSIX shell guards often compare against forward-slash or `$PWD`-relative paths. A guard such as `[[ &quot;$FILE_PATH&quot; =~ ^src/ ]]` or `${FILE_PATH#&quot;$PWD&quot;/}` can therefore never match, exit 0, and silently allow writes that the hook author expected to deny.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -114,7 +122,7 @@
     <title>[HIGH] Renamed project roots can drop project-scoped hooks, settings, and memory.</title>
     <id>https://framework.boucle.sh/limitations.html#renamed-project-root-can-drop-project-scoped-hooks-settings-and-memory</id>
     <link href="https://framework.boucle.sh/limitations.html#renamed-project-root-can-drop-project-scoped-hooks-settings-and-memory"/>
-    <updated>2026-08-05T00:00:00Z</updated>
+    <updated>2026-08-13T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.219 macOS desktop-app setup kept launching new sessions against an old project root after the directory was renamed. The per-session registry recorded the dead cwd, Claude Code silently failed to load the `.claude/settings.json` file at the real renamed root, project-scoped hooks and permissions did not intercept gated tool calls, project memory appeared empty because it was keyed by the old path, and the harness recreated the deleted old directory with `.claude/scheduled_tasks.lock`.</summary>
     <category term="Project configuration &amp; memory"/>
   </entry>
@@ -122,7 +130,7 @@
     <title>[HIGH] Windows hook runner can execute git instead of the configured command.</title>
     <id>https://framework.boucle.sh/limitations.html#windows-hook-runner-can-execute-git-instead-of-configured-command</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-hook-runner-can-execute-git-instead-of-configured-command"/>
-    <updated>2026-08-05T00:00:00Z</updated>
+    <updated>2026-08-13T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.197 Windows setup showed every configured hook command failing in both Desktop and standalone CLI sessions. The session transcript recorded `hook_non_blocking_error` attachments whose `command` field matched the configured `.cmd` hook, but whose stdout was git&#x27;s usage banner and exit code 1, so the configured hook never ran while Claude Code treated the event as non-blocking and continued without a visible warning.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -130,7 +138,7 @@
     <title>[MEDIUM] `/hooks` can omit managed hooks that still execute.</title>
     <id>https://framework.boucle.sh/limitations.html#hooks-browser-omits-managed-hooks-that-execute</id>
     <link href="https://framework.boucle.sh/limitations.html#hooks-browser-omits-managed-hooks-that-execute"/>
-    <updated>2026-08-05T00:00:00Z</updated>
+    <updated>2026-08-13T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.215 macOS setup loaded a `PreToolUse` Bash hook from `/Library/Application Support/ClaudeCode/managed-settings.json` and executed it successfully, but the interactive `/hooks` browser still reported `0 hooks configured` and showed no `PreToolUse` hook. The runtime hook event showed `PreToolUse:Bash` success, narrowing the issue to UI discovery and audit visibility rather than hook execution. This is distinct from older managed-settings reports where managed hooks did not fire at all.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -138,7 +146,7 @@
     <title>[HIGH] Background agent attach can hang on AskUserQuestion blocks.</title>
     <id>https://framework.boucle.sh/limitations.html#background-agent-askuserquestion-attach-can-hang</id>
     <link href="https://framework.boucle.sh/limitations.html#background-agent-askuserquestion-attach-can-hang"/>
-    <updated>2026-08-05T00:00:00Z</updated>
+    <updated>2026-08-13T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.221 macOS daemon-hosted background agent can hang indefinitely when opened from `claude agents` while the job is parked inside an unanswered `AskUserQuestion`. The job record can show `state: &quot;working&quot;` while `tempo: &quot;blocked&quot;`, `needs`, and `block.questions` indicate a user-answer block. The attach guard reportedly checks only `state`, falls through to the held-screen attach path, gates stdin, and never renders a first frame, so the user cannot answer the question from that surface.</summary>
     <category term="Subagent &amp; spawned agents"/>
   </entry>
@@ -146,7 +154,7 @@
     <title>[HIGH] Allow-listed MCP tools can be denied before the server sees the call.</title>
     <id>https://framework.boucle.sh/limitations.html#allowlisted-mcp-tool-can-be-denied-before-server</id>
     <link href="https://framework.boucle.sh/limitations.html#allowlisted-mcp-tool-can-be-denied-before-server"/>
-    <updated>2026-08-05T00:00:00Z</updated>
+    <updated>2026-08-13T00:00:00Z</updated>
     <summary>A reported Linux Claude Code 2.1.220 auto-mode session denied an MCP tool even though that exact tool name was present in `permissions.allow`, the settings files parsed cleanly, and no deny or ask rule matched it. Earlier in the same session the same call reached the MCP server and received a server-level approval error, so the later failures happened in a layer before the server. The classifier denial text also suggested adding a Bash permission rule even though the blocked action was an MCP tool and the relevant allow entry already existed.</summary>
     <category term="Permissions &amp; safety"/>
   </entry>
@@ -154,16 +162,8 @@
     <title>[HIGH] Auto-mode Bash hooks can fail open on external volumes.</title>
     <id>https://framework.boucle.sh/limitations.html#auto-mode-bash-hooks-can-fail-open-on-external-volumes</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-mode-bash-hooks-can-fail-open-on-external-volumes"/>
-    <updated>2026-08-05T00:00:00Z</updated>
+    <updated>2026-08-13T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.220 macOS setup found that, after switching to auto permission mode, PreToolUse Bash hooks registered from a project on an external APFS volume with a space in its path failed for newly spawned subagents with `MODULE_NOT_FOUND` before the hook script ran. Claude Code treated the hook process failure as non-blocking, so Bash commands continued in the same mode where commands were being auto-approved. Older subagents from before the mode switch and non-Bash matchers in the same hook directory reportedly kept working, narrowing the failure to the auto-mode Bash hook execution path rather than a missing script dependency.</summary>
     <category term="Hook execution &amp; lifecycle"/>
-  </entry>
-  <entry>
-    <title>[HIGH] PreToolUse allow can lose to matching permissions.ask rules.</title>
-    <id>https://framework.boucle.sh/limitations.html#pretooluse-allow-can-lose-to-matching-permissions-ask</id>
-    <link href="https://framework.boucle.sh/limitations.html#pretooluse-allow-can-lose-to-matching-permissions-ask"/>
-    <updated>2026-08-05T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.220 regression says a PreToolUse hook returning `hookSpecificOutput.permissionDecision: &quot;allow&quot;` no longer overrides a matching `permissions.ask` Bash glob. With the ask rule present, the same sentinel command was denied in headless `-p` runs or stopped at an interactive permission menu, while removing only the ask rule let the hook allow take effect.</summary>
-    <category term="Permissions &amp; safety"/>
   </entry>
 </feed>
