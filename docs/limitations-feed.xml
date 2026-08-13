@@ -7,6 +7,14 @@
   <updated>2026-08-13T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Worktree isolation can refuse every Bash command.</title>
+    <id>https://framework.boucle.sh/limitations.html#worktree-isolation-can-refuse-all-bash-commands</id>
+    <link href="https://framework.boucle.sh/limitations.html#worktree-isolation-can-refuse-all-bash-commands"/>
+    <updated>2026-08-13T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.231 macOS session with worktree isolation active refused every Bash command, including `pwd`, `echo hi`, `ls`, and `git status`, with the message that the command was too complex to verify inside the worktree. The report traced the failure to the isolation guard failing closed when the bash-command classifier returns a non-simple parse, plausibly from a tree-sitter parser abort. Read/Grep/Glob still worked, so the isolated session could look alive while being unable to build, test, or commit.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
     <title>[HIGH] MCP list parameters can be stringified mid-session.</title>
     <id>https://framework.boucle.sh/limitations.html#mcp-list-parameters-can-stringify-mid-session</id>
     <link href="https://framework.boucle.sh/limitations.html#mcp-list-parameters-can-stringify-mid-session"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-13T00:00:00Z</updated>
     <summary>Claude Code PreToolUse hooks receive `tool_name` and `tool_input` for MCP tools, but reported hook payloads do not include MCP tool annotations such as `readOnlyHint`, `destructiveHint`, or `openWorldHint`. A hook that wants to allow read-only MCP tools while gating write-capable ones must therefore rely on tool-name regexes or hand-maintained deny lists. A second report described maintaining matcher rules, deny-list files, hardcoded hook branches, and a monthly diff job solely to keep destructive Google Workspace MCP operations from slipping past stale name-based policy.</summary>
     <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] MCP `requiresUserInteraction` tools can stall unattended Routines despite hook allow decisions.</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-requires-user-interaction-can-stall-unattended-routines</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-requires-user-interaction-can-stall-unattended-routines"/>
-    <updated>2026-08-13T00:00:00Z</updated>
-    <summary>A reported Claude Code cloud Routine using a DesignSync MCP tool found that calls annotated with `_meta[&quot;anthropic/requiresUserInteraction&quot;]` still raise a human approval prompt inside an otherwise unattended Routine. The reporter&#x27;s PreToolUse hook returned `allow` for both `finalize_plan` and `write_files`, and `permissions.allow` covered the MCP server name, but the annotated `finalize_plan` call prompted anyway while the unannotated write call did not. The behavior is consistent with the MCP annotation, but it contradicts a common reading of Routines as fully unattended sessions.</summary>
-    <category term="Scheduled tasks"/>
   </entry>
 </feed>
