@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1485,
+  "count": 1486,
   "categories": {
     "Hook behavior & events": 200,
     "Permission system": 130,
@@ -18,7 +18,7 @@
     "Performance & cost": 23,
     "Agents & subagents": 22,
     "Tool behavior": 21,
-    "Sandbox & permissions": 18,
+    "Sandbox & permissions": 19,
     "Security & trust boundaries": 18,
     "Auth & accounts": 17,
     "Core & session management": 17,
@@ -189,7 +189,7 @@
   },
   "severity_counts": {
     "CRITICAL": 129,
-    "HIGH": 786,
+    "HIGH": 787,
     "LOW": 111,
     "MEDIUM": 459
   },
@@ -19149,30 +19149,41 @@
       "status": "open",
       "date_added": "2026-08-13",
       "workaround": "For critical MCP writes with list-valued parameters, verify the external side effect after each call instead of trusting a successful-looking client request. If list_type or stringified-array validation errors appear, restart the Claude Code session and, where safe, call the underlying service API directly with a captured JSON request body. MCP server authors should publish explicit array schemas for list fields, but users should still treat mid-session marshalling drift as a client-side risk until the client is fixed."
+    },
+    {
+      "id": "worktree-isolation-can-refuse-all-bash-commands",
+      "title": "Worktree isolation can refuse every Bash command.",
+      "severity": "HIGH",
+      "category": "Sandbox & permissions",
+      "description": "A reported Claude Code 2.1.231 macOS session with worktree isolation active refused every Bash command, including `pwd`, `echo hi`, `ls`, and `git status`, with the message that the command was too complex to verify inside the worktree. The report traced the failure to the isolation guard failing closed when the bash-command classifier returns a non-simple parse, plausibly from a tree-sitter parser abort. Read/Grep/Glob still worked, so the isolated session could look alive while being unable to build, test, or commit.",
+      "issue": "86340",
+      "status": "open",
+      "date_added": "2026-08-13",
+      "workaround": "Before delegating critical work to an isolated worktree session, run a one-command Bash smoke test such as `pwd` or `git status` and require the output to come from the expected `.claude/worktrees/...` path. If even trivial Bash commands are refused as too complex, restart in a fresh non-isolated session or a disposable clone, and do not treat read-only tool success as proof that the isolated agent can execute or commit."
     }
   ],
   "status_summary": {
-    "open": 1471,
+    "open": 1472,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 129,
-    "high": 786,
+    "high": 787,
     "low": 111,
     "medium": 459
   },
   "lastUpdated": "2026-08-13",
   "stats": {
-    "total": 1485,
+    "total": 1486,
     "critical": 129,
-    "high": 786,
+    "high": 787,
     "medium": 459,
     "low": 111,
-    "open": 1471,
+    "open": 1472,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-13",
-  "total": 1485
+  "total": 1486
 }
