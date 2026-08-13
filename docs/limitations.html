@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1478</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-13.</span></p>
+        <p class="subtitle"><span id="total-count">1479</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-13.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -6920,15 +6920,15 @@
             <p>RemoteTrigger ultraplan session receives stale project context from a previous session instead of current local project. Remote agent works on wrong codebase. Context is cached and not refreshed between trigger invocations.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/44643" target="_blank">#44643</a></div>
         </div>
-        <div class="kl-entry" data-category="Permissions" data-issues="44642" id="managed-settings-disable-bypass-permissions-ineffective" data-severity="critical" data-status="open">
+        <div class="kl-entry" data-category="Permissions" data-issues="44642 86253" id="managed-settings-disable-bypass-permissions-ineffective" data-severity="critical" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#646</span>
                 <span class="kl-cat">Permissions</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
             </div>
             <h3>Enterprise managed-settings.json disableBypassPermissionsMode has no effect; --dangerously-skip-permissions still works</h3>
-            <p>Enterprise managed-settings.json disableBypassPermissionsMode=disable does not prevent --dangerously-skip-permissions flag. Users can fully bypass deny rules in managed environments despite admin configuration. Enterprise security control is non-functional.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/44642" target="_blank">#44642</a></div>
+            <p>Enterprise managed-settings.json disableBypassPermissionsMode=disable does not prevent the --dangerously-skip-permissions flag. Multiple reports found that bypass sessions still launch even when the same managed settings file enforces adjacent deny rules, so loading the managed file is not enough proof that the bypass-mode control is active.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/44642" target="_blank">#44642</a>, <a href="https://github.com/anthropics/claude-code/issues/86253" target="_blank">#86253</a></div>
         </div>
         <div class="kl-entry" data-category="Model Behavior" data-issues="44641" id="model-approved-destructive-rsync-delete-root" data-severity="critical" data-status="open">
             <div class="kl-header">
@@ -16462,6 +16462,18 @@
                         <!-- workaround:managed-settings-dropin-hooks-suppressed-by-remote-settings -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat MDM inventory of managed-settings.d files as proof that managed hooks are active. Test a sentinel hook under each signed-in organization and check /status for the active managed source. Until Claude Code merges remote and drop-in managed sources, avoid relying on local drop-in hooks in orgs that also publish server-managed settings, or deploy the equivalent hook policy through the remote managed settings path and verify it in a fresh session.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86293" target="_blank">#86293</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="86334" id="managed-settings-disable-sideload-flags-mcp-config-bypass" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1479</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Managed `disableSideloadFlags` may not reject `--mcp-config`.</h3>
+            <p>A reported macOS Claude Code 2.1.228 and 2.1.231 setup accepted `--mcp-config` even though machine managed settings set `disableSideloadFlags: true`. The same managed file enforced adjacent controls such as default permission mode, shell-skill blocking, and known-marketplace policy, so admins cannot assume the sideload-flag gate fired just because other managed settings loaded.</p>
+                        <!-- workaround:managed-settings-disable-sideload-flags-mcp-config-bypass -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Test each disabled sideload flag directly on managed machines, especially `--mcp-config`, rather than relying on schema conformance or unrelated managed-setting canaries. Pair `disableSideloadFlags` with MCP server allowlisting, process-argv monitoring for unexpected `--mcp-config` use, and a fresh-session verification step after Claude Code updates.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86334" target="_blank">#86334</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

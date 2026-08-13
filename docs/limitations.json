@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1478,
+  "count": 1479,
   "categories": {
     "Hook behavior & events": 197,
     "Permission system": 130,
     "Hook bypass & evasion": 102,
-    "MCP & plugin issues": 75,
+    "MCP & plugin issues": 76,
     "Subagent & spawned agents": 70,
     "Desktop & IDE integration": 53,
     "TUI & display": 35,
@@ -188,7 +188,7 @@
   },
   "severity_counts": {
     "CRITICAL": 129,
-    "HIGH": 783,
+    "HIGH": 784,
     "LOW": 111,
     "MEDIUM": 455
   },
@@ -8114,9 +8114,10 @@
       "category": "Permissions",
       "severity": "CRITICAL",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/44642"
+        "https://github.com/anthropics/claude-code/issues/44642",
+        "https://github.com/anthropics/claude-code/issues/86253"
       ],
-      "description": "Enterprise managed-settings.json disableBypassPermissionsMode=disable does not prevent --dangerously-skip-permissions flag. Users can fully bypass deny rules in managed environments despite admin configuration. Enterprise security control is non-functional.",
+      "description": "Enterprise managed-settings.json disableBypassPermissionsMode=disable does not prevent the --dangerously-skip-permissions flag. Multiple reports found that bypass sessions still launch even when the same managed settings file enforces adjacent deny rules, so loading the managed file is not enough proof that the bypass-mode control is active.",
       "seq": 1,
       "date_added": "2026-04-07",
       "status": "open"
@@ -19058,30 +19059,43 @@
       ],
       "description": "A reported macOS Team-plan setup found that hooks deployed through /Library/Application Support/ClaudeCode/managed-settings.d run only when the signed-in organization has no server-managed settings. When the remote managed settings fetch succeeds, /status switches from Enterprise managed settings (drop-ins) to Enterprise managed settings (remote), the local drop-in hook is not registered, and its audit log never records the deactivation.",
       "workaround": "Do not treat MDM inventory of managed-settings.d files as proof that managed hooks are active. Test a sentinel hook under each signed-in organization and check /status for the active managed source. Until Claude Code merges remote and drop-in managed sources, avoid relying on local drop-in hooks in orgs that also publish server-managed settings, or deploy the equivalent hook policy through the remote managed settings path and verify it in a fresh session."
+    },
+    {
+      "id": "managed-settings-disable-sideload-flags-mcp-config-bypass",
+      "title": "Managed `disableSideloadFlags` may not reject `--mcp-config`.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "date_added": "2026-08-13",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/86334"
+      ],
+      "description": "A reported macOS Claude Code 2.1.228 and 2.1.231 setup accepted `--mcp-config` even though machine managed settings set `disableSideloadFlags: true`. The same managed file enforced adjacent controls such as default permission mode, shell-skill blocking, and known-marketplace policy, so admins cannot assume the sideload-flag gate fired just because other managed settings loaded.",
+      "workaround": "Test each disabled sideload flag directly on managed machines, especially `--mcp-config`, rather than relying on schema conformance or unrelated managed-setting canaries. Pair `disableSideloadFlags` with MCP server allowlisting, process-argv monitoring for unexpected `--mcp-config` use, and a fresh-session verification step after Claude Code updates."
     }
   ],
   "status_summary": {
-    "open": 1464,
+    "open": 1465,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 129,
-    "high": 783,
+    "high": 784,
     "low": 111,
     "medium": 455
   },
   "lastUpdated": "2026-08-13",
   "stats": {
-    "total": 1478,
+    "total": 1479,
     "critical": 129,
-    "high": 783,
+    "high": 784,
     "medium": 455,
     "low": 111,
-    "open": 1464,
+    "open": 1465,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-13",
-  "total": 1478
+  "total": 1479
 }
