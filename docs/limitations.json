@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1483,
+  "count": 1484,
   "categories": {
     "Hook behavior & events": 200,
     "Permission system": 130,
@@ -50,11 +50,11 @@
     "Authentication & accounts": 6,
     "Memory & context": 6,
     "Model routing & identity": 6,
+    "Skills / slash commands": 6,
     "CLI / TUI rendering": 5,
     "Cost & usage": 5,
     "Hook execution & lifecycle": 5,
     "Model behavior & compliance": 5,
-    "Skills / slash commands": 5,
     "Browser automation": 4,
     "MCP & plugins": 4,
     "Model behavior & instructions": 4,
@@ -188,7 +188,7 @@
   },
   "severity_counts": {
     "CRITICAL": 129,
-    "HIGH": 784,
+    "HIGH": 785,
     "LOW": 111,
     "MEDIUM": 459
   },
@@ -19124,30 +19124,43 @@
       ],
       "description": "A reported Claude Code web session displayed exit-0 UserPromptSubmit hook JSON `systemMessage` output in the user-facing chat UI with a `UserPromptSubmit says:` prefix. The same hook output is intended to be silent model context, and the terminal CLI reportedly stays silent, so plugins that put private reminders, internal state, or policy hints in `systemMessage` can expose that text to the operator in web sessions.",
       "workaround": "Do not put secrets, private implementation details, or user-invisible assumptions in UserPromptSubmit `systemMessage` payloads. Treat web sessions as a separate rendering surface and test a canary hook there before relying on silent context injection. For user-visible notices, emit explicit short text that is safe to show; for private state, store a local receipt and have later hooks read it instead of sending it through `systemMessage`."
+    },
+    {
+      "id": "slash-commands-queued-during-active-work-can-be-treated-as-chat",
+      "title": "Slash commands typed during active work can be queued as chat text.",
+      "category": "Skills / slash commands",
+      "severity": "HIGH",
+      "status": "open",
+      "date_added": "2026-08-13",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/86438"
+      ],
+      "description": "A reported Claude Code 2.1.226 VS Code Extension session recorded `/goal clear` typed while the assistant was actively working as a human `queued_command` with `commandMode: \"prompt\"` rather than dispatching it through the slash-command handler. The raw `/goal clear` text later surfaced to the model, which interpreted it as if the user had completed the command and falsely confirmed success, while the `/goal` Stop hook stayed armed for later turns.",
+      "workaround": "Do not type critical slash commands into a session while the assistant is still actively working. Interrupt or wait until the session is idle, run the slash command, and verify a real command result or transcript command block before trusting that state changed. For `/goal clear` specifically, run `/goal` afterward or inspect the relevant hook state rather than relying on the assistant's natural-language confirmation."
     }
   ],
   "status_summary": {
-    "open": 1469,
+    "open": 1470,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 129,
-    "high": 784,
+    "high": 785,
     "low": 111,
     "medium": 459
   },
   "lastUpdated": "2026-08-13",
   "stats": {
-    "total": 1483,
+    "total": 1484,
     "critical": 129,
-    "high": 784,
+    "high": 785,
     "medium": 459,
     "low": 111,
-    "open": 1469,
+    "open": 1470,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-13",
-  "total": 1483
+  "total": 1484
 }
