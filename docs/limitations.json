@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1480,
+  "count": 1481,
   "categories": {
     "Hook behavior & events": 198,
     "Permission system": 130,
@@ -34,8 +34,8 @@
     "Bash & shell execution": 11,
     "Plugin & channel system": 11,
     "UX & display": 11,
+    "Git & repository safety": 10,
     "Scheduled tasks": 10,
-    "Git & repository safety": 9,
     "hooks": 9,
     "Telemetry & insights": 9,
     "auth": 8,
@@ -190,7 +190,7 @@
     "CRITICAL": 129,
     "HIGH": 784,
     "LOW": 111,
-    "MEDIUM": 456
+    "MEDIUM": 457
   },
   "entries": [
     {
@@ -19085,10 +19085,23 @@
       ],
       "description": "A reported Claude Code 2.1.231 macOS plugin hook blocked `ExitPlanMode` by exiting non-zero with stderr, but the TUI labelled the deliberate block as a hook error and displayed the raw `${CLAUDE_PLUGIN_ROOT}` command string instead of the resolved path. The hook still executed, so this is a presentation and triage gap rather than a path-resolution failure, but it can make working safety gates look broken.",
       "workaround": "For user-facing blocking hooks, prefer stdout JSON with an explicit `permissionDecision` and keep stderr empty so the denial reason renders cleanly. If a hook appears to fail with a literal `${CLAUDE_PLUGIN_ROOT}` in the error label, verify whether the hook actually ran before treating it as a plugin-root injection failure."
+    },
+    {
+      "id": "claude-web-stop-hook-blocks-dirty-working-trees",
+      "title": "Claude Code web Stop hook can block ordinary dirty working trees.",
+      "category": "Git & repository safety",
+      "severity": "MEDIUM",
+      "status": "open",
+      "date_added": "2026-08-13",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/86379"
+      ],
+      "description": "A reported Claude Code web / CCR environment provisions `~/.claude/stop-hook-git-check.sh` so modified, staged, or untracked files make the Stop hook exit 2 even when there are no unpushed commits. Editing the hook to block only truly unpushed commits fixed the session locally, but a fresh web session reprovisioned the original blocking script, so repository-level settings could not persistently override the launcher hook.",
+      "workaround": "When a Claude Code web Stop hook forces a follow-up turn, inspect whether it is reporting dirty or untracked files rather than unpublished commits. Preserve intentional uncommitted work with an explicit handoff or patch file, but do not commit or push solely to satisfy the provisioned hook. For repeat workflows, verify the live `~/.claude/stop-hook-git-check.sh` behavior in each fresh web session because launcher provisioning can restore the old script."
     }
   ],
   "status_summary": {
-    "open": 1466,
+    "open": 1467,
     "fixed": 13,
     "mitigated": 1
   },
@@ -19096,19 +19109,19 @@
     "critical": 129,
     "high": 784,
     "low": 111,
-    "medium": 456
+    "medium": 457
   },
   "lastUpdated": "2026-08-13",
   "stats": {
-    "total": 1480,
+    "total": 1481,
     "critical": 129,
     "high": 784,
-    "medium": 456,
+    "medium": 457,
     "low": 111,
-    "open": 1466,
+    "open": 1467,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-13",
-  "total": 1480
+  "total": 1481
 }
