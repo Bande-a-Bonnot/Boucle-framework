@@ -7,6 +7,14 @@
   <updated>2026-08-14T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Nested-agent orchestrators can report completion before child agents finish.</title>
+    <id>https://framework.boucle.sh/limitations.html#nested-agent-orchestrators-can-complete-before-children-finish</id>
+    <link href="https://framework.boucle.sh/limitations.html#nested-agent-orchestrators-can-complete-before-children-finish"/>
+    <updated>2026-08-14T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.229 macOS `/code-review` run spawned a background Skill orchestrator that launched eight nested Agent finder agents, then ended its own turn while saying it would wait for those children. Task notifications reported `status: &quot;completed&quot;` for the orchestrator turns even though the review work was still waiting on child-agent results, and the top-level session needed repeated SendMessage resumes over about 20 minutes before a final report appeared. The report distinguishes this from false liveness notifications: each turn really had completed, but the status described turn termination rather than the assigned multi-agent review being done.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
     <title>[HIGH] Hidden Opus 5 prompt text can suppress expected subagent and workflow delegation.</title>
     <id>https://framework.boucle.sh/limitations.html#hidden-heron-brook-prompt-can-suppress-opus-5-delegation</id>
     <link href="https://framework.boucle.sh/limitations.html#hidden-heron-brook-prompt-can-suppress-opus-5-delegation"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-14T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.231 macOS session with worktree isolation active refused every Bash command, including `pwd`, `echo hi`, `ls`, and `git status`, with the message that the command was too complex to verify inside the worktree. The report traced the failure to the isolation guard failing closed when the bash-command classifier returns a non-simple parse, plausibly from a tree-sitter parser abort. Read/Grep/Glob still worked, so the isolated session could look alive while being unable to build, test, or commit.</summary>
     <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] MCP list parameters can be stringified mid-session.</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-list-parameters-can-stringify-mid-session</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-list-parameters-can-stringify-mid-session"/>
-    <updated>2026-08-14T00:00:00Z</updated>
-    <summary>A reported Claude Code 1.28929.0 Desktop session on macOS intermittently converted MCP tool arguments that were sent as JSON arrays into string values before the server-side validator received them. The affected Plane connector calls succeeded earlier in the same session with assignees as an array, then later failed with Pydantic list_type errors showing input_type=str for the same field. The reporter saw this cluster around auto-mode classifier denials and temporary-unavailable states on other tool calls, but the confirmed limitation is argument marshalling instability: list-typed MCP parameters such as assignees, labels, tags, or IDs can fail mid-session even when the outgoing tool call shape is a real JSON array.</summary>
-    <category term="MCP tools"/>
   </entry>
 </feed>

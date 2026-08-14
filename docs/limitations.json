@@ -1,12 +1,12 @@
 {
   "version": "0.13.0",
-  "count": 1504,
+  "count": 1505,
   "categories": {
     "Hook behavior & events": 203,
     "Permission system": 135,
     "Hook bypass & evasion": 102,
     "MCP & plugin issues": 78,
-    "Subagent & spawned agents": 72,
+    "Subagent & spawned agents": 73,
     "Desktop & IDE integration": 53,
     "TUI & display": 35,
     "CLI & terminal": 31,
@@ -189,7 +189,7 @@
   },
   "severity_counts": {
     "CRITICAL": 130,
-    "HIGH": 804,
+    "HIGH": 805,
     "LOW": 111,
     "MEDIUM": 459
   },
@@ -19364,30 +19364,41 @@
       "date_added": "2026-08-14",
       "description": "A reported Claude Code 2.1.219 through 2.1.232 Opus 5 path injects a dynamic prompt section called `heron_brook` that tells the model not to call AgentTool or workflows unless the user requested them. Reports say the section is model-gated, has no documented settings or environment opt-out, is not recorded in normal transcripts, and can make project CLAUDE.md, Skill, or agent-description delegation policies silently degrade unless the current user turn asks for delegation explicitly.",
       "workaround": "For workflows that depend on subagents, state the delegation request explicitly in the user prompt and verify the transcript for actual Agent or Task calls before trusting the result. Put narrow delegation triggers in CLAUDE.md as a backup, test behavior across the intended model family, and treat missing subagent fan-out on Opus 5 as a possible active prompt-section effect rather than only a local configuration mistake."
+    },
+    {
+      "id": "nested-agent-orchestrators-can-complete-before-children-finish",
+      "title": "Nested-agent orchestrators can report completion before child agents finish.",
+      "severity": "HIGH",
+      "category": "Subagent & spawned agents",
+      "description": "A reported Claude Code 2.1.229 macOS `/code-review` run spawned a background Skill orchestrator that launched eight nested Agent finder agents, then ended its own turn while saying it would wait for those children. Task notifications reported `status: \"completed\"` for the orchestrator turns even though the review work was still waiting on child-agent results, and the top-level session needed repeated SendMessage resumes over about 20 minutes before a final report appeared. The report distinguishes this from false liveness notifications: each turn really had completed, but the status described turn termination rather than the assigned multi-agent review being done.",
+      "issue": "86724",
+      "status": "open",
+      "date_added": "2026-08-14",
+      "workaround": "Do not treat a nested orchestrator task notification with `status: \"completed\"` as proof that its child agents have finished or that the assigned workflow is complete. For fan-out review workflows, require explicit accounting for every launched child, verify child completion through ListAgents or transcript records, and keep a parent-side checklist of expected phases before accepting the report. Prefer Workflow parallel or pipeline primitives for deterministic fan-out and collection where available, because the wait state is held by script logic rather than another agent turn."
     }
   ],
   "status_summary": {
-    "open": 1490,
+    "open": 1491,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 130,
-    "high": 804,
+    "high": 805,
     "low": 111,
     "medium": 459
   },
   "lastUpdated": "2026-08-14",
   "stats": {
-    "total": 1504,
+    "total": 1505,
     "critical": 130,
-    "high": 804,
+    "high": 805,
     "medium": 459,
     "low": 111,
-    "open": 1490,
+    "open": 1491,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-14",
-  "total": 1504
+  "total": 1505
 }
