@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1499,
+  "count": 1500,
   "categories": {
     "Hook behavior & events": 202,
     "Permission system": 135,
@@ -41,6 +41,7 @@
     "Telemetry & insights": 9,
     "auth": 8,
     "Desktop & platform bugs": 8,
+    "Hook execution & lifecycle": 7,
     "MCP": 7,
     "Model behavior & output": 7,
     "Permissions": 7,
@@ -48,7 +49,6 @@
     "Skills & commands": 7,
     "Stability & crashes": 7,
     "Authentication & accounts": 6,
-    "Hook execution & lifecycle": 6,
     "Memory & context": 6,
     "Model routing & identity": 6,
     "Skills / slash commands": 6,
@@ -189,7 +189,7 @@
   },
   "severity_counts": {
     "CRITICAL": 130,
-    "HIGH": 799,
+    "HIGH": 800,
     "LOW": 111,
     "MEDIUM": 459
   },
@@ -19287,6 +19287,17 @@
       "workaround": "Do not treat the hook `timeout` field as proof that a blocked hook will be reclaimed. Keep hook stdin handling bounded, avoid reads that wait for EOF unless the caller is proven to close stdin, and run a watchdog smoke test that leaves stdin open and expects the process tree to disappear. For unattended sessions, wrap high-risk hooks with an external supervisor that escalates from SIGTERM to SIGKILL and emits a visible failure marker when escalation was required."
     },
     {
+      "id": "hook-timeout-may-not-bound-pre-main-wedges",
+      "title": "Hook timeouts may not bound subprocesses wedged before hook code starts.",
+      "severity": "HIGH",
+      "category": "Hook execution & lifecycle",
+      "description": "A reported Claude Code 2.1.226 Windows setup with an 8-wide PreToolUse:Bash hook batch found that one spawned `node.exe` hook process could wedge during interpreter startup before JavaScript executed. The hook declared `timeout: 2`, but the session froze permanently with one unmatched `hook_started`, no `hook_response`, and an orphaned zero-CPU node process whose parent had already exited. Because the hook code never starts, hook-author mitigations such as bounded stdin reads or in-process watchdogs cannot run.",
+      "issue": "85250",
+      "status": "open",
+      "date_added": "2026-08-14",
+      "workaround": "Do not treat hook `timeout` as a complete parent-side watchdog for wide hook batches. Keep per-matcher hook batches narrow when possible, consolidate multiple guards into one dispatcher, and add an external process sweep for orphaned zero-CPU hook interpreters that have outlived their declared timeout. For headless sessions, pair hook events with a transcript or process-level heartbeat so an unmatched `hook_started` freezes the run visibly instead of looking like normal work."
+    },
+    {
       "id": "windows-git-bash-auto-mode-cd-compounds-prompt-constantly",
       "title": "Windows Git Bash cd-compound commands can trigger constant auto-mode prompts.",
       "severity": "HIGH",
@@ -19310,27 +19321,27 @@
     }
   ],
   "status_summary": {
-    "open": 1485,
+    "open": 1486,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 130,
-    "high": 799,
+    "high": 800,
     "low": 111,
     "medium": 459
   },
   "lastUpdated": "2026-08-14",
   "stats": {
-    "total": 1499,
+    "total": 1500,
     "critical": 130,
-    "high": 799,
+    "high": 800,
     "medium": 459,
     "low": 111,
-    "open": 1485,
+    "open": 1486,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-14",
-  "total": 1499
+  "total": 1500
 }

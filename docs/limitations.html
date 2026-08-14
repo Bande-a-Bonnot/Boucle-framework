@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1499</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-14.</span></p>
+        <p class="subtitle"><span id="total-count">1500</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-14.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -16691,9 +16691,21 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat the hook `timeout` field as proof that a blocked hook will be reclaimed. Keep hook stdin handling bounded, avoid reads that wait for EOF unless the caller is proven to close stdin, and run a watchdog smoke test that leaves stdin open and expects the process tree to disappear. For unattended sessions, wrap high-risk hooks with an external supervisor that escalates from SIGTERM to SIGKILL and emits a visible failure marker when escalation was required.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86578" target="_blank">#86578</a></div>
         </div>
-        <div class="kl-entry" data-category="Permission system" data-issues="86619" id="windows-git-bash-auto-mode-cd-compounds-prompt-constantly" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="Hook execution &amp; lifecycle" data-issues="85250" id="hook-timeout-may-not-bound-pre-main-wedges" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1498</span>
+                <span class="kl-cat">Hook execution &amp; lifecycle</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Hook timeouts may not bound subprocesses wedged before hook code starts.</h3>
+            <p>A reported Claude Code 2.1.226 Windows setup with an 8-wide PreToolUse:Bash hook batch found that one spawned `node.exe` hook process could wedge during interpreter startup before JavaScript executed. The hook declared `timeout: 2`, but the session froze permanently with one unmatched `hook_started`, no `hook_response`, and an orphaned zero-CPU node process whose parent had already exited. Because the hook code never starts, hook-author mitigations such as bounded stdin reads or in-process watchdogs cannot run.</p>
+                        <!-- workaround:hook-timeout-may-not-bound-pre-main-wedges -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat hook `timeout` as a complete parent-side watchdog for wide hook batches. Keep per-matcher hook batches narrow when possible, consolidate multiple guards into one dispatcher, and add an external process sweep for orphaned zero-CPU hook interpreters that have outlived their declared timeout. For headless sessions, pair hook events with a transcript or process-level heartbeat so an unmatched `hook_started` freezes the run visibly instead of looking like normal work.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/85250" target="_blank">#85250</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="86619" id="windows-git-bash-auto-mode-cd-compounds-prompt-constantly" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1499</span>
                 <span class="kl-cat">Permission system</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -16705,7 +16717,7 @@
         </div>
         <div class="kl-entry" data-category="Permission system" data-issues="86630" id="windows-auto-mode-gate-overrides-allow-rules" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1499</span>
+                <span class="kl-num">#1500</span>
                 <span class="kl-cat">Permission system</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
