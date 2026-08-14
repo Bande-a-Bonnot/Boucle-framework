@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1500,
+  "count": 1501,
   "categories": {
     "Hook behavior & events": 202,
     "Permission system": 135,
@@ -41,7 +41,7 @@
     "Telemetry & insights": 9,
     "auth": 8,
     "Desktop & platform bugs": 8,
-    "Hook execution & lifecycle": 7,
+    "Hook execution & lifecycle": 8,
     "MCP": 7,
     "Model behavior & output": 7,
     "Permissions": 7,
@@ -189,7 +189,7 @@
   },
   "severity_counts": {
     "CRITICAL": 130,
-    "HIGH": 800,
+    "HIGH": 801,
     "LOW": 111,
     "MEDIUM": 459
   },
@@ -19276,6 +19276,17 @@
       "workaround": "Do not rely on SubagentStop `decision: \"block\"` to force retry or remediation for workflow agents that use structured output schemas until your installed Claude Code version proves it. Add a smoke test that runs the same agent with and without the schema, checks the transcript for `Stop hook feedback`, and fails closed if the schema-bound path stops after one hook firing. For safety-critical checks, move the enforcement earlier to PreToolUse or avoid schema-bound subagent termination as the policy boundary."
     },
     {
+      "id": "killed-pretooluse-hook-can-allow-gated-tool",
+      "title": "Killed PreToolUse permission hooks can allow the gated tool.",
+      "severity": "HIGH",
+      "category": "Hook execution & lifecycle",
+      "description": "A reported Claude Code setup found that when a PreToolUse command hook used as an out-of-band approval gate was killed by the CLI's hook timeout, Claude Code executed the gated tool instead of denying it or falling back to the normal permission prompt. In the reported production-like case, an approval hook for a public site publish waited unanswered for about 10 minutes, the hook process was killed, and the publish continued without consent. This makes long-running permission-decision hooks fail open at the exact point where they could not finish deciding.",
+      "issue": "84302",
+      "status": "open",
+      "date_added": "2026-08-14",
+      "workaround": "Do not implement consent by letting PreToolUse hooks block indefinitely while polling for a human decision. Keep hook decisions short and bounded, and treat timeout or process death as a denial in a wrapper layer you control if possible. For high-risk public writes, move the approval inside the MCP tool or service operation so the action cannot execute until a durable approval record exists, and add a watchdog test that deliberately withholds approval past the hook timeout."
+    },
+    {
       "id": "hook-timeout-may-not-kill-stdin-read",
       "title": "Hook timeouts may not reclaim hooks blocked on stdin reads.",
       "severity": "HIGH",
@@ -19321,27 +19332,27 @@
     }
   ],
   "status_summary": {
-    "open": 1486,
+    "open": 1487,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 130,
-    "high": 800,
+    "high": 801,
     "low": 111,
     "medium": 459
   },
   "lastUpdated": "2026-08-14",
   "stats": {
-    "total": 1500,
+    "total": 1501,
     "critical": 130,
-    "high": 800,
+    "high": 801,
     "medium": 459,
     "low": 111,
-    "open": 1486,
+    "open": 1487,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-14",
-  "total": 1500
+  "total": 1501
 }
