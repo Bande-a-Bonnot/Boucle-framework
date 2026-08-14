@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1508,
+  "count": 1509,
   "categories": {
     "Hook behavior & events": 204,
     "Permission system": 135,
@@ -90,6 +90,7 @@
     "Hooks & automation": 2,
     "IDE integrations": 2,
     "mcp": 2,
+    "MCP & connectors": 2,
     "MCP & tool integration": 2,
     "MCP and plugins": 2,
     "Multi-agent": 2,
@@ -133,7 +134,6 @@
     "IDE Integration": 1,
     "Install & update": 1,
     "instruction-following": 1,
-    "MCP & connectors": 1,
     "MCP & plugin integration": 1,
     "MCP & tool infrastructure": 1,
     "MCP servers": 1,
@@ -190,7 +190,7 @@
   },
   "severity_counts": {
     "CRITICAL": 130,
-    "HIGH": 808,
+    "HIGH": 809,
     "LOW": 111,
     "MEDIUM": 459
   },
@@ -19409,30 +19409,41 @@
       "status": "open",
       "date_added": "2026-08-14",
       "workaround": "Do not rely on the connector consent wording alone when deciding whether a Google Drive account is safe to connect. After authorizing, inspect https://myaccount.google.com/permissions for the exact granted scopes and remove the connector if broad Drive read access is unacceptable. For sensitive personal or Workspace accounts, use a dedicated low-sensitivity Drive account or folder export instead of connecting the primary corpus until the OAuth request matches the narrow file-specific access model."
+    },
+    {
+      "id": "slack-read-file-pdf-attachments-can-return-malformed-mcp-blocks",
+      "title": "Slack `slack_read_file` can return malformed MCP blocks for mid-size PDFs.",
+      "severity": "HIGH",
+      "category": "MCP & connectors",
+      "description": "A reported Claude Code Slack MCP connector setup found that `slack_read_file` failed on Slack PDF attachments around 5.2-5.5 MB even though the documented limit was 10 MB. Instead of returning file content or a clean size/error response, the tool produced an MCP schema validation failure where a second content block carried a type tag but none of the required payload fields. Direct upload of the same PDFs to Claude reportedly worked, so the failure appears to sit in the Slack connector fetch or response-building path rather than in PDF parsing itself.",
+      "issue": "86797",
+      "status": "open",
+      "date_added": "2026-08-14",
+      "workaround": "Do not assume Slack-attached PDFs below the advertised size cap are readable through `slack_read_file`. For workflows that depend on plan sets, contracts, or permit PDFs, verify that the connector returns schema-valid content before acting on the result, keep a fallback path that downloads or uploads the file directly, and capture the file size plus the MCP validation error when reporting connector failures."
     }
   ],
   "status_summary": {
-    "open": 1494,
+    "open": 1495,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 130,
-    "high": 808,
+    "high": 809,
     "low": 111,
     "medium": 459
   },
   "lastUpdated": "2026-08-14",
   "stats": {
-    "total": 1508,
+    "total": 1509,
     "critical": 130,
-    "high": 808,
+    "high": 809,
     "medium": 459,
     "low": 111,
-    "open": 1494,
+    "open": 1495,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-14",
-  "total": 1508
+  "total": 1509
 }
