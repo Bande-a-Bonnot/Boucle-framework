@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1496,
+  "count": 1497,
   "categories": {
     "Hook behavior & events": 202,
     "Permission system": 133,
@@ -48,12 +48,12 @@
     "Skills & commands": 7,
     "Stability & crashes": 7,
     "Authentication & accounts": 6,
+    "Hook execution & lifecycle": 6,
     "Memory & context": 6,
     "Model routing & identity": 6,
     "Skills / slash commands": 6,
     "CLI / TUI rendering": 5,
     "Cost & usage": 5,
-    "Hook execution & lifecycle": 5,
     "Model behavior & compliance": 5,
     "Browser automation": 4,
     "MCP & plugins": 4,
@@ -189,7 +189,7 @@
   },
   "severity_counts": {
     "CRITICAL": 130,
-    "HIGH": 796,
+    "HIGH": 797,
     "LOW": 111,
     "MEDIUM": 459
   },
@@ -19273,30 +19273,41 @@
       "status": "open",
       "date_added": "2026-08-14",
       "workaround": "Do not rely on SubagentStop `decision: \"block\"` to force retry or remediation for workflow agents that use structured output schemas until your installed Claude Code version proves it. Add a smoke test that runs the same agent with and without the schema, checks the transcript for `Stop hook feedback`, and fails closed if the schema-bound path stops after one hook firing. For safety-critical checks, move the enforcement earlier to PreToolUse or avoid schema-bound subagent termination as the policy boundary."
+    },
+    {
+      "id": "hook-timeout-may-not-kill-stdin-read",
+      "title": "Hook timeouts may not reclaim hooks blocked on stdin reads.",
+      "severity": "HIGH",
+      "category": "Hook execution & lifecycle",
+      "description": "A reported Claude Code 2.1.232 Linux setup found that a command hook blocked in `io.ReadAll(os.Stdin)` survived well past its configured timeout. The timeout path delivered SIGTERM, but the child remained alive for hundreds of seconds while the wrapper waited in `sigsuspend`; only SIGKILL or SIGQUIT ended the wedged process. The report reproduced this with a hook stdin connected to a FIFO that never reached EOF, and noted that the same hook exited normally in 49 ms when stdin was closed.",
+      "issue": "86578",
+      "status": "open",
+      "date_added": "2026-08-14",
+      "workaround": "Do not treat the hook `timeout` field as proof that a blocked hook will be reclaimed. Keep hook stdin handling bounded, avoid reads that wait for EOF unless the caller is proven to close stdin, and run a watchdog smoke test that leaves stdin open and expects the process tree to disappear. For unattended sessions, wrap high-risk hooks with an external supervisor that escalates from SIGTERM to SIGKILL and emits a visible failure marker when escalation was required."
     }
   ],
   "status_summary": {
-    "open": 1482,
+    "open": 1483,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 130,
-    "high": 796,
+    "high": 797,
     "low": 111,
     "medium": 459
   },
   "lastUpdated": "2026-08-14",
   "stats": {
-    "total": 1496,
+    "total": 1497,
     "critical": 130,
-    "high": 796,
+    "high": 797,
     "medium": 459,
     "low": 111,
-    "open": 1482,
+    "open": 1483,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-14",
-  "total": 1496
+  "total": 1497
 }
