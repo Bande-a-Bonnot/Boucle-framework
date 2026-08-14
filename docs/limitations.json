@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1505,
+  "count": 1506,
   "categories": {
     "Hook behavior & events": 203,
     "Permission system": 135,
@@ -13,8 +13,8 @@
     "Context & memory": 30,
     "Platform & compatibility": 30,
     "MCP & integrations": 27,
+    "Cowork & remote": 24,
     "Configuration behavior": 23,
-    "Cowork & remote": 23,
     "Performance & cost": 23,
     "Agents & subagents": 22,
     "Tool behavior": 21,
@@ -189,7 +189,7 @@
   },
   "severity_counts": {
     "CRITICAL": 130,
-    "HIGH": 805,
+    "HIGH": 806,
     "LOW": 111,
     "MEDIUM": 459
   },
@@ -19375,30 +19375,41 @@
       "status": "open",
       "date_added": "2026-08-14",
       "workaround": "Do not treat a nested orchestrator task notification with `status: \"completed\"` as proof that its child agents have finished or that the assigned workflow is complete. For fan-out review workflows, require explicit accounting for every launched child, verify child completion through ListAgents or transcript records, and keep a parent-side checklist of expected phases before accepting the report. Prefer Workflow parallel or pipeline primitives for deterministic fan-out and collection where available, because the wait state is held by script logic rather than another agent turn."
+    },
+    {
+      "id": "mcp-session-metadata-can-hide-usage-limit-interrupted-turns",
+      "title": "MCP session metadata can hide usage-limit-interrupted turns.",
+      "severity": "HIGH",
+      "category": "Cowork & remote",
+      "description": "A reported Claude Code multi-session setup found that when a delivered `send_message` instruction began a target-session turn and that turn was killed by the usage limit, MCP session tools exposed no terminal-state field showing that the turn was interrupted. The target appeared under completed sessions in the desktop UI with a warning badge, but `get_session` returned only normal metadata such as `isRunning`, `lastActivityAt`, model, cwd, and session ids. `lastActivityAt` advanced when the turn died, so callers could mistake a recently updated idle session for successful completion even though the delivered instruction was never executed.",
+      "issue": "86729",
+      "status": "open",
+      "date_added": "2026-08-14",
+      "workaround": "Do not treat `send_message` success plus a recent `lastActivityAt` as proof that a target session processed the instruction. For multi-session orchestration, require an explicit completion artifact from the target, push or checkpoint work before long-running instructions, and reconcile local worktrees for unpushed commits or missing outputs after usage-limit banners. Until MCP session tools expose a terminal outcome, assume usage-limit interruptions can drop a delivered turn without a machine-readable failure state."
     }
   ],
   "status_summary": {
-    "open": 1491,
+    "open": 1492,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 130,
-    "high": 805,
+    "high": 806,
     "low": 111,
     "medium": 459
   },
   "lastUpdated": "2026-08-14",
   "stats": {
-    "total": 1505,
+    "total": 1506,
     "critical": 130,
-    "high": 805,
+    "high": 806,
     "medium": 459,
     "low": 111,
-    "open": 1491,
+    "open": 1492,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-14",
-  "total": 1505
+  "total": 1506
 }

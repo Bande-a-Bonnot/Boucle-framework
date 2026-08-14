@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1505</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-14.</span></p>
+        <p class="subtitle"><span id="total-count">1506</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-14.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -16786,6 +16786,18 @@
                         <!-- workaround:nested-agent-orchestrators-can-complete-before-children-finish -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat a nested orchestrator task notification with `status: &quot;completed&quot;` as proof that its child agents have finished or that the assigned workflow is complete. For fan-out review workflows, require explicit accounting for every launched child, verify child completion through ListAgents or transcript records, and keep a parent-side checklist of expected phases before accepting the report. Prefer Workflow parallel or pipeline primitives for deterministic fan-out and collection where available, because the wait state is held by script logic rather than another agent turn.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86724" target="_blank">#86724</a></div>
+        </div>
+        <div class="kl-entry" data-category="Cowork &amp; remote" data-issues="86729" id="mcp-session-metadata-can-hide-usage-limit-interrupted-turns" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1506</span>
+                <span class="kl-cat">Cowork &amp; remote</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>MCP session metadata can hide usage-limit-interrupted turns.</h3>
+            <p>A reported Claude Code multi-session setup found that when a delivered `send_message` instruction began a target-session turn and that turn was killed by the usage limit, MCP session tools exposed no terminal-state field showing that the turn was interrupted. The target appeared under completed sessions in the desktop UI with a warning badge, but `get_session` returned only normal metadata such as `isRunning`, `lastActivityAt`, model, cwd, and session ids. `lastActivityAt` advanced when the turn died, so callers could mistake a recently updated idle session for successful completion even though the delivered instruction was never executed.</p>
+                        <!-- workaround:mcp-session-metadata-can-hide-usage-limit-interrupted-turns -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat `send_message` success plus a recent `lastActivityAt` as proof that a target session processed the instruction. For multi-session orchestration, require an explicit completion artifact from the target, push or checkpoint work before long-running instructions, and reconcile local worktrees for unpushed commits or missing outputs after usage-limit banners. Until MCP session tools expose a terminal outcome, assume usage-limit interruptions can drop a delivered turn without a machine-readable failure state.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86729" target="_blank">#86729</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
