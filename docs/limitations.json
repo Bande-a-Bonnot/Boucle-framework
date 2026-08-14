@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1506,
+  "count": 1507,
   "categories": {
-    "Hook behavior & events": 203,
+    "Hook behavior & events": 204,
     "Permission system": 135,
     "Hook bypass & evasion": 102,
     "MCP & plugin issues": 78,
@@ -189,7 +189,7 @@
   },
   "severity_counts": {
     "CRITICAL": 130,
-    "HIGH": 806,
+    "HIGH": 807,
     "LOW": 111,
     "MEDIUM": 459
   },
@@ -19386,30 +19386,41 @@
       "status": "open",
       "date_added": "2026-08-14",
       "workaround": "Do not treat `send_message` success plus a recent `lastActivityAt` as proof that a target session processed the instruction. For multi-session orchestration, require an explicit completion artifact from the target, push or checkpoint work before long-running instructions, and reconcile local worktrees for unpushed commits or missing outputs after usage-limit banners. Until MCP session tools expose a terminal outcome, assume usage-limit interruptions can drop a delivered turn without a machine-readable failure state."
+    },
+    {
+      "id": "posttooluse-updatedtooloutput-shape-mismatch-silent-drop",
+      "title": "PostToolUse `updatedToolOutput` can be silently dropped when its shape is wrong.",
+      "severity": "HIGH",
+      "category": "Hook behavior & events",
+      "description": "A reported Claude Code 2.1.198 headless repro found that a PostToolUse hook for Read could exit 0, emit valid JSON, and include `hookSpecificOutput.updatedToolOutput`, but Claude Code silently delivered the original file contents to the model when the replacement was a plain string. The same hook path worked when `updatedToolOutput` mirrored Read's native structured output shape. The report also observed distinct native shapes for WebFetch and WebSearch, so generic text-rewrite hooks for built-in tools can pass direct hook checks while doing nothing in the real transcript.",
+      "issue": "86753",
+      "status": "open",
+      "date_added": "2026-08-14",
+      "workaround": "Do not treat hook invocation, exit 0, and valid JSON as proof that a PostToolUse output rewrite reached the model. Capture each target tool's native output shape, emit `updatedToolOutput` in that shape, and verify with an end-to-end transcript diff that the model saw the replacement marker. For redaction, truncation, or prompt-injection neutralization hooks, keep a fail-closed PreToolUse guard for sensitive tools until a fresh canary proves the PostToolUse rewrite path is active for that tool."
     }
   ],
   "status_summary": {
-    "open": 1492,
+    "open": 1493,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 130,
-    "high": 806,
+    "high": 807,
     "low": 111,
     "medium": 459
   },
   "lastUpdated": "2026-08-14",
   "stats": {
-    "total": 1506,
+    "total": 1507,
     "critical": 130,
-    "high": 806,
+    "high": 807,
     "medium": 459,
     "low": 111,
-    "open": 1492,
+    "open": 1493,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-14",
-  "total": 1506
+  "total": 1507
 }
