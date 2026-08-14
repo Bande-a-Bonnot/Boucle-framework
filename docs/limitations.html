@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1502</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-14.</span></p>
+        <p class="subtitle"><span id="total-count">1503</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-14.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -16750,6 +16750,18 @@
                         <!-- workaround:windows-auto-mode-gate-overrides-allow-rules -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On Windows Git Bash 2.1.232, do not treat a matching `permissions.allow` rule as proof that Bash commands will avoid human prompts. Smoke-test allowed shell, `cd ... &amp;&amp; ...`, and write-target patterns after upgrading, and keep unattended automation supervised until those probes pass. Where acceptable, start in the target directory to avoid cd-compounds, switch to WSL or PowerShell for affected workflows, or pin to a version whose permission behavior you have verified.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86630" target="_blank">#86630</a></div>
+        </div>
+        <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="86696" id="subagent-bash-tool-deferred-reports-success" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1503</span>
+                <span class="kl-cat">Subagent &amp; spawned agents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Subagent Bash calls can defer forever while the task reports success.</h3>
+            <p>A reported Claude Code 2.1.232 setup found that Bash tool calls issued by Agent-spawned subagents could emit a `tool_use`, never execute the command, receive no `tool_result`, and still surface to the parent task path as `subtype: &quot;success&quot;` with `is_error: false`. The headless payload exposed `stop_reason: &quot;tool_deferred&quot;`, `terminal_reason: &quot;tool_deferred&quot;`, and a `deferred_tool_use` containing the Bash call, while side-effect probes such as writing `date -u` to a temp file confirmed the command did not run. Read/Grep subagents and parent-session Bash calls continued to work, so this is distinct from a general shell outage and from hook decisions being ignored.</p>
+                        <!-- workaround:subagent-bash-tool-deferred-reports-success -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat an Agent task notification or `subtype: &quot;success&quot;` as proof that a subagent Bash command ran. For shell-dependent subagents, inspect `terminal_reason`, require matching `tool_result` records for every Bash `tool_use`, and verify expected side effects from the parent before acting on the subagent&#x27;s summary. Where possible, restrict audit subagents to read-only tools and route shell probes through the parent session until a fresh canary shows subagent Bash calls complete normally.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86696" target="_blank">#86696</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
