@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1496</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-14.</span></p>
+        <p class="subtitle"><span id="total-count">1497</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-14.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -16678,6 +16678,18 @@
                         <!-- workaround:subagentstop-block-ignored-with-structured-output -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on SubagentStop `decision: &quot;block&quot;` to force retry or remediation for workflow agents that use structured output schemas until your installed Claude Code version proves it. Add a smoke test that runs the same agent with and without the schema, checks the transcript for `Stop hook feedback`, and fails closed if the schema-bound path stops after one hook firing. For safety-critical checks, move the enforcement earlier to PreToolUse or avoid schema-bound subagent termination as the policy boundary.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86569" target="_blank">#86569</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook execution &amp; lifecycle" data-issues="86578" id="hook-timeout-may-not-kill-stdin-read" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1497</span>
+                <span class="kl-cat">Hook execution &amp; lifecycle</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Hook timeouts may not reclaim hooks blocked on stdin reads.</h3>
+            <p>A reported Claude Code 2.1.232 Linux setup found that a command hook blocked in `io.ReadAll(os.Stdin)` survived well past its configured timeout. The timeout path delivered SIGTERM, but the child remained alive for hundreds of seconds while the wrapper waited in `sigsuspend`; only SIGKILL or SIGQUIT ended the wedged process. The report reproduced this with a hook stdin connected to a FIFO that never reached EOF, and noted that the same hook exited normally in 49 ms when stdin was closed.</p>
+                        <!-- workaround:hook-timeout-may-not-kill-stdin-read -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat the hook `timeout` field as proof that a blocked hook will be reclaimed. Keep hook stdin handling bounded, avoid reads that wait for EOF unless the caller is proven to close stdin, and run a watchdog smoke test that leaves stdin open and expects the process tree to disappear. For unattended sessions, wrap high-risk hooks with an external supervisor that escalates from SIGTERM to SIGKILL and emits a visible failure marker when escalation was required.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86578" target="_blank">#86578</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
