@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1497,
+  "count": 1498,
   "categories": {
     "Hook behavior & events": 202,
-    "Permission system": 133,
+    "Permission system": 134,
     "Hook bypass & evasion": 102,
     "MCP & plugin issues": 78,
     "Subagent & spawned agents": 70,
@@ -189,7 +189,7 @@
   },
   "severity_counts": {
     "CRITICAL": 130,
-    "HIGH": 797,
+    "HIGH": 798,
     "LOW": 111,
     "MEDIUM": 459
   },
@@ -19284,30 +19284,41 @@
       "status": "open",
       "date_added": "2026-08-14",
       "workaround": "Do not treat the hook `timeout` field as proof that a blocked hook will be reclaimed. Keep hook stdin handling bounded, avoid reads that wait for EOF unless the caller is proven to close stdin, and run a watchdog smoke test that leaves stdin open and expects the process tree to disappear. For unattended sessions, wrap high-risk hooks with an external supervisor that escalates from SIGTERM to SIGKILL and emits a visible failure marker when escalation was required."
+    },
+    {
+      "id": "windows-git-bash-auto-mode-cd-compounds-prompt-constantly",
+      "title": "Windows Git Bash cd-compound commands can trigger constant auto-mode prompts.",
+      "severity": "HIGH",
+      "category": "Permission system",
+      "description": "A reported Claude Code 2.1.232 Windows 11 Git Bash setup found that auto mode repeatedly sent quoted absolute-path `cd ... && ...` Bash compounds to manual approval, including read-only `sed`, `grep`, `head`, and `tail` pipelines with no redirects or write verbs. The prompts used several different static-analysis reasons, including a read-only pipeline labelled as a write operation, Windows 8.3 short paths interpreted as tilde expansion, and a concrete Cygwin-symlink claim that the reporter checked against the filesystem and found false. A follow-up also showed the approval dialog rendering a pipe as a comma, suggesting the displayed command or analysis path may be using a corrupted parse. Because Windows subagents commonly generate `cd \"<absolute path>\" && ...` commands and these prompts do not offer a scoped \"do not ask again\" option, the rollout can create dozens of manual prompts per hour.",
+      "issue": "86619",
+      "status": "open",
+      "date_added": "2026-08-14",
+      "workaround": "On Windows Git Bash, expect `cd ... && ...` Bash compounds to be high-friction in auto mode until your installed Claude Code version proves otherwise. Start Claude Code from the intended project directory when possible so commands do not need a leading `cd`, prefer PowerShell or WSL for workflows where those shells are acceptable, and move repetitive safe commands into narrowly scoped allow rules before starting a fresh session. Keep screenshots or transcripts of false-positive prompt text, especially when the dialog's rendered command differs from the command sent, so you can distinguish real policy stops from parser or classifier drift."
     }
   ],
   "status_summary": {
-    "open": 1483,
+    "open": 1484,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 130,
-    "high": 797,
+    "high": 798,
     "low": 111,
     "medium": 459
   },
   "lastUpdated": "2026-08-14",
   "stats": {
-    "total": 1497,
+    "total": 1498,
     "critical": 130,
-    "high": 797,
+    "high": 798,
     "medium": 459,
     "low": 111,
-    "open": 1483,
+    "open": 1484,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-14",
-  "total": 1497
+  "total": 1498
 }

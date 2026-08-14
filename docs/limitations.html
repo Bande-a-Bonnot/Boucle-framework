@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1497</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-14.</span></p>
+        <p class="subtitle"><span id="total-count">1498</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-14.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -16690,6 +16690,18 @@
                         <!-- workaround:hook-timeout-may-not-kill-stdin-read -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat the hook `timeout` field as proof that a blocked hook will be reclaimed. Keep hook stdin handling bounded, avoid reads that wait for EOF unless the caller is proven to close stdin, and run a watchdog smoke test that leaves stdin open and expects the process tree to disappear. For unattended sessions, wrap high-risk hooks with an external supervisor that escalates from SIGTERM to SIGKILL and emits a visible failure marker when escalation was required.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86578" target="_blank">#86578</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="86619" id="windows-git-bash-auto-mode-cd-compounds-prompt-constantly" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1498</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Windows Git Bash cd-compound commands can trigger constant auto-mode prompts.</h3>
+            <p>A reported Claude Code 2.1.232 Windows 11 Git Bash setup found that auto mode repeatedly sent quoted absolute-path `cd ... &amp;&amp; ...` Bash compounds to manual approval, including read-only `sed`, `grep`, `head`, and `tail` pipelines with no redirects or write verbs. The prompts used several different static-analysis reasons, including a read-only pipeline labelled as a write operation, Windows 8.3 short paths interpreted as tilde expansion, and a concrete Cygwin-symlink claim that the reporter checked against the filesystem and found false. A follow-up also showed the approval dialog rendering a pipe as a comma, suggesting the displayed command or analysis path may be using a corrupted parse. Because Windows subagents commonly generate `cd &quot;&lt;absolute path&gt;&quot; &amp;&amp; ...` commands and these prompts do not offer a scoped &quot;do not ask again&quot; option, the rollout can create dozens of manual prompts per hour.</p>
+                        <!-- workaround:windows-git-bash-auto-mode-cd-compounds-prompt-constantly -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On Windows Git Bash, expect `cd ... &amp;&amp; ...` Bash compounds to be high-friction in auto mode until your installed Claude Code version proves otherwise. Start Claude Code from the intended project directory when possible so commands do not need a leading `cd`, prefer PowerShell or WSL for workflows where those shells are acceptable, and move repetitive safe commands into narrowly scoped allow rules before starting a fresh session. Keep screenshots or transcripts of false-positive prompt text, especially when the dialog&#x27;s rendered command differs from the command sent, so you can distinguish real policy stops from parser or classifier drift.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86619" target="_blank">#86619</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
