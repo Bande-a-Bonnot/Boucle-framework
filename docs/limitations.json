@@ -16315,10 +16315,11 @@
       "category": "Hook bypass & evasion",
       "severity": "CRITICAL",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/80039"
+        "https://github.com/anthropics/claude-code/issues/80039",
+        "https://github.com/anthropics/claude-code/issues/86655"
       ],
-      "description": "A reported Windows 11 Claude Code 2.1.217 session ran a flat command-type PreToolUse hook for `Edit|Write` that received the correct stdin JSON, executed real detection logic, wrote a block reason to stderr, and exited with status 2, but Claude Code still applied the Edit tool call and never surfaced the blocking message to the assistant. The same report also found a PostToolUse hook exit-2 stderr message did not reach the model, while sibling hooks in the same array still dispatched, narrowing the failure to exit-code and stderr propagation rather than hook registration.",
-      "workaround": "On Windows, do not trust exit-code-only hook blocking until a real Claude Code tool call proves it stops `Edit` and `Write`. Prefer JSON hook responses with explicit decisions where supported, keep commands flat rather than nested through multiple shells, and add a startup smoke test that attempts a harmless blocked edit and verifies the file is unchanged. For high-risk paths, pair hooks with file permissions, git pre-commit checks, or an external guard that does not depend on Claude Code honoring exit status.",
+      "description": "Reported Windows sessions on Claude Code 2.1.217 and 2.1.229 ran PreToolUse hooks for `Edit|Write` that received the correct stdin JSON, executed real detection logic, wrote a block reason to stderr, and exited with status 2, but Claude Code still applied the file operation and never surfaced the blocking message. The newer 2.1.229 Windows Desktop repro covered both agent-frontmatter hooks and `.claude/settings.json` hooks, used a PowerShell `-File` guard to avoid the `-Command` exit-code trap, and logged a hook-owned trace proving the deny verdict happened before the write succeeded. A sibling report also found a PostToolUse hook exit-2 stderr message did not reach the model, narrowing the failure to exit-code and stderr propagation rather than hook registration.",
+      "workaround": "On Windows, do not trust exit-code-only hook blocking until a real Claude Code tool call proves it stops `Edit` and `Write` and leaves the target file unchanged. Prefer JSON hook responses with explicit decisions where supported, keep commands flat rather than nested through multiple shells, and add a startup smoke test that attempts a harmless blocked edit or write through the same carrier you rely on, including agent frontmatter. For high-risk paths, pair hooks with file permissions, git pre-commit checks, or an external guard that does not depend on Claude Code honoring exit status.",
       "status": "open",
       "date_added": "2026-07-22"
     },
