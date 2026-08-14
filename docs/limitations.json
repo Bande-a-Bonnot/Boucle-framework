@@ -1,12 +1,12 @@
 {
   "version": "0.13.0",
-  "count": 1502,
+  "count": 1503,
   "categories": {
     "Hook behavior & events": 203,
     "Permission system": 135,
     "Hook bypass & evasion": 102,
     "MCP & plugin issues": 78,
-    "Subagent & spawned agents": 70,
+    "Subagent & spawned agents": 71,
     "Desktop & IDE integration": 53,
     "TUI & display": 35,
     "CLI & terminal": 31,
@@ -189,7 +189,7 @@
   },
   "severity_counts": {
     "CRITICAL": 130,
-    "HIGH": 802,
+    "HIGH": 803,
     "LOW": 111,
     "MEDIUM": 459
   },
@@ -19340,30 +19340,41 @@
       "status": "open",
       "date_added": "2026-08-14",
       "workaround": "On Windows Git Bash 2.1.232, do not treat a matching `permissions.allow` rule as proof that Bash commands will avoid human prompts. Smoke-test allowed shell, `cd ... && ...`, and write-target patterns after upgrading, and keep unattended automation supervised until those probes pass. Where acceptable, start in the target directory to avoid cd-compounds, switch to WSL or PowerShell for affected workflows, or pin to a version whose permission behavior you have verified."
+    },
+    {
+      "id": "subagent-bash-tool-deferred-reports-success",
+      "title": "Subagent Bash calls can defer forever while the task reports success.",
+      "severity": "HIGH",
+      "category": "Subagent & spawned agents",
+      "description": "A reported Claude Code 2.1.232 setup found that Bash tool calls issued by Agent-spawned subagents could emit a `tool_use`, never execute the command, receive no `tool_result`, and still surface to the parent task path as `subtype: \"success\"` with `is_error: false`. The headless payload exposed `stop_reason: \"tool_deferred\"`, `terminal_reason: \"tool_deferred\"`, and a `deferred_tool_use` containing the Bash call, while side-effect probes such as writing `date -u` to a temp file confirmed the command did not run. Read/Grep subagents and parent-session Bash calls continued to work, so this is distinct from a general shell outage and from hook decisions being ignored.",
+      "issue": "86696",
+      "status": "open",
+      "date_added": "2026-08-14",
+      "workaround": "Do not treat an Agent task notification or `subtype: \"success\"` as proof that a subagent Bash command ran. For shell-dependent subagents, inspect `terminal_reason`, require matching `tool_result` records for every Bash `tool_use`, and verify expected side effects from the parent before acting on the subagent's summary. Where possible, restrict audit subagents to read-only tools and route shell probes through the parent session until a fresh canary shows subagent Bash calls complete normally."
     }
   ],
   "status_summary": {
-    "open": 1488,
+    "open": 1489,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 130,
-    "high": 802,
+    "high": 803,
     "low": 111,
     "medium": 459
   },
   "lastUpdated": "2026-08-14",
   "stats": {
-    "total": 1502,
+    "total": 1503,
     "critical": 130,
-    "high": 802,
+    "high": 803,
     "medium": 459,
     "low": 111,
-    "open": 1488,
+    "open": 1489,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-14",
-  "total": 1502
+  "total": 1503
 }
