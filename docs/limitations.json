@@ -757,9 +757,11 @@
       "category": "Permission system",
       "severity": "HIGH",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/37210"
+        "https://github.com/anthropics/claude-code/issues/37210",
+        "https://github.com/anthropics/claude-code/issues/86655"
       ],
-      "description": "If a hook script exits with code 2, Claude Code treats it as a crash (closed as intended behavior). For Bash tool calls, crashed hooks still block. For Edit and Write tools, crashed hooks are silently ignored and the operation proceeds. enforce-hooks generates hooks that always exit 0, so this does not affect generated hooks. But custom hook scripts that use exit 2 on the deny path will appear to ",
+      "description": "If a hook script exits with code 2, Claude Code can treat the verdict as a hook failure instead of an enforcement decision. Older reports showed Edit and Write operations proceeding after such hook failures. A newer Windows Desktop / agent-frontmatter repro showed the hook ran, parsed the Write target, appended a DENY trace line, and exited 2, but the denied file was still created with no visible stderr or block message.",
+      "workaround": "Do not rely on bare exit-code-2 hook scripts as the only guard for Edit or Write until a live smoke test proves the operation is blocked on your installed surface. Prefer hook JSON decisions that return a hard block or deny path known to work for the target tool, keep enforce-hooks' generated engine path, and test with a denied file creation rather than only testing the hook script by hand.",
       "status": "open"
     },
     {
@@ -2603,9 +2605,11 @@
       "severity": "HIGH",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/40029",
-        "https://github.com/anthropics/claude-code/issues/13339"
+        "https://github.com/anthropics/claude-code/issues/13339",
+        "https://github.com/anthropics/claude-code/issues/86754"
       ],
-      "description": "In the VS Code extension, PreToolUse hooks returning {\"permissionDecision\": \"ask\"} are silently ignored. The same hooks work correctly in CLI. Other decisions (allow, deny, block) work in both environments. Hooks cannot enforce \"ask before executing\" policies in VS Code; only hard-allow or hard-deny. Workaround: use \"decision\": \"block\" instead of \"ask\", at the cost of losing case-by-case approval.",
+      "description": "In the VS Code extension, PreToolUse hooks returning {\"permissionDecision\": \"ask\"} can be silently resolved to allow instead of showing a prompt. A newer repro also reports static permissions.ask rules with no matching allow rule running immediately in the extension's default permission mode, while the same ask-tier controls fail closed in headless CLI. Other decisions such as deny or block may still work in the same environment, which makes the ask tier specifically unsafe as a checkpoint.",
+      "workaround": "For VS Code extension workflows, do not use ask-tier hook or static permission rules as the only safety boundary for risky operations. Use hard deny/block decisions for must-stop cases, keep a CLI/headless parity test for each ask rule, and verify that the extension actually shows a prompt before relying on case-by-case approval.",
       "status": "open"
     },
     {
