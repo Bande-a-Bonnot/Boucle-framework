@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1518</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-15.</span></p>
+        <p class="subtitle"><span id="total-count">1521</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-15.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -16942,6 +16942,42 @@
                         <!-- workaround:desktop-app-can-stop-rendering-complete-transcript-tail -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When the Desktop app view appears frozen, do not assume the latest messages are lost. Inspect the matching `~/.claude/projects/&lt;project&gt;/&lt;session-id&gt;.jsonl` file and tail user or assistant records to recover the completed responses. Preserve the transcript file before repeated restarts, and include the last visible timestamp plus the later JSONL timestamps when reporting the render failure.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86851" target="_blank">#86851</a></div>
+        </div>
+        <div class="kl-entry" data-category="Bash &amp; shell execution" data-issues="86853" id="bash-tool-can-drop-stdout-and-misreport-simple-commands" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1519</span>
+                <span class="kl-cat">Bash &amp; shell execution</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>The Bash tool can drop stdout and misreport simple commands as failures.</h3>
+            <p>A reported Claude Code 2.1.233 Linux setup found that the Bash tool stopped surfacing stdout for ordinary commands in fresh sessions. Commands such as `pwd`, `date`, `echo hi`, `printf`, and `pwd &gt; /tmp/f &amp;&amp; cat /tmp/f` returned either `(Bash completed with no output)` or a bare `Exit code 1` with no stdout or stderr, even though the same commands should print output or succeed in a normal shell. The reporter ruled out local aliases, shell startup files, and Bash hooks, and saw the behavior across multiple concurrent sessions, making it look like a client or harness stdout-capture regression rather than a project configuration issue.</p>
+                        <!-- workaround:bash-tool-can-drop-stdout-and-misreport-simple-commands -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When Bash results look empty or implausibly failed, do not trust the displayed stdout or exit status as proof of command behavior. Reproduce with a fresh harmless probe such as `pwd` and `date`, then route critical command output through a file and inspect that file with a separate Read tool or external terminal. For automation, require a second-channel artifact check before acting on Bash-reported empty output, and include shell startup files, hooks settings, and the exact probe commands in bug reports.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86853" target="_blank">#86853</a></div>
+        </div>
+        <div class="kl-entry" data-category="VS Code extension" data-issues="86854" id="vscode-remote-ssh-stream-backpressure-can-delay-permission-prompts" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1520</span>
+                <span class="kl-cat">VS Code extension</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>VS Code Remote-SSH stream backpressure can delay permission prompts by minutes or hours.</h3>
+            <p>A reported Claude Code VS Code extension 2.1.233 Remote-SSH setup fell far behind the CLI when connected to an Anthropic-compatible provider that emitted one SSE content delta per token. The session transcript showed the assistant response and a pending `tool_use` had already completed, and a Notification hook fired on time, but the VS Code extension continued rendering old stream events and displayed the permission prompt or AskUserQuestion minutes to hours late. The terminal CLI with the same provider worked normally, and the extension with the official API worked normally, so the failure appears tied to fine-grained stream-event volume and extension/webview backpressure.</p>
+                        <!-- workaround:vscode-remote-ssh-stream-backpressure-can-delay-permission-prompts -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For Remote-SSH sessions that use third-party Anthropic-compatible gateways, treat delayed VS Code prompts as a possible stream-drain failure rather than model indecision. Compare the on-disk transcript and hook side effects against the visible extension state, and switch to the terminal CLI for permission-sensitive work if prompts lag. Gateway operators can reduce risk by coalescing consecutive same-type SSE deltas while preserving order, then verifying that approval prompts appear within seconds on long, thinking-heavy turns.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86854" target="_blank">#86854</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="86843" id="desktop-session-group-writes-can-clobber-existing-groups" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1521</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Desktop session group writes can clobber existing sidebar groups.</h3>
+            <p>A reported Claude Desktop app 1.30096.1 Windows setup lost all existing Code-tab sidebar groups when the user created a new group and moved a session into it. The affected metadata lives in `%APPDATA%\Claude\claude_desktop_config.json` under `preferences.epitaxyPrefs[&quot;dframe-group-scopes&quot;]`; after the incident, that scope contained only the newly created group and its assignments. Session JSON files were intact, but the original user-defined grouping metadata was unrecoverable because the local storage mirror already reflected the clobbered value and no backup existed.</p>
+                        <!-- workaround:desktop-session-group-writes-can-clobber-existing-groups -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before reorganizing important Desktop Code session groups, back up `%APPDATA%\Claude\claude_desktop_config.json` and, if possible, export or document the group mapping. If groups disappear, preserve the config immediately, avoid creating more groups until the overwritten value is understood, and rebuild only from surviving session data such as each session&#x27;s `originCwd`. Treat group metadata as separate from transcript preservation: intact session files do not prove sidebar organization is recoverable.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86843" target="_blank">#86843</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

@@ -7,6 +7,30 @@
   <updated>2026-08-15T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Desktop session group writes can clobber existing sidebar groups.</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-session-group-writes-can-clobber-existing-groups</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-session-group-writes-can-clobber-existing-groups"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Desktop app 1.30096.1 Windows setup lost all existing Code-tab sidebar groups when the user created a new group and moved a session into it. The affected metadata lives in `%APPDATA%\Claude\claude_desktop_config.json` under `preferences.epitaxyPrefs[&quot;dframe-group-scopes&quot;]`; after the incident, that scope contained only the newly created group and its assignments. Session JSON files were intact, but the original user-defined grouping metadata was unrecoverable because the local storage mirror already reflected the clobbered value and no backup existed.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
+  <entry>
+    <title>[HIGH] VS Code Remote-SSH stream backpressure can delay permission prompts by minutes or hours.</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-remote-ssh-stream-backpressure-can-delay-permission-prompts</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-remote-ssh-stream-backpressure-can-delay-permission-prompts"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Code VS Code extension 2.1.233 Remote-SSH setup fell far behind the CLI when connected to an Anthropic-compatible provider that emitted one SSE content delta per token. The session transcript showed the assistant response and a pending `tool_use` had already completed, and a Notification hook fired on time, but the VS Code extension continued rendering old stream events and displayed the permission prompt or AskUserQuestion minutes to hours late. The terminal CLI with the same provider worked normally, and the extension with the official API worked normally, so the failure appears tied to fine-grained stream-event volume and extension/webview backpressure.</summary>
+    <category term="VS Code extension"/>
+  </entry>
+  <entry>
+    <title>[HIGH] The Bash tool can drop stdout and misreport simple commands as failures.</title>
+    <id>https://framework.boucle.sh/limitations.html#bash-tool-can-drop-stdout-and-misreport-simple-commands</id>
+    <link href="https://framework.boucle.sh/limitations.html#bash-tool-can-drop-stdout-and-misreport-simple-commands"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 Linux setup found that the Bash tool stopped surfacing stdout for ordinary commands in fresh sessions. Commands such as `pwd`, `date`, `echo hi`, `printf`, and `pwd &gt; /tmp/f &amp;&amp; cat /tmp/f` returned either `(Bash completed with no output)` or a bare `Exit code 1` with no stdout or stderr, even though the same commands should print output or succeed in a normal shell. The reporter ruled out local aliases, shell startup files, and Bash hooks, and saw the behavior across multiple concurrent sessions, making it look like a client or harness stdout-capture regression rather than a project configuration issue.</summary>
+    <category term="Bash &amp; shell execution"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] The Desktop app can stop rendering completed transcript tail messages.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-app-can-stop-rendering-complete-transcript-tail</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-app-can-stop-rendering-complete-transcript-tail"/>
@@ -141,29 +165,5 @@
     <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.232 Linux setup found that a command hook blocked in `io.ReadAll(os.Stdin)` survived well past its configured timeout. The timeout path delivered SIGTERM, but the child remained alive for hundreds of seconds while the wrapper waited in `sigsuspend`; only SIGKILL or SIGQUIT ended the wedged process. The report reproduced this with a hook stdin connected to a FIFO that never reached EOF, and noted that the same hook exited normally in 49 ms when stdin was closed.</summary>
     <category term="Hook execution &amp; lifecycle"/>
-  </entry>
-  <entry>
-    <title>[HIGH] PreToolUse `ask` prompts can default to approval.</title>
-    <id>https://framework.boucle.sh/limitations.html#pretooluse-ask-prompts-default-to-approval</id>
-    <link href="https://framework.boucle.sh/limitations.html#pretooluse-ask-prompts-default-to-approval"/>
-    <updated>2026-08-15T00:00:00Z</updated>
-    <summary>A reported Claude Code setup used a PreToolUse hook returning hookSpecificOutput.permissionDecision: &quot;ask&quot; as an approval gate for git push. The resulting prompt accepted the highlighted Yes option when Enter was pressed, and an engineer typing into the wrong window unintentionally published a branch about 25 seconds after the prompt appeared. This makes hook-level ask prompts risky for outward actions because the default interaction is approval, not denial.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Killed PreToolUse permission hooks can allow the gated tool.</title>
-    <id>https://framework.boucle.sh/limitations.html#killed-pretooluse-hook-can-allow-gated-tool</id>
-    <link href="https://framework.boucle.sh/limitations.html#killed-pretooluse-hook-can-allow-gated-tool"/>
-    <updated>2026-08-15T00:00:00Z</updated>
-    <summary>A reported Claude Code setup found that when a PreToolUse command hook used as an out-of-band approval gate was killed by the CLI&#x27;s hook timeout, Claude Code executed the gated tool instead of denying it or falling back to the normal permission prompt. In the reported production-like case, an approval hook for a public site publish waited unanswered for about 10 minutes, the hook process was killed, and the publish continued without consent. This makes long-running permission-decision hooks fail open at the exact point where they could not finish deciding.</summary>
-    <category term="Hook execution &amp; lifecycle"/>
-  </entry>
-  <entry>
-    <title>[HIGH] SubagentStop `decision: block` can be ignored for schema-bound agents.</title>
-    <id>https://framework.boucle.sh/limitations.html#subagentstop-block-ignored-with-structured-output</id>
-    <link href="https://framework.boucle.sh/limitations.html#subagentstop-block-ignored-with-structured-output"/>
-    <updated>2026-08-15T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.232 Linux workflow found that a SubagentStop hook for an agent with a structured output schema fired and returned `decision: &quot;block&quot;`, but the agent still terminated after emitting StructuredOutput. The same agent, hook, and prompt without the schema honored the block, injected the stop-hook feedback, ran again, and then produced a second SubagentStop event with `stop_hook_active: true`. The report narrows the symptom to workflow agents using structured output or the terminating StructuredOutput path, and notes that silently discarding the block makes schema-bound subagents unsafe to treat as hook-enforced.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>
