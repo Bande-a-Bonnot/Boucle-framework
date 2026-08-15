@@ -7,6 +7,14 @@
   <updated>2026-08-15T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Subdirectory launches can disable project `Read()` deny rules.</title>
+    <id>https://framework.boucle.sh/limitations.html#subdirectory-launch-can-disable-read-deny-rules</id>
+    <link href="https://framework.boucle.sh/limitations.html#subdirectory-launch-can-disable-read-deny-rules"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.220 macOS monorepo found that project-level `.claude/settings.json` still appeared to load from a package subdirectory because enabled plugins from that file were present, but `permissions.deny` `Read()` rules from the same file stopped enforcing. The reporter verified that `Read(/build/**)`, `Read(**/build/**)`, absolute path denies, and combined patterns blocked when Claude Code started at the repo root, yet allowed the same absolute generated-file read when launched from `packages/backend`. This makes subdirectory sessions dangerous even when some visible project settings prove the file was partially active.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
     <title>[HIGH] Startup glob scans can repeatedly walk gitignored dependency trees.</title>
     <id>https://framework.boucle.sh/limitations.html#startup-glob-scans-can-rewalk-gitignored-trees</id>
     <link href="https://framework.boucle.sh/limitations.html#startup-glob-scans-can-rewalk-gitignored-trees"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code VS Code extension 2.1.233 setup rendered markdown links to files with non-ASCII names as clickable anchors, but clicking them opened nothing and showed no error. The reporter traced the path through the webview and extension bundles: the markdown renderer percent-encoded the href, the click path forwarded the encoded string as a filesystem path, and `openFile()` attempted to open the literal encoded filename. The same missing-decode path likely also covers links whose spaces become `%20`, so repositories with localized filenames or spaces can lose one-click navigation from assistant file references.</summary>
     <category term="VS Code extension"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Nested-repo trust migration can silently disable trust-gated features.</title>
-    <id>https://framework.boucle.sh/limitations.html#nested-repo-trust-migration-can-silence-statusline</id>
-    <link href="https://framework.boucle.sh/limitations.html#nested-repo-trust-migration-can-silence-statusline"/>
-    <updated>2026-08-15T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.232 macOS setup found that repositories which previously inherited trust from a parent folder could become untrusted after the nested-repository trust change without showing a new trust dialog or warning. Those project entries still had `hasTrustDialogAccepted: false` because the old inherited-trust path had suppressed the prompt. After updating, trust-gated features such as `statusLine` stopped running in the nested repositories, leaving an empty status row while the command and settings remained valid.</summary>
-    <category term="Security &amp; trust boundaries"/>
   </entry>
 </feed>
