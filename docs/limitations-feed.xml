@@ -7,6 +7,38 @@
   <updated>2026-08-15T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Desktop pinned sessions can be invisible to `ListAgents` until manually opened.</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-pinned-sessions-can-be-invisible-to-listagents-until-opened</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-pinned-sessions-can-be-invisible-to-listagents-until-opened"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Desktop app 1.30096.5 macOS setup showed many pinned Code sessions in the sidebar, but only sessions that were currently open had running Claude Code processes, socket files in `/tmp/cc-socks/`, and entries in peer `ListAgents` output. Closed pinned sessions were omitted entirely, so `ListAgents` returned `No reachable agents.` even though the sidebar showed known peers. That string is indistinguishable from a real peer-discovery failure, and there is no peer-side way to wake a pinned session before sending a message.</summary>
+    <category term="Agent &amp; multi-agent"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Desktop session-card save failures can remain invisible while work continues.</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-session-card-save-failures-can-stay-invisible</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-session-card-save-failures-can-stay-invisible"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Desktop app 1.30096.5 Windows setup logged thousands of consecutive `Failed to save session` errors while showing no UI warning. The Desktop app still opened chats and the underlying CLI transcripts under `~/.claude/projects/` were written, but new conversations never received sidebar cards. After account switching or restart, those conversations appeared lost even though the transcripts were intact. In the reported case the app correctly refused to write through a non-directory or junction-like storage path, but the user-visible failure was the lack of warning that persistence was broken.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
+  <entry>
+    <title>[HIGH] The workspace trust dialog can fail to appear while trust-gated features stay disabled.</title>
+    <id>https://framework.boucle.sh/limitations.html#workspace-trust-dialog-can-fail-to-appear</id>
+    <link href="https://framework.boucle.sh/limitations.html#workspace-trust-dialog-can-fail-to-appear"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 macOS setup had project entries stuck with `hasTrustDialogAccepted: false` in `~/.claude.json`, but fresh launches in those folders never showed the trust prompt. Trust-gated features such as `statusLine` silently stayed disabled with no error or warning. Manually setting the affected path&#x27;s trust flag to true made the status line render immediately in the already-running session, which narrows the symptom to the trust prompt path rather than a broken statusLine command. The reporter also confirmed trust is tracked per exact path, so trusted parent folders do not automatically cover nested worktrees or subdirectories.</summary>
+    <category term="Security &amp; trust boundaries"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Remote Control app-started sessions can ignore `bypassPermissions` default mode.</title>
+    <id>https://framework.boucle.sh/limitations.html#remote-control-app-sessions-can-ignore-bypass-default-mode</id>
+    <link href="https://framework.boucle.sh/limitations.html#remote-control-app-sessions-can-ignore-bypass-default-mode"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.232 Linux Remote Control server honored `permissions.defaultMode: &quot;bypassPermissions&quot;` for sessions started or resumed from the host CLI, but sessions started from the Android app or web client ran in auto mode instead. The same user, server, user settings, project settings, and `claude remote-control --capacity 16` process were involved; only the client path changed. App-started sessions then hit auto-mode classifier denials for ordinary read-only or admin commands, making remote maintenance workflows impossible despite bypass mode being configured.</summary>
+    <category term="Permissions &amp; safety"/>
+  </entry>
+  <entry>
     <title>[HIGH] Desktop session group writes can clobber existing sidebar groups.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-session-group-writes-can-clobber-existing-groups</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-session-group-writes-can-clobber-existing-groups"/>
@@ -133,37 +165,5 @@
     <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.232 setup found that Bash tool calls issued by Agent-spawned subagents could emit a `tool_use`, never execute the command, receive no `tool_result`, and still surface to the parent task path as `subtype: &quot;success&quot;` with `is_error: false`. The headless payload exposed `stop_reason: &quot;tool_deferred&quot;`, `terminal_reason: &quot;tool_deferred&quot;`, and a `deferred_tool_use` containing the Bash call, while side-effect probes such as writing `date -u` to a temp file confirmed the command did not run. Read/Grep subagents and parent-session Bash calls continued to work, so this is distinct from a general shell outage and from hook decisions being ignored.</summary>
     <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows auto-mode gate can override explicit Bash allow rules.</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-auto-mode-gate-overrides-allow-rules</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-auto-mode-gate-overrides-allow-rules"/>
-    <updated>2026-08-15T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.232 Windows 11 Git Bash setup found a new Windows-only permission gate that can downgrade an already allowed Bash command to a manual prompt before auto mode&#x27;s classifier runs. The reporter compared 2.1.220 and 2.1.232 binaries, found new Cygwin-emulated symlink and cd-compound static-analysis strings, and reported that affected paths set `classifierApprovable: false`, making `autoMode.allow` inert. The scope includes shell interpreters, shell-code strings, cd-compound commands, and write targets that cannot be statically resolved; explicit `permissions.allow` or custom auto-mode rules may no longer restore the previous behavior.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows Git Bash cd-compound commands can trigger constant auto-mode prompts.</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-git-bash-auto-mode-cd-compounds-prompt-constantly</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-git-bash-auto-mode-cd-compounds-prompt-constantly"/>
-    <updated>2026-08-15T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.232 Windows 11 Git Bash setup found that auto mode repeatedly sent quoted absolute-path `cd ... &amp;&amp; ...` Bash compounds to manual approval, including read-only `sed`, `grep`, `head`, and `tail` pipelines with no redirects or write verbs. The prompts used several different static-analysis reasons, including a read-only pipeline labelled as a write operation, Windows 8.3 short paths interpreted as tilde expansion, and a concrete Cygwin-symlink claim that the reporter checked against the filesystem and found false. A follow-up also showed the approval dialog rendering a pipe as a comma, suggesting the displayed command or analysis path may be using a corrupted parse. Because Windows subagents commonly generate `cd &quot;&lt;absolute path&gt;&quot; &amp;&amp; ...` commands and these prompts do not offer a scoped &quot;do not ask again&quot; option, the rollout can create dozens of manual prompts per hour.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Hook timeouts may not bound subprocesses wedged before hook code starts.</title>
-    <id>https://framework.boucle.sh/limitations.html#hook-timeout-may-not-bound-pre-main-wedges</id>
-    <link href="https://framework.boucle.sh/limitations.html#hook-timeout-may-not-bound-pre-main-wedges"/>
-    <updated>2026-08-15T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.226 Windows setup with an 8-wide PreToolUse:Bash hook batch found that one spawned `node.exe` hook process could wedge during interpreter startup before JavaScript executed. The hook declared `timeout: 2`, but the session froze permanently with one unmatched `hook_started`, no `hook_response`, and an orphaned zero-CPU node process whose parent had already exited. Because the hook code never starts, hook-author mitigations such as bounded stdin reads or in-process watchdogs cannot run.</summary>
-    <category term="Hook execution &amp; lifecycle"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Hook timeouts may not reclaim hooks blocked on stdin reads.</title>
-    <id>https://framework.boucle.sh/limitations.html#hook-timeout-may-not-kill-stdin-read</id>
-    <link href="https://framework.boucle.sh/limitations.html#hook-timeout-may-not-kill-stdin-read"/>
-    <updated>2026-08-15T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.232 Linux setup found that a command hook blocked in `io.ReadAll(os.Stdin)` survived well past its configured timeout. The timeout path delivered SIGTERM, but the child remained alive for hundreds of seconds while the wrapper waited in `sigsuspend`; only SIGKILL or SIGQUIT ended the wedged process. The report reproduced this with a hook stdin connected to a FIFO that never reached EOF, and noted that the same hook exited normally in 49 ms when stdin was closed.</summary>
-    <category term="Hook execution &amp; lifecycle"/>
   </entry>
 </feed>

@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1521</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-15.</span></p>
+        <p class="subtitle"><span id="total-count">1525</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-15.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -16978,6 +16978,54 @@
                         <!-- workaround:desktop-session-group-writes-can-clobber-existing-groups -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before reorganizing important Desktop Code session groups, back up `%APPDATA%\Claude\claude_desktop_config.json` and, if possible, export or document the group mapping. If groups disappear, preserve the config immediately, avoid creating more groups until the overwritten value is understood, and rebuild only from surviving session data such as each session&#x27;s `originCwd`. Treat group metadata as separate from transcript preservation: intact session files do not prove sidebar organization is recoverable.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86843" target="_blank">#86843</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permissions &amp; safety" data-issues="86858" id="remote-control-app-sessions-can-ignore-bypass-default-mode" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1522</span>
+                <span class="kl-cat">Permissions &amp; safety</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Remote Control app-started sessions can ignore `bypassPermissions` default mode.</h3>
+            <p>A reported Claude Code 2.1.232 Linux Remote Control server honored `permissions.defaultMode: &quot;bypassPermissions&quot;` for sessions started or resumed from the host CLI, but sessions started from the Android app or web client ran in auto mode instead. The same user, server, user settings, project settings, and `claude remote-control --capacity 16` process were involved; only the client path changed. App-started sessions then hit auto-mode classifier denials for ordinary read-only or admin commands, making remote maintenance workflows impossible despite bypass mode being configured.</p>
+                        <!-- workaround:remote-control-app-sessions-can-ignore-bypass-default-mode -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume Remote Control sessions inherit the host&#x27;s configured permission mode just because CLI-started sessions do. For privileged or unattended maintenance, start or resume the session from the host CLI and verify the live permission mode before issuing tool calls. If an app-started session reports auto-mode classifier denials despite `permissions.defaultMode: &quot;bypassPermissions&quot;`, treat it as running under a different policy and avoid using it for operations that depend on bypass semantics.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86858" target="_blank">#86858</a></div>
+        </div>
+        <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="86857" id="workspace-trust-dialog-can-fail-to-appear" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1523</span>
+                <span class="kl-cat">Security &amp; trust boundaries</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>The workspace trust dialog can fail to appear while trust-gated features stay disabled.</h3>
+            <p>A reported Claude Code 2.1.233 macOS setup had project entries stuck with `hasTrustDialogAccepted: false` in `~/.claude.json`, but fresh launches in those folders never showed the trust prompt. Trust-gated features such as `statusLine` silently stayed disabled with no error or warning. Manually setting the affected path&#x27;s trust flag to true made the status line render immediately in the already-running session, which narrows the symptom to the trust prompt path rather than a broken statusLine command. The reporter also confirmed trust is tracked per exact path, so trusted parent folders do not automatically cover nested worktrees or subdirectories.</p>
+                        <!-- workaround:workspace-trust-dialog-can-fail-to-appear -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When a configured statusLine, hook, or project trust-gated setting appears to do nothing, inspect the exact project path entry in `~/.claude.json` instead of relying on parent-folder trust. If `hasTrustDialogAccepted` is false and no prompt appears after a fresh launch, trigger an explicit trust flow if available. Only edit the trust flag manually after verifying the path is the intended workspace, then restart or recheck the feature in that same folder.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86857" target="_blank">#86857</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="86861" id="desktop-session-card-save-failures-can-stay-invisible" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1524</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Desktop session-card save failures can remain invisible while work continues.</h3>
+            <p>A reported Claude Desktop app 1.30096.5 Windows setup logged thousands of consecutive `Failed to save session` errors while showing no UI warning. The Desktop app still opened chats and the underlying CLI transcripts under `~/.claude/projects/` were written, but new conversations never received sidebar cards. After account switching or restart, those conversations appeared lost even though the transcripts were intact. In the reported case the app correctly refused to write through a non-directory or junction-like storage path, but the user-visible failure was the lack of warning that persistence was broken.</p>
+                        <!-- workaround:desktop-session-card-save-failures-can-stay-invisible -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If Desktop conversations disappear from the sidebar, do not assume transcript loss until checking both the Desktop `main.log` and `~/.claude/projects/`. Search logs for `Failed to save session`, preserve the transcript JSONL files before repeated restarts, and repair the account or organization storage directory so the session-card path is a writable real directory. For managed Windows installs, add a health check that tails `main.log` for repeated save failures.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86861" target="_blank">#86861</a></div>
+        </div>
+        <div class="kl-entry" data-category="Agent &amp; multi-agent" data-issues="86864" id="desktop-pinned-sessions-can-be-invisible-to-listagents-until-opened" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1525</span>
+                <span class="kl-cat">Agent &amp; multi-agent</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Desktop pinned sessions can be invisible to `ListAgents` until manually opened.</h3>
+            <p>A reported Claude Desktop app 1.30096.5 macOS setup showed many pinned Code sessions in the sidebar, but only sessions that were currently open had running Claude Code processes, socket files in `/tmp/cc-socks/`, and entries in peer `ListAgents` output. Closed pinned sessions were omitted entirely, so `ListAgents` returned `No reachable agents.` even though the sidebar showed known peers. That string is indistinguishable from a real peer-discovery failure, and there is no peer-side way to wake a pinned session before sending a message.</p>
+                        <!-- workaround:desktop-pinned-sessions-can-be-invisible-to-listagents-until-opened -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For Desktop peer messaging, treat pinned sidebar sessions as saved shortcuts, not proof of live agents. Before using `SendMessage`, open the intended peer sessions manually, rerun `ListAgents`, and confirm their current identifiers; inspect `/tmp/cc-socks/` or the process table if reachability is ambiguous. Do not treat `No reachable agents.` alone as evidence that messaging is broken unless the expected peer sessions are known to be open and still missing.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86864" target="_blank">#86864</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
