@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1533,
+  "count": 1534,
   "categories": {
     "Hook behavior & events": 204,
     "Permission system": 135,
@@ -17,8 +17,8 @@
     "Performance & cost": 24,
     "Configuration behavior": 23,
     "Agents & subagents": 22,
+    "Sandbox & permissions": 21,
     "Tool behavior": 21,
-    "Sandbox & permissions": 20,
     "Security & trust boundaries": 20,
     "VS Code extension": 20,
     "Auth & accounts": 18,
@@ -190,7 +190,7 @@
   },
   "severity_counts": {
     "CRITICAL": 131,
-    "HIGH": 829,
+    "HIGH": 830,
     "LOW": 111,
     "MEDIUM": 462
   },
@@ -19209,6 +19209,17 @@
       "workaround": "Before delegating critical work to an isolated worktree session, run a one-command Bash smoke test such as `pwd` or `git status` and require the output to come from the expected `.claude/worktrees/...` path. If even trivial Bash commands are refused as too complex, restart in a fresh non-isolated session or a disposable clone, and do not treat read-only tool success as proof that the isolated agent can execute or commit."
     },
     {
+      "id": "worktree-isolation-can-overrule-approved-git-commands",
+      "title": "Worktree isolation can overrule approved git commands.",
+      "severity": "HIGH",
+      "category": "Sandbox & permissions",
+      "description": "A reported Claude Code 2.1.222 macOS worktree-isolated session hard-blocked `git -C <main-checkout>` commands from the isolated worktree, including read-only `git status` and a normal `merge --ff-only` finishing step, even after a PreToolUse hook prompted the user and the user approved the command. A follow-up on 2.1.223 found a second false-positive class where a purely in-worktree `git merge-base` variable reused as a later argument was refused as too complex to verify, with no `-C`, `--git-dir`, or cross-checkout redirect involved.",
+      "issue": "84258",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "Do not treat a worktree-session permission prompt as sufficient authorization for git commands that target another checkout or use compound shell forms. Run finishing merges, cross-checkout status checks, and multi-step git bookkeeping from a non-isolated parent session or an external terminal, and split in-worktree git probes into simple commands with explicit intermediate files when the static verifier rejects safe variable reuse. If a workflow depends on this boundary, document that hook approval can be overruled by the lower worktree guard."
+    },
+    {
       "id": "mcp-get-can-print-secret-header-values",
       "title": "`claude mcp get` can print secret header values in plaintext.",
       "severity": "HIGH",
@@ -19699,27 +19710,27 @@
     }
   ],
   "status_summary": {
-    "open": 1519,
+    "open": 1520,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 131,
-    "high": 829,
+    "high": 830,
     "low": 111,
     "medium": 462
   },
   "lastUpdated": "2026-08-15",
   "stats": {
-    "total": 1533,
+    "total": 1534,
     "critical": 131,
-    "high": 829,
+    "high": 830,
     "medium": 462,
     "low": 111,
-    "open": 1519,
+    "open": 1520,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-15",
-  "total": 1533
+  "total": 1534
 }
