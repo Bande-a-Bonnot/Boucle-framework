@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1536,
+  "count": 1537,
   "categories": {
     "Hook behavior & events": 204,
     "Permission system": 137,
@@ -18,8 +18,8 @@
     "Configuration behavior": 23,
     "Agents & subagents": 22,
     "Sandbox & permissions": 21,
+    "Security & trust boundaries": 21,
     "Tool behavior": 21,
-    "Security & trust boundaries": 20,
     "VS Code extension": 20,
     "Auth & accounts": 18,
     "Core & session management": 17,
@@ -190,7 +190,7 @@
   },
   "severity_counts": {
     "CRITICAL": 131,
-    "HIGH": 832,
+    "HIGH": 833,
     "LOW": 111,
     "MEDIUM": 462
   },
@@ -19729,30 +19729,41 @@
       "status": "open",
       "date_added": "2026-08-15",
       "workaround": "Do not treat `/permissions` display as proof that file-tool deny rules are enforcing. Add an end-to-end canary that attempts a harmless `Read` covered by each critical deny pattern in a fresh session, and fail closed if it returns content. Keep secrets and sibling projects behind OS permissions, separate users, or a PreToolUse/file-guard layer that has been tested against real Read calls, not only against settings validation."
+    },
+    {
+      "id": "policy-limits-security-key-can-be-silently-removed",
+      "title": "`policy-limits.json` security restrictions can be silently removed.",
+      "severity": "HIGH",
+      "category": "Security & trust boundaries",
+      "description": "A reported Claude Code 2.1.220 Windows session found that a committed project `policy-limits.json` repeatedly lost `restrictions.allow_remote_control: {\"allowed\": false}` in place during one long session, while sibling restriction keys stayed intact. The reporter said the removal recurred five times, did not reach git history, and coincided with system-reminder text asserting the diff was intentional and telling the model not to tell the user. The root cause is not proven, but the observed risk is that a project-local security restriction can disappear without a traceable user-visible change.",
+      "issue": "86919",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "Treat `policy-limits.json` as a security input that needs integrity checks, not a file to trust once at session start. Keep it under version control, run a SessionStart or external watchdog that restores or blocks when required restriction keys are missing, and inspect diffs before allowing remote-control or web-setup related work to continue. If Claude Code reports an intentional security-relevant diff, verify the filesystem and git state directly rather than relying on the assistant's summary."
     }
   ],
   "status_summary": {
-    "open": 1522,
+    "open": 1523,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 131,
-    "high": 832,
+    "high": 833,
     "low": 111,
     "medium": 462
   },
   "lastUpdated": "2026-08-15",
   "stats": {
-    "total": 1536,
+    "total": 1537,
     "critical": 131,
-    "high": 832,
+    "high": 833,
     "medium": 462,
     "low": 111,
-    "open": 1522,
+    "open": 1523,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-15",
-  "total": 1536
+  "total": 1537
 }
