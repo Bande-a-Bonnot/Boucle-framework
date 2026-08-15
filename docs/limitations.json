@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1525,
+  "count": 1527,
   "categories": {
     "Hook behavior & events": 204,
     "Permission system": 135,
     "Hook bypass & evasion": 102,
-    "MCP & plugin issues": 79,
+    "MCP & plugin issues": 80,
     "Subagent & spawned agents": 73,
     "Desktop & IDE integration": 56,
     "TUI & display": 35,
@@ -20,7 +20,7 @@
     "Tool behavior": 21,
     "Sandbox & permissions": 20,
     "Security & trust boundaries": 20,
-    "VS Code extension": 19,
+    "VS Code extension": 20,
     "Auth & accounts": 17,
     "Core & session management": 17,
     "Model behavior": 17,
@@ -190,7 +190,7 @@
   },
   "severity_counts": {
     "CRITICAL": 130,
-    "HIGH": 822,
+    "HIGH": 824,
     "LOW": 111,
     "MEDIUM": 462
   },
@@ -19604,30 +19604,52 @@
       "status": "open",
       "date_added": "2026-08-15",
       "workaround": "For Desktop peer messaging, treat pinned sidebar sessions as saved shortcuts, not proof of live agents. Before using `SendMessage`, open the intended peer sessions manually, rerun `ListAgents`, and confirm their current identifiers; inspect `/tmp/cc-socks/` or the process table if reachability is ambiguous. Do not treat `No reachable agents.` alone as evidence that messaging is broken unless the expected peer sessions are known to be open and still missing."
+    },
+    {
+      "id": "vscode-entrypoint-can-suppress-local-stdio-mcp-servers",
+      "title": "VS Code extension entrypoint can suppress local stdio MCP servers.",
+      "severity": "HIGH",
+      "category": "VS Code extension",
+      "description": "A reported Claude Code VS Code extension 2.1.233 Windows setup found that native extension-panel sessions set `CLAUDE_CODE_ENTRYPOINT=claude-vscode`, and that single environment value caused local stdio MCP servers from `.mcp.json` or `~/.claude.json` to be skipped. The same server connected in the standalone CLI, but `/mcp` inside the native VS Code panel reported no configured MCP servers and the model had no `mcp__*` tools. The reporter isolated the variable outside the extension by running `claude mcp list` with only `CLAUDE_CODE_ENTRYPOINT=claude-vscode` changed, and ruled out trust state, `MCP_CONNECTION_NONBLOCKING`, managed settings, and invalid config keys.",
+      "issue": "86871",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "If local stdio MCP servers disappear only in the native VS Code Claude panel, compare `claude mcp list` from a normal terminal with the same command under `CLAUDE_CODE_ENTRYPOINT=claude-vscode`. Until fixed, use the command palette action `Claude Code: Open in Terminal`, which follows a different launch path and can load the same MCP servers. Do not rely on `/mcp` alone; ask for the exact `mcp__*` tools or make a harmless tool call before starting MCP-dependent work."
+    },
+    {
+      "id": "http-mcp-tools-can-be-listed-but-uncallable",
+      "title": "HTTP MCP tools can be listed in `/mcp` but unavailable to calls.",
+      "severity": "HIGH",
+      "category": "MCP & plugin issues",
+      "description": "A reported Claude Code 2.1.80 through 2.1.233 Linux setup added a Streamable HTTP MCP server with `claude mcp add --transport http --header ...`. `/mcp` showed the server connected and listed its tools, but exact tool calls failed immediately with `No such tool available`, and the MCP server saw no corresponding request. The reporter confirmed the same endpoint and bearer token worked through manual HTTP probes, and other SSE MCP servers in the same configuration remained callable, so the failure appears to be a client-side gap between `/mcp` connection discovery and the runtime tool registry for HTTP transport.",
+      "issue": "86875",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "Treat `/mcp` listing as connection evidence, not proof that HTTP-transport tools are callable. After adding or updating an HTTP MCP server, run a harmless exact tool call in a fresh session and watch the server logs for a real request before depending on it. If calls fail client-side while `/mcp` lists tools, preserve the `/mcp` output, exact transport configuration, Claude Code version range, and server-side empty request log; use an SSE, stdio, direct API, or non-MCP fallback for critical work until the registry is rebuilt or the transport bug is fixed."
     }
   ],
   "status_summary": {
-    "open": 1511,
+    "open": 1513,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 130,
-    "high": 822,
+    "high": 824,
     "low": 111,
     "medium": 462
   },
   "lastUpdated": "2026-08-15",
   "stats": {
-    "total": 1525,
+    "total": 1527,
     "critical": 130,
-    "high": 822,
+    "high": 824,
     "medium": 462,
     "low": 111,
-    "open": 1511,
+    "open": 1513,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-15",
-  "total": 1525
+  "total": 1527
 }
