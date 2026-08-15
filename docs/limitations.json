@@ -1,13 +1,13 @@
 {
   "version": "0.13.0",
-  "count": 1518,
+  "count": 1521,
   "categories": {
     "Hook behavior & events": 204,
     "Permission system": 135,
     "Hook bypass & evasion": 102,
     "MCP & plugin issues": 79,
     "Subagent & spawned agents": 73,
-    "Desktop & IDE integration": 54,
+    "Desktop & IDE integration": 55,
     "TUI & display": 35,
     "CLI & terminal": 31,
     "Context & memory": 30,
@@ -20,7 +20,7 @@
     "Tool behavior": 21,
     "Sandbox & permissions": 20,
     "Security & trust boundaries": 19,
-    "VS Code extension": 18,
+    "VS Code extension": 19,
     "Auth & accounts": 17,
     "Core & session management": 17,
     "Model behavior": 17,
@@ -30,8 +30,8 @@
     "File system & paths": 13,
     "MCP integration": 13,
     "Worktree": 13,
+    "Bash & shell execution": 12,
     "Permissions & safety": 12,
-    "Bash & shell execution": 11,
     "Plugin & channel system": 11,
     "UX & display": 11,
     "Configuration & settings": 10,
@@ -190,7 +190,7 @@
   },
   "severity_counts": {
     "CRITICAL": 130,
-    "HIGH": 816,
+    "HIGH": 819,
     "LOW": 111,
     "MEDIUM": 461
   },
@@ -19527,30 +19527,63 @@
       "status": "open",
       "date_added": "2026-08-15",
       "workaround": "When the Desktop app view appears frozen, do not assume the latest messages are lost. Inspect the matching `~/.claude/projects/<project>/<session-id>.jsonl` file and tail user or assistant records to recover the completed responses. Preserve the transcript file before repeated restarts, and include the last visible timestamp plus the later JSONL timestamps when reporting the render failure."
+    },
+    {
+      "id": "bash-tool-can-drop-stdout-and-misreport-simple-commands",
+      "title": "The Bash tool can drop stdout and misreport simple commands as failures.",
+      "severity": "HIGH",
+      "category": "Bash & shell execution",
+      "description": "A reported Claude Code 2.1.233 Linux setup found that the Bash tool stopped surfacing stdout for ordinary commands in fresh sessions. Commands such as `pwd`, `date`, `echo hi`, `printf`, and `pwd > /tmp/f && cat /tmp/f` returned either `(Bash completed with no output)` or a bare `Exit code 1` with no stdout or stderr, even though the same commands should print output or succeed in a normal shell. The reporter ruled out local aliases, shell startup files, and Bash hooks, and saw the behavior across multiple concurrent sessions, making it look like a client or harness stdout-capture regression rather than a project configuration issue.",
+      "issue": "86853",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "When Bash results look empty or implausibly failed, do not trust the displayed stdout or exit status as proof of command behavior. Reproduce with a fresh harmless probe such as `pwd` and `date`, then route critical command output through a file and inspect that file with a separate Read tool or external terminal. For automation, require a second-channel artifact check before acting on Bash-reported empty output, and include shell startup files, hooks settings, and the exact probe commands in bug reports."
+    },
+    {
+      "id": "vscode-remote-ssh-stream-backpressure-can-delay-permission-prompts",
+      "title": "VS Code Remote-SSH stream backpressure can delay permission prompts by minutes or hours.",
+      "severity": "HIGH",
+      "category": "VS Code extension",
+      "description": "A reported Claude Code VS Code extension 2.1.233 Remote-SSH setup fell far behind the CLI when connected to an Anthropic-compatible provider that emitted one SSE content delta per token. The session transcript showed the assistant response and a pending `tool_use` had already completed, and a Notification hook fired on time, but the VS Code extension continued rendering old stream events and displayed the permission prompt or AskUserQuestion minutes to hours late. The terminal CLI with the same provider worked normally, and the extension with the official API worked normally, so the failure appears tied to fine-grained stream-event volume and extension/webview backpressure.",
+      "issue": "86854",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "For Remote-SSH sessions that use third-party Anthropic-compatible gateways, treat delayed VS Code prompts as a possible stream-drain failure rather than model indecision. Compare the on-disk transcript and hook side effects against the visible extension state, and switch to the terminal CLI for permission-sensitive work if prompts lag. Gateway operators can reduce risk by coalescing consecutive same-type SSE deltas while preserving order, then verifying that approval prompts appear within seconds on long, thinking-heavy turns."
+    },
+    {
+      "id": "desktop-session-group-writes-can-clobber-existing-groups",
+      "title": "Desktop session group writes can clobber existing sidebar groups.",
+      "severity": "HIGH",
+      "category": "Desktop & IDE integration",
+      "description": "A reported Claude Desktop app 1.30096.1 Windows setup lost all existing Code-tab sidebar groups when the user created a new group and moved a session into it. The affected metadata lives in `%APPDATA%\\Claude\\claude_desktop_config.json` under `preferences.epitaxyPrefs[\"dframe-group-scopes\"]`; after the incident, that scope contained only the newly created group and its assignments. Session JSON files were intact, but the original user-defined grouping metadata was unrecoverable because the local storage mirror already reflected the clobbered value and no backup existed.",
+      "issue": "86843",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "Before reorganizing important Desktop Code session groups, back up `%APPDATA%\\Claude\\claude_desktop_config.json` and, if possible, export or document the group mapping. If groups disappear, preserve the config immediately, avoid creating more groups until the overwritten value is understood, and rebuild only from surviving session data such as each session's `originCwd`. Treat group metadata as separate from transcript preservation: intact session files do not prove sidebar organization is recoverable."
     }
   ],
   "status_summary": {
-    "open": 1504,
+    "open": 1507,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 130,
-    "high": 816,
+    "high": 819,
     "low": 111,
     "medium": 461
   },
   "lastUpdated": "2026-08-15",
   "stats": {
-    "total": 1518,
+    "total": 1521,
     "critical": 130,
-    "high": 816,
+    "high": 819,
     "medium": 461,
     "low": 111,
-    "open": 1504,
+    "open": 1507,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-15",
-  "total": 1518
+  "total": 1521
 }
