@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1539,
+  "count": 1540,
   "categories": {
     "Hook behavior & events": 204,
     "Permission system": 137,
@@ -20,7 +20,7 @@
     "Sandbox & permissions": 21,
     "Security & trust boundaries": 21,
     "Tool behavior": 21,
-    "VS Code extension": 20,
+    "VS Code extension": 21,
     "Auth & accounts": 18,
     "Core & session management": 17,
     "Model behavior": 17,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 131,
-    "HIGH": 835,
+    "HIGH": 836,
     "LOW": 111,
     "MEDIUM": 462
   },
@@ -19754,6 +19754,17 @@
       "workaround": "For SDK orchestrators that use background Agent tasks, do not treat the refusal text alone as a human decision. Inspect structured denial metadata where available, log task-notification timing against Stop-hook summaries, and retry cancelled tool work in a fresh user-initiated turn or fresh session instead of continuing inside the poisoned resumed turn. Keep permission-handler logs around background-agent completion windows so real user denials can be separated from infrastructure cancellations."
     },
     {
+      "id": "vscode-approvals-can-pollute-tracked-project-settings",
+      "title": "VS Code approval persistence can pollute tracked project settings.",
+      "severity": "HIGH",
+      "category": "VS Code extension",
+      "description": "A reported Claude Code VS Code extension 2.1.218 macOS session found that new Bash permission approvals were repeatedly appended to the git-tracked project `.claude/settings.json` instead of the existing writable `.claude/settings.local.json` that is meant for machine-local approvals. The reporter observed path-specific and one-off command patterns accumulating in the shared file across multiple sessions. A later Windows VS Code 2.1.227 comment reported the same persistence target for PowerShell approvals and `permissions.additionalDirectories`, including absolute home paths and OS usernames that were committed to public repositories before detection.",
+      "issue": "83588",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "For repositories with tracked `.claude/settings.json`, do not assume new VS Code extension approvals land in `.claude/settings.local.json`. Add a pre-commit check that rejects `.claude/settings.json` diffs containing absolute paths, usernames, temp directories, or generated allow rules, and consider a SessionStart hook that warns when the tracked project settings file has gained local approval entries. Keep shared settings curated in review and discard local drift before committing."
+    },
+    {
       "id": "settings-watcher-can-rewalk-huge-symlink-target-directories",
       "title": "Settings watcher can rewalk huge symlink target directories.",
       "severity": "HIGH",
@@ -19766,27 +19777,27 @@
     }
   ],
   "status_summary": {
-    "open": 1525,
+    "open": 1526,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 131,
-    "high": 835,
+    "high": 836,
     "low": 111,
     "medium": 462
   },
   "lastUpdated": "2026-08-15",
   "stats": {
-    "total": 1539,
+    "total": 1540,
     "critical": 131,
-    "high": 835,
+    "high": 836,
     "medium": 462,
     "low": 111,
-    "open": 1525,
+    "open": 1526,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-15",
-  "total": 1539
+  "total": 1540
 }
