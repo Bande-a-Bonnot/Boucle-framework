@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1513,
+  "count": 1515,
   "categories": {
     "Hook behavior & events": 204,
     "Permission system": 135,
@@ -19,12 +19,12 @@
     "Agents & subagents": 22,
     "Tool behavior": 21,
     "Sandbox & permissions": 20,
-    "Security & trust boundaries": 18,
+    "Security & trust boundaries": 19,
+    "VS Code extension": 18,
     "Auth & accounts": 17,
     "Core & session management": 17,
     "Model behavior": 17,
     "Remote & cloud": 17,
-    "VS Code extension": 17,
     "Data integrity": 16,
     "Scheduling & remote triggers": 15,
     "MCP integration": 13,
@@ -190,9 +190,9 @@
   },
   "severity_counts": {
     "CRITICAL": 130,
-    "HIGH": 813,
+    "HIGH": 814,
     "LOW": 111,
-    "MEDIUM": 459
+    "MEDIUM": 460
   },
   "entries": [
     {
@@ -19472,30 +19472,52 @@
       "status": "open",
       "date_added": "2026-08-15",
       "workaround": "For auth-gated OTLP collectors, prefer `OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf` until a gRPC fix is verified. Test the helper script independently, inspect collector logs for missing or empty Authorization values, and do not assume `CLAUDE_CODE_OTEL_DIAG_STDERR=1` will surface the discarded-header warning on affected versions."
+    },
+    {
+      "id": "nested-repo-trust-migration-can-silence-statusline",
+      "title": "Nested-repo trust migration can silently disable trust-gated features.",
+      "severity": "HIGH",
+      "category": "Security & trust boundaries",
+      "description": "A reported Claude Code 2.1.232 macOS setup found that repositories which previously inherited trust from a parent folder could become untrusted after the nested-repository trust change without showing a new trust dialog or warning. Those project entries still had `hasTrustDialogAccepted: false` because the old inherited-trust path had suppressed the prompt. After updating, trust-gated features such as `statusLine` stopped running in the nested repositories, leaving an empty status row while the command and settings remained valid.",
+      "issue": "86824",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "After updating to 2.1.232 or later, smoke-test trust-gated features from nested repositories instead of trusting parent-folder history. If a configured statusLine or hook stops firing only in a nested repo, inspect the matching `~/.claude.json` project entry for `hasTrustDialogAccepted: false`; trigger an explicit trust flow if available, or carefully repair the flag only after verifying the path is the intended repository."
+    },
+    {
+      "id": "vscode-chat-file-links-can-fail-for-percent-encoded-paths",
+      "title": "VS Code chat file links can fail for percent-encoded paths.",
+      "severity": "MEDIUM",
+      "category": "VS Code extension",
+      "description": "A reported Claude Code VS Code extension 2.1.233 setup rendered markdown links to files with non-ASCII names as clickable anchors, but clicking them opened nothing and showed no error. The reporter traced the path through the webview and extension bundles: the markdown renderer percent-encoded the href, the click path forwarded the encoded string as a filesystem path, and `openFile()` attempted to open the literal encoded filename. The same missing-decode path likely also covers links whose spaces become `%20`, so repositories with localized filenames or spaces can lose one-click navigation from assistant file references.",
+      "issue": "86829",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "Do not assume a rendered VS Code chat link proves the target file can be opened through the extension. For non-ASCII or space-containing paths, open the file manually from the explorer, terminal, or command palette, and preserve the encoded href plus extension version when reporting failures. Extension maintainers can verify the fix by decoding percent-encoded paths only when the decoded target exists, so real percent signs in filenames remain safe."
     }
   ],
   "status_summary": {
-    "open": 1499,
+    "open": 1501,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 130,
-    "high": 813,
+    "high": 814,
     "low": 111,
-    "medium": 459
+    "medium": 460
   },
   "lastUpdated": "2026-08-15",
   "stats": {
-    "total": 1513,
+    "total": 1515,
     "critical": 130,
-    "high": 813,
-    "medium": 459,
+    "high": 814,
+    "medium": 460,
     "low": 111,
-    "open": 1499,
+    "open": 1501,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-15",
-  "total": 1513
+  "total": 1515
 }
