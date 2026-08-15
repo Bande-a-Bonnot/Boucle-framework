@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1527,
+  "count": 1529,
   "categories": {
     "Hook behavior & events": 204,
     "Permission system": 135,
     "Hook bypass & evasion": 102,
-    "MCP & plugin issues": 80,
+    "MCP & plugin issues": 81,
     "Subagent & spawned agents": 73,
     "Desktop & IDE integration": 56,
     "TUI & display": 35,
@@ -14,8 +14,8 @@
     "Platform & compatibility": 30,
     "MCP & integrations": 27,
     "Cowork & remote": 26,
+    "Performance & cost": 24,
     "Configuration behavior": 23,
-    "Performance & cost": 23,
     "Agents & subagents": 22,
     "Tool behavior": 21,
     "Sandbox & permissions": 20,
@@ -190,7 +190,7 @@
   },
   "severity_counts": {
     "CRITICAL": 130,
-    "HIGH": 824,
+    "HIGH": 826,
     "LOW": 111,
     "MEDIUM": 462
   },
@@ -19626,30 +19626,52 @@
       "status": "open",
       "date_added": "2026-08-15",
       "workaround": "Treat `/mcp` listing as connection evidence, not proof that HTTP-transport tools are callable. After adding or updating an HTTP MCP server, run a harmless exact tool call in a fresh session and watch the server logs for a real request before depending on it. If calls fail client-side while `/mcp` lists tools, preserve the `/mcp` output, exact transport configuration, Claude Code version range, and server-side empty request log; use an SSE, stdio, direct API, or non-MCP fallback for critical work until the registry is rebuilt or the transport bug is fixed."
+    },
+    {
+      "id": "wsl-stdio-mcp-retry-can-orphan-windows-server",
+      "title": "WSL stdio MCP retries can orphan Windows-side server processes.",
+      "severity": "HIGH",
+      "category": "MCP & plugin issues",
+      "description": "A reported Claude Code 2.1.228 through 2.1.232 WSL2 setup found that stdio MCP servers whose `initialize` response takes more than about three seconds receive an early SIGTERM and are immediately spawned again. Native Linux servers can clean up and the retry may connect, but when the server command launches a Windows executable through WSL interop, the WSL-side stub dies while the Windows child survives. For a single-instance MCP server, the orphan keeps its profile lock, the retry exits with `CONNECTION_CLOSED`, and every reconnect attempt leaks another Windows process even though the same command works through MCP Inspector.",
+      "issue": "86711",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "For WSL stdio MCP servers that launch Windows executables, treat `CONNECTION_CLOSED` after a slow startup as a possible orphaned-child and lock problem rather than proof the server is broken. Compare with MCP Inspector or a direct `initialize` probe from the same WSL shell, inspect Windows processes and server lock files after each failed attempt, and manually kill or clean stale instances before retrying. Pin to a version before the retry behavior, use a native Linux/stdout server path, or wrap startup so Claude Code sees a fast ready process before depending on the server."
+    },
+    {
+      "id": "startup-glob-scans-can-rewalk-gitignored-trees",
+      "title": "Startup glob scans can repeatedly walk gitignored dependency trees.",
+      "severity": "HIGH",
+      "category": "Performance & cost",
+      "description": "A reported Claude Code 2.1.232 Linux monorepo with hundreds of thousands of mostly gitignored dependency files spent about 9.6 seconds of silent CPU time before the first API request for `claude -p`. `strace` showed roughly 2.1 million `getdents64` calls, and deleting ignored `node_modules`, `.venv`, and `target` trees reduced the delay linearly. The reporter narrowed the cost to startup settings, sandbox, and glob-resolution paths that read `.gitignore` files but still descend into ignored directories, apparently performing many full tree walks for patterns such as `Read(**/.env)` and sandbox deny-write globs before dispatch.",
+      "issue": "86638",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "For large monorepos, measure the pre-dispatch gap in `--debug-file` logs before assuming model or network latency. Keep massive ignored dependency trees outside the Claude Code workspace when possible, trim or narrow broad `**` permission and sandbox globs, and run headless probes from a smaller project root for automation that does not need the whole monorepo. When reporting, include ignored-tree size, relevant settings globs, `strace` or equivalent directory-read counts, and a comparison after removing or relocating ignored dependency directories."
     }
   ],
   "status_summary": {
-    "open": 1513,
+    "open": 1515,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 130,
-    "high": 824,
+    "high": 826,
     "low": 111,
     "medium": 462
   },
   "lastUpdated": "2026-08-15",
   "stats": {
-    "total": 1527,
+    "total": 1529,
     "critical": 130,
-    "high": 824,
+    "high": 826,
     "medium": 462,
     "low": 111,
-    "open": 1513,
+    "open": 1515,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-15",
-  "total": 1527
+  "total": 1529
 }
