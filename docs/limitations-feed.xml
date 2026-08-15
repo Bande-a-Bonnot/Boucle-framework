@@ -7,6 +7,22 @@
   <updated>2026-08-15T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] HTTP MCP tools can be listed in `/mcp` but unavailable to calls.</title>
+    <id>https://framework.boucle.sh/limitations.html#http-mcp-tools-can-be-listed-but-uncallable</id>
+    <link href="https://framework.boucle.sh/limitations.html#http-mcp-tools-can-be-listed-but-uncallable"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.80 through 2.1.233 Linux setup added a Streamable HTTP MCP server with `claude mcp add --transport http --header ...`. `/mcp` showed the server connected and listed its tools, but exact tool calls failed immediately with `No such tool available`, and the MCP server saw no corresponding request. The reporter confirmed the same endpoint and bearer token worked through manual HTTP probes, and other SSE MCP servers in the same configuration remained callable, so the failure appears to be a client-side gap between `/mcp` connection discovery and the runtime tool registry for HTTP transport.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[HIGH] VS Code extension entrypoint can suppress local stdio MCP servers.</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-entrypoint-can-suppress-local-stdio-mcp-servers</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-entrypoint-can-suppress-local-stdio-mcp-servers"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Code VS Code extension 2.1.233 Windows setup found that native extension-panel sessions set `CLAUDE_CODE_ENTRYPOINT=claude-vscode`, and that single environment value caused local stdio MCP servers from `.mcp.json` or `~/.claude.json` to be skipped. The same server connected in the standalone CLI, but `/mcp` inside the native VS Code panel reported no configured MCP servers and the model had no `mcp__*` tools. The reporter isolated the variable outside the extension by running `claude mcp list` with only `CLAUDE_CODE_ENTRYPOINT=claude-vscode` changed, and ruled out trust state, `MCP_CONNECTION_NONBLOCKING`, managed settings, and invalid config keys.</summary>
+    <category term="VS Code extension"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Desktop pinned sessions can be invisible to `ListAgents` until manually opened.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-pinned-sessions-can-be-invisible-to-listagents-until-opened</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-pinned-sessions-can-be-invisible-to-listagents-until-opened"/>
@@ -148,22 +164,6 @@
     <link href="https://framework.boucle.sh/limitations.html#nested-agent-orchestrators-can-complete-before-children-finish"/>
     <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.229 macOS `/code-review` run spawned a background Skill orchestrator that launched eight nested Agent finder agents, then ended its own turn while saying it would wait for those children. Task notifications reported `status: &quot;completed&quot;` for the orchestrator turns even though the review work was still waiting on child-agent results, and the top-level session needed repeated SendMessage resumes over about 20 minutes before a final report appeared. The report distinguishes this from false liveness notifications: each turn really had completed, but the status described turn termination rather than the assigned multi-agent review being done.</summary>
-    <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Hidden Opus 5 prompt text can suppress expected subagent and workflow delegation.</title>
-    <id>https://framework.boucle.sh/limitations.html#hidden-heron-brook-prompt-can-suppress-opus-5-delegation</id>
-    <link href="https://framework.boucle.sh/limitations.html#hidden-heron-brook-prompt-can-suppress-opus-5-delegation"/>
-    <updated>2026-08-15T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.219 through 2.1.232 Opus 5 path injects a dynamic prompt section called `heron_brook` that tells the model not to call AgentTool or workflows unless the user requested them. Reports say the section is model-gated, has no documented settings or environment opt-out, is not recorded in normal transcripts, and can make project CLAUDE.md, Skill, or agent-description delegation policies silently degrade unless the current user turn asks for delegation explicitly.</summary>
-    <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Subagent Bash calls can defer forever while the task reports success.</title>
-    <id>https://framework.boucle.sh/limitations.html#subagent-bash-tool-deferred-reports-success</id>
-    <link href="https://framework.boucle.sh/limitations.html#subagent-bash-tool-deferred-reports-success"/>
-    <updated>2026-08-15T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.232 setup found that Bash tool calls issued by Agent-spawned subagents could emit a `tool_use`, never execute the command, receive no `tool_result`, and still surface to the parent task path as `subtype: &quot;success&quot;` with `is_error: false`. The headless payload exposed `stop_reason: &quot;tool_deferred&quot;`, `terminal_reason: &quot;tool_deferred&quot;`, and a `deferred_tool_use` containing the Bash call, while side-effect probes such as writing `date -u` to a temp file confirmed the command did not run. Read/Grep subagents and parent-session Bash calls continued to work, so this is distinct from a general shell outage and from hook decisions being ignored.</summary>
     <category term="Subagent &amp; spawned agents"/>
   </entry>
 </feed>

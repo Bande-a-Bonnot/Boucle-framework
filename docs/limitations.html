@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1525</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-15.</span></p>
+        <p class="subtitle"><span id="total-count">1527</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-15.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -17026,6 +17026,30 @@
                         <!-- workaround:desktop-pinned-sessions-can-be-invisible-to-listagents-until-opened -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For Desktop peer messaging, treat pinned sidebar sessions as saved shortcuts, not proof of live agents. Before using `SendMessage`, open the intended peer sessions manually, rerun `ListAgents`, and confirm their current identifiers; inspect `/tmp/cc-socks/` or the process table if reachability is ambiguous. Do not treat `No reachable agents.` alone as evidence that messaging is broken unless the expected peer sessions are known to be open and still missing.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86864" target="_blank">#86864</a></div>
+        </div>
+        <div class="kl-entry" data-category="VS Code extension" data-issues="86871" id="vscode-entrypoint-can-suppress-local-stdio-mcp-servers" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1526</span>
+                <span class="kl-cat">VS Code extension</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>VS Code extension entrypoint can suppress local stdio MCP servers.</h3>
+            <p>A reported Claude Code VS Code extension 2.1.233 Windows setup found that native extension-panel sessions set `CLAUDE_CODE_ENTRYPOINT=claude-vscode`, and that single environment value caused local stdio MCP servers from `.mcp.json` or `~/.claude.json` to be skipped. The same server connected in the standalone CLI, but `/mcp` inside the native VS Code panel reported no configured MCP servers and the model had no `mcp__*` tools. The reporter isolated the variable outside the extension by running `claude mcp list` with only `CLAUDE_CODE_ENTRYPOINT=claude-vscode` changed, and ruled out trust state, `MCP_CONNECTION_NONBLOCKING`, managed settings, and invalid config keys.</p>
+                        <!-- workaround:vscode-entrypoint-can-suppress-local-stdio-mcp-servers -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If local stdio MCP servers disappear only in the native VS Code Claude panel, compare `claude mcp list` from a normal terminal with the same command under `CLAUDE_CODE_ENTRYPOINT=claude-vscode`. Until fixed, use the command palette action `Claude Code: Open in Terminal`, which follows a different launch path and can load the same MCP servers. Do not rely on `/mcp` alone; ask for the exact `mcp__*` tools or make a harmless tool call before starting MCP-dependent work.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86871" target="_blank">#86871</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="86875" id="http-mcp-tools-can-be-listed-but-uncallable" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1527</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>HTTP MCP tools can be listed in `/mcp` but unavailable to calls.</h3>
+            <p>A reported Claude Code 2.1.80 through 2.1.233 Linux setup added a Streamable HTTP MCP server with `claude mcp add --transport http --header ...`. `/mcp` showed the server connected and listed its tools, but exact tool calls failed immediately with `No such tool available`, and the MCP server saw no corresponding request. The reporter confirmed the same endpoint and bearer token worked through manual HTTP probes, and other SSE MCP servers in the same configuration remained callable, so the failure appears to be a client-side gap between `/mcp` connection discovery and the runtime tool registry for HTTP transport.</p>
+                        <!-- workaround:http-mcp-tools-can-be-listed-but-uncallable -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat `/mcp` listing as connection evidence, not proof that HTTP-transport tools are callable. After adding or updating an HTTP MCP server, run a harmless exact tool call in a fresh session and watch the server logs for a real request before depending on it. If calls fail client-side while `/mcp` lists tools, preserve the `/mcp` output, exact transport configuration, Claude Code version range, and server-side empty request log; use an SSE, stdio, direct API, or non-MCP fallback for critical work until the registry is rebuilt or the transport bug is fixed.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86875" target="_blank">#86875</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
