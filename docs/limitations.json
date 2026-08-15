@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1529,
+  "count": 1533,
   "categories": {
     "Hook behavior & events": 204,
     "Permission system": 135,
@@ -10,8 +10,8 @@
     "Desktop & IDE integration": 56,
     "TUI & display": 35,
     "CLI & terminal": 31,
+    "Platform & compatibility": 31,
     "Context & memory": 30,
-    "Platform & compatibility": 30,
     "MCP & integrations": 27,
     "Cowork & remote": 26,
     "Performance & cost": 24,
@@ -21,15 +21,15 @@
     "Sandbox & permissions": 20,
     "Security & trust boundaries": 20,
     "VS Code extension": 20,
-    "Auth & accounts": 17,
+    "Auth & accounts": 18,
     "Core & session management": 17,
     "Model behavior": 17,
     "Remote & cloud": 17,
     "Data integrity": 16,
     "Scheduling & remote triggers": 15,
+    "Permissions & safety": 14,
     "File system & paths": 13,
     "MCP integration": 13,
-    "Permissions & safety": 13,
     "Worktree": 13,
     "Bash & shell execution": 12,
     "Plugin & channel system": 11,
@@ -58,6 +58,7 @@
     "Browser automation": 4,
     "MCP & plugins": 4,
     "Model behavior & instructions": 4,
+    "Performance & resource usage": 4,
     "Performance & resources": 4,
     "permissions": 4,
     "sandbox": 4,
@@ -70,7 +71,6 @@
     "Hooks": 3,
     "IDE integration": 3,
     "model-behavior": 3,
-    "Performance & resource usage": 3,
     "Plan mode": 3,
     "Remote": 3,
     "Sandbox": 3,
@@ -189,8 +189,8 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 130,
-    "HIGH": 826,
+    "CRITICAL": 131,
+    "HIGH": 829,
     "LOW": 111,
     "MEDIUM": 462
   },
@@ -19628,6 +19628,50 @@
       "workaround": "Treat `/mcp` listing as connection evidence, not proof that HTTP-transport tools are callable. After adding or updating an HTTP MCP server, run a harmless exact tool call in a fresh session and watch the server logs for a real request before depending on it. If calls fail client-side while `/mcp` lists tools, preserve the `/mcp` output, exact transport configuration, Claude Code version range, and server-side empty request log; use an SSE, stdio, direct API, or non-MCP fallback for critical work until the registry is rebuilt or the transport bug is fixed."
     },
     {
+      "id": "mcp-oauth-can-report-success-with-empty-credentials",
+      "title": "MCP OAuth can report success while leaving empty credentials.",
+      "severity": "HIGH",
+      "category": "Auth & accounts",
+      "description": "A reported Claude Desktop 1.30096.1 and Claude Code 2.1.231 Windows setup showed several MCP OAuth failure paths around a remote HTTP server. The required `claude mcp login <server>` command was not surfaced in the auth-required notice, `/mcp` desktop-pane help, or the dead-end `Reconnect, enable, and disable aren't available in this session.` message. Worse, the browser callback page reported authorization success before the token exchange completed, while the client log recorded `InvalidGrantError: incorrect code_verifier`; the credential store then contained an entry with an empty `accessToken` and no `refreshToken` that did not appear invalid in normal MCP listings.",
+      "issue": "86605",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "For OAuth-protected MCP servers, do not treat the browser success page or a configured server row as proof that authentication finished. Run `claude mcp login <server>` explicitly, then verify the credential entry contains a usable token or check with a harmless MCP tool call. If auth keeps repeating, inspect client logs for token-exchange errors such as `incorrect code_verifier`, remove incomplete empty-token entries only after backing up credentials, and fully quit Desktop clients that may still be holding stale MCP config or callback ports."
+    },
+    {
+      "id": "long-background-tool-sessions-can-grow-until-global-oom",
+      "title": "Long background-tool sessions can grow until the host OOM killer intervenes.",
+      "severity": "HIGH",
+      "category": "Performance & resource usage",
+      "description": "A reported Claude Code 2.1.231 native Linux session under WSL2 grew to about 14.6 GiB RSS over roughly two and a half hours and was killed by the kernel OOM killer, taking down co-resident workloads such as VS Code Remote. The transcript was small and ordinary context growth, large file reads, runaway tool loops, inotify watchers, and large MCP payloads were ruled out. The remaining suspicion was workload-specific lifecycle pressure from multiple long background Bash tasks that spawned Chromium and video-rendering subprocesses, with no self-imposed RSS ceiling to contain the failure before the global OOM path.",
+      "issue": "86712",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "For long Claude Code sessions that run renderers, browsers, or other heavyweight background tasks, monitor RSS externally instead of assuming the client will fail locally before harming the host. Run the CLI inside a containment boundary such as a transient systemd scope or cgroup with explicit memory and swap limits, preserve kernel OOM logs and transcript metadata after failures, and split high-memory rendering work into shorter sessions where possible. Treat a small transcript as insufficient evidence that memory risk is low."
+    },
+    {
+      "id": "linux-arm64-binary-can-recursively-relaunch-under-proot",
+      "title": "The linux-arm64 binary can recursively relaunch under proot.",
+      "severity": "HIGH",
+      "category": "Platform & compatibility",
+      "description": "A reported Claude Code 2.1.232 to 2.1.233 linux-arm64 binary forced into a Termux Android proot-distro Ubuntu 24.04 container hung before printing `--version`. Process inspection showed the binary repeatedly spawning a duplicate of the original `proot-distro login ... claude.exe --version` invocation chain, while `proot-distro login ubuntu -- echo hello` worked normally. The reporter's evidence points to a self-relaunch path, possibly through `/proc/self/exe`, interacting badly with proot's proc emulation and re-executing the whole wrapper command rather than the binary itself.",
+      "issue": "86798",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "Do not run forced Claude Code linux-arm64 binaries under Termux/proot as unattended jobs until the launch path is confirmed safe. If `claude --version` hangs, inspect the process tree for repeated nested `proot` or `proot-distro` invocations and kill the group before retrying. Prefer a supported platform, avoid wrapper chains that confuse self-exec detection, and include a minimal `echo` control plus process-tree evidence when reporting similar chroot or proot launch loops."
+    },
+    {
+      "id": "subagent-recursive-delete-can-escape-workdir-when-safety-fails-open",
+      "title": "Sub-agent recursive deletes can escape the workdir when safety fails open.",
+      "severity": "CRITICAL",
+      "category": "Permissions & safety",
+      "description": "A reported Claude Code VS Code extension 2.1.231 Windows auto-mode session spawned a general-purpose sub-agent that ran a long PowerShell command associated with a recursive delete. NTFS journal evidence tied the command runtime to roughly 235,000 deletions under the user's profile root, outside the project working directory. The existing broad PowerShell allow-rule auto-approved the tool call, and the extension log showed the handoff safety classifier was unavailable or lacked a verdict but allowed the sub-agent output with only a warning, so the destructive command was not contained when the safety layer degraded.",
+      "issue": "86872",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "Avoid broad PowerShell or Bash allow-rules for agents that may spawn sub-agents, especially rules that can match recursive deletion commands. Keep destructive commands behind explicit approval, run high-risk audits in throwaway sandboxes or least-privilege accounts, and add independent filesystem protections or backups for profile directories. After any unexpected long-running delete-like command, preserve extension logs, transcript fragments, and filesystem journal evidence before restarting or cleaning up."
+    },
+    {
       "id": "wsl-stdio-mcp-retry-can-orphan-windows-server",
       "title": "WSL stdio MCP retries can orphan Windows-side server processes.",
       "severity": "HIGH",
@@ -19651,27 +19695,27 @@
     }
   ],
   "status_summary": {
-    "open": 1515,
+    "open": 1519,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 130,
-    "high": 826,
+    "critical": 131,
+    "high": 829,
     "low": 111,
     "medium": 462
   },
   "lastUpdated": "2026-08-15",
   "stats": {
-    "total": 1529,
-    "critical": 130,
-    "high": 826,
+    "total": 1533,
+    "critical": 131,
+    "high": 829,
     "medium": 462,
     "low": 111,
-    "open": 1515,
+    "open": 1519,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-15",
-  "total": 1529
+  "total": 1533
 }
