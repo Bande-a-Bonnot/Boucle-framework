@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1512,
+  "count": 1513,
   "categories": {
     "Hook behavior & events": 204,
     "Permission system": 135,
@@ -13,7 +13,7 @@
     "Context & memory": 30,
     "Platform & compatibility": 30,
     "MCP & integrations": 27,
-    "Cowork & remote": 25,
+    "Cowork & remote": 26,
     "Configuration behavior": 23,
     "Performance & cost": 23,
     "Agents & subagents": 22,
@@ -190,11 +190,24 @@
   },
   "severity_counts": {
     "CRITICAL": 130,
-    "HIGH": 812,
+    "HIGH": 813,
     "LOW": 111,
     "MEDIUM": 459
   },
   "entries": [
+    {
+      "id": "cowork-windows-non-c-install-can-break-rpc-pipe",
+      "title": "Cowork can fail when Claude Desktop is installed on a non-C: Windows drive.",
+      "category": "Cowork & remote",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/86825"
+      ],
+      "date_added": "2026-08-15",
+      "description": "A reported Windows 11 Claude Desktop Cowork setup failed to start the workspace with `RPC pipe closed` after Claude was installed through the Microsoft Store on a non-C: drive. Logs showed signature verification comparing the real package path under `D:\\WindowsApps\\...\\claude.exe` against a hard-coded expected `C:\\Program Files\\WindowsApps\\...` package directory, so a supported Windows app-install location made Cowork reject its own client before the workspace could start. The workspace reinstall path also failed around 78-80%, leaving users with a generic Cowork startup error instead of an install-drive diagnosis.",
+      "workaround": "If Cowork fails on Windows with `RPC pipe closed`, check the Claude Desktop install path in logs before reinstalling the workspace repeatedly. If the app is under a non-C: WindowsApps directory, remove the Claude app package, set new Microsoft Store apps to install on C:, reinstall Claude Desktop, and verify Cowork starts before moving work back into the session."
+    },
     {
       "id": "cloud-github-gate-can-override-full-network-access",
       "title": "Cloud sessions can block public GitHub reads despite Full network access.",
@@ -12033,13 +12046,14 @@
       "category": "Configuration & settings",
       "severity": "HIGH",
       "status": "open",
-      "description": "When Claude Code is launched with `CLAUDE_CONFIG_DIR` pointing at an alternate profile directory, the session can still preload instructions from the default `~/.claude/CLAUDE.md` instead of isolating itself to the selected config root. In the reported macOS v2.1.104 repro, the model explicitly confirmed that `/Users/.../.claude/CLAUDE.md` had already been injected into context as startup `claudeMd` content even though `CLAUDE_CONFIG_DIR` was set to a different directory. This is distinct from the older `CLAUDE_CONFIG_DIR` MCP hierarchy and plugin-isolation bugs because the break is not limited to MCP or marketplace state: the wrong profile's top-level instruction file itself crosses the boundary at session start, so supposedly isolated local profiles can inherit unrelated rules, tooling guidance, or secrets from the default home profile before the user does any work.",
+      "description": "When Claude Code is launched with `CLAUDE_CONFIG_DIR` pointing at an alternate profile directory, the session can still preload instructions from the default `~/.claude/CLAUDE.md` instead of isolating itself to the selected config root. In the reported macOS v2.1.104 repro, the model explicitly confirmed that `/Users/.../.claude/CLAUDE.md` had already been injected into context as startup `claudeMd` content even though `CLAUDE_CONFIG_DIR` was set to a different directory. A later v2.1.233 repro found the same default-home `CLAUDE.md` still loaded alongside the shadow config file and still loaded even when `--setting-sources project,local` removed the profile file. This is distinct from the older `CLAUDE_CONFIG_DIR` MCP hierarchy and plugin-isolation bugs because the break is not limited to MCP or marketplace state: the wrong profile's top-level instruction file itself crosses the boundary at session start, so supposedly isolated local profiles can inherit unrelated rules, tooling guidance, or secrets from the default home profile before the user does any work.",
       "cc_issue": 47056,
-      "cc_version": "2.1.104",
+      "cc_version": "2.1.104, 2.1.233",
       "date_added": "2026-04-12",
-      "workaround": "Do not assume `CLAUDE_CONFIG_DIR` currently gives you full startup-instruction isolation. If profile separation matters, keep `~/.claude/CLAUDE.md` empty or move it aside before launching alternate profiles, or use a separate OS user/home directory instead of relying on `CLAUDE_CONFIG_DIR` alone until Anthropic makes CLAUDE.md discovery honor the selected config root.",
+      "workaround": "Do not assume `CLAUDE_CONFIG_DIR` currently gives you full startup-instruction isolation. If profile separation matters, keep `~/.claude/CLAUDE.md` empty or move it aside before launching alternate profiles, use a separate OS user/home directory instead of relying on `CLAUDE_CONFIG_DIR` alone, or add an explicit `claudeMdExcludes` entry for the default-home `~/.claude/CLAUDE.md` path in the shadow profile's settings.json and verify the loaded paths with a marker-file prompt before doing sensitive work.",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/47056"
+        "https://github.com/anthropics/claude-code/issues/47056",
+        "https://github.com/anthropics/claude-code/issues/86837"
       ]
     },
     {
@@ -19461,27 +19475,27 @@
     }
   ],
   "status_summary": {
-    "open": 1498,
+    "open": 1499,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 130,
-    "high": 812,
+    "high": 813,
     "low": 111,
     "medium": 459
   },
   "lastUpdated": "2026-08-15",
   "stats": {
-    "total": 1512,
+    "total": 1513,
     "critical": 130,
-    "high": 812,
+    "high": 813,
     "medium": 459,
     "low": 111,
-    "open": 1498,
+    "open": 1499,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-15",
-  "total": 1512
+  "total": 1513
 }
