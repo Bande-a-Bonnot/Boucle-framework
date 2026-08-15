@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1509,
+  "count": 1510,
   "categories": {
     "Hook behavior & events": 204,
     "Permission system": 135,
@@ -37,8 +37,8 @@
     "Configuration & settings": 10,
     "Git & repository safety": 10,
     "Scheduled tasks": 10,
+    "Telemetry & insights": 10,
     "hooks": 9,
-    "Telemetry & insights": 9,
     "auth": 8,
     "Desktop & platform bugs": 8,
     "Hook execution & lifecycle": 8,
@@ -190,7 +190,7 @@
   },
   "severity_counts": {
     "CRITICAL": 130,
-    "HIGH": 809,
+    "HIGH": 810,
     "LOW": 111,
     "MEDIUM": 459
   },
@@ -19421,30 +19421,41 @@
       "status": "open",
       "date_added": "2026-08-14",
       "workaround": "Do not assume Slack-attached PDFs below the advertised size cap are readable through `slack_read_file`. For workflows that depend on plan sets, contracts, or permit PDFs, verify that the connector returns schema-valid content before acting on the result, keep a fallback path that downloads or uploads the file directly, and capture the file size plus the MCP validation error when reporting connector failures."
+    },
+    {
+      "id": "otelheadershelper-grpc-otlp-can-drop-auth-headers",
+      "title": "`otelHeadersHelper` can drop auth headers for gRPC OTLP exporters.",
+      "severity": "HIGH",
+      "category": "Telemetry & insights",
+      "description": "A reported Claude Code 2.1.223 macOS setup configured `otelHeadersHelper` to emit an Authorization header for OTLP metrics, logs, and traces while using `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`. The bundled OpenTelemetry gRPC exporter path reportedly receives those headers through the legacy `.headers` option, but the current SDK only honors metadata or credentials for gRPC and silently falls back to empty metadata. Auth-gated collectors then reject every export with generic unauthenticated errors, while the user sees no clear indication that Claude Code discarded the helper-produced headers. HTTP/protobuf transport continues to honor the same headers.",
+      "issue": "86814",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "For auth-gated OTLP collectors, prefer `OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf` until a gRPC fix is verified. Test the helper script independently, inspect collector logs for missing or empty Authorization values, and do not assume `CLAUDE_CODE_OTEL_DIAG_STDERR=1` will surface the discarded-header warning on affected versions."
     }
   ],
   "status_summary": {
-    "open": 1495,
+    "open": 1496,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 130,
-    "high": 809,
+    "high": 810,
     "low": 111,
     "medium": 459
   },
-  "lastUpdated": "2026-08-14",
+  "lastUpdated": "2026-08-15",
   "stats": {
-    "total": 1509,
+    "total": 1510,
     "critical": 130,
-    "high": 809,
+    "high": 810,
     "medium": 459,
     "low": 111,
-    "open": 1495,
+    "open": 1496,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-08-14",
-  "total": 1509
+  "last_updated": "2026-08-15",
+  "total": 1510
 }
