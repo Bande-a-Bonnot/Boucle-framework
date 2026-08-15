@@ -1,13 +1,13 @@
 {
   "version": "0.13.0",
-  "count": 1515,
+  "count": 1518,
   "categories": {
     "Hook behavior & events": 204,
     "Permission system": 135,
     "Hook bypass & evasion": 102,
-    "MCP & plugin issues": 78,
+    "MCP & plugin issues": 79,
     "Subagent & spawned agents": 73,
-    "Desktop & IDE integration": 53,
+    "Desktop & IDE integration": 54,
     "TUI & display": 35,
     "CLI & terminal": 31,
     "Context & memory": 30,
@@ -27,9 +27,9 @@
     "Remote & cloud": 17,
     "Data integrity": 16,
     "Scheduling & remote triggers": 15,
+    "File system & paths": 13,
     "MCP integration": 13,
     "Worktree": 13,
-    "File system & paths": 12,
     "Permissions & safety": 12,
     "Bash & shell execution": 11,
     "Plugin & channel system": 11,
@@ -190,9 +190,9 @@
   },
   "severity_counts": {
     "CRITICAL": 130,
-    "HIGH": 814,
+    "HIGH": 816,
     "LOW": 111,
-    "MEDIUM": 460
+    "MEDIUM": 461
   },
   "entries": [
     {
@@ -19494,30 +19494,63 @@
       "status": "open",
       "date_added": "2026-08-15",
       "workaround": "Do not assume a rendered VS Code chat link proves the target file can be opened through the extension. For non-ASCII or space-containing paths, open the file manually from the explorer, terminal, or command palette, and preserve the encoded href plus extension version when reporting failures. Extension maintainers can verify the fix by decoding percent-encoded paths only when the decoded target exists, so real percent signs in filenames remain safe."
+    },
+    {
+      "id": "dragged-file-paths-can-drop-ampersands",
+      "title": "Dragged file paths can silently drop ampersands in Claude Code input.",
+      "severity": "HIGH",
+      "category": "File system & paths",
+      "description": "A reported Claude Code 2.1.228 macOS setup running inside the VS Code integrated terminal found that dragging a Finder file whose name contained `&` inserted a path with the ampersand removed while preserving the surrounding spaces. The corrupted path still looked plausible, so downstream tools consumed the wrong filename. In the reported case, `sqlite3` received the mangled database path and created a new empty database instead of failing, leaving the session with confidently wrong `no such table` results and a stray file.",
+      "issue": "86833",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "Do not trust drag-inserted paths for files with shell metacharacters, especially `&`. Paste or quote the path from a shell, run `test -e` or `ls -lb` on the exact inserted string before handing it to tools that create missing files, and compare directory listings when a tool reports unexpected empty or missing content. To isolate the layer, test the same drag at a plain shell prompt in the same VS Code terminal and in another terminal app."
+    },
+    {
+      "id": "plugin-agent-yaml-errors-can-collapse-sibling-agent-identities",
+      "title": "Plugin agent YAML errors can collapse sibling agent identities.",
+      "severity": "HIGH",
+      "category": "MCP & plugin issues",
+      "description": "A reported Claude Code 2.1.232 plugin setup declared multiple agents through an explicit `agents` array in `plugin.json`. When one agent file used a plain `description:` frontmatter value that crossed a blank line, the plugin did not merely degrade that file's metadata. Instead, the plugin exposed one generic `<plugin-name>:AGENT` identifier, served only one declared agent's content, and made the sibling agents inaccessible without surfacing an error in `/plugin` or debug output. The reporter confirmed the failure requires both the explicit agents array and the blank line inside the description value.",
+      "issue": "86841",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "Write multi-line agent descriptions as YAML block scalars, for example `description: |`, or keep `description:` to one physical line. After installing or editing a plugin, verify that every expected `<plugin-name>:<agent-name>` identifier appears in the Agent tool or `/context` custom-agent list, and treat a lone generic `<plugin-name>:AGENT` entry as a failed registration. Where possible, add a plugin smoke test that installs the package and asserts the expected agent identifiers before relying on the plugin in production workflows."
+    },
+    {
+      "id": "desktop-app-can-stop-rendering-complete-transcript-tail",
+      "title": "The Desktop app can stop rendering completed transcript tail messages.",
+      "severity": "MEDIUM",
+      "category": "Desktop & IDE integration",
+      "description": "A reported Claude Code macOS Desktop app 2.1.229 session stopped painting the most recent assistant messages in the chat view while the on-disk transcript remained complete and structurally valid. The visible conversation appeared stuck at an older message with a loading indicator, but later user and assistant records were present in `~/.claude/projects/<project>/<session-id>.jsonl`. The reporter ruled out transcript size, malformed JSON lines, parent-chain breaks, and force-quit truncation in the affected 48 KB session, so the failure appears to be a renderer or hydration commit issue rather than storage loss.",
+      "issue": "86851",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "When the Desktop app view appears frozen, do not assume the latest messages are lost. Inspect the matching `~/.claude/projects/<project>/<session-id>.jsonl` file and tail user or assistant records to recover the completed responses. Preserve the transcript file before repeated restarts, and include the last visible timestamp plus the later JSONL timestamps when reporting the render failure."
     }
   ],
   "status_summary": {
-    "open": 1501,
+    "open": 1504,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 130,
-    "high": 814,
+    "high": 816,
     "low": 111,
-    "medium": 460
+    "medium": 461
   },
   "lastUpdated": "2026-08-15",
   "stats": {
-    "total": 1515,
+    "total": 1518,
     "critical": 130,
-    "high": 814,
-    "medium": 460,
+    "high": 816,
+    "medium": 461,
     "low": 111,
-    "open": 1501,
+    "open": 1504,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-15",
-  "total": 1515
+  "total": 1518
 }

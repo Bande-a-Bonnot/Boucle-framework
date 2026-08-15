@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1515</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-15.</span></p>
+        <p class="subtitle"><span id="total-count">1518</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-15.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -16906,6 +16906,42 @@
                         <!-- workaround:vscode-chat-file-links-can-fail-for-percent-encoded-paths -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume a rendered VS Code chat link proves the target file can be opened through the extension. For non-ASCII or space-containing paths, open the file manually from the explorer, terminal, or command palette, and preserve the encoded href plus extension version when reporting failures. Extension maintainers can verify the fix by decoding percent-encoded paths only when the decoded target exists, so real percent signs in filenames remain safe.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86829" target="_blank">#86829</a></div>
+        </div>
+        <div class="kl-entry" data-category="File system &amp; paths" data-issues="86833" id="dragged-file-paths-can-drop-ampersands" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1516</span>
+                <span class="kl-cat">File system &amp; paths</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Dragged file paths can silently drop ampersands in Claude Code input.</h3>
+            <p>A reported Claude Code 2.1.228 macOS setup running inside the VS Code integrated terminal found that dragging a Finder file whose name contained `&amp;` inserted a path with the ampersand removed while preserving the surrounding spaces. The corrupted path still looked plausible, so downstream tools consumed the wrong filename. In the reported case, `sqlite3` received the mangled database path and created a new empty database instead of failing, leaving the session with confidently wrong `no such table` results and a stray file.</p>
+                        <!-- workaround:dragged-file-paths-can-drop-ampersands -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not trust drag-inserted paths for files with shell metacharacters, especially `&amp;`. Paste or quote the path from a shell, run `test -e` or `ls -lb` on the exact inserted string before handing it to tools that create missing files, and compare directory listings when a tool reports unexpected empty or missing content. To isolate the layer, test the same drag at a plain shell prompt in the same VS Code terminal and in another terminal app.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86833" target="_blank">#86833</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="86841" id="plugin-agent-yaml-errors-can-collapse-sibling-agent-identities" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1517</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Plugin agent YAML errors can collapse sibling agent identities.</h3>
+            <p>A reported Claude Code 2.1.232 plugin setup declared multiple agents through an explicit `agents` array in `plugin.json`. When one agent file used a plain `description:` frontmatter value that crossed a blank line, the plugin did not merely degrade that file&#x27;s metadata. Instead, the plugin exposed one generic `&lt;plugin-name&gt;:AGENT` identifier, served only one declared agent&#x27;s content, and made the sibling agents inaccessible without surfacing an error in `/plugin` or debug output. The reporter confirmed the failure requires both the explicit agents array and the blank line inside the description value.</p>
+                        <!-- workaround:plugin-agent-yaml-errors-can-collapse-sibling-agent-identities -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Write multi-line agent descriptions as YAML block scalars, for example `description: |`, or keep `description:` to one physical line. After installing or editing a plugin, verify that every expected `&lt;plugin-name&gt;:&lt;agent-name&gt;` identifier appears in the Agent tool or `/context` custom-agent list, and treat a lone generic `&lt;plugin-name&gt;:AGENT` entry as a failed registration. Where possible, add a plugin smoke test that installs the package and asserts the expected agent identifiers before relying on the plugin in production workflows.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86841" target="_blank">#86841</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="86851" id="desktop-app-can-stop-rendering-complete-transcript-tail" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1518</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>The Desktop app can stop rendering completed transcript tail messages.</h3>
+            <p>A reported Claude Code macOS Desktop app 2.1.229 session stopped painting the most recent assistant messages in the chat view while the on-disk transcript remained complete and structurally valid. The visible conversation appeared stuck at an older message with a loading indicator, but later user and assistant records were present in `~/.claude/projects/&lt;project&gt;/&lt;session-id&gt;.jsonl`. The reporter ruled out transcript size, malformed JSON lines, parent-chain breaks, and force-quit truncation in the affected 48 KB session, so the failure appears to be a renderer or hydration commit issue rather than storage loss.</p>
+                        <!-- workaround:desktop-app-can-stop-rendering-complete-transcript-tail -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When the Desktop app view appears frozen, do not assume the latest messages are lost. Inspect the matching `~/.claude/projects/&lt;project&gt;/&lt;session-id&gt;.jsonl` file and tail user or assistant records to recover the completed responses. Preserve the transcript file before repeated restarts, and include the last visible timestamp plus the later JSONL timestamps when reporting the render failure.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86851" target="_blank">#86851</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

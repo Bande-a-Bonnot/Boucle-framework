@@ -7,6 +7,30 @@
   <updated>2026-08-15T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] The Desktop app can stop rendering completed transcript tail messages.</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-app-can-stop-rendering-complete-transcript-tail</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-app-can-stop-rendering-complete-transcript-tail"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Code macOS Desktop app 2.1.229 session stopped painting the most recent assistant messages in the chat view while the on-disk transcript remained complete and structurally valid. The visible conversation appeared stuck at an older message with a loading indicator, but later user and assistant records were present in `~/.claude/projects/&lt;project&gt;/&lt;session-id&gt;.jsonl`. The reporter ruled out transcript size, malformed JSON lines, parent-chain breaks, and force-quit truncation in the affected 48 KB session, so the failure appears to be a renderer or hydration commit issue rather than storage loss.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Plugin agent YAML errors can collapse sibling agent identities.</title>
+    <id>https://framework.boucle.sh/limitations.html#plugin-agent-yaml-errors-can-collapse-sibling-agent-identities</id>
+    <link href="https://framework.boucle.sh/limitations.html#plugin-agent-yaml-errors-can-collapse-sibling-agent-identities"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.232 plugin setup declared multiple agents through an explicit `agents` array in `plugin.json`. When one agent file used a plain `description:` frontmatter value that crossed a blank line, the plugin did not merely degrade that file&#x27;s metadata. Instead, the plugin exposed one generic `&lt;plugin-name&gt;:AGENT` identifier, served only one declared agent&#x27;s content, and made the sibling agents inaccessible without surfacing an error in `/plugin` or debug output. The reporter confirmed the failure requires both the explicit agents array and the blank line inside the description value.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Dragged file paths can silently drop ampersands in Claude Code input.</title>
+    <id>https://framework.boucle.sh/limitations.html#dragged-file-paths-can-drop-ampersands</id>
+    <link href="https://framework.boucle.sh/limitations.html#dragged-file-paths-can-drop-ampersands"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.228 macOS setup running inside the VS Code integrated terminal found that dragging a Finder file whose name contained `&amp;` inserted a path with the ampersand removed while preserving the surrounding spaces. The corrupted path still looked plausible, so downstream tools consumed the wrong filename. In the reported case, `sqlite3` received the mangled database path and created a new empty database instead of failing, leaving the session with confidently wrong `no such table` results and a stray file.</summary>
+    <category term="File system &amp; paths"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] VS Code chat file links can fail for percent-encoded paths.</title>
     <id>https://framework.boucle.sh/limitations.html#vscode-chat-file-links-can-fail-for-percent-encoded-paths</id>
     <link href="https://framework.boucle.sh/limitations.html#vscode-chat-file-links-can-fail-for-percent-encoded-paths"/>
@@ -141,29 +165,5 @@
     <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.232 Linux workflow found that a SubagentStop hook for an agent with a structured output schema fired and returned `decision: &quot;block&quot;`, but the agent still terminated after emitting StructuredOutput. The same agent, hook, and prompt without the schema honored the block, injected the stop-hook feedback, ran again, and then produced a second SubagentStop event with `stop_hook_active: true`. The report narrows the symptom to workflow agents using structured output or the terminating StructuredOutput path, and notes that silently discarding the block makes schema-bound subagents unsafe to treat as hook-enforced.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Auto-mode rollout can override `bypassPermissions` settings and launch flags.</title>
-    <id>https://framework.boucle.sh/limitations.html#auto-mode-rollout-can-override-bypasspermissions</id>
-    <link href="https://framework.boucle.sh/limitations.html#auto-mode-rollout-can-override-bypasspermissions"/>
-    <updated>2026-08-15T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.231 Linux setup found that after the 2026-08-14 auto-mode rollout for Pro, Max, and Team plans, fresh sessions started in auto mode even though permissions.defaultMode was set to &quot;bypassPermissions&quot; in user, local, project, and project-local settings, and even when launched with `claude --permission-mode bypassPermissions`. The reporter ruled out managed settings, disableBypassPermissionsMode, shell aliases, wrapper binaries, and stale resumed sessions, then confirmed the active mode through the status indicator and an Ask-rule prompt that explicitly named auto mode.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] PreToolUse denials drop hook identity from transcripts.</title>
-    <id>https://framework.boucle.sh/limitations.html#pretooluse-denials-drop-hook-identity-from-transcripts</id>
-    <link href="https://framework.boucle.sh/limitations.html#pretooluse-denials-drop-hook-identity-from-transcripts"/>
-    <updated>2026-08-15T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.220 hook-denial path constructs a decisionReason with the PreToolUse hook name, hook source, and reason, but persists only a coarse denial category in the session transcript. Follow-up measurements across 601 transcript files found allow and ask decisions recorded in hook attachments, but zero deny decisions, even while 132 visible denials appeared as tool_result text. This makes multi-hook systems hard to audit: after a blocked call, users may not be able to tell which hook or plugin denied the tool, and hook authors can undercount friction because denies disappear from the decision stream.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Cloud multi-repo sessions can skip repo `.claude/settings.json`.</title>
-    <id>https://framework.boucle.sh/limitations.html#cloud-multirepo-sessions-skip-repo-settings</id>
-    <link href="https://framework.boucle.sh/limitations.html#cloud-multirepo-sessions-skip-repo-settings"/>
-    <updated>2026-08-15T00:00:00Z</updated>
-    <summary>A Claude Code web report says cloud sessions opened with multiple repositories load repo CLAUDE.md, rules, skills, and plugins while never applying each repo&#x27;s .claude/settings.json. SessionStart hooks defined only in repo settings do not register, and CLAUDE_PROJECT_DIR is an empty string while the working directory is the parent directory above the cloned repos. This can silently drop hooks and other settings.json-only configuration in multi-repo cloud sessions even though most of the repo .claude directory appears active.</summary>
-    <category term="Configuration &amp; settings"/>
   </entry>
 </feed>
