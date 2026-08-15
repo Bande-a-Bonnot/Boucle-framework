@@ -7,6 +7,22 @@
   <updated>2026-08-15T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Startup glob scans can repeatedly walk gitignored dependency trees.</title>
+    <id>https://framework.boucle.sh/limitations.html#startup-glob-scans-can-rewalk-gitignored-trees</id>
+    <link href="https://framework.boucle.sh/limitations.html#startup-glob-scans-can-rewalk-gitignored-trees"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.232 Linux monorepo with hundreds of thousands of mostly gitignored dependency files spent about 9.6 seconds of silent CPU time before the first API request for `claude -p`. `strace` showed roughly 2.1 million `getdents64` calls, and deleting ignored `node_modules`, `.venv`, and `target` trees reduced the delay linearly. The reporter narrowed the cost to startup settings, sandbox, and glob-resolution paths that read `.gitignore` files but still descend into ignored directories, apparently performing many full tree walks for patterns such as `Read(**/.env)` and sandbox deny-write globs before dispatch.</summary>
+    <category term="Performance &amp; cost"/>
+  </entry>
+  <entry>
+    <title>[HIGH] WSL stdio MCP retries can orphan Windows-side server processes.</title>
+    <id>https://framework.boucle.sh/limitations.html#wsl-stdio-mcp-retry-can-orphan-windows-server</id>
+    <link href="https://framework.boucle.sh/limitations.html#wsl-stdio-mcp-retry-can-orphan-windows-server"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.228 through 2.1.232 WSL2 setup found that stdio MCP servers whose `initialize` response takes more than about three seconds receive an early SIGTERM and are immediately spawned again. Native Linux servers can clean up and the retry may connect, but when the server command launches a Windows executable through WSL interop, the WSL-side stub dies while the Windows child survives. For a single-instance MCP server, the orphan keeps its profile lock, the retry exits with `CONNECTION_CLOSED`, and every reconnect attempt leaks another Windows process even though the same command works through MCP Inspector.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[HIGH] HTTP MCP tools can be listed in `/mcp` but unavailable to calls.</title>
     <id>https://framework.boucle.sh/limitations.html#http-mcp-tools-can-be-listed-but-uncallable</id>
     <link href="https://framework.boucle.sh/limitations.html#http-mcp-tools-can-be-listed-but-uncallable"/>
@@ -149,21 +165,5 @@
     <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.198 headless repro found that a PostToolUse hook for Read could exit 0, emit valid JSON, and include `hookSpecificOutput.updatedToolOutput`, but Claude Code silently delivered the original file contents to the model when the replacement was a plain string. The same hook path worked when `updatedToolOutput` mirrored Read&#x27;s native structured output shape. The report also observed distinct native shapes for WebFetch and WebSearch, so generic text-rewrite hooks for built-in tools can pass direct hook checks while doing nothing in the real transcript.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] MCP session metadata can hide usage-limit-interrupted turns.</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-session-metadata-can-hide-usage-limit-interrupted-turns</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-session-metadata-can-hide-usage-limit-interrupted-turns"/>
-    <updated>2026-08-15T00:00:00Z</updated>
-    <summary>A reported Claude Code multi-session setup found that when a delivered `send_message` instruction began a target-session turn and that turn was killed by the usage limit, MCP session tools exposed no terminal-state field showing that the turn was interrupted. The target appeared under completed sessions in the desktop UI with a warning badge, but `get_session` returned only normal metadata such as `isRunning`, `lastActivityAt`, model, cwd, and session ids. `lastActivityAt` advanced when the turn died, so callers could mistake a recently updated idle session for successful completion even though the delivered instruction was never executed.</summary>
-    <category term="Cowork &amp; remote"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Nested-agent orchestrators can report completion before child agents finish.</title>
-    <id>https://framework.boucle.sh/limitations.html#nested-agent-orchestrators-can-complete-before-children-finish</id>
-    <link href="https://framework.boucle.sh/limitations.html#nested-agent-orchestrators-can-complete-before-children-finish"/>
-    <updated>2026-08-15T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.229 macOS `/code-review` run spawned a background Skill orchestrator that launched eight nested Agent finder agents, then ended its own turn while saying it would wait for those children. Task notifications reported `status: &quot;completed&quot;` for the orchestrator turns even though the review work was still waiting on child-agent results, and the top-level session needed repeated SendMessage resumes over about 20 minutes before a final report appeared. The report distinguishes this from false liveness notifications: each turn really had completed, but the status described turn termination rather than the assigned multi-agent review being done.</summary>
-    <category term="Subagent &amp; spawned agents"/>
   </entry>
 </feed>
