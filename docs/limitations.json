@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1510,
+  "count": 1512,
   "categories": {
     "Hook behavior & events": 204,
     "Permission system": 135,
@@ -13,7 +13,7 @@
     "Context & memory": 30,
     "Platform & compatibility": 30,
     "MCP & integrations": 27,
-    "Cowork & remote": 24,
+    "Cowork & remote": 25,
     "Configuration behavior": 23,
     "Performance & cost": 23,
     "Agents & subagents": 22,
@@ -23,9 +23,9 @@
     "Auth & accounts": 17,
     "Core & session management": 17,
     "Model behavior": 17,
+    "Remote & cloud": 17,
     "VS Code extension": 17,
     "Data integrity": 16,
-    "Remote & cloud": 16,
     "Scheduling & remote triggers": 15,
     "MCP integration": 13,
     "Worktree": 13,
@@ -190,11 +190,37 @@
   },
   "severity_counts": {
     "CRITICAL": 130,
-    "HIGH": 810,
+    "HIGH": 812,
     "LOW": 111,
     "MEDIUM": 459
   },
   "entries": [
+    {
+      "id": "cloud-github-gate-can-override-full-network-access",
+      "title": "Cloud sessions can block public GitHub reads despite Full network access.",
+      "category": "Remote & cloud",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/86828"
+      ],
+      "date_added": "2026-08-15",
+      "description": "A reported Claude Code web cloud session with custom environment network access set to Full still received 403 policy responses for anonymous public GitHub API reads and even public github.com HTML pages outside the attached repo set. The same session could reach other hosts, use git ls-remote, and download release assets, narrowing the failure to a GitHub-specific credential-scoping layer that can also discard user-supplied Authorization headers before returning the policy error.",
+      "workaround": "Do not treat Full network access in cloud sessions as proof that ordinary GitHub REST, GraphQL, or HTML reads will work for unattached public repositories. For release checks or public-repo discovery, verify the exact curl or gh api path from inside the session, use git protocol or release asset URLs when they cover the need, or attach the repository explicitly when the workflow requires GitHub API access."
+    },
+    {
+      "id": "cowork-stale-folder-entry-can-drop-all-folder-grants",
+      "title": "Cowork cloud sessions can drop every folder grant when one registered path is missing.",
+      "category": "Cowork & remote",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/86823"
+      ],
+      "date_added": "2026-08-15",
+      "description": "A reported Windows Cowork cloud task with two registered project folders lost all connectedFolders entries when one registered path no longer existed, even though the other folder was valid and reachable. The startup context still claimed both folders were connected, but get_device_info, device_list_dir, and device_bash all failed at the grant gate, so the agent saw a misleading no-folders-connected state instead of a warning about the stale registration.",
+      "workaround": "Before relying on Cowork folder access, verify connectedFolders from inside the session rather than trusting the startup context. If every device tool says no folders are connected while parent paths remain reachable, request access to the known-existing folder alone and remove or repair stale project folder registrations before starting long-running work."
+    },
     {
       "id": "remote-control-client-model-picker-can-be-ignored",
       "title": "Remote Control clients can show a selected model while the spawned session stays on the host default.",
@@ -19435,27 +19461,27 @@
     }
   ],
   "status_summary": {
-    "open": 1496,
+    "open": 1498,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 130,
-    "high": 810,
+    "high": 812,
     "low": 111,
     "medium": 459
   },
   "lastUpdated": "2026-08-15",
   "stats": {
-    "total": 1510,
+    "total": 1512,
     "critical": 130,
-    "high": 810,
+    "high": 812,
     "medium": 459,
     "low": 111,
-    "open": 1496,
+    "open": 1498,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-15",
-  "total": 1510
+  "total": 1512
 }
