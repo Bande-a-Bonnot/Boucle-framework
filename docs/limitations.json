@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1534,
+  "count": 1535,
   "categories": {
     "Hook behavior & events": 204,
-    "Permission system": 135,
+    "Permission system": 136,
     "Hook bypass & evasion": 102,
     "MCP & plugin issues": 81,
     "Subagent & spawned agents": 73,
@@ -190,7 +190,7 @@
   },
   "severity_counts": {
     "CRITICAL": 131,
-    "HIGH": 830,
+    "HIGH": 831,
     "LOW": 111,
     "MEDIUM": 462
   },
@@ -19707,30 +19707,41 @@
       "status": "open",
       "date_added": "2026-08-15",
       "workaround": "For large monorepos, measure the pre-dispatch gap in `--debug-file` logs before assuming model or network latency. Keep massive ignored dependency trees outside the Claude Code workspace when possible, trim or narrow broad `**` permission and sandbox globs, and run headless probes from a smaller project root for automation that does not need the whole monorepo. When reporting, include ignored-tree size, relevant settings globs, `strace` or equivalent directory-read counts, and a comparison after removing or relocating ignored dependency directories."
+    },
+    {
+      "id": "subdirectory-launch-can-disable-read-deny-rules",
+      "title": "Subdirectory launches can disable project `Read()` deny rules.",
+      "severity": "HIGH",
+      "category": "Permission system",
+      "description": "A reported Claude Code 2.1.220 macOS monorepo found that project-level `.claude/settings.json` still appeared to load from a package subdirectory because enabled plugins from that file were present, but `permissions.deny` `Read()` rules from the same file stopped enforcing. The reporter verified that `Read(/build/**)`, `Read(**/build/**)`, absolute path denies, and combined patterns blocked when Claude Code started at the repo root, yet allowed the same absolute generated-file read when launched from `packages/backend`. This makes subdirectory sessions dangerous even when some visible project settings prove the file was partially active.",
+      "issue": "84318",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "Do not treat plugin, skill, or CLAUDE.md loading as proof that project `permissions.deny` rules are enforcing from a subdirectory. For monorepos, launch Claude Code through a wrapper that cd's to the repository root before starting, and keep a smoke test that attempts a harmless read covered by a project deny rule from each common package directory. If the subdirectory path is required, move critical read-deny controls to a global hook or another fail-closed layer until the installed version proves project deny matching is cwd-independent."
     }
   ],
   "status_summary": {
-    "open": 1520,
+    "open": 1521,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 131,
-    "high": 830,
+    "high": 831,
     "low": 111,
     "medium": 462
   },
   "lastUpdated": "2026-08-15",
   "stats": {
-    "total": 1534,
+    "total": 1535,
     "critical": 131,
-    "high": 830,
+    "high": 831,
     "medium": 462,
     "low": 111,
-    "open": 1520,
+    "open": 1521,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-15",
-  "total": 1534
+  "total": 1535
 }
