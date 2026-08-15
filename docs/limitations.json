@@ -1,13 +1,13 @@
 {
   "version": "0.13.0",
-  "count": 1521,
+  "count": 1525,
   "categories": {
     "Hook behavior & events": 204,
     "Permission system": 135,
     "Hook bypass & evasion": 102,
     "MCP & plugin issues": 79,
     "Subagent & spawned agents": 73,
-    "Desktop & IDE integration": 55,
+    "Desktop & IDE integration": 56,
     "TUI & display": 35,
     "CLI & terminal": 31,
     "Context & memory": 30,
@@ -19,7 +19,7 @@
     "Agents & subagents": 22,
     "Tool behavior": 21,
     "Sandbox & permissions": 20,
-    "Security & trust boundaries": 19,
+    "Security & trust boundaries": 20,
     "VS Code extension": 19,
     "Auth & accounts": 17,
     "Core & session management": 17,
@@ -29,9 +29,9 @@
     "Scheduling & remote triggers": 15,
     "File system & paths": 13,
     "MCP integration": 13,
+    "Permissions & safety": 13,
     "Worktree": 13,
     "Bash & shell execution": 12,
-    "Permissions & safety": 12,
     "Plugin & channel system": 11,
     "UX & display": 11,
     "Configuration & settings": 10,
@@ -62,6 +62,7 @@
     "permissions": 4,
     "sandbox": 4,
     "tui": 4,
+    "Agent & multi-agent": 3,
     "API & infrastructure": 3,
     "Context / compaction": 3,
     "cowork": 3,
@@ -75,7 +76,6 @@
     "Sandbox": 3,
     "Security": 3,
     "Tool availability": 3,
-    "Agent & multi-agent": 2,
     "Agent control & instruction following": 2,
     "Agents": 2,
     "agents": 2,
@@ -190,9 +190,9 @@
   },
   "severity_counts": {
     "CRITICAL": 130,
-    "HIGH": 819,
+    "HIGH": 822,
     "LOW": 111,
-    "MEDIUM": 461
+    "MEDIUM": 462
   },
   "entries": [
     {
@@ -19560,30 +19560,74 @@
       "status": "open",
       "date_added": "2026-08-15",
       "workaround": "Before reorganizing important Desktop Code session groups, back up `%APPDATA%\\Claude\\claude_desktop_config.json` and, if possible, export or document the group mapping. If groups disappear, preserve the config immediately, avoid creating more groups until the overwritten value is understood, and rebuild only from surviving session data such as each session's `originCwd`. Treat group metadata as separate from transcript preservation: intact session files do not prove sidebar organization is recoverable."
+    },
+    {
+      "id": "remote-control-app-sessions-can-ignore-bypass-default-mode",
+      "title": "Remote Control app-started sessions can ignore `bypassPermissions` default mode.",
+      "severity": "HIGH",
+      "category": "Permissions & safety",
+      "description": "A reported Claude Code 2.1.232 Linux Remote Control server honored `permissions.defaultMode: \"bypassPermissions\"` for sessions started or resumed from the host CLI, but sessions started from the Android app or web client ran in auto mode instead. The same user, server, user settings, project settings, and `claude remote-control --capacity 16` process were involved; only the client path changed. App-started sessions then hit auto-mode classifier denials for ordinary read-only or admin commands, making remote maintenance workflows impossible despite bypass mode being configured.",
+      "issue": "86858",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "Do not assume Remote Control sessions inherit the host's configured permission mode just because CLI-started sessions do. For privileged or unattended maintenance, start or resume the session from the host CLI and verify the live permission mode before issuing tool calls. If an app-started session reports auto-mode classifier denials despite `permissions.defaultMode: \"bypassPermissions\"`, treat it as running under a different policy and avoid using it for operations that depend on bypass semantics."
+    },
+    {
+      "id": "workspace-trust-dialog-can-fail-to-appear",
+      "title": "The workspace trust dialog can fail to appear while trust-gated features stay disabled.",
+      "severity": "HIGH",
+      "category": "Security & trust boundaries",
+      "description": "A reported Claude Code 2.1.233 macOS setup had project entries stuck with `hasTrustDialogAccepted: false` in `~/.claude.json`, but fresh launches in those folders never showed the trust prompt. Trust-gated features such as `statusLine` silently stayed disabled with no error or warning. Manually setting the affected path's trust flag to true made the status line render immediately in the already-running session, which narrows the symptom to the trust prompt path rather than a broken statusLine command. The reporter also confirmed trust is tracked per exact path, so trusted parent folders do not automatically cover nested worktrees or subdirectories.",
+      "issue": "86857",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "When a configured statusLine, hook, or project trust-gated setting appears to do nothing, inspect the exact project path entry in `~/.claude.json` instead of relying on parent-folder trust. If `hasTrustDialogAccepted` is false and no prompt appears after a fresh launch, trigger an explicit trust flow if available. Only edit the trust flag manually after verifying the path is the intended workspace, then restart or recheck the feature in that same folder."
+    },
+    {
+      "id": "desktop-session-card-save-failures-can-stay-invisible",
+      "title": "Desktop session-card save failures can remain invisible while work continues.",
+      "severity": "HIGH",
+      "category": "Desktop & IDE integration",
+      "description": "A reported Claude Desktop app 1.30096.5 Windows setup logged thousands of consecutive `Failed to save session` errors while showing no UI warning. The Desktop app still opened chats and the underlying CLI transcripts under `~/.claude/projects/` were written, but new conversations never received sidebar cards. After account switching or restart, those conversations appeared lost even though the transcripts were intact. In the reported case the app correctly refused to write through a non-directory or junction-like storage path, but the user-visible failure was the lack of warning that persistence was broken.",
+      "issue": "86861",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "If Desktop conversations disappear from the sidebar, do not assume transcript loss until checking both the Desktop `main.log` and `~/.claude/projects/`. Search logs for `Failed to save session`, preserve the transcript JSONL files before repeated restarts, and repair the account or organization storage directory so the session-card path is a writable real directory. For managed Windows installs, add a health check that tails `main.log` for repeated save failures."
+    },
+    {
+      "id": "desktop-pinned-sessions-can-be-invisible-to-listagents-until-opened",
+      "title": "Desktop pinned sessions can be invisible to `ListAgents` until manually opened.",
+      "severity": "MEDIUM",
+      "category": "Agent & multi-agent",
+      "description": "A reported Claude Desktop app 1.30096.5 macOS setup showed many pinned Code sessions in the sidebar, but only sessions that were currently open had running Claude Code processes, socket files in `/tmp/cc-socks/`, and entries in peer `ListAgents` output. Closed pinned sessions were omitted entirely, so `ListAgents` returned `No reachable agents.` even though the sidebar showed known peers. That string is indistinguishable from a real peer-discovery failure, and there is no peer-side way to wake a pinned session before sending a message.",
+      "issue": "86864",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "For Desktop peer messaging, treat pinned sidebar sessions as saved shortcuts, not proof of live agents. Before using `SendMessage`, open the intended peer sessions manually, rerun `ListAgents`, and confirm their current identifiers; inspect `/tmp/cc-socks/` or the process table if reachability is ambiguous. Do not treat `No reachable agents.` alone as evidence that messaging is broken unless the expected peer sessions are known to be open and still missing."
     }
   ],
   "status_summary": {
-    "open": 1507,
+    "open": 1511,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 130,
-    "high": 819,
+    "high": 822,
     "low": 111,
-    "medium": 461
+    "medium": 462
   },
   "lastUpdated": "2026-08-15",
   "stats": {
-    "total": 1521,
+    "total": 1525,
     "critical": 130,
-    "high": 819,
-    "medium": 461,
+    "high": 822,
+    "medium": 462,
     "low": 111,
-    "open": 1507,
+    "open": 1511,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-15",
-  "total": 1521
+  "total": 1525
 }
