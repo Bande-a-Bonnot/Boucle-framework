@@ -23,6 +23,38 @@
     <category term="MCP &amp; plugin issues"/>
   </entry>
   <entry>
+    <title>[CRITICAL] Sub-agent recursive deletes can escape the workdir when safety fails open.</title>
+    <id>https://framework.boucle.sh/limitations.html#subagent-recursive-delete-can-escape-workdir-when-safety-fails-open</id>
+    <link href="https://framework.boucle.sh/limitations.html#subagent-recursive-delete-can-escape-workdir-when-safety-fails-open"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Code VS Code extension 2.1.231 Windows auto-mode session spawned a general-purpose sub-agent that ran a long PowerShell command associated with a recursive delete. NTFS journal evidence tied the command runtime to roughly 235,000 deletions under the user&#x27;s profile root, outside the project working directory. The existing broad PowerShell allow-rule auto-approved the tool call, and the extension log showed the handoff safety classifier was unavailable or lacked a verdict but allowed the sub-agent output with only a warning, so the destructive command was not contained when the safety layer degraded.</summary>
+    <category term="Permissions &amp; safety"/>
+  </entry>
+  <entry>
+    <title>[HIGH] The linux-arm64 binary can recursively relaunch under proot.</title>
+    <id>https://framework.boucle.sh/limitations.html#linux-arm64-binary-can-recursively-relaunch-under-proot</id>
+    <link href="https://framework.boucle.sh/limitations.html#linux-arm64-binary-can-recursively-relaunch-under-proot"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.232 to 2.1.233 linux-arm64 binary forced into a Termux Android proot-distro Ubuntu 24.04 container hung before printing `--version`. Process inspection showed the binary repeatedly spawning a duplicate of the original `proot-distro login ... claude.exe --version` invocation chain, while `proot-distro login ubuntu -- echo hello` worked normally. The reporter&#x27;s evidence points to a self-relaunch path, possibly through `/proc/self/exe`, interacting badly with proot&#x27;s proc emulation and re-executing the whole wrapper command rather than the binary itself.</summary>
+    <category term="Platform &amp; compatibility"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Long background-tool sessions can grow until the host OOM killer intervenes.</title>
+    <id>https://framework.boucle.sh/limitations.html#long-background-tool-sessions-can-grow-until-global-oom</id>
+    <link href="https://framework.boucle.sh/limitations.html#long-background-tool-sessions-can-grow-until-global-oom"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.231 native Linux session under WSL2 grew to about 14.6 GiB RSS over roughly two and a half hours and was killed by the kernel OOM killer, taking down co-resident workloads such as VS Code Remote. The transcript was small and ordinary context growth, large file reads, runaway tool loops, inotify watchers, and large MCP payloads were ruled out. The remaining suspicion was workload-specific lifecycle pressure from multiple long background Bash tasks that spawned Chromium and video-rendering subprocesses, with no self-imposed RSS ceiling to contain the failure before the global OOM path.</summary>
+    <category term="Performance &amp; resource usage"/>
+  </entry>
+  <entry>
+    <title>[HIGH] MCP OAuth can report success while leaving empty credentials.</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-oauth-can-report-success-with-empty-credentials</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-oauth-can-report-success-with-empty-credentials"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Desktop 1.30096.1 and Claude Code 2.1.231 Windows setup showed several MCP OAuth failure paths around a remote HTTP server. The required `claude mcp login &lt;server&gt;` command was not surfaced in the auth-required notice, `/mcp` desktop-pane help, or the dead-end `Reconnect, enable, and disable aren&#x27;t available in this session.` message. Worse, the browser callback page reported authorization success before the token exchange completed, while the client log recorded `InvalidGrantError: incorrect code_verifier`; the credential store then contained an entry with an empty `accessToken` and no `refreshToken` that did not appear invalid in normal MCP listings.</summary>
+    <category term="Auth &amp; accounts"/>
+  </entry>
+  <entry>
     <title>[HIGH] HTTP MCP tools can be listed in `/mcp` but unavailable to calls.</title>
     <id>https://framework.boucle.sh/limitations.html#http-mcp-tools-can-be-listed-but-uncallable</id>
     <link href="https://framework.boucle.sh/limitations.html#http-mcp-tools-can-be-listed-but-uncallable"/>
@@ -133,37 +165,5 @@
     <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.232 macOS setup found that repositories which previously inherited trust from a parent folder could become untrusted after the nested-repository trust change without showing a new trust dialog or warning. Those project entries still had `hasTrustDialogAccepted: false` because the old inherited-trust path had suppressed the prompt. After updating, trust-gated features such as `statusLine` stopped running in the nested repositories, leaving an empty status row while the command and settings remained valid.</summary>
     <category term="Security &amp; trust boundaries"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `otelHeadersHelper` can drop auth headers for gRPC OTLP exporters.</title>
-    <id>https://framework.boucle.sh/limitations.html#otelheadershelper-grpc-otlp-can-drop-auth-headers</id>
-    <link href="https://framework.boucle.sh/limitations.html#otelheadershelper-grpc-otlp-can-drop-auth-headers"/>
-    <updated>2026-08-15T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.223 macOS setup configured `otelHeadersHelper` to emit an Authorization header for OTLP metrics, logs, and traces while using `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`. The bundled OpenTelemetry gRPC exporter path reportedly receives those headers through the legacy `.headers` option, but the current SDK only honors metadata or credentials for gRPC and silently falls back to empty metadata. Auth-gated collectors then reject every export with generic unauthenticated errors, while the user sees no clear indication that Claude Code discarded the helper-produced headers. HTTP/protobuf transport continues to honor the same headers.</summary>
-    <category term="Telemetry &amp; insights"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Slack `slack_read_file` can return malformed MCP blocks for mid-size PDFs.</title>
-    <id>https://framework.boucle.sh/limitations.html#slack-read-file-pdf-attachments-can-return-malformed-mcp-blocks</id>
-    <link href="https://framework.boucle.sh/limitations.html#slack-read-file-pdf-attachments-can-return-malformed-mcp-blocks"/>
-    <updated>2026-08-15T00:00:00Z</updated>
-    <summary>A reported Claude Code Slack MCP connector setup found that `slack_read_file` failed on Slack PDF attachments around 5.2-5.5 MB even though the documented limit was 10 MB. Instead of returning file content or a clean size/error response, the tool produced an MCP schema validation failure where a second content block carried a type tag but none of the required payload fields. Direct upload of the same PDFs to Claude reportedly worked, so the failure appears to sit in the Slack connector fetch or response-building path rather than in PDF parsing itself.</summary>
-    <category term="MCP &amp; connectors"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Google Drive connector consent can hide a full-Drive read scope.</title>
-    <id>https://framework.boucle.sh/limitations.html#google-drive-connector-consent-can-hide-full-drive-read-scope</id>
-    <link href="https://framework.boucle.sh/limitations.html#google-drive-connector-consent-can-hide-full-drive-read-scope"/>
-    <updated>2026-08-15T00:00:00Z</updated>
-    <summary>A reported Claude connector setup found that the Google Drive OAuth consent flow presents access as limited to specific files used with the app, but the issued token includes `drive.readonly` alongside `drive.file`. `drive.file` limits access to files selected through the picker or created by the app, while `drive.readonly` grants read access across the user&#x27;s Drive corpus. The report says the broader scope is visible after connection in Google&#x27;s third-party permissions page, and that the single OAuth client gives users no option to grant only the narrower file-specific scope.</summary>
-    <category term="MCP &amp; connectors"/>
-  </entry>
-  <entry>
-    <title>[HIGH] PostToolUse `updatedToolOutput` can be silently dropped when its shape is wrong.</title>
-    <id>https://framework.boucle.sh/limitations.html#posttooluse-updatedtooloutput-shape-mismatch-silent-drop</id>
-    <link href="https://framework.boucle.sh/limitations.html#posttooluse-updatedtooloutput-shape-mismatch-silent-drop"/>
-    <updated>2026-08-15T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.198 headless repro found that a PostToolUse hook for Read could exit 0, emit valid JSON, and include `hookSpecificOutput.updatedToolOutput`, but Claude Code silently delivered the original file contents to the model when the replacement was a plain string. The same hook path worked when `updatedToolOutput` mirrored Read&#x27;s native structured output shape. The report also observed distinct native shapes for WebFetch and WebSearch, so generic text-rewrite hooks for built-in tools can pass direct hook checks while doing nothing in the real transcript.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>
