@@ -4,13 +4,21 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-08-14T00:00:00Z</updated>
+  <updated>2026-08-15T00:00:00Z</updated>
   <author><name>Boucle</name></author>
+  <entry>
+    <title>[HIGH] `otelHeadersHelper` can drop auth headers for gRPC OTLP exporters.</title>
+    <id>https://framework.boucle.sh/limitations.html#otelheadershelper-grpc-otlp-can-drop-auth-headers</id>
+    <link href="https://framework.boucle.sh/limitations.html#otelheadershelper-grpc-otlp-can-drop-auth-headers"/>
+    <updated>2026-08-15T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.223 macOS setup configured `otelHeadersHelper` to emit an Authorization header for OTLP metrics, logs, and traces while using `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`. The bundled OpenTelemetry gRPC exporter path reportedly receives those headers through the legacy `.headers` option, but the current SDK only honors metadata or credentials for gRPC and silently falls back to empty metadata. Auth-gated collectors then reject every export with generic unauthenticated errors, while the user sees no clear indication that Claude Code discarded the helper-produced headers. HTTP/protobuf transport continues to honor the same headers.</summary>
+    <category term="Telemetry &amp; insights"/>
+  </entry>
   <entry>
     <title>[HIGH] Slack `slack_read_file` can return malformed MCP blocks for mid-size PDFs.</title>
     <id>https://framework.boucle.sh/limitations.html#slack-read-file-pdf-attachments-can-return-malformed-mcp-blocks</id>
     <link href="https://framework.boucle.sh/limitations.html#slack-read-file-pdf-attachments-can-return-malformed-mcp-blocks"/>
-    <updated>2026-08-14T00:00:00Z</updated>
+    <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code Slack MCP connector setup found that `slack_read_file` failed on Slack PDF attachments around 5.2-5.5 MB even though the documented limit was 10 MB. Instead of returning file content or a clean size/error response, the tool produced an MCP schema validation failure where a second content block carried a type tag but none of the required payload fields. Direct upload of the same PDFs to Claude reportedly worked, so the failure appears to sit in the Slack connector fetch or response-building path rather than in PDF parsing itself.</summary>
     <category term="MCP &amp; connectors"/>
   </entry>
@@ -18,7 +26,7 @@
     <title>[HIGH] Google Drive connector consent can hide a full-Drive read scope.</title>
     <id>https://framework.boucle.sh/limitations.html#google-drive-connector-consent-can-hide-full-drive-read-scope</id>
     <link href="https://framework.boucle.sh/limitations.html#google-drive-connector-consent-can-hide-full-drive-read-scope"/>
-    <updated>2026-08-14T00:00:00Z</updated>
+    <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude connector setup found that the Google Drive OAuth consent flow presents access as limited to specific files used with the app, but the issued token includes `drive.readonly` alongside `drive.file`. `drive.file` limits access to files selected through the picker or created by the app, while `drive.readonly` grants read access across the user&#x27;s Drive corpus. The report says the broader scope is visible after connection in Google&#x27;s third-party permissions page, and that the single OAuth client gives users no option to grant only the narrower file-specific scope.</summary>
     <category term="MCP &amp; connectors"/>
   </entry>
@@ -26,7 +34,7 @@
     <title>[HIGH] PostToolUse `updatedToolOutput` can be silently dropped when its shape is wrong.</title>
     <id>https://framework.boucle.sh/limitations.html#posttooluse-updatedtooloutput-shape-mismatch-silent-drop</id>
     <link href="https://framework.boucle.sh/limitations.html#posttooluse-updatedtooloutput-shape-mismatch-silent-drop"/>
-    <updated>2026-08-14T00:00:00Z</updated>
+    <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.198 headless repro found that a PostToolUse hook for Read could exit 0, emit valid JSON, and include `hookSpecificOutput.updatedToolOutput`, but Claude Code silently delivered the original file contents to the model when the replacement was a plain string. The same hook path worked when `updatedToolOutput` mirrored Read&#x27;s native structured output shape. The report also observed distinct native shapes for WebFetch and WebSearch, so generic text-rewrite hooks for built-in tools can pass direct hook checks while doing nothing in the real transcript.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -34,7 +42,7 @@
     <title>[HIGH] MCP session metadata can hide usage-limit-interrupted turns.</title>
     <id>https://framework.boucle.sh/limitations.html#mcp-session-metadata-can-hide-usage-limit-interrupted-turns</id>
     <link href="https://framework.boucle.sh/limitations.html#mcp-session-metadata-can-hide-usage-limit-interrupted-turns"/>
-    <updated>2026-08-14T00:00:00Z</updated>
+    <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code multi-session setup found that when a delivered `send_message` instruction began a target-session turn and that turn was killed by the usage limit, MCP session tools exposed no terminal-state field showing that the turn was interrupted. The target appeared under completed sessions in the desktop UI with a warning badge, but `get_session` returned only normal metadata such as `isRunning`, `lastActivityAt`, model, cwd, and session ids. `lastActivityAt` advanced when the turn died, so callers could mistake a recently updated idle session for successful completion even though the delivered instruction was never executed.</summary>
     <category term="Cowork &amp; remote"/>
   </entry>
@@ -42,7 +50,7 @@
     <title>[HIGH] Nested-agent orchestrators can report completion before child agents finish.</title>
     <id>https://framework.boucle.sh/limitations.html#nested-agent-orchestrators-can-complete-before-children-finish</id>
     <link href="https://framework.boucle.sh/limitations.html#nested-agent-orchestrators-can-complete-before-children-finish"/>
-    <updated>2026-08-14T00:00:00Z</updated>
+    <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.229 macOS `/code-review` run spawned a background Skill orchestrator that launched eight nested Agent finder agents, then ended its own turn while saying it would wait for those children. Task notifications reported `status: &quot;completed&quot;` for the orchestrator turns even though the review work was still waiting on child-agent results, and the top-level session needed repeated SendMessage resumes over about 20 minutes before a final report appeared. The report distinguishes this from false liveness notifications: each turn really had completed, but the status described turn termination rather than the assigned multi-agent review being done.</summary>
     <category term="Subagent &amp; spawned agents"/>
   </entry>
@@ -50,7 +58,7 @@
     <title>[HIGH] Hidden Opus 5 prompt text can suppress expected subagent and workflow delegation.</title>
     <id>https://framework.boucle.sh/limitations.html#hidden-heron-brook-prompt-can-suppress-opus-5-delegation</id>
     <link href="https://framework.boucle.sh/limitations.html#hidden-heron-brook-prompt-can-suppress-opus-5-delegation"/>
-    <updated>2026-08-14T00:00:00Z</updated>
+    <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.219 through 2.1.232 Opus 5 path injects a dynamic prompt section called `heron_brook` that tells the model not to call AgentTool or workflows unless the user requested them. Reports say the section is model-gated, has no documented settings or environment opt-out, is not recorded in normal transcripts, and can make project CLAUDE.md, Skill, or agent-description delegation policies silently degrade unless the current user turn asks for delegation explicitly.</summary>
     <category term="Subagent &amp; spawned agents"/>
   </entry>
@@ -58,7 +66,7 @@
     <title>[HIGH] Subagent Bash calls can defer forever while the task reports success.</title>
     <id>https://framework.boucle.sh/limitations.html#subagent-bash-tool-deferred-reports-success</id>
     <link href="https://framework.boucle.sh/limitations.html#subagent-bash-tool-deferred-reports-success"/>
-    <updated>2026-08-14T00:00:00Z</updated>
+    <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.232 setup found that Bash tool calls issued by Agent-spawned subagents could emit a `tool_use`, never execute the command, receive no `tool_result`, and still surface to the parent task path as `subtype: &quot;success&quot;` with `is_error: false`. The headless payload exposed `stop_reason: &quot;tool_deferred&quot;`, `terminal_reason: &quot;tool_deferred&quot;`, and a `deferred_tool_use` containing the Bash call, while side-effect probes such as writing `date -u` to a temp file confirmed the command did not run. Read/Grep subagents and parent-session Bash calls continued to work, so this is distinct from a general shell outage and from hook decisions being ignored.</summary>
     <category term="Subagent &amp; spawned agents"/>
   </entry>
@@ -66,7 +74,7 @@
     <title>[HIGH] Windows auto-mode gate can override explicit Bash allow rules.</title>
     <id>https://framework.boucle.sh/limitations.html#windows-auto-mode-gate-overrides-allow-rules</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-auto-mode-gate-overrides-allow-rules"/>
-    <updated>2026-08-14T00:00:00Z</updated>
+    <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.232 Windows 11 Git Bash setup found a new Windows-only permission gate that can downgrade an already allowed Bash command to a manual prompt before auto mode&#x27;s classifier runs. The reporter compared 2.1.220 and 2.1.232 binaries, found new Cygwin-emulated symlink and cd-compound static-analysis strings, and reported that affected paths set `classifierApprovable: false`, making `autoMode.allow` inert. The scope includes shell interpreters, shell-code strings, cd-compound commands, and write targets that cannot be statically resolved; explicit `permissions.allow` or custom auto-mode rules may no longer restore the previous behavior.</summary>
     <category term="Permission system"/>
   </entry>
@@ -74,7 +82,7 @@
     <title>[HIGH] Windows Git Bash cd-compound commands can trigger constant auto-mode prompts.</title>
     <id>https://framework.boucle.sh/limitations.html#windows-git-bash-auto-mode-cd-compounds-prompt-constantly</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-git-bash-auto-mode-cd-compounds-prompt-constantly"/>
-    <updated>2026-08-14T00:00:00Z</updated>
+    <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.232 Windows 11 Git Bash setup found that auto mode repeatedly sent quoted absolute-path `cd ... &amp;&amp; ...` Bash compounds to manual approval, including read-only `sed`, `grep`, `head`, and `tail` pipelines with no redirects or write verbs. The prompts used several different static-analysis reasons, including a read-only pipeline labelled as a write operation, Windows 8.3 short paths interpreted as tilde expansion, and a concrete Cygwin-symlink claim that the reporter checked against the filesystem and found false. A follow-up also showed the approval dialog rendering a pipe as a comma, suggesting the displayed command or analysis path may be using a corrupted parse. Because Windows subagents commonly generate `cd &quot;&lt;absolute path&gt;&quot; &amp;&amp; ...` commands and these prompts do not offer a scoped &quot;do not ask again&quot; option, the rollout can create dozens of manual prompts per hour.</summary>
     <category term="Permission system"/>
   </entry>
@@ -82,7 +90,7 @@
     <title>[HIGH] Hook timeouts may not bound subprocesses wedged before hook code starts.</title>
     <id>https://framework.boucle.sh/limitations.html#hook-timeout-may-not-bound-pre-main-wedges</id>
     <link href="https://framework.boucle.sh/limitations.html#hook-timeout-may-not-bound-pre-main-wedges"/>
-    <updated>2026-08-14T00:00:00Z</updated>
+    <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.226 Windows setup with an 8-wide PreToolUse:Bash hook batch found that one spawned `node.exe` hook process could wedge during interpreter startup before JavaScript executed. The hook declared `timeout: 2`, but the session froze permanently with one unmatched `hook_started`, no `hook_response`, and an orphaned zero-CPU node process whose parent had already exited. Because the hook code never starts, hook-author mitigations such as bounded stdin reads or in-process watchdogs cannot run.</summary>
     <category term="Hook execution &amp; lifecycle"/>
   </entry>
@@ -90,7 +98,7 @@
     <title>[HIGH] Hook timeouts may not reclaim hooks blocked on stdin reads.</title>
     <id>https://framework.boucle.sh/limitations.html#hook-timeout-may-not-kill-stdin-read</id>
     <link href="https://framework.boucle.sh/limitations.html#hook-timeout-may-not-kill-stdin-read"/>
-    <updated>2026-08-14T00:00:00Z</updated>
+    <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.232 Linux setup found that a command hook blocked in `io.ReadAll(os.Stdin)` survived well past its configured timeout. The timeout path delivered SIGTERM, but the child remained alive for hundreds of seconds while the wrapper waited in `sigsuspend`; only SIGKILL or SIGQUIT ended the wedged process. The report reproduced this with a hook stdin connected to a FIFO that never reached EOF, and noted that the same hook exited normally in 49 ms when stdin was closed.</summary>
     <category term="Hook execution &amp; lifecycle"/>
   </entry>
@@ -98,7 +106,7 @@
     <title>[HIGH] PreToolUse `ask` prompts can default to approval.</title>
     <id>https://framework.boucle.sh/limitations.html#pretooluse-ask-prompts-default-to-approval</id>
     <link href="https://framework.boucle.sh/limitations.html#pretooluse-ask-prompts-default-to-approval"/>
-    <updated>2026-08-14T00:00:00Z</updated>
+    <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code setup used a PreToolUse hook returning hookSpecificOutput.permissionDecision: &quot;ask&quot; as an approval gate for git push. The resulting prompt accepted the highlighted Yes option when Enter was pressed, and an engineer typing into the wrong window unintentionally published a branch about 25 seconds after the prompt appeared. This makes hook-level ask prompts risky for outward actions because the default interaction is approval, not denial.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -106,7 +114,7 @@
     <title>[HIGH] Killed PreToolUse permission hooks can allow the gated tool.</title>
     <id>https://framework.boucle.sh/limitations.html#killed-pretooluse-hook-can-allow-gated-tool</id>
     <link href="https://framework.boucle.sh/limitations.html#killed-pretooluse-hook-can-allow-gated-tool"/>
-    <updated>2026-08-14T00:00:00Z</updated>
+    <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code setup found that when a PreToolUse command hook used as an out-of-band approval gate was killed by the CLI&#x27;s hook timeout, Claude Code executed the gated tool instead of denying it or falling back to the normal permission prompt. In the reported production-like case, an approval hook for a public site publish waited unanswered for about 10 minutes, the hook process was killed, and the publish continued without consent. This makes long-running permission-decision hooks fail open at the exact point where they could not finish deciding.</summary>
     <category term="Hook execution &amp; lifecycle"/>
   </entry>
@@ -114,7 +122,7 @@
     <title>[HIGH] SubagentStop `decision: block` can be ignored for schema-bound agents.</title>
     <id>https://framework.boucle.sh/limitations.html#subagentstop-block-ignored-with-structured-output</id>
     <link href="https://framework.boucle.sh/limitations.html#subagentstop-block-ignored-with-structured-output"/>
-    <updated>2026-08-14T00:00:00Z</updated>
+    <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.232 Linux workflow found that a SubagentStop hook for an agent with a structured output schema fired and returned `decision: &quot;block&quot;`, but the agent still terminated after emitting StructuredOutput. The same agent, hook, and prompt without the schema honored the block, injected the stop-hook feedback, ran again, and then produced a second SubagentStop event with `stop_hook_active: true`. The report narrows the symptom to workflow agents using structured output or the terminating StructuredOutput path, and notes that silently discarding the block makes schema-bound subagents unsafe to treat as hook-enforced.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -122,7 +130,7 @@
     <title>[HIGH] Auto-mode rollout can override `bypassPermissions` settings and launch flags.</title>
     <id>https://framework.boucle.sh/limitations.html#auto-mode-rollout-can-override-bypasspermissions</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-mode-rollout-can-override-bypasspermissions"/>
-    <updated>2026-08-14T00:00:00Z</updated>
+    <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.231 Linux setup found that after the 2026-08-14 auto-mode rollout for Pro, Max, and Team plans, fresh sessions started in auto mode even though permissions.defaultMode was set to &quot;bypassPermissions&quot; in user, local, project, and project-local settings, and even when launched with `claude --permission-mode bypassPermissions`. The reporter ruled out managed settings, disableBypassPermissionsMode, shell aliases, wrapper binaries, and stale resumed sessions, then confirmed the active mode through the status indicator and an Ask-rule prompt that explicitly named auto mode.</summary>
     <category term="Permission system"/>
   </entry>
@@ -130,7 +138,7 @@
     <title>[HIGH] PreToolUse denials drop hook identity from transcripts.</title>
     <id>https://framework.boucle.sh/limitations.html#pretooluse-denials-drop-hook-identity-from-transcripts</id>
     <link href="https://framework.boucle.sh/limitations.html#pretooluse-denials-drop-hook-identity-from-transcripts"/>
-    <updated>2026-08-14T00:00:00Z</updated>
+    <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.220 hook-denial path constructs a decisionReason with the PreToolUse hook name, hook source, and reason, but persists only a coarse denial category in the session transcript. Follow-up measurements across 601 transcript files found allow and ask decisions recorded in hook attachments, but zero deny decisions, even while 132 visible denials appeared as tool_result text. This makes multi-hook systems hard to audit: after a blocked call, users may not be able to tell which hook or plugin denied the tool, and hook authors can undercount friction because denies disappear from the decision stream.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -138,7 +146,7 @@
     <title>[HIGH] Cloud multi-repo sessions can skip repo `.claude/settings.json`.</title>
     <id>https://framework.boucle.sh/limitations.html#cloud-multirepo-sessions-skip-repo-settings</id>
     <link href="https://framework.boucle.sh/limitations.html#cloud-multirepo-sessions-skip-repo-settings"/>
-    <updated>2026-08-14T00:00:00Z</updated>
+    <updated>2026-08-15T00:00:00Z</updated>
     <summary>A Claude Code web report says cloud sessions opened with multiple repositories load repo CLAUDE.md, rules, skills, and plugins while never applying each repo&#x27;s .claude/settings.json. SessionStart hooks defined only in repo settings do not register, and CLAUDE_PROJECT_DIR is an empty string while the working directory is the parent directory above the cloned repos. This can silently drop hooks and other settings.json-only configuration in multi-repo cloud sessions even though most of the repo .claude directory appears active.</summary>
     <category term="Configuration &amp; settings"/>
   </entry>
@@ -146,7 +154,7 @@
     <title>[HIGH] Project `.claude/settings.json` can be ignored when starting from a subdirectory.</title>
     <id>https://framework.boucle.sh/limitations.html#project-settings-ignored-from-subdirectory-startup</id>
     <link href="https://framework.boucle.sh/limitations.html#project-settings-ignored-from-subdirectory-startup"/>
-    <updated>2026-08-14T00:00:00Z</updated>
+    <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.228 macOS setup found that starting Claude Code below the repository root could load the root CLAUDE.md while silently skipping the root .claude/settings.json. Hooks, enabled plugins, and project settings were inactive in the subdirectory-started session, with debug logs showing zero hook firings for a minimal PreToolUse blocker that worked from the repo root. A related Linux report described an ancestor .claude/settings.json with hooks and permissions.deny being silently ignored when sessions started inside nested repositories.</summary>
     <category term="Configuration &amp; settings"/>
   </entry>
@@ -154,16 +162,8 @@
     <title>[HIGH] PreToolUse `ask` decisions can be ignored in auto mode on Windows CLI.</title>
     <id>https://framework.boucle.sh/limitations.html#pretooluse-ask-ignored-in-auto-mode-windows-cli</id>
     <link href="https://framework.boucle.sh/limitations.html#pretooluse-ask-ignored-in-auto-mode-windows-cli"/>
-    <updated>2026-08-14T00:00:00Z</updated>
+    <updated>2026-08-15T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.219 Windows CLI setup found that PreToolUse hooks listed by /hooks and visibly invoked could return hookSpecificOutput.permissionDecision: &quot;ask&quot; while permissions.defaultMode was &quot;auto&quot;, but Claude Code showed no prompt and let the tool call proceed without warning. The reporter&#x27;s follow-up narrowed the original symptom from hooks not spawning to the hook answer being discarded under auto mode, while returning exit code 2 from the same hook still blocked the call.</summary>
     <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Project-scope settings can disable sandbox isolation.</title>
-    <id>https://framework.boucle.sh/limitations.html#project-scope-settings-can-disable-sandbox</id>
-    <link href="https://framework.boucle.sh/limitations.html#project-scope-settings-can-disable-sandbox"/>
-    <updated>2026-08-14T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.231 macOS setup found that a checked-out repository can include .claude/settings.json with sandbox.enabled: false and turn off the entire sandbox for sessions started in that directory. The docs restrict project-scope sandbox.filesystem.disabled so a project cannot switch filesystem isolation off, but sandbox.enabled reportedly has no equivalent scope restriction. The reporter observed TMPDIR change from a Claude sandbox temp directory to the host shell temp directory, with no prompt or session indication, while permissions.deny rules still applied.</summary>
-    <category term="Sandbox &amp; permissions"/>
   </entry>
 </feed>
