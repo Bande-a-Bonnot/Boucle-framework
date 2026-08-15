@@ -762,15 +762,17 @@
             <p>After a background Agent with isolation: &quot;worktree&quot; completes, the parent session&#x27;s working directory can silently drift to the worktree path. Subsequent commands execute in the wrong directory without warning. No hook can detect this because the CWD change happens outside the tool-call lifecycle. Verify your working directory (pwd) after background worktree agents complete.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/38448" target="_blank">#38448</a></div>
         </div>
-        <div class="kl-entry" data-category="Permission system" data-issues="37210" id="exit-code-2-silently-disables-hooks-for-edit-write-tools" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="Permission system" data-issues="37210 86655" id="exit-code-2-silently-disables-hooks-for-edit-write-tools" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#46</span>
                 <span class="kl-cat">Permission system</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
             <h3>Exit code 2 silently disables hooks for Edit/Write tools.</h3>
-            <p>If a hook script exits with code 2, Claude Code treats it as a crash (closed as intended behavior). For Bash tool calls, crashed hooks still block. For Edit and Write tools, crashed hooks are silently ignored and the operation proceeds. enforce-hooks generates hooks that always exit 0, so this does not affect generated hooks. But custom hook scripts that use exit 2 on the deny path will appear to </p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/37210" target="_blank">#37210</a></div>
+            <p>If a hook script exits with code 2, Claude Code can treat the verdict as a hook failure instead of an enforcement decision. Older reports showed Edit and Write operations proceeding after such hook failures. A newer Windows Desktop / agent-frontmatter repro showed the hook ran, parsed the Write target, appended a DENY trace line, and exited 2, but the denied file was still created with no visible stderr or block message.</p>
+                        <!-- workaround:exit-code-2-silently-disables-hooks-for-edit-write-tools -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on bare exit-code-2 hook scripts as the only guard for Edit or Write until a live smoke test proves the operation is blocked on your installed surface. Prefer hook JSON decisions that return a hard block or deny path known to work for the target tool, keep enforce-hooks&#x27; generated engine path, and test with a denied file creation rather than only testing the hook script by hand.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/37210" target="_blank">#37210</a>, <a href="https://github.com/anthropics/claude-code/issues/86655" target="_blank">#86655</a></div>
         </div>
         <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="39814" id="updatedinput-silently-ignored-for-agent-tool" data-severity="high" data-status="open">
             <div class="kl-header">
@@ -2369,15 +2371,17 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Set explicit permission rules in settings.json allow/deny lists at the project level rather than relying on PermissionRequest hook interception. Rules in settings.json apply to both main sessions and subagents. For strict control, use bypassPermissions: false and define all allowed operations explicitly.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/37730" target="_blank">#37730</a>, <a href="https://github.com/anthropics/claude-code/issues/40241" target="_blank">#40241</a>, <a href="https://github.com/anthropics/claude-code/issues/23983" target="_blank">#23983</a></div>
         </div>
-        <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="40029 13339" id="vs-code-ignores-hook-permissiondecision-ask" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="40029 13339 86754" id="vs-code-ignores-hook-permissiondecision-ask" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#206</span>
                 <span class="kl-cat">Hook bypass &amp; evasion</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
             <h3>VS Code ignores hook `permissionDecision: &quot;ask&quot;`.</h3>
-            <p>In the VS Code extension, PreToolUse hooks returning {&quot;permissionDecision&quot;: &quot;ask&quot;} are silently ignored. The same hooks work correctly in CLI. Other decisions (allow, deny, block) work in both environments. Hooks cannot enforce &quot;ask before executing&quot; policies in VS Code; only hard-allow or hard-deny. Workaround: use &quot;decision&quot;: &quot;block&quot; instead of &quot;ask&quot;, at the cost of losing case-by-case approval.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/40029" target="_blank">#40029</a>, <a href="https://github.com/anthropics/claude-code/issues/13339" target="_blank">#13339</a></div>
+            <p>In the VS Code extension, PreToolUse hooks returning {&quot;permissionDecision&quot;: &quot;ask&quot;} can be silently resolved to allow instead of showing a prompt. A newer repro also reports static permissions.ask rules with no matching allow rule running immediately in the extension&#x27;s default permission mode, while the same ask-tier controls fail closed in headless CLI. Other decisions such as deny or block may still work in the same environment, which makes the ask tier specifically unsafe as a checkpoint.</p>
+                        <!-- workaround:vs-code-ignores-hook-permissiondecision-ask -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For VS Code extension workflows, do not use ask-tier hook or static permission rules as the only safety boundary for risky operations. Use hard deny/block decisions for must-stop cases, keep a CLI/headless parity test for each ask rule, and verify that the extension actually shows a prompt before relying on case-by-case approval.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/40029" target="_blank">#40029</a>, <a href="https://github.com/anthropics/claude-code/issues/13339" target="_blank">#13339</a>, <a href="https://github.com/anthropics/claude-code/issues/86754" target="_blank">#86754</a></div>
         </div>
         <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="29691" id="model-can-obfuscate-terms-to-evade-pattern-matching-hooks" data-severity="high" data-status="open">
             <div class="kl-header">
