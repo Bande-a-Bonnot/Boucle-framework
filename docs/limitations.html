@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1538</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-15.</span></p>
+        <p class="subtitle"><span id="total-count">1539</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-15.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -17186,6 +17186,18 @@
                         <!-- workaround:task-notification-resume-can-cancel-subsequent-tool-calls -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For SDK orchestrators that use background Agent tasks, do not treat the refusal text alone as a human decision. Inspect structured denial metadata where available, log task-notification timing against Stop-hook summaries, and retry cancelled tool work in a fresh user-initiated turn or fresh session instead of continuing inside the poisoned resumed turn. Keep permission-handler logs around background-agent completion windows so real user denials can be separated from infrastructure cancellations.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86650" target="_blank">#86650</a></div>
+        </div>
+        <div class="kl-entry" data-category="Performance &amp; cost" data-issues="86935" id="settings-watcher-can-rewalk-huge-symlink-target-directories" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1539</span>
+                <span class="kl-cat">Performance &amp; cost</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Settings watcher can rewalk huge symlink target directories.</h3>
+            <p>A reported Claude Code 2.1.224 macOS setup with `~/.claude/settings.json` symlinked into a large Nix store path found that an idle session repeatedly opened and enumerated the symlink target&#x27;s parent directory during unrelated Nix builds. The reporter&#x27;s `sample` and `fs_usage` captures showed repeated `lstat` and `getdirentries64` work over a directory with hundreds of thousands of entries, producing sustained multi-core CPU usage while Claude Code was otherwise idle. Replacing the symlink with a real file, or pointing it at a file in a small directory, removed the `/nix/store` filesystem churn.</p>
+                        <!-- workaround:settings-watcher-can-rewalk-huge-symlink-target-directories -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If Claude Code burns CPU while idle on Nix or another declarative config setup, check whether `~/.claude/settings.json` is a symlink whose resolved target lives in a huge directory. As a temporary workaround, materialize the settings file directly under `~/.claude/`, point the symlink at a file inside a small dedicated directory, or pause idle Claude Code sessions during large builds. Capture `sample`, `fs_usage`, or equivalent directory-read evidence before reporting so the watcher path can be distinguished from model or network work.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86935" target="_blank">#86935</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

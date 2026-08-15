@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1538,
+  "count": 1539,
   "categories": {
     "Hook behavior & events": 204,
     "Permission system": 137,
@@ -14,7 +14,7 @@
     "Context & memory": 30,
     "MCP & integrations": 27,
     "Cowork & remote": 26,
-    "Performance & cost": 24,
+    "Performance & cost": 25,
     "Configuration behavior": 23,
     "Agents & subagents": 22,
     "Sandbox & permissions": 21,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 131,
-    "HIGH": 834,
+    "HIGH": 835,
     "LOW": 111,
     "MEDIUM": 462
   },
@@ -19752,30 +19752,41 @@
       "status": "open",
       "date_added": "2026-08-15",
       "workaround": "For SDK orchestrators that use background Agent tasks, do not treat the refusal text alone as a human decision. Inspect structured denial metadata where available, log task-notification timing against Stop-hook summaries, and retry cancelled tool work in a fresh user-initiated turn or fresh session instead of continuing inside the poisoned resumed turn. Keep permission-handler logs around background-agent completion windows so real user denials can be separated from infrastructure cancellations."
+    },
+    {
+      "id": "settings-watcher-can-rewalk-huge-symlink-target-directories",
+      "title": "Settings watcher can rewalk huge symlink target directories.",
+      "severity": "HIGH",
+      "category": "Performance & cost",
+      "description": "A reported Claude Code 2.1.224 macOS setup with `~/.claude/settings.json` symlinked into a large Nix store path found that an idle session repeatedly opened and enumerated the symlink target's parent directory during unrelated Nix builds. The reporter's `sample` and `fs_usage` captures showed repeated `lstat` and `getdirentries64` work over a directory with hundreds of thousands of entries, producing sustained multi-core CPU usage while Claude Code was otherwise idle. Replacing the symlink with a real file, or pointing it at a file in a small directory, removed the `/nix/store` filesystem churn.",
+      "issue": "86935",
+      "status": "open",
+      "date_added": "2026-08-15",
+      "workaround": "If Claude Code burns CPU while idle on Nix or another declarative config setup, check whether `~/.claude/settings.json` is a symlink whose resolved target lives in a huge directory. As a temporary workaround, materialize the settings file directly under `~/.claude/`, point the symlink at a file inside a small dedicated directory, or pause idle Claude Code sessions during large builds. Capture `sample`, `fs_usage`, or equivalent directory-read evidence before reporting so the watcher path can be distinguished from model or network work."
     }
   ],
   "status_summary": {
-    "open": 1524,
+    "open": 1525,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 131,
-    "high": 834,
+    "high": 835,
     "low": 111,
     "medium": 462
   },
   "lastUpdated": "2026-08-15",
   "stats": {
-    "total": 1538,
+    "total": 1539,
     "critical": 131,
-    "high": 834,
+    "high": 835,
     "medium": 462,
     "low": 111,
-    "open": 1524,
+    "open": 1525,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-15",
-  "total": 1538
+  "total": 1539
 }
