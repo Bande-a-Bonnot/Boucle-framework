@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1555,
+  "count": 1556,
   "categories": {
     "Hook behavior & events": 205,
     "Permission system": 139,
@@ -13,8 +13,8 @@
     "Platform & compatibility": 31,
     "Context & memory": 30,
     "MCP & integrations": 27,
+    "Sandbox & permissions": 27,
     "Cowork & remote": 26,
-    "Sandbox & permissions": 26,
     "Performance & cost": 25,
     "Configuration behavior": 23,
     "Agents & subagents": 22,
@@ -190,7 +190,7 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 133,
+    "CRITICAL": 134,
     "HIGH": 847,
     "LOW": 111,
     "MEDIUM": 464
@@ -19971,30 +19971,43 @@
       "date_added": "2026-08-16",
       "description": "A collaborator-reproduced Claude Code 2.1.233 macOS issue found that a linked git worktree can pick up the main worktree's untracked `.claude/settings.local.json` hooks, then run those hook commands with the linked worktree as the current directory. In the reproduced Stop-hook case, a relative hook script existed only in the main checkout, so sessions in the linked checkout reported a missing hook script even though that branch had no `.claude/` directory. The maintainer clarified that committed `.claude/settings.json` stayed per-checkout, while local settings are resolved through the repository root and can therefore cover every linked worktree without a clear warning.",
       "workaround": "Do not put branch-specific hooks or relative hook paths in `.claude/settings.local.json` when the repository uses linked worktrees. Keep local settings limited to approvals and hooks whose scripts exist in every checkout, or put branch-specific hook registrations in the committed `.claude/settings.json` for that branch. After creating or switching worktrees, run a harmless hook-fired canary from the linked checkout and inspect missing-script warnings before trusting Stop, PreToolUse, or cleanup hooks."
+    },
+    {
+      "id": "strictallowlist-can-fail-open-inside-docker",
+      "title": "Network strictAllowlist can fail open inside Docker.",
+      "category": "Sandbox & permissions",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87163"
+      ],
+      "date_added": "2026-08-16",
+      "description": "A reported Claude Code 2.1.197 and 2.1.233 Linux setup running inside Docker found that `sandbox.network.strictAllowlist: true` did not block Bash access to non-allowlisted domains. The reporter configured allowed domains, confirmed standalone `bwrap --unshare-net` blocked the same curl target inside the container, and inspected debug logs and process ancestry showing Claude Code spawned the shell directly with no `bwrap`, sandbox, namespace, seccomp, or AppArmor dispatch path. The result was a silent fail-open network boundary in an ingest workflow where external documents could prompt the agent to exfiltrate data.",
+      "workaround": "Do not treat `sandbox.network.strictAllowlist` as active in containerized Claude Code until a negative network probe proves it for the exact runtime. After enabling or updating the sandbox, run a harmless Bash curl or DNS probe to a non-allowlisted domain and require a hard block before processing untrusted content. In Docker, enforce egress with container or host-level network policy as the primary boundary, and treat missing `bwrap` or sandbox debug evidence as a fail-open condition rather than a successful setup."
     }
   ],
   "status_summary": {
-    "open": 1541,
+    "open": 1542,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 133,
+    "critical": 134,
     "high": 847,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-16",
   "stats": {
-    "total": 1555,
-    "critical": 133,
+    "total": 1556,
+    "critical": 134,
     "high": 847,
     "medium": 464,
     "low": 111,
-    "open": 1541,
+    "open": 1542,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-16",
-  "total": 1555
+  "total": 1556
 }

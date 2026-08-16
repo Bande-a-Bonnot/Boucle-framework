@@ -7,6 +7,14 @@
   <updated>2026-08-16T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[CRITICAL] Network strictAllowlist can fail open inside Docker.</title>
+    <id>https://framework.boucle.sh/limitations.html#strictallowlist-can-fail-open-inside-docker</id>
+    <link href="https://framework.boucle.sh/limitations.html#strictallowlist-can-fail-open-inside-docker"/>
+    <updated>2026-08-16T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.197 and 2.1.233 Linux setup running inside Docker found that `sandbox.network.strictAllowlist: true` did not block Bash access to non-allowlisted domains. The reporter configured allowed domains, confirmed standalone `bwrap --unshare-net` blocked the same curl target inside the container, and inspected debug logs and process ancestry showing Claude Code spawned the shell directly with no `bwrap`, sandbox, namespace, seccomp, or AppArmor dispatch path. The result was a silent fail-open network boundary in an ingest workflow where external documents could prompt the agent to exfiltrate data.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
     <title>[HIGH] Local worktree settings can leak hooks across linked checkouts.</title>
     <id>https://framework.boucle.sh/limitations.html#local-worktree-settings-can-leak-hooks-across-checkouts</id>
     <link href="https://framework.boucle.sh/limitations.html#local-worktree-settings-can-leak-hooks-across-checkouts"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-16T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.228 through 2.1.232 WSL2 setup found that stdio MCP servers whose `initialize` response takes more than about three seconds receive an early SIGTERM and are immediately spawned again. Native Linux servers can clean up and the retry may connect, but when the server command launches a Windows executable through WSL interop, the WSL-side stub dies while the Windows child survives. For a single-instance MCP server, the orphan keeps its profile lock, the retry exits with `CONNECTION_CLOSED`, and every reconnect attempt leaks another Windows process even though the same command works through MCP Inspector.</summary>
     <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Sub-agent recursive deletes can escape the workdir when safety fails open.</title>
-    <id>https://framework.boucle.sh/limitations.html#subagent-recursive-delete-can-escape-workdir-when-safety-fails-open</id>
-    <link href="https://framework.boucle.sh/limitations.html#subagent-recursive-delete-can-escape-workdir-when-safety-fails-open"/>
-    <updated>2026-08-16T00:00:00Z</updated>
-    <summary>A reported Claude Code VS Code extension 2.1.231 Windows auto-mode session spawned a general-purpose sub-agent that ran a long PowerShell command associated with a recursive delete. NTFS journal evidence tied the command runtime to roughly 235,000 deletions under the user&#x27;s profile root, outside the project working directory. The existing broad PowerShell allow-rule auto-approved the tool call, and the extension log showed the handoff safety classifier was unavailable or lacked a verdict but allowed the sub-agent output with only a warning, so the destructive command was not contained when the safety layer degraded.</summary>
-    <category term="Permissions &amp; safety"/>
   </entry>
 </feed>
