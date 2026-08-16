@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1553,
+  "count": 1554,
   "categories": {
     "Hook behavior & events": 205,
     "Permission system": 139,
@@ -14,8 +14,8 @@
     "Context & memory": 30,
     "MCP & integrations": 27,
     "Cowork & remote": 26,
+    "Sandbox & permissions": 26,
     "Performance & cost": 25,
-    "Sandbox & permissions": 25,
     "Configuration behavior": 23,
     "Agents & subagents": 22,
     "Security & trust boundaries": 22,
@@ -190,7 +190,7 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 132,
+    "CRITICAL": 133,
     "HIGH": 846,
     "LOW": 111,
     "MEDIUM": 464
@@ -19944,30 +19944,43 @@
       "date_added": "2026-08-16",
       "description": "A reported Linux and WSL2 Claude Code sandbox setup found that recursive `permissions.deny` rules such as `Read(data/**)` and `Read(**/*.parquet)` were expanded into one bubblewrap bind per matched file. With a denied data tree containing 3,552 files, the generated sandbox argument payload exceeded Linux's per-argument limit and every sandboxed Bash call failed before the user command ran with `E2BIG: argument list too long, posix_spawn '/bin/bash'`. Adding a directory-level `sandbox.filesystem.denyRead` rule did not help because permission-derived denies were merged rather than replaced.",
       "workaround": "If every sandboxed Bash command fails with E2BIG after adding broad recursive `Read()` denies, temporarily reduce or split the recursive deny patterns, move large generated data trees outside the Claude Code workspace, or disable the native sandbox only in a separate low-trust environment with OS-level file permissions. After any policy change, run a harmless sandboxed Bash probe before relying on unattended work. Ask maintainers for a bind-budget diagnostic that names the expanded glob and file count instead of treating E2BIG as a shell command problem."
+    },
+    {
+      "id": "sandbox-read-isolation-and-settings-policy-can-fail-open",
+      "title": "Sandbox read isolation and settings policy can fail open.",
+      "category": "Sandbox & permissions",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/84863"
+      ],
+      "date_added": "2026-08-16",
+      "description": "A reported Linux Claude Code sandbox setup found that `sandbox.filesystem.allowWrite` did not provide filesystem read isolation: Bash commands could still read credential paths such as `~/.ssh/id_rsa`, while `permissions.deny` `Read(...)` rules only covered the dedicated Read tool. The same session showed the agent could edit its own `settings.json`, add plausible but unsupported sandbox keys, and leave the file as invalid JSON during revert. Claude Code then continued tool execution without surfacing a hard sandbox configuration failure, making the boundary appear enabled while policy parsing or enforcement was degraded.",
+      "workaround": "Do not treat Claude Code sandbox settings as a read boundary for secrets. Keep SSH keys, cloud credentials, shell history, and other sensitive files outside any home or project tree available to the agent, or run Claude Code in a disposable OS account/container with only the files it may read. Validate user and project `settings.json` with a real JSON parser after edits, avoid unsupported sandbox keys that only look protective, and run a harmless read probe plus a hook verification pass before trusting unattended work."
     }
   ],
   "status_summary": {
-    "open": 1539,
+    "open": 1540,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 132,
+    "critical": 133,
     "high": 846,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-16",
   "stats": {
-    "total": 1553,
-    "critical": 132,
+    "total": 1554,
+    "critical": 133,
     "high": 846,
     "medium": 464,
     "low": 111,
-    "open": 1539,
+    "open": 1540,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-16",
-  "total": 1553
+  "total": 1554
 }

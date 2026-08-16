@@ -7,6 +7,14 @@
   <updated>2026-08-16T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[CRITICAL] Sandbox read isolation and settings policy can fail open.</title>
+    <id>https://framework.boucle.sh/limitations.html#sandbox-read-isolation-and-settings-policy-can-fail-open</id>
+    <link href="https://framework.boucle.sh/limitations.html#sandbox-read-isolation-and-settings-policy-can-fail-open"/>
+    <updated>2026-08-16T00:00:00Z</updated>
+    <summary>A reported Linux Claude Code sandbox setup found that `sandbox.filesystem.allowWrite` did not provide filesystem read isolation: Bash commands could still read credential paths such as `~/.ssh/id_rsa`, while `permissions.deny` `Read(...)` rules only covered the dedicated Read tool. The same session showed the agent could edit its own `settings.json`, add plausible but unsupported sandbox keys, and leave the file as invalid JSON during revert. Claude Code then continued tool execution without surfacing a hard sandbox configuration failure, making the boundary appear enabled while policy parsing or enforcement was degraded.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
     <title>[HIGH] Linux bwrap sandbox can hit E2BIG from recursive Read deny globs.</title>
     <id>https://framework.boucle.sh/limitations.html#linux-bwrap-recursive-read-deny-globs-can-hit-e2big</id>
     <link href="https://framework.boucle.sh/limitations.html#linux-bwrap-recursive-read-deny-globs-can-hit-e2big"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-16T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.232 to 2.1.233 linux-arm64 binary forced into a Termux Android proot-distro Ubuntu 24.04 container hung before printing `--version`. Process inspection showed the binary repeatedly spawning a duplicate of the original `proot-distro login ... claude.exe --version` invocation chain, while `proot-distro login ubuntu -- echo hello` worked normally. The reporter&#x27;s evidence points to a self-relaunch path, possibly through `/proc/self/exe`, interacting badly with proot&#x27;s proc emulation and re-executing the whole wrapper command rather than the binary itself.</summary>
     <category term="Platform &amp; compatibility"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Long background-tool sessions can grow until the host OOM killer intervenes.</title>
-    <id>https://framework.boucle.sh/limitations.html#long-background-tool-sessions-can-grow-until-global-oom</id>
-    <link href="https://framework.boucle.sh/limitations.html#long-background-tool-sessions-can-grow-until-global-oom"/>
-    <updated>2026-08-16T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.231 native Linux session under WSL2 grew to about 14.6 GiB RSS over roughly two and a half hours and was killed by the kernel OOM killer, taking down co-resident workloads such as VS Code Remote. The transcript was small and ordinary context growth, large file reads, runaway tool loops, inotify watchers, and large MCP payloads were ruled out. The remaining suspicion was workload-specific lifecycle pressure from multiple long background Bash tasks that spawned Chromium and video-rendering subprocesses, with no self-imposed RSS ceiling to contain the failure before the global OOM path.</summary>
-    <category term="Performance &amp; resource usage"/>
   </entry>
 </feed>
