@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1547,
+  "count": 1548,
   "categories": {
-    "Hook behavior & events": 204,
+    "Hook behavior & events": 205,
     "Permission system": 139,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 82,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 132,
-    "HIGH": 840,
+    "HIGH": 841,
     "LOW": 111,
     "MEDIUM": 464
   },
@@ -19866,30 +19866,43 @@
       "status": "open",
       "date_added": "2026-08-16",
       "workaround": "On Linux, run a harmless sandboxed Bash probe after enabling or updating Claude Code sandboxing instead of trusting startup checks alone. Avoid treating `allowAllUnixSockets: true` as a neutral fix: it restores commands by turning off Unix-socket filtering, including protections around Docker, D-Bus, and local IPC sockets. Where AppArmor is involved, prefer a narrowly loaded `bwrap` profile that grants the needed `userns` permission and verify it still applies after reboot. Keep `allowUnsandboxedCommands: false` for fail-closed workflows, and retry or restart fresh if sporadic `unshare(CLONE_NEWUSER): Invalid argument` appears."
+    },
+    {
+      "id": "interpreter-hook-script-missing-can-fail-closed",
+      "title": "Interpreter-wrapped hook scripts can fail closed when the target file is missing.",
+      "severity": "HIGH",
+      "category": "Hook behavior & events",
+      "description": "A reported Claude Code 2.1.218 Windows setup found that a `PreToolUse` command hook such as `python C:/nonexistent/ghost_hook.py` blocked the matched Bash tool because Python itself launched successfully and then exited 2 when it could not open the script. A collaborator reproduced the same behavior on Claude Code 2.1.233 and clarified the distinction: a hook executable that cannot be started can be treated as a non-blocking hook error, but an interpreter that starts and returns exit code 2 is indistinguishable from a deliberate hook deny because the hook protocol reserves exit code 2 for blocking. A stale path, renamed hook file, or disabled-by-renaming guard can therefore lock out every matched tool call, including the call that would repair the configuration from inside the session.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80697"
+      ],
+      "status": "open",
+      "date_added": "2026-08-16",
+      "workaround": "Do not disable a configured hook by renaming or deleting the script while settings still point at it. Remove the hook entry from settings, or replace the script contents with a no-op that exits 0, then start a fresh session and run a harmless matched tool call to prove the hook state. For interpreter-wrapped hooks, add installer and doctor checks that verify the target script exists and can be opened by the exact interpreter command, not only that `python`, `node`, or `sh` exists on PATH. If fail-closed on hook runtime errors is desired, document that policy explicitly so users can distinguish broken paths from intentional denies."
     }
   ],
   "status_summary": {
-    "open": 1533,
+    "open": 1534,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 132,
-    "high": 840,
+    "high": 841,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-16",
   "stats": {
-    "total": 1547,
+    "total": 1548,
     "critical": 132,
-    "high": 840,
+    "high": 841,
     "medium": 464,
     "low": 111,
-    "open": 1533,
+    "open": 1534,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-16",
-  "total": 1547
+  "total": 1548
 }
