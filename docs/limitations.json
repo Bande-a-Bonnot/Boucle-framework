@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1554,
+  "count": 1555,
   "categories": {
     "Hook behavior & events": 205,
     "Permission system": 139,
@@ -28,9 +28,9 @@
     "Data integrity": 16,
     "Scheduling & remote triggers": 15,
     "Permissions & safety": 14,
+    "Worktree": 14,
     "File system & paths": 13,
     "MCP integration": 13,
-    "Worktree": 13,
     "Bash & shell execution": 12,
     "Plugin & channel system": 11,
     "UX & display": 11,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 133,
-    "HIGH": 846,
+    "HIGH": 847,
     "LOW": 111,
     "MEDIUM": 464
   },
@@ -19958,30 +19958,43 @@
       "date_added": "2026-08-16",
       "description": "A reported Linux Claude Code sandbox setup found that `sandbox.filesystem.allowWrite` did not provide filesystem read isolation: Bash commands could still read credential paths such as `~/.ssh/id_rsa`, while `permissions.deny` `Read(...)` rules only covered the dedicated Read tool. The same session showed the agent could edit its own `settings.json`, add plausible but unsupported sandbox keys, and leave the file as invalid JSON during revert. Claude Code then continued tool execution without surfacing a hard sandbox configuration failure, making the boundary appear enabled while policy parsing or enforcement was degraded.",
       "workaround": "Do not treat Claude Code sandbox settings as a read boundary for secrets. Keep SSH keys, cloud credentials, shell history, and other sensitive files outside any home or project tree available to the agent, or run Claude Code in a disposable OS account/container with only the files it may read. Validate user and project `settings.json` with a real JSON parser after edits, avoid unsupported sandbox keys that only look protective, and run a harmless read probe plus a hook verification pass before trusting unattended work."
+    },
+    {
+      "id": "local-worktree-settings-can-leak-hooks-across-checkouts",
+      "title": "Local worktree settings can leak hooks across linked checkouts.",
+      "category": "Worktree",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/85935"
+      ],
+      "date_added": "2026-08-16",
+      "description": "A collaborator-reproduced Claude Code 2.1.233 macOS issue found that a linked git worktree can pick up the main worktree's untracked `.claude/settings.local.json` hooks, then run those hook commands with the linked worktree as the current directory. In the reproduced Stop-hook case, a relative hook script existed only in the main checkout, so sessions in the linked checkout reported a missing hook script even though that branch had no `.claude/` directory. The maintainer clarified that committed `.claude/settings.json` stayed per-checkout, while local settings are resolved through the repository root and can therefore cover every linked worktree without a clear warning.",
+      "workaround": "Do not put branch-specific hooks or relative hook paths in `.claude/settings.local.json` when the repository uses linked worktrees. Keep local settings limited to approvals and hooks whose scripts exist in every checkout, or put branch-specific hook registrations in the committed `.claude/settings.json` for that branch. After creating or switching worktrees, run a harmless hook-fired canary from the linked checkout and inspect missing-script warnings before trusting Stop, PreToolUse, or cleanup hooks."
     }
   ],
   "status_summary": {
-    "open": 1540,
+    "open": 1541,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 133,
-    "high": 846,
+    "high": 847,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-16",
   "stats": {
-    "total": 1554,
+    "total": 1555,
     "critical": 133,
-    "high": 846,
+    "high": 847,
     "medium": 464,
     "low": 111,
-    "open": 1540,
+    "open": 1541,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-16",
-  "total": 1554
+  "total": 1555
 }

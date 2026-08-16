@@ -7,6 +7,14 @@
   <updated>2026-08-16T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Local worktree settings can leak hooks across linked checkouts.</title>
+    <id>https://framework.boucle.sh/limitations.html#local-worktree-settings-can-leak-hooks-across-checkouts</id>
+    <link href="https://framework.boucle.sh/limitations.html#local-worktree-settings-can-leak-hooks-across-checkouts"/>
+    <updated>2026-08-16T00:00:00Z</updated>
+    <summary>A collaborator-reproduced Claude Code 2.1.233 macOS issue found that a linked git worktree can pick up the main worktree&#x27;s untracked `.claude/settings.local.json` hooks, then run those hook commands with the linked worktree as the current directory. In the reproduced Stop-hook case, a relative hook script existed only in the main checkout, so sessions in the linked checkout reported a missing hook script even though that branch had no `.claude/` directory. The maintainer clarified that committed `.claude/settings.json` stayed per-checkout, while local settings are resolved through the repository root and can therefore cover every linked worktree without a clear warning.</summary>
+    <category term="Worktree"/>
+  </entry>
+  <entry>
     <title>[CRITICAL] Sandbox read isolation and settings policy can fail open.</title>
     <id>https://framework.boucle.sh/limitations.html#sandbox-read-isolation-and-settings-policy-can-fail-open</id>
     <link href="https://framework.boucle.sh/limitations.html#sandbox-read-isolation-and-settings-policy-can-fail-open"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-16T00:00:00Z</updated>
     <summary>A reported Claude Code VS Code extension 2.1.231 Windows auto-mode session spawned a general-purpose sub-agent that ran a long PowerShell command associated with a recursive delete. NTFS journal evidence tied the command runtime to roughly 235,000 deletions under the user&#x27;s profile root, outside the project working directory. The existing broad PowerShell allow-rule auto-approved the tool call, and the extension log showed the handoff safety classifier was unavailable or lacked a verdict but allowed the sub-agent output with only a warning, so the destructive command was not contained when the safety layer degraded.</summary>
     <category term="Permissions &amp; safety"/>
-  </entry>
-  <entry>
-    <title>[HIGH] The linux-arm64 binary can recursively relaunch under proot.</title>
-    <id>https://framework.boucle.sh/limitations.html#linux-arm64-binary-can-recursively-relaunch-under-proot</id>
-    <link href="https://framework.boucle.sh/limitations.html#linux-arm64-binary-can-recursively-relaunch-under-proot"/>
-    <updated>2026-08-16T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.232 to 2.1.233 linux-arm64 binary forced into a Termux Android proot-distro Ubuntu 24.04 container hung before printing `--version`. Process inspection showed the binary repeatedly spawning a duplicate of the original `proot-distro login ... claude.exe --version` invocation chain, while `proot-distro login ubuntu -- echo hello` worked normally. The reporter&#x27;s evidence points to a self-relaunch path, possibly through `/proc/self/exe`, interacting badly with proot&#x27;s proc emulation and re-executing the whole wrapper command rather than the binary itself.</summary>
-    <category term="Platform &amp; compatibility"/>
   </entry>
 </feed>

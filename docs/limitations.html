@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1554</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-16.</span></p>
+        <p class="subtitle"><span id="total-count">1555</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-16.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -17378,6 +17378,18 @@
                         <!-- workaround:sandbox-read-isolation-and-settings-policy-can-fail-open -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat Claude Code sandbox settings as a read boundary for secrets. Keep SSH keys, cloud credentials, shell history, and other sensitive files outside any home or project tree available to the agent, or run Claude Code in a disposable OS account/container with only the files it may read. Validate user and project `settings.json` with a real JSON parser after edits, avoid unsupported sandbox keys that only look protective, and run a harmless read probe plus a hook verification pass before trusting unattended work.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/84863" target="_blank">#84863</a></div>
+        </div>
+        <div class="kl-entry" data-category="Worktree" data-issues="85935" id="local-worktree-settings-can-leak-hooks-across-checkouts" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1555</span>
+                <span class="kl-cat">Worktree</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Local worktree settings can leak hooks across linked checkouts.</h3>
+            <p>A collaborator-reproduced Claude Code 2.1.233 macOS issue found that a linked git worktree can pick up the main worktree&#x27;s untracked `.claude/settings.local.json` hooks, then run those hook commands with the linked worktree as the current directory. In the reproduced Stop-hook case, a relative hook script existed only in the main checkout, so sessions in the linked checkout reported a missing hook script even though that branch had no `.claude/` directory. The maintainer clarified that committed `.claude/settings.json` stayed per-checkout, while local settings are resolved through the repository root and can therefore cover every linked worktree without a clear warning.</p>
+                        <!-- workaround:local-worktree-settings-can-leak-hooks-across-checkouts -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not put branch-specific hooks or relative hook paths in `.claude/settings.local.json` when the repository uses linked worktrees. Keep local settings limited to approvals and hooks whose scripts exist in every checkout, or put branch-specific hook registrations in the committed `.claude/settings.json` for that branch. After creating or switching worktrees, run a harmless hook-fired canary from the linked checkout and inspect missing-script warnings before trusting Stop, PreToolUse, or cleanup hooks.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/85935" target="_blank">#85935</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
