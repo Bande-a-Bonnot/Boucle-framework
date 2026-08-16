@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1552,
+  "count": 1553,
   "categories": {
     "Hook behavior & events": 205,
     "Permission system": 139,
@@ -15,7 +15,7 @@
     "MCP & integrations": 27,
     "Cowork & remote": 26,
     "Performance & cost": 25,
-    "Sandbox & permissions": 24,
+    "Sandbox & permissions": 25,
     "Configuration behavior": 23,
     "Agents & subagents": 22,
     "Security & trust boundaries": 22,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 132,
-    "HIGH": 845,
+    "HIGH": 846,
     "LOW": 111,
     "MEDIUM": 464
   },
@@ -19931,30 +19931,43 @@
       "date_added": "2026-08-16",
       "description": "A reported Claude Code plugin setup found that MCP tools from installed plugins could execute when they were absent from both `permissions.allow` and `permissions.deny`. Denied tools were hidden correctly, but tools left in the expected ask-first state ran without a permission prompt and without a `permission_prompt` hook event. This collapses the permission model for plugin MCP tools from allow, deny, or ask-first into deny or auto-allow.",
       "workaround": "Do not rely on omission from `permissions.allow` to make plugin MCP tools prompt before use. For installed plugins, explicitly deny every tool you are not prepared to auto-run, especially write or external-service tools, then move only the narrow tools you have reviewed into `permissions.allow`. After changing plugin permissions, smoke-test one harmless omitted tool and confirm it prompts before treating the plugin as ask-first."
+    },
+    {
+      "id": "linux-bwrap-recursive-read-deny-globs-can-hit-e2big",
+      "title": "Linux bwrap sandbox can hit E2BIG from recursive Read deny globs.",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/74081"
+      ],
+      "date_added": "2026-08-16",
+      "description": "A reported Linux and WSL2 Claude Code sandbox setup found that recursive `permissions.deny` rules such as `Read(data/**)` and `Read(**/*.parquet)` were expanded into one bubblewrap bind per matched file. With a denied data tree containing 3,552 files, the generated sandbox argument payload exceeded Linux's per-argument limit and every sandboxed Bash call failed before the user command ran with `E2BIG: argument list too long, posix_spawn '/bin/bash'`. Adding a directory-level `sandbox.filesystem.denyRead` rule did not help because permission-derived denies were merged rather than replaced.",
+      "workaround": "If every sandboxed Bash command fails with E2BIG after adding broad recursive `Read()` denies, temporarily reduce or split the recursive deny patterns, move large generated data trees outside the Claude Code workspace, or disable the native sandbox only in a separate low-trust environment with OS-level file permissions. After any policy change, run a harmless sandboxed Bash probe before relying on unattended work. Ask maintainers for a bind-budget diagnostic that names the expanded glob and file count instead of treating E2BIG as a shell command problem."
     }
   ],
   "status_summary": {
-    "open": 1538,
+    "open": 1539,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 132,
-    "high": 845,
+    "high": 846,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-16",
   "stats": {
-    "total": 1552,
+    "total": 1553,
     "critical": 132,
-    "high": 845,
+    "high": 846,
     "medium": 464,
     "low": 111,
-    "open": 1538,
+    "open": 1539,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-16",
-  "total": 1552
+  "total": 1553
 }
