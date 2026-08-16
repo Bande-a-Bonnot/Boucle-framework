@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1559,
+  "count": 1560,
   "categories": {
     "Hook behavior & events": 207,
-    "Permission system": 139,
+    "Permission system": 140,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 84,
     "Subagent & spawned agents": 73,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 134,
-    "HIGH": 850,
+    "HIGH": 851,
     "LOW": 111,
     "MEDIUM": 464
   },
@@ -20023,30 +20023,43 @@
       "status": "open",
       "date_added": "2026-08-16",
       "workaround": "Do not make `PreToolUse` or `PostToolUse` hooks the sole live-state oracle for background Bash tasks. If a guard persists local in-flight markers, reconcile them on explicit `TaskOutput` responses and `Stop` payloads, add a bounded age-out path for stale markers, and avoid hard blocking solely because a prior `run_in_background` marker remains present. For end-of-turn safety checks, prefer a `Stop` hook or an explicit task-drain step that reads current task state before issuing a verdict."
+    },
+    {
+      "id": "permissionrequest-hook-can-stop-firing-after-windows-restart",
+      "title": "PermissionRequest hooks can stop firing after a Windows CLI restart.",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87059"
+      ],
+      "date_added": "2026-08-16",
+      "description": "A reported Claude Code 2.1.233 Windows session found that a working `PermissionRequest` hook stopped firing for Bash, PowerShell, and Write requests, produced no new hook log entries, showed no fallback confirmation prompts, and stayed inert after a full CLI restart. The hook script and `.claude/settings.json` registration still looked valid and manual invocation of the hook worked, but live tool calls no longer reached it. The restart also showed a new auto-mode setup prompt while the settings UI still reported manual permission mode, leaving users without a reliable in-session signal that the PermissionRequest safety layer was inactive.",
+      "workaround": "Treat a valid hook file, valid settings JSON, or manual hook invocation as insufficient proof that PermissionRequest is live. After Claude Code updates, CLI restarts, or auto-mode prompts, run a harmless matched Bash/Write canary and verify that both the expected prompt and hook log marker appear before trusting the session. For production data, destructive commands, commits, pushes, or migrations, keep fail-closed controls in explicit `permissions.deny`, PreToolUse hooks, OS permissions, or external wrappers so a missing PermissionRequest callback is not the only boundary."
     }
   ],
   "status_summary": {
-    "open": 1545,
+    "open": 1546,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 134,
-    "high": 850,
+    "high": 851,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-16",
   "stats": {
-    "total": 1559,
+    "total": 1560,
     "critical": 134,
-    "high": 850,
+    "high": 851,
     "medium": 464,
     "low": 111,
-    "open": 1545,
+    "open": 1546,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-16",
-  "total": 1559
+  "total": 1560
 }
