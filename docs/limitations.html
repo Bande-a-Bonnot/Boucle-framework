@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1545</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-16.</span></p>
+        <p class="subtitle"><span id="total-count">1546</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-16.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -17259,9 +17259,21 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If Claude Code burns CPU while idle on Nix or another declarative config setup, check whether `~/.claude/settings.json` is a symlink whose resolved target lives in a huge directory. As a temporary workaround, materialize the settings file directly under `~/.claude/`, point the symlink at a file inside a small dedicated directory, or pause idle Claude Code sessions during large builds. Capture `sample`, `fs_usage`, or equivalent directory-read evidence before reporting so the watcher path can be distinguished from model or network work.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86935" target="_blank">#86935</a></div>
         </div>
-        <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="85430" id="project-settings-can-load-permissions-but-skip-hooks" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="76238" id="plan-mode-mcp-allow-rules-can-still-prompt-without-readonlyhint" data-severity="medium" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1545</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Plan mode can prompt for allow-listed MCP tools that lack `readOnlyHint`.</h3>
+            <p>A reported Claude Code 2.1.206 macOS setup found that an MCP tool listed exactly in `permissions.allow` still prompted on a fresh plan-mode session even after workspace trust was accepted and no deny or ask rules existed. A collaborator reproduced on Claude Code 2.1.233 and narrowed the confirmed case: in plan mode, MCP tools that do not advertise `readOnlyHint: true` are treated as potential writes and still prompt even when an exact allow rule matches. The same tool ran silently in default mode, and the same plan-mode setup ran silently once the MCP tool was annotated as read-only. The prompt currently looks like an ordinary permission request and can offer a &#x27;do not ask again&#x27; allow entry that plan mode then continues to ignore for the non-read-only tool.</p>
+                        <!-- workaround:plan-mode-mcp-allow-rules-can-still-prompt-without-readonlyhint -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For read-only MCP tools that should run without repeated plan-mode prompts, set the MCP tool&#x27;s `readOnlyHint: true` annotation and test in a fresh plan-mode session. If the tool is not truly read-only, expect plan mode to prompt regardless of `permissions.allow`, or use default/manual mode only where that tradeoff is acceptable. Do not treat a saved &#x27;do not ask again&#x27; entry as proof that future plan-mode MCP calls will skip approval; keep server-side authorization and audit logs for MCP operations with side effects.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/76238" target="_blank">#76238</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="85430" id="project-settings-can-load-permissions-but-skip-hooks" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1546</span>
                 <span class="kl-cat">Hook bypass &amp; evasion</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
