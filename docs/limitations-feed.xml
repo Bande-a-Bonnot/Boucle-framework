@@ -7,6 +7,14 @@
   <updated>2026-08-16T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Linux bwrap sandbox can hit E2BIG from recursive Read deny globs.</title>
+    <id>https://framework.boucle.sh/limitations.html#linux-bwrap-recursive-read-deny-globs-can-hit-e2big</id>
+    <link href="https://framework.boucle.sh/limitations.html#linux-bwrap-recursive-read-deny-globs-can-hit-e2big"/>
+    <updated>2026-08-16T00:00:00Z</updated>
+    <summary>A reported Linux and WSL2 Claude Code sandbox setup found that recursive `permissions.deny` rules such as `Read(data/**)` and `Read(**/*.parquet)` were expanded into one bubblewrap bind per matched file. With a denied data tree containing 3,552 files, the generated sandbox argument payload exceeded Linux&#x27;s per-argument limit and every sandboxed Bash call failed before the user command ran with `E2BIG: argument list too long, posix_spawn &#x27;/bin/bash&#x27;`. Adding a directory-level `sandbox.filesystem.denyRead` rule did not help because permission-derived denies were merged rather than replaced.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
     <title>[HIGH] Plugin MCP tools can skip ask-first permission prompts.</title>
     <id>https://framework.boucle.sh/limitations.html#plugin-mcp-tools-can-skip-ask-first-permission-prompts</id>
     <link href="https://framework.boucle.sh/limitations.html#plugin-mcp-tools-can-skip-ask-first-permission-prompts"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-16T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.231 native Linux session under WSL2 grew to about 14.6 GiB RSS over roughly two and a half hours and was killed by the kernel OOM killer, taking down co-resident workloads such as VS Code Remote. The transcript was small and ordinary context growth, large file reads, runaway tool loops, inotify watchers, and large MCP payloads were ruled out. The remaining suspicion was workload-specific lifecycle pressure from multiple long background Bash tasks that spawned Chromium and video-rendering subprocesses, with no self-imposed RSS ceiling to contain the failure before the global OOM path.</summary>
     <category term="Performance &amp; resource usage"/>
-  </entry>
-  <entry>
-    <title>[HIGH] MCP OAuth can report success while leaving empty credentials.</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-oauth-can-report-success-with-empty-credentials</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-oauth-can-report-success-with-empty-credentials"/>
-    <updated>2026-08-16T00:00:00Z</updated>
-    <summary>A reported Claude Desktop 1.30096.1 and Claude Code 2.1.231 Windows setup showed several MCP OAuth failure paths around a remote HTTP server. The required `claude mcp login &lt;server&gt;` command was not surfaced in the auth-required notice, `/mcp` desktop-pane help, or the dead-end `Reconnect, enable, and disable aren&#x27;t available in this session.` message. Worse, the browser callback page reported authorization success before the token exchange completed, while the client log recorded `InvalidGrantError: incorrect code_verifier`; the credential store then contained an entry with an empty `accessToken` and no `refreshToken` that did not appear invalid in normal MCP listings.</summary>
-    <category term="Auth &amp; accounts"/>
   </entry>
 </feed>
