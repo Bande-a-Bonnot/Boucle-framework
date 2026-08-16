@@ -7,6 +7,14 @@
   <updated>2026-08-16T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Linux seccomp sandbox can fail inside `bwrap` unless Unix socket filtering is disabled.</title>
+    <id>https://framework.boucle.sh/limitations.html#linux-seccomp-sandbox-can-fail-inside-bwrap</id>
+    <link href="https://framework.boucle.sh/limitations.html#linux-seccomp-sandbox-can-fail-inside-bwrap"/>
+    <updated>2026-08-16T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.220 Linux sandbox setup found that every sandboxed Bash call failed before the user command ran with `apply-seccomp: write /proc/self/setgroups ... Permission denied` when `sandbox.network.allowAllUnixSockets` was false. Independent reproductions on Ubuntu narrowed the failure to the seccomp helper attempting a nested user namespace from inside bubblewrap after capabilities have been dropped; enabling `allowAllUnixSockets: true` made Bash run but disabled Unix-socket filtering wholesale. A later 2.1.233 data point found an AppArmor `bwrap` profile can restore deterministic startup while preserving socket blocking, but also reported residual intermittent `unshare(CLONE_NEWUSER): Invalid argument` failures that are not caught by `failIfUnavailable`.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
     <title>[HIGH] Project settings can load permissions while skipping hooks.</title>
     <id>https://framework.boucle.sh/limitations.html#project-settings-can-load-permissions-but-skip-hooks</id>
     <link href="https://framework.boucle.sh/limitations.html#project-settings-can-load-permissions-but-skip-hooks"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-16T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.233 macOS setup had project entries stuck with `hasTrustDialogAccepted: false` in `~/.claude.json`, but fresh launches in those folders never showed the trust prompt. Trust-gated features such as `statusLine` silently stayed disabled with no error or warning. Manually setting the affected path&#x27;s trust flag to true made the status line render immediately in the already-running session, which narrows the symptom to the trust prompt path rather than a broken statusLine command. The reporter also confirmed trust is tracked per exact path, so trusted parent folders do not automatically cover nested worktrees or subdirectories.</summary>
     <category term="Security &amp; trust boundaries"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Remote Control app-started sessions can ignore `bypassPermissions` default mode.</title>
-    <id>https://framework.boucle.sh/limitations.html#remote-control-app-sessions-can-ignore-bypass-default-mode</id>
-    <link href="https://framework.boucle.sh/limitations.html#remote-control-app-sessions-can-ignore-bypass-default-mode"/>
-    <updated>2026-08-16T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.232 Linux Remote Control server honored `permissions.defaultMode: &quot;bypassPermissions&quot;` for sessions started or resumed from the host CLI, but sessions started from the Android app or web client ran in auto mode instead. The same user, server, user settings, project settings, and `claude remote-control --capacity 16` process were involved; only the client path changed. App-started sessions then hit auto-mode classifier denials for ordinary read-only or admin commands, making remote maintenance workflows impossible despite bypass mode being configured.</summary>
-    <category term="Permissions &amp; safety"/>
   </entry>
 </feed>

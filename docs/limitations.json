@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1546,
+  "count": 1547,
   "categories": {
     "Hook behavior & events": 204,
     "Permission system": 139,
@@ -17,9 +17,9 @@
     "Performance & cost": 25,
     "Configuration behavior": 23,
     "Agents & subagents": 22,
+    "Sandbox & permissions": 22,
     "Security & trust boundaries": 22,
     "VS Code extension": 22,
-    "Sandbox & permissions": 21,
     "Tool behavior": 21,
     "Auth & accounts": 18,
     "Core & session management": 17,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 132,
-    "HIGH": 839,
+    "HIGH": 840,
     "LOW": 111,
     "MEDIUM": 464
   },
@@ -19853,30 +19853,43 @@
       "status": "open",
       "date_added": "2026-08-16",
       "workaround": "When project hooks are part of the safety boundary, verify the hook itself with a harmless matched tool call that writes an invocation marker or returns a visible ask/deny reason. Do not treat a working `permissions.deny` rule, CLAUDE.md load, or workspace trust state as proof that `PreToolUse` hooks are active. On Windows or WSL paths, run the same smoke test from the exact host and path shape users will use, and keep independent controls such as Git hooks, filesystem permissions, or explicit deny rules for irreversible operations."
+    },
+    {
+      "id": "linux-seccomp-sandbox-can-fail-inside-bwrap",
+      "title": "Linux seccomp sandbox can fail inside `bwrap` unless Unix socket filtering is disabled.",
+      "severity": "HIGH",
+      "category": "Sandbox & permissions",
+      "description": "A reported Claude Code 2.1.220 Linux sandbox setup found that every sandboxed Bash call failed before the user command ran with `apply-seccomp: write /proc/self/setgroups ... Permission denied` when `sandbox.network.allowAllUnixSockets` was false. Independent reproductions on Ubuntu narrowed the failure to the seccomp helper attempting a nested user namespace from inside bubblewrap after capabilities have been dropped; enabling `allowAllUnixSockets: true` made Bash run but disabled Unix-socket filtering wholesale. A later 2.1.233 data point found an AppArmor `bwrap` profile can restore deterministic startup while preserving socket blocking, but also reported residual intermittent `unshare(CLONE_NEWUSER): Invalid argument` failures that are not caught by `failIfUnavailable`.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/81799"
+      ],
+      "status": "open",
+      "date_added": "2026-08-16",
+      "workaround": "On Linux, run a harmless sandboxed Bash probe after enabling or updating Claude Code sandboxing instead of trusting startup checks alone. Avoid treating `allowAllUnixSockets: true` as a neutral fix: it restores commands by turning off Unix-socket filtering, including protections around Docker, D-Bus, and local IPC sockets. Where AppArmor is involved, prefer a narrowly loaded `bwrap` profile that grants the needed `userns` permission and verify it still applies after reboot. Keep `allowUnsandboxedCommands: false` for fail-closed workflows, and retry or restart fresh if sporadic `unshare(CLONE_NEWUSER): Invalid argument` appears."
     }
   ],
   "status_summary": {
-    "open": 1532,
+    "open": 1533,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 132,
-    "high": 839,
+    "high": 840,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-16",
   "stats": {
-    "total": 1546,
+    "total": 1547,
     "critical": 132,
-    "high": 839,
+    "high": 840,
     "medium": 464,
     "low": 111,
-    "open": 1532,
+    "open": 1533,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-16",
-  "total": 1546
+  "total": 1547
 }
