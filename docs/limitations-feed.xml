@@ -7,6 +7,14 @@
   <updated>2026-08-16T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Headless skill preamble failure can report success with zero turns.</title>
+    <id>https://framework.boucle.sh/limitations.html#headless-skill-preamble-failure-reports-success</id>
+    <link href="https://framework.boucle.sh/limitations.html#headless-skill-preamble-failure-reports-success"/>
+    <updated>2026-08-16T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 macOS setup found that headless `claude -p &quot;/skill&quot; --output-format json` can abort before the first model turn when the invoked skill&#x27;s `SKILL.md` contains a failing `!` dynamic-injection preamble. The command exits 0 and returns JSON shaped as success with `is_error:false`, `subtype:&quot;success&quot;`, `num_turns:0`, and an empty result. The same skill runs when invoked indirectly from a natural-language prompt, and a fail-open preamble wrapper also allows the model turn to proceed, so the failure is specific to immediate slash-skill invocation plus an unguarded failing preamble.</summary>
+    <category term="Skills"/>
+  </entry>
+  <entry>
     <title>[CRITICAL] Network strictAllowlist can fail open inside Docker.</title>
     <id>https://framework.boucle.sh/limitations.html#strictallowlist-can-fail-open-inside-docker</id>
     <link href="https://framework.boucle.sh/limitations.html#strictallowlist-can-fail-open-inside-docker"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-16T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.232 Linux monorepo with hundreds of thousands of mostly gitignored dependency files spent about 9.6 seconds of silent CPU time before the first API request for `claude -p`. `strace` showed roughly 2.1 million `getdents64` calls, and deleting ignored `node_modules`, `.venv`, and `target` trees reduced the delay linearly. The reporter narrowed the cost to startup settings, sandbox, and glob-resolution paths that read `.gitignore` files but still descend into ignored directories, apparently performing many full tree walks for patterns such as `Read(**/.env)` and sandbox deny-write globs before dispatch.</summary>
     <category term="Performance &amp; cost"/>
-  </entry>
-  <entry>
-    <title>[HIGH] WSL stdio MCP retries can orphan Windows-side server processes.</title>
-    <id>https://framework.boucle.sh/limitations.html#wsl-stdio-mcp-retry-can-orphan-windows-server</id>
-    <link href="https://framework.boucle.sh/limitations.html#wsl-stdio-mcp-retry-can-orphan-windows-server"/>
-    <updated>2026-08-16T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.228 through 2.1.232 WSL2 setup found that stdio MCP servers whose `initialize` response takes more than about three seconds receive an early SIGTERM and are immediately spawned again. Native Linux servers can clean up and the retry may connect, but when the server command launches a Windows executable through WSL interop, the WSL-side stub dies while the Windows child survives. For a single-instance MCP server, the orphan keeps its profile lock, the retry exits with `CONNECTION_CLOSED`, and every reconnect attempt leaks another Windows process even though the same command works through MCP Inspector.</summary>
-    <category term="MCP &amp; plugin issues"/>
   </entry>
 </feed>

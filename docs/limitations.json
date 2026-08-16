@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1556,
+  "count": 1557,
   "categories": {
     "Hook behavior & events": 205,
     "Permission system": 139,
@@ -42,10 +42,10 @@
     "auth": 8,
     "Desktop & platform bugs": 8,
     "Hook execution & lifecycle": 8,
+    "Skills": 8,
     "MCP": 7,
     "Model behavior & output": 7,
     "Permissions": 7,
-    "Skills": 7,
     "Skills & commands": 7,
     "Stability & crashes": 7,
     "Authentication & accounts": 6,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 134,
-    "HIGH": 847,
+    "HIGH": 848,
     "LOW": 111,
     "MEDIUM": 464
   },
@@ -19984,30 +19984,43 @@
       "date_added": "2026-08-16",
       "description": "A reported Claude Code 2.1.197 and 2.1.233 Linux setup running inside Docker found that `sandbox.network.strictAllowlist: true` did not block Bash access to non-allowlisted domains. The reporter configured allowed domains, confirmed standalone `bwrap --unshare-net` blocked the same curl target inside the container, and inspected debug logs and process ancestry showing Claude Code spawned the shell directly with no `bwrap`, sandbox, namespace, seccomp, or AppArmor dispatch path. The result was a silent fail-open network boundary in an ingest workflow where external documents could prompt the agent to exfiltrate data.",
       "workaround": "Do not treat `sandbox.network.strictAllowlist` as active in containerized Claude Code until a negative network probe proves it for the exact runtime. After enabling or updating the sandbox, run a harmless Bash curl or DNS probe to a non-allowlisted domain and require a hard block before processing untrusted content. In Docker, enforce egress with container or host-level network policy as the primary boundary, and treat missing `bwrap` or sandbox debug evidence as a fail-open condition rather than a successful setup."
+    },
+    {
+      "id": "headless-skill-preamble-failure-reports-success",
+      "title": "Headless skill preamble failure can report success with zero turns.",
+      "category": "Skills",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87159"
+      ],
+      "date_added": "2026-08-16",
+      "description": "A reported Claude Code 2.1.233 macOS setup found that headless `claude -p \"/skill\" --output-format json` can abort before the first model turn when the invoked skill's `SKILL.md` contains a failing `!` dynamic-injection preamble. The command exits 0 and returns JSON shaped as success with `is_error:false`, `subtype:\"success\"`, `num_turns:0`, and an empty result. The same skill runs when invoked indirectly from a natural-language prompt, and a fail-open preamble wrapper also allows the model turn to proceed, so the failure is specific to immediate slash-skill invocation plus an unguarded failing preamble.",
+      "workaround": "For unattended `claude -p` skill runs, treat `num_turns:0` or an empty result as a failed run even when the process exits 0 and reports `subtype:\"success\"`. Wrap every `!` preamble command so it emits diagnostic text and exits 0 on expected probe failures, or invoke the skill through a normal prompt until the headless slash path reports pre-turn aborts as errors. Add a regression canary that intentionally fails a skill preamble and asserts the caller detects the zero-turn result."
     }
   ],
   "status_summary": {
-    "open": 1542,
+    "open": 1543,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 134,
-    "high": 847,
+    "high": 848,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-16",
   "stats": {
-    "total": 1556,
+    "total": 1557,
     "critical": 134,
-    "high": 847,
+    "high": 848,
     "medium": 464,
     "low": 111,
-    "open": 1542,
+    "open": 1543,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-16",
-  "total": 1556
+  "total": 1557
 }
