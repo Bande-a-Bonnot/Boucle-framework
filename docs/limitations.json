@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1550,
+  "count": 1551,
   "categories": {
     "Hook behavior & events": 205,
     "Permission system": 139,
     "Hook bypass & evasion": 103,
-    "MCP & plugin issues": 82,
+    "MCP & plugin issues": 83,
     "Subagent & spawned agents": 73,
     "Desktop & IDE integration": 56,
     "TUI & display": 35,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 132,
-    "HIGH": 843,
+    "HIGH": 844,
     "LOW": 111,
     "MEDIUM": 464
   },
@@ -19905,30 +19905,43 @@
       "status": "open",
       "date_added": "2026-08-16",
       "workaround": "Avoid hand-editing or branch-switching active permission settings from inside a session that depends on them. If a settings file becomes invalid, is removed, or is restored by Git, start a fresh Claude Code session and run a harmless command that the intended `permissions.deny` or `permissions.ask` rule must block before trusting the guardrail again. Put mandatory controls in managed or user settings where possible, keep a ConfigChange audit hook for settings mutations, and treat a settings parse warning as a potential fail-open permission event rather than cosmetic config drift."
+    },
+    {
+      "id": "subagent-workflow-mcp-authorization-not-scoped",
+      "title": "Subagents and workflow agents cannot inherit scoped MCP authorization.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/86126"
+      ],
+      "date_added": "2026-08-16",
+      "description": "A reported macOS Claude Code workflow found that a parent session could call a permission-gated read-only MCP database tool, while subagents spawned through Task or Workflow had the same MCP call refused by the auto-mode classifier. Prompt text saying the user had authorized the tool for that run did not help, and the blocked request was not surfaced as an approval prompt. The only working permission route was a permanent `permissions.allow` entry, which is broader than the user's intended per-run grant.",
+      "workaround": "Do not assume parent-session MCP approval propagates to subagents or workflow agents. For workflows that need MCP-backed verification, either run the MCP calls in the parent session and pass only bounded results to agents, or predefine narrow `permissions.allow` rules for the exact tools you are willing to grant beyond one run. Keep a workflow smoke test where a subagent calls a harmless read-only MCP tool before relying on agent findings that depend on external data."
     }
   ],
   "status_summary": {
-    "open": 1536,
+    "open": 1537,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 132,
-    "high": 843,
+    "high": 844,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-16",
   "stats": {
-    "total": 1550,
+    "total": 1551,
     "critical": 132,
-    "high": 843,
+    "high": 844,
     "medium": 464,
     "low": 111,
-    "open": 1536,
+    "open": 1537,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-16",
-  "total": 1550
+  "total": 1551
 }
