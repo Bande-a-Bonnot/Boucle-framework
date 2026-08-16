@@ -19332,14 +19332,15 @@
       "title": "Project `.claude/settings.json` can be ignored when starting from a subdirectory.",
       "severity": "HIGH",
       "category": "Configuration & settings",
-      "description": "A reported Claude Code 2.1.228 macOS setup found that starting Claude Code below the repository root could load the root CLAUDE.md while silently skipping the root .claude/settings.json. Hooks, enabled plugins, and project settings were inactive in the subdirectory-started session, with debug logs showing zero hook firings for a minimal PreToolUse blocker that worked from the repo root. A related Linux report described an ancestor .claude/settings.json with hooks and permissions.deny being silently ignored when sessions started inside nested repositories.",
+      "description": "A maintainer-reproduced Claude Code issue on v2.1.233 found that starting Claude Code from a repository subdirectory can silently skip the shared root `.claude/settings.json`, while root `.claude/settings.local.json` and CLAUDE.md are still discovered. A minimal PreToolUse Edit/Write blocker fired from the repository root but did not fire from `subdir/`, allowing the edit to succeed with no hook prompt. Related macOS and Linux reports describe the same safety silence for hooks, enabled plugins, and project settings when a session starts below the repository root or inside a nested repository.",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/86187",
-        "https://github.com/anthropics/claude-code/issues/85613"
+        "https://github.com/anthropics/claude-code/issues/85613",
+        "https://github.com/anthropics/claude-code/issues/74023"
       ],
       "status": "open",
       "date_added": "2026-08-14",
-      "workaround": "Start Claude Code from the repository root when project hooks or plugins are part of the safety boundary, or use a shell wrapper that cd's to `git rev-parse --show-toplevel` before launching Claude. After any startup-path change, run a harmless payload that the hook must block and record an explicit hook-fired marker; do not treat CLAUDE.md loading as proof that .claude/settings.json loaded too."
+      "workaround": "Start Claude Code from the repository root when shared project hooks, allow rules, plugins, or deny rules are part of the safety boundary, or use a shell wrapper that cd's to `git rev-parse --show-toplevel` before launching Claude. After any startup-path change, run a harmless payload that the shared hook must block and record an explicit hook-fired marker. Do not treat CLAUDE.md loading, `.claude/settings.local.json` loading, or workspace trust as proof that the checked-in `.claude/settings.json` loaded too."
     },
     {
       "id": "cloud-multirepo-sessions-skip-repo-settings",
