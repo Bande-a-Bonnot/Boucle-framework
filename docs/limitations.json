@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1557,
+  "count": 1558,
   "categories": {
-    "Hook behavior & events": 205,
+    "Hook behavior & events": 206,
     "Permission system": 139,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 84,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 134,
-    "HIGH": 848,
+    "HIGH": 849,
     "LOW": 111,
     "MEDIUM": 464
   },
@@ -19997,30 +19997,43 @@
       "date_added": "2026-08-16",
       "description": "A reported Claude Code 2.1.233 macOS setup found that headless `claude -p \"/skill\" --output-format json` can abort before the first model turn when the invoked skill's `SKILL.md` contains a failing `!` dynamic-injection preamble. The command exits 0 and returns JSON shaped as success with `is_error:false`, `subtype:\"success\"`, `num_turns:0`, and an empty result. The same skill runs when invoked indirectly from a natural-language prompt, and a fail-open preamble wrapper also allows the model turn to proceed, so the failure is specific to immediate slash-skill invocation plus an unguarded failing preamble.",
       "workaround": "For unattended `claude -p` skill runs, treat `num_turns:0` or an empty result as a failed run even when the process exits 0 and reports `subtype:\"success\"`. Wrap every `!` preamble command so it emits diagnostic text and exits 0 on expected probe failures, or invoke the skill through a normal prompt until the headless slash path reports pre-turn aborts as errors. Add a regression canary that intentionally fails a skill preamble and asserts the caller detects the zero-turn result."
+    },
+    {
+      "id": "subagentstop-matcher-bypassed-on-empty-agent-type",
+      "title": "SubagentStop matcher can be bypassed for internal forks with empty agent_type.",
+      "severity": "HIGH",
+      "category": "Hook behavior & events",
+      "description": "A reported Claude Code 2.1.233 setup found that a SubagentStop hook group with a matcher naming specific agent types can still run for internal forks whose agent_type is the empty string. Because the hook gatherer treats a falsy match key as a reason to skip filtering, matcher-scoped groups are included wholesale rather than excluded. In one measured session, 115 of 129 dispatches of an agent-scoped LLM judge came from empty-agent_type internal forks, creating token waste and risking false blocking verdicts against healthy background work.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87065"
+      ],
+      "status": "open",
+      "date_added": "2026-08-16",
+      "workaround": "Do not rely on `SubagentStop` `matcher` as the only scope boundary for costly or blocking agent-type judges. In the hook command, parse stdin and explicitly ignore payloads whose `agent_type` is empty or not in the intended allowlist before doing LLM review or returning a block. Add a canary that feeds an empty-agent_type `SubagentStop` payload to the hook and asserts it exits without judgment, and prefer agent-frontmatter hooks only where the agent source is not supplied by a plugin."
     }
   ],
   "status_summary": {
-    "open": 1543,
+    "open": 1544,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 134,
-    "high": 848,
+    "high": 849,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-16",
   "stats": {
-    "total": 1557,
+    "total": 1558,
     "critical": 134,
-    "high": 848,
+    "high": 849,
     "medium": 464,
     "low": 111,
-    "open": 1543,
+    "open": 1544,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-16",
-  "total": 1557
+  "total": 1558
 }

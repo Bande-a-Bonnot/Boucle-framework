@@ -7,6 +7,14 @@
   <updated>2026-08-16T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] SubagentStop matcher can be bypassed for internal forks with empty agent_type.</title>
+    <id>https://framework.boucle.sh/limitations.html#subagentstop-matcher-bypassed-on-empty-agent-type</id>
+    <link href="https://framework.boucle.sh/limitations.html#subagentstop-matcher-bypassed-on-empty-agent-type"/>
+    <updated>2026-08-16T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 setup found that a SubagentStop hook group with a matcher naming specific agent types can still run for internal forks whose agent_type is the empty string. Because the hook gatherer treats a falsy match key as a reason to skip filtering, matcher-scoped groups are included wholesale rather than excluded. In one measured session, 115 of 129 dispatches of an agent-scoped LLM judge came from empty-agent_type internal forks, creating token waste and risking false blocking verdicts against healthy background work.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Headless skill preamble failure can report success with zero turns.</title>
     <id>https://framework.boucle.sh/limitations.html#headless-skill-preamble-failure-reports-success</id>
     <link href="https://framework.boucle.sh/limitations.html#headless-skill-preamble-failure-reports-success"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-16T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.220 macOS monorepo found that project-level `.claude/settings.json` still appeared to load from a package subdirectory because enabled plugins from that file were present, but `permissions.deny` `Read()` rules from the same file stopped enforcing. The reporter verified that `Read(/build/**)`, `Read(**/build/**)`, absolute path denies, and combined patterns blocked when Claude Code started at the repo root, yet allowed the same absolute generated-file read when launched from `packages/backend`. This makes subdirectory sessions dangerous even when some visible project settings prove the file was partially active.</summary>
     <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Startup glob scans can repeatedly walk gitignored dependency trees.</title>
-    <id>https://framework.boucle.sh/limitations.html#startup-glob-scans-can-rewalk-gitignored-trees</id>
-    <link href="https://framework.boucle.sh/limitations.html#startup-glob-scans-can-rewalk-gitignored-trees"/>
-    <updated>2026-08-16T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.232 Linux monorepo with hundreds of thousands of mostly gitignored dependency files spent about 9.6 seconds of silent CPU time before the first API request for `claude -p`. `strace` showed roughly 2.1 million `getdents64` calls, and deleting ignored `node_modules`, `.venv`, and `target` trees reduced the delay linearly. The reporter narrowed the cost to startup settings, sandbox, and glob-resolution paths that read `.gitignore` files but still descend into ignored directories, apparently performing many full tree walks for patterns such as `Read(**/.env)` and sandbox deny-write globs before dispatch.</summary>
-    <category term="Performance &amp; cost"/>
   </entry>
 </feed>

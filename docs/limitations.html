@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1557</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-16.</span></p>
+        <p class="subtitle"><span id="total-count">1558</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-16.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -17414,6 +17414,18 @@
                         <!-- workaround:headless-skill-preamble-failure-reports-success -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For unattended `claude -p` skill runs, treat `num_turns:0` or an empty result as a failed run even when the process exits 0 and reports `subtype:&quot;success&quot;`. Wrap every `!` preamble command so it emits diagnostic text and exits 0 on expected probe failures, or invoke the skill through a normal prompt until the headless slash path reports pre-turn aborts as errors. Add a regression canary that intentionally fails a skill preamble and asserts the caller detects the zero-turn result.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87159" target="_blank">#87159</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="87065" id="subagentstop-matcher-bypassed-on-empty-agent-type" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1558</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>SubagentStop matcher can be bypassed for internal forks with empty agent_type.</h3>
+            <p>A reported Claude Code 2.1.233 setup found that a SubagentStop hook group with a matcher naming specific agent types can still run for internal forks whose agent_type is the empty string. Because the hook gatherer treats a falsy match key as a reason to skip filtering, matcher-scoped groups are included wholesale rather than excluded. In one measured session, 115 of 129 dispatches of an agent-scoped LLM judge came from empty-agent_type internal forks, creating token waste and risking false blocking verdicts against healthy background work.</p>
+                        <!-- workaround:subagentstop-matcher-bypassed-on-empty-agent-type -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on `SubagentStop` `matcher` as the only scope boundary for costly or blocking agent-type judges. In the hook command, parse stdin and explicitly ignore payloads whose `agent_type` is empty or not in the intended allowlist before doing LLM review or returning a block. Add a canary that feeds an empty-agent_type `SubagentStop` payload to the hook and asserts it exits without judgment, and prefer agent-frontmatter hooks only where the agent source is not supplied by a plugin.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87065" target="_blank">#87065</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
