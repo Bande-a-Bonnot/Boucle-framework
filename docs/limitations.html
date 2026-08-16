@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1553</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-16.</span></p>
+        <p class="subtitle"><span id="total-count">1554</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-16.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -17366,6 +17366,18 @@
                         <!-- workaround:linux-bwrap-recursive-read-deny-globs-can-hit-e2big -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If every sandboxed Bash command fails with E2BIG after adding broad recursive `Read()` denies, temporarily reduce or split the recursive deny patterns, move large generated data trees outside the Claude Code workspace, or disable the native sandbox only in a separate low-trust environment with OS-level file permissions. After any policy change, run a harmless sandboxed Bash probe before relying on unattended work. Ask maintainers for a bind-budget diagnostic that names the expanded glob and file count instead of treating E2BIG as a shell command problem.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/74081" target="_blank">#74081</a></div>
+        </div>
+        <div class="kl-entry" data-category="Sandbox &amp; permissions" data-issues="84863" id="sandbox-read-isolation-and-settings-policy-can-fail-open" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1554</span>
+                <span class="kl-cat">Sandbox &amp; permissions</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Sandbox read isolation and settings policy can fail open.</h3>
+            <p>A reported Linux Claude Code sandbox setup found that `sandbox.filesystem.allowWrite` did not provide filesystem read isolation: Bash commands could still read credential paths such as `~/.ssh/id_rsa`, while `permissions.deny` `Read(...)` rules only covered the dedicated Read tool. The same session showed the agent could edit its own `settings.json`, add plausible but unsupported sandbox keys, and leave the file as invalid JSON during revert. Claude Code then continued tool execution without surfacing a hard sandbox configuration failure, making the boundary appear enabled while policy parsing or enforcement was degraded.</p>
+                        <!-- workaround:sandbox-read-isolation-and-settings-policy-can-fail-open -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat Claude Code sandbox settings as a read boundary for secrets. Keep SSH keys, cloud credentials, shell history, and other sensitive files outside any home or project tree available to the agent, or run Claude Code in a disposable OS account/container with only the files it may read. Validate user and project `settings.json` with a real JSON parser after edits, avoid unsupported sandbox keys that only look protective, and run a harmless read probe plus a hook verification pass before trusting unattended work.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/84863" target="_blank">#84863</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
