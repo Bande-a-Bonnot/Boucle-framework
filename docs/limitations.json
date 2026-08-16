@@ -1,10 +1,10 @@
 {
   "version": "0.13.0",
-  "count": 1543,
+  "count": 1544,
   "categories": {
     "Hook behavior & events": 204,
     "Permission system": 138,
-    "Hook bypass & evasion": 102,
+    "Hook bypass & evasion": 103,
     "MCP & plugin issues": 81,
     "Subagent & spawned agents": 73,
     "Desktop & IDE integration": 56,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 132,
-    "HIGH": 838,
+    "HIGH": 839,
     "LOW": 111,
     "MEDIUM": 462
   },
@@ -19813,30 +19813,43 @@
       "status": "open",
       "date_added": "2026-08-15",
       "workaround": "If Claude Code burns CPU while idle on Nix or another declarative config setup, check whether `~/.claude/settings.json` is a symlink whose resolved target lives in a huge directory. As a temporary workaround, materialize the settings file directly under `~/.claude/`, point the symlink at a file inside a small dedicated directory, or pause idle Claude Code sessions during large builds. Capture `sample`, `fs_usage`, or equivalent directory-read evidence before reporting so the watcher path can be distinguished from model or network work."
+    },
+    {
+      "id": "project-settings-can-load-permissions-but-skip-hooks",
+      "title": "Project settings can load permissions while skipping hooks.",
+      "severity": "HIGH",
+      "category": "Hook bypass & evasion",
+      "description": "A reported Claude Code Windows 11 plus WSL2 setup found that a project `.claude/settings.json` could be partially active: `permissions.deny` from the same file blocked a matching Bash command, proving the settings file was loaded, while a `PreToolUse` hook in that same file produced no marker, no prompt, and no verdict for another matching Bash command. The reporter reproduced the affected directory from the Windows side over a UNC path, ruled out a broken hook script by invoking it directly with a real payload, and reproduced with both absolute command and wrapper-command forms. The important boundary is that successful deny-rule enforcement did not prove project hooks were enforcing.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/85430"
+      ],
+      "status": "open",
+      "date_added": "2026-08-16",
+      "workaround": "When project hooks are part of the safety boundary, verify the hook itself with a harmless matched tool call that writes an invocation marker or returns a visible ask/deny reason. Do not treat a working `permissions.deny` rule, CLAUDE.md load, or workspace trust state as proof that `PreToolUse` hooks are active. On Windows or WSL paths, run the same smoke test from the exact host and path shape users will use, and keep independent controls such as Git hooks, filesystem permissions, or explicit deny rules for irreversible operations."
     }
   ],
   "status_summary": {
-    "open": 1529,
+    "open": 1530,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 132,
-    "high": 838,
+    "high": 839,
     "low": 111,
     "medium": 462
   },
   "lastUpdated": "2026-08-16",
   "stats": {
-    "total": 1543,
+    "total": 1544,
     "critical": 132,
-    "high": 838,
+    "high": 839,
     "medium": 462,
     "low": 111,
-    "open": 1529,
+    "open": 1530,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-16",
-  "total": 1543
+  "total": 1544
 }
