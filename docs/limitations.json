@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1551,
+  "count": 1552,
   "categories": {
     "Hook behavior & events": 205,
     "Permission system": 139,
     "Hook bypass & evasion": 103,
-    "MCP & plugin issues": 83,
+    "MCP & plugin issues": 84,
     "Subagent & spawned agents": 73,
     "Desktop & IDE integration": 56,
     "TUI & display": 35,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 132,
-    "HIGH": 844,
+    "HIGH": 845,
     "LOW": 111,
     "MEDIUM": 464
   },
@@ -19918,30 +19918,43 @@
       "date_added": "2026-08-16",
       "description": "A reported macOS Claude Code workflow found that a parent session could call a permission-gated read-only MCP database tool, while subagents spawned through Task or Workflow had the same MCP call refused by the auto-mode classifier. Prompt text saying the user had authorized the tool for that run did not help, and the blocked request was not surfaced as an approval prompt. The only working permission route was a permanent `permissions.allow` entry, which is broader than the user's intended per-run grant.",
       "workaround": "Do not assume parent-session MCP approval propagates to subagents or workflow agents. For workflows that need MCP-backed verification, either run the MCP calls in the parent session and pass only bounded results to agents, or predefine narrow `permissions.allow` rules for the exact tools you are willing to grant beyond one run. Keep a workflow smoke test where a subagent calls a harmless read-only MCP tool before relying on agent findings that depend on external data."
+    },
+    {
+      "id": "plugin-mcp-tools-can-skip-ask-first-permission-prompts",
+      "title": "Plugin MCP tools can skip ask-first permission prompts.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80135"
+      ],
+      "date_added": "2026-08-16",
+      "description": "A reported Claude Code plugin setup found that MCP tools from installed plugins could execute when they were absent from both `permissions.allow` and `permissions.deny`. Denied tools were hidden correctly, but tools left in the expected ask-first state ran without a permission prompt and without a `permission_prompt` hook event. This collapses the permission model for plugin MCP tools from allow, deny, or ask-first into deny or auto-allow.",
+      "workaround": "Do not rely on omission from `permissions.allow` to make plugin MCP tools prompt before use. For installed plugins, explicitly deny every tool you are not prepared to auto-run, especially write or external-service tools, then move only the narrow tools you have reviewed into `permissions.allow`. After changing plugin permissions, smoke-test one harmless omitted tool and confirm it prompts before treating the plugin as ask-first."
     }
   ],
   "status_summary": {
-    "open": 1537,
+    "open": 1538,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 132,
-    "high": 844,
+    "high": 845,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-16",
   "stats": {
-    "total": 1551,
+    "total": 1552,
     "critical": 132,
-    "high": 844,
+    "high": 845,
     "medium": 464,
     "low": 111,
-    "open": 1537,
+    "open": 1538,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-16",
-  "total": 1551
+  "total": 1552
 }
