@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1555</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-16.</span></p>
+        <p class="subtitle"><span id="total-count">1556</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-16.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -17390,6 +17390,18 @@
                         <!-- workaround:local-worktree-settings-can-leak-hooks-across-checkouts -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not put branch-specific hooks or relative hook paths in `.claude/settings.local.json` when the repository uses linked worktrees. Keep local settings limited to approvals and hooks whose scripts exist in every checkout, or put branch-specific hook registrations in the committed `.claude/settings.json` for that branch. After creating or switching worktrees, run a harmless hook-fired canary from the linked checkout and inspect missing-script warnings before trusting Stop, PreToolUse, or cleanup hooks.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/85935" target="_blank">#85935</a></div>
+        </div>
+        <div class="kl-entry" data-category="Sandbox &amp; permissions" data-issues="87163" id="strictallowlist-can-fail-open-inside-docker" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1556</span>
+                <span class="kl-cat">Sandbox &amp; permissions</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Network strictAllowlist can fail open inside Docker.</h3>
+            <p>A reported Claude Code 2.1.197 and 2.1.233 Linux setup running inside Docker found that `sandbox.network.strictAllowlist: true` did not block Bash access to non-allowlisted domains. The reporter configured allowed domains, confirmed standalone `bwrap --unshare-net` blocked the same curl target inside the container, and inspected debug logs and process ancestry showing Claude Code spawned the shell directly with no `bwrap`, sandbox, namespace, seccomp, or AppArmor dispatch path. The result was a silent fail-open network boundary in an ingest workflow where external documents could prompt the agent to exfiltrate data.</p>
+                        <!-- workaround:strictallowlist-can-fail-open-inside-docker -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat `sandbox.network.strictAllowlist` as active in containerized Claude Code until a negative network probe proves it for the exact runtime. After enabling or updating the sandbox, run a harmless Bash curl or DNS probe to a non-allowlisted domain and require a hard block before processing untrusted content. In Docker, enforce egress with container or host-level network policy as the primary boundary, and treat missing `bwrap` or sandbox debug evidence as a fail-open condition rather than a successful setup.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87163" target="_blank">#87163</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
