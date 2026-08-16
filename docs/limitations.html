@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1547</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-16.</span></p>
+        <p class="subtitle"><span id="total-count">1548</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-16.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -17294,6 +17294,18 @@
                         <!-- workaround:linux-seccomp-sandbox-can-fail-inside-bwrap -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On Linux, run a harmless sandboxed Bash probe after enabling or updating Claude Code sandboxing instead of trusting startup checks alone. Avoid treating `allowAllUnixSockets: true` as a neutral fix: it restores commands by turning off Unix-socket filtering, including protections around Docker, D-Bus, and local IPC sockets. Where AppArmor is involved, prefer a narrowly loaded `bwrap` profile that grants the needed `userns` permission and verify it still applies after reboot. Keep `allowUnsandboxedCommands: false` for fail-closed workflows, and retry or restart fresh if sporadic `unshare(CLONE_NEWUSER): Invalid argument` appears.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/81799" target="_blank">#81799</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="80697" id="interpreter-hook-script-missing-can-fail-closed" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1548</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Interpreter-wrapped hook scripts can fail closed when the target file is missing.</h3>
+            <p>A reported Claude Code 2.1.218 Windows setup found that a `PreToolUse` command hook such as `python C:/nonexistent/ghost_hook.py` blocked the matched Bash tool because Python itself launched successfully and then exited 2 when it could not open the script. A collaborator reproduced the same behavior on Claude Code 2.1.233 and clarified the distinction: a hook executable that cannot be started can be treated as a non-blocking hook error, but an interpreter that starts and returns exit code 2 is indistinguishable from a deliberate hook deny because the hook protocol reserves exit code 2 for blocking. A stale path, renamed hook file, or disabled-by-renaming guard can therefore lock out every matched tool call, including the call that would repair the configuration from inside the session.</p>
+                        <!-- workaround:interpreter-hook-script-missing-can-fail-closed -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not disable a configured hook by renaming or deleting the script while settings still point at it. Remove the hook entry from settings, or replace the script contents with a no-op that exits 0, then start a fresh session and run a harmless matched tool call to prove the hook state. For interpreter-wrapped hooks, add installer and doctor checks that verify the target script exists and can be opened by the exact interpreter command, not only that `python`, `node`, or `sh` exists on PATH. If fail-closed on hook runtime errors is desired, document that policy explicitly so users can distinguish broken paths from intentional denies.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/80697" target="_blank">#80697</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
