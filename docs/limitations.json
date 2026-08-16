@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1548,
+  "count": 1549,
   "categories": {
     "Hook behavior & events": 205,
     "Permission system": 139,
@@ -16,8 +16,8 @@
     "Cowork & remote": 26,
     "Performance & cost": 25,
     "Configuration behavior": 23,
+    "Sandbox & permissions": 23,
     "Agents & subagents": 22,
-    "Sandbox & permissions": 22,
     "Security & trust boundaries": 22,
     "VS Code extension": 22,
     "Tool behavior": 21,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 132,
-    "HIGH": 841,
+    "HIGH": 842,
     "LOW": 111,
     "MEDIUM": 464
   },
@@ -19879,30 +19879,43 @@
       "status": "open",
       "date_added": "2026-08-16",
       "workaround": "Do not disable a configured hook by renaming or deleting the script while settings still point at it. Remove the hook entry from settings, or replace the script contents with a no-op that exits 0, then start a fresh session and run a harmless matched tool call to prove the hook state. For interpreter-wrapped hooks, add installer and doctor checks that verify the target script exists and can be opened by the exact interpreter command, not only that `python`, `node`, or `sh` exists on PATH. If fail-closed on hook runtime errors is desired, document that policy explicitly so users can distinguish broken paths from intentional denies."
+    },
+    {
+      "id": "ancestor-sandbox-settings-not-inherited-by-nested-projects",
+      "title": "Ancestor sandbox settings are not inherited by nested projects.",
+      "severity": "HIGH",
+      "category": "Sandbox & permissions",
+      "description": "A reported Claude Code 2.1.220 macOS sandbox setup placed `sandbox.enabled: true`, `allowUnsandboxedCommands: false`, and a tight network allowlist in a container workspace's `.claude/settings.local.json`, then started a separate session inside a nested git repository. The nested session ran commands with network access that the parent workspace blocked. A collaborator reproduced on Claude Code 2.1.233 and clarified the current model: project and local settings are read only from the project Claude Code starts in, so ancestor-directory settings are not inherited by a nested repository, even when the nested repo has no `.claude/settings.local.json` of its own. The confirmed risk is a silent boundary mismatch where a parent folder looks sandboxed while separately launched nested-project sessions are not covered by that parent sandbox.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/83035"
+      ],
+      "status": "open",
+      "date_added": "2026-08-16",
+      "workaround": "Do not rely on a container directory's `.claude/settings.local.json` to sandbox nested repositories. Put mandatory sandbox policy in user settings or managed settings, or duplicate and verify the sandbox block in every nested project that may be launched independently. Before delegating or restarting in a nested repo, run a harmless network or filesystem probe that the intended sandbox must block, and treat parent-session success as unrelated to separate sessions started from the child project."
     }
   ],
   "status_summary": {
-    "open": 1534,
+    "open": 1535,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 132,
-    "high": 841,
+    "high": 842,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-16",
   "stats": {
-    "total": 1548,
+    "total": 1549,
     "critical": 132,
-    "high": 841,
+    "high": 842,
     "medium": 464,
     "low": 111,
-    "open": 1534,
+    "open": 1535,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-16",
-  "total": 1548
+  "total": 1549
 }
