@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1545,
+  "count": 1546,
   "categories": {
     "Hook behavior & events": 204,
     "Permission system": 139,
     "Hook bypass & evasion": 103,
-    "MCP & plugin issues": 81,
+    "MCP & plugin issues": 82,
     "Subagent & spawned agents": 73,
     "Desktop & IDE integration": 56,
     "TUI & display": 35,
@@ -193,7 +193,7 @@
     "CRITICAL": 132,
     "HIGH": 839,
     "LOW": 111,
-    "MEDIUM": 463
+    "MEDIUM": 464
   },
   "entries": [
     {
@@ -19828,6 +19828,19 @@
       "workaround": "If Claude Code burns CPU while idle on Nix or another declarative config setup, check whether `~/.claude/settings.json` is a symlink whose resolved target lives in a huge directory. As a temporary workaround, materialize the settings file directly under `~/.claude/`, point the symlink at a file inside a small dedicated directory, or pause idle Claude Code sessions during large builds. Capture `sample`, `fs_usage`, or equivalent directory-read evidence before reporting so the watcher path can be distinguished from model or network work."
     },
     {
+      "id": "plan-mode-mcp-allow-rules-can-still-prompt-without-readonlyhint",
+      "title": "Plan mode can prompt for allow-listed MCP tools that lack `readOnlyHint`.",
+      "severity": "MEDIUM",
+      "category": "MCP & plugin issues",
+      "description": "A reported Claude Code 2.1.206 macOS setup found that an MCP tool listed exactly in `permissions.allow` still prompted on a fresh plan-mode session even after workspace trust was accepted and no deny or ask rules existed. A collaborator reproduced on Claude Code 2.1.233 and narrowed the confirmed case: in plan mode, MCP tools that do not advertise `readOnlyHint: true` are treated as potential writes and still prompt even when an exact allow rule matches. The same tool ran silently in default mode, and the same plan-mode setup ran silently once the MCP tool was annotated as read-only. The prompt currently looks like an ordinary permission request and can offer a 'do not ask again' allow entry that plan mode then continues to ignore for the non-read-only tool.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/76238"
+      ],
+      "status": "open",
+      "date_added": "2026-08-16",
+      "workaround": "For read-only MCP tools that should run without repeated plan-mode prompts, set the MCP tool's `readOnlyHint: true` annotation and test in a fresh plan-mode session. If the tool is not truly read-only, expect plan mode to prompt regardless of `permissions.allow`, or use default/manual mode only where that tradeoff is acceptable. Do not treat a saved 'do not ask again' entry as proof that future plan-mode MCP calls will skip approval; keep server-side authorization and audit logs for MCP operations with side effects."
+    },
+    {
       "id": "project-settings-can-load-permissions-but-skip-hooks",
       "title": "Project settings can load permissions while skipping hooks.",
       "severity": "HIGH",
@@ -19842,7 +19855,7 @@
     }
   ],
   "status_summary": {
-    "open": 1531,
+    "open": 1532,
     "fixed": 13,
     "mitigated": 1
   },
@@ -19850,19 +19863,19 @@
     "critical": 132,
     "high": 839,
     "low": 111,
-    "medium": 463
+    "medium": 464
   },
   "lastUpdated": "2026-08-16",
   "stats": {
-    "total": 1545,
+    "total": 1546,
     "critical": 132,
     "high": 839,
-    "medium": 463,
+    "medium": 464,
     "low": 111,
-    "open": 1531,
+    "open": 1532,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-16",
-  "total": 1545
+  "total": 1546
 }
