@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1558</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-16.</span></p>
+        <p class="subtitle"><span id="total-count">1559</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-16.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -17426,6 +17426,18 @@
                         <!-- workaround:subagentstop-matcher-bypassed-on-empty-agent-type -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on `SubagentStop` `matcher` as the only scope boundary for costly or blocking agent-type judges. In the hook command, parse stdin and explicitly ignore payloads whose `agent_type` is empty or not in the intended allowlist before doing LLM review or returning a block. Add a canary that feeds an empty-agent_type `SubagentStop` payload to the hook and asserts it exits without judgment, and prefer agent-frontmatter hooks only where the agent source is not supplied by a plugin.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87065" target="_blank">#87065</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="87186" id="pre-post-hooks-lack-live-background-task-registry" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1559</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>PreToolUse and PostToolUse hooks lack live background task status.</h3>
+            <p>A reported Claude Code 2.1.233 setup found that `PreToolUse` and `PostToolUse` hooks do not receive the live `background_tasks` registry that `Stop` hooks receive. A hook that tracks background Bash work from local marker files can see a `&lt;task-notification&gt;` in the transcript only indirectly; no hook event fires when the task completes, and later Pre/Post payloads do not say that the task has reached a terminal state. Unless the agent explicitly calls `TaskOutput` or the session reaches `Stop`, hook-based tooling can keep warning or blocking as if completed background work were still live for every subsequent tool call in the same turn.</p>
+                        <!-- workaround:pre-post-hooks-lack-live-background-task-registry -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not make `PreToolUse` or `PostToolUse` hooks the sole live-state oracle for background Bash tasks. If a guard persists local in-flight markers, reconcile them on explicit `TaskOutput` responses and `Stop` payloads, add a bounded age-out path for stale markers, and avoid hard blocking solely because a prior `run_in_background` marker remains present. For end-of-turn safety checks, prefer a `Stop` hook or an explicit task-drain step that reads current task state before issuing a verdict.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87186" target="_blank">#87186</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

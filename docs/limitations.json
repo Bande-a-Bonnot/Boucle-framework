@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1558,
+  "count": 1559,
   "categories": {
-    "Hook behavior & events": 206,
+    "Hook behavior & events": 207,
     "Permission system": 139,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 84,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 134,
-    "HIGH": 849,
+    "HIGH": 850,
     "LOW": 111,
     "MEDIUM": 464
   },
@@ -20010,30 +20010,43 @@
       "status": "open",
       "date_added": "2026-08-16",
       "workaround": "Do not rely on `SubagentStop` `matcher` as the only scope boundary for costly or blocking agent-type judges. In the hook command, parse stdin and explicitly ignore payloads whose `agent_type` is empty or not in the intended allowlist before doing LLM review or returning a block. Add a canary that feeds an empty-agent_type `SubagentStop` payload to the hook and asserts it exits without judgment, and prefer agent-frontmatter hooks only where the agent source is not supplied by a plugin."
+    },
+    {
+      "id": "pre-post-hooks-lack-live-background-task-registry",
+      "title": "PreToolUse and PostToolUse hooks lack live background task status.",
+      "severity": "HIGH",
+      "category": "Hook behavior & events",
+      "description": "A reported Claude Code 2.1.233 setup found that `PreToolUse` and `PostToolUse` hooks do not receive the live `background_tasks` registry that `Stop` hooks receive. A hook that tracks background Bash work from local marker files can see a `<task-notification>` in the transcript only indirectly; no hook event fires when the task completes, and later Pre/Post payloads do not say that the task has reached a terminal state. Unless the agent explicitly calls `TaskOutput` or the session reaches `Stop`, hook-based tooling can keep warning or blocking as if completed background work were still live for every subsequent tool call in the same turn.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87186"
+      ],
+      "status": "open",
+      "date_added": "2026-08-16",
+      "workaround": "Do not make `PreToolUse` or `PostToolUse` hooks the sole live-state oracle for background Bash tasks. If a guard persists local in-flight markers, reconcile them on explicit `TaskOutput` responses and `Stop` payloads, add a bounded age-out path for stale markers, and avoid hard blocking solely because a prior `run_in_background` marker remains present. For end-of-turn safety checks, prefer a `Stop` hook or an explicit task-drain step that reads current task state before issuing a verdict."
     }
   ],
   "status_summary": {
-    "open": 1544,
+    "open": 1545,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 134,
-    "high": 849,
+    "high": 850,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-16",
   "stats": {
-    "total": 1558,
+    "total": 1559,
     "critical": 134,
-    "high": 849,
+    "high": 850,
     "medium": 464,
     "low": 111,
-    "open": 1544,
+    "open": 1545,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-16",
-  "total": 1558
+  "total": 1559
 }
