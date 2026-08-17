@@ -7,6 +7,38 @@
   <updated>2026-08-17T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] User-level `paths:` rules can silently load nowhere.</title>
+    <id>https://framework.boucle.sh/limitations.html#user-level-path-scoped-rules-can-silently-drop</id>
+    <link href="https://framework.boucle.sh/limitations.html#user-level-path-scoped-rules-can-silently-drop"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 macOS setup placed `paths:` frontmatter on a rule under `~/.claude/rules/`. The rule was skipped at `session_start` because it was conditional, but it also never loaded on matching file reads because user-scope rules did not appear to participate in `path_glob_match`. Project-scoped path rules matched the same file normally, and the missing user rule did not appear in `/context`, leaving a syntactically valid global convention with zero effect and no warning.</summary>
+    <category term="Configuration behavior"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Subagent compound Bash can bypass sandbox read-deny protection.</title>
+    <id>https://framework.boucle.sh/limitations.html#subagent-compound-bash-can-bypass-sandbox-read-deny</id>
+    <link href="https://framework.boucle.sh/limitations.html#subagent-compound-bash-can-bypass-sandbox-read-deny"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 macOS background/job session declared sandbox filesystem `read.denyOnly` coverage for `.env*` paths and had top-level protected-path reads blocked elsewhere in the same session. A general-purpose Agent subagent then ran a compound multi-line Bash command containing `grep` against `.env.local`; the command returned real environment variable names with exit code 0, no prompt, no permission error, and no block log. The same path with `cat` would have exposed secret values to the subagent context.</summary>
+    <category term="Security &amp; trust boundaries"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Native deny messages can hide the matched rule and settings source.</title>
+    <id>https://framework.boucle.sh/limitations.html#native-deny-messages-can-hide-matched-rule-source</id>
+    <link href="https://framework.boucle.sh/limitations.html#native-deny-messages-can-hide-matched-rule-source"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 macOS setup found that `permissions.deny` blocks returned generic denial text without the specific matched rule or the settings file that supplied it. With user, project, local, and managed settings all able to define overlapping permission rules, users had to remove and retest candidate rules manually to explain an unexpected denial. The same report says `claude -p` can print a startup warning that `Write(path)` deny rules are not matched by file permission checks, while normal interactive sessions with the same ineffective rules did not surface that warning.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Windows plugin hooks may not receive subscription OAuth token environment.</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-plugin-hooks-may-not-receive-oauth-token-env</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-plugin-hooks-may-not-receive-oauth-token-env"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Windows 11 Claude Code 2.1.228 setup installed the official `security-guidance` marketplace plugin under subscription `/login` auth, but every LLM review gate exited with `LLM review disabled or no API credentials`. The plugin hook process saw neither `ANTHROPIC_API_KEY` nor `ANTHROPIC_AUTH_TOKEN`, even though the plugin source expected Claude Code to pass an OAuth access token to hooks for login users. The hook itself fired, so the visible plugin installation could look active while its review layer was dormant except for debug-log lines.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Bash deny patterns ending in `:branch` may not block matching git refspec pushes.</title>
     <id>https://framework.boucle.sh/limitations.html#bash-deny-refspec-colon-patterns-can-fail-to-match</id>
     <link href="https://framework.boucle.sh/limitations.html#bash-deny-refspec-colon-patterns-can-fail-to-match"/>
@@ -133,37 +165,5 @@
     <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code cloud routine found that domains added to the account-level `Allow network egress` additional-domains setting did not appear in the routine sandbox&#x27;s proxy allowlist a week later. Both scheduled fires and a manual `RemoteTrigger run` still returned `EGRESS_BLOCKED` from `WebFetch` and 403 CONNECT failures from `curl`, while the in-sandbox `$HTTPS_PROXY/__agentproxy/status` endpoint confirmed the expected domains were absent. The trigger API exposed prompt, allowed tools, MCP connections, and schedule state, but no sandbox network policy field that could be updated or inspected for repair.</summary>
     <category term="Remote &amp; cloud"/>
-  </entry>
-  <entry>
-    <title>[HIGH] /permissions navigation can become inert after auto-mode denials.</title>
-    <id>https://framework.boucle.sh/limitations.html#permissions-menu-denial-state-can-block-human-repair</id>
-    <link href="https://framework.boucle.sh/limitations.html#permissions-menu-denial-state-can-block-human-repair"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.221 macOS session found that `/permissions` rendered but stopped responding to arrow-key navigation after recent auto-mode classifier denials in a long-running session. The user could not reach `Add a new rule...` from the discoverable permission UI, while a fresh session on the same project navigated normally and could add the needed allow rule. This makes denials harder to repair exactly when the human is supposed to recover from them, especially because the agent itself should not edit `.claude/settings.json` to grant its own permissions.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] PreToolUse hooks can read stale current-turn text from transcript_path.</title>
-    <id>https://framework.boucle.sh/limitations.html#pretooluse-transcript-path-can-lag-current-turn</id>
-    <link href="https://framework.boucle.sh/limitations.html#pretooluse-transcript-path-can-lag-current-turn"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code hook setup found that `PreToolUse` hooks that inspect the just-written assistant text by parsing `transcript_path` can race the transcript writer and read an earlier turn or draft instead of the text that immediately preceded the tool call. Stop-family hooks have `last_assistant_message` as a race-free field, but `PreToolUse` receives only tool metadata plus common fields, so content or compliance gates that must decide before a tool runs have no equivalent current-message source. The observed effect was a false block caused by matching stale transcript content rather than the clean final text.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] PermissionRequest hooks can stop firing after a Windows CLI restart.</title>
-    <id>https://framework.boucle.sh/limitations.html#permissionrequest-hook-can-stop-firing-after-windows-restart</id>
-    <link href="https://framework.boucle.sh/limitations.html#permissionrequest-hook-can-stop-firing-after-windows-restart"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 Windows session found that a working `PermissionRequest` hook stopped firing for Bash, PowerShell, and Write requests, produced no new hook log entries, showed no fallback confirmation prompts, and stayed inert after a full CLI restart. The hook script and `.claude/settings.json` registration still looked valid and manual invocation of the hook worked, but live tool calls no longer reached it. The restart also showed a new auto-mode setup prompt while the settings UI still reported manual permission mode, leaving users without a reliable in-session signal that the PermissionRequest safety layer was inactive.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] PreToolUse and PostToolUse hooks lack live background task status.</title>
-    <id>https://framework.boucle.sh/limitations.html#pre-post-hooks-lack-live-background-task-registry</id>
-    <link href="https://framework.boucle.sh/limitations.html#pre-post-hooks-lack-live-background-task-registry"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 setup found that `PreToolUse` and `PostToolUse` hooks do not receive the live `background_tasks` registry that `Stop` hooks receive. A hook that tracks background Bash work from local marker files can see a `&lt;task-notification&gt;` in the transcript only indirectly; no hook event fires when the task completes, and later Pre/Post payloads do not say that the task has reached a terminal state. Unless the agent explicitly calls `TaskOutput` or the session reaches `Stop`, hook-based tooling can keep warning or blocking as if completed background work were still live for every subsequent tool call in the same turn.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>

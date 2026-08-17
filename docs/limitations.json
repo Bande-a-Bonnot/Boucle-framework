@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1578,
+  "count": 1582,
   "categories": {
-    "Hook behavior & events": 208,
-    "Permission system": 142,
+    "Hook behavior & events": 209,
+    "Permission system": 143,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 84,
     "Subagent & spawned agents": 77,
@@ -15,9 +15,9 @@
     "MCP & integrations": 27,
     "Sandbox & permissions": 27,
     "Cowork & remote": 26,
+    "Configuration behavior": 25,
     "Performance & cost": 25,
-    "Configuration behavior": 24,
-    "Security & trust boundaries": 24,
+    "Security & trust boundaries": 25,
     "Agents & subagents": 22,
     "Tool behavior": 22,
     "VS Code extension": 22,
@@ -191,9 +191,9 @@
   },
   "severity_counts": {
     "CRITICAL": 136,
-    "HIGH": 864,
+    "HIGH": 866,
     "LOW": 111,
-    "MEDIUM": 467
+    "MEDIUM": 469
   },
   "entries": [
     {
@@ -20273,30 +20273,82 @@
       "date_added": "2026-08-17",
       "description": "A reported Claude Code 2.1.233 macOS permission audit found that several `permissions.deny` patterns for protected-branch pushes worked, including patterns matching `main`, `develop`, `refs/heads/develop`, and `HEAD:*`. However, deny rules shaped like `Bash(git push *:develop)` and `Bash(git push *:main)` did not match a direct refspec such as `git push --dry-run origin my-branch-name:develop`; the permission layer allowed the command through and only git rejected it later. The failed rules looked like explicit protected-branch coverage while matching nothing in the tested case.",
       "workaround": "Do not rely on untested Bash deny glob patterns for branch-protection policy. Smoke-test each protected-branch pattern with harmless `git push --dry-run` variants, prefer patterns that match full command words or `refs/heads/<branch>` forms, and keep server-side branch protection plus a pre-push hook that reads the actual remote ref from stdin. Remove deny rules that never match so they do not create false confidence."
+    },
+    {
+      "id": "windows-plugin-hooks-may-not-receive-oauth-token-env",
+      "title": "Windows plugin hooks may not receive subscription OAuth token environment.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87145"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Windows 11 Claude Code 2.1.228 setup installed the official `security-guidance` marketplace plugin under subscription `/login` auth, but every LLM review gate exited with `LLM review disabled or no API credentials`. The plugin hook process saw neither `ANTHROPIC_API_KEY` nor `ANTHROPIC_AUTH_TOKEN`, even though the plugin source expected Claude Code to pass an OAuth access token to hooks for login users. The hook itself fired, so the visible plugin installation could look active while its review layer was dormant except for debug-log lines.",
+      "workaround": "After installing credential-dependent plugins, inspect their hook logs and run a small same-session canary that proves the review path actually reaches the model. Do not assume subscription login credentials are available inside Windows hook subprocesses until verified. Use an explicit supported API-key setup only if acceptable for the account and billing boundary, and surface plugin dormancy in local checks rather than relying on marketplace install state."
+    },
+    {
+      "id": "native-deny-messages-can-hide-matched-rule-source",
+      "title": "Native deny messages can hide the matched rule and settings source.",
+      "category": "Permission system",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87153"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 macOS setup found that `permissions.deny` blocks returned generic denial text without the specific matched rule or the settings file that supplied it. With user, project, local, and managed settings all able to define overlapping permission rules, users had to remove and retest candidate rules manually to explain an unexpected denial. The same report says `claude -p` can print a startup warning that `Write(path)` deny rules are not matched by file permission checks, while normal interactive sessions with the same ineffective rules did not surface that warning.",
+      "workaround": "When debugging permission denials, inspect every loaded settings source rather than trusting the denial text to identify the rule. Keep a minimal `claude -p` startup validation probe in the same config before relying on new deny patterns, and prefer `Edit(path)` rules for file-write blocking unless current interactive-mode validation proves `Write(path)` is enforced."
+    },
+    {
+      "id": "subagent-compound-bash-can-bypass-sandbox-read-deny",
+      "title": "Subagent compound Bash can bypass sandbox read-deny protection.",
+      "category": "Security & trust boundaries",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87216"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 macOS background/job session declared sandbox filesystem `read.denyOnly` coverage for `.env*` paths and had top-level protected-path reads blocked elsewhere in the same session. A general-purpose Agent subagent then ran a compound multi-line Bash command containing `grep` against `.env.local`; the command returned real environment variable names with exit code 0, no prompt, no permission error, and no block log. The same path with `cat` would have exposed secret values to the subagent context.",
+      "workaround": "Do not treat sandbox read-deny declarations as a complete secret boundary for Agent-dispatched subagents until the exact subagent plus Bash pattern is verified. Keep secrets outside the workspace or protected by OS permissions, avoid sending untrusted subagents into projects with live `.env` files, and use hook or wrapper canaries that explicitly test compound Bash reads from both the parent session and subagents."
+    },
+    {
+      "id": "user-level-path-scoped-rules-can-silently-drop",
+      "title": "User-level `paths:` rules can silently load nowhere.",
+      "category": "Configuration behavior",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87217"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 macOS setup placed `paths:` frontmatter on a rule under `~/.claude/rules/`. The rule was skipped at `session_start` because it was conditional, but it also never loaded on matching file reads because user-scope rules did not appear to participate in `path_glob_match`. Project-scoped path rules matched the same file normally, and the missing user rule did not appear in `/context`, leaving a syntactically valid global convention with zero effect and no warning.",
+      "workaround": "Keep path-scoped rules in the project `.claude/rules/` directory unless user-scope `paths:` behavior is explicitly verified with an `InstructionsLoaded` hook. For user-level rules that must always apply, remove `paths:` frontmatter or add a visible canary rule and check loaded memory before relying on it. Treat `/context` as incomplete for rule debugging unless it actually lists the target rule files."
     }
   ],
   "status_summary": {
-    "open": 1564,
+    "open": 1568,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 136,
-    "high": 864,
+    "high": 866,
     "low": 111,
-    "medium": 467
+    "medium": 469
   },
   "lastUpdated": "2026-08-17",
   "stats": {
-    "total": 1578,
+    "total": 1582,
     "critical": 136,
-    "high": 864,
-    "medium": 467,
+    "high": 866,
+    "medium": 469,
     "low": 111,
-    "open": 1564,
+    "open": 1568,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-17",
-  "total": 1578
+  "total": 1582
 }
