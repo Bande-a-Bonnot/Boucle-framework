@@ -1,12 +1,12 @@
 {
   "version": "0.13.0",
-  "count": 1567,
+  "count": 1570,
   "categories": {
     "Hook behavior & events": 208,
     "Permission system": 141,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 84,
-    "Subagent & spawned agents": 73,
+    "Subagent & spawned agents": 76,
     "Desktop & IDE integration": 56,
     "TUI & display": 35,
     "CLI & terminal": 31,
@@ -190,8 +190,8 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 134,
-    "HIGH": 858,
+    "CRITICAL": 135,
+    "HIGH": 860,
     "LOW": 111,
     "MEDIUM": 464
   },
@@ -20127,30 +20127,69 @@
       "date_added": "2026-08-17",
       "description": "A reported Claude Code 2.1.233 macOS session found that a Bash tool call using `run_in_background: true` could SIGKILL the task shell and its process group while still notifying the user that the task completed with exit code 0. The triggering command invoked a CLI that spawned a detached daemonizing worker; foreground runs succeeded, but 7 of 9 background runs lost post-command markers or output, and some left 0-byte result files. A later test detached the worker into its own session: the task shell could still die, while the worker survived and wrote valid JSON, narrowing the failure to group-targeted task cleanup plus incorrect success reporting.",
       "workaround": "Do not treat a background Bash completion notification or exit code 0 as proof that long-running work finished. For critical background commands, have the worker process write the final artifact and completion sentinel itself as its last act, then verify that artifact from a separate foreground tool call before using the result. If a CLI daemonizes or spawns workers, detach the payload into its own session where appropriate, avoid relying on post-processing in the task shell, and preserve raw task output, marker files, and process-group evidence when reporting failures."
+    },
+    {
+      "id": "background-agent-can-receive-foreground-operator-input",
+      "title": "Foreground operator input can be routed into a background Agent task.",
+      "category": "Subagent & spawned agents",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87260"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code background Agent workflow delivered text typed by the operator in the main session into a live background task's transcript instead of creating a new main-session turn. The misdelivered messages appeared to the background task as genuine user interruptions while the main session had no visible record that those turns were sent there. In the cleanest reported incident, a task originally scoped to merging approved PRs received operator authorization language and used it to dispatch a separate security-testing crew outside its original task scope.",
+      "workaround": "Do not type approvals, secrets, or scope changes into a session while background Agent tasks are live unless the UI makes the recipient explicit. Drain or stop background tasks before issuing high-impact instructions, and audit subagent transcripts for unexpected `The user sent a new message while you were working` blocks before accepting their actions as in-scope. For orchestrated workflows, require durable task-scoped approval files or parent-side dispatch gates rather than letting a background leaf treat mid-task text as fresh authority."
+    },
+    {
+      "id": "agent-run-in-background-false-can-still-return-as-background",
+      "title": "Agent `run_in_background: false` can still behave like a background dispatch.",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87241"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 Windows Agent workflow found that `run_in_background: false` returned immediately with the same background-spawn message instead of blocking for the agent's final report. The agents completed their work, but results arrived only later as teammate messages or sometimes never arrived as text. The reporter measured batches where agents went idle after doing useful work while the parent saw no final tool result, causing fallback inline work and quiet quality loss.",
+      "workaround": "Do not treat `run_in_background: false` as a reliable foreground contract until the Agent tool result actually contains the final report. For critical delegated work, instruct every agent to write its result to a unique absolute output file before its final text, then verify that file from the parent session. Avoid deleting or overwriting fallback work until delayed teammate messages and output files have been reconciled, and preserve idle notifications plus missing tool-result evidence when reporting."
+    },
+    {
+      "id": "subagent-scratchpad-directory-shared-across-siblings",
+      "title": "Sibling subagents can silently overwrite each other's scratchpad files.",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87243"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 multi-agent workflow found that sibling subagents spawned by one orchestrator shared a single scratchpad directory keyed by the parent session, and a background-forked Skill inherited the parent's own scratchpad path. Parallel agents converged on generic filenames such as `preview.html` and `threads.json`; later reads succeeded but returned a sibling's artifact or a concurrently truncated parent file, making read-back verification accuse the wrong layer.",
+      "workaround": "Assume scratchpad paths are shared unless the runtime proves per-agent isolation. Prefix every scratchpad filename with a task or agent-specific nonce, include an identity marker inside generated artifacts, and verify the marker before trusting a read-back. For parent sessions that launch background Skills or agent fan-out, keep parent-owned intermediate files outside the shared scratchpad or make them read-only copies, and treat parse failures after a previously valid read as possible cross-agent overwrite rather than only malformed upstream data."
     }
   ],
   "status_summary": {
-    "open": 1553,
+    "open": 1556,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 134,
-    "high": 858,
+    "critical": 135,
+    "high": 860,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-17",
   "stats": {
-    "total": 1567,
-    "critical": 134,
-    "high": 858,
+    "total": 1570,
+    "critical": 135,
+    "high": 860,
     "medium": 464,
     "low": 111,
-    "open": 1553,
+    "open": 1556,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-17",
-  "total": 1567
+  "total": 1570
 }
