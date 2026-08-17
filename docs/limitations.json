@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1594,
+  "count": 1596,
   "categories": {
     "Hook behavior & events": 211,
-    "Permission system": 145,
+    "Permission system": 146,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 84,
     "Subagent & spawned agents": 77,
@@ -21,8 +21,8 @@
     "Agents & subagents": 22,
     "Tool behavior": 22,
     "VS Code extension": 22,
+    "Core & session management": 20,
     "Auth & accounts": 19,
-    "Core & session management": 19,
     "Remote & cloud": 18,
     "Model behavior": 17,
     "Data integrity": 16,
@@ -194,7 +194,7 @@
     "CRITICAL": 137,
     "HIGH": 868,
     "LOW": 112,
-    "MEDIUM": 477
+    "MEDIUM": 479
   },
   "entries": [
     {
@@ -20484,10 +20484,36 @@
       "date_added": "2026-08-17",
       "description": "A reported Claude Code 2.1.233 Windows background-agents view failure showed existing sessions opening with only the most recent user message visible, new sessions failing because a generated session ID was already in use, and one completed row showing an exit-before-init session error. The reporter checked `~/.claude/projects/...` and found the transcript JSONL files still present at expected sizes and mtimes, so the issue appears to affect the agent-view/session-registry layer rather than deleting transcript data. The same report noted several job directories created within minutes, including one whose ID matched the collision but had no corresponding project transcript.",
       "workaround": "When agent view shows empty scrollback or session-ID collision errors, inspect the underlying `~/.claude/projects/.../*.jsonl` transcript files before assuming data loss. Preserve the project and jobs directories for debugging, avoid starting additional background sessions in the affected workspace until the registry state is understood, and use direct transcript reads or a fresh project/session location for recovery work."
+    },
+    {
+      "id": "security-heuristics-can-silently-discard-bash-allow-rules",
+      "title": "Security heuristics can silently discard Bash allow rules from permissions.allow.",
+      "category": "Permission system",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87416"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported macOS Claude Code 2.1.233 repro found that some `permissions.allow` Bash rules remained in `.claude/settings.local.json` but disappeared from `/permissions` after a fresh session load and were not honored at execution time. In the example, `Bash(echo:*)`, `Bash(npx tsc:*)`, and `Bash(realpath:*)` loaded, while similarly formed `Bash(python3:*)` and `Bash(npm run:*)` were absent. The per-call annotation then distinguished matched allow rules from auto-mode classifier approvals, showing the discarded rules did not participate in permission matching.",
+      "workaround": "Do not assume a rule persisted in `settings.local.json` is active. After adding broad Bash allow rules, open `/permissions` in a fresh session and run one harmless command from each pattern to confirm whether the rule matched or the auto-mode classifier merely approved the call. For unattended work, prefer narrower commands that visibly survive reload, preserve settings and transcript evidence when a rule is silently rejected, and keep hooks or external wrappers for commands that must never prompt."
+    },
+    {
+      "id": "resume-picker-searches-only-the-50-most-recent-sessions",
+      "title": "Resume picker search can miss retained sessions outside the 50 most recent.",
+      "category": "Core & session management",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87392"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Linux Claude Code 2.1.233 repro found that both the in-session `/resume` picker and standalone `claude --resume` picker load only the 50 most recent sessions, and the type-to-search filter searches only that loaded subset rather than all retained transcript files on disk. A month-old session whose generated title contained the search term was not findable until its transcript file mtime was moved back into the top 50. This means a high `cleanupPeriodDays` setting can retain old transcripts without making them discoverable in the UI.",
+      "workaround": "For long-lived projects, do not treat `/resume` search as exhaustive. If an old session is missing, search `~/.claude/projects/<project>/*.jsonl` for remembered prompt text, title fragments, or other transcript content, extract the session UUID from the matching filename, and run `claude --resume <session-id>` directly. Keep important session IDs or transcript anchors outside the picker if you expect to revisit them after many newer sessions."
     }
   ],
   "status_summary": {
-    "open": 1580,
+    "open": 1582,
     "fixed": 13,
     "mitigated": 1
   },
@@ -20495,19 +20521,19 @@
     "critical": 137,
     "high": 868,
     "low": 112,
-    "medium": 477
+    "medium": 479
   },
   "lastUpdated": "2026-08-17",
   "stats": {
-    "total": 1594,
+    "total": 1596,
     "critical": 137,
     "high": 868,
-    "medium": 477,
+    "medium": 479,
     "low": 112,
-    "open": 1580,
+    "open": 1582,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-17",
-  "total": 1594
+  "total": 1596
 }

@@ -7,6 +7,22 @@
   <updated>2026-08-17T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Resume picker search can miss retained sessions outside the 50 most recent.</title>
+    <id>https://framework.boucle.sh/limitations.html#resume-picker-searches-only-the-50-most-recent-sessions</id>
+    <link href="https://framework.boucle.sh/limitations.html#resume-picker-searches-only-the-50-most-recent-sessions"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Linux Claude Code 2.1.233 repro found that both the in-session `/resume` picker and standalone `claude --resume` picker load only the 50 most recent sessions, and the type-to-search filter searches only that loaded subset rather than all retained transcript files on disk. A month-old session whose generated title contained the search term was not findable until its transcript file mtime was moved back into the top 50. This means a high `cleanupPeriodDays` setting can retain old transcripts without making them discoverable in the UI.</summary>
+    <category term="Core &amp; session management"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Security heuristics can silently discard Bash allow rules from permissions.allow.</title>
+    <id>https://framework.boucle.sh/limitations.html#security-heuristics-can-silently-discard-bash-allow-rules</id>
+    <link href="https://framework.boucle.sh/limitations.html#security-heuristics-can-silently-discard-bash-allow-rules"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported macOS Claude Code 2.1.233 repro found that some `permissions.allow` Bash rules remained in `.claude/settings.local.json` but disappeared from `/permissions` after a fresh session load and were not honored at execution time. In the example, `Bash(echo:*)`, `Bash(npx tsc:*)`, and `Bash(realpath:*)` loaded, while similarly formed `Bash(python3:*)` and `Bash(npm run:*)` were absent. The per-call annotation then distinguished matched allow rules from auto-mode classifier approvals, showing the discarded rules did not participate in permission matching.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Background agent view can collide session IDs and hide existing session history.</title>
     <id>https://framework.boucle.sh/limitations.html#background-agent-view-can-collide-session-ids-and-hide-history</id>
     <link href="https://framework.boucle.sh/limitations.html#background-agent-view-can-collide-session-ids-and-hide-history"/>
@@ -149,21 +165,5 @@
     <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.233 macOS setup used separate config worlds and attempted to exclude a third-party toolkit&#x27;s home-level `CLAUDE.md` and `.claude/rules/*.md` files. The `CLAUDE.md` exclude worked, but rules installed as symlinks still loaded until the exclude pattern targeted the resolved symlink destination under the toolkit&#x27;s versioned directory. The docs described `CLAUDE.md` memory excludes but did not make it clear that rules files were in scope or that matching used resolved paths, producing a silent partial success that looked like isolation until an `InstructionsLoaded` hook logged every loaded path.</summary>
     <category term="Configuration behavior"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Subagent forks can inherit full parent context and become unresumable.</title>
-    <id>https://framework.boucle.sh/limitations.html#subagent-fork-can-inherit-full-parent-context-and-become-unresumable</id>
-    <link href="https://framework.boucle.sh/limitations.html#subagent-fork-can-inherit-full-parent-context-and-become-unresumable"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 Linux orchestration session found that an internal `subagent_type: &quot;fork&quot;` inherited the full parent context for a narrow summarization task, consuming 143,790 tokens for work the reporter estimated at roughly 2,000 tokens when done directly. Other forked agents returned garbled or truncated output after long runs, could not be resumed because no transcript was found, or completed commits without delivering their reasoning back to the orchestrator. The reporter&#x27;s follow-up described substantial cost and lost operator time from dozens of subagents that disappeared or failed to report.</summary>
-    <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] VS Code chat channel relaunches can abort in-flight work.</title>
-    <id>https://framework.boucle.sh/limitations.html#vscode-chat-channel-relaunch-can-abort-inflight-work</id>
-    <link href="https://framework.boucle.sh/limitations.html#vscode-chat-channel-relaunch-can-abort-inflight-work"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code VS Code Remote WSL2 session saw the extension log `Closing Claude on channel` and tear down one or two active chat channels without a user action or VS Code host restart. One incident happened mid-response stream, dropped backend process count to zero for more than a minute, and later resumed the same session; another relaunch spawned two backend processes for the same resume and one failed with a config lock error. Conversation state resumed, but in-flight tool calls and responses were aborted while the UI looked like the session crashed.</summary>
-    <category term="Desktop &amp; IDE integration"/>
   </entry>
 </feed>
