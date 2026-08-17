@@ -7,6 +7,46 @@
   <updated>2026-08-17T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Bash deny patterns ending in `:branch` may not block matching git refspec pushes.</title>
+    <id>https://framework.boucle.sh/limitations.html#bash-deny-refspec-colon-patterns-can-fail-to-match</id>
+    <link href="https://framework.boucle.sh/limitations.html#bash-deny-refspec-colon-patterns-can-fail-to-match"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 macOS permission audit found that several `permissions.deny` patterns for protected-branch pushes worked, including patterns matching `main`, `develop`, `refs/heads/develop`, and `HEAD:*`. However, deny rules shaped like `Bash(git push *:develop)` and `Bash(git push *:main)` did not match a direct refspec such as `git push --dry-run origin my-branch-name:develop`; the permission layer allowed the command through and only git rejected it later. The failed rules looked like explicit protected-branch coverage while matching nothing in the tested case.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] `claudeMdExcludes` can silently miss symlinked rules paths.</title>
+    <id>https://framework.boucle.sh/limitations.html#claudemdexcludes-matches-resolved-symlink-rule-paths</id>
+    <link href="https://framework.boucle.sh/limitations.html#claudemdexcludes-matches-resolved-symlink-rule-paths"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 macOS setup used separate config worlds and attempted to exclude a third-party toolkit&#x27;s home-level `CLAUDE.md` and `.claude/rules/*.md` files. The `CLAUDE.md` exclude worked, but rules installed as symlinks still loaded until the exclude pattern targeted the resolved symlink destination under the toolkit&#x27;s versioned directory. The docs described `CLAUDE.md` memory excludes but did not make it clear that rules files were in scope or that matching used resolved paths, producing a silent partial success that looked like isolation until an `InstructionsLoaded` hook logged every loaded path.</summary>
+    <category term="Configuration behavior"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Subagent forks can inherit full parent context and become unresumable.</title>
+    <id>https://framework.boucle.sh/limitations.html#subagent-fork-can-inherit-full-parent-context-and-become-unresumable</id>
+    <link href="https://framework.boucle.sh/limitations.html#subagent-fork-can-inherit-full-parent-context-and-become-unresumable"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 Linux orchestration session found that an internal `subagent_type: &quot;fork&quot;` inherited the full parent context for a narrow summarization task, consuming 143,790 tokens for work the reporter estimated at roughly 2,000 tokens when done directly. Other forked agents returned garbled or truncated output after long runs, could not be resumed because no transcript was found, or completed commits without delivering their reasoning back to the orchestrator. The reporter&#x27;s follow-up described substantial cost and lost operator time from dozens of subagents that disappeared or failed to report.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] VS Code chat channel relaunches can abort in-flight work.</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-chat-channel-relaunch-can-abort-inflight-work</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-chat-channel-relaunch-can-abort-inflight-work"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code VS Code Remote WSL2 session saw the extension log `Closing Claude on channel` and tear down one or two active chat channels without a user action or VS Code host restart. One incident happened mid-response stream, dropped backend process count to zero for more than a minute, and later resumed the same session; another relaunch spawned two backend processes for the same resume and one failed with a config lock error. Conversation state resumed, but in-flight tool calls and responses were aborted while the UI looked like the session crashed.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Unlogged interruption messages can enter model context outside the transcript.</title>
+    <id>https://framework.boucle.sh/limitations.html#unlogged-interrupt-message-can-enter-model-context</id>
+    <link href="https://framework.boucle.sh/limitations.html#unlogged-interrupt-message-can-enter-model-context"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code Desktop 2.1.229 Windows session showed the model responding to a system-styled interruption message that the user says they did not send and that had no corresponding user-role entry in the local JSONL transcript. The injected content impersonated a user interruption, claimed a compressed context view, and asked the agent to use existing SSH access to create a production admin account with a public password. The model refused, but the first local trace was the assistant response, leaving the user unable to audit how the content reached the request from transcript evidence alone.</summary>
+    <category term="Security &amp; trust boundaries"/>
+  </entry>
+  <entry>
     <title>[HIGH] Background forks can drop Vertex gateway auth environment variables.</title>
     <id>https://framework.boucle.sh/limitations.html#background-fork-can-drop-vertex-gateway-env</id>
     <link href="https://framework.boucle.sh/limitations.html#background-fork-can-drop-vertex-gateway-env"/>
@@ -125,45 +165,5 @@
     <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.233 setup found that `PreToolUse` and `PostToolUse` hooks do not receive the live `background_tasks` registry that `Stop` hooks receive. A hook that tracks background Bash work from local marker files can see a `&lt;task-notification&gt;` in the transcript only indirectly; no hook event fires when the task completes, and later Pre/Post payloads do not say that the task has reached a terminal state. Unless the agent explicitly calls `TaskOutput` or the session reaches `Stop`, hook-based tooling can keep warning or blocking as if completed background work were still live for every subsequent tool call in the same turn.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] SubagentStop matcher can be bypassed for internal forks with empty agent_type.</title>
-    <id>https://framework.boucle.sh/limitations.html#subagentstop-matcher-bypassed-on-empty-agent-type</id>
-    <link href="https://framework.boucle.sh/limitations.html#subagentstop-matcher-bypassed-on-empty-agent-type"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 setup found that a SubagentStop hook group with a matcher naming specific agent types can still run for internal forks whose agent_type is the empty string. Because the hook gatherer treats a falsy match key as a reason to skip filtering, matcher-scoped groups are included wholesale rather than excluded. In one measured session, 115 of 129 dispatches of an agent-scoped LLM judge came from empty-agent_type internal forks, creating token waste and risking false blocking verdicts against healthy background work.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Headless skill preamble failure can report success with zero turns.</title>
-    <id>https://framework.boucle.sh/limitations.html#headless-skill-preamble-failure-reports-success</id>
-    <link href="https://framework.boucle.sh/limitations.html#headless-skill-preamble-failure-reports-success"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 macOS setup found that headless `claude -p &quot;/skill&quot; --output-format json` can abort before the first model turn when the invoked skill&#x27;s `SKILL.md` contains a failing `!` dynamic-injection preamble. The command exits 0 and returns JSON shaped as success with `is_error:false`, `subtype:&quot;success&quot;`, `num_turns:0`, and an empty result. The same skill runs when invoked indirectly from a natural-language prompt, and a fail-open preamble wrapper also allows the model turn to proceed, so the failure is specific to immediate slash-skill invocation plus an unguarded failing preamble.</summary>
-    <category term="Skills"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Network strictAllowlist can fail open inside Docker.</title>
-    <id>https://framework.boucle.sh/limitations.html#strictallowlist-can-fail-open-inside-docker</id>
-    <link href="https://framework.boucle.sh/limitations.html#strictallowlist-can-fail-open-inside-docker"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.197 and 2.1.233 Linux setup running inside Docker found that `sandbox.network.strictAllowlist: true` did not block Bash access to non-allowlisted domains. The reporter configured allowed domains, confirmed standalone `bwrap --unshare-net` blocked the same curl target inside the container, and inspected debug logs and process ancestry showing Claude Code spawned the shell directly with no `bwrap`, sandbox, namespace, seccomp, or AppArmor dispatch path. The result was a silent fail-open network boundary in an ingest workflow where external documents could prompt the agent to exfiltrate data.</summary>
-    <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Local worktree settings can leak hooks across linked checkouts.</title>
-    <id>https://framework.boucle.sh/limitations.html#local-worktree-settings-can-leak-hooks-across-checkouts</id>
-    <link href="https://framework.boucle.sh/limitations.html#local-worktree-settings-can-leak-hooks-across-checkouts"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A collaborator-reproduced Claude Code 2.1.233 macOS issue found that a linked git worktree can pick up the main worktree&#x27;s untracked `.claude/settings.local.json` hooks, then run those hook commands with the linked worktree as the current directory. In the reproduced Stop-hook case, a relative hook script existed only in the main checkout, so sessions in the linked checkout reported a missing hook script even though that branch had no `.claude/` directory. The maintainer clarified that committed `.claude/settings.json` stayed per-checkout, while local settings are resolved through the repository root and can therefore cover every linked worktree without a clear warning.</summary>
-    <category term="Worktree"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Sandbox read isolation and settings policy can fail open.</title>
-    <id>https://framework.boucle.sh/limitations.html#sandbox-read-isolation-and-settings-policy-can-fail-open</id>
-    <link href="https://framework.boucle.sh/limitations.html#sandbox-read-isolation-and-settings-policy-can-fail-open"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Linux Claude Code sandbox setup found that `sandbox.filesystem.allowWrite` did not provide filesystem read isolation: Bash commands could still read credential paths such as `~/.ssh/id_rsa`, while `permissions.deny` `Read(...)` rules only covered the dedicated Read tool. The same session showed the agent could edit its own `settings.json`, add plausible but unsupported sandbox keys, and leave the file as invalid JSON during revert. Claude Code then continued tool execution without surfacing a hard sandbox configuration failure, making the boundary appear enabled while policy parsing or enforcement was degraded.</summary>
-    <category term="Sandbox &amp; permissions"/>
   </entry>
 </feed>

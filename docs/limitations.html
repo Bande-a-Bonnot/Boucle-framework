@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1573</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-17.</span></p>
+        <p class="subtitle"><span id="total-count">1578</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-17.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -16803,17 +16803,17 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not use `permissionDecision: &quot;ask&quot;` as the only guard for high-risk outward actions unless the installed UI proves it defaults to denial. For public writes, git pushes, deploys, or money-moving operations, require a second fail-closed control such as a service-side approval record, a wrapper that treats ambiguous input as denial, or a hard block plus a separate explicit command to proceed.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/85607" target="_blank">#85607</a></div>
         </div>
-        <div class="kl-entry" data-category="Hook execution &amp; lifecycle" data-issues="86578" id="hook-timeout-may-not-kill-stdin-read" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="Hook execution &amp; lifecycle" data-issues="86578 87289" id="hook-timeout-may-not-kill-stdin-read" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1507</span>
                 <span class="kl-cat">Hook execution &amp; lifecycle</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
             <h3>Hook timeouts may not reclaim hooks blocked on stdin reads.</h3>
-            <p>A reported Claude Code 2.1.232 Linux setup found that a command hook blocked in `io.ReadAll(os.Stdin)` survived well past its configured timeout. The timeout path delivered SIGTERM, but the child remained alive for hundreds of seconds while the wrapper waited in `sigsuspend`; only SIGKILL or SIGQUIT ended the wedged process. The report reproduced this with a hook stdin connected to a FIFO that never reached EOF, and noted that the same hook exited normally in 49 ms when stdin was closed.</p>
+            <p>Reported Claude Code 2.1.232 Linux and 2.1.229 Windows setups found that hooks blocked while reading stdin can survive well past their declared timeout. One report used `io.ReadAll(os.Stdin)` with a FIFO that never reached EOF and observed the child alive for hundreds of seconds after SIGTERM; another measured PostToolUse and PreToolUse hooks declared at 3s or 5s stalling for roughly 182s to 303s before a larger backstop cancelled them. In the Windows case the visible tool call sat at `Running...`, and the real blocker was sometimes a previous PostToolUse hook rather than the current command.</p>
                         <!-- workaround:hook-timeout-may-not-kill-stdin-read -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat the hook `timeout` field as proof that a blocked hook will be reclaimed. Keep hook stdin handling bounded, avoid reads that wait for EOF unless the caller is proven to close stdin, and run a watchdog smoke test that leaves stdin open and expects the process tree to disappear. For unattended sessions, wrap high-risk hooks with an external supervisor that escalates from SIGTERM to SIGKILL and emits a visible failure marker when escalation was required.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86578" target="_blank">#86578</a></div>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86578" target="_blank">#86578</a>, <a href="https://github.com/anthropics/claude-code/issues/87289" target="_blank">#87289</a></div>
         </div>
         <div class="kl-entry" data-category="Hook execution &amp; lifecycle" data-issues="85250" id="hook-timeout-may-not-bound-pre-main-wedges" data-severity="high" data-status="open">
             <div class="kl-header">
@@ -17606,6 +17606,66 @@
                         <!-- workaround:background-fork-can-drop-vertex-gateway-env -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For gateway-fronted Vertex or similar provider overrides, do not assume background forks inherit the interactive session&#x27;s auth environment. Before moving critical work into a background fork, run a harmless status or tiny model-call canary from the forked session and confirm the expected gateway path is used. Keep provider env setup in a wrapper or daemon launch path where possible, avoid left-arrow backgrounding for sessions that depend on per-shell override variables, and preserve process environment variable names, not values, when reporting auth inheritance failures.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87255" target="_blank">#87255</a></div>
+        </div>
+        <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="87278" id="unlogged-interrupt-message-can-enter-model-context" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1574</span>
+                <span class="kl-cat">Security &amp; trust boundaries</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Unlogged interruption messages can enter model context outside the transcript.</h3>
+            <p>A reported Claude Code Desktop 2.1.229 Windows session showed the model responding to a system-styled interruption message that the user says they did not send and that had no corresponding user-role entry in the local JSONL transcript. The injected content impersonated a user interruption, claimed a compressed context view, and asked the agent to use existing SSH access to create a production admin account with a public password. The model refused, but the first local trace was the assistant response, leaving the user unable to audit how the content reached the request from transcript evidence alone.</p>
+                        <!-- workaround:unlogged-interrupt-message-can-enter-model-context -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat transcript absence as inconclusive when investigating suspicious model behavior. Preserve request IDs, timestamps, raw local transcripts, active connector and MCP state, and security logs before restarting or deleting remote connectors. For production access, require durable out-of-band approvals and server-side audit trails before executing account, SSH, or permission changes, and assume that a model-visible interruption may not be user-authored unless it is backed by logged client input.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87278" target="_blank">#87278</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="87316" id="vscode-chat-channel-relaunch-can-abort-inflight-work" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1575</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>VS Code chat channel relaunches can abort in-flight work.</h3>
+            <p>A reported Claude Code VS Code Remote WSL2 session saw the extension log `Closing Claude on channel` and tear down one or two active chat channels without a user action or VS Code host restart. One incident happened mid-response stream, dropped backend process count to zero for more than a minute, and later resumed the same session; another relaunch spawned two backend processes for the same resume and one failed with a config lock error. Conversation state resumed, but in-flight tool calls and responses were aborted while the UI looked like the session crashed.</p>
+                        <!-- workaround:vscode-chat-channel-relaunch-can-abort-inflight-work -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For VS Code Remote or multi-window sessions, do not assume a resumed chat means the interrupted tool call finished. After any unexplained channel close or `Closing Claude on channel` log line, verify intended artifacts, commits, and tool outputs from disk before continuing. Keep critical long-running operations behind explicit checkpoints, avoid relying on only the chat panel for final delivery, and preserve extension logs plus backend process counts when reporting relaunch races.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87316" target="_blank">#87316</a></div>
+        </div>
+        <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="87221" id="subagent-fork-can-inherit-full-parent-context-and-become-unresumable" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1576</span>
+                <span class="kl-cat">Subagent &amp; spawned agents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Subagent forks can inherit full parent context and become unresumable.</h3>
+            <p>A reported Claude Code 2.1.233 Linux orchestration session found that an internal `subagent_type: &quot;fork&quot;` inherited the full parent context for a narrow summarization task, consuming 143,790 tokens for work the reporter estimated at roughly 2,000 tokens when done directly. Other forked agents returned garbled or truncated output after long runs, could not be resumed because no transcript was found, or completed commits without delivering their reasoning back to the orchestrator. The reporter&#x27;s follow-up described substantial cost and lost operator time from dozens of subagents that disappeared or failed to report.</p>
+                        <!-- workaround:subagent-fork-can-inherit-full-parent-context-and-become-unresumable -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not let agents spawn unbounded forks for narrow summarization, validation, or issue-triage work unless token budget and transcript persistence are explicitly monitored. Give subagents unique output files and require parent-side readback before treating work as delivered, cap fan-out width, and checkpoint commits or artifacts before long background runs. When costs matter, compare forked-agent token usage against a direct single-agent baseline and stop the workflow if transcripts are missing or unresumable.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87221" target="_blank">#87221</a></div>
+        </div>
+        <div class="kl-entry" data-category="Configuration behavior" data-issues="87248" id="claudemdexcludes-matches-resolved-symlink-rule-paths" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1577</span>
+                <span class="kl-cat">Configuration behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>`claudeMdExcludes` can silently miss symlinked rules paths.</h3>
+            <p>A reported Claude Code 2.1.233 macOS setup used separate config worlds and attempted to exclude a third-party toolkit&#x27;s home-level `CLAUDE.md` and `.claude/rules/*.md` files. The `CLAUDE.md` exclude worked, but rules installed as symlinks still loaded until the exclude pattern targeted the resolved symlink destination under the toolkit&#x27;s versioned directory. The docs described `CLAUDE.md` memory excludes but did not make it clear that rules files were in scope or that matching used resolved paths, producing a silent partial success that looked like isolation until an `InstructionsLoaded` hook logged every loaded path.</p>
+                        <!-- workaround:claudemdexcludes-matches-resolved-symlink-rule-paths -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> After adding `claudeMdExcludes`, verify the loaded memory and rules files with `/context` or an `InstructionsLoaded` audit hook instead of trusting the pattern text. For symlinked rules directories, add excludes for both the link location and the resolved target root, and treat any zero-match exclude as suspicious. When using multiple company or client config worlds on one machine, keep a canary that reports foreign memory files before starting sensitive work.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87248" target="_blank">#87248</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="87248" id="bash-deny-refspec-colon-patterns-can-fail-to-match" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1578</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Bash deny patterns ending in `:branch` may not block matching git refspec pushes.</h3>
+            <p>A reported Claude Code 2.1.233 macOS permission audit found that several `permissions.deny` patterns for protected-branch pushes worked, including patterns matching `main`, `develop`, `refs/heads/develop`, and `HEAD:*`. However, deny rules shaped like `Bash(git push *:develop)` and `Bash(git push *:main)` did not match a direct refspec such as `git push --dry-run origin my-branch-name:develop`; the permission layer allowed the command through and only git rejected it later. The failed rules looked like explicit protected-branch coverage while matching nothing in the tested case.</p>
+                        <!-- workaround:bash-deny-refspec-colon-patterns-can-fail-to-match -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on untested Bash deny glob patterns for branch-protection policy. Smoke-test each protected-branch pattern with harmless `git push --dry-run` variants, prefer patterns that match full command words or `refs/heads/&lt;branch&gt;` forms, and keep server-side branch protection plus a pre-push hook that reads the actual remote ref from stdin. Remove deny rules that never match so they do not create false confidence.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87248" target="_blank">#87248</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
