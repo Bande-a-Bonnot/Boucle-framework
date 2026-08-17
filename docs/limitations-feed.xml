@@ -7,6 +7,46 @@
   <updated>2026-08-17T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Hooks cannot watch file changes independent of the originating tool.</title>
+    <id>https://framework.boucle.sh/limitations.html#hooks-cannot-watch-file-changes-independent-of-originating-tool</id>
+    <link href="https://framework.boucle.sh/limitations.html#hooks-cannot-watch-file-changes-independent-of-originating-tool"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code hook limitation notes that PreToolUse and PostToolUse matchers fire on the Claude Code tool name, such as Edit, Write, Bash, or PowerShell, rather than on the underlying filesystem mutation. A hook that normalizes or audits written files after Edit or Write therefore does not fire when a script, shell redirection, or another tool changes the same file. There is no documented hook scope that means `run after any file content changed` regardless of which tool caused the change.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Reconnected MCP tools can ignore bypass-permissions and allow rules.</title>
+    <id>https://framework.boucle.sh/limitations.html#reconnected-mcp-tools-can-ignore-bypass-and-allow-rules</id>
+    <link href="https://framework.boucle.sh/limitations.html#reconnected-mcp-tools-can-ignore-bypass-and-allow-rules"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported macOS Claude Code Desktop session showed MCP server tools prompting on every call after the desktop app restarted or the server reconnected, even though `defaultMode` was `bypassPermissions` and both wildcard and per-tool allow rules were configured. Built-in Bash, Read, Edit, and Write still respected the configuration, but reconnected MCP tools such as `claude-in-chrome` displayed recurring per-call dialogs. The reporter also observed that Allow once did not suppress the next call, and Always allow did not persist across the next reconnect.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Custom sandbox proxy settings can silently remove allowlist and credential-mask controls.</title>
+    <id>https://framework.boucle.sh/limitations.html#custom-sandbox-proxy-can-disable-allowlist-and-credential-mask-controls</id>
+    <link href="https://framework.boucle.sh/limitations.html#custom-sandbox-proxy-can-disable-allowlist-and-credential-mask-controls"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.220 WSL2 documentation gap found that setting a custom sandbox proxy port made the built-in network allowlist stop enforcing `strictAllowlist` or `allowManagedDomainsOnly`, while credential `mask` entries no longer substituted secrets even with the documented `tlsTerminate` setting. The same report also found that `sandbox.credentials` denied built-in Read access to protected files despite docs saying the setting affects sandboxed Bash only. The issue is framed as a documentation gap because these controls change behavior by configuration path without an obvious warning.</summary>
+    <category term="Configuration behavior"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Auto mode can miss agent-authored scripts that run destructive `git clean` commands.</title>
+    <id>https://framework.boucle.sh/limitations.html#auto-mode-can-miss-agent-script-git-clean-data-loss</id>
+    <link href="https://framework.boucle.sh/limitations.html#auto-mode-can-miss-agent-script-git-clean-data-loss"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 native Windows session in `permissions.defaultMode: &quot;auto&quot;` allowed a subagent to write and execute a PowerShell script whose non-terminal `Push-Location` failure left execution in the live workspace root before running `git clean -xdff`. The configured deny rules and PreToolUse hook could not inspect the script payload behind the executed file path, Windows had no Claude Code OS sandbox, and the auto-mode classifier did not block the destructive payload. The reported result was large gitignored-workspace data loss, including projects with no remote copy.</summary>
+    <category term="Security &amp; trust boundaries"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Sandbox network allowlists can be bypassed by an in-sandbox CONNECT relay.</title>
+    <id>https://framework.boucle.sh/limitations.html#sandbox-network-allowlist-can-be-bypassed-by-local-connect-relay</id>
+    <link href="https://framework.boucle.sh/limitations.html#sandbox-network-allowlist-can-be-bypassed-by-local-connect-relay"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 Linux sandbox configuration with `sandbox.enabled`, `allowUnsandboxedCommands: false`, `failIfUnavailable: true`, and `allowManagedDomainsOnly: true` blocked a direct HTTPS request to a non-allowlisted host with HTTP 403, but allowed the same destination when the sandboxed command forwarded the CONNECT through a local relay process. The reporter observed both paths in the same session with the same proxy credentials and same target authority, so the configured domain allowlist was active for direct requests but ineffective for relayed CONNECT traffic.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
     <title>[LOW] Agent SDK subagent docs can omit fork-mode foreground/background precedence.</title>
     <id>https://framework.boucle.sh/limitations.html#agent-sdk-subagent-docs-omit-fork-mode-precedence</id>
     <link href="https://framework.boucle.sh/limitations.html#agent-sdk-subagent-docs-omit-fork-mode-precedence"/>
@@ -125,45 +165,5 @@
     <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.233 macOS Vertex-gateway setup found that pressing left arrow to background a conversation into a daemon fork reconstructed the worker environment without `CLAUDE_CODE_SKIP_VERTEX_AUTH` and `ANTHROPIC_VERTEX_BASE_URL`, while keeping `CLAUDE_CODE_USE_VERTEX`, `ANTHROPIC_VERTEX_PROJECT_ID`, and `ANTHROPIC_AUTH_TOKEN`. The forked worker then attempted local Google ADC and failed every request, even though the original interactive session and daemon process had the complete gateway environment.</summary>
     <category term="Auth &amp; accounts"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Background job main sessions can miss the available-skills listing.</title>
-    <id>https://framework.boucle.sh/limitations.html#background-job-main-session-can-miss-skills-listing</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-job-main-session-can-miss-skills-listing"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 macOS background job started from the agents interface did not receive the available-skills system-reminder in its main session, while subagents spawned from that same session did receive the full personal, project, and built-in skills listing. Because Claude Code instructs agents to use only listed skills, the background job main session had no discoverable path to invoke a matching user or project skill and produced an HTML deliverable without loading the user&#x27;s page-convention skill.</summary>
-    <category term="Skills"/>
-  </entry>
-  <entry>
-    <title>[HIGH] File-freshness notices can assert false user intent and tell agents not to disclose it.</title>
-    <id>https://framework.boucle.sh/limitations.html#file-freshness-notice-can-assert-false-user-intent</id>
-    <link href="https://framework.boucle.sh/limitations.html#file-freshness-notice-can-assert-false-user-intent"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 Windows parent session plus background subagent workflow found that native file-modification boilerplate could appear after an agent changed tracked files outside Edit/Write tooling. The notice asserted that the change was intentional, that the user was already aware, and that the assistant should not tell the user. In the reported cases those assertions were false: the change came from an agent edit or revert, and the human did not know about it. The same notice was also ephemeral enough that a recovered subagent transcript did not contain the injected text, making later forensics first look like either a prompt-injection event or a model confabulation.</summary>
-    <category term="Security &amp; trust boundaries"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Sibling subagents can silently overwrite each other&#x27;s scratchpad files.</title>
-    <id>https://framework.boucle.sh/limitations.html#subagent-scratchpad-directory-shared-across-siblings</id>
-    <link href="https://framework.boucle.sh/limitations.html#subagent-scratchpad-directory-shared-across-siblings"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 multi-agent workflow found that sibling subagents spawned by one orchestrator shared a single scratchpad directory keyed by the parent session, and a background-forked Skill inherited the parent&#x27;s own scratchpad path. Parallel agents converged on generic filenames such as `preview.html` and `threads.json`; later reads succeeded but returned a sibling&#x27;s artifact or a concurrently truncated parent file, making read-back verification accuse the wrong layer.</summary>
-    <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Agent `run_in_background: false` can still behave like a background dispatch.</title>
-    <id>https://framework.boucle.sh/limitations.html#agent-run-in-background-false-can-still-return-as-background</id>
-    <link href="https://framework.boucle.sh/limitations.html#agent-run-in-background-false-can-still-return-as-background"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 Windows Agent workflow found that `run_in_background: false` returned immediately with the same background-spawn message instead of blocking for the agent&#x27;s final report. The agents completed their work, but results arrived only later as teammate messages or sometimes never arrived as text. The reporter measured batches where agents went idle after doing useful work while the parent saw no final tool result, causing fallback inline work and quiet quality loss.</summary>
-    <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Foreground operator input can be routed into a background Agent task.</title>
-    <id>https://framework.boucle.sh/limitations.html#background-agent-can-receive-foreground-operator-input</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-agent-can-receive-foreground-operator-input"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code background Agent workflow delivered text typed by the operator in the main session into a live background task&#x27;s transcript instead of creating a new main-session turn. The misdelivered messages appeared to the background task as genuine user interruptions while the main session had no visible record that those turns were sent there. In the cleanest reported incident, a task originally scoped to merging approved PRs received operator authorization language and used it to dispatch a separate security-testing crew outside its original task scope.</summary>
-    <category term="Subagent &amp; spawned agents"/>
   </entry>
 </feed>

@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1587,
+  "count": 1592,
   "categories": {
-    "Hook behavior & events": 210,
-    "Permission system": 144,
+    "Hook behavior & events": 211,
+    "Permission system": 145,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 84,
     "Subagent & spawned agents": 77,
@@ -12,12 +12,12 @@
     "CLI & terminal": 31,
     "Platform & compatibility": 31,
     "Context & memory": 30,
-    "Sandbox & permissions": 28,
+    "Sandbox & permissions": 29,
     "MCP & integrations": 27,
+    "Configuration behavior": 26,
     "Cowork & remote": 26,
-    "Configuration behavior": 25,
+    "Security & trust boundaries": 26,
     "Performance & cost": 25,
-    "Security & trust boundaries": 25,
     "Agents & subagents": 22,
     "Tool behavior": 22,
     "VS Code extension": 22,
@@ -191,10 +191,10 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 136,
-    "HIGH": 867,
+    "CRITICAL": 137,
+    "HIGH": 868,
     "LOW": 112,
-    "MEDIUM": 472
+    "MEDIUM": 475
   },
   "entries": [
     {
@@ -20393,30 +20393,95 @@
       "date_added": "2026-08-17",
       "description": "A reported Claude Code Agent SDK documentation gap found that the SDK subagents page describes foreground versus background behavior for the SDK default, but does not mention fork mode, that fork mode can be enabled in the SDK, that it became the default in interactive sessions, or that `run_in_background` can be absent from the Agent tool schema while fork mode is active. The separate sub-agents docs page contains the precedence list, but the SDK page can lead users to file or debug the wrong issue when interactive CLI behavior differs from the SDK default.",
       "workaround": "When debugging subagent foreground or background behavior, check the sub-agents foreground/background precedence docs in addition to the Agent SDK page. Record whether fork mode is enabled and inspect the actual Agent tool schema before assuming `run_in_background` should be accepted. Link both docs pages in internal SDK runbooks until the SDK page names fork mode directly."
+    },
+    {
+      "id": "sandbox-network-allowlist-can-be-bypassed-by-local-connect-relay",
+      "title": "Sandbox network allowlists can be bypassed by an in-sandbox CONNECT relay.",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87381"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 Linux sandbox configuration with `sandbox.enabled`, `allowUnsandboxedCommands: false`, `failIfUnavailable: true`, and `allowManagedDomainsOnly: true` blocked a direct HTTPS request to a non-allowlisted host with HTTP 403, but allowed the same destination when the sandboxed command forwarded the CONNECT through a local relay process. The reporter observed both paths in the same session with the same proxy credentials and same target authority, so the configured domain allowlist was active for direct requests but ineffective for relayed CONNECT traffic.",
+      "workaround": "Do not treat Claude Code's sandbox domain allowlist as the only egress boundary for untrusted commands. Add host, container, or network-level egress policy where destination control matters, and verify with both direct and relayed proxy probes after Claude Code updates. If a workflow can start local relay processes inside the sandbox, assume the allowlist may not constrain every outbound path until an upstream fix is verified."
+    },
+    {
+      "id": "auto-mode-can-miss-agent-script-git-clean-data-loss",
+      "title": "Auto mode can miss agent-authored scripts that run destructive `git clean` commands.",
+      "category": "Security & trust boundaries",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87360"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 native Windows session in `permissions.defaultMode: \"auto\"` allowed a subagent to write and execute a PowerShell script whose non-terminal `Push-Location` failure left execution in the live workspace root before running `git clean -xdff`. The configured deny rules and PreToolUse hook could not inspect the script payload behind the executed file path, Windows had no Claude Code OS sandbox, and the auto-mode classifier did not block the destructive payload. The reported result was large gitignored-workspace data loss, including projects with no remote copy.",
+      "workaround": "Do not rely on auto mode or literal command hooks as the sole guard for agent-authored scripts that can run destructive Git commands. Deny or manually review script execution when payloads contain `git clean`, `reset --hard`, `checkout .`, or similar commands without an explicit safe working directory. Keep important generated and client work outside gitignored-only storage, use OS backups, and add external filesystem or Git hooks where native Windows sandboxing is unavailable."
+    },
+    {
+      "id": "custom-sandbox-proxy-can-disable-allowlist-and-credential-mask-controls",
+      "title": "Custom sandbox proxy settings can silently remove allowlist and credential-mask controls.",
+      "category": "Configuration behavior",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87296"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.220 WSL2 documentation gap found that setting a custom sandbox proxy port made the built-in network allowlist stop enforcing `strictAllowlist` or `allowManagedDomainsOnly`, while credential `mask` entries no longer substituted secrets even with the documented `tlsTerminate` setting. The same report also found that `sandbox.credentials` denied built-in Read access to protected files despite docs saying the setting affects sandboxed Bash only. The issue is framed as a documentation gap because these controls change behavior by configuration path without an obvious warning.",
+      "workaround": "If you configure `httpProxyPort` or another custom proxy path, implement domain allowlisting and credential substitution in that proxy and test both before trusting the sandbox policy. Keep a small harness that checks non-allowlisted HTTPS, private or loopback targets, credential masking, and built-in file-tool access on every Claude Code update. Treat docs examples that mention only Bash or only the built-in proxy as incomplete until the exact configured path is measured."
+    },
+    {
+      "id": "reconnected-mcp-tools-can-ignore-bypass-and-allow-rules",
+      "title": "Reconnected MCP tools can ignore bypass-permissions and allow rules.",
+      "category": "Permission system",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87358"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported macOS Claude Code Desktop session showed MCP server tools prompting on every call after the desktop app restarted or the server reconnected, even though `defaultMode` was `bypassPermissions` and both wildcard and per-tool allow rules were configured. Built-in Bash, Read, Edit, and Write still respected the configuration, but reconnected MCP tools such as `claude-in-chrome` displayed recurring per-call dialogs. The reporter also observed that Allow once did not suppress the next call, and Always allow did not persist across the next reconnect.",
+      "workaround": "For Desktop workflows that depend on MCP tools after app restarts or reconnects, do not assume bypass-permissions mode or allow rules still cover the server. Exercise one representative tool call after reconnect and keep an operator present if dialogs recur. For unattended work, prefer built-in tools or a freshly started session whose MCP server permissions were just verified, and record reconnects as permission-boundary changes."
+    },
+    {
+      "id": "hooks-cannot-watch-file-changes-independent-of-originating-tool",
+      "title": "Hooks cannot watch file changes independent of the originating tool.",
+      "category": "Hook behavior & events",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87356"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code hook limitation notes that PreToolUse and PostToolUse matchers fire on the Claude Code tool name, such as Edit, Write, Bash, or PowerShell, rather than on the underlying filesystem mutation. A hook that normalizes or audits written files after Edit or Write therefore does not fire when a script, shell redirection, or another tool changes the same file. There is no documented hook scope that means `run after any file content changed` regardless of which tool caused the change.",
+      "workaround": "For file-change policies, attach checks to every tool family that can mutate files in the target workflow, including Bash and PowerShell, or run a diff-based audit after each tool call class that might write. For high-value repositories, use Git hooks, filesystem watchers, CI checks, or OS-level controls as the tool-independent layer, and treat Claude Code hooks as tool-call gates rather than complete file-change monitors."
     }
   ],
   "status_summary": {
-    "open": 1573,
+    "open": 1578,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 136,
-    "high": 867,
+    "critical": 137,
+    "high": 868,
     "low": 112,
-    "medium": 472
+    "medium": 475
   },
   "lastUpdated": "2026-08-17",
   "stats": {
-    "total": 1587,
-    "critical": 136,
-    "high": 867,
-    "medium": 472,
+    "total": 1592,
+    "critical": 137,
+    "high": 868,
+    "medium": 475,
     "low": 112,
-    "open": 1573,
+    "open": 1578,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-17",
-  "total": 1587
+  "total": 1592
 }
