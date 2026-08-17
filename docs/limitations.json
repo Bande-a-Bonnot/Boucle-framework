@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1597,
+  "count": 1598,
   "categories": {
     "Hook behavior & events": 211,
     "Permission system": 146,
@@ -21,8 +21,8 @@
     "Agents & subagents": 22,
     "Tool behavior": 22,
     "VS Code extension": 22,
+    "Auth & accounts": 20,
     "Core & session management": 20,
-    "Auth & accounts": 19,
     "Remote & cloud": 18,
     "Model behavior": 17,
     "Data integrity": 16,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 137,
-    "HIGH": 869,
+    "HIGH": 870,
     "LOW": 112,
     "MEDIUM": 479
   },
@@ -20523,30 +20523,43 @@
       "date_added": "2026-08-17",
       "description": "A reported Claude Code 2.1.233 Linux repro found that a Bash tool call with a 3s timeout returned control to the agent while the underlying process continued running for roughly 16 more seconds. The reporter tied the behavior to multi-hour VM disk-saturation incidents under concurrent subagent load, where many individually timed-out commands could continue consuming I/O after the tool layer appeared to have moved on.",
       "workaround": "Do not treat the Bash tool `timeout` parameter as a hard cancellation boundary for resource-heavy commands. Wrap expensive shell work in OS-level timeouts or job-control supervision that kills the full process tree, cap subagent concurrency for I/O-heavy tasks, and verify that no matching child processes or high-I/O jobs remain after a timeout before launching more work."
+    },
+    {
+      "id": "claude-config-dir-can-name-different-account-than-session-spends",
+      "title": "CLAUDE_CONFIG_DIR can name a different account than the session appears to spend.",
+      "category": "Auth & accounts",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87447"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Windows Claude Code Desktop and CLI setup with several config roots found that a desktop-launched session exposed `CLAUDE_CONFIG_DIR`, `claude auth status`, and model-visible context for one account while desktop session records, usage samples, and owner confirmation indicated another account was being billed. Follow-up measurements found contradictory account identifiers inside the same config file, including an OAuth identity for one account and cached usage for another. The reporter explicitly notes that the signing credential was not directly measured, so the hard limitation is that local tooling cannot reliably identify the effective account or billing boundary from the available session surfaces.",
+      "workaround": "Do not use `CLAUDE_CONFIG_DIR` or `claude auth status` alone as the source of truth for account-specific governors, spend caps, or audit attribution in multi-account Desktop setups. Cross-check session-visible identity against Desktop records, usage samples, and owner/account dashboards before taking protective action, and fail closed or ask the operator when those sources disagree. For tools that enforce usage limits, record the config root, reported identity, observed usage account, and any null identity responses so mismatches are visible instead of silently grading the wrong account."
     }
   ],
   "status_summary": {
-    "open": 1583,
+    "open": 1584,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 137,
-    "high": 869,
+    "high": 870,
     "low": 112,
     "medium": 479
   },
   "lastUpdated": "2026-08-17",
   "stats": {
-    "total": 1597,
+    "total": 1598,
     "critical": 137,
-    "high": 869,
+    "high": 870,
     "medium": 479,
     "low": 112,
-    "open": 1583,
+    "open": 1584,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-17",
-  "total": 1597
+  "total": 1598
 }
