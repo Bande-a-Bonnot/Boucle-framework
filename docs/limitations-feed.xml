@@ -7,6 +7,14 @@
   <updated>2026-08-17T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Background Bash tasks can be killed while reporting success.</title>
+    <id>https://framework.boucle.sh/limitations.html#background-bash-task-can-be-killed-while-reporting-success</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-bash-task-can-be-killed-while-reporting-success"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 macOS session found that a Bash tool call using `run_in_background: true` could SIGKILL the task shell and its process group while still notifying the user that the task completed with exit code 0. The triggering command invoked a CLI that spawned a detached daemonizing worker; foreground runs succeeded, but 7 of 9 background runs lost post-command markers or output, and some left 0-byte result files. A later test detached the worker into its own session: the task shell could still die, while the worker survived and wrote valid JSON, narrowing the failure to group-targeted task cleanup plus incorrect success reporting.</summary>
+    <category term="Bash &amp; shell execution"/>
+  </entry>
+  <entry>
     <title>[HIGH] Piped `-p` prompts can be recorded but omitted from the model request.</title>
     <id>https://framework.boucle.sh/limitations.html#piped-print-prompt-can-be-dropped-before-model-request</id>
     <link href="https://framework.boucle.sh/limitations.html#piped-print-prompt-can-be-dropped-before-model-request"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.218 Windows setup found that a `PreToolUse` command hook such as `python C:/nonexistent/ghost_hook.py` blocked the matched Bash tool because Python itself launched successfully and then exited 2 when it could not open the script. A collaborator reproduced the same behavior on Claude Code 2.1.233 and clarified the distinction: a hook executable that cannot be started can be treated as a non-blocking hook error, but an interpreter that starts and returns exit code 2 is indistinguishable from a deliberate hook deny because the hook protocol reserves exit code 2 for blocking. A stale path, renamed hook file, or disabled-by-renaming guard can therefore lock out every matched tool call, including the call that would repair the configuration from inside the session.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Linux seccomp sandbox can fail inside `bwrap` unless Unix socket filtering is disabled.</title>
-    <id>https://framework.boucle.sh/limitations.html#linux-seccomp-sandbox-can-fail-inside-bwrap</id>
-    <link href="https://framework.boucle.sh/limitations.html#linux-seccomp-sandbox-can-fail-inside-bwrap"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.220 Linux sandbox setup found that every sandboxed Bash call failed before the user command ran with `apply-seccomp: write /proc/self/setgroups ... Permission denied` when `sandbox.network.allowAllUnixSockets` was false. Independent reproductions on Ubuntu narrowed the failure to the seccomp helper attempting a nested user namespace from inside bubblewrap after capabilities have been dropped; enabling `allowAllUnixSockets: true` made Bash run but disabled Unix-socket filtering wholesale. A later 2.1.233 data point found an AppArmor `bwrap` profile can restore deterministic startup while preserving socket blocking, but also reported residual intermittent `unshare(CLONE_NEWUSER): Invalid argument` failures that are not caught by `failIfUnavailable`.</summary>
-    <category term="Sandbox &amp; permissions"/>
   </entry>
 </feed>
