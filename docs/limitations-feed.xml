@@ -7,6 +7,14 @@
   <updated>2026-08-17T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Sandboxed Bash helper process can OOM during a slow command.</title>
+    <id>https://framework.boucle.sh/limitations.html#sandboxed-bash-helper-can-oom-during-slow-command</id>
+    <link href="https://framework.boucle.sh/limitations.html#sandboxed-bash-helper-can-oom-during-slow-command"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 Linux session in an unprivileged LXC found that an ephemeral per-tool-call helper process named `claude.exe` grew to 11.6 GB anonymous RSS in about two minutes while a sandboxed Bash pipeline was running. The interactive Claude Code process stayed around 430 MB, the input JSONL files totaled under 14 MB, and the known triggering command was a slow `grep -o -i` bounded-repetition pattern piped to `head` that hit the Bash tool timeout. The kernel OOM kill occurred inside the service cgroup, and with systemd `OOMPolicy=stop` it stopped the parent Claude service before restart recovered it.</summary>
+    <category term="Performance &amp; resource usage"/>
+  </entry>
+  <entry>
     <title>[HIGH] Cloud routine egress allowlist domains may not reach the sandbox proxy.</title>
     <id>https://framework.boucle.sh/limitations.html#cloud-routine-egress-allowlist-not-propagated-to-sandbox</id>
     <link href="https://framework.boucle.sh/limitations.html#cloud-routine-egress-allowlist-not-propagated-to-sandbox"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.206 macOS setup found that an MCP tool listed exactly in `permissions.allow` still prompted on a fresh plan-mode session even after workspace trust was accepted and no deny or ask rules existed. A collaborator reproduced on Claude Code 2.1.233 and narrowed the confirmed case: in plan mode, MCP tools that do not advertise `readOnlyHint: true` are treated as potential writes and still prompt even when an exact allow rule matches. The same tool ran silently in default mode, and the same plan-mode setup ran silently once the MCP tool was annotated as read-only. The prompt currently looks like an ordinary permission request and can offer a &#x27;do not ask again&#x27; allow entry that plan mode then continues to ignore for the non-read-only tool.</summary>
     <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Settings watcher can rewalk huge symlink target directories.</title>
-    <id>https://framework.boucle.sh/limitations.html#settings-watcher-can-rewalk-huge-symlink-target-directories</id>
-    <link href="https://framework.boucle.sh/limitations.html#settings-watcher-can-rewalk-huge-symlink-target-directories"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.224 macOS setup with `~/.claude/settings.json` symlinked into a large Nix store path found that an idle session repeatedly opened and enumerated the symlink target&#x27;s parent directory during unrelated Nix builds. The reporter&#x27;s `sample` and `fs_usage` captures showed repeated `lstat` and `getdirentries64` work over a directory with hundreds of thousands of entries, producing sustained multi-core CPU usage while Claude Code was otherwise idle. Replacing the symlink with a real file, or pointing it at a file in a small directory, removed the `/nix/store` filesystem churn.</summary>
-    <category term="Performance &amp; cost"/>
   </entry>
 </feed>

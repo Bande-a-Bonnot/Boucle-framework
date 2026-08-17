@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1563,
+  "count": 1564,
   "categories": {
     "Hook behavior & events": 208,
     "Permission system": 141,
@@ -55,10 +55,10 @@
     "CLI / TUI rendering": 5,
     "Cost & usage": 5,
     "Model behavior & compliance": 5,
+    "Performance & resource usage": 5,
     "Browser automation": 4,
     "MCP & plugins": 4,
     "Model behavior & instructions": 4,
-    "Performance & resource usage": 4,
     "Performance & resources": 4,
     "permissions": 4,
     "sandbox": 4,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 134,
-    "HIGH": 854,
+    "HIGH": 855,
     "LOW": 111,
     "MEDIUM": 464
   },
@@ -20075,30 +20075,43 @@
       "date_added": "2026-08-17",
       "description": "A reported Claude Code cloud routine found that domains added to the account-level `Allow network egress` additional-domains setting did not appear in the routine sandbox's proxy allowlist a week later. Both scheduled fires and a manual `RemoteTrigger run` still returned `EGRESS_BLOCKED` from `WebFetch` and 403 CONNECT failures from `curl`, while the in-sandbox `$HTTPS_PROXY/__agentproxy/status` endpoint confirmed the expected domains were absent. The trigger API exposed prompt, allowed tools, MCP connections, and schedule state, but no sandbox network policy field that could be updated or inspected for repair.",
       "workaround": "Do not assume account-level network egress changes have reached Claude Code cloud routines. After adding a domain, run a canary routine that checks the exact host with both the intended fetch path and `$HTTPS_PROXY/__agentproxy/status`; treat absence from the proxy allowlist as a hard failure, not propagation delay. For workflows that must fetch those hosts, run the fetch from a local session, mirror the needed data into a default-reachable location, or redesign the routine around domains already visible in the sandbox proxy until the cloud allowlist path is verified."
+    },
+    {
+      "id": "sandboxed-bash-helper-can-oom-during-slow-command",
+      "title": "Sandboxed Bash helper process can OOM during a slow command.",
+      "category": "Performance & resource usage",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87238"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 Linux session in an unprivileged LXC found that an ephemeral per-tool-call helper process named `claude.exe` grew to 11.6 GB anonymous RSS in about two minutes while a sandboxed Bash pipeline was running. The interactive Claude Code process stayed around 430 MB, the input JSONL files totaled under 14 MB, and the known triggering command was a slow `grep -o -i` bounded-repetition pattern piped to `head` that hit the Bash tool timeout. The kernel OOM kill occurred inside the service cgroup, and with systemd `OOMPolicy=stop` it stopped the parent Claude service before restart recovered it.",
+      "workaround": "For slow sandboxed Bash searches, avoid ambiguous `grep` wrappers when bounded repetitions are involved: prefer `/usr/bin/grep` by absolute path, simplify wide two-sided `{0,N}` patterns, or prefilter large JSONL records before matching. Run unattended Claude Code sessions inside an explicit memory boundary such as a systemd scope, service cgroup, or container limit so a leaking helper kills only that session. Preserve kernel OOM logs, the exact Bash command, cgroup policy, sandbox errors such as `apply-seccomp`, and process-tree evidence that distinguishes the helper from the interactive session."
     }
   ],
   "status_summary": {
-    "open": 1549,
+    "open": 1550,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 134,
-    "high": 854,
+    "high": 855,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-17",
   "stats": {
-    "total": 1563,
+    "total": 1564,
     "critical": 134,
-    "high": 854,
+    "high": 855,
     "medium": 464,
     "low": 111,
-    "open": 1549,
+    "open": 1550,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-17",
-  "total": 1563
+  "total": 1564
 }
