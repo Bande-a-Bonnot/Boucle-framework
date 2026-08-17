@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1566,
+  "count": 1567,
   "categories": {
     "Hook behavior & events": 208,
     "Permission system": 141,
@@ -29,9 +29,9 @@
     "Scheduling & remote triggers": 15,
     "Permissions & safety": 14,
     "Worktree": 14,
+    "Bash & shell execution": 13,
     "File system & paths": 13,
     "MCP integration": 13,
-    "Bash & shell execution": 12,
     "Plugin & channel system": 11,
     "UX & display": 11,
     "Configuration & settings": 10,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 134,
-    "HIGH": 857,
+    "HIGH": 858,
     "LOW": 111,
     "MEDIUM": 464
   },
@@ -20114,30 +20114,43 @@
       "date_added": "2026-08-17",
       "description": "A reported Claude Code 2.1.233 Windows headless setup intermittently enqueued and persisted a full piped prompt in the transcript and last-prompt preview, but the first API request behaved as if the user turn were empty. Failing runs exited 0 in one or two turns with tiny ambient-context responses, while usage telemetry showed only 2 input tokens for the user request despite the same wrapper and prompt bytes succeeding minutes apart. Transcript inspection alone can therefore falsely reassure automation owners that the prompt reached the model.",
       "workaround": "For unattended `claude -p` lanes, add an output-contract watchdog that proves the requested task actually started instead of trusting exit 0 or transcript presence. Include a unique nonce or required summary token in every piped prompt, fail closed if the first result omits it or has implausibly small token usage, and preserve both the result JSON and raw transcript when reporting. Prefer direct prompt arguments or a small wrapper that validates non-empty stdin before launch, but keep the contract check because the reported failure occurred after the prompt was queued."
+    },
+    {
+      "id": "background-bash-task-can-be-killed-while-reporting-success",
+      "title": "Background Bash tasks can be killed while reporting success.",
+      "category": "Bash & shell execution",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87055"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 macOS session found that a Bash tool call using `run_in_background: true` could SIGKILL the task shell and its process group while still notifying the user that the task completed with exit code 0. The triggering command invoked a CLI that spawned a detached daemonizing worker; foreground runs succeeded, but 7 of 9 background runs lost post-command markers or output, and some left 0-byte result files. A later test detached the worker into its own session: the task shell could still die, while the worker survived and wrote valid JSON, narrowing the failure to group-targeted task cleanup plus incorrect success reporting.",
+      "workaround": "Do not treat a background Bash completion notification or exit code 0 as proof that long-running work finished. For critical background commands, have the worker process write the final artifact and completion sentinel itself as its last act, then verify that artifact from a separate foreground tool call before using the result. If a CLI daemonizes or spawns workers, detach the payload into its own session where appropriate, avoid relying on post-processing in the task shell, and preserve raw task output, marker files, and process-group evidence when reporting failures."
     }
   ],
   "status_summary": {
-    "open": 1552,
+    "open": 1553,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 134,
-    "high": 857,
+    "high": 858,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-17",
   "stats": {
-    "total": 1566,
+    "total": 1567,
     "critical": 134,
-    "high": 857,
+    "high": 858,
     "medium": 464,
     "low": 111,
-    "open": 1552,
+    "open": 1553,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-17",
-  "total": 1566
+  "total": 1567
 }
