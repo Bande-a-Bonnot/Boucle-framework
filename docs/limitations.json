@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1564,
+  "count": 1565,
   "categories": {
     "Hook behavior & events": 208,
     "Permission system": 141,
@@ -19,8 +19,8 @@
     "Configuration behavior": 23,
     "Agents & subagents": 22,
     "Security & trust boundaries": 22,
+    "Tool behavior": 22,
     "VS Code extension": 22,
-    "Tool behavior": 21,
     "Auth & accounts": 18,
     "Remote & cloud": 18,
     "Core & session management": 17,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 134,
-    "HIGH": 855,
+    "HIGH": 856,
     "LOW": 111,
     "MEDIUM": 464
   },
@@ -20088,30 +20088,43 @@
       "date_added": "2026-08-17",
       "description": "A reported Claude Code 2.1.233 Linux session in an unprivileged LXC found that an ephemeral per-tool-call helper process named `claude.exe` grew to 11.6 GB anonymous RSS in about two minutes while a sandboxed Bash pipeline was running. The interactive Claude Code process stayed around 430 MB, the input JSONL files totaled under 14 MB, and the known triggering command was a slow `grep -o -i` bounded-repetition pattern piped to `head` that hit the Bash tool timeout. The kernel OOM kill occurred inside the service cgroup, and with systemd `OOMPolicy=stop` it stopped the parent Claude service before restart recovered it.",
       "workaround": "For slow sandboxed Bash searches, avoid ambiguous `grep` wrappers when bounded repetitions are involved: prefer `/usr/bin/grep` by absolute path, simplify wide two-sided `{0,N}` patterns, or prefilter large JSONL records before matching. Run unattended Claude Code sessions inside an explicit memory boundary such as a systemd scope, service cgroup, or container limit so a leaking helper kills only that session. Preserve kernel OOM logs, the exact Bash command, cgroup policy, sandbox errors such as `apply-seccomp`, and process-tree evidence that distinguishes the helper from the interactive session."
+    },
+    {
+      "id": "grep-shell-shim-can-silently-skip-binary-and-ignored-files",
+      "title": "`grep` shell shim can silently skip binary and ignored files.",
+      "category": "Tool behavior",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87245"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 Linux and WSL2 setup found that Bash tool calls shadowed system `grep` with a shell function that runs the bundled ugrep using flags such as `-I` and `--ignore-files`. Files containing NUL bytes and files matched by `.gitignore` were skipped with exit status 1 and no stdout or stderr, making the result indistinguishable from a genuine no-match search. The report also notes that `which grep` can still point at `/usr/bin/grep`, so an agent investigating the failure may see contradictory evidence while carrying forward a false conclusion that searched code does not exist.",
+      "workaround": "For agent-critical searches, do not treat empty `grep` output as proof until the skip behavior is ruled out. Use `grep -a` when searching files that may contain NUL bytes, add `--no-ignore-files` when ignored paths are in scope, or bypass the shell function with `command grep` or `/usr/bin/grep`. Prefer explicit-file `rg`, `git grep`, or a small script for source files where a literal NUL may be legal, and record the exact search command when a negative result changes the plan."
     }
   ],
   "status_summary": {
-    "open": 1550,
+    "open": 1551,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 134,
-    "high": 855,
+    "high": 856,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-17",
   "stats": {
-    "total": 1564,
+    "total": 1565,
     "critical": 134,
-    "high": 855,
+    "high": 856,
     "medium": 464,
     "low": 111,
-    "open": 1550,
+    "open": 1551,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-17",
-  "total": 1564
+  "total": 1565
 }

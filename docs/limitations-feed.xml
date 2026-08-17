@@ -7,6 +7,14 @@
   <updated>2026-08-17T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] `grep` shell shim can silently skip binary and ignored files.</title>
+    <id>https://framework.boucle.sh/limitations.html#grep-shell-shim-can-silently-skip-binary-and-ignored-files</id>
+    <link href="https://framework.boucle.sh/limitations.html#grep-shell-shim-can-silently-skip-binary-and-ignored-files"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 Linux and WSL2 setup found that Bash tool calls shadowed system `grep` with a shell function that runs the bundled ugrep using flags such as `-I` and `--ignore-files`. Files containing NUL bytes and files matched by `.gitignore` were skipped with exit status 1 and no stdout or stderr, making the result indistinguishable from a genuine no-match search. The report also notes that `which grep` can still point at `/usr/bin/grep`, so an agent investigating the failure may see contradictory evidence while carrying forward a false conclusion that searched code does not exist.</summary>
+    <category term="Tool behavior"/>
+  </entry>
+  <entry>
     <title>[HIGH] Sandboxed Bash helper process can OOM during a slow command.</title>
     <id>https://framework.boucle.sh/limitations.html#sandboxed-bash-helper-can-oom-during-slow-command</id>
     <link href="https://framework.boucle.sh/limitations.html#sandboxed-bash-helper-can-oom-during-slow-command"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code Windows 11 plus WSL2 setup found that a project `.claude/settings.json` could be partially active: `permissions.deny` from the same file blocked a matching Bash command, proving the settings file was loaded, while a `PreToolUse` hook in that same file produced no marker, no prompt, and no verdict for another matching Bash command. The reporter reproduced the affected directory from the Windows side over a UNC path, ruled out a broken hook script by invoking it directly with a real payload, and reproduced with both absolute command and wrapper-command forms. The important boundary is that successful deny-rule enforcement did not prove project hooks were enforcing.</summary>
     <category term="Hook bypass &amp; evasion"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Plan mode can prompt for allow-listed MCP tools that lack `readOnlyHint`.</title>
-    <id>https://framework.boucle.sh/limitations.html#plan-mode-mcp-allow-rules-can-still-prompt-without-readonlyhint</id>
-    <link href="https://framework.boucle.sh/limitations.html#plan-mode-mcp-allow-rules-can-still-prompt-without-readonlyhint"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.206 macOS setup found that an MCP tool listed exactly in `permissions.allow` still prompted on a fresh plan-mode session even after workspace trust was accepted and no deny or ask rules existed. A collaborator reproduced on Claude Code 2.1.233 and narrowed the confirmed case: in plan mode, MCP tools that do not advertise `readOnlyHint: true` are treated as potential writes and still prompt even when an exact allow rule matches. The same tool ran silently in default mode, and the same plan-mode setup ran silently once the MCP tool was annotated as read-only. The prompt currently looks like an ordinary permission request and can offer a &#x27;do not ask again&#x27; allow entry that plan mode then continues to ignore for the non-read-only tool.</summary>
-    <category term="MCP &amp; plugin issues"/>
   </entry>
 </feed>
