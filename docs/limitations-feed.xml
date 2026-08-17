@@ -7,6 +7,22 @@
   <updated>2026-08-17T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Background agent view can collide session IDs and hide existing session history.</title>
+    <id>https://framework.boucle.sh/limitations.html#background-agent-view-can-collide-session-ids-and-hide-history</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-agent-view-can-collide-session-ids-and-hide-history"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 Windows background-agents view failure showed existing sessions opening with only the most recent user message visible, new sessions failing because a generated session ID was already in use, and one completed row showing an exit-before-init session error. The reporter checked `~/.claude/projects/...` and found the transcript JSONL files still present at expected sizes and mtimes, so the issue appears to affect the agent-view/session-registry layer rather than deleting transcript data. The same report noted several job directories created within minutes, including one whose ID matched the collision but had no corresponding project transcript.</summary>
+    <category term="Core &amp; session management"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Channel events can be silently invisible to non-interactive print-mode sessions.</title>
+    <id>https://framework.boucle.sh/limitations.html#channel-events-can-be-silent-in-non-interactive-print-sessions</id>
+    <link href="https://framework.boucle.sh/limitations.html#channel-events-can-be-silent-in-non-interactive-print-sessions"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 Windows channel test found that events sent to a custom channel in a `-p` non-interactive session were accepted by the channel server but never surfaced in the model context, while the same channel did surface events in an interactive session. The reporter measured server-side acknowledgements for both queued-before-start and queued-during-run events, but the print-mode session saw the messages only after explicitly polling with the channel&#x27;s read tool. Because the channel server records successful delivery, automation can falsely believe the model received a push event.</summary>
+    <category term="MCP &amp; integrations"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Hooks cannot watch file changes independent of the originating tool.</title>
     <id>https://framework.boucle.sh/limitations.html#hooks-cannot-watch-file-changes-independent-of-originating-tool</id>
     <link href="https://framework.boucle.sh/limitations.html#hooks-cannot-watch-file-changes-independent-of-originating-tool"/>
@@ -149,21 +165,5 @@
     <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code VS Code Remote WSL2 session saw the extension log `Closing Claude on channel` and tear down one or two active chat channels without a user action or VS Code host restart. One incident happened mid-response stream, dropped backend process count to zero for more than a minute, and later resumed the same session; another relaunch spawned two backend processes for the same resume and one failed with a config lock error. Conversation state resumed, but in-flight tool calls and responses were aborted while the UI looked like the session crashed.</summary>
     <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Unlogged interruption messages can enter model context outside the transcript.</title>
-    <id>https://framework.boucle.sh/limitations.html#unlogged-interrupt-message-can-enter-model-context</id>
-    <link href="https://framework.boucle.sh/limitations.html#unlogged-interrupt-message-can-enter-model-context"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code Desktop 2.1.229 Windows session showed the model responding to a system-styled interruption message that the user says they did not send and that had no corresponding user-role entry in the local JSONL transcript. The injected content impersonated a user interruption, claimed a compressed context view, and asked the agent to use existing SSH access to create a production admin account with a public password. The model refused, but the first local trace was the assistant response, leaving the user unable to audit how the content reached the request from transcript evidence alone.</summary>
-    <category term="Security &amp; trust boundaries"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Background forks can drop Vertex gateway auth environment variables.</title>
-    <id>https://framework.boucle.sh/limitations.html#background-fork-can-drop-vertex-gateway-env</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-fork-can-drop-vertex-gateway-env"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 macOS Vertex-gateway setup found that pressing left arrow to background a conversation into a daemon fork reconstructed the worker environment without `CLAUDE_CODE_SKIP_VERTEX_AUTH` and `ANTHROPIC_VERTEX_BASE_URL`, while keeping `CLAUDE_CODE_USE_VERTEX`, `ANTHROPIC_VERTEX_PROJECT_ID`, and `ANTHROPIC_AUTH_TOKEN`. The forked worker then attempted local Google ADC and failed every request, even though the original interactive session and daemon process had the complete gateway environment.</summary>
-    <category term="Auth &amp; accounts"/>
   </entry>
 </feed>

@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1592</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-17.</span></p>
+        <p class="subtitle"><span id="total-count">1594</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-17.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -17834,6 +17834,30 @@
                         <!-- workaround:hooks-cannot-watch-file-changes-independent-of-originating-tool -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For file-change policies, attach checks to every tool family that can mutate files in the target workflow, including Bash and PowerShell, or run a diff-based audit after each tool call class that might write. For high-value repositories, use Git hooks, filesystem watchers, CI checks, or OS-level controls as the tool-independent layer, and treat Claude Code hooks as tool-call gates rather than complete file-change monitors.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87356" target="_blank">#87356</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="87404" id="channel-events-can-be-silent-in-non-interactive-print-sessions" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1593</span>
+                <span class="kl-cat">MCP &amp; integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Channel events can be silently invisible to non-interactive print-mode sessions.</h3>
+            <p>A reported Claude Code 2.1.233 Windows channel test found that events sent to a custom channel in a `-p` non-interactive session were accepted by the channel server but never surfaced in the model context, while the same channel did surface events in an interactive session. The reporter measured server-side acknowledgements for both queued-before-start and queued-during-run events, but the print-mode session saw the messages only after explicitly polling with the channel&#x27;s read tool. Because the channel server records successful delivery, automation can falsely believe the model received a push event.</p>
+                        <!-- workaround:channel-events-can-be-silent-in-non-interactive-print-sessions -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on pushed channel events as the only coordination path for `claude -p` or other one-turn automation until the current Claude Code behavior is documented and verified. Add an explicit polling step with the channel&#x27;s read tool, pass required messages in the prompt or another startup-visible input, and treat server-side delivery acknowledgements as transport acknowledgements rather than proof that the model context contains the event.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87404" target="_blank">#87404</a></div>
+        </div>
+        <div class="kl-entry" data-category="Core &amp; session management" data-issues="87399" id="background-agent-view-can-collide-session-ids-and-hide-history" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1594</span>
+                <span class="kl-cat">Core &amp; session management</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Background agent view can collide session IDs and hide existing session history.</h3>
+            <p>A reported Claude Code 2.1.233 Windows background-agents view failure showed existing sessions opening with only the most recent user message visible, new sessions failing because a generated session ID was already in use, and one completed row showing an exit-before-init session error. The reporter checked `~/.claude/projects/...` and found the transcript JSONL files still present at expected sizes and mtimes, so the issue appears to affect the agent-view/session-registry layer rather than deleting transcript data. The same report noted several job directories created within minutes, including one whose ID matched the collision but had no corresponding project transcript.</p>
+                        <!-- workaround:background-agent-view-can-collide-session-ids-and-hide-history -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When agent view shows empty scrollback or session-ID collision errors, inspect the underlying `~/.claude/projects/.../*.jsonl` transcript files before assuming data loss. Preserve the project and jobs directories for debugging, avoid starting additional background sessions in the affected workspace until the registry state is understood, and use direct transcript reads or a fresh project/session location for recovery work.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87399" target="_blank">#87399</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
