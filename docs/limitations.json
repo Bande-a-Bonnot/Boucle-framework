@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1560,
+  "count": 1561,
   "categories": {
-    "Hook behavior & events": 207,
+    "Hook behavior & events": 208,
     "Permission system": 140,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 84,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 134,
-    "HIGH": 851,
+    "HIGH": 852,
     "LOW": 111,
     "MEDIUM": 464
   },
@@ -20036,30 +20036,43 @@
       "date_added": "2026-08-16",
       "description": "A reported Claude Code 2.1.233 Windows session found that a working `PermissionRequest` hook stopped firing for Bash, PowerShell, and Write requests, produced no new hook log entries, showed no fallback confirmation prompts, and stayed inert after a full CLI restart. The hook script and `.claude/settings.json` registration still looked valid and manual invocation of the hook worked, but live tool calls no longer reached it. The restart also showed a new auto-mode setup prompt while the settings UI still reported manual permission mode, leaving users without a reliable in-session signal that the PermissionRequest safety layer was inactive.",
       "workaround": "Treat a valid hook file, valid settings JSON, or manual hook invocation as insufficient proof that PermissionRequest is live. After Claude Code updates, CLI restarts, or auto-mode prompts, run a harmless matched Bash/Write canary and verify that both the expected prompt and hook log marker appear before trusting the session. For production data, destructive commands, commits, pushes, or migrations, keep fail-closed controls in explicit `permissions.deny`, PreToolUse hooks, OS permissions, or external wrappers so a missing PermissionRequest callback is not the only boundary."
+    },
+    {
+      "id": "pretooluse-transcript-path-can-lag-current-turn",
+      "title": "PreToolUse hooks can read stale current-turn text from transcript_path.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87223"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code hook setup found that `PreToolUse` hooks that inspect the just-written assistant text by parsing `transcript_path` can race the transcript writer and read an earlier turn or draft instead of the text that immediately preceded the tool call. Stop-family hooks have `last_assistant_message` as a race-free field, but `PreToolUse` receives only tool metadata plus common fields, so content or compliance gates that must decide before a tool runs have no equivalent current-message source. The observed effect was a false block caused by matching stale transcript content rather than the clean final text.",
+      "workaround": "Do not treat `transcript_path` as a race-free source for current-turn text in `PreToolUse`. If a hook is about to block based on transcript content, re-read with a short bounded backoff and require a stable match before denying, or fail closed with a message that asks the user to retry after the transcript catches up. Where possible, move end-of-turn content checks to Stop-family hooks that receive `last_assistant_message`, and add a canary that simulates a delayed transcript write so stale-read behavior is visible during hook testing."
     }
   ],
   "status_summary": {
-    "open": 1546,
+    "open": 1547,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 134,
-    "high": 851,
+    "high": 852,
     "low": 111,
     "medium": 464
   },
-  "lastUpdated": "2026-08-16",
+  "lastUpdated": "2026-08-17",
   "stats": {
-    "total": 1560,
+    "total": 1561,
     "critical": 134,
-    "high": 851,
+    "high": 852,
     "medium": 464,
     "low": 111,
-    "open": 1546,
+    "open": 1547,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-08-16",
-  "total": 1560
+  "last_updated": "2026-08-17",
+  "total": 1561
 }

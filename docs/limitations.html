@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1560</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-16.</span></p>
+        <p class="subtitle"><span id="total-count">1561</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-17.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -17450,6 +17450,18 @@
                         <!-- workaround:permissionrequest-hook-can-stop-firing-after-windows-restart -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat a valid hook file, valid settings JSON, or manual hook invocation as insufficient proof that PermissionRequest is live. After Claude Code updates, CLI restarts, or auto-mode prompts, run a harmless matched Bash/Write canary and verify that both the expected prompt and hook log marker appear before trusting the session. For production data, destructive commands, commits, pushes, or migrations, keep fail-closed controls in explicit `permissions.deny`, PreToolUse hooks, OS permissions, or external wrappers so a missing PermissionRequest callback is not the only boundary.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87059" target="_blank">#87059</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="87223" id="pretooluse-transcript-path-can-lag-current-turn" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1561</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>PreToolUse hooks can read stale current-turn text from transcript_path.</h3>
+            <p>A reported Claude Code hook setup found that `PreToolUse` hooks that inspect the just-written assistant text by parsing `transcript_path` can race the transcript writer and read an earlier turn or draft instead of the text that immediately preceded the tool call. Stop-family hooks have `last_assistant_message` as a race-free field, but `PreToolUse` receives only tool metadata plus common fields, so content or compliance gates that must decide before a tool runs have no equivalent current-message source. The observed effect was a false block caused by matching stale transcript content rather than the clean final text.</p>
+                        <!-- workaround:pretooluse-transcript-path-can-lag-current-turn -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat `transcript_path` as a race-free source for current-turn text in `PreToolUse`. If a hook is about to block based on transcript content, re-read with a short bounded backoff and require a stable match before denying, or fail closed with a message that asks the user to retry after the transcript catches up. Where possible, move end-of-turn content checks to Stop-family hooks that receive `last_assistant_message`, and add a canary that simulates a delayed transcript write so stale-read behavior is visible during hook testing.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87223" target="_blank">#87223</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
