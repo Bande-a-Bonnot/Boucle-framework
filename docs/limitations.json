@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1561,
+  "count": 1562,
   "categories": {
     "Hook behavior & events": 208,
-    "Permission system": 140,
+    "Permission system": 141,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 84,
     "Subagent & spawned agents": 73,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 134,
-    "HIGH": 852,
+    "HIGH": 853,
     "LOW": 111,
     "MEDIUM": 464
   },
@@ -20049,30 +20049,43 @@
       "date_added": "2026-08-17",
       "description": "A reported Claude Code hook setup found that `PreToolUse` hooks that inspect the just-written assistant text by parsing `transcript_path` can race the transcript writer and read an earlier turn or draft instead of the text that immediately preceded the tool call. Stop-family hooks have `last_assistant_message` as a race-free field, but `PreToolUse` receives only tool metadata plus common fields, so content or compliance gates that must decide before a tool runs have no equivalent current-message source. The observed effect was a false block caused by matching stale transcript content rather than the clean final text.",
       "workaround": "Do not treat `transcript_path` as a race-free source for current-turn text in `PreToolUse`. If a hook is about to block based on transcript content, re-read with a short bounded backoff and require a stable match before denying, or fail closed with a message that asks the user to retry after the transcript catches up. Where possible, move end-of-turn content checks to Stop-family hooks that receive `last_assistant_message`, and add a canary that simulates a delayed transcript write so stale-read behavior is visible during hook testing."
+    },
+    {
+      "id": "permissions-menu-denial-state-can-block-human-repair",
+      "title": "/permissions navigation can become inert after auto-mode denials.",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87224"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.221 macOS session found that `/permissions` rendered but stopped responding to arrow-key navigation after recent auto-mode classifier denials in a long-running session. The user could not reach `Add a new rule...` from the discoverable permission UI, while a fresh session on the same project navigated normally and could add the needed allow rule. This makes denials harder to repair exactly when the human is supposed to recover from them, especially because the agent itself should not edit `.claude/settings.json` to grant its own permissions.",
+      "workaround": "If `/permissions` appears frozen after denials, open a fresh Claude Code session in the same project and add the rule there, or hand-edit the relevant `permissions.allow` entry after verifying the syntax from trusted docs. For teams, document a manual settings-file fallback for permission repair, preserve the denial count and session age when reporting the bug, and add a lightweight canary that opens `/permissions` after a test denial before relying on it as the only repair path."
     }
   ],
   "status_summary": {
-    "open": 1547,
+    "open": 1548,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 134,
-    "high": 852,
+    "high": 853,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-17",
   "stats": {
-    "total": 1561,
+    "total": 1562,
     "critical": 134,
-    "high": 852,
+    "high": 853,
     "medium": 464,
     "low": 111,
-    "open": 1547,
+    "open": 1548,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-17",
-  "total": 1561
+  "total": 1562
 }
