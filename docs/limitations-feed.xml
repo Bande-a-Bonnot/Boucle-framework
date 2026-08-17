@@ -4,13 +4,21 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-08-16T00:00:00Z</updated>
+  <updated>2026-08-17T00:00:00Z</updated>
   <author><name>Boucle</name></author>
+  <entry>
+    <title>[HIGH] PreToolUse hooks can read stale current-turn text from transcript_path.</title>
+    <id>https://framework.boucle.sh/limitations.html#pretooluse-transcript-path-can-lag-current-turn</id>
+    <link href="https://framework.boucle.sh/limitations.html#pretooluse-transcript-path-can-lag-current-turn"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code hook setup found that `PreToolUse` hooks that inspect the just-written assistant text by parsing `transcript_path` can race the transcript writer and read an earlier turn or draft instead of the text that immediately preceded the tool call. Stop-family hooks have `last_assistant_message` as a race-free field, but `PreToolUse` receives only tool metadata plus common fields, so content or compliance gates that must decide before a tool runs have no equivalent current-message source. The observed effect was a false block caused by matching stale transcript content rather than the clean final text.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
   <entry>
     <title>[HIGH] PermissionRequest hooks can stop firing after a Windows CLI restart.</title>
     <id>https://framework.boucle.sh/limitations.html#permissionrequest-hook-can-stop-firing-after-windows-restart</id>
     <link href="https://framework.boucle.sh/limitations.html#permissionrequest-hook-can-stop-firing-after-windows-restart"/>
-    <updated>2026-08-16T00:00:00Z</updated>
+    <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.233 Windows session found that a working `PermissionRequest` hook stopped firing for Bash, PowerShell, and Write requests, produced no new hook log entries, showed no fallback confirmation prompts, and stayed inert after a full CLI restart. The hook script and `.claude/settings.json` registration still looked valid and manual invocation of the hook worked, but live tool calls no longer reached it. The restart also showed a new auto-mode setup prompt while the settings UI still reported manual permission mode, leaving users without a reliable in-session signal that the PermissionRequest safety layer was inactive.</summary>
     <category term="Permission system"/>
   </entry>
@@ -18,7 +26,7 @@
     <title>[HIGH] PreToolUse and PostToolUse hooks lack live background task status.</title>
     <id>https://framework.boucle.sh/limitations.html#pre-post-hooks-lack-live-background-task-registry</id>
     <link href="https://framework.boucle.sh/limitations.html#pre-post-hooks-lack-live-background-task-registry"/>
-    <updated>2026-08-16T00:00:00Z</updated>
+    <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.233 setup found that `PreToolUse` and `PostToolUse` hooks do not receive the live `background_tasks` registry that `Stop` hooks receive. A hook that tracks background Bash work from local marker files can see a `&lt;task-notification&gt;` in the transcript only indirectly; no hook event fires when the task completes, and later Pre/Post payloads do not say that the task has reached a terminal state. Unless the agent explicitly calls `TaskOutput` or the session reaches `Stop`, hook-based tooling can keep warning or blocking as if completed background work were still live for every subsequent tool call in the same turn.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -26,7 +34,7 @@
     <title>[HIGH] SubagentStop matcher can be bypassed for internal forks with empty agent_type.</title>
     <id>https://framework.boucle.sh/limitations.html#subagentstop-matcher-bypassed-on-empty-agent-type</id>
     <link href="https://framework.boucle.sh/limitations.html#subagentstop-matcher-bypassed-on-empty-agent-type"/>
-    <updated>2026-08-16T00:00:00Z</updated>
+    <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.233 setup found that a SubagentStop hook group with a matcher naming specific agent types can still run for internal forks whose agent_type is the empty string. Because the hook gatherer treats a falsy match key as a reason to skip filtering, matcher-scoped groups are included wholesale rather than excluded. In one measured session, 115 of 129 dispatches of an agent-scoped LLM judge came from empty-agent_type internal forks, creating token waste and risking false blocking verdicts against healthy background work.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -34,7 +42,7 @@
     <title>[HIGH] Headless skill preamble failure can report success with zero turns.</title>
     <id>https://framework.boucle.sh/limitations.html#headless-skill-preamble-failure-reports-success</id>
     <link href="https://framework.boucle.sh/limitations.html#headless-skill-preamble-failure-reports-success"/>
-    <updated>2026-08-16T00:00:00Z</updated>
+    <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.233 macOS setup found that headless `claude -p &quot;/skill&quot; --output-format json` can abort before the first model turn when the invoked skill&#x27;s `SKILL.md` contains a failing `!` dynamic-injection preamble. The command exits 0 and returns JSON shaped as success with `is_error:false`, `subtype:&quot;success&quot;`, `num_turns:0`, and an empty result. The same skill runs when invoked indirectly from a natural-language prompt, and a fail-open preamble wrapper also allows the model turn to proceed, so the failure is specific to immediate slash-skill invocation plus an unguarded failing preamble.</summary>
     <category term="Skills"/>
   </entry>
@@ -42,7 +50,7 @@
     <title>[CRITICAL] Network strictAllowlist can fail open inside Docker.</title>
     <id>https://framework.boucle.sh/limitations.html#strictallowlist-can-fail-open-inside-docker</id>
     <link href="https://framework.boucle.sh/limitations.html#strictallowlist-can-fail-open-inside-docker"/>
-    <updated>2026-08-16T00:00:00Z</updated>
+    <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.197 and 2.1.233 Linux setup running inside Docker found that `sandbox.network.strictAllowlist: true` did not block Bash access to non-allowlisted domains. The reporter configured allowed domains, confirmed standalone `bwrap --unshare-net` blocked the same curl target inside the container, and inspected debug logs and process ancestry showing Claude Code spawned the shell directly with no `bwrap`, sandbox, namespace, seccomp, or AppArmor dispatch path. The result was a silent fail-open network boundary in an ingest workflow where external documents could prompt the agent to exfiltrate data.</summary>
     <category term="Sandbox &amp; permissions"/>
   </entry>
@@ -50,7 +58,7 @@
     <title>[HIGH] Local worktree settings can leak hooks across linked checkouts.</title>
     <id>https://framework.boucle.sh/limitations.html#local-worktree-settings-can-leak-hooks-across-checkouts</id>
     <link href="https://framework.boucle.sh/limitations.html#local-worktree-settings-can-leak-hooks-across-checkouts"/>
-    <updated>2026-08-16T00:00:00Z</updated>
+    <updated>2026-08-17T00:00:00Z</updated>
     <summary>A collaborator-reproduced Claude Code 2.1.233 macOS issue found that a linked git worktree can pick up the main worktree&#x27;s untracked `.claude/settings.local.json` hooks, then run those hook commands with the linked worktree as the current directory. In the reproduced Stop-hook case, a relative hook script existed only in the main checkout, so sessions in the linked checkout reported a missing hook script even though that branch had no `.claude/` directory. The maintainer clarified that committed `.claude/settings.json` stayed per-checkout, while local settings are resolved through the repository root and can therefore cover every linked worktree without a clear warning.</summary>
     <category term="Worktree"/>
   </entry>
@@ -58,7 +66,7 @@
     <title>[CRITICAL] Sandbox read isolation and settings policy can fail open.</title>
     <id>https://framework.boucle.sh/limitations.html#sandbox-read-isolation-and-settings-policy-can-fail-open</id>
     <link href="https://framework.boucle.sh/limitations.html#sandbox-read-isolation-and-settings-policy-can-fail-open"/>
-    <updated>2026-08-16T00:00:00Z</updated>
+    <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Linux Claude Code sandbox setup found that `sandbox.filesystem.allowWrite` did not provide filesystem read isolation: Bash commands could still read credential paths such as `~/.ssh/id_rsa`, while `permissions.deny` `Read(...)` rules only covered the dedicated Read tool. The same session showed the agent could edit its own `settings.json`, add plausible but unsupported sandbox keys, and leave the file as invalid JSON during revert. Claude Code then continued tool execution without surfacing a hard sandbox configuration failure, making the boundary appear enabled while policy parsing or enforcement was degraded.</summary>
     <category term="Sandbox &amp; permissions"/>
   </entry>
@@ -66,7 +74,7 @@
     <title>[HIGH] Linux bwrap sandbox can hit E2BIG from recursive Read deny globs.</title>
     <id>https://framework.boucle.sh/limitations.html#linux-bwrap-recursive-read-deny-globs-can-hit-e2big</id>
     <link href="https://framework.boucle.sh/limitations.html#linux-bwrap-recursive-read-deny-globs-can-hit-e2big"/>
-    <updated>2026-08-16T00:00:00Z</updated>
+    <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Linux and WSL2 Claude Code sandbox setup found that recursive `permissions.deny` rules such as `Read(data/**)` and `Read(**/*.parquet)` were expanded into one bubblewrap bind per matched file. With a denied data tree containing 3,552 files, the generated sandbox argument payload exceeded Linux&#x27;s per-argument limit and every sandboxed Bash call failed before the user command ran with `E2BIG: argument list too long, posix_spawn &#x27;/bin/bash&#x27;`. Adding a directory-level `sandbox.filesystem.denyRead` rule did not help because permission-derived denies were merged rather than replaced.</summary>
     <category term="Sandbox &amp; permissions"/>
   </entry>
@@ -74,7 +82,7 @@
     <title>[HIGH] Plugin MCP tools can skip ask-first permission prompts.</title>
     <id>https://framework.boucle.sh/limitations.html#plugin-mcp-tools-can-skip-ask-first-permission-prompts</id>
     <link href="https://framework.boucle.sh/limitations.html#plugin-mcp-tools-can-skip-ask-first-permission-prompts"/>
-    <updated>2026-08-16T00:00:00Z</updated>
+    <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code plugin setup found that MCP tools from installed plugins could execute when they were absent from both `permissions.allow` and `permissions.deny`. Denied tools were hidden correctly, but tools left in the expected ask-first state ran without a permission prompt and without a `permission_prompt` hook event. This collapses the permission model for plugin MCP tools from allow, deny, or ask-first into deny or auto-allow.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -82,7 +90,7 @@
     <title>[HIGH] Subagents and workflow agents cannot inherit scoped MCP authorization.</title>
     <id>https://framework.boucle.sh/limitations.html#subagent-workflow-mcp-authorization-not-scoped</id>
     <link href="https://framework.boucle.sh/limitations.html#subagent-workflow-mcp-authorization-not-scoped"/>
-    <updated>2026-08-16T00:00:00Z</updated>
+    <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported macOS Claude Code workflow found that a parent session could call a permission-gated read-only MCP database tool, while subagents spawned through Task or Workflow had the same MCP call refused by the auto-mode classifier. Prompt text saying the user had authorized the tool for that run did not help, and the blocked request was not surfaced as an approval prompt. The only working permission route was a permanent `permissions.allow` entry, which is broader than the user&#x27;s intended per-run grant.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -90,7 +98,7 @@
     <title>[HIGH] Invalid or removed settings can disable permissions mid-session.</title>
     <id>https://framework.boucle.sh/limitations.html#invalid-or-removed-settings-can-disable-permissions-mid-session</id>
     <link href="https://framework.boucle.sh/limitations.html#invalid-or-removed-settings-can-disable-permissions-mid-session"/>
-    <updated>2026-08-16T00:00:00Z</updated>
+    <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.214 macOS session found that while Claude Code is already running, a watched `.claude/settings.json` or `~/.claude/settings.json` file that becomes syntactically invalid is rejected as a whole and its `permissions.deny` and `permissions.ask` rules stop enforcing. A Bash command that was denied in the previous turn can then execute silently until the file parses again. A later comment on Claude Code 2.1.231 web session reported the same fail-open shape when a project settings file was deleted by `git checkout`: deny rules stopped applying, and in that case stayed inert after the file was restored by merge. The risk is not only malformed startup config; ordinary mid-session edits or branch switches can silently remove active permission policy from a live session.</summary>
     <category term="Sandbox &amp; permissions"/>
   </entry>
@@ -98,7 +106,7 @@
     <title>[HIGH] Ancestor sandbox settings are not inherited by nested projects.</title>
     <id>https://framework.boucle.sh/limitations.html#ancestor-sandbox-settings-not-inherited-by-nested-projects</id>
     <link href="https://framework.boucle.sh/limitations.html#ancestor-sandbox-settings-not-inherited-by-nested-projects"/>
-    <updated>2026-08-16T00:00:00Z</updated>
+    <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.220 macOS sandbox setup placed `sandbox.enabled: true`, `allowUnsandboxedCommands: false`, and a tight network allowlist in a container workspace&#x27;s `.claude/settings.local.json`, then started a separate session inside a nested git repository. The nested session ran commands with network access that the parent workspace blocked. A collaborator reproduced on Claude Code 2.1.233 and clarified the current model: project and local settings are read only from the project Claude Code starts in, so ancestor-directory settings are not inherited by a nested repository, even when the nested repo has no `.claude/settings.local.json` of its own. The confirmed risk is a silent boundary mismatch where a parent folder looks sandboxed while separately launched nested-project sessions are not covered by that parent sandbox.</summary>
     <category term="Sandbox &amp; permissions"/>
   </entry>
@@ -106,7 +114,7 @@
     <title>[HIGH] Interpreter-wrapped hook scripts can fail closed when the target file is missing.</title>
     <id>https://framework.boucle.sh/limitations.html#interpreter-hook-script-missing-can-fail-closed</id>
     <link href="https://framework.boucle.sh/limitations.html#interpreter-hook-script-missing-can-fail-closed"/>
-    <updated>2026-08-16T00:00:00Z</updated>
+    <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.218 Windows setup found that a `PreToolUse` command hook such as `python C:/nonexistent/ghost_hook.py` blocked the matched Bash tool because Python itself launched successfully and then exited 2 when it could not open the script. A collaborator reproduced the same behavior on Claude Code 2.1.233 and clarified the distinction: a hook executable that cannot be started can be treated as a non-blocking hook error, but an interpreter that starts and returns exit code 2 is indistinguishable from a deliberate hook deny because the hook protocol reserves exit code 2 for blocking. A stale path, renamed hook file, or disabled-by-renaming guard can therefore lock out every matched tool call, including the call that would repair the configuration from inside the session.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -114,7 +122,7 @@
     <title>[HIGH] Linux seccomp sandbox can fail inside `bwrap` unless Unix socket filtering is disabled.</title>
     <id>https://framework.boucle.sh/limitations.html#linux-seccomp-sandbox-can-fail-inside-bwrap</id>
     <link href="https://framework.boucle.sh/limitations.html#linux-seccomp-sandbox-can-fail-inside-bwrap"/>
-    <updated>2026-08-16T00:00:00Z</updated>
+    <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.220 Linux sandbox setup found that every sandboxed Bash call failed before the user command ran with `apply-seccomp: write /proc/self/setgroups ... Permission denied` when `sandbox.network.allowAllUnixSockets` was false. Independent reproductions on Ubuntu narrowed the failure to the seccomp helper attempting a nested user namespace from inside bubblewrap after capabilities have been dropped; enabling `allowAllUnixSockets: true` made Bash run but disabled Unix-socket filtering wholesale. A later 2.1.233 data point found an AppArmor `bwrap` profile can restore deterministic startup while preserving socket blocking, but also reported residual intermittent `unshare(CLONE_NEWUSER): Invalid argument` failures that are not caught by `failIfUnavailable`.</summary>
     <category term="Sandbox &amp; permissions"/>
   </entry>
@@ -122,7 +130,7 @@
     <title>[HIGH] Project settings can load permissions while skipping hooks.</title>
     <id>https://framework.boucle.sh/limitations.html#project-settings-can-load-permissions-but-skip-hooks</id>
     <link href="https://framework.boucle.sh/limitations.html#project-settings-can-load-permissions-but-skip-hooks"/>
-    <updated>2026-08-16T00:00:00Z</updated>
+    <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code Windows 11 plus WSL2 setup found that a project `.claude/settings.json` could be partially active: `permissions.deny` from the same file blocked a matching Bash command, proving the settings file was loaded, while a `PreToolUse` hook in that same file produced no marker, no prompt, and no verdict for another matching Bash command. The reporter reproduced the affected directory from the Windows side over a UNC path, ruled out a broken hook script by invoking it directly with a real payload, and reproduced with both absolute command and wrapper-command forms. The important boundary is that successful deny-rule enforcement did not prove project hooks were enforcing.</summary>
     <category term="Hook bypass &amp; evasion"/>
   </entry>
@@ -130,7 +138,7 @@
     <title>[MEDIUM] Plan mode can prompt for allow-listed MCP tools that lack `readOnlyHint`.</title>
     <id>https://framework.boucle.sh/limitations.html#plan-mode-mcp-allow-rules-can-still-prompt-without-readonlyhint</id>
     <link href="https://framework.boucle.sh/limitations.html#plan-mode-mcp-allow-rules-can-still-prompt-without-readonlyhint"/>
-    <updated>2026-08-16T00:00:00Z</updated>
+    <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.206 macOS setup found that an MCP tool listed exactly in `permissions.allow` still prompted on a fresh plan-mode session even after workspace trust was accepted and no deny or ask rules existed. A collaborator reproduced on Claude Code 2.1.233 and narrowed the confirmed case: in plan mode, MCP tools that do not advertise `readOnlyHint: true` are treated as potential writes and still prompt even when an exact allow rule matches. The same tool ran silently in default mode, and the same plan-mode setup ran silently once the MCP tool was annotated as read-only. The prompt currently looks like an ordinary permission request and can offer a &#x27;do not ask again&#x27; allow entry that plan mode then continues to ignore for the non-read-only tool.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -138,7 +146,7 @@
     <title>[HIGH] Settings watcher can rewalk huge symlink target directories.</title>
     <id>https://framework.boucle.sh/limitations.html#settings-watcher-can-rewalk-huge-symlink-target-directories</id>
     <link href="https://framework.boucle.sh/limitations.html#settings-watcher-can-rewalk-huge-symlink-target-directories"/>
-    <updated>2026-08-16T00:00:00Z</updated>
+    <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.224 macOS setup with `~/.claude/settings.json` symlinked into a large Nix store path found that an idle session repeatedly opened and enumerated the symlink target&#x27;s parent directory during unrelated Nix builds. The reporter&#x27;s `sample` and `fs_usage` captures showed repeated `lstat` and `getdirentries64` work over a directory with hundreds of thousands of entries, producing sustained multi-core CPU usage while Claude Code was otherwise idle. Replacing the symlink with a real file, or pointing it at a file in a small directory, removed the `/nix/store` filesystem churn.</summary>
     <category term="Performance &amp; cost"/>
   </entry>
@@ -146,7 +154,7 @@
     <title>[HIGH] VS Code approval persistence can pollute tracked project settings.</title>
     <id>https://framework.boucle.sh/limitations.html#vscode-approvals-can-pollute-tracked-project-settings</id>
     <link href="https://framework.boucle.sh/limitations.html#vscode-approvals-can-pollute-tracked-project-settings"/>
-    <updated>2026-08-16T00:00:00Z</updated>
+    <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code VS Code extension 2.1.218 macOS session found that new Bash permission approvals were repeatedly appended to the git-tracked project `.claude/settings.json` instead of the existing writable `.claude/settings.local.json` that is meant for machine-local approvals. The reporter observed path-specific and one-off command patterns accumulating in the shared file across multiple sessions. A later Windows VS Code 2.1.227 comment reported the same persistence target for PowerShell approvals and `permissions.additionalDirectories`, including absolute home paths and OS usernames that were committed to public repositories before detection.</summary>
     <category term="VS Code extension"/>
   </entry>
@@ -154,16 +162,8 @@
     <title>[HIGH] Task-notification resumes can cancel later tool calls as if the user refused.</title>
     <id>https://framework.boucle.sh/limitations.html#task-notification-resume-can-cancel-subsequent-tool-calls</id>
     <link href="https://framework.boucle.sh/limitations.html#task-notification-resume-can-cancel-subsequent-tool-calls"/>
-    <updated>2026-08-16T00:00:00Z</updated>
+    <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code SDK 2.1.229 session found that when a background Agent tool task completed just after the parent turn stopped, its completion was re-injected as a same-session `task-notification` and the resumed turn reused an already-aborted AbortController. The next native or MCP tool call was then short-circuited with `toolDenialKind: &quot;cancelled&quot;` and user-facing text saying the user did not want to take the action, even though no permission prompt appeared and the permission handler was not consulted. The reporter observed the pattern in the CLI transcript and said it recurred across prior history, making background sub-agent completions able to poison the rest of a resumed turn with misleading human-refusal wording.</summary>
     <category term="Agent orchestration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `policy-limits.json` security restrictions can be silently removed.</title>
-    <id>https://framework.boucle.sh/limitations.html#policy-limits-security-key-can-be-silently-removed</id>
-    <link href="https://framework.boucle.sh/limitations.html#policy-limits-security-key-can-be-silently-removed"/>
-    <updated>2026-08-16T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.220 Windows session found that a committed project `policy-limits.json` repeatedly lost `restrictions.allow_remote_control: {&quot;allowed&quot;: false}` in place during one long session, while sibling restriction keys stayed intact. The reporter said the removal recurred five times, did not reach git history, and coincided with system-reminder text asserting the diff was intentional and telling the model not to tell the user. The root cause is not proven, but the observed risk is that a project-local security restriction can disappear without a traceable user-visible change.</summary>
-    <category term="Security &amp; trust boundaries"/>
   </entry>
 </feed>
