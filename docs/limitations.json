@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1565,
+  "count": 1566,
   "categories": {
     "Hook behavior & events": 208,
     "Permission system": 141,
@@ -22,8 +22,8 @@
     "Tool behavior": 22,
     "VS Code extension": 22,
     "Auth & accounts": 18,
+    "Core & session management": 18,
     "Remote & cloud": 18,
-    "Core & session management": 17,
     "Model behavior": 17,
     "Data integrity": 16,
     "Scheduling & remote triggers": 15,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 134,
-    "HIGH": 856,
+    "HIGH": 857,
     "LOW": 111,
     "MEDIUM": 464
   },
@@ -20101,30 +20101,43 @@
       "date_added": "2026-08-17",
       "description": "A reported Claude Code 2.1.233 Linux and WSL2 setup found that Bash tool calls shadowed system `grep` with a shell function that runs the bundled ugrep using flags such as `-I` and `--ignore-files`. Files containing NUL bytes and files matched by `.gitignore` were skipped with exit status 1 and no stdout or stderr, making the result indistinguishable from a genuine no-match search. The report also notes that `which grep` can still point at `/usr/bin/grep`, so an agent investigating the failure may see contradictory evidence while carrying forward a false conclusion that searched code does not exist.",
       "workaround": "For agent-critical searches, do not treat empty `grep` output as proof until the skip behavior is ruled out. Use `grep -a` when searching files that may contain NUL bytes, add `--no-ignore-files` when ignored paths are in scope, or bypass the shell function with `command grep` or `/usr/bin/grep`. Prefer explicit-file `rg`, `git grep`, or a small script for source files where a literal NUL may be legal, and record the exact search command when a negative result changes the plan."
+    },
+    {
+      "id": "piped-print-prompt-can-be-dropped-before-model-request",
+      "title": "Piped `-p` prompts can be recorded but omitted from the model request.",
+      "category": "Core & session management",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87249"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 Windows headless setup intermittently enqueued and persisted a full piped prompt in the transcript and last-prompt preview, but the first API request behaved as if the user turn were empty. Failing runs exited 0 in one or two turns with tiny ambient-context responses, while usage telemetry showed only 2 input tokens for the user request despite the same wrapper and prompt bytes succeeding minutes apart. Transcript inspection alone can therefore falsely reassure automation owners that the prompt reached the model.",
+      "workaround": "For unattended `claude -p` lanes, add an output-contract watchdog that proves the requested task actually started instead of trusting exit 0 or transcript presence. Include a unique nonce or required summary token in every piped prompt, fail closed if the first result omits it or has implausibly small token usage, and preserve both the result JSON and raw transcript when reporting. Prefer direct prompt arguments or a small wrapper that validates non-empty stdin before launch, but keep the contract check because the reported failure occurred after the prompt was queued."
     }
   ],
   "status_summary": {
-    "open": 1551,
+    "open": 1552,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 134,
-    "high": 856,
+    "high": 857,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-17",
   "stats": {
-    "total": 1565,
+    "total": 1566,
     "critical": 134,
-    "high": 856,
+    "high": 857,
     "medium": 464,
     "low": 111,
-    "open": 1551,
+    "open": 1552,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-17",
-  "total": 1565
+  "total": 1566
 }

@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1565</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-17.</span></p>
+        <p class="subtitle"><span id="total-count">1566</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-17.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -17510,6 +17510,18 @@
                         <!-- workaround:grep-shell-shim-can-silently-skip-binary-and-ignored-files -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For agent-critical searches, do not treat empty `grep` output as proof until the skip behavior is ruled out. Use `grep -a` when searching files that may contain NUL bytes, add `--no-ignore-files` when ignored paths are in scope, or bypass the shell function with `command grep` or `/usr/bin/grep`. Prefer explicit-file `rg`, `git grep`, or a small script for source files where a literal NUL may be legal, and record the exact search command when a negative result changes the plan.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87245" target="_blank">#87245</a></div>
+        </div>
+        <div class="kl-entry" data-category="Core &amp; session management" data-issues="87249" id="piped-print-prompt-can-be-dropped-before-model-request" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1566</span>
+                <span class="kl-cat">Core &amp; session management</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Piped `-p` prompts can be recorded but omitted from the model request.</h3>
+            <p>A reported Claude Code 2.1.233 Windows headless setup intermittently enqueued and persisted a full piped prompt in the transcript and last-prompt preview, but the first API request behaved as if the user turn were empty. Failing runs exited 0 in one or two turns with tiny ambient-context responses, while usage telemetry showed only 2 input tokens for the user request despite the same wrapper and prompt bytes succeeding minutes apart. Transcript inspection alone can therefore falsely reassure automation owners that the prompt reached the model.</p>
+                        <!-- workaround:piped-print-prompt-can-be-dropped-before-model-request -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For unattended `claude -p` lanes, add an output-contract watchdog that proves the requested task actually started instead of trusting exit 0 or transcript presence. Include a unique nonce or required summary token in every piped prompt, fail closed if the first result omits it or has implausibly small token usage, and preserve both the result JSON and raw transcript when reporting. Prefer direct prompt arguments or a small wrapper that validates non-empty stdin before launch, but keep the contract check because the reported failure occurred after the prompt was queued.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87249" target="_blank">#87249</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
