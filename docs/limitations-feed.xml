@@ -7,6 +7,46 @@
   <updated>2026-08-17T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[LOW] Agent SDK subagent docs can omit fork-mode foreground/background precedence.</title>
+    <id>https://framework.boucle.sh/limitations.html#agent-sdk-subagent-docs-omit-fork-mode-precedence</id>
+    <link href="https://framework.boucle.sh/limitations.html#agent-sdk-subagent-docs-omit-fork-mode-precedence"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code Agent SDK documentation gap found that the SDK subagents page describes foreground versus background behavior for the SDK default, but does not mention fork mode, that fork mode can be enabled in the SDK, that it became the default in interactive sessions, or that `run_in_background` can be absent from the Agent tool schema while fork mode is active. The separate sub-agents docs page contains the precedence list, but the SDK page can lead users to file or debug the wrong issue when interactive CLI behavior differs from the SDK default.</summary>
+    <category term="Documentation &amp; workflow"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Desktop dev-server start prompts can ignore bypass-permissions mode.</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-dev-server-prompt-ignores-bypass-mode</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-dev-server-prompt-ignores-bypass-mode"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code Desktop macOS session with permission mode set to `Bypass permissions` still showed an `Allow Claude to start dev?` approval dialog when the browser-preview flow tried to run `npm run dev` from a `.claude/worktrees/...` directory. The dialog offered only Deny or Allow once, and the reporter could not find a settings permission rule or always-allow option that suppressed the prompt. If the prompt is an intentional always-ask desktop action, the docs did not name dev-server starts as one of those exceptions.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Hook `if` conditions require tool-specific copies for one policy.</title>
+    <id>https://framework.boucle.sh/limitations.html#hook-if-conditions-require-tool-specific-copies</id>
+    <link href="https://framework.boucle.sh/limitations.html#hook-if-conditions-require-tool-specific-copies"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 hooks limitation found that `hooks[].if` uses permission-rule syntax, so the condition must name a single tool such as `Edit(**/*.ts)` or `Write(**/*.ts)`. A prompt hook that wants to apply the same policy to Edit, Write, and MultiEdit has to clone the handler and duplicate the prompt once per tool even though `matcher` already selected the tools. The apparently generic form `*(**/*.ts)` did not fire for a matching Write call and produced no warning, leaving the hook silently inert.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Queued input modes can run out of the order typed.</title>
+    <id>https://framework.boucle.sh/limitations.html#queued-input-modes-can-run-out-of-typed-order</id>
+    <link href="https://framework.boucle.sh/limitations.html#queued-input-modes-can-run-out-of-typed-order"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 interactive-mode documentation gap found that queued plain prompts, queued `!` shell commands, and queued slash commands do not all drain through the same path. Plain prompts can be folded into the running turn at a tool-call boundary, while `!` shell commands and most slash commands wait until the turn finishes. A user can therefore type a shell command, then a normal prompt, and have the later prompt affect the running turn before the earlier shell command executes, with no transcript or queue UI warning that the ordering changed.</summary>
+    <category term="TUI &amp; display"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Sandbox `apply-seccomp` EINVAL failures can trigger unsafe retries.</title>
+    <id>https://framework.boucle.sh/limitations.html#sandbox-apply-seccomp-einval-can-trigger-unsandboxed-retry</id>
+    <link href="https://framework.boucle.sh/limitations.html#sandbox-apply-seccomp-einval-can-trigger-unsandboxed-retry"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Reported Claude Code 2.1.232 and 2.1.233 Linux sessions with `sandbox.enabled` saw intermittent Bash failures where `apply-seccomp: unshare(CLONE_NEWUSER): Invalid argument` replaced the command output. The root report traced the failure to a race where the embedded seccomp helper calls `unshare(CLONE_NEWUSER)` while the runtime still has a recently exited thread in the thread group, producing EINVAL. The user-facing risk is larger than a flaky command: one agent misdiagnosed the sandbox behavior from the helper error, and another retried with `dangerouslyDisableSandbox: true` after transient failures, successfully reading data the sandbox had blocked.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] User-level `paths:` rules can silently load nowhere.</title>
     <id>https://framework.boucle.sh/limitations.html#user-level-path-scoped-rules-can-silently-drop</id>
     <link href="https://framework.boucle.sh/limitations.html#user-level-path-scoped-rules-can-silently-drop"/>
@@ -125,45 +165,5 @@
     <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Claude Code background Agent workflow delivered text typed by the operator in the main session into a live background task&#x27;s transcript instead of creating a new main-session turn. The misdelivered messages appeared to the background task as genuine user interruptions while the main session had no visible record that those turns were sent there. In the cleanest reported incident, a task originally scoped to merging approved PRs received operator authorization language and used it to dispatch a separate security-testing crew outside its original task scope.</summary>
     <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Background Bash tasks can be killed while reporting success.</title>
-    <id>https://framework.boucle.sh/limitations.html#background-bash-task-can-be-killed-while-reporting-success</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-bash-task-can-be-killed-while-reporting-success"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 macOS session found that a Bash tool call using `run_in_background: true` could SIGKILL the task shell and its process group while still notifying the user that the task completed with exit code 0. The triggering command invoked a CLI that spawned a detached daemonizing worker; foreground runs succeeded, but 7 of 9 background runs lost post-command markers or output, and some left 0-byte result files. A later test detached the worker into its own session: the task shell could still die, while the worker survived and wrote valid JSON, narrowing the failure to group-targeted task cleanup plus incorrect success reporting.</summary>
-    <category term="Bash &amp; shell execution"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Piped `-p` prompts can be recorded but omitted from the model request.</title>
-    <id>https://framework.boucle.sh/limitations.html#piped-print-prompt-can-be-dropped-before-model-request</id>
-    <link href="https://framework.boucle.sh/limitations.html#piped-print-prompt-can-be-dropped-before-model-request"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 Windows headless setup intermittently enqueued and persisted a full piped prompt in the transcript and last-prompt preview, but the first API request behaved as if the user turn were empty. Failing runs exited 0 in one or two turns with tiny ambient-context responses, while usage telemetry showed only 2 input tokens for the user request despite the same wrapper and prompt bytes succeeding minutes apart. Transcript inspection alone can therefore falsely reassure automation owners that the prompt reached the model.</summary>
-    <category term="Core &amp; session management"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `grep` shell shim can silently skip binary and ignored files.</title>
-    <id>https://framework.boucle.sh/limitations.html#grep-shell-shim-can-silently-skip-binary-and-ignored-files</id>
-    <link href="https://framework.boucle.sh/limitations.html#grep-shell-shim-can-silently-skip-binary-and-ignored-files"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 Linux and WSL2 setup found that Bash tool calls shadowed system `grep` with a shell function that runs the bundled ugrep using flags such as `-I` and `--ignore-files`. Files containing NUL bytes and files matched by `.gitignore` were skipped with exit status 1 and no stdout or stderr, making the result indistinguishable from a genuine no-match search. The report also notes that `which grep` can still point at `/usr/bin/grep`, so an agent investigating the failure may see contradictory evidence while carrying forward a false conclusion that searched code does not exist.</summary>
-    <category term="Tool behavior"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Sandboxed Bash helper process can OOM during a slow command.</title>
-    <id>https://framework.boucle.sh/limitations.html#sandboxed-bash-helper-can-oom-during-slow-command</id>
-    <link href="https://framework.boucle.sh/limitations.html#sandboxed-bash-helper-can-oom-during-slow-command"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 Linux session in an unprivileged LXC found that an ephemeral per-tool-call helper process named `claude.exe` grew to 11.6 GB anonymous RSS in about two minutes while a sandboxed Bash pipeline was running. The interactive Claude Code process stayed around 430 MB, the input JSONL files totaled under 14 MB, and the known triggering command was a slow `grep -o -i` bounded-repetition pattern piped to `head` that hit the Bash tool timeout. The kernel OOM kill occurred inside the service cgroup, and with systemd `OOMPolicy=stop` it stopped the parent Claude service before restart recovered it.</summary>
-    <category term="Performance &amp; resource usage"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Cloud routine egress allowlist domains may not reach the sandbox proxy.</title>
-    <id>https://framework.boucle.sh/limitations.html#cloud-routine-egress-allowlist-not-propagated-to-sandbox</id>
-    <link href="https://framework.boucle.sh/limitations.html#cloud-routine-egress-allowlist-not-propagated-to-sandbox"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code cloud routine found that domains added to the account-level `Allow network egress` additional-domains setting did not appear in the routine sandbox&#x27;s proxy allowlist a week later. Both scheduled fires and a manual `RemoteTrigger run` still returned `EGRESS_BLOCKED` from `WebFetch` and 403 CONNECT failures from `curl`, while the in-sandbox `$HTTPS_PROXY/__agentproxy/status` endpoint confirmed the expected domains were absent. The trigger API exposed prompt, allowed tools, MCP connections, and schedule state, but no sandbox network policy field that could be updated or inspected for repair.</summary>
-    <category term="Remote &amp; cloud"/>
   </entry>
 </feed>
