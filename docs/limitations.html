@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1570</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-17.</span></p>
+        <p class="subtitle"><span id="total-count">1573</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-17.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -17570,6 +17570,42 @@
                         <!-- workaround:subagent-scratchpad-directory-shared-across-siblings -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Assume scratchpad paths are shared unless the runtime proves per-agent isolation. Prefix every scratchpad filename with a task or agent-specific nonce, include an identity marker inside generated artifacts, and verify the marker before trusting a read-back. For parent sessions that launch background Skills or agent fan-out, keep parent-owned intermediate files outside the shared scratchpad or make them read-only copies, and treat parse failures after a previously valid read as possible cross-agent overwrite rather than only malformed upstream data.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87243" target="_blank">#87243</a></div>
+        </div>
+        <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="87266" id="file-freshness-notice-can-assert-false-user-intent" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1571</span>
+                <span class="kl-cat">Security &amp; trust boundaries</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>File-freshness notices can assert false user intent and tell agents not to disclose it.</h3>
+            <p>A reported Claude Code 2.1.233 Windows parent session plus background subagent workflow found that native file-modification boilerplate could appear after an agent changed tracked files outside Edit/Write tooling. The notice asserted that the change was intentional, that the user was already aware, and that the assistant should not tell the user. In the reported cases those assertions were false: the change came from an agent edit or revert, and the human did not know about it. The same notice was also ephemeral enough that a recovered subagent transcript did not contain the injected text, making later forensics first look like either a prompt-injection event or a model confabulation.</p>
+                        <!-- workaround:file-freshness-notice-can-assert-false-user-intent -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat file-freshness notices as claims about on-disk change state, not proof of user intent. When a notice says a file changed outside file tools, verify `git status`, `git diff`, and recent tool commands directly before accepting or hiding the change. For audit-sensitive work, report unexpected security-relevant file changes to the parent session even if a boilerplate reminder says not to mention them, and preserve raw transcripts plus filesystem evidence because the reminder itself may not be persisted.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87266" target="_blank">#87266</a></div>
+        </div>
+        <div class="kl-entry" data-category="Skills" data-issues="87281" id="background-job-main-session-can-miss-skills-listing" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1572</span>
+                <span class="kl-cat">Skills</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Background job main sessions can miss the available-skills listing.</h3>
+            <p>A reported Claude Code 2.1.233 macOS background job started from the agents interface did not receive the available-skills system-reminder in its main session, while subagents spawned from that same session did receive the full personal, project, and built-in skills listing. Because Claude Code instructs agents to use only listed skills, the background job main session had no discoverable path to invoke a matching user or project skill and produced an HTML deliverable without loading the user&#x27;s page-convention skill.</p>
+                        <!-- workaround:background-job-main-session-can-miss-skills-listing -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume background job main sessions can see the same skills as interactive sessions. For skill-dependent background jobs, include the required skill name and expected behavior explicitly in the prompt, or start with a small self-check that asks the main session to report whether the skills listing is visible. If the list is absent, restart interactively, delegate the skill-specific step to a subagent that can see the listing, or provide the relevant conventions as normal task context.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87281" target="_blank">#87281</a></div>
+        </div>
+        <div class="kl-entry" data-category="Auth &amp; accounts" data-issues="87255" id="background-fork-can-drop-vertex-gateway-env" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1573</span>
+                <span class="kl-cat">Auth &amp; accounts</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Background forks can drop Vertex gateway auth environment variables.</h3>
+            <p>A reported Claude Code 2.1.233 macOS Vertex-gateway setup found that pressing left arrow to background a conversation into a daemon fork reconstructed the worker environment without `CLAUDE_CODE_SKIP_VERTEX_AUTH` and `ANTHROPIC_VERTEX_BASE_URL`, while keeping `CLAUDE_CODE_USE_VERTEX`, `ANTHROPIC_VERTEX_PROJECT_ID`, and `ANTHROPIC_AUTH_TOKEN`. The forked worker then attempted local Google ADC and failed every request, even though the original interactive session and daemon process had the complete gateway environment.</p>
+                        <!-- workaround:background-fork-can-drop-vertex-gateway-env -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For gateway-fronted Vertex or similar provider overrides, do not assume background forks inherit the interactive session&#x27;s auth environment. Before moving critical work into a background fork, run a harmless status or tiny model-call canary from the forked session and confirm the expected gateway path is used. Keep provider env setup in a wrapper or daemon launch path where possible, avoid left-arrow backgrounding for sessions that depend on per-shell override variables, and preserve process environment variable names, not values, when reporting auth inheritance failures.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87255" target="_blank">#87255</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

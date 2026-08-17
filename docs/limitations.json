@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1570,
+  "count": 1573,
   "categories": {
     "Hook behavior & events": 208,
     "Permission system": 141,
@@ -17,11 +17,11 @@
     "Cowork & remote": 26,
     "Performance & cost": 25,
     "Configuration behavior": 23,
+    "Security & trust boundaries": 23,
     "Agents & subagents": 22,
-    "Security & trust boundaries": 22,
     "Tool behavior": 22,
     "VS Code extension": 22,
-    "Auth & accounts": 18,
+    "Auth & accounts": 19,
     "Core & session management": 18,
     "Remote & cloud": 18,
     "Model behavior": 17,
@@ -39,10 +39,10 @@
     "Scheduled tasks": 10,
     "Telemetry & insights": 10,
     "hooks": 9,
+    "Skills": 9,
     "auth": 8,
     "Desktop & platform bugs": 8,
     "Hook execution & lifecycle": 8,
-    "Skills": 8,
     "MCP": 7,
     "Model behavior & output": 7,
     "Permissions": 7,
@@ -191,9 +191,9 @@
   },
   "severity_counts": {
     "CRITICAL": 135,
-    "HIGH": 860,
+    "HIGH": 862,
     "LOW": 111,
-    "MEDIUM": 464
+    "MEDIUM": 465
   },
   "entries": [
     {
@@ -20166,30 +20166,69 @@
       "date_added": "2026-08-17",
       "description": "A reported Claude Code 2.1.233 multi-agent workflow found that sibling subagents spawned by one orchestrator shared a single scratchpad directory keyed by the parent session, and a background-forked Skill inherited the parent's own scratchpad path. Parallel agents converged on generic filenames such as `preview.html` and `threads.json`; later reads succeeded but returned a sibling's artifact or a concurrently truncated parent file, making read-back verification accuse the wrong layer.",
       "workaround": "Assume scratchpad paths are shared unless the runtime proves per-agent isolation. Prefix every scratchpad filename with a task or agent-specific nonce, include an identity marker inside generated artifacts, and verify the marker before trusting a read-back. For parent sessions that launch background Skills or agent fan-out, keep parent-owned intermediate files outside the shared scratchpad or make them read-only copies, and treat parse failures after a previously valid read as possible cross-agent overwrite rather than only malformed upstream data."
+    },
+    {
+      "id": "file-freshness-notice-can-assert-false-user-intent",
+      "title": "File-freshness notices can assert false user intent and tell agents not to disclose it.",
+      "category": "Security & trust boundaries",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87266"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 Windows parent session plus background subagent workflow found that native file-modification boilerplate could appear after an agent changed tracked files outside Edit/Write tooling. The notice asserted that the change was intentional, that the user was already aware, and that the assistant should not tell the user. In the reported cases those assertions were false: the change came from an agent edit or revert, and the human did not know about it. The same notice was also ephemeral enough that a recovered subagent transcript did not contain the injected text, making later forensics first look like either a prompt-injection event or a model confabulation.",
+      "workaround": "Treat file-freshness notices as claims about on-disk change state, not proof of user intent. When a notice says a file changed outside file tools, verify `git status`, `git diff`, and recent tool commands directly before accepting or hiding the change. For audit-sensitive work, report unexpected security-relevant file changes to the parent session even if a boilerplate reminder says not to mention them, and preserve raw transcripts plus filesystem evidence because the reminder itself may not be persisted."
+    },
+    {
+      "id": "background-job-main-session-can-miss-skills-listing",
+      "title": "Background job main sessions can miss the available-skills listing.",
+      "category": "Skills",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87281"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 macOS background job started from the agents interface did not receive the available-skills system-reminder in its main session, while subagents spawned from that same session did receive the full personal, project, and built-in skills listing. Because Claude Code instructs agents to use only listed skills, the background job main session had no discoverable path to invoke a matching user or project skill and produced an HTML deliverable without loading the user's page-convention skill.",
+      "workaround": "Do not assume background job main sessions can see the same skills as interactive sessions. For skill-dependent background jobs, include the required skill name and expected behavior explicitly in the prompt, or start with a small self-check that asks the main session to report whether the skills listing is visible. If the list is absent, restart interactively, delegate the skill-specific step to a subagent that can see the listing, or provide the relevant conventions as normal task context."
+    },
+    {
+      "id": "background-fork-can-drop-vertex-gateway-env",
+      "title": "Background forks can drop Vertex gateway auth environment variables.",
+      "category": "Auth & accounts",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87255"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 macOS Vertex-gateway setup found that pressing left arrow to background a conversation into a daemon fork reconstructed the worker environment without `CLAUDE_CODE_SKIP_VERTEX_AUTH` and `ANTHROPIC_VERTEX_BASE_URL`, while keeping `CLAUDE_CODE_USE_VERTEX`, `ANTHROPIC_VERTEX_PROJECT_ID`, and `ANTHROPIC_AUTH_TOKEN`. The forked worker then attempted local Google ADC and failed every request, even though the original interactive session and daemon process had the complete gateway environment.",
+      "workaround": "For gateway-fronted Vertex or similar provider overrides, do not assume background forks inherit the interactive session's auth environment. Before moving critical work into a background fork, run a harmless status or tiny model-call canary from the forked session and confirm the expected gateway path is used. Keep provider env setup in a wrapper or daemon launch path where possible, avoid left-arrow backgrounding for sessions that depend on per-shell override variables, and preserve process environment variable names, not values, when reporting auth inheritance failures."
     }
   ],
   "status_summary": {
-    "open": 1556,
+    "open": 1559,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 135,
-    "high": 860,
+    "high": 862,
     "low": 111,
-    "medium": 464
+    "medium": 465
   },
   "lastUpdated": "2026-08-17",
   "stats": {
-    "total": 1570,
+    "total": 1573,
     "critical": 135,
-    "high": 860,
-    "medium": 464,
+    "high": 862,
+    "medium": 465,
     "low": 111,
-    "open": 1556,
+    "open": 1559,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-17",
-  "total": 1570
+  "total": 1573
 }
