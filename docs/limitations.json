@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1598,
+  "count": 1600,
   "categories": {
-    "Hook behavior & events": 211,
+    "Hook behavior & events": 212,
     "Permission system": 146,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 84,
@@ -12,8 +12,8 @@
     "CLI & terminal": 31,
     "Platform & compatibility": 31,
     "Context & memory": 30,
+    "MCP & integrations": 29,
     "Sandbox & permissions": 29,
-    "MCP & integrations": 28,
     "Configuration behavior": 26,
     "Cowork & remote": 26,
     "Security & trust boundaries": 26,
@@ -192,9 +192,9 @@
   },
   "severity_counts": {
     "CRITICAL": 137,
-    "HIGH": 870,
+    "HIGH": 871,
     "LOW": 112,
-    "MEDIUM": 479
+    "MEDIUM": 480
   },
   "entries": [
     {
@@ -20536,30 +20536,56 @@
       "date_added": "2026-08-17",
       "description": "A reported Windows Claude Code Desktop and CLI setup with several config roots found that a desktop-launched session exposed `CLAUDE_CONFIG_DIR`, `claude auth status`, and model-visible context for one account while desktop session records, usage samples, and owner confirmation indicated another account was being billed. Follow-up measurements found contradictory account identifiers inside the same config file, including an OAuth identity for one account and cached usage for another. The reporter explicitly notes that the signing credential was not directly measured, so the hard limitation is that local tooling cannot reliably identify the effective account or billing boundary from the available session surfaces.",
       "workaround": "Do not use `CLAUDE_CONFIG_DIR` or `claude auth status` alone as the source of truth for account-specific governors, spend caps, or audit attribution in multi-account Desktop setups. Cross-check session-visible identity against Desktop records, usage samples, and owner/account dashboards before taking protective action, and fail closed or ask the operator when those sources disagree. For tools that enforce usage limits, record the config root, reported identity, observed usage account, and any null identity responses so mismatches are visible instead of silently grading the wrong account."
+    },
+    {
+      "id": "settings-json-hook-command-edits-can-fail-false-json-validation",
+      "title": "Editing settings.json hook commands can fail false JSON validation.",
+      "category": "Hook behavior & events",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87456"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Windows 11 Git Bash setup found that the Claude Code Edit tool repeatedly refused an otherwise valid `.claude/settings.json` change when the edited hook `command` string contained shell regex metacharacters such as `'.ts$'`. The tool reported `Invalid JSON: JSON Parse error: Unterminated string` and rolled the edit back, while independent `jq` validation passed before and after, and writing the same value through a structured JSON mutation succeeded immediately. The failure appears to be in the Edit tool's settings validator or patch path, not in the final JSON bytes.",
+      "workaround": "When adding or changing hook commands in `.claude/settings.json`, verify the file with an independent JSON parser if Edit reports an unterminated string. For commands with quotes, regexes, pipes, or shell metacharacters, mutate the settings file through a structured JSON writer such as Node or jq and then re-run `jq -e .claude/settings.json` before starting a fresh Claude Code session. Keep hook command strings small or move complex logic into a separate script file so future settings edits are less likely to trip validator edge cases."
+    },
+    {
+      "id": "mcp-approval-can-return-without-unblocking-tool-call",
+      "title": "MCP permission approval can return without unblocking the tool call.",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87433"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 macOS session showed MCP tools from a connected server returning `MCP tool call requires approval` even after the user tapped `Allow once` in the client permission prompt. The prompt rendered normally and produced no visible error, but retrying the same `add_repo` and `get_session` calls on the same server produced the identical approval-required response across multiple attempts and after reopening the app. The result is an approval UI that appears accepted while the underlying MCP tool state remains blocked.",
+      "workaround": "Do not treat a rendered MCP approval prompt as proof that the next call will execute. After approving an MCP tool, retry a harmless representative call and confirm it reaches the server before depending on it for repository, deploy, or data changes. If the approval loops, restart the session or app, inspect server-side logs to determine whether calls are arriving, and avoid broad bypass-permissions workarounds for tools that touch external systems until the unblocking path has been verified."
     }
   ],
   "status_summary": {
-    "open": 1584,
+    "open": 1586,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 137,
-    "high": 870,
+    "high": 871,
     "low": 112,
-    "medium": 479
+    "medium": 480
   },
   "lastUpdated": "2026-08-17",
   "stats": {
-    "total": 1598,
+    "total": 1600,
     "critical": 137,
-    "high": 870,
-    "medium": 479,
+    "high": 871,
+    "medium": 480,
     "low": 112,
-    "open": 1584,
+    "open": 1586,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-17",
-  "total": 1598
+  "total": 1600
 }
