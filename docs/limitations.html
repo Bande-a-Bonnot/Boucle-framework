@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1598</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-17.</span></p>
+        <p class="subtitle"><span id="total-count">1600</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-17.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -17906,6 +17906,30 @@
                         <!-- workaround:claude-config-dir-can-name-different-account-than-session-spends -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not use `CLAUDE_CONFIG_DIR` or `claude auth status` alone as the source of truth for account-specific governors, spend caps, or audit attribution in multi-account Desktop setups. Cross-check session-visible identity against Desktop records, usage samples, and owner/account dashboards before taking protective action, and fail closed or ask the operator when those sources disagree. For tools that enforce usage limits, record the config root, reported identity, observed usage account, and any null identity responses so mismatches are visible instead of silently grading the wrong account.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87447" target="_blank">#87447</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="87456" id="settings-json-hook-command-edits-can-fail-false-json-validation" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1599</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Editing settings.json hook commands can fail false JSON validation.</h3>
+            <p>A reported Windows 11 Git Bash setup found that the Claude Code Edit tool repeatedly refused an otherwise valid `.claude/settings.json` change when the edited hook `command` string contained shell regex metacharacters such as `&#x27;.ts$&#x27;`. The tool reported `Invalid JSON: JSON Parse error: Unterminated string` and rolled the edit back, while independent `jq` validation passed before and after, and writing the same value through a structured JSON mutation succeeded immediately. The failure appears to be in the Edit tool&#x27;s settings validator or patch path, not in the final JSON bytes.</p>
+                        <!-- workaround:settings-json-hook-command-edits-can-fail-false-json-validation -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When adding or changing hook commands in `.claude/settings.json`, verify the file with an independent JSON parser if Edit reports an unterminated string. For commands with quotes, regexes, pipes, or shell metacharacters, mutate the settings file through a structured JSON writer such as Node or jq and then re-run `jq -e .claude/settings.json` before starting a fresh Claude Code session. Keep hook command strings small or move complex logic into a separate script file so future settings edits are less likely to trip validator edge cases.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87456" target="_blank">#87456</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="87433" id="mcp-approval-can-return-without-unblocking-tool-call" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1600</span>
+                <span class="kl-cat">MCP &amp; integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>MCP permission approval can return without unblocking the tool call.</h3>
+            <p>A reported Claude Code 2.1.233 macOS session showed MCP tools from a connected server returning `MCP tool call requires approval` even after the user tapped `Allow once` in the client permission prompt. The prompt rendered normally and produced no visible error, but retrying the same `add_repo` and `get_session` calls on the same server produced the identical approval-required response across multiple attempts and after reopening the app. The result is an approval UI that appears accepted while the underlying MCP tool state remains blocked.</p>
+                        <!-- workaround:mcp-approval-can-return-without-unblocking-tool-call -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat a rendered MCP approval prompt as proof that the next call will execute. After approving an MCP tool, retry a harmless representative call and confirm it reaches the server before depending on it for repository, deploy, or data changes. If the approval loops, restart the session or app, inspect server-side logs to determine whether calls are arriving, and avoid broad bypass-permissions workarounds for tools that touch external systems until the unblocking path has been verified.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87433" target="_blank">#87433</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
