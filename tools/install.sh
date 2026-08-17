@@ -16,7 +16,8 @@
 # Or:    curl ... | bash -s -- help
 set -euo pipefail
 
-REPO="https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools"
+REPO="${BOUCLE_HOOKS_REPO:-https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools}"
+REPO="${REPO%/}"
 SETTINGS="${HOME}/.claude/settings.json"
 
 # Colors (if terminal supports them)
@@ -155,7 +156,7 @@ if [ $# -gt 0 ] && [ "$1" = "check" ]; then
   tmpfile=$(mktemp)
   trap 'rm -f "$tmpfile"' EXIT
 
-  if $DL "https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh" > "$tmpfile" 2>/dev/null; then
+  if $DL "${REPO}/safety-check/check.sh" > "$tmpfile" 2>/dev/null; then
     if [ -s "$tmpfile" ]; then
       chmod +x "$tmpfile"
       bash "$tmpfile" "$@"

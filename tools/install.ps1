@@ -43,7 +43,12 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
     exit 1
 }
 
-$Repo = "https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools"
+$DefaultRepo = "https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools"
+if ($env:BOUCLE_HOOKS_REPO) {
+    $Repo = $env:BOUCLE_HOOKS_REPO.TrimEnd('/')
+} else {
+    $Repo = $DefaultRepo
+}
 $SettingsPath = Join-Path $HOME ".claude" "settings.json"
 
 # Hook catalog
@@ -383,7 +388,7 @@ if ($Hooks -and $Hooks.Count -gt 0 -and $Hooks[0] -eq 'check') {
     Write-Host "Running safety audit..." -ForegroundColor White
     Write-Host ""
 
-    $checkUrl = "https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh"
+    $checkUrl = "$Repo/safety-check/check.sh"
     $tmpFile = [System.IO.Path]::GetTempFileName()
 
     try {
