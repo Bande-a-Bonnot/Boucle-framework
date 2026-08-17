@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1562,
+  "count": 1563,
   "categories": {
     "Hook behavior & events": 208,
     "Permission system": 141,
@@ -22,9 +22,9 @@
     "VS Code extension": 22,
     "Tool behavior": 21,
     "Auth & accounts": 18,
+    "Remote & cloud": 18,
     "Core & session management": 17,
     "Model behavior": 17,
-    "Remote & cloud": 17,
     "Data integrity": 16,
     "Scheduling & remote triggers": 15,
     "Permissions & safety": 14,
@@ -191,7 +191,7 @@
   },
   "severity_counts": {
     "CRITICAL": 134,
-    "HIGH": 853,
+    "HIGH": 854,
     "LOW": 111,
     "MEDIUM": 464
   },
@@ -20062,30 +20062,43 @@
       "date_added": "2026-08-17",
       "description": "A reported Claude Code 2.1.221 macOS session found that `/permissions` rendered but stopped responding to arrow-key navigation after recent auto-mode classifier denials in a long-running session. The user could not reach `Add a new rule...` from the discoverable permission UI, while a fresh session on the same project navigated normally and could add the needed allow rule. This makes denials harder to repair exactly when the human is supposed to recover from them, especially because the agent itself should not edit `.claude/settings.json` to grant its own permissions.",
       "workaround": "If `/permissions` appears frozen after denials, open a fresh Claude Code session in the same project and add the rule there, or hand-edit the relevant `permissions.allow` entry after verifying the syntax from trusted docs. For teams, document a manual settings-file fallback for permission repair, preserve the denial count and session age when reporting the bug, and add a lightweight canary that opens `/permissions` after a test denial before relying on it as the only repair path."
+    },
+    {
+      "id": "cloud-routine-egress-allowlist-not-propagated-to-sandbox",
+      "title": "Cloud routine egress allowlist domains may not reach the sandbox proxy.",
+      "category": "Remote & cloud",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87236"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code cloud routine found that domains added to the account-level `Allow network egress` additional-domains setting did not appear in the routine sandbox's proxy allowlist a week later. Both scheduled fires and a manual `RemoteTrigger run` still returned `EGRESS_BLOCKED` from `WebFetch` and 403 CONNECT failures from `curl`, while the in-sandbox `$HTTPS_PROXY/__agentproxy/status` endpoint confirmed the expected domains were absent. The trigger API exposed prompt, allowed tools, MCP connections, and schedule state, but no sandbox network policy field that could be updated or inspected for repair.",
+      "workaround": "Do not assume account-level network egress changes have reached Claude Code cloud routines. After adding a domain, run a canary routine that checks the exact host with both the intended fetch path and `$HTTPS_PROXY/__agentproxy/status`; treat absence from the proxy allowlist as a hard failure, not propagation delay. For workflows that must fetch those hosts, run the fetch from a local session, mirror the needed data into a default-reachable location, or redesign the routine around domains already visible in the sandbox proxy until the cloud allowlist path is verified."
     }
   ],
   "status_summary": {
-    "open": 1548,
+    "open": 1549,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 134,
-    "high": 853,
+    "high": 854,
     "low": 111,
     "medium": 464
   },
   "lastUpdated": "2026-08-17",
   "stats": {
-    "total": 1562,
+    "total": 1563,
     "critical": 134,
-    "high": 853,
+    "high": 854,
     "medium": 464,
     "low": 111,
-    "open": 1548,
+    "open": 1549,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-17",
-  "total": 1562
+  "total": 1563
 }
