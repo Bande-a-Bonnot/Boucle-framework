@@ -7,6 +7,30 @@
   <updated>2026-08-17T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Sibling subagents can silently overwrite each other&#x27;s scratchpad files.</title>
+    <id>https://framework.boucle.sh/limitations.html#subagent-scratchpad-directory-shared-across-siblings</id>
+    <link href="https://framework.boucle.sh/limitations.html#subagent-scratchpad-directory-shared-across-siblings"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 multi-agent workflow found that sibling subagents spawned by one orchestrator shared a single scratchpad directory keyed by the parent session, and a background-forked Skill inherited the parent&#x27;s own scratchpad path. Parallel agents converged on generic filenames such as `preview.html` and `threads.json`; later reads succeeded but returned a sibling&#x27;s artifact or a concurrently truncated parent file, making read-back verification accuse the wrong layer.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Agent `run_in_background: false` can still behave like a background dispatch.</title>
+    <id>https://framework.boucle.sh/limitations.html#agent-run-in-background-false-can-still-return-as-background</id>
+    <link href="https://framework.boucle.sh/limitations.html#agent-run-in-background-false-can-still-return-as-background"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 Windows Agent workflow found that `run_in_background: false` returned immediately with the same background-spawn message instead of blocking for the agent&#x27;s final report. The agents completed their work, but results arrived only later as teammate messages or sometimes never arrived as text. The reporter measured batches where agents went idle after doing useful work while the parent saw no final tool result, causing fallback inline work and quiet quality loss.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Foreground operator input can be routed into a background Agent task.</title>
+    <id>https://framework.boucle.sh/limitations.html#background-agent-can-receive-foreground-operator-input</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-agent-can-receive-foreground-operator-input"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code background Agent workflow delivered text typed by the operator in the main session into a live background task&#x27;s transcript instead of creating a new main-session turn. The misdelivered messages appeared to the background task as genuine user interruptions while the main session had no visible record that those turns were sent there. In the cleanest reported incident, a task originally scoped to merging approved PRs received operator authorization language and used it to dispatch a separate security-testing crew outside its original task scope.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
     <title>[HIGH] Background Bash tasks can be killed while reporting success.</title>
     <id>https://framework.boucle.sh/limitations.html#background-bash-task-can-be-killed-while-reporting-success</id>
     <link href="https://framework.boucle.sh/limitations.html#background-bash-task-can-be-killed-while-reporting-success"/>
@@ -141,29 +165,5 @@
     <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported macOS Claude Code workflow found that a parent session could call a permission-gated read-only MCP database tool, while subagents spawned through Task or Workflow had the same MCP call refused by the auto-mode classifier. Prompt text saying the user had authorized the tool for that run did not help, and the blocked request was not surfaced as an approval prompt. The only working permission route was a permanent `permissions.allow` entry, which is broader than the user&#x27;s intended per-run grant.</summary>
     <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Invalid or removed settings can disable permissions mid-session.</title>
-    <id>https://framework.boucle.sh/limitations.html#invalid-or-removed-settings-can-disable-permissions-mid-session</id>
-    <link href="https://framework.boucle.sh/limitations.html#invalid-or-removed-settings-can-disable-permissions-mid-session"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.214 macOS session found that while Claude Code is already running, a watched `.claude/settings.json` or `~/.claude/settings.json` file that becomes syntactically invalid is rejected as a whole and its `permissions.deny` and `permissions.ask` rules stop enforcing. A Bash command that was denied in the previous turn can then execute silently until the file parses again. A later comment on Claude Code 2.1.231 web session reported the same fail-open shape when a project settings file was deleted by `git checkout`: deny rules stopped applying, and in that case stayed inert after the file was restored by merge. The risk is not only malformed startup config; ordinary mid-session edits or branch switches can silently remove active permission policy from a live session.</summary>
-    <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Ancestor sandbox settings are not inherited by nested projects.</title>
-    <id>https://framework.boucle.sh/limitations.html#ancestor-sandbox-settings-not-inherited-by-nested-projects</id>
-    <link href="https://framework.boucle.sh/limitations.html#ancestor-sandbox-settings-not-inherited-by-nested-projects"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.220 macOS sandbox setup placed `sandbox.enabled: true`, `allowUnsandboxedCommands: false`, and a tight network allowlist in a container workspace&#x27;s `.claude/settings.local.json`, then started a separate session inside a nested git repository. The nested session ran commands with network access that the parent workspace blocked. A collaborator reproduced on Claude Code 2.1.233 and clarified the current model: project and local settings are read only from the project Claude Code starts in, so ancestor-directory settings are not inherited by a nested repository, even when the nested repo has no `.claude/settings.local.json` of its own. The confirmed risk is a silent boundary mismatch where a parent folder looks sandboxed while separately launched nested-project sessions are not covered by that parent sandbox.</summary>
-    <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Interpreter-wrapped hook scripts can fail closed when the target file is missing.</title>
-    <id>https://framework.boucle.sh/limitations.html#interpreter-hook-script-missing-can-fail-closed</id>
-    <link href="https://framework.boucle.sh/limitations.html#interpreter-hook-script-missing-can-fail-closed"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.218 Windows setup found that a `PreToolUse` command hook such as `python C:/nonexistent/ghost_hook.py` blocked the matched Bash tool because Python itself launched successfully and then exited 2 when it could not open the script. A collaborator reproduced the same behavior on Claude Code 2.1.233 and clarified the distinction: a hook executable that cannot be started can be treated as a non-blocking hook error, but an interpreter that starts and returns exit code 2 is indistinguishable from a deliberate hook deny because the hook protocol reserves exit code 2 for blocking. A stale path, renamed hook file, or disabled-by-renaming guard can therefore lock out every matched tool call, including the call that would repair the configuration from inside the session.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>
