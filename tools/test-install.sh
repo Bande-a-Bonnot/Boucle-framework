@@ -9,6 +9,8 @@ export BOUCLE_HOOKS_REPO="file://${SCRIPT_DIR}"
 
 pass() { PASS=$((PASS + 1)); echo "  PASS: $1"; }
 fail() { FAIL=$((FAIL + 1)); echo "  FAIL: $1"; }
+output_contains() { grep -q -- "$2" <<<"$1"; }
+output_contains_i() { grep -qi -- "$2" <<<"$1"; }
 
 # Create temp home for testing
 TEST_HOME=$(mktemp -d)
@@ -160,7 +162,7 @@ fi
 # Test 6: Unknown hook
 echo "--- Unknown hook ---"
 output=$(bash "$SCRIPT_DIR/install.sh" nonexistent 2>&1 || true)
-if echo "$output" | grep -q "Unknown hook"; then
+if output_contains "$output" "Unknown hook"; then
   pass "unknown hook warned"
 else
   fail "unknown hook not handled"
@@ -457,7 +459,7 @@ fi
 # Test 15: Uninstall unknown hook warns
 echo "--- Uninstall unknown hook ---"
 output=$(bash "$SCRIPT_DIR/install.sh" uninstall nonexistent 2>&1 || true)
-if echo "$output" | grep -q "Unknown hook"; then
+if output_contains "$output" "Unknown hook"; then
   pass "uninstall unknown hook warned"
 else
   fail "uninstall unknown hook not handled"
@@ -466,7 +468,7 @@ fi
 # Test 16: Uninstall hook not installed skips
 echo "--- Uninstall not-installed hook ---"
 output=$(bash "$SCRIPT_DIR/install.sh" uninstall branch-guard 2>&1 || true)
-if echo "$output" | grep -qi "skip\|not installed"; then
+if output_contains_i "$output" "skip\|not installed"; then
   pass "uninstall skipped non-installed hook"
 else
   fail "uninstall did not skip non-installed hook"
@@ -575,7 +577,7 @@ fi
 # Test 20: Uninstall no args shows usage
 echo "--- Uninstall usage ---"
 output=$(bash "$SCRIPT_DIR/install.sh" uninstall 2>&1 || true)
-if echo "$output" | grep -qi "usage\|Usage"; then
+if output_contains_i "$output" "usage\|Usage"; then
   pass "uninstall no args shows usage"
 else
   fail "uninstall no args missing usage"
@@ -623,21 +625,21 @@ rm -rf "$TEST_HOME/.claude"
 bash "$SCRIPT_DIR/install.sh" read-once git-safe >/dev/null 2>&1
 
 output=$(bash "$SCRIPT_DIR/install.sh" list 2>&1)
-if echo "$output" | grep -q "read-once" && echo "$output" | grep -q "git-safe"; then
+if output_contains "$output" "read-once" && output_contains "$output" "git-safe"; then
   pass "list shows installed hooks"
 else
   fail "list missing installed hooks"
 fi
 
 # Test 23: List does not show uninstalled hooks
-if echo "$output" | grep -q "bash-guard"; then
+if output_contains "$output" "bash-guard"; then
   fail "list shows non-installed hook"
 else
   pass "list hides non-installed hooks"
 fi
 
 # Test 23: List shows count
-if echo "$output" | grep -q "2 hook"; then
+if output_contains "$output" "2 hook"; then
   pass "list shows correct count"
 else
   fail "list count wrong"
@@ -648,7 +650,7 @@ echo "--- List empty ---"
 rm -rf "$TEST_HOME/.claude"
 mkdir -p "$TEST_HOME/.claude"
 output=$(bash "$SCRIPT_DIR/install.sh" list 2>&1)
-if echo "$output" | grep -qi "no hooks"; then
+if output_contains_i "$output" "no hooks"; then
   pass "list reports no hooks"
 else
   fail "list does not report empty state"
@@ -663,7 +665,7 @@ echo "--- Upgrade empty ---"
 rm -rf "$TEST_HOME/.claude"
 mkdir -p "$TEST_HOME/.claude"
 output=$(bash "$SCRIPT_DIR/install.sh" upgrade 2>&1)
-if echo "$output" | grep -qi "up to date"; then
+if output_contains_i "$output" "up to date"; then
   pass "upgrade with no hooks says up to date"
 else
   fail "upgrade with no hooks unclear output"
@@ -675,7 +677,7 @@ rm -rf "$TEST_HOME/.claude"
 bash "$SCRIPT_DIR/install.sh" git-safe >/dev/null 2>&1
 
 output=$(bash "$SCRIPT_DIR/install.sh" upgrade 2>&1)
-if echo "$output" | grep -qi "up to date"; then
+if output_contains_i "$output" "up to date"; then
   pass "upgrade of fresh install says up to date"
 else
   fail "upgrade of fresh install not detected as current"
@@ -690,7 +692,7 @@ bash "$SCRIPT_DIR/install.sh" git-safe >/dev/null 2>&1
 echo "# outdated version" > "$TEST_HOME/.claude/git-safe/hook.sh"
 
 output=$(bash "$SCRIPT_DIR/install.sh" upgrade 2>&1)
-if echo "$output" | grep -qi "updated"; then
+if output_contains_i "$output" "updated"; then
   pass "upgrade detected and updated modified hook"
 else
   fail "upgrade did not detect modified hook"
@@ -710,7 +712,7 @@ bash "$SCRIPT_DIR/install.sh" git-safe >/dev/null 2>&1
 
 output=$(bash "$SCRIPT_DIR/install.sh" upgrade 2>&1)
 # Should not mention read-once or other non-installed hooks
-if echo "$output" | grep -q "read-once"; then
+if output_contains "$output" "read-once"; then
   fail "upgrade mentioned non-installed hook"
 else
   pass "upgrade only processes installed hooks"
@@ -898,7 +900,7 @@ cat > "$TEST_HOME/.claude/settings.json" << 'EOF'
 }
 EOF
 output=$(bash "$SCRIPT_DIR/install.sh" backup 2>&1)
-if echo "$output" | grep -q "Backup created"; then
+if output_contains "$output" "Backup created"; then
   pass "backup reports success"
 else
   fail "backup did not report success: $output"
@@ -918,7 +920,7 @@ else
   fail "backup content differs from original"
 fi
 
-if echo "$output" | grep -q "1 unique hook"; then
+if output_contains "$output" "1 unique hook"; then
   pass "backup counts hooks"
 else
   fail "backup hook count missing"
@@ -926,12 +928,12 @@ fi
 
 echo "--- Backup list ---"
 output=$(bash "$SCRIPT_DIR/install.sh" backup list 2>&1)
-if echo "$output" | grep -q "settings\..*\.json"; then
+if output_contains "$output" "settings\..*\.json"; then
   pass "backup list shows files"
 else
   fail "backup list shows no files"
 fi
-if echo "$output" | grep -q "1 backup"; then
+if output_contains "$output" "1 backup"; then
   pass "backup list shows count"
 else
   fail "backup list count wrong"
@@ -940,7 +942,7 @@ fi
 echo "--- Backup list empty ---"
 rm -rf "$TEST_HOME/.claude/backups"
 output=$(bash "$SCRIPT_DIR/install.sh" backup list 2>&1)
-if echo "$output" | grep -q "No backups found"; then
+if output_contains "$output" "No backups found"; then
   pass "backup list empty message"
 else
   fail "backup list should show no backups"
@@ -949,7 +951,7 @@ fi
 echo "--- Backup no settings ---"
 rm -f "$TEST_HOME/.claude/settings.json"
 output=$(bash "$SCRIPT_DIR/install.sh" backup 2>&1)
-if echo "$output" | grep -q "Nothing to back up"; then
+if output_contains "$output" "Nothing to back up"; then
   pass "backup with no settings.json"
 else
   fail "backup should warn about missing settings.json"
@@ -966,7 +968,7 @@ bash "$SCRIPT_DIR/install.sh" backup >/dev/null 2>&1
 echo '{}' > "$TEST_HOME/.claude/settings.json"
 
 output=$(bash "$SCRIPT_DIR/install.sh" restore 2>&1)
-if echo "$output" | grep -q "Restored"; then
+if output_contains "$output" "Restored"; then
   pass "restore reports success"
 else
   fail "restore did not report success: $output"
@@ -1007,7 +1009,7 @@ first_name=$(basename "$first_backup")
 # Wipe and restore the specific older backup
 echo '{}' > "$TEST_HOME/.claude/settings.json"
 output=$(bash "$SCRIPT_DIR/install.sh" restore "$first_name" 2>&1)
-if echo "$output" | grep -q "Restored"; then
+if output_contains "$output" "Restored"; then
   pass "restore specific file works"
 else
   fail "restore specific file failed: $output"
@@ -1030,7 +1032,7 @@ echo "--- Restore nonexistent file ---"
 if output=$(bash "$SCRIPT_DIR/install.sh" restore "settings.fake.json" 2>&1); then
   fail "restore nonexistent file should fail"
 else
-  if echo "$output" | grep -q "not found"; then
+  if output_contains "$output" "not found"; then
     pass "restore nonexistent file fails"
   else
     fail "restore nonexistent file wrong message: $output"
@@ -1042,7 +1044,7 @@ rm -rf "$TEST_HOME/.claude/backups"
 if output=$(bash "$SCRIPT_DIR/install.sh" restore 2>&1); then
   fail "restore should fail with no backups"
 else
-  if echo "$output" | grep -q "No backups found"; then
+  if output_contains "$output" "No backups found"; then
     pass "restore with no backups fails"
   else
     fail "restore no backups wrong message: $output"
@@ -1079,7 +1081,7 @@ fi
 
 output=$(bash "$SCRIPT_DIR/install.sh" backup list 2>&1)
 # 2 manual backups + 1 pre-restore = 3 total
-if echo "$output" | grep -q "backup.* found"; then
+if output_contains "$output" "backup.* found"; then
   pass "backup list counts correctly"
 else
   fail "backup list should show backup count"
@@ -1090,25 +1092,25 @@ echo "--- Doctor subcommand ---"
 # Re-install a hook so doctor has something to check
 bash "$SCRIPT_DIR/install.sh" bash-guard >/dev/null 2>&1
 output=$(bash "$SCRIPT_DIR/install.sh" doctor 2>&1)
-if echo "$output" | grep -q "Running diagnostics"; then
+if output_contains "$output" "Running diagnostics"; then
   pass "doctor runs successfully"
 else
   fail "doctor did not run"
 fi
 
-if echo "$output" | grep -q "settings.json exists"; then
+if output_contains "$output" "settings.json exists"; then
   pass "doctor detects settings.json"
 else
   fail "doctor did not detect settings.json"
 fi
 
-if echo "$output" | grep -q "OK.*bash-guard"; then
+if output_contains "$output" "OK.*bash-guard"; then
   pass "doctor detects installed hook"
 else
   fail "doctor did not detect installed hook"
 fi
 
-if echo "$output" | grep -qi "not installed"; then
+if output_contains_i "$output" "not installed"; then
   pass "doctor shows uninstalled hooks"
 else
   fail "doctor did not show uninstalled hooks"
@@ -1117,7 +1119,7 @@ fi
 # Doctor with no settings.json
 mv "$TEST_HOME/.claude/settings.json" "$TEST_HOME/.claude/settings.json.bak"
 output=$(bash "$SCRIPT_DIR/install.sh" doctor 2>&1 || true)
-if echo "$output" | grep -qi "error.*settings.json not found"; then
+if output_contains_i "$output" "error.*settings.json not found"; then
   pass "doctor reports missing settings.json"
 else
   fail "doctor did not report missing settings.json"
@@ -1127,7 +1129,7 @@ mv "$TEST_HOME/.claude/settings.json.bak" "$TEST_HOME/.claude/settings.json"
 # Doctor with broken JSON
 echo "{{invalid json" > "$TEST_HOME/.claude/settings.json"
 output=$(bash "$SCRIPT_DIR/install.sh" doctor 2>&1 || true)
-if echo "$output" | grep -qi "error.*not valid"; then
+if output_contains_i "$output" "error.*not valid"; then
   pass "doctor reports invalid JSON"
 else
   fail "doctor did not report invalid JSON"
@@ -1141,7 +1143,7 @@ cat > "$TEST_HOME/.claude/settings.json" <<'JSONC_EOF'
 }
 JSONC_EOF
 output=$(bash "$SCRIPT_DIR/install.sh" doctor 2>&1 || true)
-if echo "$output" | grep -qi "warn.*jsonc\|warn.*comment"; then
+if output_contains_i "$output" "warn.*jsonc\|warn.*comment"; then
   pass "doctor warns about JSONC comments"
 else
   fail "doctor did not warn about JSONC comments"
@@ -1157,7 +1159,7 @@ cat > "$TEST_HOME/.claude/settings.json" <<'EOF'
 {"hooks": {"PreToolUse": [{"hooks": [{"type": "command", "command": "/nonexistent/hook.sh", "timeout": 5000}]}]}}
 EOF
 output=$(bash "$SCRIPT_DIR/install.sh" doctor 2>&1 || true)
-if echo "$output" | grep -qi "orphan"; then
+if output_contains_i "$output" "orphan"; then
   pass "doctor detects orphaned entries"
 else
   fail "doctor did not detect orphaned entries"
@@ -1172,7 +1174,7 @@ EOF
 bash "$SCRIPT_DIR/install.sh" bash-guard >/dev/null 2>&1
 chmod -x "$TEST_HOME/.claude/bash-guard/hook.sh"
 output=$(bash "$SCRIPT_DIR/install.sh" doctor 2>&1 || true)
-if echo "$output" | grep -qi "not executable"; then
+if output_contains_i "$output" "not executable"; then
   pass "doctor detects non-executable hook"
 else
   fail "doctor did not detect non-executable hook"
@@ -1184,14 +1186,14 @@ cat > "$TEST_HOME/.claude/settings.json" <<'EOF'
 {"hooks": {}}
 EOF
 output=$(bash "$SCRIPT_DIR/install.sh" doctor 2>&1 || true)
-if echo "$output" | grep -qi "not registered"; then
+if output_contains_i "$output" "not registered"; then
   pass "doctor detects unregistered hooks"
 else
   fail "doctor did not detect unregistered hooks"
 fi
 
 # Doctor with backup check
-if echo "$output" | grep -qi "backup"; then
+if output_contains_i "$output" "backup"; then
   pass "doctor checks backups"
 else
   fail "doctor did not check backups"
@@ -1212,31 +1214,31 @@ rm -rf "$TEST_HOME/.claude"
 bash "$SCRIPT_DIR/install.sh" bash-guard git-safe file-guard >/dev/null 2>&1
 output=$(bash "$SCRIPT_DIR/install.sh" verify 2>&1)
 
-if echo "$output" | grep -q "Verifying installed hooks"; then
+if output_contains "$output" "Verifying installed hooks"; then
   pass "verify runs successfully"
 else
   fail "verify did not run"
 fi
 
-if echo "$output" | grep -q "OK.*bash-guard.*blocked rm -rf /"; then
+if output_contains "$output" "OK.*bash-guard.*blocked rm -rf /"; then
   pass "verify recognizes bash-guard stderr deny path"
 else
   fail "verify did not recognize bash-guard deny path"
 fi
 
-if echo "$output" | grep -q "OK.*git-safe.*blocked git push --force"; then
+if output_contains "$output" "OK.*git-safe.*blocked git push --force"; then
   pass "verify recognizes git-safe stderr deny path"
 else
   fail "verify did not recognize git-safe deny path"
 fi
 
-if echo "$output" | grep -q "OK.*file-guard.*blocked relative path write"; then
+if output_contains "$output" "OK.*file-guard.*blocked relative path write"; then
   pass "verify recognizes file-guard JSON deny path"
 else
   fail "verify did not recognize file-guard deny path"
 fi
 
-if echo "$output" | grep -q "did not block"; then
+if output_contains "$output" "did not block"; then
   fail "verify reported a blocking hook as not blocking"
 else
   pass "verify no longer false-warns on blocking hooks"
@@ -1247,13 +1249,13 @@ echo "=== Check Subcommand Tests ==="
 
 # Check subcommand appears in help
 output=$(bash "$SCRIPT_DIR/install.sh" help 2>&1)
-if echo "$output" | grep -q "check"; then
+if output_contains "$output" "check"; then
   pass "help lists check subcommand"
 else
   fail "help does not list check subcommand"
 fi
 
-if echo "$output" | grep -q "safety audit"; then
+if output_contains "$output" "safety audit"; then
   pass "help describes check as safety audit"
 else
   fail "help missing safety audit description for check"
@@ -1262,7 +1264,7 @@ fi
 # Check subcommand requires network (will fail in test env, but should not crash)
 output=$(bash "$SCRIPT_DIR/install.sh" check 2>&1 || true)
 # It should either run safety-check or show a network error, not crash
-if echo "$output" | grep -qi "safety audit\|Running\|Warning.*network\|Warning.*download"; then
+if output_contains_i "$output" "safety audit\|Running\|Warning.*network\|Warning.*download"; then
   pass "check subcommand runs without crash"
 else
   fail "check subcommand did not produce expected output: $output"
