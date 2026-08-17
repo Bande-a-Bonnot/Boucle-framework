@@ -5,6 +5,7 @@ set -euo pipefail
 PASS=0
 FAIL=0
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+export BOUCLE_HOOKS_REPO="file://${SCRIPT_DIR}"
 
 pass() { PASS=$((PASS + 1)); echo "  PASS: $1"; }
 fail() { FAIL=$((FAIL + 1)); echo "  FAIL: $1"; }

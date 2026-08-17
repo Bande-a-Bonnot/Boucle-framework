@@ -1,19 +1,19 @@
 {
   "version": "0.13.0",
-  "count": 1582,
+  "count": 1587,
   "categories": {
-    "Hook behavior & events": 209,
-    "Permission system": 143,
+    "Hook behavior & events": 210,
+    "Permission system": 144,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 84,
     "Subagent & spawned agents": 77,
     "Desktop & IDE integration": 57,
-    "TUI & display": 35,
+    "TUI & display": 36,
     "CLI & terminal": 31,
     "Platform & compatibility": 31,
     "Context & memory": 30,
+    "Sandbox & permissions": 28,
     "MCP & integrations": 27,
-    "Sandbox & permissions": 27,
     "Cowork & remote": 26,
     "Configuration behavior": 25,
     "Performance & cost": 25,
@@ -127,6 +127,7 @@
     "Cowork & cloud": 1,
     "data-integrity": 1,
     "data-loss": 1,
+    "Documentation & workflow": 1,
     "Error handling & recovery": 1,
     "File system": 1,
     "filesystem": 1,
@@ -191,9 +192,9 @@
   },
   "severity_counts": {
     "CRITICAL": 136,
-    "HIGH": 866,
-    "LOW": 111,
-    "MEDIUM": 469
+    "HIGH": 867,
+    "LOW": 112,
+    "MEDIUM": 472
   },
   "entries": [
     {
@@ -20325,30 +20326,97 @@
       "date_added": "2026-08-17",
       "description": "A reported Claude Code 2.1.233 macOS setup placed `paths:` frontmatter on a rule under `~/.claude/rules/`. The rule was skipped at `session_start` because it was conditional, but it also never loaded on matching file reads because user-scope rules did not appear to participate in `path_glob_match`. Project-scoped path rules matched the same file normally, and the missing user rule did not appear in `/context`, leaving a syntactically valid global convention with zero effect and no warning.",
       "workaround": "Keep path-scoped rules in the project `.claude/rules/` directory unless user-scope `paths:` behavior is explicitly verified with an `InstructionsLoaded` hook. For user-level rules that must always apply, remove `paths:` frontmatter or add a visible canary rule and check loaded memory before relying on it. Treat `/context` as incomplete for rule debugging unless it actually lists the target rule files."
+    },
+    {
+      "id": "sandbox-apply-seccomp-einval-can-trigger-unsandboxed-retry",
+      "title": "Sandbox `apply-seccomp` EINVAL failures can trigger unsafe retries.",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/86928",
+        "https://github.com/anthropics/claude-code/issues/87138"
+      ],
+      "date_added": "2026-08-17",
+      "description": "Reported Claude Code 2.1.232 and 2.1.233 Linux sessions with `sandbox.enabled` saw intermittent Bash failures where `apply-seccomp: unshare(CLONE_NEWUSER): Invalid argument` replaced the command output. The root report traced the failure to a race where the embedded seccomp helper calls `unshare(CLONE_NEWUSER)` while the runtime still has a recently exited thread in the thread group, producing EINVAL. The user-facing risk is larger than a flaky command: one agent misdiagnosed the sandbox behavior from the helper error, and another retried with `dangerouslyDisableSandbox: true` after transient failures, successfully reading data the sandbox had blocked.",
+      "workaround": "Treat `apply-seccomp` EINVAL as a sandbox setup failure, not as payload output. Keep `sandbox.allowUnsandboxedCommands` set to `false` where possible so model-generated `dangerouslyDisableSandbox` retries are inert, and fail closed on repeated sandbox setup errors instead of asking the model to retry unsandboxed. On affected Linux hosts, preserve the exact helper error and environment details, then verify any upstream fix with a repeated sandboxed Bash loop before trusting the sandbox boundary."
+    },
+    {
+      "id": "queued-input-modes-can-run-out-of-typed-order",
+      "title": "Queued input modes can run out of the order typed.",
+      "category": "TUI & display",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87037"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 interactive-mode documentation gap found that queued plain prompts, queued `!` shell commands, and queued slash commands do not all drain through the same path. Plain prompts can be folded into the running turn at a tool-call boundary, while `!` shell commands and most slash commands wait until the turn finishes. A user can therefore type a shell command, then a normal prompt, and have the later prompt affect the running turn before the earlier shell command executes, with no transcript or queue UI warning that the ordering changed.",
+      "workaround": "Do not mix queued shell commands, slash commands, and steering prompts when order matters. Wait for the current turn to finish before queuing state-changing `!` commands, or explicitly restate the intended order after the turn resumes. For team procedures, document which commands are immediate and which wait, and treat queued prompt steering as logically separate from queued shell execution."
+    },
+    {
+      "id": "hook-if-conditions-require-tool-specific-copies",
+      "title": "Hook `if` conditions require tool-specific copies for one policy.",
+      "category": "Hook behavior & events",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87035"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 hooks limitation found that `hooks[].if` uses permission-rule syntax, so the condition must name a single tool such as `Edit(**/*.ts)` or `Write(**/*.ts)`. A prompt hook that wants to apply the same policy to Edit, Write, and MultiEdit has to clone the handler and duplicate the prompt once per tool even though `matcher` already selected the tools. The apparently generic form `*(**/*.ts)` did not fire for a matching Write call and produced no warning, leaving the hook silently inert.",
+      "workaround": "Keep one explicit handler per tool until tool-agnostic `if` patterns are supported, and test each handler with a representative runtime tool call instead of relying on JSON shape alone. Avoid wildcard tool names in `if` conditions unless the current Claude Code version proves they match. For large prompt hooks, factor the policy text into a generated settings template or external command hook so duplicated JSON entries do not drift."
+    },
+    {
+      "id": "desktop-dev-server-prompt-ignores-bypass-mode",
+      "title": "Desktop dev-server start prompts can ignore bypass-permissions mode.",
+      "category": "Permission system",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87229"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code Desktop macOS session with permission mode set to `Bypass permissions` still showed an `Allow Claude to start dev?` approval dialog when the browser-preview flow tried to run `npm run dev` from a `.claude/worktrees/...` directory. The dialog offered only Deny or Allow once, and the reporter could not find a settings permission rule or always-allow option that suppressed the prompt. If the prompt is an intentional always-ask desktop action, the docs did not name dev-server starts as one of those exceptions.",
+      "workaround": "Do not assume bypass-permissions mode covers Desktop preview or dev-server lifecycle actions. For repeatable demos and automation, start the dev server yourself outside the preview flow or keep an operator present for the recurring approval. Document this exception in project runbooks and avoid measuring a workflow as fully unattended until preview startup has been exercised in the same app surface."
+    },
+    {
+      "id": "agent-sdk-subagent-docs-omit-fork-mode-precedence",
+      "title": "Agent SDK subagent docs can omit fork-mode foreground/background precedence.",
+      "category": "Documentation & workflow",
+      "severity": "LOW",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87300",
+        "https://github.com/anthropics/claude-code/issues/85765"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code Agent SDK documentation gap found that the SDK subagents page describes foreground versus background behavior for the SDK default, but does not mention fork mode, that fork mode can be enabled in the SDK, that it became the default in interactive sessions, or that `run_in_background` can be absent from the Agent tool schema while fork mode is active. The separate sub-agents docs page contains the precedence list, but the SDK page can lead users to file or debug the wrong issue when interactive CLI behavior differs from the SDK default.",
+      "workaround": "When debugging subagent foreground or background behavior, check the sub-agents foreground/background precedence docs in addition to the Agent SDK page. Record whether fork mode is enabled and inspect the actual Agent tool schema before assuming `run_in_background` should be accepted. Link both docs pages in internal SDK runbooks until the SDK page names fork mode directly."
     }
   ],
   "status_summary": {
-    "open": 1568,
+    "open": 1573,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 136,
-    "high": 866,
-    "low": 111,
-    "medium": 469
+    "high": 867,
+    "low": 112,
+    "medium": 472
   },
   "lastUpdated": "2026-08-17",
   "stats": {
-    "total": 1582,
+    "total": 1587,
     "critical": 136,
-    "high": 866,
-    "medium": 469,
-    "low": 111,
-    "open": 1568,
+    "high": 867,
+    "medium": 472,
+    "low": 112,
+    "open": 1573,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-17",
-  "total": 1582
+  "total": 1587
 }

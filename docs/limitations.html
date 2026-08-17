@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1582</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-17.</span></p>
+        <p class="subtitle"><span id="total-count">1587</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-17.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -17714,6 +17714,66 @@
                         <!-- workaround:user-level-path-scoped-rules-can-silently-drop -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Keep path-scoped rules in the project `.claude/rules/` directory unless user-scope `paths:` behavior is explicitly verified with an `InstructionsLoaded` hook. For user-level rules that must always apply, remove `paths:` frontmatter or add a visible canary rule and check loaded memory before relying on it. Treat `/context` as incomplete for rule debugging unless it actually lists the target rule files.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87217" target="_blank">#87217</a></div>
+        </div>
+        <div class="kl-entry" data-category="Sandbox &amp; permissions" data-issues="86928 87138" id="sandbox-apply-seccomp-einval-can-trigger-unsandboxed-retry" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1583</span>
+                <span class="kl-cat">Sandbox &amp; permissions</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Sandbox `apply-seccomp` EINVAL failures can trigger unsafe retries.</h3>
+            <p>Reported Claude Code 2.1.232 and 2.1.233 Linux sessions with `sandbox.enabled` saw intermittent Bash failures where `apply-seccomp: unshare(CLONE_NEWUSER): Invalid argument` replaced the command output. The root report traced the failure to a race where the embedded seccomp helper calls `unshare(CLONE_NEWUSER)` while the runtime still has a recently exited thread in the thread group, producing EINVAL. The user-facing risk is larger than a flaky command: one agent misdiagnosed the sandbox behavior from the helper error, and another retried with `dangerouslyDisableSandbox: true` after transient failures, successfully reading data the sandbox had blocked.</p>
+                        <!-- workaround:sandbox-apply-seccomp-einval-can-trigger-unsandboxed-retry -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat `apply-seccomp` EINVAL as a sandbox setup failure, not as payload output. Keep `sandbox.allowUnsandboxedCommands` set to `false` where possible so model-generated `dangerouslyDisableSandbox` retries are inert, and fail closed on repeated sandbox setup errors instead of asking the model to retry unsandboxed. On affected Linux hosts, preserve the exact helper error and environment details, then verify any upstream fix with a repeated sandboxed Bash loop before trusting the sandbox boundary.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86928" target="_blank">#86928</a>, <a href="https://github.com/anthropics/claude-code/issues/87138" target="_blank">#87138</a></div>
+        </div>
+        <div class="kl-entry" data-category="TUI &amp; display" data-issues="87037" id="queued-input-modes-can-run-out-of-typed-order" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1584</span>
+                <span class="kl-cat">TUI &amp; display</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Queued input modes can run out of the order typed.</h3>
+            <p>A reported Claude Code 2.1.233 interactive-mode documentation gap found that queued plain prompts, queued `!` shell commands, and queued slash commands do not all drain through the same path. Plain prompts can be folded into the running turn at a tool-call boundary, while `!` shell commands and most slash commands wait until the turn finishes. A user can therefore type a shell command, then a normal prompt, and have the later prompt affect the running turn before the earlier shell command executes, with no transcript or queue UI warning that the ordering changed.</p>
+                        <!-- workaround:queued-input-modes-can-run-out-of-typed-order -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not mix queued shell commands, slash commands, and steering prompts when order matters. Wait for the current turn to finish before queuing state-changing `!` commands, or explicitly restate the intended order after the turn resumes. For team procedures, document which commands are immediate and which wait, and treat queued prompt steering as logically separate from queued shell execution.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87037" target="_blank">#87037</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="87035" id="hook-if-conditions-require-tool-specific-copies" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1585</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Hook `if` conditions require tool-specific copies for one policy.</h3>
+            <p>A reported Claude Code 2.1.233 hooks limitation found that `hooks[].if` uses permission-rule syntax, so the condition must name a single tool such as `Edit(**/*.ts)` or `Write(**/*.ts)`. A prompt hook that wants to apply the same policy to Edit, Write, and MultiEdit has to clone the handler and duplicate the prompt once per tool even though `matcher` already selected the tools. The apparently generic form `*(**/*.ts)` did not fire for a matching Write call and produced no warning, leaving the hook silently inert.</p>
+                        <!-- workaround:hook-if-conditions-require-tool-specific-copies -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Keep one explicit handler per tool until tool-agnostic `if` patterns are supported, and test each handler with a representative runtime tool call instead of relying on JSON shape alone. Avoid wildcard tool names in `if` conditions unless the current Claude Code version proves they match. For large prompt hooks, factor the policy text into a generated settings template or external command hook so duplicated JSON entries do not drift.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87035" target="_blank">#87035</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="87229" id="desktop-dev-server-prompt-ignores-bypass-mode" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1586</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Desktop dev-server start prompts can ignore bypass-permissions mode.</h3>
+            <p>A reported Claude Code Desktop macOS session with permission mode set to `Bypass permissions` still showed an `Allow Claude to start dev?` approval dialog when the browser-preview flow tried to run `npm run dev` from a `.claude/worktrees/...` directory. The dialog offered only Deny or Allow once, and the reporter could not find a settings permission rule or always-allow option that suppressed the prompt. If the prompt is an intentional always-ask desktop action, the docs did not name dev-server starts as one of those exceptions.</p>
+                        <!-- workaround:desktop-dev-server-prompt-ignores-bypass-mode -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume bypass-permissions mode covers Desktop preview or dev-server lifecycle actions. For repeatable demos and automation, start the dev server yourself outside the preview flow or keep an operator present for the recurring approval. Document this exception in project runbooks and avoid measuring a workflow as fully unattended until preview startup has been exercised in the same app surface.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87229" target="_blank">#87229</a></div>
+        </div>
+        <div class="kl-entry" data-category="Documentation &amp; workflow" data-issues="87300 85765" id="agent-sdk-subagent-docs-omit-fork-mode-precedence" data-severity="low" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1587</span>
+                <span class="kl-cat">Documentation &amp; workflow</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
+            </div>
+            <h3>Agent SDK subagent docs can omit fork-mode foreground/background precedence.</h3>
+            <p>A reported Claude Code Agent SDK documentation gap found that the SDK subagents page describes foreground versus background behavior for the SDK default, but does not mention fork mode, that fork mode can be enabled in the SDK, that it became the default in interactive sessions, or that `run_in_background` can be absent from the Agent tool schema while fork mode is active. The separate sub-agents docs page contains the precedence list, but the SDK page can lead users to file or debug the wrong issue when interactive CLI behavior differs from the SDK default.</p>
+                        <!-- workaround:agent-sdk-subagent-docs-omit-fork-mode-precedence -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When debugging subagent foreground or background behavior, check the sub-agents foreground/background precedence docs in addition to the Agent SDK page. Record whether fork mode is enabled and inspect the actual Agent tool schema before assuming `run_in_background` should be accepted. Link both docs pages in internal SDK runbooks until the SDK page names fork mode directly.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87300" target="_blank">#87300</a>, <a href="https://github.com/anthropics/claude-code/issues/85765" target="_blank">#85765</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
