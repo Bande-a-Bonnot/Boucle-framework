@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1592,
+  "count": 1594,
   "categories": {
     "Hook behavior & events": 211,
     "Permission system": 145,
@@ -13,7 +13,7 @@
     "Platform & compatibility": 31,
     "Context & memory": 30,
     "Sandbox & permissions": 29,
-    "MCP & integrations": 27,
+    "MCP & integrations": 28,
     "Configuration behavior": 26,
     "Cowork & remote": 26,
     "Security & trust boundaries": 26,
@@ -22,7 +22,7 @@
     "Tool behavior": 22,
     "VS Code extension": 22,
     "Auth & accounts": 19,
-    "Core & session management": 18,
+    "Core & session management": 19,
     "Remote & cloud": 18,
     "Model behavior": 17,
     "Data integrity": 16,
@@ -194,7 +194,7 @@
     "CRITICAL": 137,
     "HIGH": 868,
     "LOW": 112,
-    "MEDIUM": 475
+    "MEDIUM": 477
   },
   "entries": [
     {
@@ -20458,10 +20458,36 @@
       "date_added": "2026-08-17",
       "description": "A reported Claude Code hook limitation notes that PreToolUse and PostToolUse matchers fire on the Claude Code tool name, such as Edit, Write, Bash, or PowerShell, rather than on the underlying filesystem mutation. A hook that normalizes or audits written files after Edit or Write therefore does not fire when a script, shell redirection, or another tool changes the same file. There is no documented hook scope that means `run after any file content changed` regardless of which tool caused the change.",
       "workaround": "For file-change policies, attach checks to every tool family that can mutate files in the target workflow, including Bash and PowerShell, or run a diff-based audit after each tool call class that might write. For high-value repositories, use Git hooks, filesystem watchers, CI checks, or OS-level controls as the tool-independent layer, and treat Claude Code hooks as tool-call gates rather than complete file-change monitors."
+    },
+    {
+      "id": "channel-events-can-be-silent-in-non-interactive-print-sessions",
+      "title": "Channel events can be silently invisible to non-interactive print-mode sessions.",
+      "category": "MCP & integrations",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87404"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 Windows channel test found that events sent to a custom channel in a `-p` non-interactive session were accepted by the channel server but never surfaced in the model context, while the same channel did surface events in an interactive session. The reporter measured server-side acknowledgements for both queued-before-start and queued-during-run events, but the print-mode session saw the messages only after explicitly polling with the channel's read tool. Because the channel server records successful delivery, automation can falsely believe the model received a push event.",
+      "workaround": "Do not rely on pushed channel events as the only coordination path for `claude -p` or other one-turn automation until the current Claude Code behavior is documented and verified. Add an explicit polling step with the channel's read tool, pass required messages in the prompt or another startup-visible input, and treat server-side delivery acknowledgements as transport acknowledgements rather than proof that the model context contains the event."
+    },
+    {
+      "id": "background-agent-view-can-collide-session-ids-and-hide-history",
+      "title": "Background agent view can collide session IDs and hide existing session history.",
+      "category": "Core & session management",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87399"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 Windows background-agents view failure showed existing sessions opening with only the most recent user message visible, new sessions failing because a generated session ID was already in use, and one completed row showing an exit-before-init session error. The reporter checked `~/.claude/projects/...` and found the transcript JSONL files still present at expected sizes and mtimes, so the issue appears to affect the agent-view/session-registry layer rather than deleting transcript data. The same report noted several job directories created within minutes, including one whose ID matched the collision but had no corresponding project transcript.",
+      "workaround": "When agent view shows empty scrollback or session-ID collision errors, inspect the underlying `~/.claude/projects/.../*.jsonl` transcript files before assuming data loss. Preserve the project and jobs directories for debugging, avoid starting additional background sessions in the affected workspace until the registry state is understood, and use direct transcript reads or a fresh project/session location for recovery work."
     }
   ],
   "status_summary": {
-    "open": 1578,
+    "open": 1580,
     "fixed": 13,
     "mitigated": 1
   },
@@ -20469,19 +20495,19 @@
     "critical": 137,
     "high": 868,
     "low": 112,
-    "medium": 475
+    "medium": 477
   },
   "lastUpdated": "2026-08-17",
   "stats": {
-    "total": 1592,
+    "total": 1594,
     "critical": 137,
     "high": 868,
-    "medium": 475,
+    "medium": 477,
     "low": 112,
-    "open": 1578,
+    "open": 1580,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-17",
-  "total": 1592
+  "total": 1594
 }
