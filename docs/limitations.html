@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1561</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-17.</span></p>
+        <p class="subtitle"><span id="total-count">1562</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-17.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -17462,6 +17462,18 @@
                         <!-- workaround:pretooluse-transcript-path-can-lag-current-turn -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat `transcript_path` as a race-free source for current-turn text in `PreToolUse`. If a hook is about to block based on transcript content, re-read with a short bounded backoff and require a stable match before denying, or fail closed with a message that asks the user to retry after the transcript catches up. Where possible, move end-of-turn content checks to Stop-family hooks that receive `last_assistant_message`, and add a canary that simulates a delayed transcript write so stale-read behavior is visible during hook testing.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87223" target="_blank">#87223</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="87224" id="permissions-menu-denial-state-can-block-human-repair" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1562</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>/permissions navigation can become inert after auto-mode denials.</h3>
+            <p>A reported Claude Code 2.1.221 macOS session found that `/permissions` rendered but stopped responding to arrow-key navigation after recent auto-mode classifier denials in a long-running session. The user could not reach `Add a new rule...` from the discoverable permission UI, while a fresh session on the same project navigated normally and could add the needed allow rule. This makes denials harder to repair exactly when the human is supposed to recover from them, especially because the agent itself should not edit `.claude/settings.json` to grant its own permissions.</p>
+                        <!-- workaround:permissions-menu-denial-state-can-block-human-repair -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If `/permissions` appears frozen after denials, open a fresh Claude Code session in the same project and add the rule there, or hand-edit the relevant `permissions.allow` entry after verifying the syntax from trusted docs. For teams, document a manual settings-file fallback for permission repair, preserve the denial count and session age when reporting the bug, and add a lightweight canary that opens `/permissions` after a test denial before relying on it as the only repair path.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87224" target="_blank">#87224</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
