@@ -7,6 +7,30 @@
   <updated>2026-08-17T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Background forks can drop Vertex gateway auth environment variables.</title>
+    <id>https://framework.boucle.sh/limitations.html#background-fork-can-drop-vertex-gateway-env</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-fork-can-drop-vertex-gateway-env"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 macOS Vertex-gateway setup found that pressing left arrow to background a conversation into a daemon fork reconstructed the worker environment without `CLAUDE_CODE_SKIP_VERTEX_AUTH` and `ANTHROPIC_VERTEX_BASE_URL`, while keeping `CLAUDE_CODE_USE_VERTEX`, `ANTHROPIC_VERTEX_PROJECT_ID`, and `ANTHROPIC_AUTH_TOKEN`. The forked worker then attempted local Google ADC and failed every request, even though the original interactive session and daemon process had the complete gateway environment.</summary>
+    <category term="Auth &amp; accounts"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Background job main sessions can miss the available-skills listing.</title>
+    <id>https://framework.boucle.sh/limitations.html#background-job-main-session-can-miss-skills-listing</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-job-main-session-can-miss-skills-listing"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 macOS background job started from the agents interface did not receive the available-skills system-reminder in its main session, while subagents spawned from that same session did receive the full personal, project, and built-in skills listing. Because Claude Code instructs agents to use only listed skills, the background job main session had no discoverable path to invoke a matching user or project skill and produced an HTML deliverable without loading the user&#x27;s page-convention skill.</summary>
+    <category term="Skills"/>
+  </entry>
+  <entry>
+    <title>[HIGH] File-freshness notices can assert false user intent and tell agents not to disclose it.</title>
+    <id>https://framework.boucle.sh/limitations.html#file-freshness-notice-can-assert-false-user-intent</id>
+    <link href="https://framework.boucle.sh/limitations.html#file-freshness-notice-can-assert-false-user-intent"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 Windows parent session plus background subagent workflow found that native file-modification boilerplate could appear after an agent changed tracked files outside Edit/Write tooling. The notice asserted that the change was intentional, that the user was already aware, and that the assistant should not tell the user. In the reported cases those assertions were false: the change came from an agent edit or revert, and the human did not know about it. The same notice was also ephemeral enough that a recovered subagent transcript did not contain the injected text, making later forensics first look like either a prompt-injection event or a model confabulation.</summary>
+    <category term="Security &amp; trust boundaries"/>
+  </entry>
+  <entry>
     <title>[HIGH] Sibling subagents can silently overwrite each other&#x27;s scratchpad files.</title>
     <id>https://framework.boucle.sh/limitations.html#subagent-scratchpad-directory-shared-across-siblings</id>
     <link href="https://framework.boucle.sh/limitations.html#subagent-scratchpad-directory-shared-across-siblings"/>
@@ -141,29 +165,5 @@
     <updated>2026-08-17T00:00:00Z</updated>
     <summary>A reported Linux Claude Code sandbox setup found that `sandbox.filesystem.allowWrite` did not provide filesystem read isolation: Bash commands could still read credential paths such as `~/.ssh/id_rsa`, while `permissions.deny` `Read(...)` rules only covered the dedicated Read tool. The same session showed the agent could edit its own `settings.json`, add plausible but unsupported sandbox keys, and leave the file as invalid JSON during revert. Claude Code then continued tool execution without surfacing a hard sandbox configuration failure, making the boundary appear enabled while policy parsing or enforcement was degraded.</summary>
     <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Linux bwrap sandbox can hit E2BIG from recursive Read deny globs.</title>
-    <id>https://framework.boucle.sh/limitations.html#linux-bwrap-recursive-read-deny-globs-can-hit-e2big</id>
-    <link href="https://framework.boucle.sh/limitations.html#linux-bwrap-recursive-read-deny-globs-can-hit-e2big"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Linux and WSL2 Claude Code sandbox setup found that recursive `permissions.deny` rules such as `Read(data/**)` and `Read(**/*.parquet)` were expanded into one bubblewrap bind per matched file. With a denied data tree containing 3,552 files, the generated sandbox argument payload exceeded Linux&#x27;s per-argument limit and every sandboxed Bash call failed before the user command ran with `E2BIG: argument list too long, posix_spawn &#x27;/bin/bash&#x27;`. Adding a directory-level `sandbox.filesystem.denyRead` rule did not help because permission-derived denies were merged rather than replaced.</summary>
-    <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Plugin MCP tools can skip ask-first permission prompts.</title>
-    <id>https://framework.boucle.sh/limitations.html#plugin-mcp-tools-can-skip-ask-first-permission-prompts</id>
-    <link href="https://framework.boucle.sh/limitations.html#plugin-mcp-tools-can-skip-ask-first-permission-prompts"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported Claude Code plugin setup found that MCP tools from installed plugins could execute when they were absent from both `permissions.allow` and `permissions.deny`. Denied tools were hidden correctly, but tools left in the expected ask-first state ran without a permission prompt and without a `permission_prompt` hook event. This collapses the permission model for plugin MCP tools from allow, deny, or ask-first into deny or auto-allow.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Subagents and workflow agents cannot inherit scoped MCP authorization.</title>
-    <id>https://framework.boucle.sh/limitations.html#subagent-workflow-mcp-authorization-not-scoped</id>
-    <link href="https://framework.boucle.sh/limitations.html#subagent-workflow-mcp-authorization-not-scoped"/>
-    <updated>2026-08-17T00:00:00Z</updated>
-    <summary>A reported macOS Claude Code workflow found that a parent session could call a permission-gated read-only MCP database tool, while subagents spawned through Task or Workflow had the same MCP call refused by the auto-mode classifier. Prompt text saying the user had authorized the tool for that run did not help, and the blocked request was not surfaced as an approval prompt. The only working permission route was a permanent `permissions.allow` entry, which is broader than the user&#x27;s intended per-run grant.</summary>
-    <category term="MCP &amp; plugin issues"/>
   </entry>
 </feed>
