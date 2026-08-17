@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1596,
+  "count": 1597,
   "categories": {
     "Hook behavior & events": 211,
     "Permission system": 146,
@@ -27,9 +27,9 @@
     "Model behavior": 17,
     "Data integrity": 16,
     "Scheduling & remote triggers": 15,
+    "Bash & shell execution": 14,
     "Permissions & safety": 14,
     "Worktree": 14,
-    "Bash & shell execution": 13,
     "File system & paths": 13,
     "MCP integration": 13,
     "Plugin & channel system": 11,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 137,
-    "HIGH": 868,
+    "HIGH": 869,
     "LOW": 112,
     "MEDIUM": 479
   },
@@ -20510,30 +20510,43 @@
       "date_added": "2026-08-17",
       "description": "A reported Linux Claude Code 2.1.233 repro found that both the in-session `/resume` picker and standalone `claude --resume` picker load only the 50 most recent sessions, and the type-to-search filter searches only that loaded subset rather than all retained transcript files on disk. A month-old session whose generated title contained the search term was not findable until its transcript file mtime was moved back into the top 50. This means a high `cleanupPeriodDays` setting can retain old transcripts without making them discoverable in the UI.",
       "workaround": "For long-lived projects, do not treat `/resume` search as exhaustive. If an old session is missing, search `~/.claude/projects/<project>/*.jsonl` for remembered prompt text, title fragments, or other transcript content, extract the session UUID from the matching filename, and run `claude --resume <session-id>` directly. Keep important session IDs or transcript anchors outside the picker if you expect to revisit them after many newer sessions."
+    },
+    {
+      "id": "bash-timeout-can-background-command-instead-of-cancelling",
+      "title": "Bash tool timeouts can background commands instead of cancelling them.",
+      "category": "Bash & shell execution",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87439"
+      ],
+      "date_added": "2026-08-17",
+      "description": "A reported Claude Code 2.1.233 Linux repro found that a Bash tool call with a 3s timeout returned control to the agent while the underlying process continued running for roughly 16 more seconds. The reporter tied the behavior to multi-hour VM disk-saturation incidents under concurrent subagent load, where many individually timed-out commands could continue consuming I/O after the tool layer appeared to have moved on.",
+      "workaround": "Do not treat the Bash tool `timeout` parameter as a hard cancellation boundary for resource-heavy commands. Wrap expensive shell work in OS-level timeouts or job-control supervision that kills the full process tree, cap subagent concurrency for I/O-heavy tasks, and verify that no matching child processes or high-I/O jobs remain after a timeout before launching more work."
     }
   ],
   "status_summary": {
-    "open": 1582,
+    "open": 1583,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 137,
-    "high": 868,
+    "high": 869,
     "low": 112,
     "medium": 479
   },
   "lastUpdated": "2026-08-17",
   "stats": {
-    "total": 1596,
+    "total": 1597,
     "critical": 137,
-    "high": 868,
+    "high": 869,
     "medium": 479,
     "low": 112,
-    "open": 1582,
+    "open": 1583,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-17",
-  "total": 1596
+  "total": 1597
 }
