@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1608,
+  "count": 1609,
   "categories": {
     "Hook behavior & events": 212,
     "Permission system": 146,
@@ -100,6 +100,7 @@
     "Project configuration & memory": 2,
     "security": 2,
     "session-management": 2,
+    "Settings & configuration": 2,
     "TUI & interface": 2,
     "TUI & rendering": 2,
     "UI & display": 2,
@@ -175,7 +176,6 @@
     "SDK & automation": 1,
     "Sessions & conversation management": 1,
     "settings": 1,
-    "Settings & configuration": 1,
     "setup": 1,
     "skills": 1,
     "Skills & plugins": 1,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 137,
-    "HIGH": 877,
+    "HIGH": 878,
     "LOW": 112,
     "MEDIUM": 482
   },
@@ -20666,30 +20666,43 @@
       "status": "open",
       "date_added": "2026-08-18",
       "workaround": "Do not share one physical checkout between native Windows Claude Code and WSL Claude Code when either side can create or clean up worktrees. Use separate clones per environment, or disable automatic cross-side worktree cleanup until Claude Code treats unresolvable gitdir paths as unknown rather than stale. Before pruning worktrees manually, inspect .git/worktrees/*/gitdir from both Windows and WSL and keep any entry whose worktree directory exists under either path spelling. Hooks and allowlists may not catch this because the reported trigger was session startup with no explicit user git command."
+    },
+    {
+      "id": "headless-invalid-claude-json-reset-drops-live-config",
+      "title": "Headless startup can replace invalid ~/.claude.json with defaults.",
+      "severity": "HIGH",
+      "category": "Settings & configuration",
+      "description": "A reproduced Claude Code report shows that adding invalid JSON syntax, such as a C-style comment, to a working `~/.claude.json` has different recovery behavior by entrypoint. Interactive `claude` stops at a configuration-error screen and leaves the file untouched, but a non-interactive launch such as `claude -p \"hi\"` reports the configuration file as corrupted and rewrites the live file with defaults. That removes saved `mcpServers` and other settings from the active config, even though a timestamped backup is created under `~/.claude/backups/`. The JSON parse failure is expected because `~/.claude.json` is strict JSON; the limitation is that the headless recovery path mutates live configuration instead of failing closed.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87551"
+      ],
+      "status": "open",
+      "date_added": "2026-08-18",
+      "workaround": "Validate `~/.claude.json` with a JSON parser before starting unattended `claude -p`, launchd, cron, CI, or app-driven Claude Code sessions. Keep versioned backups of MCP and permission config, and treat any headless stderr mentioning a corrupted configuration file as a hold until the live config is compared against `~/.claude/backups/.claude.json.corrupted.*`. For automation hosts, run Claude Code with a dedicated HOME or wrapper that refuses to start when `~/.claude.json` is invalid rather than letting the CLI perform recovery."
     }
   ],
   "status_summary": {
-    "open": 1594,
+    "open": 1595,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 137,
-    "high": 877,
+    "high": 878,
     "low": 112,
     "medium": 482
   },
   "lastUpdated": "2026-08-18",
   "stats": {
-    "total": 1608,
+    "total": 1609,
     "critical": 137,
-    "high": 877,
+    "high": 878,
     "medium": 482,
     "low": 112,
-    "open": 1594,
+    "open": 1595,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-18",
-  "total": 1608
+  "total": 1609
 }

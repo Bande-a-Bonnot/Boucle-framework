@@ -7,6 +7,14 @@
   <updated>2026-08-18T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Headless startup can replace invalid ~/.claude.json with defaults.</title>
+    <id>https://framework.boucle.sh/limitations.html#headless-invalid-claude-json-reset-drops-live-config</id>
+    <link href="https://framework.boucle.sh/limitations.html#headless-invalid-claude-json-reset-drops-live-config"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>A reproduced Claude Code report shows that adding invalid JSON syntax, such as a C-style comment, to a working `~/.claude.json` has different recovery behavior by entrypoint. Interactive `claude` stops at a configuration-error screen and leaves the file untouched, but a non-interactive launch such as `claude -p &quot;hi&quot;` reports the configuration file as corrupted and rewrites the live file with defaults. That removes saved `mcpServers` and other settings from the active config, even though a timestamped backup is created under `~/.claude/backups/`. The JSON parse failure is expected because `~/.claude.json` is strict JSON; the limitation is that the headless recovery path mutates live configuration instead of failing closed.</summary>
+    <category term="Settings &amp; configuration"/>
+  </entry>
+  <entry>
     <title>[HIGH] Windows/WSL shared repos can make live worktrees look prunable.</title>
     <id>https://framework.boucle.sh/limitations.html#windows-wsl-worktree-cleanup-deletes-live-worktrees</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-wsl-worktree-cleanup-deletes-live-worktrees"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-18T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.220 WSL2 documentation gap found that setting a custom sandbox proxy port made the built-in network allowlist stop enforcing `strictAllowlist` or `allowManagedDomainsOnly`, while credential `mask` entries no longer substituted secrets even with the documented `tlsTerminate` setting. The same report also found that `sandbox.credentials` denied built-in Read access to protected files despite docs saying the setting affects sandboxed Bash only. The issue is framed as a documentation gap because these controls change behavior by configuration path without an obvious warning.</summary>
     <category term="Configuration behavior"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Auto mode can miss agent-authored scripts that run destructive `git clean` commands.</title>
-    <id>https://framework.boucle.sh/limitations.html#auto-mode-can-miss-agent-script-git-clean-data-loss</id>
-    <link href="https://framework.boucle.sh/limitations.html#auto-mode-can-miss-agent-script-git-clean-data-loss"/>
-    <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 native Windows session in `permissions.defaultMode: &quot;auto&quot;` allowed a subagent to write and execute a PowerShell script whose non-terminal `Push-Location` failure left execution in the live workspace root before running `git clean -xdff`. The configured deny rules and PreToolUse hook could not inspect the script payload behind the executed file path, Windows had no Claude Code OS sandbox, and the auto-mode classifier did not block the destructive payload. The reported result was large gitignored-workspace data loss, including projects with no remote copy.</summary>
-    <category term="Security &amp; trust boundaries"/>
   </entry>
 </feed>
