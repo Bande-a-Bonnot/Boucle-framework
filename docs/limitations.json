@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1605,
+  "count": 1606,
   "categories": {
     "Hook behavior & events": 212,
     "Permission system": 146,
@@ -21,8 +21,8 @@
     "Agents & subagents": 22,
     "Tool behavior": 22,
     "VS Code extension": 22,
+    "Core & session management": 21,
     "Auth & accounts": 20,
-    "Core & session management": 20,
     "Remote & cloud": 18,
     "Model behavior": 17,
     "Data integrity": 16,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 137,
-    "HIGH": 874,
+    "HIGH": 875,
     "LOW": 112,
     "MEDIUM": 482
   },
@@ -20627,30 +20627,43 @@
       "date_added": "2026-08-18",
       "description": "A reported Claude Code 2.1.234 cloud-session repro found that project `.claude/settings.json` could read an `enabledPlugins` entry for a GitHub marketplace plugin while dropping the same file's `extraKnownMarketplaces` declaration. Startup logs then reported the enabled plugin as orphaned because the marketplace was not registered, saved zero installed plugins, and later said `installPluginsForHeadless: no marketplaces declared`. The public cloud and desktop docs pointed users at repo-declared plugins as the cloud-session path, while a shipped guard and a follow-up static read of the binary suggested project-scope marketplaces are excluded from the declared-marketplace map.",
       "workaround": "Do not rely on repo-committed `extraKnownMarketplaces` plus `enabledPlugins` as proof that a plugin will install in Claude Code cloud sessions. In a fresh cloud session, inspect startup logs and `~/.claude/plugins/installed_plugins.json`, and confirm the expected skills or commands appear before depending on them. For personal accounts without org plugin catalog access, document a fallback that does not require the unavailable `/plugin` browser inside the cloud session, or keep the plugin logic in setup scripts, hooks, or normal repository files until the cloud marketplace path is verified."
+    },
+    {
+      "id": "windows-desktop-cross-session-send-message-ghost-delivery",
+      "title": "Windows Desktop cross-session send_message can ghost-deliver without enqueueing.",
+      "category": "Core & session management",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87509"
+      ],
+      "date_added": "2026-08-18",
+      "description": "A reported Windows 11 Claude Desktop setup found that cross-session `send_message` between local sessions could return success and render the message in the target session UI while never appending it to the target session's real `.jsonl` transcript and never delivering it to the model. The reporter checked unique markers across multiple sends, saw the target transcript mtime remain frozen, and found the ghost messages disappeared after app restart. The receiving session could also enter phantom-running states with a spinner, frozen activity timestamps, and no persisted user turn.",
+      "workaround": "Do not treat sender-side success or receiver-side UI rendering as proof that a cross-session message reached the model on Windows Desktop. For supervisor/worker workflows, require an independent acknowledgement written by the receiving session into a durable file, transcript, issue, or API record, and include the marker that was sent. When delivery matters, poll the target `.jsonl` or another durable channel before continuing, and keep a file-based fallback for app sessions until cross-session persistence is verified on the exact Claude Desktop and bundled CLI versions in use."
     }
   ],
   "status_summary": {
-    "open": 1591,
+    "open": 1592,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 137,
-    "high": 874,
+    "high": 875,
     "low": 112,
     "medium": 482
   },
   "lastUpdated": "2026-08-18",
   "stats": {
-    "total": 1605,
+    "total": 1606,
     "critical": 137,
-    "high": 874,
+    "high": 875,
     "medium": 482,
     "low": 112,
-    "open": 1591,
+    "open": 1592,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-18",
-  "total": 1605
+  "total": 1606
 }
