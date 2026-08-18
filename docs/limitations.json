@@ -19032,16 +19032,17 @@
     },
     {
       "id": "mcp-tool-annotations-are-hidden-from-tool-hooks",
-      "title": "MCP tool annotations are not surfaced to PreToolUse hooks.",
+      "title": "MCP tool annotations are not surfaced to hooks or native permissions.",
       "category": "MCP & plugin issues",
       "severity": "HIGH",
       "status": "open",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/83886"
+        "https://github.com/anthropics/claude-code/issues/83886",
+        "https://github.com/anthropics/claude-code/issues/87452"
       ],
       "date_added": "2026-08-04",
-      "description": "Claude Code PreToolUse hooks receive `tool_name` and `tool_input` for MCP tools, but reported hook payloads do not include MCP tool annotations such as `readOnlyHint`, `destructiveHint`, or `openWorldHint`. A hook that wants to allow read-only MCP tools while gating write-capable ones must therefore rely on tool-name regexes or hand-maintained deny lists. A second report described maintaining matcher rules, deny-list files, hardcoded hook branches, and a monthly diff job solely to keep destructive Google Workspace MCP operations from slipping past stale name-based policy.",
-      "workaround": "Treat MCP tool names as an incomplete security boundary. For MCP servers used in gated phases, keep a reviewed catalog of tool names and argument-level destructive cases, run a drift check against the live server catalog after updates, and default unknown or unannotated MCP tools to manual review until Claude Code exposes trustworthy capability metadata in hook input."
+      "description": "Claude Code PreToolUse hooks receive `tool_name` and `tool_input` for MCP tools, but reported hook payloads do not include MCP tool annotations such as `readOnlyHint`, `destructiveHint`, or `openWorldHint`. A hook that wants to allow read-only MCP tools while gating write-capable ones must therefore rely on tool-name regexes or hand-maintained deny lists. A second report described maintaining matcher rules, deny-list files, hardcoded hook branches, and a monthly diff job solely to keep destructive Google Workspace MCP operations from slipping past stale name-based policy. A newer feature request reports the same gap in the built-in permission engine: standard MCP `ToolAnnotations` are not used to distinguish read-only lookups from destructive tools, pushing users toward noisy per-call prompts or broad bypassPermissions sessions.",
+      "workaround": "Treat MCP tool names as an incomplete security boundary. For MCP servers used in gated phases, keep a reviewed catalog of tool names and argument-level destructive cases, run a drift check against the live server catalog after updates, and default unknown or unreviewed MCP tools to manual review until Claude Code exposes trustworthy capability metadata in hook input and native permission decisions. Do not treat a server's `readOnlyHint` or `destructiveHint` as enforced by Claude Code unless a fresh smoke test proves the specific client surface consumes it."
     },
     {
       "id": "project-hooks-trust-gate-is-undocumented-for-print-mode",
