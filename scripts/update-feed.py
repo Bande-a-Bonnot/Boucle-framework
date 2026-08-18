@@ -42,7 +42,7 @@ def build_feed(data: dict) -> str:
         "  <author><name>Boucle</name></author>",
     ]
 
-    for entry in entries[:20]:
+    for entry in reversed(entries[-20:]):
         eid = entry["id"]
         title = html.escape(entry["title"])
         desc = html.escape(entry["description"])
