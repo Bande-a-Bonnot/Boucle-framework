@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1607,
+  "count": 1608,
   "categories": {
     "Hook behavior & events": 212,
     "Permission system": 146,
@@ -32,11 +32,11 @@
     "Worktree": 14,
     "File system & paths": 13,
     "MCP integration": 13,
+    "Git & repository safety": 11,
     "Plugin & channel system": 11,
     "Scheduled tasks": 11,
     "UX & display": 11,
     "Configuration & settings": 10,
-    "Git & repository safety": 10,
     "Telemetry & insights": 10,
     "hooks": 9,
     "Skills": 9,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 137,
-    "HIGH": 876,
+    "HIGH": 877,
     "LOW": 112,
     "MEDIUM": 482
   },
@@ -20653,30 +20653,43 @@
       "status": "open",
       "date_added": "2026-08-18",
       "workaround": "Prefer ASCII or normalization-invariant project paths for Claude Desktop work on macOS until the resume migration path is fixed. If Desktop starts hiding turns while `claude --resume` still sees them, quit Desktop, inspect `~/.claude/projects` for visually related NFC/NFD slug directories, merge the newest transcript into the CLI-visible slug, and avoid continuing from the frozen Desktop copy until the session is verified from both Desktop and CLI."
+    },
+    {
+      "id": "windows-wsl-worktree-cleanup-deletes-live-worktrees",
+      "title": "Windows/WSL shared repos can make live worktrees look prunable.",
+      "severity": "HIGH",
+      "category": "Git & repository safety",
+      "description": "A reported Windows 11 plus WSL2 setup used one NTFS repository from both native Windows paths and /mnt/c WSL paths. Git worktree registrations written by one side stored absolute gitdir paths in that side's spelling, so the other side could not stat them and reported the still-live worktrees as prunable. Claude Code automatic worktree cleanup then deleted the other side's .git/worktrees registrations during session startup, breaking active sessions and making later git commands fail with not-a-git-repository errors. In the report, a failed git show redirection also truncated a working file to zero bytes after the registration vanished.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87547"
+      ],
+      "status": "open",
+      "date_added": "2026-08-18",
+      "workaround": "Do not share one physical checkout between native Windows Claude Code and WSL Claude Code when either side can create or clean up worktrees. Use separate clones per environment, or disable automatic cross-side worktree cleanup until Claude Code treats unresolvable gitdir paths as unknown rather than stale. Before pruning worktrees manually, inspect .git/worktrees/*/gitdir from both Windows and WSL and keep any entry whose worktree directory exists under either path spelling. Hooks and allowlists may not catch this because the reported trigger was session startup with no explicit user git command."
     }
   ],
   "status_summary": {
-    "open": 1593,
+    "open": 1594,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 137,
-    "high": 876,
+    "high": 877,
     "low": 112,
     "medium": 482
   },
   "lastUpdated": "2026-08-18",
   "stats": {
-    "total": 1607,
+    "total": 1608,
     "critical": 137,
-    "high": 876,
+    "high": 877,
     "medium": 482,
     "low": 112,
-    "open": 1593,
+    "open": 1594,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-18",
-  "total": 1607
+  "total": 1608
 }
