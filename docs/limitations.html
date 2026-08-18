@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1608</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-18.</span></p>
+        <p class="subtitle"><span id="total-count">1609</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-18.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18026,6 +18026,18 @@
                         <!-- workaround:windows-wsl-worktree-cleanup-deletes-live-worktrees -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not share one physical checkout between native Windows Claude Code and WSL Claude Code when either side can create or clean up worktrees. Use separate clones per environment, or disable automatic cross-side worktree cleanup until Claude Code treats unresolvable gitdir paths as unknown rather than stale. Before pruning worktrees manually, inspect .git/worktrees/*/gitdir from both Windows and WSL and keep any entry whose worktree directory exists under either path spelling. Hooks and allowlists may not catch this because the reported trigger was session startup with no explicit user git command.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87547" target="_blank">#87547</a></div>
+        </div>
+        <div class="kl-entry" data-category="Settings &amp; configuration" data-issues="87551" id="headless-invalid-claude-json-reset-drops-live-config" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1609</span>
+                <span class="kl-cat">Settings &amp; configuration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Headless startup can replace invalid ~/.claude.json with defaults.</h3>
+            <p>A reproduced Claude Code report shows that adding invalid JSON syntax, such as a C-style comment, to a working `~/.claude.json` has different recovery behavior by entrypoint. Interactive `claude` stops at a configuration-error screen and leaves the file untouched, but a non-interactive launch such as `claude -p &quot;hi&quot;` reports the configuration file as corrupted and rewrites the live file with defaults. That removes saved `mcpServers` and other settings from the active config, even though a timestamped backup is created under `~/.claude/backups/`. The JSON parse failure is expected because `~/.claude.json` is strict JSON; the limitation is that the headless recovery path mutates live configuration instead of failing closed.</p>
+                        <!-- workaround:headless-invalid-claude-json-reset-drops-live-config -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Validate `~/.claude.json` with a JSON parser before starting unattended `claude -p`, launchd, cron, CI, or app-driven Claude Code sessions. Keep versioned backups of MCP and permission config, and treat any headless stderr mentioning a corrupted configuration file as a hold until the live config is compared against `~/.claude/backups/.claude.json.corrupted.*`. For automation hosts, run Claude Code with a dedicated HOME or wrapper that refuses to start when `~/.claude.json` is invalid rather than letting the CLI perform recovery.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87551" target="_blank">#87551</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
