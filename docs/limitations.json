@@ -1,13 +1,13 @@
 {
   "version": "0.13.0",
-  "count": 1606,
+  "count": 1607,
   "categories": {
     "Hook behavior & events": 212,
     "Permission system": 146,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 85,
     "Subagent & spawned agents": 77,
-    "Desktop & IDE integration": 57,
+    "Desktop & IDE integration": 58,
     "TUI & display": 36,
     "CLI & terminal": 31,
     "Platform & compatibility": 31,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 137,
-    "HIGH": 875,
+    "HIGH": 876,
     "LOW": 112,
     "MEDIUM": 482
   },
@@ -20640,30 +20640,43 @@
       "date_added": "2026-08-18",
       "description": "A reported Windows 11 Claude Desktop setup found that cross-session `send_message` between local sessions could return success and render the message in the target session UI while never appending it to the target session's real `.jsonl` transcript and never delivering it to the model. The reporter checked unique markers across multiple sends, saw the target transcript mtime remain frozen, and found the ghost messages disappeared after app restart. The receiving session could also enter phantom-running states with a spinner, frozen activity timestamps, and no persisted user turn.",
       "workaround": "Do not treat sender-side success or receiver-side UI rendering as proof that a cross-session message reached the model on Windows Desktop. For supervisor/worker workflows, require an independent acknowledgement written by the receiving session into a durable file, transcript, issue, or API record, and include the marker that was sent. When delivery matters, poll the target `.jsonl` or another durable channel before continuing, and keep a file-based fallback for app sessions until cross-session persistence is verified on the exact Claude Desktop and bundled CLI versions in use."
+    },
+    {
+      "id": "macos-desktop-nfd-path-slug-splits-transcripts",
+      "title": "macOS Desktop can split or freeze transcripts for Unicode-normalized project paths",
+      "severity": "HIGH",
+      "category": "Desktop & IDE integration",
+      "description": "On macOS, Claude Desktop's resume migration can slugify a project path from decomposed Unicode bytes while the CLI writes transcripts under the NFC-normalized slug. For projects whose path contains combining marks or accented folder names, Desktop can copy or move a transcript into a second project directory, pin its UI to a frozen snapshot, and hide later CLI-written turns after restart or idle resume. In the reported 1.30096.1 through 1.32352.1 repro, Desktop logs showed transcript migration from the NFC slug to an NFD-derived slug, and the NFD-side file remained only a byte-prefix of the current NFC transcript.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87516"
+      ],
+      "status": "open",
+      "date_added": "2026-08-18",
+      "workaround": "Prefer ASCII or normalization-invariant project paths for Claude Desktop work on macOS until the resume migration path is fixed. If Desktop starts hiding turns while `claude --resume` still sees them, quit Desktop, inspect `~/.claude/projects` for visually related NFC/NFD slug directories, merge the newest transcript into the CLI-visible slug, and avoid continuing from the frozen Desktop copy until the session is verified from both Desktop and CLI."
     }
   ],
   "status_summary": {
-    "open": 1592,
+    "open": 1593,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 137,
-    "high": 875,
+    "high": 876,
     "low": 112,
     "medium": 482
   },
   "lastUpdated": "2026-08-18",
   "stats": {
-    "total": 1606,
+    "total": 1607,
     "critical": 137,
-    "high": 875,
+    "high": 876,
     "medium": 482,
     "low": 112,
-    "open": 1592,
+    "open": 1593,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-18",
-  "total": 1606
+  "total": 1607
 }
