@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1600</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-17.</span></p>
+        <p class="subtitle"><span id="total-count">1603</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-18.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -17930,6 +17930,42 @@
                         <!-- workaround:mcp-approval-can-return-without-unblocking-tool-call -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat a rendered MCP approval prompt as proof that the next call will execute. After approving an MCP tool, retry a harmless representative call and confirm it reaches the server before depending on it for repository, deploy, or data changes. If the approval loops, restart the session or app, inspect server-side logs to determine whether calls are arriving, and avoid broad bypass-permissions workarounds for tools that touch external systems until the unblocking path has been verified.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87433" target="_blank">#87433</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="87476" id="mcp-secret-env-values-can-be-redacted-before-subprocess" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1601</span>
+                <span class="kl-cat">MCP &amp; integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>MCP secret env values can be redacted before reaching the subprocess.</h3>
+            <p>A reported Windows 11 Claude Code Desktop setup configured an MCP server with an env block referencing `GITHUB_PERSONAL_ACCESS_TOKEN` through `${GITHUB_PERSONAL_ACCESS_TOKEN}`. The server then failed because the value delivered to the child process contained U+2022 redaction characters, producing `Cannot convert argument to a ByteString because the character at index 15 has a value of 8226`. The reporter reproduced after setting the variable through `setx`, fully restarting Claude Code, and rebooting, including an attempt where the token was typed into a fresh PowerShell window and never appeared in the chat transcript.</p>
+                        <!-- workaround:mcp-secret-env-values-can-be-redacted-before-subprocess -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume secret redaction is display-only for MCP subprocess env values until the affected Claude Code build is verified. For secret-dependent MCP servers, use a tiny diagnostic server or wrapper that checks value shape without logging the secret, for example length, ASCII range, and prefix/suffix hashes. Prefer platform secret stores or wrapper scripts that read secrets at process startup, and fail closed when an MCP auth error mentions redaction glyphs, Unicode code point 8226, or ByteString conversion.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87476" target="_blank">#87476</a></div>
+        </div>
+        <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="87469" id="claude-md-rules-can-be-recitable-but-not-enforced-on-late-shared-resource-edits" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1602</span>
+                <span class="kl-cat">Security &amp; trust boundaries</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>CLAUDE.md rules can be recitable but not enforced on late shared-resource edits.</h3>
+            <p>A reported long Claude Code session against a shared Figma document had explicit user-level CLAUDE.md rules requiring a fresh refetch before editing shared resources. Late in the session, after the human edited the same Figma text node outside Claude, Claude corrected one factual error by rewriting the whole node from an earlier in-context copy instead of refetching current state. The human&#x27;s concurrent edit was silently destroyed and was not recoverable from Figma autosave. Afterward, Claude could quote the relevant CLAUDE.md rules back correctly, so the failure was not simply a missing memory-file load.</p>
+                        <!-- workaround:claude-md-rules-can-be-recitable-but-not-enforced-on-late-shared-resource-edits -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat CLAUDE.md refetch rules as advisory unless a separate guard proves they were followed immediately before a destructive shared-resource write. For Figma, Notion, Linear, Drive, and similar multiplayer resources, require a pre-write read with a fresh timestamp or version marker, prefer targeted patch operations over whole-object rewrites, and add confirmation or external hooks around large replacement writes. In long sessions, assume instruction adherence can decay even when rules remain available in context.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87469" target="_blank">#87469</a></div>
+        </div>
+        <div class="kl-entry" data-category="Scheduled tasks" data-issues="87470" id="webfetch-can-report-live-content-for-error-pages-in-unattended-routines" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1603</span>
+                <span class="kl-cat">Scheduled tasks</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>WebFetch can report live content for error pages in unattended routines.</h3>
+            <p>A reported Claude cloud Scheduled Task used WebFetch to verify a job URL and emailed the result as a live listing, but a real browser showed the URL was a bare 500 Internal Server Error page. Follow-up WebFetch calls over more than 15 minutes still returned a detailed job posting, including under prompts asking for raw page text and explicitly forbidding fabrication. The user later supplied raw HTML showing only the 500 error page, so the agent-visible tool result did not match the current browser-visible source. The report does not prove whether the cause is stale cache, backend fetch behavior, or summarization fabrication.</p>
+                        <!-- workaround:webfetch-can-report-live-content-for-error-pages-in-unattended-routines -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on WebFetch alone as the live-content witness for unattended tasks that notify users, send email, or update external systems. For scheduled workflows, require a second fetch path or explicit status-code witness before labeling a URL live, store the raw status and a short content hash with each notification, and treat generic error pages, thin HTML, or fetch-backend disagreement as a hold rather than a verified positive. When WebFetch is asked to quote raw content, still verify high-impact results through a browser, curl, or site-specific API before publication.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87470" target="_blank">#87470</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
