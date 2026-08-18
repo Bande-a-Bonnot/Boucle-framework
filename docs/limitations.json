@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1612,
+  "count": 1613,
   "categories": {
     "Hook behavior & events": 212,
     "Permission system": 146,
     "Hook bypass & evasion": 103,
-    "MCP & plugin issues": 86,
+    "MCP & plugin issues": 87,
     "Subagent & spawned agents": 77,
     "Desktop & IDE integration": 58,
     "TUI & display": 36,
@@ -192,11 +192,24 @@
   },
   "severity_counts": {
     "CRITICAL": 138,
-    "HIGH": 881,
+    "HIGH": 882,
     "LOW": 111,
     "MEDIUM": 482
   },
   "entries": [
+    {
+      "id": "security-guidance-path-globs-match-absolute-paths",
+      "title": "Official `security-guidance` plugin can silently miss repo-relative path globs.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/86545"
+      ],
+      "date_added": "2026-08-18",
+      "description": "A reproduced `security-guidance` plugin 2.0.7 issue found that path and exclude globs are evaluated against the tool payload path rather than a canonical project-relative path. Normal Edit payloads can carry absolute file paths, so repo-relative directory rules such as `src/*.ts`, `src/**/*.ts`, or `utils/**/*.ts` may match nothing even when files under those directories are edited. The same thread also confirmed a separate `fnmatch` semantics gap: on the canonical path form, `**/*.ts` does not include the zero-directory case unless the matcher adds it explicitly. Security rules can therefore appear installed while silently skipping intended files.",
+      "workaround": "Until the plugin canonicalizes in-project paths before matching, test each security pattern against the exact absolute and relative payload shapes your Claude Code surface emits. Prefer smoke tests that edit root, direct-child, and nested files and assert the expected reminders fire. Avoid relying on repo-relative directory globs such as `src/*.ts` or `src/**/*.ts` without proof, and verify include and exclude patterns after every plugin update."
+    },
     {
       "id": "security-guidance-non-mapping-config-drops-user-patterns",
       "title": "Official `security-guidance` plugin can silently drop all user patterns when one config file has the wrong top-level shape.",
@@ -20723,27 +20736,27 @@
     }
   ],
   "status_summary": {
-    "open": 1598,
+    "open": 1599,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 138,
-    "high": 881,
+    "high": 882,
     "low": 111,
     "medium": 482
   },
   "lastUpdated": "2026-08-18",
   "stats": {
-    "total": 1612,
+    "total": 1613,
     "critical": 138,
-    "high": 881,
+    "high": 882,
     "medium": 482,
     "low": 111,
-    "open": 1598,
+    "open": 1599,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-18",
-  "total": 1612
+  "total": 1613
 }
