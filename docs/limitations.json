@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1611,
+  "count": 1612,
   "categories": {
     "Hook behavior & events": 212,
     "Permission system": 146,
     "Hook bypass & evasion": 103,
-    "MCP & plugin issues": 85,
+    "MCP & plugin issues": 86,
     "Subagent & spawned agents": 77,
     "Desktop & IDE integration": 58,
     "TUI & display": 36,
@@ -192,11 +192,24 @@
   },
   "severity_counts": {
     "CRITICAL": 138,
-    "HIGH": 880,
+    "HIGH": 881,
     "LOW": 111,
     "MEDIUM": 482
   },
   "entries": [
+    {
+      "id": "security-guidance-non-mapping-config-drops-user-patterns",
+      "title": "Official `security-guidance` plugin can silently drop all user patterns when one config file has the wrong top-level shape.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87627"
+      ],
+      "date_added": "2026-08-18",
+      "description": "A reported `security-guidance` plugin 2.0.7 loader accepted valid YAML or JSON whose top-level value was a scalar or list instead of a mapping, then raised `AttributeError` while reading `.get(\"patterns\")`. The session-level loader caught that exception around the whole user-pattern load and reset the in-memory pattern list to empty, so one wrong-shape `security-patterns.local.yaml` or JSON file could silently discard otherwise valid user, project, or project-local security patterns. Invalid YAML is skipped per file, but valid YAML with the wrong shape can disable all custom patterns with only a debug-log trace.",
+      "workaround": "Validate every `security-patterns.{yaml,yml,json}` file before relying on the official plugin: the top-level value must be an object with a `patterns` key, not a bare list or scalar. Keep a small smoke test that loads the exact config tree and asserts expected rule names are present, fail closed if user patterns are empty unexpectedly, and remove or repair wrong-shape `.local` files before starting sensitive sessions."
+    },
     {
       "id": "read-tool-ask-hook-reasons-not-shown",
       "title": "Read-tool `ask` hooks can hide the approval reason.",
@@ -20710,27 +20723,27 @@
     }
   ],
   "status_summary": {
-    "open": 1597,
+    "open": 1598,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 138,
-    "high": 880,
+    "high": 881,
     "low": 111,
     "medium": 482
   },
   "lastUpdated": "2026-08-18",
   "stats": {
-    "total": 1611,
+    "total": 1612,
     "critical": 138,
-    "high": 880,
+    "high": 881,
     "medium": 482,
     "low": 111,
-    "open": 1597,
+    "open": 1598,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-18",
-  "total": 1611
+  "total": 1612
 }
