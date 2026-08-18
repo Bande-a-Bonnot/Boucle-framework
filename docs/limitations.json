@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1610,
+  "count": 1611,
   "categories": {
     "Hook behavior & events": 212,
     "Permission system": 146,
@@ -24,8 +24,8 @@
     "Core & session management": 21,
     "Auth & accounts": 20,
     "Remote & cloud": 18,
+    "Data integrity": 17,
     "Model behavior": 17,
-    "Data integrity": 16,
     "Scheduling & remote triggers": 15,
     "Bash & shell execution": 14,
     "Permissions & safety": 14,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 137,
-    "HIGH": 879,
+    "HIGH": 880,
     "LOW": 112,
     "MEDIUM": 482
   },
@@ -20692,30 +20692,43 @@
       "status": "open",
       "date_added": "2026-08-18",
       "workaround": "Keep `autoMode` policy in trusted user, managed, or CLI flag settings rather than checked-in or local project settings until Claude Code warns on ignored project-scope blocks. After changing auto-mode rules, run `claude auto-mode config` and search for a unique sentinel from the intended rule. Treat a default-looking config as unverified, not as success, and add a setup check that fails when `.claude/settings.json` or `.claude/settings.local.json` contains an `autoMode` key."
+    },
+    {
+      "id": "auto-mode-bash-edits-can-escape-rewind",
+      "title": "Auto mode Bash edits can escape /rewind checkpoints.",
+      "severity": "HIGH",
+      "category": "Data integrity",
+      "description": "A reported Claude Code 2.1.234 WSL2 repro found that, when auto mode is active, the built-in prompt can steer the model to make file changes through Bash tools such as Python heredocs, sed, or redirected shell writes instead of the dedicated Edit or Write tools. Those Bash-authored writes were not tracked by the checkpoint system, so /rewind reported success while leaving modified and newly created files on disk. The mismatch is silent unless the user manually checks git status, and later turns can build on code the user believed had been reverted.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87575"
+      ],
+      "status": "open",
+      "date_added": "2026-08-18",
+      "workaround": "Do not rely on /rewind as the only rollback path for auto-mode sessions that may edit through Bash. Before accepting a rewind, run `git status --short` and inspect newly created files, then revert with git or a filesystem snapshot if shell-authored changes remain. For review-sensitive work, keep auto mode off or add hooks and permissions that block Bash write patterns such as heredocs, redirects, `sed -i`, and short rewrite scripts unless explicitly approved. If testing the reported experiment flag workaround, verify the effective prompt behavior in a fresh session before trusting it."
     }
   ],
   "status_summary": {
-    "open": 1596,
+    "open": 1597,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 137,
-    "high": 879,
+    "high": 880,
     "low": 112,
     "medium": 482
   },
   "lastUpdated": "2026-08-18",
   "stats": {
-    "total": 1610,
+    "total": 1611,
     "critical": 137,
-    "high": 879,
+    "high": 880,
     "medium": 482,
     "low": 112,
-    "open": 1596,
+    "open": 1597,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-18",
-  "total": 1610
+  "total": 1611
 }
