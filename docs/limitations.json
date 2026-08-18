@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1600,
+  "count": 1603,
   "categories": {
     "Hook behavior & events": 212,
     "Permission system": 146,
@@ -12,11 +12,11 @@
     "CLI & terminal": 31,
     "Platform & compatibility": 31,
     "Context & memory": 30,
-    "MCP & integrations": 29,
+    "MCP & integrations": 30,
     "Sandbox & permissions": 29,
+    "Security & trust boundaries": 27,
     "Configuration behavior": 26,
     "Cowork & remote": 26,
-    "Security & trust boundaries": 26,
     "Performance & cost": 25,
     "Agents & subagents": 22,
     "Tool behavior": 22,
@@ -33,10 +33,10 @@
     "File system & paths": 13,
     "MCP integration": 13,
     "Plugin & channel system": 11,
+    "Scheduled tasks": 11,
     "UX & display": 11,
     "Configuration & settings": 10,
     "Git & repository safety": 10,
-    "Scheduled tasks": 10,
     "Telemetry & insights": 10,
     "hooks": 9,
     "Skills": 9,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 137,
-    "HIGH": 871,
+    "HIGH": 874,
     "LOW": 112,
     "MEDIUM": 480
   },
@@ -20562,30 +20562,69 @@
       "date_added": "2026-08-17",
       "description": "A reported Claude Code 2.1.233 macOS session showed MCP tools from a connected server returning `MCP tool call requires approval` even after the user tapped `Allow once` in the client permission prompt. The prompt rendered normally and produced no visible error, but retrying the same `add_repo` and `get_session` calls on the same server produced the identical approval-required response across multiple attempts and after reopening the app. The result is an approval UI that appears accepted while the underlying MCP tool state remains blocked.",
       "workaround": "Do not treat a rendered MCP approval prompt as proof that the next call will execute. After approving an MCP tool, retry a harmless representative call and confirm it reaches the server before depending on it for repository, deploy, or data changes. If the approval loops, restart the session or app, inspect server-side logs to determine whether calls are arriving, and avoid broad bypass-permissions workarounds for tools that touch external systems until the unblocking path has been verified."
+    },
+    {
+      "id": "mcp-secret-env-values-can-be-redacted-before-subprocess",
+      "title": "MCP secret env values can be redacted before reaching the subprocess.",
+      "category": "MCP & integrations",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87476"
+      ],
+      "date_added": "2026-08-18",
+      "description": "A reported Windows 11 Claude Code Desktop setup configured an MCP server with an env block referencing `GITHUB_PERSONAL_ACCESS_TOKEN` through `${GITHUB_PERSONAL_ACCESS_TOKEN}`. The server then failed because the value delivered to the child process contained U+2022 redaction characters, producing `Cannot convert argument to a ByteString because the character at index 15 has a value of 8226`. The reporter reproduced after setting the variable through `setx`, fully restarting Claude Code, and rebooting, including an attempt where the token was typed into a fresh PowerShell window and never appeared in the chat transcript.",
+      "workaround": "Do not assume secret redaction is display-only for MCP subprocess env values until the affected Claude Code build is verified. For secret-dependent MCP servers, use a tiny diagnostic server or wrapper that checks value shape without logging the secret, for example length, ASCII range, and prefix/suffix hashes. Prefer platform secret stores or wrapper scripts that read secrets at process startup, and fail closed when an MCP auth error mentions redaction glyphs, Unicode code point 8226, or ByteString conversion."
+    },
+    {
+      "id": "claude-md-rules-can-be-recitable-but-not-enforced-on-late-shared-resource-edits",
+      "title": "CLAUDE.md rules can be recitable but not enforced on late shared-resource edits.",
+      "category": "Security & trust boundaries",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87469"
+      ],
+      "date_added": "2026-08-18",
+      "description": "A reported long Claude Code session against a shared Figma document had explicit user-level CLAUDE.md rules requiring a fresh refetch before editing shared resources. Late in the session, after the human edited the same Figma text node outside Claude, Claude corrected one factual error by rewriting the whole node from an earlier in-context copy instead of refetching current state. The human's concurrent edit was silently destroyed and was not recoverable from Figma autosave. Afterward, Claude could quote the relevant CLAUDE.md rules back correctly, so the failure was not simply a missing memory-file load.",
+      "workaround": "Treat CLAUDE.md refetch rules as advisory unless a separate guard proves they were followed immediately before a destructive shared-resource write. For Figma, Notion, Linear, Drive, and similar multiplayer resources, require a pre-write read with a fresh timestamp or version marker, prefer targeted patch operations over whole-object rewrites, and add confirmation or external hooks around large replacement writes. In long sessions, assume instruction adherence can decay even when rules remain available in context."
+    },
+    {
+      "id": "webfetch-can-report-live-content-for-error-pages-in-unattended-routines",
+      "title": "WebFetch can report live content for error pages in unattended routines.",
+      "category": "Scheduled tasks",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87470"
+      ],
+      "date_added": "2026-08-18",
+      "description": "A reported Claude cloud Scheduled Task used WebFetch to verify a job URL and emailed the result as a live listing, but a real browser showed the URL was a bare 500 Internal Server Error page. Follow-up WebFetch calls over more than 15 minutes still returned a detailed job posting, including under prompts asking for raw page text and explicitly forbidding fabrication. The user later supplied raw HTML showing only the 500 error page, so the agent-visible tool result did not match the current browser-visible source. The report does not prove whether the cause is stale cache, backend fetch behavior, or summarization fabrication.",
+      "workaround": "Do not rely on WebFetch alone as the live-content witness for unattended tasks that notify users, send email, or update external systems. For scheduled workflows, require a second fetch path or explicit status-code witness before labeling a URL live, store the raw status and a short content hash with each notification, and treat generic error pages, thin HTML, or fetch-backend disagreement as a hold rather than a verified positive. When WebFetch is asked to quote raw content, still verify high-impact results through a browser, curl, or site-specific API before publication."
     }
   ],
   "status_summary": {
-    "open": 1586,
+    "open": 1589,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 137,
-    "high": 871,
+    "high": 874,
     "low": 112,
     "medium": 480
   },
-  "lastUpdated": "2026-08-17",
+  "lastUpdated": "2026-08-18",
   "stats": {
-    "total": 1600,
+    "total": 1603,
     "critical": 137,
-    "high": 871,
+    "high": 874,
     "medium": 480,
     "low": 112,
-    "open": 1586,
+    "open": 1589,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-08-17",
-  "total": 1600
+  "last_updated": "2026-08-18",
+  "total": 1603
 }
