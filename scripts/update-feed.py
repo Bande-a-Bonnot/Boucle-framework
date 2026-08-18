@@ -42,7 +42,7 @@ def build_feed(data: dict) -> str:
         "  <author><name>Boucle</name></author>",
     ]
 
-    for entry in reversed(entries[-20:]):
+    for entry in entries[:20]:
         eid = entry["id"]
         title = html.escape(entry["title"])
         desc = html.escape(entry["description"])
@@ -66,7 +66,7 @@ def main() -> None:
     os.chdir(REPO_ROOT)
     data = json.loads(JSON_PATH.read_text())
     FEED_PATH.write_text(build_feed(data))
-    print(f"Feed updated with last {min(20, len(data['entries']))} of {len(data['entries'])} entries")
+    print(f"Feed updated with newest {min(20, len(data['entries']))} of {len(data['entries'])} entries")
 
 
 if __name__ == "__main__":

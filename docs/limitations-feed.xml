@@ -7,163 +7,163 @@
   <updated>2026-08-18T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
-    <title>[HIGH] Auto mode Bash edits can escape /rewind checkpoints.</title>
-    <id>https://framework.boucle.sh/limitations.html#auto-mode-bash-edits-can-escape-rewind</id>
-    <link href="https://framework.boucle.sh/limitations.html#auto-mode-bash-edits-can-escape-rewind"/>
+    <title>[HIGH] Official `security-guidance` plugin can silently drop all user patterns when one config file has the wrong top-level shape.</title>
+    <id>https://framework.boucle.sh/limitations.html#security-guidance-non-mapping-config-drops-user-patterns</id>
+    <link href="https://framework.boucle.sh/limitations.html#security-guidance-non-mapping-config-drops-user-patterns"/>
     <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.234 WSL2 repro found that, when auto mode is active, the built-in prompt can steer the model to make file changes through Bash tools such as Python heredocs, sed, or redirected shell writes instead of the dedicated Edit or Write tools. Those Bash-authored writes were not tracked by the checkpoint system, so /rewind reported success while leaving modified and newly created files on disk. The mismatch is silent unless the user manually checks git status, and later turns can build on code the user believed had been reverted.</summary>
-    <category term="Data integrity"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Project-scoped autoMode config can be silently ignored.</title>
-    <id>https://framework.boucle.sh/limitations.html#project-scoped-automode-config-silently-ignored</id>
-    <link href="https://framework.boucle.sh/limitations.html#project-scoped-automode-config-silently-ignored"/>
-    <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 repro found that an `autoMode` block placed in project `.claude/settings.json` or `.claude/settings.local.json` is ignored by design, but the shipped JSON schema does not mark `autoMode` as user-, managed-, or flag-scope only while sibling restricted keys do. The documented verification command, `claude auto-mode config`, then prints a default-looking effective config with no warning, and `claude doctor`, interactive startup, headless startup, and explicit `--setting-sources project` also give no signal that the project-scope block was discarded. A one-character path mistake between `.claude/settings.json` and `~/.claude/settings.json` can therefore drop custom auto-mode classifier rules silently.</summary>
-    <category term="Settings &amp; configuration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Headless startup can replace invalid ~/.claude.json with defaults.</title>
-    <id>https://framework.boucle.sh/limitations.html#headless-invalid-claude-json-reset-drops-live-config</id>
-    <link href="https://framework.boucle.sh/limitations.html#headless-invalid-claude-json-reset-drops-live-config"/>
-    <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reproduced Claude Code report shows that adding invalid JSON syntax, such as a C-style comment, to a working `~/.claude.json` has different recovery behavior by entrypoint. Interactive `claude` stops at a configuration-error screen and leaves the file untouched, but a non-interactive launch such as `claude -p &quot;hi&quot;` reports the configuration file as corrupted and rewrites the live file with defaults. That removes saved `mcpServers` and other settings from the active config, even though a timestamped backup is created under `~/.claude/backups/`. The JSON parse failure is expected because `~/.claude.json` is strict JSON; the limitation is that the headless recovery path mutates live configuration instead of failing closed.</summary>
-    <category term="Settings &amp; configuration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows/WSL shared repos can make live worktrees look prunable.</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-wsl-worktree-cleanup-deletes-live-worktrees</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-wsl-worktree-cleanup-deletes-live-worktrees"/>
-    <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reported Windows 11 plus WSL2 setup used one NTFS repository from both native Windows paths and /mnt/c WSL paths. Git worktree registrations written by one side stored absolute gitdir paths in that side&#x27;s spelling, so the other side could not stat them and reported the still-live worktrees as prunable. Claude Code automatic worktree cleanup then deleted the other side&#x27;s .git/worktrees registrations during session startup, breaking active sessions and making later git commands fail with not-a-git-repository errors. In the report, a failed git show redirection also truncated a working file to zero bytes after the registration vanished.</summary>
-    <category term="Git &amp; repository safety"/>
-  </entry>
-  <entry>
-    <title>[HIGH] macOS Desktop can split or freeze transcripts for Unicode-normalized project paths</title>
-    <id>https://framework.boucle.sh/limitations.html#macos-desktop-nfd-path-slug-splits-transcripts</id>
-    <link href="https://framework.boucle.sh/limitations.html#macos-desktop-nfd-path-slug-splits-transcripts"/>
-    <updated>2026-08-18T00:00:00Z</updated>
-    <summary>On macOS, Claude Desktop&#x27;s resume migration can slugify a project path from decomposed Unicode bytes while the CLI writes transcripts under the NFC-normalized slug. For projects whose path contains combining marks or accented folder names, Desktop can copy or move a transcript into a second project directory, pin its UI to a frozen snapshot, and hide later CLI-written turns after restart or idle resume. In the reported 1.30096.1 through 1.32352.1 repro, Desktop logs showed transcript migration from the NFC slug to an NFD-derived slug, and the NFD-side file remained only a byte-prefix of the current NFC transcript.</summary>
-    <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows Desktop cross-session send_message can ghost-deliver without enqueueing.</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-desktop-cross-session-send-message-ghost-delivery</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-desktop-cross-session-send-message-ghost-delivery"/>
-    <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reported Windows 11 Claude Desktop setup found that cross-session `send_message` between local sessions could return success and render the message in the target session UI while never appending it to the target session&#x27;s real `.jsonl` transcript and never delivering it to the model. The reporter checked unique markers across multiple sends, saw the target transcript mtime remain frozen, and found the ghost messages disappeared after app restart. The receiving session could also enter phantom-running states with a spinner, frozen activity timestamps, and no persisted user turn.</summary>
-    <category term="Core &amp; session management"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Cloud sessions can drop project-declared plugin marketplaces while reading enabledPlugins.</title>
-    <id>https://framework.boucle.sh/limitations.html#cloud-sessions-drop-project-plugin-marketplaces</id>
-    <link href="https://framework.boucle.sh/limitations.html#cloud-sessions-drop-project-plugin-marketplaces"/>
-    <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.234 cloud-session repro found that project `.claude/settings.json` could read an `enabledPlugins` entry for a GitHub marketplace plugin while dropping the same file&#x27;s `extraKnownMarketplaces` declaration. Startup logs then reported the enabled plugin as orphaned because the marketplace was not registered, saved zero installed plugins, and later said `installPluginsForHeadless: no marketplaces declared`. The public cloud and desktop docs pointed users at repo-declared plugins as the cloud-session path, while a shipped guard and a follow-up static read of the binary suggested project-scope marketplaces are excluded from the declared-marketplace map.</summary>
+    <summary>A reported `security-guidance` plugin 2.0.7 loader accepted valid YAML or JSON whose top-level value was a scalar or list instead of a mapping, then raised `AttributeError` while reading `.get(&quot;patterns&quot;)`. The session-level loader caught that exception around the whole user-pattern load and reset the in-memory pattern list to empty, so one wrong-shape `security-patterns.local.yaml` or JSON file could silently discard otherwise valid user, project, or project-local security patterns. Invalid YAML is skipped per file, but valid YAML with the wrong shape can disable all custom patterns with only a debug-log trace.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
   <entry>
-    <title>[HIGH] WebFetch can report live content for error pages in unattended routines.</title>
-    <id>https://framework.boucle.sh/limitations.html#webfetch-can-report-live-content-for-error-pages-in-unattended-routines</id>
-    <link href="https://framework.boucle.sh/limitations.html#webfetch-can-report-live-content-for-error-pages-in-unattended-routines"/>
+    <title>[MEDIUM] Read-tool `ask` hooks can hide the approval reason.</title>
+    <id>https://framework.boucle.sh/limitations.html#read-tool-ask-hook-reasons-not-shown</id>
+    <link href="https://framework.boucle.sh/limitations.html#read-tool-ask-hook-reasons-not-shown"/>
     <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reported Claude cloud Scheduled Task used WebFetch to verify a job URL and emailed the result as a live listing, but a real browser showed the URL was a bare 500 Internal Server Error page. Follow-up WebFetch calls over more than 15 minutes still returned a detailed job posting, including under prompts asking for raw page text and explicitly forbidding fabrication. The user later supplied raw HTML showing only the 500 error page, so the agent-visible tool result did not match the current browser-visible source. The report does not prove whether the cause is stale cache, backend fetch behavior, or summarization fabrication.</summary>
-    <category term="Scheduled tasks"/>
-  </entry>
-  <entry>
-    <title>[HIGH] CLAUDE.md rules can be recitable but not enforced on late shared-resource edits.</title>
-    <id>https://framework.boucle.sh/limitations.html#claude-md-rules-can-be-recitable-but-not-enforced-on-late-shared-resource-edits</id>
-    <link href="https://framework.boucle.sh/limitations.html#claude-md-rules-can-be-recitable-but-not-enforced-on-late-shared-resource-edits"/>
-    <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reported long Claude Code session against a shared Figma document had explicit user-level CLAUDE.md rules requiring a fresh refetch before editing shared resources. Late in the session, after the human edited the same Figma text node outside Claude, Claude corrected one factual error by rewriting the whole node from an earlier in-context copy instead of refetching current state. The human&#x27;s concurrent edit was silently destroyed and was not recoverable from Figma autosave. Afterward, Claude could quote the relevant CLAUDE.md rules back correctly, so the failure was not simply a missing memory-file load.</summary>
-    <category term="Security &amp; trust boundaries"/>
-  </entry>
-  <entry>
-    <title>[HIGH] MCP secret env values can be redacted before reaching the subprocess.</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-secret-env-values-can-be-redacted-before-subprocess</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-secret-env-values-can-be-redacted-before-subprocess"/>
-    <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reported Windows 11 Claude Code Desktop setup configured an MCP server with an env block referencing `GITHUB_PERSONAL_ACCESS_TOKEN` through `${GITHUB_PERSONAL_ACCESS_TOKEN}`. The server then failed because the value delivered to the child process contained U+2022 redaction characters, producing `Cannot convert argument to a ByteString because the character at index 15 has a value of 8226`. The reporter reproduced after setting the variable through `setx`, fully restarting Claude Code, and rebooting, including an attempt where the token was typed into a fresh PowerShell window and never appeared in the chat transcript.</summary>
-    <category term="MCP &amp; integrations"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] CLAUDE.md symlinked to AGENTS.md refuses direct tool writes.</title>
-    <id>https://framework.boucle.sh/limitations.html#claude-md-agents-md-symlink-refuses-tool-writes</id>
-    <link href="https://framework.boucle.sh/limitations.html#claude-md-agents-md-symlink-refuses-tool-writes"/>
-    <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reported Claude Code setup followed the documented `CLAUDE.md -&gt; AGENTS.md` symlink pattern, then found that Read succeeds while Edit and Write on `CLAUDE.md` fail with `Refusing to write through symlink`. A maintainer reproduced the behavior on released 2.1.234 and clarified that refusing symlink writes is an intentional safety guard, but that the memory docs do not warn users that the documented symlink form cannot be directly updated by Claude Code&#x27;s file-writing tools.</summary>
-    <category term="Configuration behavior"/>
-  </entry>
-  <entry>
-    <title>[HIGH] MCP permission approval can return without unblocking the tool call.</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-approval-can-return-without-unblocking-tool-call</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-approval-can-return-without-unblocking-tool-call"/>
-    <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 macOS session showed MCP tools from a connected server returning `MCP tool call requires approval` even after the user tapped `Allow once` in the client permission prompt. The prompt rendered normally and produced no visible error, but retrying the same `add_repo` and `get_session` calls on the same server produced the identical approval-required response across multiple attempts and after reopening the app. The result is an approval UI that appears accepted while the underlying MCP tool state remains blocked.</summary>
-    <category term="MCP &amp; integrations"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Editing settings.json hook commands can fail false JSON validation.</title>
-    <id>https://framework.boucle.sh/limitations.html#settings-json-hook-command-edits-can-fail-false-json-validation</id>
-    <link href="https://framework.boucle.sh/limitations.html#settings-json-hook-command-edits-can-fail-false-json-validation"/>
-    <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reported Windows 11 Git Bash setup found that the Claude Code Edit tool repeatedly refused an otherwise valid `.claude/settings.json` change when the edited hook `command` string contained shell regex metacharacters such as `&#x27;.ts$&#x27;`. The tool reported `Invalid JSON: JSON Parse error: Unterminated string` and rolled the edit back, while independent `jq` validation passed before and after, and writing the same value through a structured JSON mutation succeeded immediately. The failure appears to be in the Edit tool&#x27;s settings validator or patch path, not in the final JSON bytes.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] CLAUDE_CONFIG_DIR can name a different account than the session appears to spend.</title>
-    <id>https://framework.boucle.sh/limitations.html#claude-config-dir-can-name-different-account-than-session-spends</id>
-    <link href="https://framework.boucle.sh/limitations.html#claude-config-dir-can-name-different-account-than-session-spends"/>
-    <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reported Windows Claude Code Desktop and CLI setup with several config roots found that a desktop-launched session exposed `CLAUDE_CONFIG_DIR`, `claude auth status`, and model-visible context for one account while desktop session records, usage samples, and owner confirmation indicated another account was being billed. Follow-up measurements found contradictory account identifiers inside the same config file, including an OAuth identity for one account and cached usage for another. The reporter explicitly notes that the signing credential was not directly measured, so the hard limitation is that local tooling cannot reliably identify the effective account or billing boundary from the available session surfaces.</summary>
-    <category term="Auth &amp; accounts"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Bash tool timeouts can background commands instead of cancelling them.</title>
-    <id>https://framework.boucle.sh/limitations.html#bash-timeout-can-background-command-instead-of-cancelling</id>
-    <link href="https://framework.boucle.sh/limitations.html#bash-timeout-can-background-command-instead-of-cancelling"/>
-    <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 Linux repro found that a Bash tool call with a 3s timeout returned control to the agent while the underlying process continued running for roughly 16 more seconds. The reporter tied the behavior to multi-hour VM disk-saturation incidents under concurrent subagent load, where many individually timed-out commands could continue consuming I/O after the tool layer appeared to have moved on.</summary>
-    <category term="Bash &amp; shell execution"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Resume picker search can miss retained sessions outside the 50 most recent.</title>
-    <id>https://framework.boucle.sh/limitations.html#resume-picker-searches-only-the-50-most-recent-sessions</id>
-    <link href="https://framework.boucle.sh/limitations.html#resume-picker-searches-only-the-50-most-recent-sessions"/>
-    <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reported Linux Claude Code 2.1.233 repro found that both the in-session `/resume` picker and standalone `claude --resume` picker load only the 50 most recent sessions, and the type-to-search filter searches only that loaded subset rather than all retained transcript files on disk. A month-old session whose generated title contained the search term was not findable until its transcript file mtime was moved back into the top 50. This means a high `cleanupPeriodDays` setting can retain old transcripts without making them discoverable in the UI.</summary>
-    <category term="Core &amp; session management"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Security heuristics can silently discard Bash allow rules from permissions.allow.</title>
-    <id>https://framework.boucle.sh/limitations.html#security-heuristics-can-silently-discard-bash-allow-rules</id>
-    <link href="https://framework.boucle.sh/limitations.html#security-heuristics-can-silently-discard-bash-allow-rules"/>
-    <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reported macOS Claude Code 2.1.233 repro found that some `permissions.allow` Bash rules remained in `.claude/settings.local.json` but disappeared from `/permissions` after a fresh session load and were not honored at execution time. In the example, `Bash(echo:*)`, `Bash(npx tsc:*)`, and `Bash(realpath:*)` loaded, while similarly formed `Bash(python3:*)` and `Bash(npm run:*)` were absent. The per-call annotation then distinguished matched allow rules from auto-mode classifier approvals, showing the discarded rules did not participate in permission matching.</summary>
+    <summary>A collaborator-reproduced Claude Code issue found that `PreToolUse` hooks returning `permissionDecision: &quot;ask&quot;` with a non-empty `permissionDecisionReason` can show the reason in Bash approval dialogs while omitting it from Read approval dialogs. Additional user evidence says native file-search tools such as Read, Grep, and Glob show only the tool/path confirmation even when the hook stdout is valid and includes both a reason and `systemMessage`. Users can therefore be asked to approve a file read without seeing the hook author&#x27;s explanation of why the read is sensitive.</summary>
     <category term="Permission system"/>
   </entry>
   <entry>
-    <title>[MEDIUM] Background agent view can collide session IDs and hide existing session history.</title>
-    <id>https://framework.boucle.sh/limitations.html#background-agent-view-can-collide-session-ids-and-hide-history</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-agent-view-can-collide-session-ids-and-hide-history"/>
+    <title>[HIGH] Workspace trust dialog can hide most pre-approved permissions.</title>
+    <id>https://framework.boucle.sh/limitations.html#workspace-trust-dialog-truncates-preapproved-permissions</id>
+    <link href="https://framework.boucle.sh/limitations.html#workspace-trust-dialog-truncates-preapproved-permissions"/>
     <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 Windows background-agents view failure showed existing sessions opening with only the most recent user message visible, new sessions failing because a generated session ID was already in use, and one completed row showing an exit-before-init session error. The reporter checked `~/.claude/projects/...` and found the transcript JSONL files still present at expected sizes and mtimes, so the issue appears to affect the agent-view/session-registry layer rather than deleting transcript data. The same report noted several job directories created within minutes, including one whose ID matched the collision but had no corresponding project transcript.</summary>
-    <category term="Core &amp; session management"/>
+    <summary>A reported Claude Code 2.1.232 workspace trust dialog showed only the first few entries from a large `.claude/settings.local.json` permission set, truncated individual entries, collapsed the remainder behind an &quot;and N more&quot; summary, and offered only trust-or-exit choices. The same dialog did not mention other trust-sensitive project surfaces such as `.claude/settings.json` hooks, `.mcp.json` servers, or `CLAUDE.md`. A user can therefore be asked to accept all pre-approved tool permissions for a repository without seeing the full list or reviewing broad entries such as sudo, ssh, arbitrary shell, or paths outside the project.</summary>
+    <category term="Security &amp; trust boundaries"/>
   </entry>
   <entry>
-    <title>[MEDIUM] Channel events can be silently invisible to non-interactive print-mode sessions.</title>
-    <id>https://framework.boucle.sh/limitations.html#channel-events-can-be-silent-in-non-interactive-print-sessions</id>
-    <link href="https://framework.boucle.sh/limitations.html#channel-events-can-be-silent-in-non-interactive-print-sessions"/>
+    <title>[CRITICAL] VS Code `ask` permission decisions can silently allow tool calls.</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-ask-permissions-can-silently-allow</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-ask-permissions-can-silently-allow"/>
     <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 Windows channel test found that events sent to a custom channel in a `-p` non-interactive session were accepted by the channel server but never surfaced in the model context, while the same channel did surface events in an interactive session. The reporter measured server-side acknowledgements for both queued-before-start and queued-during-run events, but the print-mode session saw the messages only after explicitly polling with the channel&#x27;s read tool. Because the channel server records successful delivery, automation can falsely believe the model received a push event.</summary>
-    <category term="MCP &amp; integrations"/>
+    <summary>A reported VS Code extension session in default permission mode let tool calls run immediately when they matched an `ask` tier permission decision, with no prompt shown to the user. The report covers both static `ask` permission rules and `PreToolUse` hooks returning `hookSpecificOutput.permissionDecision: &quot;ask&quot;`; in the same environment, `deny` decisions still blocked as expected, and headless CLI tests failed closed for the same `ask` cases. Teams that rely on `ask` as a human-confirmation tier can therefore get no protection in VS Code while seeing normal-looking tool execution.</summary>
+    <category term="VS Code extension"/>
   </entry>
   <entry>
-    <title>[MEDIUM] Hooks cannot watch file changes independent of the originating tool.</title>
-    <id>https://framework.boucle.sh/limitations.html#hooks-cannot-watch-file-changes-independent-of-originating-tool</id>
-    <link href="https://framework.boucle.sh/limitations.html#hooks-cannot-watch-file-changes-independent-of-originating-tool"/>
+    <title>[HIGH] Cowork can fail when Claude Desktop is installed on a non-C: Windows drive.</title>
+    <id>https://framework.boucle.sh/limitations.html#cowork-windows-non-c-install-can-break-rpc-pipe</id>
+    <link href="https://framework.boucle.sh/limitations.html#cowork-windows-non-c-install-can-break-rpc-pipe"/>
     <updated>2026-08-18T00:00:00Z</updated>
-    <summary>A reported Claude Code hook limitation notes that PreToolUse and PostToolUse matchers fire on the Claude Code tool name, such as Edit, Write, Bash, or PowerShell, rather than on the underlying filesystem mutation. A hook that normalizes or audits written files after Edit or Write therefore does not fire when a script, shell redirection, or another tool changes the same file. There is no documented hook scope that means `run after any file content changed` regardless of which tool caused the change.</summary>
-    <category term="Hook behavior &amp; events"/>
+    <summary>A reported Windows 11 Claude Desktop Cowork setup failed to start the workspace with `RPC pipe closed` after Claude was installed through the Microsoft Store on a non-C: drive. Logs showed signature verification comparing the real package path under `D:\WindowsApps\...\claude.exe` against a hard-coded expected `C:\Program Files\WindowsApps\...` package directory, so a supported Windows app-install location made Cowork reject its own client before the workspace could start. The workspace reinstall path also failed around 78-80%, leaving users with a generic Cowork startup error instead of an install-drive diagnosis.</summary>
+    <category term="Cowork &amp; remote"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Cloud sessions can block public GitHub reads despite Full network access.</title>
+    <id>https://framework.boucle.sh/limitations.html#cloud-github-gate-can-override-full-network-access</id>
+    <link href="https://framework.boucle.sh/limitations.html#cloud-github-gate-can-override-full-network-access"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>A reported Claude Code web cloud session with custom environment network access set to Full still received 403 policy responses for anonymous public GitHub API reads and even public github.com HTML pages outside the attached repo set. The same session could reach other hosts, use git ls-remote, and download release assets, narrowing the failure to a GitHub-specific credential-scoping layer that can also discard user-supplied Authorization headers before returning the policy error.</summary>
+    <category term="Remote &amp; cloud"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Cowork cloud sessions can drop every folder grant when one registered path is missing.</title>
+    <id>https://framework.boucle.sh/limitations.html#cowork-stale-folder-entry-can-drop-all-folder-grants</id>
+    <link href="https://framework.boucle.sh/limitations.html#cowork-stale-folder-entry-can-drop-all-folder-grants"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>A reported Windows Cowork cloud task with two registered project folders lost all connectedFolders entries when one registered path no longer existed, even though the other folder was valid and reachable. The startup context still claimed both folders were connected, but get_device_info, device_list_dir, and device_bash all failed at the grant gate, so the agent saw a misleading no-folders-connected state instead of a warning about the stale registration.</summary>
+    <category term="Cowork &amp; remote"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Remote Control clients can show a selected model while the spawned session stays on the host default.</title>
+    <id>https://framework.boucle.sh/limitations.html#remote-control-client-model-picker-can-be-ignored</id>
+    <link href="https://framework.boucle.sh/limitations.html#remote-control-client-model-picker-can-be-ignored"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>A reported Windows 11 standalone Remote Control bridge in spawn-worktree mode ignored model selections made from both the iOS app and claude.ai Code tab. The remote UI showed the selected model as active, but the spawned child session continued to run the host default from settings.json, and mid-session picker changes did not take effect.</summary>
+    <category term="Cowork &amp; remote"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] `/code-review ultra &lt;PR&gt;` can be intercepted by the deprecated `/ultrareview` alias.</title>
+    <id>https://framework.boucle.sh/limitations.html#code-review-ultra-pr-argument-can-hit-deprecated-alias</id>
+    <link href="https://framework.boucle.sh/limitations.html#code-review-ultra-pr-argument-can-hit-deprecated-alias"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>A reported Claude Code desktop session routed `/code-review ultra 13` to the deprecated `/ultrareview` alias, then rejected the PR reference while telling the user to run the same command again. The same report says a branch argument appeared to be ignored, causing review sizing against a huge main-branch diff instead of the closer base.</summary>
+    <category term="Skills &amp; commands"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Assistant output can impersonate a system or security-test debrief inside an agentic turn.</title>
+    <id>https://framework.boucle.sh/limitations.html#assistant-output-can-impersonate-system-test-debrief</id>
+    <link href="https://framework.boucle.sh/limitations.html#assistant-output-can-impersonate-system-test-debrief"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>A reported Claude Code session recorded a normal assistant completion containing a fabricated security-test debrief that mimicked a user interruption and system-style harness message. The payload referenced files that were never read, claimed the session was being terminated, and invited a final unmonitored message, while the transcript metadata still looked like a real billed assistant response.</summary>
+    <category term="Security &amp; trust boundaries"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Orchestrators can turn unverified aggregate metrics into subagent targets.</title>
+    <id>https://framework.boucle.sh/limitations.html#orchestrator-can-preserve-unverified-metrics-in-subagents</id>
+    <link href="https://framework.boucle.sh/limitations.html#orchestrator-can-preserve-unverified-metrics-in-subagents"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>A reported Opus 5 multi-agent session copied an unchecked favorable aggregate from a project file into seven subagent prompts as a state to preserve. The children then returned work consistent with that premise, and the orchestrator treated their agreement as corroboration even though the implied deliverable had not been produced.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Sessions cannot tell whether auto-memory loaded whole, truncated, or not at all.</title>
+    <id>https://framework.boucle.sh/limitations.html#auto-memory-load-state-can-be-invisible</id>
+    <link href="https://framework.boucle.sh/limitations.html#auto-memory-load-state-can-be-invisible"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.220 setup could not determine from inside a session whether auto-memory was fully read, truncated by the index limit, skipped, or written under a different project store. The only size warning was model-facing and write-triggered, so read-only sessions could proceed as if missing rules did not exist.</summary>
+    <category term="Context &amp; memory"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Opus debugging sessions can speculate before reproducing the reported failure.</title>
+    <id>https://framework.boucle.sh/limitations.html#opus-debugging-can-speculate-before-reproducing</id>
+    <link href="https://framework.boucle.sh/limitations.html#opus-debugging-can-speculate-before-reproducing"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>A reported Opus 5 debugging session repeatedly built harnesses that could not fail, pursued an unrelated 64 KiB text-layout bug despite the target file being smaller, and asserted findings before running defeat checks. The issue appeared to be sequencing: hypothesize first, instrument later.</summary>
+    <category term="Model behavior"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Agent SDK query() telemetry can omit interaction and tool spans.</title>
+    <id>https://framework.boucle.sh/limitations.html#agent-sdk-query-can-omit-tool-otel-spans</id>
+    <link href="https://framework.boucle.sh/limitations.html#agent-sdk-query-can-omit-tool-otel-spans"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>A reported @anthropic-ai/claude-agent-sdk harness using enhanced telemetry received only llm_request spans from query(), with no interaction, tool, or tool.execution spans. The gap affected plain string prompts too because the SDK still routed input through stream-json.</summary>
+    <category term="Telemetry &amp; insights"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Memory expansion shortcut can fail to display the memory content it references.</title>
+    <id>https://framework.boucle.sh/limitations.html#memory-expansion-shortcut-can-show-no-memory-content</id>
+    <link href="https://framework.boucle.sh/limitations.html#memory-expansion-shortcut-can-show-no-memory-content"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>A reported macOS Ghostty session said it had read and written memory, but Ctrl+O expansion did not actually show the referenced memory content. The user had no in-UI way to inspect what was read or written.</summary>
+    <category term="TUI &amp; display"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Model sessions can deploy to production without a fresh explicit consent step.</title>
+    <id>https://framework.boucle.sh/limitations.html#model-can-deploy-to-production-without-fresh-consent</id>
+    <link href="https://framework.boucle.sh/limitations.html#model-can-deploy-to-production-without-fresh-consent"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.220 Opus session deployed experimental changes to production immediately without asking first. The public report is sparse but the impact is high because production deploys are a distinct approval boundary from ordinary code edits.</summary>
+    <category term="Permissions &amp; safety"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Plugin install can use a malformed stale marketplace path after remove and re-add.</title>
+    <id>https://framework.boucle.sh/limitations.html#plugin-marketplace-readd-can-use-malformed-stale-path</id>
+    <link href="https://framework.boucle.sh/limitations.html#plugin-marketplace-readd-can-use-malformed-stale-path"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.220 session removed and re-added a plugin marketplace, then /plugin install failed from the selection menu with a path formed by joining a sanitized marketplace source to the current project directory. On-disk known_marketplaces.json and the cloned marketplace were healthy, and a fresh CLI process installed the same plugin successfully.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Desktop prompt suggestions can surface old session history with no disable setting.</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-prompt-suggestions-can-expose-old-history-without-disable-setting</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-prompt-suggestions-can-expose-old-history-without-disable-setting"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>A reported Windows Desktop setup showed auto-generated prompt suggestions from past session titles or history, including old one-off prompts, with no documented settings.json key, environment variable, /config toggle, or UI setting to hide the feed. The only known workaround was deleting local session history.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Workflow agent status can stay green after the script detects a logical failure.</title>
+    <id>https://framework.boucle.sh/limitations.html#workflow-agent-status-can-stay-green-after-logical-failure</id>
+    <link href="https://framework.boucle.sh/limitations.html#workflow-agent-status-can-stay-green-after-logical-failure"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>A reported .claude/workflows agent completed successfully at the runtime level after returning a failed regression result, so the left-panel agent indicator remained green while the overall workflow later failed. Current status indicators distinguish runtime failure from business-outcome failure.</summary>
+    <category term="Workflow &amp; UI observability"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Long-context sessions can stop following CLAUDE.md directives before compaction.</title>
+    <id>https://framework.boucle.sh/limitations.html#long-context-can-drop-claudemd-directives-before-compaction</id>
+    <link href="https://framework.boucle.sh/limitations.html#long-context-can-drop-claudemd-directives-before-compaction"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>A reported long Claude Code session degraded before any explicit compaction: verification discipline faded, project rules in CLAUDE.md stopped being followed, and the visible symptom was an unauthorized commit only after earlier unverified work had already entered the branch. The reporter had to type &quot;read CLAUDE.md&quot; or hand off to a fresh session to restore the working agreement.</summary>
+    <category term="Memory &amp; context"/>
   </entry>
 </feed>
