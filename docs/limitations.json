@@ -18875,16 +18875,17 @@
     },
     {
       "id": "binary-read-rejection-skips-pretooluse-hooks",
-      "title": "Binary Read validation can skip PreToolUse hooks.",
+      "title": "Input-validation rejections can skip PreToolUse hooks.",
       "category": "Hook execution & lifecycle",
       "severity": "MEDIUM",
       "status": "open",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/82442"
+        "https://github.com/anthropics/claude-code/issues/82442",
+        "https://github.com/anthropics/claude-code/issues/77735"
       ],
       "date_added": "2026-07-31",
-      "description": "A Claude Code macOS report says a PreToolUse hook registered with matcher `Read` never runs when the Read tool targets binary files such as `.docx` or `.pdf`. The tool rejects the binary file before hook execution, so hook-based conversion or redirection workflows cannot deny the original read and point the model at a generated Markdown copy.",
-      "workaround": "Do not rely on Read hooks to intercept binary file reads. Convert binary documents explicitly before asking Claude to read them, use a dedicated skill or wrapper command for conversion, and verify the conversion path in the actual session instead of only testing the hook script on stdin."
+      "description": "Reported Claude Code paths show PreToolUse hooks can be skipped when a tool call is rejected during input validation. A Read hook did not run for binary files such as `.docx` or `.pdf`, preventing hook-based conversion workflows from redirecting the model to a generated Markdown copy. A separate `.claude/settings.json` report found that schema-invalid Edit attempts against settings files are rejected without spawning the registered Edit/Write hook, so hook-based security tooling receives no trace of the attempted policy-surface edit. An Anthropic collaborator confirmed the ordering: input validation runs before PreToolUse, validation-rejected calls do not reach hooks, and the settings file is not modified in the schema-invalid case.",
+      "workaround": "Do not assume PreToolUse is a complete audit stream for calls rejected by Claude Code before hook dispatch. Convert binary documents explicitly before asking Claude to read them, validate settings edits outside the active Claude Code session, and keep native `permissions.deny` rules or external wrappers around policy files that must be protected. If governance requires receipts for failed attempts, add non-hook logging around settings-file writes and treat missing PreToolUse events for validation failures as an expected platform boundary."
     },
     {
       "id": "malformed-userpromptsubmit-entry-can-disable-sibling-hooks",
