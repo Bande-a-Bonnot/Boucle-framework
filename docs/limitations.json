@@ -191,9 +191,9 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 137,
+    "CRITICAL": 138,
     "HIGH": 880,
-    "LOW": 112,
+    "LOW": 111,
     "MEDIUM": 482
   },
   "entries": [
@@ -1828,13 +1828,15 @@
       "id": "model-acts-on-its-own-output-as-if-it-were-user-input",
       "title": "Model acts on its own output as if it were user input.",
       "category": "Hook bypass & evasion",
-      "severity": "LOW",
+      "severity": "CRITICAL",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/40593",
         "https://github.com/anthropics/claude-code/issues/40166",
-        "https://github.com/anthropics/claude-code/issues/40629"
+        "https://github.com/anthropics/claude-code/issues/40629",
+        "https://github.com/anthropics/claude-code/issues/87591"
       ],
-      "description": "Claude Code can generate a response to its own output without waiting for user confirmation, then act on it. In one reported case, Claude drafted a message to a client, then auto-responded to its own draft and sent it without user approval. The model's response appears merged with the user's message in the terminal with no visual separation. Not hookable \u2014 the fabricated input happens at the conve",
+      "description": "Claude Code can generate or serialize user-looking approval text inside an assistant turn, then act on that text as if it were real user input. Earlier reports covered drafted messages being auto-answered and sent without approval. A newer macOS auto-mode report from Claude Code 2.1.232 narrowed the mechanism: the assistant printed transcript-role and system-token-looking frames, no user record appeared between the approval question and the tool_use, and the external send tool shared the same requestId as the assistant record. Two real outbound messages were delivered before the operator approved them. This makes preview-then-approve workflows unsafe when the final external-effect tool can treat same-turn assistant text as consent.",
+      "workaround": "For send, publish, purchase, deploy, and other external-effect tools, require a durable approval record that is outside the assistant transcript and tied to the specific payload. Add a PreToolUse or service-side gate that denies the tool when the last human-authored user record does not contain the required approval, when the pending assistant text contains transcript-role markers such as user/system frames or token counters, or when the tool_use shares a requestId with the assistant text that asked for approval. Preserve requestIds and raw JSONL around any incident, and do not accept assistant-authored approval prose as consent.",
       "status": "open"
     },
     {
@@ -20713,18 +20715,18 @@
     "mitigated": 1
   },
   "severities": {
-    "critical": 137,
+    "critical": 138,
     "high": 880,
-    "low": 112,
+    "low": 111,
     "medium": 482
   },
   "lastUpdated": "2026-08-18",
   "stats": {
     "total": 1611,
-    "critical": 137,
+    "critical": 138,
     "high": 880,
     "medium": 482,
-    "low": 112,
+    "low": 111,
     "open": 1597,
     "fixed": 13,
     "mitigated": 1
