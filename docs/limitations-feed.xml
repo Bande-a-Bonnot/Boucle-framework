@@ -7,6 +7,14 @@
   <updated>2026-08-19T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Tool-event hooks can silently miss runtime dispatch.</title>
+    <id>https://framework.boucle.sh/limitations.html#tool-event-hooks-can-silently-miss-runtime-dispatch</id>
+    <link href="https://framework.boucle.sh/limitations.html#tool-event-hooks-can-silently-miss-runtime-dispatch"/>
+    <updated>2026-08-19T00:00:00Z</updated>
+    <summary>A long-running Claude Code issue thread reports `PreToolUse` and `PostToolUse` hooks that are visible in `/hooks`, pass manual stdin tests, and coexist with working SessionStart or Stop hooks, but still receive no real tool-event invocation in some runtime paths. Later comments narrow the failure modes to VS Code extension sessions, headless `-p` plus `--output-format stream-json`, parallel Bash batches where only one tool event dispatches, and long edit sessions where PostToolUse stops firing despite isolated single-edit tests succeeding. Enforcement hooks can therefore look installed while real Write, Edit, Bash, or PowerShell operations proceed without the expected preflight or post-action automation.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Explicit PreToolUse `defer` decisions can dead-end tool calls.</title>
     <id>https://framework.boucle.sh/limitations.html#explicit-pretooluse-defer-can-dead-end-tool-calls</id>
     <link href="https://framework.boucle.sh/limitations.html#explicit-pretooluse-defer-can-dead-end-tool-calls"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-19T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.233 Linux repro found that a Bash tool call with a 3s timeout returned control to the agent while the underlying process continued running for roughly 16 more seconds. The reporter tied the behavior to multi-hour VM disk-saturation incidents under concurrent subagent load, where many individually timed-out commands could continue consuming I/O after the tool layer appeared to have moved on.</summary>
     <category term="Bash &amp; shell execution"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Resume picker search can miss retained sessions outside the 50 most recent.</title>
-    <id>https://framework.boucle.sh/limitations.html#resume-picker-searches-only-the-50-most-recent-sessions</id>
-    <link href="https://framework.boucle.sh/limitations.html#resume-picker-searches-only-the-50-most-recent-sessions"/>
-    <updated>2026-08-19T00:00:00Z</updated>
-    <summary>A reported Linux Claude Code 2.1.233 repro found that both the in-session `/resume` picker and standalone `claude --resume` picker load only the 50 most recent sessions, and the type-to-search filter searches only that loaded subset rather than all retained transcript files on disk. A month-old session whose generated title contained the search term was not findable until its transcript file mtime was moved back into the top 50. This means a high `cleanupPeriodDays` setting can retain old transcripts without making them discoverable in the UI.</summary>
-    <category term="Core &amp; session management"/>
   </entry>
 </feed>
