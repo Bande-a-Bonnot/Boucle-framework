@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1617,
+  "count": 1618,
   "categories": {
-    "Hook behavior & events": 212,
+    "Hook behavior & events": 213,
     "Permission system": 147,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 88,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 138,
-    "HIGH": 884,
+    "HIGH": 885,
     "LOW": 111,
     "MEDIUM": 484
   },
@@ -19507,11 +19507,11 @@
       "title": "Subagent Bash calls can defer forever while the task reports success.",
       "severity": "HIGH",
       "category": "Subagent & spawned agents",
-      "description": "A reported Claude Code 2.1.232 setup found that Bash tool calls issued by Agent-spawned subagents could emit a `tool_use`, never execute the command, receive no `tool_result`, and still surface to the parent task path as `subtype: \"success\"` with `is_error: false`. The headless payload exposed `stop_reason: \"tool_deferred\"`, `terminal_reason: \"tool_deferred\"`, and a `deferred_tool_use` containing the Bash call, while side-effect probes such as writing `date -u` to a temp file confirmed the command did not run. Read/Grep subagents and parent-session Bash calls continued to work, so this is distinct from a general shell outage and from hook decisions being ignored.",
+      "description": "A reported Claude Code 2.1.232 setup found that Bash tool calls issued by Agent-spawned subagents could emit a `tool_use`, never execute the command, receive no `tool_result`, and still surface to the parent task path as `subtype: \"success\"` with `is_error: false`. Follow-up narrowed the proximate cause to a user-level `PreToolUse(Bash)` hook that returned `permissionDecision: \"defer\"` as a supposed pass-through signal. Claude Code treated that as a real deferred tool call, but the subagent path had no practical resume flow; later maintainer triage confirmed `tool_deferred` is only expected when a hook returns `defer`, not as an ordinary client decision. The remaining limitation is that deferred subagent calls can look completed while leaving no tool result or durable hook marker that points clearly at the responsible hook.",
       "issue": "86696",
       "status": "open",
       "date_added": "2026-08-14",
-      "workaround": "Do not treat an Agent task notification or `subtype: \"success\"` as proof that a subagent Bash command ran. For shell-dependent subagents, inspect `terminal_reason`, require matching `tool_result` records for every Bash `tool_use`, and verify expected side effects from the parent before acting on the subagent's summary. Where possible, restrict audit subagents to read-only tools and route shell probes through the parent session until a fresh canary shows subagent Bash calls complete normally."
+      "workaround": "Hook pass-through should emit no output and exit 0, not return explicit `permissionDecision: \"defer\"`, unless an external driver will resume the deferred call. For shell-dependent subagents, treat `terminal_reason: \"tool_deferred\"`, empty result text, or a missing `tool_result` as a failed run even when `subtype` is `success` or a task notification says `completed`. Verify expected side effects from the parent, and include a hook canary that proves no pass-through hook returns `defer` before running unattended subagent Bash workflows."
     },
     {
       "id": "hidden-heron-brook-prompt-can-suppress-opus-5-delegation",
@@ -20789,30 +20789,43 @@
       "workaround": "Before running non-interactive desktop or web sessions that may need new CLI permissions, pre-seed narrow project allow rules or keep an out-of-band settings-edit path available. If the classifier blocks both the action and the permission grant, stop the automation, edit `.claude/settings.local.json` directly in a reviewed change, and start a fresh session that proves the new rule is active before continuing.",
       "status": "open",
       "date_added": "2026-08-19"
+    },
+    {
+      "id": "explicit-pretooluse-defer-can-dead-end-tool-calls",
+      "title": "Explicit PreToolUse `defer` decisions can dead-end tool calls.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/64389"
+      ],
+      "description": "A reported Claude Code hook setup found that a `PreToolUse` hook returning `hookSpecificOutput.permissionDecision: \"defer\"` is not equivalent to a silent pass-through. Matching tool calls can stop at `tool_deferred`, receive a synthetic missing-tool-result error on a later continuation path, or leave subagent Bash calls without any `tool_result` while the parent sees a completed-looking task. Comments reproduced the issue in the CLI and TypeScript Agent SDK, including cases where a fast synchronous `defer` raced the assistant stream closure and produced `[Tool result missing due to internal error]` instead of a clean suspended call.",
+      "workaround": "Use explicit `defer` only in systems that intentionally pause headless tool calls and then resume the session. For ordinary hook pass-through, print nothing and exit 0; for allow-list approval, return `allow` only when bypassing later permission checks is acceptable. Add hook tests that exercise both parent and subagent tool calls and assert that pass-through hooks do not emit `defer`, no `[Tool result missing due to internal error]` placeholder reaches the model, and every tool_use has either a tool_result or an intentional resumable deferred state.",
+      "status": "open",
+      "date_added": "2026-08-19"
     }
   ],
   "status_summary": {
-    "open": 1603,
+    "open": 1604,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 138,
-    "high": 884,
+    "high": 885,
     "low": 111,
     "medium": 484
   },
   "lastUpdated": "2026-08-19",
   "stats": {
-    "total": 1617,
+    "total": 1618,
     "critical": 138,
-    "high": 884,
+    "high": 885,
     "medium": 484,
     "low": 111,
-    "open": 1603,
+    "open": 1604,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-19",
-  "total": 1617
+  "total": 1618
 }
