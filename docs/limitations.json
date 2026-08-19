@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1618,
+  "count": 1619,
   "categories": {
-    "Hook behavior & events": 213,
+    "Hook behavior & events": 214,
     "Permission system": 147,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 88,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 138,
-    "HIGH": 885,
+    "HIGH": 886,
     "LOW": 111,
     "MEDIUM": 484
   },
@@ -20802,30 +20802,43 @@
       "workaround": "Use explicit `defer` only in systems that intentionally pause headless tool calls and then resume the session. For ordinary hook pass-through, print nothing and exit 0; for allow-list approval, return `allow` only when bypassing later permission checks is acceptable. Add hook tests that exercise both parent and subagent tool calls and assert that pass-through hooks do not emit `defer`, no `[Tool result missing due to internal error]` placeholder reaches the model, and every tool_use has either a tool_result or an intentional resumable deferred state.",
       "status": "open",
       "date_added": "2026-08-19"
+    },
+    {
+      "id": "tool-event-hooks-can-silently-miss-runtime-dispatch",
+      "title": "Tool-event hooks can silently miss runtime dispatch.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/6305"
+      ],
+      "date_added": "2026-08-19",
+      "description": "A long-running Claude Code issue thread reports `PreToolUse` and `PostToolUse` hooks that are visible in `/hooks`, pass manual stdin tests, and coexist with working SessionStart or Stop hooks, but still receive no real tool-event invocation in some runtime paths. Later comments narrow the failure modes to VS Code extension sessions, headless `-p` plus `--output-format stream-json`, parallel Bash batches where only one tool event dispatches, and long edit sessions where PostToolUse stops firing despite isolated single-edit tests succeeding. Enforcement hooks can therefore look installed while real Write, Edit, Bash, or PowerShell operations proceed without the expected preflight or post-action automation.",
+      "workaround": "Treat hook registration and manual script tests as insufficient proof that tool-event hooks fire in your actual surface. For every Claude Code mode you rely on, run an end-to-end sentinel test that performs the matching tool call and asserts a durable hook side effect. Avoid parallel batches for commands that depend on hook enforcement, sequentialize gate-relevant Bash/PowerShell calls, and keep external backstops such as git hooks, CI checks, MCP/server-side authorization, or filesystem watchers for high-consequence actions until the dispatcher path is proven reliable on that version and UI."
     }
   ],
   "status_summary": {
-    "open": 1604,
+    "open": 1605,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 138,
-    "high": 885,
+    "high": 886,
     "low": 111,
     "medium": 484
   },
   "lastUpdated": "2026-08-19",
   "stats": {
-    "total": 1618,
+    "total": 1619,
     "critical": 138,
-    "high": 885,
+    "high": 886,
     "medium": 484,
     "low": 111,
-    "open": 1604,
+    "open": 1605,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-19",
-  "total": 1618
+  "total": 1619
 }
