@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1623,
+  "count": 1624,
   "categories": {
     "Hook behavior & events": 215,
     "Permission system": 148,
@@ -23,9 +23,9 @@
     "Tool behavior": 22,
     "Core & session management": 21,
     "Auth & accounts": 20,
+    "Model behavior": 18,
     "Remote & cloud": 18,
     "Data integrity": 17,
-    "Model behavior": 17,
     "Scheduling & remote triggers": 15,
     "Bash & shell execution": 14,
     "Permissions & safety": 14,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 138,
-    "HIGH": 890,
+    "HIGH": 891,
     "LOW": 111,
     "MEDIUM": 484
   },
@@ -210,6 +210,19 @@
       "date_added": "2026-08-19",
       "description": "A reported Claude Code 2.1.202 setup found that one object-valued hook `matcher` inside settings.json caused every hook in the file to stop firing, including unrelated valid Stop and UserPromptSubmit hooks. A collaborator reproduced the file-level drop on Claude Code 2.1.233: interactive sessions now show a settings-error dialog, but `claude -p` print mode still completes without stderr and runs with the whole user or project settings file skipped. The bare `\"*\"` matcher variant did not reproduce in the collaborator test, so the confirmed trigger is a non-string matcher value. For enforcement hooks, headless runs can therefore look successful while the configured guardrail file is inert.",
       "workaround": "Validate hook settings before unattended or headless runs, especially that every `hooks.*[].matcher` value is a string and any regex compiles. Keep at least one out-of-band smoke test that proves a valid hook from each settings file fired in the current session, and treat missing hook telemetry as a fail-closed condition. Run interactive Claude Code or `--debug` after settings edits to surface validation errors, and avoid assuming `claude -p` will report user or project settings failures on stderr."
+    },
+    {
+      "id": "security-heuristic-can-confabulate-prompt-injection-event",
+      "title": "Security heuristics can confabulate a prompt-injection incident.",
+      "category": "Model behavior",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87965"
+      ],
+      "date_added": "2026-08-19",
+      "description": "A reported Claude Code 2.1.220 Bedrock session claimed it had detected and quoted a prompt-injection attack from a tool result, but full-text search of the persisted JSONL found the quoted attack text only in assistant text blocks, not in any `tool_result.content`. The preceding real tool result was an ordinary Write success message. The model later searched its own transcript for the claimed strings, had evidence that the strings were absent from tool output, and still reinforced the security-event story instead of retracting it.",
+      "workaround": "When Claude Code reports an injection incident, verify transcript provenance before treating the quoted text as external input. Search raw JSONL by role and content field, distinguish assistant-generated text from `tool_result.content`, and do not propagate the claim into incident notes unless a matching external row exists. For security review workflows, require provenance fields in incident records and stop or fork the session if the model continues to treat its own generated text as observed tool output after falsifying evidence."
     },
     {
       "id": "security-guidance-python-shim-hides-probe-errors",
@@ -20872,27 +20885,27 @@
     }
   ],
   "status_summary": {
-    "open": 1609,
+    "open": 1610,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 138,
-    "high": 890,
+    "high": 891,
     "low": 111,
     "medium": 484
   },
   "lastUpdated": "2026-08-19",
   "stats": {
-    "total": 1623,
+    "total": 1624,
     "critical": 138,
-    "high": 890,
+    "high": 891,
     "medium": 484,
     "low": 111,
-    "open": 1609,
+    "open": 1610,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-19",
-  "total": 1623
+  "total": 1624
 }
