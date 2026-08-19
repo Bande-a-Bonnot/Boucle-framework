@@ -821,6 +821,14 @@ start a fresh session and run `safety-check --verify` from the same root. Use
 PreToolUse hooks for the destructive commands you need to block; do not treat
 sandbox prompts as the only safety boundary.
 
+**Write may not share Bash's working-directory boundary**: A public headless
+`claude -p` report shows Bash can refuse a write outside the current worktree
+while the Write tool creates the same absolute path anyway
+([claude-code#88038](https://github.com/anthropics/claude-code/issues/88038)).
+If you rely on cwd-scoped task isolation, use a disposable clone, container, or
+OS-permission boundary, and verify Write, Edit, MultiEdit, NotebookEdit, and
+Bash separately with out-of-scope canaries before committing automation output.
+
 **IS_DEMO environment variable disables all hooks**: If `IS_DEMO=1` is set in your environment (sometimes via IDE or cloud workspace settings), Claude Code [silently skips all hook execution](https://github.com/anthropics/claude-code/issues/37780) by suppressing workspace trust without granting it. Run `echo $IS_DEMO` to check. Our `safety-check` tool detects this automatically.
 
 **CLAUDE_CODE_SIMPLE disables all hooks**: When the `CLAUDE_CODE_SIMPLE` environment variable is set to any non-empty value, Claude Code disables hooks, MCP tools, attachments, and CLAUDE.md file loading entirely (introduced in v2.1.50). No enforcement rules will fire. Run `echo $CLAUDE_CODE_SIMPLE` to check. Our `safety-check` tool detects this automatically.

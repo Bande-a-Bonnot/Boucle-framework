@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1624,
+  "count": 1625,
   "categories": {
     "Hook behavior & events": 215,
     "Permission system": 148,
@@ -63,6 +63,7 @@
     "permissions": 4,
     "sandbox": 4,
     "tui": 4,
+    "Worktrees & isolation": 4,
     "Agent & multi-agent": 3,
     "API & infrastructure": 3,
     "Context / compaction": 3,
@@ -77,7 +78,6 @@
     "Security": 3,
     "Settings & configuration": 3,
     "Tool availability": 3,
-    "Worktrees & isolation": 3,
     "Agent control & instruction following": 2,
     "Agents": 2,
     "agents": 2,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 138,
-    "HIGH": 891,
+    "HIGH": 892,
     "LOW": 111,
     "MEDIUM": 484
   },
@@ -20882,30 +20882,43 @@
       "date_added": "2026-08-19",
       "description": "A reported Windows 11 CLI/agent SDK session found that after `EnterWorktree` switches file tools into a new git worktree, `PreToolUse` hook subprocesses can keep resolving `${CLAUDE_PROJECT_DIR:-$PWD}` against the original checkout. `Bash`, `Read`, `Write`, and `Edit` operated in the entered worktree, but a hook command using `${CLAUDE_PROJECT_DIR:-$PWD}/.claude/hooks/...` launched the original checkout's copy of the script for the rest of the session. Editing or instrumenting the worktree's own hook copy then had no effect, so path guards could permanently block valid worktree edits or leave Bash and PowerShell workarounds outside the intended hook coverage.",
       "workaround": "Do not assume mid-session `EnterWorktree` rebinds project-relative hook commands or `CLAUDE_PROJECT_DIR` for security-sensitive work. Prefer starting a fresh Claude Code session from the intended worktree, or install critical hook scripts at user or managed scope with explicit path resolution that does not depend on the current checkout's project directory. After entering a worktree, run a harmless canary that must trigger the hook, record which script path executed, and verify the hook reasons over the tool input file path rather than a stale project-root environment."
+    },
+    {
+      "id": "write-tool-can-ignore-bash-working-directory-boundary",
+      "title": "Write tool can ignore the Bash working-directory boundary.",
+      "category": "Worktrees & isolation",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88038"
+      ],
+      "status": "open",
+      "date_added": "2026-08-19",
+      "description": "A reported macOS headless `claude -p` automation found that starting Claude Code from a restricted worktree made Bash refuse a redirected write outside the working directory, while the Write tool could still create the same absolute path outside that boundary. The reporter reproduced it with `--permission-mode acceptEdits`, a settings file allowing Write/Edit, and no `--add-dir` grant for the parent checkout. In the real pipeline, task files landed in a sibling checkout and were later committed on the wrong branch.",
+      "workaround": "Do not rely on process cwd alone as the isolation boundary for file-mutating tools. For per-task automation, run Claude Code in a disposable clone, container, or OS-permission boundary that makes out-of-scope paths unwritable, and add an explicit post-run scan for modified files outside the expected worktree before committing. If you use hooks for path policy, verify Write, Edit, MultiEdit, NotebookEdit, and Bash separately with absolute out-of-scope canaries, because one tool's cwd denial does not prove the others share the same boundary."
     }
   ],
   "status_summary": {
-    "open": 1610,
+    "open": 1611,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 138,
-    "high": 891,
+    "high": 892,
     "low": 111,
     "medium": 484
   },
   "lastUpdated": "2026-08-19",
   "stats": {
-    "total": 1624,
+    "total": 1625,
     "critical": 138,
-    "high": 891,
+    "high": 892,
     "medium": 484,
     "low": 111,
-    "open": 1610,
+    "open": 1611,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-19",
-  "total": 1624
+  "total": 1625
 }

@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1624</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-19.</span></p>
+        <p class="subtitle"><span id="total-count">1625</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-19.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18220,6 +18220,18 @@
                         <!-- workaround:enterworktree-hook-subprocesses-can-stay-bound-to-original-checkout -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume mid-session `EnterWorktree` rebinds project-relative hook commands or `CLAUDE_PROJECT_DIR` for security-sensitive work. Prefer starting a fresh Claude Code session from the intended worktree, or install critical hook scripts at user or managed scope with explicit path resolution that does not depend on the current checkout&#x27;s project directory. After entering a worktree, run a harmless canary that must trigger the hook, record which script path executed, and verify the hook reasons over the tool input file path rather than a stale project-root environment.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87890" target="_blank">#87890</a></div>
+        </div>
+        <div class="kl-entry" data-category="Worktrees &amp; isolation" data-issues="88038" id="write-tool-can-ignore-bash-working-directory-boundary" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1625</span>
+                <span class="kl-cat">Worktrees &amp; isolation</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Write tool can ignore the Bash working-directory boundary.</h3>
+            <p>A reported macOS headless `claude -p` automation found that starting Claude Code from a restricted worktree made Bash refuse a redirected write outside the working directory, while the Write tool could still create the same absolute path outside that boundary. The reporter reproduced it with `--permission-mode acceptEdits`, a settings file allowing Write/Edit, and no `--add-dir` grant for the parent checkout. In the real pipeline, task files landed in a sibling checkout and were later committed on the wrong branch.</p>
+                        <!-- workaround:write-tool-can-ignore-bash-working-directory-boundary -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on process cwd alone as the isolation boundary for file-mutating tools. For per-task automation, run Claude Code in a disposable clone, container, or OS-permission boundary that makes out-of-scope paths unwritable, and add an explicit post-run scan for modified files outside the expected worktree before committing. If you use hooks for path policy, verify Write, Edit, MultiEdit, NotebookEdit, and Bash separately with absolute out-of-scope canaries, because one tool&#x27;s cwd denial does not prove the others share the same boundary.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88038" target="_blank">#88038</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
