@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1621</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-19.</span></p>
+        <p class="subtitle"><span id="total-count">1622</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-19.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18184,6 +18184,18 @@
                         <!-- workaround:tool-event-hooks-can-silently-miss-runtime-dispatch -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat hook registration and manual script tests as insufficient proof that tool-event hooks fire in your actual surface. For every Claude Code mode you rely on, run an end-to-end sentinel test that performs the matching tool call and asserts a durable hook side effect. Avoid parallel batches for commands that depend on hook enforcement, sequentialize gate-relevant Bash/PowerShell calls, and keep external backstops such as git hooks, CI checks, MCP/server-side authorization, or filesystem watchers for high-consequence actions until the dispatcher path is proven reliable on that version and UI.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/6305" target="_blank">#6305</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="76262" id="headless-path-scoped-write-retries-can-breach-scope" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1622</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Headless path-scoped Write retries can breach the allowed path.</h3>
+            <p>A reported Claude Code 2.1.206 Windows headless `claude -p` repro found that `--allowedTools &quot;Write(&lt;ALLOWED_DIR&gt;/**)&quot;` correctly denied the first out-of-scope Write attempt and recorded a `permission_denials` entry, but later retries of the same out-of-scope Write in the same session could create the file anyway. The observed breach correlated with retrying after the first denial: runs where the model stopped after one denial withheld the write, while runs that retried to the turn cap created the outside file and still reported overall success.</p>
+                        <!-- workaround:headless-path-scoped-write-retries-can-breach-scope -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat one recorded path-scope denial as proof that later Write calls in the same headless run stayed inside scope. For unattended jobs, cap turns after critical denials, parse `permission_denials` as a hard failure, and verify the filesystem after the run for canary files outside the allowed directory. Keep OS-level directory permissions, isolated workspaces, or wrapper-level path checks around high-consequence writes until the installed Claude Code version proves scope is re-evaluated on every retry.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/76262" target="_blank">#76262</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

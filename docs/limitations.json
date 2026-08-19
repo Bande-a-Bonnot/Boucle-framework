@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1621,
+  "count": 1622,
   "categories": {
     "Hook behavior & events": 215,
-    "Permission system": 147,
+    "Permission system": 148,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 88,
     "Subagent & spawned agents": 77,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 138,
-    "HIGH": 888,
+    "HIGH": 889,
     "LOW": 111,
     "MEDIUM": 484
   },
@@ -20843,30 +20843,43 @@
       "date_added": "2026-08-19",
       "description": "A long-running Claude Code issue thread reports `PreToolUse` and `PostToolUse` hooks that are visible in `/hooks`, pass manual stdin tests, and coexist with working SessionStart or Stop hooks, but still receive no real tool-event invocation in some runtime paths. Later comments narrow the failure modes to VS Code extension sessions, headless `-p` plus `--output-format stream-json`, parallel Bash batches where only one tool event dispatches, and long edit sessions where PostToolUse stops firing despite isolated single-edit tests succeeding. Enforcement hooks can therefore look installed while real Write, Edit, Bash, or PowerShell operations proceed without the expected preflight or post-action automation.",
       "workaround": "Treat hook registration and manual script tests as insufficient proof that tool-event hooks fire in your actual surface. For every Claude Code mode you rely on, run an end-to-end sentinel test that performs the matching tool call and asserts a durable hook side effect. Avoid parallel batches for commands that depend on hook enforcement, sequentialize gate-relevant Bash/PowerShell calls, and keep external backstops such as git hooks, CI checks, MCP/server-side authorization, or filesystem watchers for high-consequence actions until the dispatcher path is proven reliable on that version and UI."
+    },
+    {
+      "id": "headless-path-scoped-write-retries-can-breach-scope",
+      "title": "Headless path-scoped Write retries can breach the allowed path.",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/76262"
+      ],
+      "status": "open",
+      "date_added": "2026-08-19",
+      "description": "A reported Claude Code 2.1.206 Windows headless `claude -p` repro found that `--allowedTools \"Write(<ALLOWED_DIR>/**)\"` correctly denied the first out-of-scope Write attempt and recorded a `permission_denials` entry, but later retries of the same out-of-scope Write in the same session could create the file anyway. The observed breach correlated with retrying after the first denial: runs where the model stopped after one denial withheld the write, while runs that retried to the turn cap created the outside file and still reported overall success.",
+      "workaround": "Do not treat one recorded path-scope denial as proof that later Write calls in the same headless run stayed inside scope. For unattended jobs, cap turns after critical denials, parse `permission_denials` as a hard failure, and verify the filesystem after the run for canary files outside the allowed directory. Keep OS-level directory permissions, isolated workspaces, or wrapper-level path checks around high-consequence writes until the installed Claude Code version proves scope is re-evaluated on every retry."
     }
   ],
   "status_summary": {
-    "open": 1607,
+    "open": 1608,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 138,
-    "high": 888,
+    "high": 889,
     "low": 111,
     "medium": 484
   },
   "lastUpdated": "2026-08-19",
   "stats": {
-    "total": 1621,
+    "total": 1622,
     "critical": 138,
-    "high": 888,
+    "high": 889,
     "medium": 484,
     "low": 111,
-    "open": 1607,
+    "open": 1608,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-19",
-  "total": 1621
+  "total": 1622
 }
