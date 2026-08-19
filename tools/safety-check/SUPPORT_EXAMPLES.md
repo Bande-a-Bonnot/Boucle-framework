@@ -49,6 +49,38 @@ In this example, `summary/version captured` means both the old Claude Code
 version and the bounded safety summary were recorded before the update. If only
 one was captured, say `not captured`.
 
+## Passed hooks with residual warnings
+
+Use this shape when hook payload checks pass but safety-check still reports
+platform or environment warnings. Do not reinstall repeatedly just to improve
+the grade. Keep the verified hook boundary and name the remaining warnings as
+residual risk.
+
+```text
+OS: macOS
+Shell: zsh
+Claude Code version: 1.0.93
+Where hooks are installed: user settings
+Command/scope: real project-root --verify --summary-only
+What changed recently: fresh recommended install
+Pre-update baseline: not an update issue
+
+--- Safety Summary (copy/paste) ---
+Grade C | 73% | 3/8 hooks
+[+] bash-guard  [+] git-safe  [+] file-guard  [-] read-once
+[-] branch-guard  [-] session-log  [-] enforce  [-] worktree-guard
+Issue: Sandbox mode enabled; do not rely on repeated approval prompts for sensitive commands.
+Verify: 0 FAIL-OPEN | 8 payload checks | 0 skipped
+Boundary: hooks passed representative checks; document residual platform warnings.
+github.com/Bande-a-Bonnot/Boucle-framework
+--- End Safety Summary ---
+```
+
+That report says the representative payloads passed for the checked hook
+boundary, not that Claude Code is sandboxed or certified safe. The useful next
+action is to record the sandbox warning and start a fresh Claude Code session
+from the same project root, not to reinstall the same hooks again.
+
 ## First-test handoff
 
 Use this shape when someone asked you to try safety-check, but you only ran the
