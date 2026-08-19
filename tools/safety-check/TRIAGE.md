@@ -86,7 +86,7 @@ checks.
 |---------------------------------|------------------|
 | `ANTHROPIC_API_KEY is set` | Start Claude Code from a shell where billing-sensitive API keys are unset, or put a real wrapper executable earlier in `PATH` that unsets them before nested `claude` calls. |
 | `GIT_INDEX_FILE is set` | Start Claude Code outside git hook processes, or unset `GIT_INDEX_FILE` before launch so plugin initialization cannot write through a hook-provided index file. |
-| `Sandbox mode enabled` | Do not rely on repeated approval prompts for sensitive commands. Put those commands behind `PreToolUse` hooks instead. |
+| `Sandbox mode enabled` | Do not rely on repeated approval prompts for sensitive commands. Put those commands behind `PreToolUse` hooks instead. On WSL2, Claude Code 2.1.233-2.1.235 can OOM at startup with `sandbox.enabled: true`; remove the sandbox block or set `enabled: false` before starting long or unattended sessions ([#88029](https://github.com/anthropics/claude-code/issues/88029)). |
 | `Skills/workflows can override CLAUDE.md directives` | Move must-enforce rules from prompt text into hooks for the specific covered tools. |
 | `Running non-interactively` | Add an outer timeout or process supervisor before long headless runs; usage-limit prompts can hang when no terminal can answer. |
 | `Your global settings.json contains keys` | Back up `~/.claude/settings.json` before plugin install, update, or marketplace commands that may rewrite settings. |
