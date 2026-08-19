@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1620</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-19.</span></p>
+        <p class="subtitle"><span id="total-count">1621</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-19.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -17465,9 +17465,21 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For unattended `claude -p` skill runs, treat `num_turns:0` or an empty result as a failed run even when the process exits 0 and reports `subtype:&quot;success&quot;`. Wrap every `!` preamble command so it emits diagnostic text and exits 0 on expected probe failures, or invoke the skill through a normal prompt until the headless slash path reports pre-turn aborts as errors. Add a regression canary that intentionally fails a skill preamble and asserts the caller detects the zero-turn result.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87159" target="_blank">#87159</a></div>
         </div>
-        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="87065" id="subagentstop-matcher-bypassed-on-empty-agent-type" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="Skills" data-issues="77363" id="headless-model-invoked-skills-with-grants-can-be-denied-silently" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1562</span>
+                <span class="kl-cat">Skills</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Headless model-invoked skills with permission grants can be denied silently.</h3>
+            <p>A collaborator-reproduced Claude Code 2.1.233 Linux issue found that, under headless `claude -p`, a skill declaring `allowed-tools` can be denied when Claude invokes it through the Skill tool. The Skill result contains only `Execute skill: &lt;name&gt;` with `is_error:true`, the skill body never loads, and the run can still complete successfully. The original report reproduced the same shape on Claude Code 2.1.208 macOS, and a later comment reported that skills declaring frontmatter `hooks:` can hit the same headless denial class unless bypass mode is used. The maintainer clarified that `allowed-tools` asks for a permission grant, headless mode cannot prompt, and the bad part is that the denial is effectively silent and undocumented.</p>
+                        <!-- workaround:headless-model-invoked-skills-with-grants-can-be-denied-silently -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For CI, evals, and other unattended skill runs, do not rely on process exit status alone. Pre-allow the skill with `claude --allowedTools &quot;Skill(&lt;name&gt;)&quot; -p &quot;...&quot;`, or invoke it as a user slash command such as `claude -p &quot;/&lt;name&gt;&quot;` when that path fits the workflow. Parse JSON output for `permission_denials`, Skill tool `is_error:true`, and a skill-specific sentinel value, and fail closed if the sentinel is missing. Use `--dangerously-skip-permissions` only inside an isolation boundary that makes broad bypass acceptable.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/77363" target="_blank">#77363</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="87065" id="subagentstop-matcher-bypassed-on-empty-agent-type" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1563</span>
                 <span class="kl-cat">Hook behavior &amp; events</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17479,7 +17491,7 @@
         </div>
         <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="87186" id="pre-post-hooks-lack-live-background-task-registry" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1563</span>
+                <span class="kl-num">#1564</span>
                 <span class="kl-cat">Hook behavior &amp; events</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17491,7 +17503,7 @@
         </div>
         <div class="kl-entry" data-category="Permission system" data-issues="87059" id="permissionrequest-hook-can-stop-firing-after-windows-restart" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1564</span>
+                <span class="kl-num">#1565</span>
                 <span class="kl-cat">Permission system</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17503,7 +17515,7 @@
         </div>
         <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="87223" id="pretooluse-transcript-path-can-lag-current-turn" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1565</span>
+                <span class="kl-num">#1566</span>
                 <span class="kl-cat">Hook behavior &amp; events</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17515,7 +17527,7 @@
         </div>
         <div class="kl-entry" data-category="Permission system" data-issues="87224" id="permissions-menu-denial-state-can-block-human-repair" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1566</span>
+                <span class="kl-num">#1567</span>
                 <span class="kl-cat">Permission system</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17527,7 +17539,7 @@
         </div>
         <div class="kl-entry" data-category="Remote &amp; cloud" data-issues="87236" id="cloud-routine-egress-allowlist-not-propagated-to-sandbox" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1567</span>
+                <span class="kl-num">#1568</span>
                 <span class="kl-cat">Remote &amp; cloud</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17539,7 +17551,7 @@
         </div>
         <div class="kl-entry" data-category="Performance &amp; resource usage" data-issues="87238" id="sandboxed-bash-helper-can-oom-during-slow-command" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1568</span>
+                <span class="kl-num">#1569</span>
                 <span class="kl-cat">Performance &amp; resource usage</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17551,7 +17563,7 @@
         </div>
         <div class="kl-entry" data-category="Tool behavior" data-issues="87245" id="grep-shell-shim-can-silently-skip-binary-and-ignored-files" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1569</span>
+                <span class="kl-num">#1570</span>
                 <span class="kl-cat">Tool behavior</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17563,7 +17575,7 @@
         </div>
         <div class="kl-entry" data-category="Core &amp; session management" data-issues="87249" id="piped-print-prompt-can-be-dropped-before-model-request" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1570</span>
+                <span class="kl-num">#1571</span>
                 <span class="kl-cat">Core &amp; session management</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17575,7 +17587,7 @@
         </div>
         <div class="kl-entry" data-category="Bash &amp; shell execution" data-issues="87055" id="background-bash-task-can-be-killed-while-reporting-success" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1571</span>
+                <span class="kl-num">#1572</span>
                 <span class="kl-cat">Bash &amp; shell execution</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17587,7 +17599,7 @@
         </div>
         <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="87260" id="background-agent-can-receive-foreground-operator-input" data-severity="critical" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1572</span>
+                <span class="kl-num">#1573</span>
                 <span class="kl-cat">Subagent &amp; spawned agents</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
             </div>
@@ -17599,7 +17611,7 @@
         </div>
         <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="87241" id="agent-run-in-background-false-can-still-return-as-background" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1573</span>
+                <span class="kl-num">#1574</span>
                 <span class="kl-cat">Subagent &amp; spawned agents</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17611,7 +17623,7 @@
         </div>
         <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="87243" id="subagent-scratchpad-directory-shared-across-siblings" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1574</span>
+                <span class="kl-num">#1575</span>
                 <span class="kl-cat">Subagent &amp; spawned agents</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17623,7 +17635,7 @@
         </div>
         <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="87266" id="file-freshness-notice-can-assert-false-user-intent" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1575</span>
+                <span class="kl-num">#1576</span>
                 <span class="kl-cat">Security &amp; trust boundaries</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17635,7 +17647,7 @@
         </div>
         <div class="kl-entry" data-category="Skills" data-issues="87281" id="background-job-main-session-can-miss-skills-listing" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1576</span>
+                <span class="kl-num">#1577</span>
                 <span class="kl-cat">Skills</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -17647,7 +17659,7 @@
         </div>
         <div class="kl-entry" data-category="Auth &amp; accounts" data-issues="87255" id="background-fork-can-drop-vertex-gateway-env" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1577</span>
+                <span class="kl-num">#1578</span>
                 <span class="kl-cat">Auth &amp; accounts</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17659,7 +17671,7 @@
         </div>
         <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="87278" id="unlogged-interrupt-message-can-enter-model-context" data-severity="critical" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1578</span>
+                <span class="kl-num">#1579</span>
                 <span class="kl-cat">Security &amp; trust boundaries</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
             </div>
@@ -17671,7 +17683,7 @@
         </div>
         <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="87316" id="vscode-chat-channel-relaunch-can-abort-inflight-work" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1579</span>
+                <span class="kl-num">#1580</span>
                 <span class="kl-cat">Desktop &amp; IDE integration</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -17683,7 +17695,7 @@
         </div>
         <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="87221" id="subagent-fork-can-inherit-full-parent-context-and-become-unresumable" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1580</span>
+                <span class="kl-num">#1581</span>
                 <span class="kl-cat">Subagent &amp; spawned agents</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17695,7 +17707,7 @@
         </div>
         <div class="kl-entry" data-category="Configuration behavior" data-issues="87248" id="claudemdexcludes-matches-resolved-symlink-rule-paths" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1581</span>
+                <span class="kl-num">#1582</span>
                 <span class="kl-cat">Configuration behavior</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -17707,7 +17719,7 @@
         </div>
         <div class="kl-entry" data-category="Permission system" data-issues="87248" id="bash-deny-refspec-colon-patterns-can-fail-to-match" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1582</span>
+                <span class="kl-num">#1583</span>
                 <span class="kl-cat">Permission system</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17719,7 +17731,7 @@
         </div>
         <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="87145" id="windows-plugin-hooks-may-not-receive-oauth-token-env" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1583</span>
+                <span class="kl-num">#1584</span>
                 <span class="kl-cat">Hook behavior &amp; events</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17731,7 +17743,7 @@
         </div>
         <div class="kl-entry" data-category="Permission system" data-issues="87153" id="native-deny-messages-can-hide-matched-rule-source" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1584</span>
+                <span class="kl-num">#1585</span>
                 <span class="kl-cat">Permission system</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -17743,7 +17755,7 @@
         </div>
         <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="87216" id="subagent-compound-bash-can-bypass-sandbox-read-deny" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1585</span>
+                <span class="kl-num">#1586</span>
                 <span class="kl-cat">Security &amp; trust boundaries</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17755,7 +17767,7 @@
         </div>
         <div class="kl-entry" data-category="Configuration behavior" data-issues="87217" id="user-level-path-scoped-rules-can-silently-drop" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1586</span>
+                <span class="kl-num">#1587</span>
                 <span class="kl-cat">Configuration behavior</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -17767,7 +17779,7 @@
         </div>
         <div class="kl-entry" data-category="Sandbox &amp; permissions" data-issues="86928 87138" id="sandbox-apply-seccomp-einval-can-trigger-unsandboxed-retry" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1587</span>
+                <span class="kl-num">#1588</span>
                 <span class="kl-cat">Sandbox &amp; permissions</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17779,7 +17791,7 @@
         </div>
         <div class="kl-entry" data-category="TUI &amp; display" data-issues="87037" id="queued-input-modes-can-run-out-of-typed-order" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1588</span>
+                <span class="kl-num">#1589</span>
                 <span class="kl-cat">TUI &amp; display</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -17791,7 +17803,7 @@
         </div>
         <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="87035" id="hook-if-conditions-require-tool-specific-copies" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1589</span>
+                <span class="kl-num">#1590</span>
                 <span class="kl-cat">Hook behavior &amp; events</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -17803,7 +17815,7 @@
         </div>
         <div class="kl-entry" data-category="Permission system" data-issues="87229" id="desktop-dev-server-prompt-ignores-bypass-mode" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1590</span>
+                <span class="kl-num">#1591</span>
                 <span class="kl-cat">Permission system</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -17815,7 +17827,7 @@
         </div>
         <div class="kl-entry" data-category="Documentation &amp; workflow" data-issues="87300 85765" id="agent-sdk-subagent-docs-omit-fork-mode-precedence" data-severity="low" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1591</span>
+                <span class="kl-num">#1592</span>
                 <span class="kl-cat">Documentation &amp; workflow</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
             </div>
@@ -17827,7 +17839,7 @@
         </div>
         <div class="kl-entry" data-category="Sandbox &amp; permissions" data-issues="87381" id="sandbox-network-allowlist-can-be-bypassed-by-local-connect-relay" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1592</span>
+                <span class="kl-num">#1593</span>
                 <span class="kl-cat">Sandbox &amp; permissions</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17839,7 +17851,7 @@
         </div>
         <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="87360" id="auto-mode-can-miss-agent-script-git-clean-data-loss" data-severity="critical" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1593</span>
+                <span class="kl-num">#1594</span>
                 <span class="kl-cat">Security &amp; trust boundaries</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
             </div>
@@ -17851,7 +17863,7 @@
         </div>
         <div class="kl-entry" data-category="Configuration behavior" data-issues="87296" id="custom-sandbox-proxy-can-disable-allowlist-and-credential-mask-controls" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1594</span>
+                <span class="kl-num">#1595</span>
                 <span class="kl-cat">Configuration behavior</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -17863,7 +17875,7 @@
         </div>
         <div class="kl-entry" data-category="Permission system" data-issues="87358" id="reconnected-mcp-tools-can-ignore-bypass-and-allow-rules" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1595</span>
+                <span class="kl-num">#1596</span>
                 <span class="kl-cat">Permission system</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -17875,7 +17887,7 @@
         </div>
         <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="87356" id="hooks-cannot-watch-file-changes-independent-of-originating-tool" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1596</span>
+                <span class="kl-num">#1597</span>
                 <span class="kl-cat">Hook behavior &amp; events</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -17887,7 +17899,7 @@
         </div>
         <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="87404" id="channel-events-can-be-silent-in-non-interactive-print-sessions" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1597</span>
+                <span class="kl-num">#1598</span>
                 <span class="kl-cat">MCP &amp; integrations</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -17899,7 +17911,7 @@
         </div>
         <div class="kl-entry" data-category="Core &amp; session management" data-issues="87399" id="background-agent-view-can-collide-session-ids-and-hide-history" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1598</span>
+                <span class="kl-num">#1599</span>
                 <span class="kl-cat">Core &amp; session management</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -17911,7 +17923,7 @@
         </div>
         <div class="kl-entry" data-category="Permission system" data-issues="87416" id="security-heuristics-can-silently-discard-bash-allow-rules" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1599</span>
+                <span class="kl-num">#1600</span>
                 <span class="kl-cat">Permission system</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -17923,7 +17935,7 @@
         </div>
         <div class="kl-entry" data-category="Core &amp; session management" data-issues="87392" id="resume-picker-searches-only-the-50-most-recent-sessions" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1600</span>
+                <span class="kl-num">#1601</span>
                 <span class="kl-cat">Core &amp; session management</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -17935,7 +17947,7 @@
         </div>
         <div class="kl-entry" data-category="Bash &amp; shell execution" data-issues="87439" id="bash-timeout-can-background-command-instead-of-cancelling" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1601</span>
+                <span class="kl-num">#1602</span>
                 <span class="kl-cat">Bash &amp; shell execution</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17947,7 +17959,7 @@
         </div>
         <div class="kl-entry" data-category="Auth &amp; accounts" data-issues="87447" id="claude-config-dir-can-name-different-account-than-session-spends" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1602</span>
+                <span class="kl-num">#1603</span>
                 <span class="kl-cat">Auth &amp; accounts</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17959,7 +17971,7 @@
         </div>
         <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="87456" id="settings-json-hook-command-edits-can-fail-false-json-validation" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1603</span>
+                <span class="kl-num">#1604</span>
                 <span class="kl-cat">Hook behavior &amp; events</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -17971,7 +17983,7 @@
         </div>
         <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="87433" id="mcp-approval-can-return-without-unblocking-tool-call" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1604</span>
+                <span class="kl-num">#1605</span>
                 <span class="kl-cat">MCP &amp; integrations</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -17983,7 +17995,7 @@
         </div>
         <div class="kl-entry" data-category="Configuration behavior" data-issues="66559" id="claude-md-agents-md-symlink-refuses-tool-writes" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1605</span>
+                <span class="kl-num">#1606</span>
                 <span class="kl-cat">Configuration behavior</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -17995,7 +18007,7 @@
         </div>
         <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="87476" id="mcp-secret-env-values-can-be-redacted-before-subprocess" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1606</span>
+                <span class="kl-num">#1607</span>
                 <span class="kl-cat">MCP &amp; integrations</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -18007,7 +18019,7 @@
         </div>
         <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="87469" id="claude-md-rules-can-be-recitable-but-not-enforced-on-late-shared-resource-edits" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1607</span>
+                <span class="kl-num">#1608</span>
                 <span class="kl-cat">Security &amp; trust boundaries</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -18019,7 +18031,7 @@
         </div>
         <div class="kl-entry" data-category="Scheduled tasks" data-issues="87470" id="webfetch-can-report-live-content-for-error-pages-in-unattended-routines" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1608</span>
+                <span class="kl-num">#1609</span>
                 <span class="kl-cat">Scheduled tasks</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -18031,7 +18043,7 @@
         </div>
         <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="87497" id="cloud-sessions-drop-project-plugin-marketplaces" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1609</span>
+                <span class="kl-num">#1610</span>
                 <span class="kl-cat">MCP &amp; plugin issues</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -18043,7 +18055,7 @@
         </div>
         <div class="kl-entry" data-category="Core &amp; session management" data-issues="87509" id="windows-desktop-cross-session-send-message-ghost-delivery" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1610</span>
+                <span class="kl-num">#1611</span>
                 <span class="kl-cat">Core &amp; session management</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -18055,7 +18067,7 @@
         </div>
         <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="87516" id="macos-desktop-nfd-path-slug-splits-transcripts" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1611</span>
+                <span class="kl-num">#1612</span>
                 <span class="kl-cat">Desktop &amp; IDE integration</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -18067,7 +18079,7 @@
         </div>
         <div class="kl-entry" data-category="Git &amp; repository safety" data-issues="87547" id="windows-wsl-worktree-cleanup-deletes-live-worktrees" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1612</span>
+                <span class="kl-num">#1613</span>
                 <span class="kl-cat">Git &amp; repository safety</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -18079,7 +18091,7 @@
         </div>
         <div class="kl-entry" data-category="Settings &amp; configuration" data-issues="87551" id="headless-invalid-claude-json-reset-drops-live-config" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1613</span>
+                <span class="kl-num">#1614</span>
                 <span class="kl-cat">Settings &amp; configuration</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -18091,7 +18103,7 @@
         </div>
         <div class="kl-entry" data-category="Settings &amp; configuration" data-issues="87545" id="project-scoped-automode-config-silently-ignored" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1614</span>
+                <span class="kl-num">#1615</span>
                 <span class="kl-cat">Settings &amp; configuration</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -18103,7 +18115,7 @@
         </div>
         <div class="kl-entry" data-category="Data integrity" data-issues="87575" id="auto-mode-bash-edits-can-escape-rewind" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1615</span>
+                <span class="kl-num">#1616</span>
                 <span class="kl-cat">Data integrity</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -18115,7 +18127,7 @@
         </div>
         <div class="kl-entry" data-category="VS Code extension" data-issues="87786" id="vscode-mcp-reconnect-command-shows-terminal-readiness-error" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1616</span>
+                <span class="kl-num">#1617</span>
                 <span class="kl-cat">VS Code extension</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -18127,7 +18139,7 @@
         </div>
         <div class="kl-entry" data-category="TUI &amp; display" data-issues="87790" id="tui-markdown-renumbers-non-sequential-list-references" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1617</span>
+                <span class="kl-num">#1618</span>
                 <span class="kl-cat">TUI &amp; display</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -18139,7 +18151,7 @@
         </div>
         <div class="kl-entry" data-category="Permission system" data-issues="87809" id="non-interactive-permission-denials-can-block-the-grant-path" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1618</span>
+                <span class="kl-num">#1619</span>
                 <span class="kl-cat">Permission system</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -18151,7 +18163,7 @@
         </div>
         <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="64389" id="explicit-pretooluse-defer-can-dead-end-tool-calls" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1619</span>
+                <span class="kl-num">#1620</span>
                 <span class="kl-cat">Hook behavior &amp; events</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -18163,7 +18175,7 @@
         </div>
         <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="6305" id="tool-event-hooks-can-silently-miss-runtime-dispatch" data-severity="high" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1620</span>
+                <span class="kl-num">#1621</span>
                 <span class="kl-cat">Hook behavior &amp; events</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>

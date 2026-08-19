@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1620,
+  "count": 1621,
   "categories": {
     "Hook behavior & events": 215,
     "Permission system": 147,
@@ -37,9 +37,9 @@
     "Scheduled tasks": 11,
     "UX & display": 11,
     "Configuration & settings": 10,
+    "Skills": 10,
     "Telemetry & insights": 10,
     "hooks": 9,
-    "Skills": 9,
     "auth": 8,
     "Desktop & platform bugs": 8,
     "Hook execution & lifecycle": 8,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 138,
-    "HIGH": 887,
+    "HIGH": 888,
     "LOW": 111,
     "MEDIUM": 484
   },
@@ -20063,6 +20063,19 @@
       "workaround": "For unattended `claude -p` skill runs, treat `num_turns:0` or an empty result as a failed run even when the process exits 0 and reports `subtype:\"success\"`. Wrap every `!` preamble command so it emits diagnostic text and exits 0 on expected probe failures, or invoke the skill through a normal prompt until the headless slash path reports pre-turn aborts as errors. Add a regression canary that intentionally fails a skill preamble and asserts the caller detects the zero-turn result."
     },
     {
+      "id": "headless-model-invoked-skills-with-grants-can-be-denied-silently",
+      "title": "Headless model-invoked skills with permission grants can be denied silently.",
+      "category": "Skills",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/77363"
+      ],
+      "date_added": "2026-08-19",
+      "description": "A collaborator-reproduced Claude Code 2.1.233 Linux issue found that, under headless `claude -p`, a skill declaring `allowed-tools` can be denied when Claude invokes it through the Skill tool. The Skill result contains only `Execute skill: <name>` with `is_error:true`, the skill body never loads, and the run can still complete successfully. The original report reproduced the same shape on Claude Code 2.1.208 macOS, and a later comment reported that skills declaring frontmatter `hooks:` can hit the same headless denial class unless bypass mode is used. The maintainer clarified that `allowed-tools` asks for a permission grant, headless mode cannot prompt, and the bad part is that the denial is effectively silent and undocumented.",
+      "workaround": "For CI, evals, and other unattended skill runs, do not rely on process exit status alone. Pre-allow the skill with `claude --allowedTools \"Skill(<name>)\" -p \"...\"`, or invoke it as a user slash command such as `claude -p \"/<name>\"` when that path fits the workflow. Parse JSON output for `permission_denials`, Skill tool `is_error:true`, and a skill-specific sentinel value, and fail closed if the sentinel is missing. Use `--dangerously-skip-permissions` only inside an isolation boundary that makes broad bypass acceptable."
+    },
+    {
       "id": "subagentstop-matcher-bypassed-on-empty-agent-type",
       "title": "SubagentStop matcher can be bypassed for internal forks with empty agent_type.",
       "severity": "HIGH",
@@ -20833,27 +20846,27 @@
     }
   ],
   "status_summary": {
-    "open": 1606,
+    "open": 1607,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 138,
-    "high": 887,
+    "high": 888,
     "low": 111,
     "medium": 484
   },
   "lastUpdated": "2026-08-19",
   "stats": {
-    "total": 1620,
+    "total": 1621,
     "critical": 138,
-    "high": 887,
+    "high": 888,
     "medium": 484,
     "low": 111,
-    "open": 1606,
+    "open": 1607,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-19",
-  "total": 1620
+  "total": 1621
 }
