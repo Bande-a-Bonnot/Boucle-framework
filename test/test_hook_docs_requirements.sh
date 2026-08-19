@@ -42,6 +42,8 @@ docs = {
         "Or install all standalone hooks at once",
         "Project hooks skipped from subdirectories",
         "ancestor project settings warning",
+        "User-home settings.local.json is not portable user policy",
+        "Put persistent user-level hooks and permissions in `~/.claude/settings.json`",
         "If you use `claude -w`, also install [worktree-guard]",
         "delete unmerged or unpushed commits",
         "That path downloads `check.sh` from GitHub raw content",
@@ -167,6 +169,8 @@ docs = {
         "Use bare `restore` only when the most recent backup is the exact snapshot you",
         "safety summary triage guide",
         "team handoff report",
+        "Do not use `~/.claude/settings.local.json` as portable user-level policy",
+        "public report shows its hooks and permissions can be inert outside `$HOME`",
     ],
     repo / "tools" / "safety-check" / "TRIAGE.md": [
         "## Full-report warning map",

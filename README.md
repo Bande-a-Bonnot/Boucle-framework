@@ -801,6 +801,15 @@ $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --sho
 if ($root) { Set-Location $root }
 ```
 
+**User-home settings.local.json is not portable user policy**: A public report
+shows that `~/.claude/settings.local.json` can apply only to sessions started
+from `$HOME`, leaving its hooks, permissions, and worktree config inert in
+normal project sessions ([claude-code#88051](https://github.com/anthropics/claude-code/issues/88051)).
+Put persistent user-level hooks and permissions in `~/.claude/settings.json`,
+or put project policy in the repo's `.claude/settings.json`, then start Claude
+Code and run `safety-check --verify` from the same project root you actually
+use.
+
 **Permission bypass resets with hooks installed**: If you use `--dangerously-skip-permissions` (common in autonomous setups), PreToolUse hooks can [cause the permission state to reset mid-session](https://github.com/anthropics/claude-code/issues/37745), reverting all tools to manual approval. This is a platform bug, not a hooks bug. If tools suddenly require approval 30-120 minutes into a session, this is why.
 
 **Sandbox enabled can fail before hooks run**: On WSL2, Claude Code
