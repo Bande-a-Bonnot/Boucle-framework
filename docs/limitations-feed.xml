@@ -7,6 +7,14 @@
   <updated>2026-08-19T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Explicit PreToolUse `defer` decisions can dead-end tool calls.</title>
+    <id>https://framework.boucle.sh/limitations.html#explicit-pretooluse-defer-can-dead-end-tool-calls</id>
+    <link href="https://framework.boucle.sh/limitations.html#explicit-pretooluse-defer-can-dead-end-tool-calls"/>
+    <updated>2026-08-19T00:00:00Z</updated>
+    <summary>A reported Claude Code hook setup found that a `PreToolUse` hook returning `hookSpecificOutput.permissionDecision: &quot;defer&quot;` is not equivalent to a silent pass-through. Matching tool calls can stop at `tool_deferred`, receive a synthetic missing-tool-result error on a later continuation path, or leave subagent Bash calls without any `tool_result` while the parent sees a completed-looking task. Comments reproduced the issue in the CLI and TypeScript Agent SDK, including cases where a fast synchronous `defer` raced the assistant stream closure and produced `[Tool result missing due to internal error]` instead of a clean suspended call.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Non-interactive permission denials can block the grant path</title>
     <id>https://framework.boucle.sh/limitations.html#non-interactive-permission-denials-can-block-the-grant-path</id>
     <link href="https://framework.boucle.sh/limitations.html#non-interactive-permission-denials-can-block-the-grant-path"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-19T00:00:00Z</updated>
     <summary>A reported Linux Claude Code 2.1.233 repro found that both the in-session `/resume` picker and standalone `claude --resume` picker load only the 50 most recent sessions, and the type-to-search filter searches only that loaded subset rather than all retained transcript files on disk. A month-old session whose generated title contained the search term was not findable until its transcript file mtime was moved back into the top 50. This means a high `cleanupPeriodDays` setting can retain old transcripts without making them discoverable in the UI.</summary>
     <category term="Core &amp; session management"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Security heuristics can silently discard Bash allow rules from permissions.allow.</title>
-    <id>https://framework.boucle.sh/limitations.html#security-heuristics-can-silently-discard-bash-allow-rules</id>
-    <link href="https://framework.boucle.sh/limitations.html#security-heuristics-can-silently-discard-bash-allow-rules"/>
-    <updated>2026-08-19T00:00:00Z</updated>
-    <summary>A reported macOS Claude Code 2.1.233 repro found that some `permissions.allow` Bash rules remained in `.claude/settings.local.json` but disappeared from `/permissions` after a fresh session load and were not honored at execution time. In the example, `Bash(echo:*)`, `Bash(npx tsc:*)`, and `Bash(realpath:*)` loaded, while similarly formed `Bash(python3:*)` and `Bash(npm run:*)` were absent. The per-call annotation then distinguished matched allow rules from auto-mode classifier approvals, showing the discarded rules did not participate in permission matching.</summary>
-    <category term="Permission system"/>
   </entry>
 </feed>
