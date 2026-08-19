@@ -16,6 +16,34 @@ Use the same terminal profile and project root you use for real Claude Code
 sessions. A clean check from a different shell or subdirectory does not prove
 the session you are about to trust.
 
+## Minimum recheck
+
+If Claude Code already updated and you need the shortest useful answer, run the
+strict verifier from the same root and terminal profile you use for real work:
+
+```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
+unset IS_DEMO CLAUDE_CODE_SIMPLE
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
+```
+
+On native Windows with PowerShell 7, use the native verifier:
+
+```powershell
+$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
+if ($root) { Set-Location $root }
+Remove-Item Env:IS_DEMO -ErrorAction SilentlyContinue
+Remove-Item Env:CLAUDE_CODE_SIMPLE -ErrorAction SilentlyContinue
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
+```
+
+Treat a non-zero strict result, `FAIL-OPEN`, skipped boundary hook, missing hook
+inventory, or `Verify: not run` as a stop signal. Run the longer repair path
+below before trusting the updated session. Treat a passing result as fresh
+boundary evidence only after starting a new Claude Code session from the same
+root.
+
 If this is a git checkout, move to the repo root first; otherwise stay in the
 directory you use for Claude Code:
 
