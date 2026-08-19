@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1625,
+  "count": 1626,
   "categories": {
     "Hook behavior & events": 215,
     "Permission system": 148,
@@ -56,6 +56,7 @@
     "Cost & usage": 5,
     "Model behavior & compliance": 5,
     "Performance & resource usage": 5,
+    "Worktrees & isolation": 5,
     "Browser automation": 4,
     "MCP & plugins": 4,
     "Model behavior & instructions": 4,
@@ -63,7 +64,6 @@
     "permissions": 4,
     "sandbox": 4,
     "tui": 4,
-    "Worktrees & isolation": 4,
     "Agent & multi-agent": 3,
     "API & infrastructure": 3,
     "Context / compaction": 3,
@@ -194,7 +194,7 @@
     "CRITICAL": 138,
     "HIGH": 892,
     "LOW": 111,
-    "MEDIUM": 484
+    "MEDIUM": 485
   },
   "entries": [
     {
@@ -20895,10 +20895,23 @@
       "date_added": "2026-08-19",
       "description": "A reported macOS headless `claude -p` automation found that starting Claude Code from a restricted worktree made Bash refuse a redirected write outside the working directory, while the Write tool could still create the same absolute path outside that boundary. The reporter reproduced it with `--permission-mode acceptEdits`, a settings file allowing Write/Edit, and no `--add-dir` grant for the parent checkout. In the real pipeline, task files landed in a sibling checkout and were later committed on the wrong branch.",
       "workaround": "Do not rely on process cwd alone as the isolation boundary for file-mutating tools. For per-task automation, run Claude Code in a disposable clone, container, or OS-permission boundary that makes out-of-scope paths unwritable, and add an explicit post-run scan for modified files outside the expected worktree before committing. If you use hooks for path policy, verify Write, Edit, MultiEdit, NotebookEdit, and Bash separately with absolute out-of-scope canaries, because one tool's cwd denial does not prove the others share the same boundary."
+    },
+    {
+      "id": "worktree-command-safety-can-misread-builtin-names-as-invocations",
+      "title": "Worktree command safety can misread builtin names as invocations.",
+      "category": "Worktrees & isolation",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88047"
+      ],
+      "status": "open",
+      "date_added": "2026-08-19",
+      "description": "A reported Windows 11 worktree-isolated session found that Claude Code's Bash command-safety analyzer refused commands containing shell builtin names such as `complete`, `compgen`, or `compopt` even when those words appeared as ordinary non-leading arguments. The concrete failure was a Python workflow command whose subcommand was named `complete`; the analyzer treated the argument as if Bash would invoke the completion builtin and refused it as unverifiable inside the worktree. Quoting the token and disabling the sandbox did not help because the refusal came from the PreToolUse-layer worktree analyzer, not from the sandbox.",
+      "workaround": "Avoid English subcommand names or arguments that collide with string-running shell builtins in worktree-isolated Bash calls until the analyzer distinguishes command-head position from later argv tokens. Rename local workflow verbs such as `complete` to collision-free aliases like `finish`, or invoke the underlying code through a wrapper whose visible Bash command line does not contain the flagged token. If the command must keep the name, run it from a non-isolated parent session or an external terminal and record the rationale so the workaround does not normalize obfuscated bypasses."
     }
   ],
   "status_summary": {
-    "open": 1611,
+    "open": 1612,
     "fixed": 13,
     "mitigated": 1
   },
@@ -20906,19 +20919,19 @@
     "critical": 138,
     "high": 892,
     "low": 111,
-    "medium": 484
+    "medium": 485
   },
   "lastUpdated": "2026-08-19",
   "stats": {
-    "total": 1625,
+    "total": 1626,
     "critical": 138,
     "high": 892,
-    "medium": 484,
+    "medium": 485,
     "low": 111,
-    "open": 1611,
+    "open": 1612,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-19",
-  "total": 1625
+  "total": 1626
 }
