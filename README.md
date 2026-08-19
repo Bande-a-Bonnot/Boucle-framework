@@ -803,6 +803,15 @@ if ($root) { Set-Location $root }
 
 **Permission bypass resets with hooks installed**: If you use `--dangerously-skip-permissions` (common in autonomous setups), PreToolUse hooks can [cause the permission state to reset mid-session](https://github.com/anthropics/claude-code/issues/37745), reverting all tools to manual approval. This is a platform bug, not a hooks bug. If tools suddenly require approval 30-120 minutes into a session, this is why.
 
+**Sandbox enabled can fail before hooks run**: On WSL2, Claude Code
+2.1.233-2.1.235 has a public report of unbounded startup memory growth when
+`sandbox.enabled: true` is set ([#88029](https://github.com/anthropics/claude-code/issues/88029)).
+The process can OOM before a prompt, transcript, or hook invocation exists. If
+you see this signature, remove the sandbox block or set `enabled: false`, then
+start a fresh session and run `safety-check --verify` from the same root. Use
+PreToolUse hooks for the destructive commands you need to block; do not treat
+sandbox prompts as the only safety boundary.
+
 **IS_DEMO environment variable disables all hooks**: If `IS_DEMO=1` is set in your environment (sometimes via IDE or cloud workspace settings), Claude Code [silently skips all hook execution](https://github.com/anthropics/claude-code/issues/37780) by suppressing workspace trust without granting it. Run `echo $IS_DEMO` to check. Our `safety-check` tool detects this automatically.
 
 **CLAUDE_CODE_SIMPLE disables all hooks**: When the `CLAUDE_CODE_SIMPLE` environment variable is set to any non-empty value, Claude Code disables hooks, MCP tools, attachments, and CLAUDE.md file loading entirely (introduced in v2.1.50). No enforcement rules will fire. Run `echo $CLAUDE_CODE_SIMPLE` to check. Our `safety-check` tool detects this automatically.
