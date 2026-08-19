@@ -45,6 +45,13 @@ If a parent directory has `.claude/settings.json` and the current directory
 does not, safety-check warns because Claude Code may skip root project hooks
 when launched from the subdirectory.
 
+Do not use `~/.claude/settings.local.json` as portable user-level policy. A
+public report shows its hooks and permissions can be inert outside `$HOME`
+([#88051](https://github.com/anthropics/claude-code/issues/88051)). Put
+persistent user-level hooks and permissions in `~/.claude/settings.json`, or
+put project policy in the repo's `.claude/settings.json`, then run verification
+from the same project root where you start Claude Code.
+
 New to the tool? Start with the [safety-check quickstart](QUICKSTART.md) for the
 short audit, install, verify, and repair loop.
 
