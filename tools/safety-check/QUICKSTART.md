@@ -23,6 +23,7 @@ Use the first row that matches why you are here:
 | You want to audit your current Claude Code setup | [Run the audit](#1-run-the-audit) | You understand the first missing hook, settings, or environment issue. |
 | You want a minimal personal workstation baseline | [Install the baseline hooks](#2-install-the-baseline-hooks) | `install.sh verify` or `install.ps1 verify` reports the recommended hooks blocking their test payloads. |
 | You need proof before a risky session, CI job, or team handoff | [Verify the hooks fire](#3-verify-the-hooks-fire) | The summary reports zero `FAIL-OPEN` checks, zero skipped boundary hooks, and a fresh Claude Code session has started from the same root. |
+| Claude Code just updated or started behaving differently | [Claude Code update checklist](UPDATE_CHECKLIST.md) | You captured a fresh strict result from the same root before trusting the updated session. |
 | You are preparing a public support request | [Share safe support evidence](#7-share-safe-support-evidence) | You have only the bounded summary block and the minimum redacted context. |
 
 ## 1. Run the audit
