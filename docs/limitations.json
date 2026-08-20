@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1637,
+  "count": 1638,
   "categories": {
     "Hook behavior & events": 217,
     "Permission system": 148,
     "Hook bypass & evasion": 103,
-    "MCP & plugin issues": 90,
+    "MCP & plugin issues": 91,
     "Subagent & spawned agents": 77,
     "Desktop & IDE integration": 59,
     "TUI & display": 37,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 138,
-    "HIGH": 902,
+    "HIGH": 903,
     "LOW": 111,
     "MEDIUM": 486
   },
@@ -21052,30 +21052,43 @@
       "date_added": "2026-08-20",
       "description": "A reported Claude Code 2.1.237 plugin-marketplace repro found that dependencies declared on a marketplace entry were used by install-time name resolution but not by the rest of the dependency graph. Version constraints such as `~2.1.0` could silently resolve to an incompatible newer tag, conflicting ranges were not reported, `list --json` showed no dependency errors, and `uninstall <unrelated> --prune -y` removed an auto-installed dependency that the dependent plugin still needed. Declaring the same edge in the dependent plugin's own `plugin.json` made version checks, disable/enable behavior, and prune protection work.",
       "workaround": "Declare load-bearing plugin dependencies in each dependent plugin's `plugin.json`, even if the marketplace entry also lists them. For generated internal marketplaces, duplicate catalog-level dependencies into the shipped manifest until every dependency graph consumer honors entry-declared edges. After plugin uninstall, prune, disable, enable, marketplace update, or account/profile changes, run `claude plugin list --json` and a same-session skill or hook canary rather than treating a successful install message as proof that required foundation plugins remain installed and compatible."
+    },
+    {
+      "id": "windows-plugin-hook-command-rewrites-can-report-false-success",
+      "title": "Windows plugin hook command rewrites can report false success.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82893"
+      ],
+      "status": "open",
+      "date_added": "2026-08-20",
+      "description": "A reported Windows 11 Claude Code 2.1.220 setup found that already-installed plugin hook commands were rewritten from a Bash `${CLAUDE_PLUGIN_ROOT}` form into an absolute `cmd /d /s /c ...run-hook.cmd` command while the hook still declared `\"shell\": \"bash\"`. Bash then launched a bare interactive `cmd`, the hook's JSON stdin was echoed into the Windows prompt, and Claude Code recorded the result as `hook_success` with the Windows banner injected as hook context. The reporter classified 119 local session transcripts and found the plugin SessionStart context missing from most sessions across roughly a month, with clean installs later re-mangled by another rewrite.",
+      "workaround": "On Windows, do not trust `hook_success` alone for plugin-delivered hooks. Inspect the actual hook attachment or transcript output for shell banners, prompts, or non-JSON context, and run a same-session canary that proves the plugin's expected context appears. If cached plugin `hooks.json` commands have been rewritten into a shell-mismatched `cmd` form, repair them back to a Bash-safe `${CLAUDE_PLUGIN_ROOT}` command or reinstall the plugin, then keep an idempotent audit because later client rewrites can undo the fix."
     }
   ],
   "status_summary": {
-    "open": 1623,
+    "open": 1624,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 138,
-    "high": 902,
+    "high": 903,
     "low": 111,
     "medium": 486
   },
   "lastUpdated": "2026-08-20",
   "stats": {
-    "total": 1637,
+    "total": 1638,
     "critical": 138,
-    "high": 902,
+    "high": 903,
     "medium": 486,
     "low": 111,
-    "open": 1623,
+    "open": 1624,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-20",
-  "total": 1637
+  "total": 1638
 }
