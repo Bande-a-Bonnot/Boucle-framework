@@ -20725,24 +20725,26 @@
       "severity": "MEDIUM",
       "status": "open",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/87497"
+        "https://github.com/anthropics/claude-code/issues/87497",
+        "https://github.com/anthropics/claude-code/issues/88214"
       ],
       "date_added": "2026-08-18",
-      "description": "A reported Claude Code 2.1.234 cloud-session repro found that project `.claude/settings.json` could read an `enabledPlugins` entry for a GitHub marketplace plugin while dropping the same file's `extraKnownMarketplaces` declaration. Startup logs then reported the enabled plugin as orphaned because the marketplace was not registered, saved zero installed plugins, and later said `installPluginsForHeadless: no marketplaces declared`. The public cloud and desktop docs pointed users at repo-declared plugins as the cloud-session path, while a shipped guard and a follow-up static read of the binary suggested project-scope marketplaces are excluded from the declared-marketplace map.",
-      "workaround": "Do not rely on repo-committed `extraKnownMarketplaces` plus `enabledPlugins` as proof that a plugin will install in Claude Code cloud sessions. In a fresh cloud session, inspect startup logs and `~/.claude/plugins/installed_plugins.json`, and confirm the expected skills or commands appear before depending on them. For personal accounts without org plugin catalog access, document a fallback that does not require the unavailable `/plugin` browser inside the cloud session, or keep the plugin logic in setup scripts, hooks, or normal repository files until the cloud marketplace path is verified."
+      "description": "Reported Claude Code cloud-session repros found that project `.claude/settings.json` could read `enabledPlugins` while failing to make the declared plugins usable. In one Claude Code 2.1.234 case, the session dropped the same file's `extraKnownMarketplaces` declaration, reported the enabled plugin as orphaned, saved zero installed plugins, and later said `installPluginsForHeadless: no marketplaces declared`. A newer web cloud-session report said the official marketplace clone and plugin metadata were present on disk, but `installed_plugins.json` stayed empty, `~/.claude/plugins/synced/` was empty, declared skills and agents were unavailable, and `/plugin` was documented as unavailable in cloud sessions. The public cloud and desktop docs pointed users at repo-declared plugins as the cloud-session path, but cloud startup can silently leave the repo's plugin policy absent.",
+      "workaround": "Do not rely on repo-committed `extraKnownMarketplaces`, `enabledPlugins`, or partial marketplace cache files as proof that a plugin will install in Claude Code cloud sessions. In every fresh cloud session, inspect startup logs, `~/.claude/plugins/installed_plugins.json`, `~/.claude/plugins/synced/`, and the available skills, agents, hooks, or commands before depending on plugin behavior. Because `/plugin` may be unavailable in cloud sessions, keep a fallback that does not require interactive plugin repair: setup scripts, committed normal files, direct hooks in settings, or a degraded workflow that fails loudly when required plugin capabilities are absent."
     },
     {
       "id": "windows-desktop-cross-session-send-message-ghost-delivery",
-      "title": "Windows Desktop cross-session send_message can ghost-deliver without enqueueing.",
+      "title": "Claude Desktop cross-session send_message can ghost-deliver without enqueueing.",
       "category": "Core & session management",
       "severity": "HIGH",
       "status": "open",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/87509"
+        "https://github.com/anthropics/claude-code/issues/87509",
+        "https://github.com/anthropics/claude-code/issues/88231"
       ],
       "date_added": "2026-08-18",
-      "description": "A reported Windows 11 Claude Desktop setup found that cross-session `send_message` between local sessions could return success and render the message in the target session UI while never appending it to the target session's real `.jsonl` transcript and never delivering it to the model. The reporter checked unique markers across multiple sends, saw the target transcript mtime remain frozen, and found the ghost messages disappeared after app restart. The receiving session could also enter phantom-running states with a spinner, frozen activity timestamps, and no persisted user turn.",
-      "workaround": "Do not treat sender-side success or receiver-side UI rendering as proof that a cross-session message reached the model on Windows Desktop. For supervisor/worker workflows, require an independent acknowledgement written by the receiving session into a durable file, transcript, issue, or API record, and include the marker that was sent. When delivery matters, poll the target `.jsonl` or another durable channel before continuing, and keep a file-based fallback for app sessions until cross-session persistence is verified on the exact Claude Desktop and bundled CLI versions in use."
+      "description": "Reported Claude Desktop cross-session `send_message` failures found that a positive delivery receipt can mean only that the app accepted or displayed the message, not that the target model received a durable user turn. One Windows 11 report saw local messages render in the target session UI while never appending to the real `.jsonl` transcript; the ghost messages disappeared after app restart. A newer macOS/Desktop regression report found `mcp__ccd_session_mgmt__send_message` returning `delivered: true` for cold target sessions: the app initiated a cold resume, but the recipient CLI never mapped the peer message into a turn, no transcript row was written, and the message was lost unless the target became live before restart.",
+      "workaround": "Do not treat sender-side success, `delivered: true`, or receiver-side UI rendering as proof that a cross-session message reached the model. For supervisor/worker workflows, require an independent acknowledgement written by the receiving session into a durable file, transcript, issue, or API record, and include the marker that was sent. Prefer message-as-file for payloads plus a live-process doorbell that fails loudly for dead targets; when delivery matters, poll the target `.jsonl` or another durable channel before continuing, and keep a file-based fallback until cross-session persistence is verified on the exact Claude Desktop and bundled CLI versions in use."
     },
     {
       "id": "macos-desktop-nfd-path-slug-splits-transcripts",
