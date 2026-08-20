@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1635,
+  "count": 1636,
   "categories": {
-    "Hook behavior & events": 216,
+    "Hook behavior & events": 217,
     "Permission system": 148,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 89,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 138,
-    "HIGH": 900,
+    "HIGH": 901,
     "LOW": 111,
     "MEDIUM": 486
   },
@@ -21015,6 +21015,19 @@
       "workaround": "When a tool-call input contains prompt-injection text, wrapper language, or content that cannot be a valid argument, reject the call and stop treating the current session as clean. Preserve the raw JSONL transcript around the malformed call, grep the workspace to distinguish on-disk content from harness leakage, and restart from a clean summary before continuing sensitive work. Do not rely on a single permission prompt as the only containment layer for future calls; add fail-closed hooks or external wrappers around reads and writes that should never accept mixed prompt text as a path or argument."
     },
     {
+      "id": "hook-stdin-eof-can-hang-synchronous-hook-sessions",
+      "title": "Hook stdin EOF can hang synchronous hook sessions.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/78756"
+      ],
+      "status": "open",
+      "date_added": "2026-08-20",
+      "description": "A reported Windows 11 Claude Code 2.1.208 and later setup found that synchronous hook processes can intermittently receive a written JSON payload without the client closing the hook stdin pipe. Hook code that waits for EOF, such as `json.load(sys.stdin)`, then blocks forever, and because the hook is synchronous the whole session freezes until the specific child hook process is killed. The reporter reproduced it under hook-heavy Bash workflows and noted that killing only the hung hook process lets the session resume, pointing to hook stdin lifecycle handling rather than model latency.",
+      "workaround": "Do not let hook correctness depend on an unbounded EOF wait. Wrap hook stdin reads in a bounded reader, add a process-level watchdog that exits before the Claude Code hook timeout budget, and keep an external reaper for hook-heavy Windows sessions until the client reliably closes hook stdin. For critical hooks, log hook start, payload-read completion, and exit timestamps so a session freeze can be traced to the stuck hook child instead of being mistaken for model or shell latency."
+    },
+    {
       "id": "marketplace-entry-dependencies-can-be-ignored-by-graph-consumers",
       "title": "Marketplace-entry dependencies can be ignored by graph consumers.",
       "category": "MCP & plugin issues",
@@ -21029,27 +21042,27 @@
     }
   ],
   "status_summary": {
-    "open": 1621,
+    "open": 1622,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 138,
-    "high": 900,
+    "high": 901,
     "low": 111,
     "medium": 486
   },
   "lastUpdated": "2026-08-20",
   "stats": {
-    "total": 1635,
+    "total": 1636,
     "critical": 138,
-    "high": 900,
+    "high": 901,
     "medium": 486,
     "low": 111,
-    "open": 1621,
+    "open": 1622,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-20",
-  "total": 1635
+  "total": 1636
 }

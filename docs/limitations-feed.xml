@@ -15,6 +15,14 @@
     <category term="MCP &amp; plugin issues"/>
   </entry>
   <entry>
+    <title>[HIGH] Hook stdin EOF can hang synchronous hook sessions.</title>
+    <id>https://framework.boucle.sh/limitations.html#hook-stdin-eof-can-hang-synchronous-hook-sessions</id>
+    <link href="https://framework.boucle.sh/limitations.html#hook-stdin-eof-can-hang-synchronous-hook-sessions"/>
+    <updated>2026-08-20T00:00:00Z</updated>
+    <summary>A reported Windows 11 Claude Code 2.1.208 and later setup found that synchronous hook processes can intermittently receive a written JSON payload without the client closing the hook stdin pipe. Hook code that waits for EOF, such as `json.load(sys.stdin)`, then blocks forever, and because the hook is synchronous the whole session freezes until the specific child hook process is killed. The reporter reproduced it under hook-heavy Bash workflows and noted that killing only the hung hook process lets the session resume, pointing to hook stdin lifecycle handling rather than model latency.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Flagged tool-output content can leak into a later tool-call input.</title>
     <id>https://framework.boucle.sh/limitations.html#flagged-tool-output-can-leak-into-tool-call-input</id>
     <link href="https://framework.boucle.sh/limitations.html#flagged-tool-output-can-leak-into-tool-call-input"/>
@@ -156,14 +164,6 @@
     <link href="https://framework.boucle.sh/limitations.html#project-scoped-automode-config-silently-ignored"/>
     <updated>2026-08-20T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.233 repro found that an `autoMode` block placed in project `.claude/settings.json` or `.claude/settings.local.json` is ignored by design, but the shipped JSON schema does not mark `autoMode` as user-, managed-, or flag-scope only while sibling restricted keys do. The documented verification command, `claude auto-mode config`, then prints a default-looking effective config with no warning, and `claude doctor`, interactive startup, headless startup, and explicit `--setting-sources project` also give no signal that the project-scope block was discarded. A one-character path mistake between `.claude/settings.json` and `~/.claude/settings.json` can therefore drop custom auto-mode classifier rules silently.</summary>
-    <category term="Settings &amp; configuration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Headless startup can replace invalid ~/.claude.json with defaults.</title>
-    <id>https://framework.boucle.sh/limitations.html#headless-invalid-claude-json-reset-drops-live-config</id>
-    <link href="https://framework.boucle.sh/limitations.html#headless-invalid-claude-json-reset-drops-live-config"/>
-    <updated>2026-08-20T00:00:00Z</updated>
-    <summary>A reproduced Claude Code report shows that adding invalid JSON syntax, such as a C-style comment, to a working `~/.claude.json` has different recovery behavior by entrypoint. Interactive `claude` stops at a configuration-error screen and leaves the file untouched, but a non-interactive launch such as `claude -p &quot;hi&quot;` reports the configuration file as corrupted and rewrites the live file with defaults. That removes saved `mcpServers` and other settings from the active config, even though a timestamped backup is created under `~/.claude/backups/`. The JSON parse failure is expected because `~/.claude.json` is strict JSON; the limitation is that the headless recovery path mutates live configuration instead of failing closed.</summary>
     <category term="Settings &amp; configuration"/>
   </entry>
 </feed>

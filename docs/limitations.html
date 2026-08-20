@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1635</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-20.</span></p>
+        <p class="subtitle"><span id="total-count">1636</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-20.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18341,9 +18341,21 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When a tool-call input contains prompt-injection text, wrapper language, or content that cannot be a valid argument, reject the call and stop treating the current session as clean. Preserve the raw JSONL transcript around the malformed call, grep the workspace to distinguish on-disk content from harness leakage, and restart from a clean summary before continuing sensitive work. Do not rely on a single permission prompt as the only containment layer for future calls; add fail-closed hooks or external wrappers around reads and writes that should never accept mixed prompt text as a path or argument.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88117" target="_blank">#88117</a></div>
         </div>
-        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="88170" id="marketplace-entry-dependencies-can-be-ignored-by-graph-consumers" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="78756" id="hook-stdin-eof-can-hang-synchronous-hook-sessions" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1635</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Hook stdin EOF can hang synchronous hook sessions.</h3>
+            <p>A reported Windows 11 Claude Code 2.1.208 and later setup found that synchronous hook processes can intermittently receive a written JSON payload without the client closing the hook stdin pipe. Hook code that waits for EOF, such as `json.load(sys.stdin)`, then blocks forever, and because the hook is synchronous the whole session freezes until the specific child hook process is killed. The reporter reproduced it under hook-heavy Bash workflows and noted that killing only the hung hook process lets the session resume, pointing to hook stdin lifecycle handling rather than model latency.</p>
+                        <!-- workaround:hook-stdin-eof-can-hang-synchronous-hook-sessions -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not let hook correctness depend on an unbounded EOF wait. Wrap hook stdin reads in a bounded reader, add a process-level watchdog that exits before the Claude Code hook timeout budget, and keep an external reaper for hook-heavy Windows sessions until the client reliably closes hook stdin. For critical hooks, log hook start, payload-read completion, and exit timestamps so a session freeze can be traced to the stuck hook child instead of being mistaken for model or shell latency.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78756" target="_blank">#78756</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="88170" id="marketplace-entry-dependencies-can-be-ignored-by-graph-consumers" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1636</span>
                 <span class="kl-cat">MCP &amp; plugin issues</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
