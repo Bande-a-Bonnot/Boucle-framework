@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1630</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-20.</span></p>
+        <p class="subtitle"><span id="total-count">1631</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-20.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18269,9 +18269,21 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on custom metadata keys inside Claude Code hook groups or hook items as durable identity. For installers and uninstallers, identify owned hooks by preserved fields such as event, matcher, command path, script basename, or a separate external registry, and treat marker keys as short-lived hints only. After any Claude Code operation that rewrites settings, such as plugin marketplace changes, plugin installs, permission grants, or config toggles, re-run a hook registration audit and de-duplicate owned entries before trusting enforcement coverage.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88113" target="_blank">#88113</a></div>
         </div>
-        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="88043" id="desktop-can-hide-auto-mode-despite-defaultmode-settings" data-severity="medium" data-status="open">
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="88118" id="read-dedup-can-bypass-posttooluse-output-substitution" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1629</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Read dedup can bypass PostToolUse output substitution.</h3>
+            <p>A reported Claude Code 2.1.237 Linux repro found that repeated `Read` calls for the same unchanged file can be answered from `readFileState` as `file_unchanged` even when the first `Read` result was replaced by a `PostToolUse` hook via `updatedToolOutput`. The cache is written from raw disk content before hooks run, so the second identical `Read` gives the hook only a content-free unchanged marker and tells the model to refer to prior bytes that the model may never have received. On resumed sessions, the reconstructed cache can drift the other way by treating hook-substituted transcript content as if it came from disk.</p>
+                        <!-- workaround:read-dedup-can-bypass-posttooluse-output-substitution -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on repeated identical `Read` calls to re-consult redaction, caching, or context-management `PostToolUse` hooks while the file mtime is unchanged. For hooks that substitute `Read` output, keep an out-of-band cache of the substituted result and emit a full schema-valid `updatedToolOutput` when the hook receives `file_unchanged`, or vary the `Read` range deliberately so the dedup path does not fire. Verify with an end-to-end transcript canary that repeated reads show the substituted marker, and keep fail-closed `PreToolUse` guards around sensitive reads until your installed version proves the cache is synced after hooks.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88118" target="_blank">#88118</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="88043" id="desktop-can-hide-auto-mode-despite-defaultmode-settings" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1630</span>
                 <span class="kl-cat">Desktop &amp; IDE integration</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
@@ -18283,7 +18295,7 @@
         </div>
         <div class="kl-entry" data-category="Worktrees &amp; isolation" data-issues="88047" id="worktree-command-safety-can-misread-builtin-names-as-invocations" data-severity="medium" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1630</span>
+                <span class="kl-num">#1631</span>
                 <span class="kl-cat">Worktrees &amp; isolation</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>

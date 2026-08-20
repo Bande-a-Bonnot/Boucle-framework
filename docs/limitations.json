@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1630,
+  "count": 1631,
   "categories": {
-    "Hook behavior & events": 215,
+    "Hook behavior & events": 216,
     "Permission system": 148,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 88,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 138,
-    "HIGH": 895,
+    "HIGH": 896,
     "LOW": 111,
     "MEDIUM": 486
   },
@@ -20936,6 +20936,19 @@
       "workaround": "Do not rely on custom metadata keys inside Claude Code hook groups or hook items as durable identity. For installers and uninstallers, identify owned hooks by preserved fields such as event, matcher, command path, script basename, or a separate external registry, and treat marker keys as short-lived hints only. After any Claude Code operation that rewrites settings, such as plugin marketplace changes, plugin installs, permission grants, or config toggles, re-run a hook registration audit and de-duplicate owned entries before trusting enforcement coverage."
     },
     {
+      "id": "read-dedup-can-bypass-posttooluse-output-substitution",
+      "title": "Read dedup can bypass PostToolUse output substitution.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88118"
+      ],
+      "status": "open",
+      "date_added": "2026-08-20",
+      "description": "A reported Claude Code 2.1.237 Linux repro found that repeated `Read` calls for the same unchanged file can be answered from `readFileState` as `file_unchanged` even when the first `Read` result was replaced by a `PostToolUse` hook via `updatedToolOutput`. The cache is written from raw disk content before hooks run, so the second identical `Read` gives the hook only a content-free unchanged marker and tells the model to refer to prior bytes that the model may never have received. On resumed sessions, the reconstructed cache can drift the other way by treating hook-substituted transcript content as if it came from disk.",
+      "workaround": "Do not rely on repeated identical `Read` calls to re-consult redaction, caching, or context-management `PostToolUse` hooks while the file mtime is unchanged. For hooks that substitute `Read` output, keep an out-of-band cache of the substituted result and emit a full schema-valid `updatedToolOutput` when the hook receives `file_unchanged`, or vary the `Read` range deliberately so the dedup path does not fire. Verify with an end-to-end transcript canary that repeated reads show the substituted marker, and keep fail-closed `PreToolUse` guards around sensitive reads until your installed version proves the cache is synced after hooks."
+    },
+    {
       "id": "desktop-can-hide-auto-mode-despite-defaultmode-settings",
       "title": "Desktop can hide Auto mode despite defaultMode settings.",
       "category": "Desktop & IDE integration",
@@ -20963,27 +20976,27 @@
     }
   ],
   "status_summary": {
-    "open": 1616,
+    "open": 1617,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 138,
-    "high": 895,
+    "high": 896,
     "low": 111,
     "medium": 486
   },
   "lastUpdated": "2026-08-20",
   "stats": {
-    "total": 1630,
+    "total": 1631,
     "critical": 138,
-    "high": 895,
+    "high": 896,
     "medium": 486,
     "low": 111,
-    "open": 1616,
+    "open": 1617,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-20",
-  "total": 1630
+  "total": 1631
 }
