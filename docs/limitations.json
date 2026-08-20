@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1640,
+  "count": 1641,
   "categories": {
-    "Hook behavior & events": 217,
+    "Hook behavior & events": 218,
     "Permission system": 148,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 91,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 139,
-    "HIGH": 904,
+    "HIGH": 905,
     "LOW": 110,
     "MEDIUM": 487
   },
@@ -21098,30 +21098,43 @@
       "date_added": "2026-08-20",
       "description": "A reported Nix/home-manager Claude Code 2.1.219 setup found that a long-lived daemon-hosted `claude bg-spare` worker repeatedly unlinked `~/.claude/settings.json` when that path was a symlink into a read-only store directory. Kernel audit records attributed four successful `unlinkat` deletions to the same idle Claude Code worker within 7 to 69 seconds of the symlink being recreated, while replacing the symlink with a regular file stopped the deletion. Because `settings.json` carries permissions, hooks, sandbox policy, model, env, and status line, this can silently drop every user-level guardrail and make later sessions fall back to defaults with no obvious UI error.",
       "workaround": "If you manage Claude Code config with Nix, home-manager, stow, or another symlink-based dotfile system, avoid pointing `~/.claude/settings.json` directly at a read-only target until the writer path is fixed. Materialize a regular file under `~/.claude/`, or point the symlink at a writable small directory and monitor it. Add a startup check that fails closed when `~/.claude/settings.json` is missing, not a symlink when you expect one, or lacks sentinel permission and hook rules. After any dotfile switch, restart Claude Code daemon workers and run a harmless permission plus hook canary before trusting user-level enforcement."
+    },
+    {
+      "id": "posttooluse-rewrite-collisions-can-silently-drop-redactions",
+      "title": "PostToolUse rewrite collisions can silently drop redactions.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88338"
+      ],
+      "status": "open",
+      "date_added": "2026-08-20",
+      "description": "A reported Claude Code 2.1.234 repro found that when multiple `PostToolUse` hooks return conflicting `hookSpecificOutput.updatedToolOutput` values for the same tool call, the winning rewrite is deterministic by registration order rather than by completion order. In the repro, a later-registered identity rewrite restored the original Bash output after an earlier redaction hook masked a recognizable secret, so the model received the unmasked value. Claude Code emitted no warning that one rewrite had clobbered another, and the relevant SDK warning was attached to `classifierContext` rather than the `updatedToolOutput` field that carries the security-sensitive replacement.",
+      "workaround": "Do not combine redaction, truncation, classifier, and identity-style `PostToolUse` rewrites without proving their merge order in the exact installed Claude Code version. Register security-relevant redaction hooks after any hook that may return an identity or generic rewrite, and avoid returning `updatedToolOutput` at all from hooks that only need to attach assertions or classifier context. Add an end-to-end canary that makes a tool emit a fake secret and verifies the subsequent transcript contains only the masked value, not just hook-local success logs."
     }
   ],
   "status_summary": {
-    "open": 1626,
+    "open": 1627,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 139,
-    "high": 904,
+    "high": 905,
     "low": 110,
     "medium": 487
   },
   "lastUpdated": "2026-08-20",
   "stats": {
-    "total": 1640,
+    "total": 1641,
     "critical": 139,
-    "high": 904,
+    "high": 905,
     "medium": 487,
     "low": 110,
-    "open": 1626,
+    "open": 1627,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-20",
-  "total": 1640
+  "total": 1641
 }

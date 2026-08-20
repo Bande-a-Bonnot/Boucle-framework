@@ -7,6 +7,14 @@
   <updated>2026-08-20T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] PostToolUse rewrite collisions can silently drop redactions.</title>
+    <id>https://framework.boucle.sh/limitations.html#posttooluse-rewrite-collisions-can-silently-drop-redactions</id>
+    <link href="https://framework.boucle.sh/limitations.html#posttooluse-rewrite-collisions-can-silently-drop-redactions"/>
+    <updated>2026-08-20T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.234 repro found that when multiple `PostToolUse` hooks return conflicting `hookSpecificOutput.updatedToolOutput` values for the same tool call, the winning rewrite is deterministic by registration order rather than by completion order. In the repro, a later-registered identity rewrite restored the original Bash output after an earlier redaction hook masked a recognizable secret, so the model received the unmasked value. Claude Code emitted no warning that one rewrite had clobbered another, and the relevant SDK warning was attached to `classifierContext` rather than the `updatedToolOutput` field that carries the security-sensitive replacement.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[CRITICAL] Daemon worker can delete symlinked settings.json.</title>
     <id>https://framework.boucle.sh/limitations.html#daemon-worker-can-delete-symlinked-settings-json</id>
     <link href="https://framework.boucle.sh/limitations.html#daemon-worker-can-delete-symlinked-settings-json"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-20T00:00:00Z</updated>
     <summary>A reported Claude Code desktop/web non-interactive session denied an infrastructure CLI command in auto permission mode, then also denied the documented settings-editing path that would have added the needed allow rule. Because `/permissions` was unavailable on that surface, the user had no in-session prompt or approval UI to raise the authorization ceiling; a direct edit to `.claude/settings.local.json` succeeded, leaving the sanctioned config-update path stricter than raw file editing.</summary>
     <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] TUI Markdown rendering can renumber non-sequential list references.</title>
-    <id>https://framework.boucle.sh/limitations.html#tui-markdown-renumbers-non-sequential-list-references</id>
-    <link href="https://framework.boucle.sh/limitations.html#tui-markdown-renumbers-non-sequential-list-references"/>
-    <updated>2026-08-20T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.234 Linux TUI repro shows assistant output containing intentionally non-sequential ordered-list markers, such as 1, 5, 6, and 8, rendered back to the user as 1, 2, 3, and 4. The raw conversation JSON preserved the literal numbers, but the TUI applied normal Markdown ordered-list normalization, making cross-references appear to point at different source items and causing the assistant to deny a rendered item number the user could see. This is a semantic display corruption rather than a model-only mistake because the transcript and the terminal view disagree.</summary>
-    <category term="TUI &amp; display"/>
   </entry>
 </feed>
