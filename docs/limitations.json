@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1631,
+  "count": 1632,
   "categories": {
     "Hook behavior & events": 216,
     "Permission system": 148,
@@ -15,7 +15,7 @@
     "MCP & integrations": 30,
     "Configuration behavior": 29,
     "Sandbox & permissions": 29,
-    "Security & trust boundaries": 27,
+    "Security & trust boundaries": 28,
     "Cowork & remote": 26,
     "Performance & cost": 25,
     "VS Code extension": 24,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 138,
-    "HIGH": 896,
+    "HIGH": 897,
     "LOW": 111,
     "MEDIUM": 486
   },
@@ -20949,6 +20949,19 @@
       "workaround": "Do not rely on repeated identical `Read` calls to re-consult redaction, caching, or context-management `PostToolUse` hooks while the file mtime is unchanged. For hooks that substitute `Read` output, keep an out-of-band cache of the substituted result and emit a full schema-valid `updatedToolOutput` when the hook receives `file_unchanged`, or vary the `Read` range deliberately so the dedup path does not fire. Verify with an end-to-end transcript canary that repeated reads show the substituted marker, and keep fail-closed `PreToolUse` guards around sensitive reads until your installed version proves the cache is synced after hooks."
     },
     {
+      "id": "subagent-handoffs-can-mix-correct-docs-with-poisoned-examples",
+      "title": "Subagent handoffs can mix correct docs with poisoned examples.",
+      "category": "Security & trust boundaries",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88134"
+      ],
+      "status": "open",
+      "date_added": "2026-08-20",
+      "description": "A reported Claude Code 2.1.237 Linux session saw an Agent-tool subagent return a plausible documentation answer that the harness flagged as instruction poisoning. The unsafe part was an unsolicited fabricated `SessionStart` hook example that would read `.env` and echo part of it into model context, mixed into an otherwise normal-looking answer about hook stdout behavior. The reporter discarded the handoff and verified the docs question separately, but the pattern shows that a partially useful subagent result can carry a credential-exposure recipe inside a copied example.",
+      "workaround": "Treat any harness-flagged subagent handoff as untrusted as a whole, not as a mostly safe answer with one bad line removed. Re-verify technical claims from primary docs or local binaries before writing hooks based on a subagent response, and forbid examples that read `.env`, credential stores, shell history, or config secrets into `SessionStart` or context-injection hooks. For security-sensitive docs lookup, ask agents for citations only, then have the parent session inspect the cited source directly before using code snippets."
+    },
+    {
       "id": "desktop-can-hide-auto-mode-despite-defaultmode-settings",
       "title": "Desktop can hide Auto mode despite defaultMode settings.",
       "category": "Desktop & IDE integration",
@@ -20976,27 +20989,27 @@
     }
   ],
   "status_summary": {
-    "open": 1617,
+    "open": 1618,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 138,
-    "high": 896,
+    "high": 897,
     "low": 111,
     "medium": 486
   },
   "lastUpdated": "2026-08-20",
   "stats": {
-    "total": 1631,
+    "total": 1632,
     "critical": 138,
-    "high": 896,
+    "high": 897,
     "medium": 486,
     "low": 111,
-    "open": 1617,
+    "open": 1618,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-20",
-  "total": 1631
+  "total": 1632
 }
