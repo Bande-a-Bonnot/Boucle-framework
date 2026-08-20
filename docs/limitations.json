@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1634,
+  "count": 1635,
   "categories": {
     "Hook behavior & events": 216,
     "Permission system": 148,
     "Hook bypass & evasion": 103,
-    "MCP & plugin issues": 88,
+    "MCP & plugin issues": 89,
     "Subagent & spawned agents": 77,
     "Desktop & IDE integration": 59,
     "TUI & display": 37,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 138,
-    "HIGH": 899,
+    "HIGH": 900,
     "LOW": 111,
     "MEDIUM": 486
   },
@@ -21013,30 +21013,43 @@
       "date_added": "2026-08-20",
       "description": "A reported Windows 11 Claude Code 2.1.237 session produced a malformed `Read` tool call whose `file_path` began like a truncated local path and then contained roughly 900 words of injected content, including Claude Code's own wrapper phrase for suspicious tool output and fake instructions to exfiltrate data. The permission prompt intercepted the malformed call and the user rejected it before execution, but the wrapper phrase appearing inside a new tool input suggests previously flagged content may have crossed from inert tool output into tool-call argument construction.",
       "workaround": "When a tool-call input contains prompt-injection text, wrapper language, or content that cannot be a valid argument, reject the call and stop treating the current session as clean. Preserve the raw JSONL transcript around the malformed call, grep the workspace to distinguish on-disk content from harness leakage, and restart from a clean summary before continuing sensitive work. Do not rely on a single permission prompt as the only containment layer for future calls; add fail-closed hooks or external wrappers around reads and writes that should never accept mixed prompt text as a path or argument."
+    },
+    {
+      "id": "marketplace-entry-dependencies-can-be-ignored-by-graph-consumers",
+      "title": "Marketplace-entry dependencies can be ignored by graph consumers.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88170"
+      ],
+      "status": "open",
+      "date_added": "2026-08-20",
+      "description": "A reported Claude Code 2.1.237 plugin-marketplace repro found that dependencies declared on a marketplace entry were used by install-time name resolution but not by the rest of the dependency graph. Version constraints such as `~2.1.0` could silently resolve to an incompatible newer tag, conflicting ranges were not reported, `list --json` showed no dependency errors, and `uninstall <unrelated> --prune -y` removed an auto-installed dependency that the dependent plugin still needed. Declaring the same edge in the dependent plugin's own `plugin.json` made version checks, disable/enable behavior, and prune protection work.",
+      "workaround": "Declare load-bearing plugin dependencies in each dependent plugin's `plugin.json`, even if the marketplace entry also lists them. For generated internal marketplaces, duplicate catalog-level dependencies into the shipped manifest until every dependency graph consumer honors entry-declared edges. After plugin uninstall, prune, disable, enable, marketplace update, or account/profile changes, run `claude plugin list --json` and a same-session skill or hook canary rather than treating a successful install message as proof that required foundation plugins remain installed and compatible."
     }
   ],
   "status_summary": {
-    "open": 1620,
+    "open": 1621,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 138,
-    "high": 899,
+    "high": 900,
     "low": 111,
     "medium": 486
   },
   "lastUpdated": "2026-08-20",
   "stats": {
-    "total": 1634,
+    "total": 1635,
     "critical": 138,
-    "high": 899,
+    "high": 900,
     "medium": 486,
     "low": 111,
-    "open": 1620,
+    "open": 1621,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-20",
-  "total": 1634
+  "total": 1635
 }
