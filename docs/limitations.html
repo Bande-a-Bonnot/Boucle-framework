@@ -830,15 +830,17 @@
             <p>When Claude Code is launched from a git hook (post-commit, pre-push, etc.), it inherits the GIT_INDEX_FILE environment variable. Plugin initialization then writes plugin file entries into the project&#x27;s git index, silently corrupting it. Workaround: unset GIT_INDEX_FILE before invoking Claude from any git hook. This is a platform bug, not an enforce-hooks issue.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/38181" target="_blank">#38181</a></div>
         </div>
-        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="38165" id="prompt-type-hooks-incur-undocumented-billing" data-severity="low" data-status="open">
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="38165 88292" id="prompt-type-hooks-incur-undocumented-billing" data-severity="medium" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#51</span>
                 <span class="kl-cat">Hook behavior &amp; events</span>
-                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
-            <h3>Prompt-type hooks incur undocumented billing.</h3>
-            <p>Hooks with &quot;type&quot;: &quot;prompt&quot; send an LLM call per invocation, adding token costs that are not documented in the billing docs. enforce-hooks generates only &quot;type&quot;: &quot;command&quot; hooks, which run as local processes with zero API cost. If you need reasoning-based enforcement, be aware that prompt hooks double your per-response cost.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/38165" target="_blank">#38165</a></div>
+            <h3>Prompt-type hook denies can leak prompts and incur hidden token cost.</h3>
+            <p>Hooks with &quot;type&quot;: &quot;prompt&quot; send an LLM call per invocation, adding token costs that are not documented in the billing docs. A reported Claude Code 2.1.234 repro also found that when a prompt-type PreToolUse hook denies a call, Claude Code returned the hook&#x27;s configured prompt text to the blocked agent as part of the tool error before the deny reason; the same reason from a command hook `permissionDecision: &quot;deny&quot;` was returned without exposing the hook prompt. Long policy prompts can therefore be billed once for evaluation and then injected back into the main context on every deny, while also disclosing hook-author policy text in transcripts and stream-json output.</p>
+                        <!-- workaround:prompt-type-hooks-incur-undocumented-billing -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Use command-type hooks for load-bearing enforcement, especially when the hook prompt contains policy, thresholds, or other text you do not want copied into the main conversation. Keep prompt-type hook prompts short and non-sensitive, and test a denied representative tool call with `--output-format stream-json` after Claude Code updates to confirm the agent-facing tool error contains only the intended reason.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/38165" target="_blank">#38165</a>, <a href="https://github.com/anthropics/claude-code/issues/88292" target="_blank">#88292</a></div>
         </div>
         <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="37420" id="permissiondecision-ask-permanently-breaks-bypass-mode" data-severity="medium" data-status="open">
             <div class="kl-header">
