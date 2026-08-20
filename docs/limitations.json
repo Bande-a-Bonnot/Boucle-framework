@@ -19892,11 +19892,14 @@
       "title": "Task-notification resumes can cancel later tool calls as if the user refused.",
       "severity": "HIGH",
       "category": "Agent orchestration",
-      "description": "A reported Claude Code SDK 2.1.229 session found that when a background Agent tool task completed just after the parent turn stopped, its completion was re-injected as a same-session `task-notification` and the resumed turn reused an already-aborted AbortController. The next native or MCP tool call was then short-circuited with `toolDenialKind: \"cancelled\"` and user-facing text saying the user did not want to take the action, even though no permission prompt appeared and the permission handler was not consulted. The reporter observed the pattern in the CLI transcript and said it recurred across prior history, making background sub-agent completions able to poison the rest of a resumed turn with misleading human-refusal wording.",
+      "description": "Reported Claude Code SDK sessions found that `task-notification` turns can cancel later tool calls with `toolDenialKind: \"cancelled\"` and user-facing text saying the user did not want the action, even though no prompt appeared. The original 2.1.229 report tied this to a background Agent completion after the parent turn stopped. A later 2.1.237 repro narrowed another trigger: registering even a no-op `PreToolUse` hook made tools in a notification-woken turn cancel before the hook or permission handler ran, and follow-up evidence showed the whole remainder of the poisoned turn can be affected. This makes task notifications look like human refusals and can silently stop multi-agent or SDK workflows that depend on hook logs for observability.",
       "issue": "86650",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88203"
+      ],
       "status": "open",
       "date_added": "2026-08-15",
-      "workaround": "For SDK orchestrators that use background Agent tasks, do not treat the refusal text alone as a human decision. Inspect structured denial metadata where available, log task-notification timing against Stop-hook summaries, and retry cancelled tool work in a fresh user-initiated turn or fresh session instead of continuing inside the poisoned resumed turn. Keep permission-handler logs around background-agent completion windows so real user denials can be separated from infrastructure cancellations."
+      "workaround": "For SDK orchestrators, do not treat the refusal text alone as a human decision. Inspect structured denial metadata where available, log task-notification timing against hook and permission-handler logs, and retry cancelled tool work only in a fresh user-initiated turn or fresh session. If a `PreToolUse` hook is registered, avoid designs where subagents can report asynchronously while the parent turn still has tools left to call: prefer one-shot foreground agents, do not message existing subagents mid-turn unless the next tool call is disposable, and add a transcript canary that flags cancelled tool results with no corresponding hook invocation."
     },
     {
       "id": "vscode-approvals-can-pollute-tracked-project-settings",
