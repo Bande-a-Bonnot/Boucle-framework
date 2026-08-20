@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1636,
+  "count": 1637,
   "categories": {
     "Hook behavior & events": 217,
     "Permission system": 148,
     "Hook bypass & evasion": 103,
-    "MCP & plugin issues": 89,
+    "MCP & plugin issues": 90,
     "Subagent & spawned agents": 77,
     "Desktop & IDE integration": 59,
     "TUI & display": 37,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 138,
-    "HIGH": 901,
+    "HIGH": 902,
     "LOW": 111,
     "MEDIUM": 486
   },
@@ -21015,6 +21015,19 @@
       "workaround": "When a tool-call input contains prompt-injection text, wrapper language, or content that cannot be a valid argument, reject the call and stop treating the current session as clean. Preserve the raw JSONL transcript around the malformed call, grep the workspace to distinguish on-disk content from harness leakage, and restart from a clean summary before continuing sensitive work. Do not rely on a single permission prompt as the only containment layer for future calls; add fail-closed hooks or external wrappers around reads and writes that should never accept mixed prompt text as a path or argument."
     },
     {
+      "id": "desktop-remote-plugin-sync-can-omit-plugin-hooks",
+      "title": "Desktop remote plugin sync can omit plugin hooks.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/83643"
+      ],
+      "status": "open",
+      "date_added": "2026-08-20",
+      "description": "A reported Claude Desktop remote SSH session passed synced plugin directories under `~/.claude/remote/plugins` to the remote `ccd-cli`, but those synced copies omitted each plugin's `hooks/` directory and `hooks/hooks.json`. The same plugin's skills and commands worked, direct `settings.json` hooks fired in the desktop remote session, and a control `--plugin-dir` pointing at a complete plugin registered hooks normally. This means a plugin-delivered `PreToolUse` guard can appear enabled in a desktop remote session while its hook dispatch path is silently absent.",
+      "workaround": "Do not treat an enabled plugin as proof that its hooks are active in Claude Desktop remote or SSH sessions. On the remote host, check the synced plugin payload under `~/.claude/remote/plugins` for `hooks/hooks.json`, run a same-session hook canary, and move critical guard hooks into `~/.claude/settings.json` or project settings until desktop remote sync preserves plugin hook files. Keep terminal CLI and desktop-remote verification separate because the local CLI plugin cache can include hooks that the remote synced copy does not."
+    },
+    {
       "id": "hook-stdin-eof-can-hang-synchronous-hook-sessions",
       "title": "Hook stdin EOF can hang synchronous hook sessions.",
       "category": "Hook behavior & events",
@@ -21042,27 +21055,27 @@
     }
   ],
   "status_summary": {
-    "open": 1622,
+    "open": 1623,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 138,
-    "high": 901,
+    "high": 902,
     "low": 111,
     "medium": 486
   },
   "lastUpdated": "2026-08-20",
   "stats": {
-    "total": 1636,
+    "total": 1637,
     "critical": 138,
-    "high": 901,
+    "high": 902,
     "medium": 486,
     "low": 111,
-    "open": 1622,
+    "open": 1623,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-20",
-  "total": 1636
+  "total": 1637
 }
