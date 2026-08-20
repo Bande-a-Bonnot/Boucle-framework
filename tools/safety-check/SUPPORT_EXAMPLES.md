@@ -210,7 +210,11 @@ Build a temporary reproduction with throwaway paths:
   tmp_home="$(mktemp -d)"
   cleanup() {
     if [ "${KEEP_BOUCLE_REPRO:-0}" != "1" ]; then
-      rm -rf "$tmpdir" "$tmp_home"
+      rm -f "$tmpdir/.claude/settings.json"
+      rmdir "$tmpdir/.claude/hooks" "$tmpdir/.claude" "$tmpdir" "$tmp_home" 2>/dev/null || {
+        printf 'Temporary directories were not empty; inspect and remove manually:\n'
+        printf '  %s\n  %s\n' "$tmp_home" "$tmpdir"
+      }
     fi
   }
   trap cleanup EXIT
@@ -218,7 +222,7 @@ Build a temporary reproduction with throwaway paths:
   mkdir -p "$tmpdir/.claude/hooks"
   printf '{"hooks":{}}\n' > "$tmpdir/.claude/settings.json"
   cd "$tmpdir"
-  curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | HOME="$tmp_home" bash -s -- --verify --summary-only
+  curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | PYTHONDONTWRITEBYTECODE=1 HOME="$tmp_home" bash -s -- --verify --summary-only
   if [ "${KEEP_BOUCLE_REPRO:-0}" = "1" ]; then
     printf 'Temporary HOME: %s\nTemporary project: %s\n' "$tmp_home" "$tmpdir"
   fi
@@ -227,9 +231,11 @@ Build a temporary reproduction with throwaway paths:
 
 Replace that settings file with the smallest redacted configuration that still
 reproduces the issue. The temporary `HOME` keeps real user-level Claude Code
-hooks out of the reproduction. The snippet removes the temporary directories
-when it finishes; set `KEEP_BOUCLE_REPRO=1` in the same shell before running it
-if you need to inspect them afterward. If the problem disappears in the
-temporary directory, the remaining signal is probably in private paths,
-environment variables, shell startup files, or custom hook code. Say that
-instead of posting the private workspace.
+hooks out of the reproduction. The snippet removes the known throwaway settings
+file and then removes the temporary directories only if they are empty; set
+`KEEP_BOUCLE_REPRO=1` in the same shell before running it if you need to inspect
+them afterward. If anything unexpected remains, the paths are printed so you can
+inspect and remove them manually. If the problem disappears in the temporary
+directory, the remaining signal is probably in private paths, environment
+variables, shell startup files, or custom hook code. Say that instead of posting
+the private workspace.
