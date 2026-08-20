@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1642</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-20.</span></p>
+        <p class="subtitle"><span id="total-count">1643</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-20.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18429,9 +18429,21 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not combine redaction, truncation, classifier, and identity-style `PostToolUse` rewrites without proving their merge order in the exact installed Claude Code version. Register security-relevant redaction hooks after any hook that may return an identity or generic rewrite, and avoid returning `updatedToolOutput` at all from hooks that only need to attach assertions or classifier context. Add an end-to-end canary that makes a tool emit a fake secret and verifies the subsequent transcript contains only the masked value, not just hook-local success logs.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88338" target="_blank">#88338</a></div>
         </div>
-        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="88350" id="desktop-inline-plugins-can-reenable-after-restart" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="Worktrees &amp; isolation" data-issues="88379" id="worktree-git-c-path-classifier-can-invert-safe-and-unsafe-targets" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1642</span>
+                <span class="kl-cat">Worktrees &amp; isolation</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Worktree `git -C` path classifier can invert safe and unsafe targets.</h3>
+            <p>A reported Claude Code 2.1.228 worktree-isolated session found that the built-in git command safety check classified `git -C &lt;path&gt;` by the path token&#x27;s leading character rather than by the directory it resolves to. Literal in-worktree targets such as `git -C .` and `git -C ./tmp/some-clone ...` were refused as unverifiable runtime computations, while `git -C &quot;$HOME/some-other-repo&quot; ...` was allowed and executed against a repository outside the isolated worktree. The refusal is a hard tool error rather than a permission prompt, so users cannot approve a safe in-worktree false positive from the normal dialog path.</p>
+                        <!-- workaround:worktree-git-c-path-classifier-can-invert-safe-and-unsafe-targets -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> In worktree-isolated sessions, avoid variable-expanded `git -C` targets such as `$HOME/...`, `${VAR}/...`, or command substitutions. Prefer running git from the intended current directory, or use a literal relative path without a leading `./` only after checking `pwd` and `git rev-parse --show-toplevel`. If a command is refused with the computed-at-runtime worktree message, simplify it to run from the worktree root rather than treating the refusal as proof the original target was unsafe. For high-impact git operations, verify the resolved repository root before and after the command.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88379" target="_blank">#88379</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="88350" id="desktop-inline-plugins-can-reenable-after-restart" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1643</span>
                 <span class="kl-cat">MCP &amp; plugin issues</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>

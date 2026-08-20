@@ -15,6 +15,14 @@
     <category term="MCP &amp; plugin issues"/>
   </entry>
   <entry>
+    <title>[HIGH] Worktree `git -C` path classifier can invert safe and unsafe targets.</title>
+    <id>https://framework.boucle.sh/limitations.html#worktree-git-c-path-classifier-can-invert-safe-and-unsafe-targets</id>
+    <link href="https://framework.boucle.sh/limitations.html#worktree-git-c-path-classifier-can-invert-safe-and-unsafe-targets"/>
+    <updated>2026-08-20T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.228 worktree-isolated session found that the built-in git command safety check classified `git -C &lt;path&gt;` by the path token&#x27;s leading character rather than by the directory it resolves to. Literal in-worktree targets such as `git -C .` and `git -C ./tmp/some-clone ...` were refused as unverifiable runtime computations, while `git -C &quot;$HOME/some-other-repo&quot; ...` was allowed and executed against a repository outside the isolated worktree. The refusal is a hard tool error rather than a permission prompt, so users cannot approve a safe in-worktree false positive from the normal dialog path.</summary>
+    <category term="Worktrees &amp; isolation"/>
+  </entry>
+  <entry>
     <title>[HIGH] PostToolUse rewrite collisions can silently drop redactions.</title>
     <id>https://framework.boucle.sh/limitations.html#posttooluse-rewrite-collisions-can-silently-drop-redactions</id>
     <link href="https://framework.boucle.sh/limitations.html#posttooluse-rewrite-collisions-can-silently-drop-redactions"/>
@@ -156,14 +164,6 @@
     <link href="https://framework.boucle.sh/limitations.html#tool-event-hooks-can-silently-miss-runtime-dispatch"/>
     <updated>2026-08-20T00:00:00Z</updated>
     <summary>A long-running Claude Code issue thread reports `PreToolUse` and `PostToolUse` hooks that are visible in `/hooks`, pass manual stdin tests, and coexist with working SessionStart or Stop hooks, but still receive no real tool-event invocation in some runtime paths. Later comments narrow the failure modes to VS Code extension sessions, headless `-p` plus `--output-format stream-json`, parallel Bash batches where only one tool event dispatches, and long edit sessions where PostToolUse stops firing despite isolated single-edit tests succeeding. Enforcement hooks can therefore look installed while real Write, Edit, Bash, or PowerShell operations proceed without the expected preflight or post-action automation.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Explicit PreToolUse `defer` decisions can dead-end tool calls.</title>
-    <id>https://framework.boucle.sh/limitations.html#explicit-pretooluse-defer-can-dead-end-tool-calls</id>
-    <link href="https://framework.boucle.sh/limitations.html#explicit-pretooluse-defer-can-dead-end-tool-calls"/>
-    <updated>2026-08-20T00:00:00Z</updated>
-    <summary>A reported Claude Code hook setup found that a `PreToolUse` hook returning `hookSpecificOutput.permissionDecision: &quot;defer&quot;` is not equivalent to a silent pass-through. Matching tool calls can stop at `tool_deferred`, receive a synthetic missing-tool-result error on a later continuation path, or leave subagent Bash calls without any `tool_result` while the parent sees a completed-looking task. Comments reproduced the issue in the CLI and TypeScript Agent SDK, including cases where a fast synchronous `defer` raced the assistant stream closure and produced `[Tool result missing due to internal error]` instead of a clean suspended call.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>
