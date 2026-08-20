@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1629,
+  "count": 1630,
   "categories": {
     "Hook behavior & events": 215,
     "Permission system": 148,
@@ -13,8 +13,8 @@
     "Platform & compatibility": 31,
     "Context & memory": 30,
     "MCP & integrations": 30,
+    "Configuration behavior": 29,
     "Sandbox & permissions": 29,
-    "Configuration behavior": 28,
     "Security & trust boundaries": 27,
     "Cowork & remote": 26,
     "Performance & cost": 25,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 138,
-    "HIGH": 894,
+    "HIGH": 895,
     "LOW": 111,
     "MEDIUM": 486
   },
@@ -20923,6 +20923,19 @@
       "workaround": "Do not put load-bearing user-wide permissions, deny rules, hooks, or worktree settings only in `~/.claude/settings.local.json` unless every relevant session starts in `$HOME`. Put user-wide policy in `~/.claude/settings.json` or managed settings, and reserve `settings.local.json` for project-local trust state that you verify from the actual project directory. After changing config-home settings, start a fresh project session and run a harmless command or hook canary that proves the intended permission or hook is active before relying on unattended work."
     },
     {
+      "id": "settings-writes-can-strip-hook-metadata-keys",
+      "title": "settings.json writes can strip hook metadata keys.",
+      "category": "Configuration behavior",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88113"
+      ],
+      "status": "open",
+      "date_added": "2026-08-20",
+      "description": "A reported macOS Claude Code 2.1.227 repro found that any client write to `settings.json`, including plugin marketplace or install changes unrelated to hooks, silently removed unknown keys from hook group objects and hook item objects while preserving unknown keys at the settings root. The reporter showed marker keys disappearing from `SessionStart`, `Stop`, `SubagentStop`, and `PreToolUse` hook entries. Third-party hook managers that key identity on those markers can then lose track of their own registration, append duplicate hooks, or fail to uninstall cleanly.",
+      "workaround": "Do not rely on custom metadata keys inside Claude Code hook groups or hook items as durable identity. For installers and uninstallers, identify owned hooks by preserved fields such as event, matcher, command path, script basename, or a separate external registry, and treat marker keys as short-lived hints only. After any Claude Code operation that rewrites settings, such as plugin marketplace changes, plugin installs, permission grants, or config toggles, re-run a hook registration audit and de-duplicate owned entries before trusting enforcement coverage."
+    },
+    {
       "id": "desktop-can-hide-auto-mode-despite-defaultmode-settings",
       "title": "Desktop can hide Auto mode despite defaultMode settings.",
       "category": "Desktop & IDE integration",
@@ -20950,27 +20963,27 @@
     }
   ],
   "status_summary": {
-    "open": 1615,
+    "open": 1616,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 138,
-    "high": 894,
+    "high": 895,
     "low": 111,
     "medium": 486
   },
   "lastUpdated": "2026-08-20",
   "stats": {
-    "total": 1629,
+    "total": 1630,
     "critical": 138,
-    "high": 894,
+    "high": 895,
     "medium": 486,
     "low": 111,
-    "open": 1615,
+    "open": 1616,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-20",
-  "total": 1629
+  "total": 1630
 }
