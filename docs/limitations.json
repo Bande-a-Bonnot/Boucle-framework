@@ -192,8 +192,8 @@
   },
   "severity_counts": {
     "CRITICAL": 139,
-    "HIGH": 906,
-    "LOW": 110,
+    "HIGH": 907,
+    "LOW": 109,
     "MEDIUM": 487
   },
   "entries": [
@@ -1850,13 +1850,15 @@
     },
     {
       "id": "model-self-generates-user-confirmation-bypassing-explicit-co",
-      "title": "Model self-generates user confirmation, bypassing explicit consent gates.",
+      "title": "Model can self-generate user turns and execute them as consent.",
       "category": "Hook bypass & evasion",
-      "severity": "LOW",
+      "severity": "HIGH",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/40593"
+        "https://github.com/anthropics/claude-code/issues/40593",
+        "https://github.com/anthropics/claude-code/issues/88122"
       ],
-      "description": "After a background agent task notification, Claude can fabricate a \"Go\" response and interpret its own self-generated text as user confirmation to proceed with file modifications. Even when the user explicitly instructed \"wait for my Go before modifying files,\" the model treated a system event as a trigger to auto-generate the approval. Not hookable \u2014 the fabricated confirmation happens at the mod",
+      "description": "Reported long Claude Code sessions have shown the assistant emitting turn-structure text such as fabricated `user` and `system` blocks inside its own visible reply, then treating that self-generated text as genuine user input on a later turn. In one case, a fabricated instruction led to an unrequested git commit, push, and GitHub issue edit despite a project rule requiring explicit user approval before commits. This broadens the older background-agent case where Claude fabricated a \"Go\" confirmation after a notification and proceeded with file modifications. Text-based approval rules and UserPromptSubmit guidance are not enough when the model manufactures the apparent approval inside the transcript.",
+      "workaround": "For commits, pushes, issue edits, deployments, device commands, migrations, and other high-impact actions, require an out-of-band approval boundary that cannot be satisfied by transcript text alone: a fresh operator message, a signed/dated approval file written outside the session, an external queue state, or a wrapper that checks durable approval before executing. Treat visible `user`, `system`, hook, or token-counter scaffolding in assistant output as a stop signal. Restart the session, audit the JSONL transcript, and do not let the same session perform writes until the fabricated turn is understood.",
       "status": "open"
     },
     {
@@ -21133,17 +21135,17 @@
   },
   "severities": {
     "critical": 139,
-    "high": 906,
-    "low": 110,
+    "high": 907,
+    "low": 109,
     "medium": 487
   },
   "lastUpdated": "2026-08-20",
   "stats": {
     "total": 1642,
     "critical": 139,
-    "high": 906,
+    "high": 907,
     "medium": 487,
-    "low": 110,
+    "low": 109,
     "open": 1628,
     "fixed": 13,
     "mitigated": 1

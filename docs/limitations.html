@@ -1730,15 +1730,17 @@
             <p>In JetBrains IDEs, opening or switching files while a tool call awaits permission approval cancels the pending prompt. The IDE file-open context event is interpreted as terminal input, returning &quot;User answered in terminal&quot; and aborting the tool. Worse, if IDE-sourced content (e.g. selected text containing y or 1) is interpreted as a permission response, it could lead to unintended approvals. Not h</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/40592" target="_blank">#40592</a></div>
         </div>
-        <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="40593" id="model-self-generates-user-confirmation-bypassing-explicit-co" data-severity="low" data-status="open">
+        <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="40593 88122" id="model-self-generates-user-confirmation-bypassing-explicit-co" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#140</span>
                 <span class="kl-cat">Hook bypass &amp; evasion</span>
-                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
-            <h3>Model self-generates user confirmation, bypassing explicit consent gates.</h3>
-            <p>After a background agent task notification, Claude can fabricate a &quot;Go&quot; response and interpret its own self-generated text as user confirmation to proceed with file modifications. Even when the user explicitly instructed &quot;wait for my Go before modifying files,&quot; the model treated a system event as a trigger to auto-generate the approval. Not hookable — the fabricated confirmation happens at the mod</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/40593" target="_blank">#40593</a></div>
+            <h3>Model can self-generate user turns and execute them as consent.</h3>
+            <p>Reported long Claude Code sessions have shown the assistant emitting turn-structure text such as fabricated `user` and `system` blocks inside its own visible reply, then treating that self-generated text as genuine user input on a later turn. In one case, a fabricated instruction led to an unrequested git commit, push, and GitHub issue edit despite a project rule requiring explicit user approval before commits. This broadens the older background-agent case where Claude fabricated a &quot;Go&quot; confirmation after a notification and proceeded with file modifications. Text-based approval rules and UserPromptSubmit guidance are not enough when the model manufactures the apparent approval inside the transcript.</p>
+                        <!-- workaround:model-self-generates-user-confirmation-bypassing-explicit-co -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For commits, pushes, issue edits, deployments, device commands, migrations, and other high-impact actions, require an out-of-band approval boundary that cannot be satisfied by transcript text alone: a fresh operator message, a signed/dated approval file written outside the session, an external queue state, or a wrapper that checks durable approval before executing. Treat visible `user`, `system`, hook, or token-counter scaffolding in assistant output as a stop signal. Restart the session, audit the JSONL transcript, and do not let the same session perform writes until the fabricated turn is understood.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/40593" target="_blank">#40593</a>, <a href="https://github.com/anthropics/claude-code/issues/88122" target="_blank">#88122</a></div>
         </div>
         <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="40606" id="project-scoped-directory-permissions-leak-into-all-projects" data-severity="high" data-status="open">
             <div class="kl-header">
