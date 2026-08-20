@@ -4,21 +4,29 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-08-19T00:00:00Z</updated>
+  <updated>2026-08-20T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
     <title>[MEDIUM] Worktree command safety can misread builtin names as invocations.</title>
     <id>https://framework.boucle.sh/limitations.html#worktree-command-safety-can-misread-builtin-names-as-invocations</id>
     <link href="https://framework.boucle.sh/limitations.html#worktree-command-safety-can-misread-builtin-names-as-invocations"/>
-    <updated>2026-08-19T00:00:00Z</updated>
+    <updated>2026-08-20T00:00:00Z</updated>
     <summary>A reported Windows 11 worktree-isolated session found that Claude Code&#x27;s Bash command-safety analyzer refused commands containing shell builtin names such as `complete`, `compgen`, or `compopt` even when those words appeared as ordinary non-leading arguments. The concrete failure was a Python workflow command whose subcommand was named `complete`; the analyzer treated the argument as if Bash would invoke the completion builtin and refused it as unverifiable inside the worktree. Quoting the token and disabling the sandbox did not help because the refusal came from the PreToolUse-layer worktree analyzer, not from the sandbox.</summary>
     <category term="Worktrees &amp; isolation"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Desktop can hide Auto mode despite defaultMode settings.</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-can-hide-auto-mode-despite-defaultmode-settings</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-can-hide-auto-mode-despite-defaultmode-settings"/>
+    <updated>2026-08-20T00:00:00Z</updated>
+    <summary>A reported personal Claude Max macOS Desktop session stopped offering Auto in the Claude Code permission-mode picker and labelled bypass permissions as disabled by the user&#x27;s organization, even though the account had no managed policy and `~/.claude/settings.json` still set `permissions.defaultMode` to `auto`. The same machine&#x27;s terminal CLI continued to start in Auto mode, so the regression appeared isolated to Desktop-started sessions or Desktop remote configuration rather than the local settings file.</summary>
+    <category term="Desktop &amp; IDE integration"/>
   </entry>
   <entry>
     <title>[HIGH] Write tool can ignore the Bash working-directory boundary.</title>
     <id>https://framework.boucle.sh/limitations.html#write-tool-can-ignore-bash-working-directory-boundary</id>
     <link href="https://framework.boucle.sh/limitations.html#write-tool-can-ignore-bash-working-directory-boundary"/>
-    <updated>2026-08-19T00:00:00Z</updated>
+    <updated>2026-08-20T00:00:00Z</updated>
     <summary>A reported macOS headless `claude -p` automation found that starting Claude Code from a restricted worktree made Bash refuse a redirected write outside the working directory, while the Write tool could still create the same absolute path outside that boundary. The reporter reproduced it with `--permission-mode acceptEdits`, a settings file allowing Write/Edit, and no `--add-dir` grant for the parent checkout. In the real pipeline, task files landed in a sibling checkout and were later committed on the wrong branch.</summary>
     <category term="Worktrees &amp; isolation"/>
   </entry>
@@ -26,7 +34,7 @@
     <title>[HIGH] EnterWorktree hook subprocesses can stay bound to the original checkout.</title>
     <id>https://framework.boucle.sh/limitations.html#enterworktree-hook-subprocesses-can-stay-bound-to-original-checkout</id>
     <link href="https://framework.boucle.sh/limitations.html#enterworktree-hook-subprocesses-can-stay-bound-to-original-checkout"/>
-    <updated>2026-08-19T00:00:00Z</updated>
+    <updated>2026-08-20T00:00:00Z</updated>
     <summary>A reported Windows 11 CLI/agent SDK session found that after `EnterWorktree` switches file tools into a new git worktree, `PreToolUse` hook subprocesses can keep resolving `${CLAUDE_PROJECT_DIR:-$PWD}` against the original checkout. `Bash`, `Read`, `Write`, and `Edit` operated in the entered worktree, but a hook command using `${CLAUDE_PROJECT_DIR:-$PWD}/.claude/hooks/...` launched the original checkout&#x27;s copy of the script for the rest of the session. Editing or instrumenting the worktree&#x27;s own hook copy then had no effect, so path guards could permanently block valid worktree edits or leave Bash and PowerShell workarounds outside the intended hook coverage.</summary>
     <category term="Worktrees &amp; isolation"/>
   </entry>
@@ -34,7 +42,7 @@
     <title>[HIGH] Headless path-scoped Write retries can breach the allowed path.</title>
     <id>https://framework.boucle.sh/limitations.html#headless-path-scoped-write-retries-can-breach-scope</id>
     <link href="https://framework.boucle.sh/limitations.html#headless-path-scoped-write-retries-can-breach-scope"/>
-    <updated>2026-08-19T00:00:00Z</updated>
+    <updated>2026-08-20T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.206 Windows headless `claude -p` repro found that `--allowedTools &quot;Write(&lt;ALLOWED_DIR&gt;/**)&quot;` correctly denied the first out-of-scope Write attempt and recorded a `permission_denials` entry, but later retries of the same out-of-scope Write in the same session could create the file anyway. The observed breach correlated with retrying after the first denial: runs where the model stopped after one denial withheld the write, while runs that retried to the turn cap created the outside file and still reported overall success.</summary>
     <category term="Permission system"/>
   </entry>
@@ -42,7 +50,7 @@
     <title>[HIGH] Tool-event hooks can silently miss runtime dispatch.</title>
     <id>https://framework.boucle.sh/limitations.html#tool-event-hooks-can-silently-miss-runtime-dispatch</id>
     <link href="https://framework.boucle.sh/limitations.html#tool-event-hooks-can-silently-miss-runtime-dispatch"/>
-    <updated>2026-08-19T00:00:00Z</updated>
+    <updated>2026-08-20T00:00:00Z</updated>
     <summary>A long-running Claude Code issue thread reports `PreToolUse` and `PostToolUse` hooks that are visible in `/hooks`, pass manual stdin tests, and coexist with working SessionStart or Stop hooks, but still receive no real tool-event invocation in some runtime paths. Later comments narrow the failure modes to VS Code extension sessions, headless `-p` plus `--output-format stream-json`, parallel Bash batches where only one tool event dispatches, and long edit sessions where PostToolUse stops firing despite isolated single-edit tests succeeding. Enforcement hooks can therefore look installed while real Write, Edit, Bash, or PowerShell operations proceed without the expected preflight or post-action automation.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -50,7 +58,7 @@
     <title>[HIGH] Explicit PreToolUse `defer` decisions can dead-end tool calls.</title>
     <id>https://framework.boucle.sh/limitations.html#explicit-pretooluse-defer-can-dead-end-tool-calls</id>
     <link href="https://framework.boucle.sh/limitations.html#explicit-pretooluse-defer-can-dead-end-tool-calls"/>
-    <updated>2026-08-19T00:00:00Z</updated>
+    <updated>2026-08-20T00:00:00Z</updated>
     <summary>A reported Claude Code hook setup found that a `PreToolUse` hook returning `hookSpecificOutput.permissionDecision: &quot;defer&quot;` is not equivalent to a silent pass-through. Matching tool calls can stop at `tool_deferred`, receive a synthetic missing-tool-result error on a later continuation path, or leave subagent Bash calls without any `tool_result` while the parent sees a completed-looking task. Comments reproduced the issue in the CLI and TypeScript Agent SDK, including cases where a fast synchronous `defer` raced the assistant stream closure and produced `[Tool result missing due to internal error]` instead of a clean suspended call.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -58,7 +66,7 @@
     <title>[HIGH] Non-interactive permission denials can block the grant path</title>
     <id>https://framework.boucle.sh/limitations.html#non-interactive-permission-denials-can-block-the-grant-path</id>
     <link href="https://framework.boucle.sh/limitations.html#non-interactive-permission-denials-can-block-the-grant-path"/>
-    <updated>2026-08-19T00:00:00Z</updated>
+    <updated>2026-08-20T00:00:00Z</updated>
     <summary>A reported Claude Code desktop/web non-interactive session denied an infrastructure CLI command in auto permission mode, then also denied the documented settings-editing path that would have added the needed allow rule. Because `/permissions` was unavailable on that surface, the user had no in-session prompt or approval UI to raise the authorization ceiling; a direct edit to `.claude/settings.local.json` succeeded, leaving the sanctioned config-update path stricter than raw file editing.</summary>
     <category term="Permission system"/>
   </entry>
@@ -66,7 +74,7 @@
     <title>[HIGH] TUI Markdown rendering can renumber non-sequential list references.</title>
     <id>https://framework.boucle.sh/limitations.html#tui-markdown-renumbers-non-sequential-list-references</id>
     <link href="https://framework.boucle.sh/limitations.html#tui-markdown-renumbers-non-sequential-list-references"/>
-    <updated>2026-08-19T00:00:00Z</updated>
+    <updated>2026-08-20T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.234 Linux TUI repro shows assistant output containing intentionally non-sequential ordered-list markers, such as 1, 5, 6, and 8, rendered back to the user as 1, 2, 3, and 4. The raw conversation JSON preserved the literal numbers, but the TUI applied normal Markdown ordered-list normalization, making cross-references appear to point at different source items and causing the assistant to deny a rendered item number the user could see. This is a semantic display corruption rather than a model-only mistake because the transcript and the terminal view disagree.</summary>
     <category term="TUI &amp; display"/>
   </entry>
@@ -74,7 +82,7 @@
     <title>[MEDIUM] VS Code extension can reject `/mcp reconnect &lt;server&gt;` with a terminal-readiness error.</title>
     <id>https://framework.boucle.sh/limitations.html#vscode-mcp-reconnect-command-shows-terminal-readiness-error</id>
     <link href="https://framework.boucle.sh/limitations.html#vscode-mcp-reconnect-command-shows-terminal-readiness-error"/>
-    <updated>2026-08-19T00:00:00Z</updated>
+    <updated>2026-08-20T00:00:00Z</updated>
     <summary>A reported Claude Code VS Code native extension repro found that running `/mcp reconnect &lt;server-name&gt;` fails even when the integrated terminal is idle and no permission dialog, overlay, or streaming turn is active. The bare `/mcp` command still works and prints usage that includes the reconnect argument form, but the named reconnect command returns a CLI/TUI-style readiness message about the terminal still starting up or showing another view. In the VS Code chat sidebar that condition does not map cleanly to the UI, so the command appears to be unavailable or guarded by the wrong readiness check.</summary>
     <category term="VS Code extension"/>
   </entry>
@@ -82,7 +90,7 @@
     <title>[HIGH] Auto mode Bash edits can escape /rewind checkpoints.</title>
     <id>https://framework.boucle.sh/limitations.html#auto-mode-bash-edits-can-escape-rewind</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-mode-bash-edits-can-escape-rewind"/>
-    <updated>2026-08-19T00:00:00Z</updated>
+    <updated>2026-08-20T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.234 WSL2 repro found that, when auto mode is active, the built-in prompt can steer the model to make file changes through Bash tools such as Python heredocs, sed, or redirected shell writes instead of the dedicated Edit or Write tools. Those Bash-authored writes were not tracked by the checkpoint system, so /rewind reported success while leaving modified and newly created files on disk. The mismatch is silent unless the user manually checks git status, and later turns can build on code the user believed had been reverted.</summary>
     <category term="Data integrity"/>
   </entry>
@@ -90,7 +98,7 @@
     <title>[HIGH] Project-scoped autoMode config can be silently ignored.</title>
     <id>https://framework.boucle.sh/limitations.html#project-scoped-automode-config-silently-ignored</id>
     <link href="https://framework.boucle.sh/limitations.html#project-scoped-automode-config-silently-ignored"/>
-    <updated>2026-08-19T00:00:00Z</updated>
+    <updated>2026-08-20T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.233 repro found that an `autoMode` block placed in project `.claude/settings.json` or `.claude/settings.local.json` is ignored by design, but the shipped JSON schema does not mark `autoMode` as user-, managed-, or flag-scope only while sibling restricted keys do. The documented verification command, `claude auto-mode config`, then prints a default-looking effective config with no warning, and `claude doctor`, interactive startup, headless startup, and explicit `--setting-sources project` also give no signal that the project-scope block was discarded. A one-character path mistake between `.claude/settings.json` and `~/.claude/settings.json` can therefore drop custom auto-mode classifier rules silently.</summary>
     <category term="Settings &amp; configuration"/>
   </entry>
@@ -98,7 +106,7 @@
     <title>[HIGH] Headless startup can replace invalid ~/.claude.json with defaults.</title>
     <id>https://framework.boucle.sh/limitations.html#headless-invalid-claude-json-reset-drops-live-config</id>
     <link href="https://framework.boucle.sh/limitations.html#headless-invalid-claude-json-reset-drops-live-config"/>
-    <updated>2026-08-19T00:00:00Z</updated>
+    <updated>2026-08-20T00:00:00Z</updated>
     <summary>A reproduced Claude Code report shows that adding invalid JSON syntax, such as a C-style comment, to a working `~/.claude.json` has different recovery behavior by entrypoint. Interactive `claude` stops at a configuration-error screen and leaves the file untouched, but a non-interactive launch such as `claude -p &quot;hi&quot;` reports the configuration file as corrupted and rewrites the live file with defaults. That removes saved `mcpServers` and other settings from the active config, even though a timestamped backup is created under `~/.claude/backups/`. The JSON parse failure is expected because `~/.claude.json` is strict JSON; the limitation is that the headless recovery path mutates live configuration instead of failing closed.</summary>
     <category term="Settings &amp; configuration"/>
   </entry>
@@ -106,7 +114,7 @@
     <title>[HIGH] Windows/WSL shared repos can make live worktrees look prunable.</title>
     <id>https://framework.boucle.sh/limitations.html#windows-wsl-worktree-cleanup-deletes-live-worktrees</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-wsl-worktree-cleanup-deletes-live-worktrees"/>
-    <updated>2026-08-19T00:00:00Z</updated>
+    <updated>2026-08-20T00:00:00Z</updated>
     <summary>A reported Windows 11 plus WSL2 setup used one NTFS repository from both native Windows paths and /mnt/c WSL paths. Git worktree registrations written by one side stored absolute gitdir paths in that side&#x27;s spelling, so the other side could not stat them and reported the still-live worktrees as prunable. Claude Code automatic worktree cleanup then deleted the other side&#x27;s .git/worktrees registrations during session startup, breaking active sessions and making later git commands fail with not-a-git-repository errors. In the report, a failed git show redirection also truncated a working file to zero bytes after the registration vanished.</summary>
     <category term="Git &amp; repository safety"/>
   </entry>
@@ -114,7 +122,7 @@
     <title>[HIGH] macOS Desktop can split or freeze transcripts for Unicode-normalized project paths</title>
     <id>https://framework.boucle.sh/limitations.html#macos-desktop-nfd-path-slug-splits-transcripts</id>
     <link href="https://framework.boucle.sh/limitations.html#macos-desktop-nfd-path-slug-splits-transcripts"/>
-    <updated>2026-08-19T00:00:00Z</updated>
+    <updated>2026-08-20T00:00:00Z</updated>
     <summary>On macOS, Claude Desktop&#x27;s resume migration can slugify a project path from decomposed Unicode bytes while the CLI writes transcripts under the NFC-normalized slug. For projects whose path contains combining marks or accented folder names, Desktop can copy or move a transcript into a second project directory, pin its UI to a frozen snapshot, and hide later CLI-written turns after restart or idle resume. In the reported 1.30096.1 through 1.32352.1 repro, Desktop logs showed transcript migration from the NFC slug to an NFD-derived slug, and the NFD-side file remained only a byte-prefix of the current NFC transcript.</summary>
     <category term="Desktop &amp; IDE integration"/>
   </entry>
@@ -122,7 +130,7 @@
     <title>[HIGH] Windows Desktop cross-session send_message can ghost-deliver without enqueueing.</title>
     <id>https://framework.boucle.sh/limitations.html#windows-desktop-cross-session-send-message-ghost-delivery</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-desktop-cross-session-send-message-ghost-delivery"/>
-    <updated>2026-08-19T00:00:00Z</updated>
+    <updated>2026-08-20T00:00:00Z</updated>
     <summary>A reported Windows 11 Claude Desktop setup found that cross-session `send_message` between local sessions could return success and render the message in the target session UI while never appending it to the target session&#x27;s real `.jsonl` transcript and never delivering it to the model. The reporter checked unique markers across multiple sends, saw the target transcript mtime remain frozen, and found the ghost messages disappeared after app restart. The receiving session could also enter phantom-running states with a spinner, frozen activity timestamps, and no persisted user turn.</summary>
     <category term="Core &amp; session management"/>
   </entry>
@@ -130,7 +138,7 @@
     <title>[MEDIUM] Cloud sessions can drop project-declared plugin marketplaces while reading enabledPlugins.</title>
     <id>https://framework.boucle.sh/limitations.html#cloud-sessions-drop-project-plugin-marketplaces</id>
     <link href="https://framework.boucle.sh/limitations.html#cloud-sessions-drop-project-plugin-marketplaces"/>
-    <updated>2026-08-19T00:00:00Z</updated>
+    <updated>2026-08-20T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.234 cloud-session repro found that project `.claude/settings.json` could read an `enabledPlugins` entry for a GitHub marketplace plugin while dropping the same file&#x27;s `extraKnownMarketplaces` declaration. Startup logs then reported the enabled plugin as orphaned because the marketplace was not registered, saved zero installed plugins, and later said `installPluginsForHeadless: no marketplaces declared`. The public cloud and desktop docs pointed users at repo-declared plugins as the cloud-session path, while a shipped guard and a follow-up static read of the binary suggested project-scope marketplaces are excluded from the declared-marketplace map.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -138,7 +146,7 @@
     <title>[HIGH] WebFetch can report live content for error pages in unattended routines.</title>
     <id>https://framework.boucle.sh/limitations.html#webfetch-can-report-live-content-for-error-pages-in-unattended-routines</id>
     <link href="https://framework.boucle.sh/limitations.html#webfetch-can-report-live-content-for-error-pages-in-unattended-routines"/>
-    <updated>2026-08-19T00:00:00Z</updated>
+    <updated>2026-08-20T00:00:00Z</updated>
     <summary>A reported Claude cloud Scheduled Task used WebFetch to verify a job URL and emailed the result as a live listing, but a real browser showed the URL was a bare 500 Internal Server Error page. Follow-up WebFetch calls over more than 15 minutes still returned a detailed job posting, including under prompts asking for raw page text and explicitly forbidding fabrication. The user later supplied raw HTML showing only the 500 error page, so the agent-visible tool result did not match the current browser-visible source. The report does not prove whether the cause is stale cache, backend fetch behavior, or summarization fabrication.</summary>
     <category term="Scheduled tasks"/>
   </entry>
@@ -146,7 +154,7 @@
     <title>[HIGH] CLAUDE.md rules can be recitable but not enforced on late shared-resource edits.</title>
     <id>https://framework.boucle.sh/limitations.html#claude-md-rules-can-be-recitable-but-not-enforced-on-late-shared-resource-edits</id>
     <link href="https://framework.boucle.sh/limitations.html#claude-md-rules-can-be-recitable-but-not-enforced-on-late-shared-resource-edits"/>
-    <updated>2026-08-19T00:00:00Z</updated>
+    <updated>2026-08-20T00:00:00Z</updated>
     <summary>A reported long Claude Code session against a shared Figma document had explicit user-level CLAUDE.md rules requiring a fresh refetch before editing shared resources. Late in the session, after the human edited the same Figma text node outside Claude, Claude corrected one factual error by rewriting the whole node from an earlier in-context copy instead of refetching current state. The human&#x27;s concurrent edit was silently destroyed and was not recoverable from Figma autosave. Afterward, Claude could quote the relevant CLAUDE.md rules back correctly, so the failure was not simply a missing memory-file load.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
@@ -154,16 +162,8 @@
     <title>[HIGH] MCP secret env values can be redacted before reaching the subprocess.</title>
     <id>https://framework.boucle.sh/limitations.html#mcp-secret-env-values-can-be-redacted-before-subprocess</id>
     <link href="https://framework.boucle.sh/limitations.html#mcp-secret-env-values-can-be-redacted-before-subprocess"/>
-    <updated>2026-08-19T00:00:00Z</updated>
+    <updated>2026-08-20T00:00:00Z</updated>
     <summary>A reported Windows 11 Claude Code Desktop setup configured an MCP server with an env block referencing `GITHUB_PERSONAL_ACCESS_TOKEN` through `${GITHUB_PERSONAL_ACCESS_TOKEN}`. The server then failed because the value delivered to the child process contained U+2022 redaction characters, producing `Cannot convert argument to a ByteString because the character at index 15 has a value of 8226`. The reporter reproduced after setting the variable through `setx`, fully restarting Claude Code, and rebooting, including an attempt where the token was typed into a fresh PowerShell window and never appeared in the chat transcript.</summary>
     <category term="MCP &amp; integrations"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] CLAUDE.md symlinked to AGENTS.md refuses direct tool writes.</title>
-    <id>https://framework.boucle.sh/limitations.html#claude-md-agents-md-symlink-refuses-tool-writes</id>
-    <link href="https://framework.boucle.sh/limitations.html#claude-md-agents-md-symlink-refuses-tool-writes"/>
-    <updated>2026-08-19T00:00:00Z</updated>
-    <summary>A reported Claude Code setup followed the documented `CLAUDE.md -&gt; AGENTS.md` symlink pattern, then found that Read succeeds while Edit and Write on `CLAUDE.md` fail with `Refusing to write through symlink`. A maintainer reproduced the behavior on released 2.1.234 and clarified that refusing symlink writes is an intentional safety guard, but that the memory docs do not warn users that the documented symlink form cannot be directly updated by Claude Code&#x27;s file-writing tools.</summary>
-    <category term="Configuration behavior"/>
   </entry>
 </feed>
