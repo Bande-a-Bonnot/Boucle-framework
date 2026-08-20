@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1642,
+  "count": 1643,
   "categories": {
     "Hook behavior & events": 218,
     "Permission system": 148,
@@ -52,11 +52,11 @@
     "Memory & context": 6,
     "Model routing & identity": 6,
     "Skills / slash commands": 6,
+    "Worktrees & isolation": 6,
     "CLI / TUI rendering": 5,
     "Cost & usage": 5,
     "Model behavior & compliance": 5,
     "Performance & resource usage": 5,
-    "Worktrees & isolation": 5,
     "Browser automation": 4,
     "MCP & plugins": 4,
     "Model behavior & instructions": 4,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 139,
-    "HIGH": 907,
+    "HIGH": 908,
     "LOW": 109,
     "MEDIUM": 487
   },
@@ -21115,6 +21115,19 @@
       "workaround": "Do not combine redaction, truncation, classifier, and identity-style `PostToolUse` rewrites without proving their merge order in the exact installed Claude Code version. Register security-relevant redaction hooks after any hook that may return an identity or generic rewrite, and avoid returning `updatedToolOutput` at all from hooks that only need to attach assertions or classifier context. Add an end-to-end canary that makes a tool emit a fake secret and verifies the subsequent transcript contains only the masked value, not just hook-local success logs."
     },
     {
+      "id": "worktree-git-c-path-classifier-can-invert-safe-and-unsafe-targets",
+      "title": "Worktree `git -C` path classifier can invert safe and unsafe targets.",
+      "category": "Worktrees & isolation",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88379"
+      ],
+      "date_added": "2026-08-20",
+      "description": "A reported Claude Code 2.1.228 worktree-isolated session found that the built-in git command safety check classified `git -C <path>` by the path token's leading character rather than by the directory it resolves to. Literal in-worktree targets such as `git -C .` and `git -C ./tmp/some-clone ...` were refused as unverifiable runtime computations, while `git -C \"$HOME/some-other-repo\" ...` was allowed and executed against a repository outside the isolated worktree. The refusal is a hard tool error rather than a permission prompt, so users cannot approve a safe in-worktree false positive from the normal dialog path.",
+      "workaround": "In worktree-isolated sessions, avoid variable-expanded `git -C` targets such as `$HOME/...`, `${VAR}/...`, or command substitutions. Prefer running git from the intended current directory, or use a literal relative path without a leading `./` only after checking `pwd` and `git rev-parse --show-toplevel`. If a command is refused with the computed-at-runtime worktree message, simplify it to run from the worktree root rather than treating the refusal as proof the original target was unsafe. For high-impact git operations, verify the resolved repository root before and after the command."
+    },
+    {
       "id": "desktop-inline-plugins-can-reenable-after-restart",
       "title": "Desktop bundled @inline plugins can re-enable after restart.",
       "category": "MCP & plugin issues",
@@ -21129,27 +21142,27 @@
     }
   ],
   "status_summary": {
-    "open": 1628,
+    "open": 1629,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 139,
-    "high": 907,
+    "high": 908,
     "low": 109,
     "medium": 487
   },
   "lastUpdated": "2026-08-20",
   "stats": {
-    "total": 1642,
+    "total": 1643,
     "critical": 139,
-    "high": 907,
+    "high": 908,
     "medium": 487,
     "low": 109,
-    "open": 1628,
+    "open": 1629,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-20",
-  "total": 1642
+  "total": 1643
 }
