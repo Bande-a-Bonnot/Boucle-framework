@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1641,
+  "count": 1642,
   "categories": {
     "Hook behavior & events": 218,
     "Permission system": 148,
     "Hook bypass & evasion": 103,
-    "MCP & plugin issues": 91,
+    "MCP & plugin issues": 92,
     "Subagent & spawned agents": 77,
     "Desktop & IDE integration": 60,
     "TUI & display": 37,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 139,
-    "HIGH": 905,
+    "HIGH": 906,
     "LOW": 110,
     "MEDIUM": 487
   },
@@ -21111,30 +21111,43 @@
       "date_added": "2026-08-20",
       "description": "A reported Claude Code 2.1.234 repro found that when multiple `PostToolUse` hooks return conflicting `hookSpecificOutput.updatedToolOutput` values for the same tool call, the winning rewrite is deterministic by registration order rather than by completion order. In the repro, a later-registered identity rewrite restored the original Bash output after an earlier redaction hook masked a recognizable secret, so the model received the unmasked value. Claude Code emitted no warning that one rewrite had clobbered another, and the relevant SDK warning was attached to `classifierContext` rather than the `updatedToolOutput` field that carries the security-sensitive replacement.",
       "workaround": "Do not combine redaction, truncation, classifier, and identity-style `PostToolUse` rewrites without proving their merge order in the exact installed Claude Code version. Register security-relevant redaction hooks after any hook that may return an identity or generic rewrite, and avoid returning `updatedToolOutput` at all from hooks that only need to attach assertions or classifier context. Add an end-to-end canary that makes a tool emit a fake secret and verifies the subsequent transcript contains only the masked value, not just hook-local success logs."
+    },
+    {
+      "id": "desktop-inline-plugins-can-reenable-after-restart",
+      "title": "Desktop bundled @inline plugins can re-enable after restart.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88350"
+      ],
+      "date_added": "2026-08-20",
+      "description": "A reported Claude Desktop Cowork setup found that bundled `@inline` plugins such as marketing and product-management could not be disabled persistently. Disabling them in the app UI or setting `enabledPlugins` entries to `false` in `~/.claude/settings.json` survived on disk, but after each Desktop restart the bundled plugin skill sets and MCP servers were enabled again. Because these plugins are bundled inside the Desktop app rather than ordinary installed plugins, `claude plugin list` and the local plugin cache did not show a removable or inspectable source of truth. The result is silent reintroduction of about 65 skills and related plugin context into sessions where the user believed those plugins were off.",
+      "workaround": "Do not treat `enabledPlugins: false` as sufficient proof that Desktop bundled `@inline` plugins are absent after restart. For sensitive Cowork sessions, start a fresh session after every Desktop restart and verify the loaded skill/plugin context before sharing private task details. If the bundled skills still appear, use a plain Claude Code terminal session or another surface that does not inject the Desktop inline bundle for plugin-sensitive work until the Desktop app persists the disable state or documents a supported opt-out."
     }
   ],
   "status_summary": {
-    "open": 1627,
+    "open": 1628,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 139,
-    "high": 905,
+    "high": 906,
     "low": 110,
     "medium": 487
   },
   "lastUpdated": "2026-08-20",
   "stats": {
-    "total": 1641,
+    "total": 1642,
     "critical": 139,
-    "high": 905,
+    "high": 906,
     "medium": 487,
     "low": 110,
-    "open": 1627,
+    "open": 1628,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-20",
-  "total": 1641
+  "total": 1642
 }
