@@ -193,8 +193,8 @@
   "severity_counts": {
     "CRITICAL": 138,
     "HIGH": 903,
-    "LOW": 111,
-    "MEDIUM": 486
+    "LOW": 110,
+    "MEDIUM": 487
   },
   "entries": [
     {
@@ -829,13 +829,15 @@
     },
     {
       "id": "prompt-type-hooks-incur-undocumented-billing",
-      "title": "Prompt-type hooks incur undocumented billing.",
+      "title": "Prompt-type hook denies can leak prompts and incur hidden token cost.",
       "category": "Hook behavior & events",
-      "severity": "LOW",
+      "severity": "MEDIUM",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/38165"
+        "https://github.com/anthropics/claude-code/issues/38165",
+        "https://github.com/anthropics/claude-code/issues/88292"
       ],
-      "description": "Hooks with \"type\": \"prompt\" send an LLM call per invocation, adding token costs that are not documented in the billing docs. enforce-hooks generates only \"type\": \"command\" hooks, which run as local processes with zero API cost. If you need reasoning-based enforcement, be aware that prompt hooks double your per-response cost.",
+      "description": "Hooks with \"type\": \"prompt\" send an LLM call per invocation, adding token costs that are not documented in the billing docs. A reported Claude Code 2.1.234 repro also found that when a prompt-type PreToolUse hook denies a call, Claude Code returned the hook's configured prompt text to the blocked agent as part of the tool error before the deny reason; the same reason from a command hook `permissionDecision: \"deny\"` was returned without exposing the hook prompt. Long policy prompts can therefore be billed once for evaluation and then injected back into the main context on every deny, while also disclosing hook-author policy text in transcripts and stream-json output.",
+      "workaround": "Use command-type hooks for load-bearing enforcement, especially when the hook prompt contains policy, thresholds, or other text you do not want copied into the main conversation. Keep prompt-type hook prompts short and non-sensitive, and test a denied representative tool call with `--output-format stream-json` after Claude Code updates to confirm the agent-facing tool error contains only the intended reason.",
       "status": "open"
     },
     {
@@ -21080,16 +21082,16 @@
   "severities": {
     "critical": 138,
     "high": 903,
-    "low": 111,
-    "medium": 486
+    "low": 110,
+    "medium": 487
   },
   "lastUpdated": "2026-08-20",
   "stats": {
     "total": 1638,
     "critical": 138,
     "high": 903,
-    "medium": 486,
-    "low": 111,
+    "medium": 487,
+    "low": 110,
     "open": 1624,
     "fixed": 13,
     "mitigated": 1
