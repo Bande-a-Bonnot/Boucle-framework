@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1628,
+  "count": 1629,
   "categories": {
     "Hook behavior & events": 215,
     "Permission system": 148,
@@ -14,7 +14,7 @@
     "Context & memory": 30,
     "MCP & integrations": 30,
     "Sandbox & permissions": 29,
-    "Configuration behavior": 27,
+    "Configuration behavior": 28,
     "Security & trust boundaries": 27,
     "Cowork & remote": 26,
     "Performance & cost": 25,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 138,
-    "HIGH": 893,
+    "HIGH": 894,
     "LOW": 111,
     "MEDIUM": 486
   },
@@ -20910,6 +20910,19 @@
       "workaround": "Do not rely on process cwd alone as the isolation boundary for file-mutating tools. For per-task automation, run Claude Code in a disposable clone, container, or OS-permission boundary that makes out-of-scope paths unwritable, and add an explicit post-run scan for modified files outside the expected worktree before committing. If you use hooks for path policy, verify Write, Edit, MultiEdit, NotebookEdit, and Bash separately with absolute out-of-scope canaries, because one tool's cwd denial does not prove the others share the same boundary."
     },
     {
+      "id": "config-home-settings-local-only-applies-from-home",
+      "title": "Config-home settings.local.json can be ignored outside home.",
+      "category": "Configuration behavior",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88051"
+      ],
+      "status": "open",
+      "date_added": "2026-08-20",
+      "description": "A reported Fedora Claude Code 2.1.235 CLI setup found that `~/.claude/settings.local.json` was honored only when Claude Code started with `$HOME` as the working directory. The same file's `permissions.defaultMode`, allow rules, deny rules, hooks, and worktree config were silently inert when the session started from a project directory, while moving the same permissions object to `~/.claude/settings.json` made the project session honor it. This creates a config-scope trap for users who read config-home `settings.local.json` as a user-wide local settings file.",
+      "workaround": "Do not put load-bearing user-wide permissions, deny rules, hooks, or worktree settings only in `~/.claude/settings.local.json` unless every relevant session starts in `$HOME`. Put user-wide policy in `~/.claude/settings.json` or managed settings, and reserve `settings.local.json` for project-local trust state that you verify from the actual project directory. After changing config-home settings, start a fresh project session and run a harmless command or hook canary that proves the intended permission or hook is active before relying on unattended work."
+    },
+    {
       "id": "desktop-can-hide-auto-mode-despite-defaultmode-settings",
       "title": "Desktop can hide Auto mode despite defaultMode settings.",
       "category": "Desktop & IDE integration",
@@ -20937,27 +20950,27 @@
     }
   ],
   "status_summary": {
-    "open": 1614,
+    "open": 1615,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 138,
-    "high": 893,
+    "high": 894,
     "low": 111,
     "medium": 486
   },
   "lastUpdated": "2026-08-20",
   "stats": {
-    "total": 1628,
+    "total": 1629,
     "critical": 138,
-    "high": 893,
+    "high": 894,
     "medium": 486,
     "low": 111,
-    "open": 1614,
+    "open": 1615,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-20",
-  "total": 1628
+  "total": 1629
 }
