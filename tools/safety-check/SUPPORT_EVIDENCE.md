@@ -181,7 +181,11 @@ zip. Build a minimal reproduction in a temporary directory, then run
   tmp_home="$(mktemp -d)"
   cleanup() {
     if [ "${KEEP_BOUCLE_REPRO:-0}" != "1" ]; then
-      rm -rf "$tmpdir" "$tmp_home"
+      rm -f "$tmpdir/.claude/settings.json"
+      rmdir "$tmpdir/.claude/hooks" "$tmpdir/.claude" "$tmpdir" "$tmp_home" 2>/dev/null || {
+        printf 'Temporary directories were not empty; inspect and remove manually:\n'
+        printf '  %s\n  %s\n' "$tmp_home" "$tmpdir"
+      }
     fi
   }
   trap cleanup EXIT
@@ -189,7 +193,7 @@ zip. Build a minimal reproduction in a temporary directory, then run
   mkdir -p "$tmpdir/.claude/hooks"
   printf '{"hooks":{}}\n' > "$tmpdir/.claude/settings.json"
   cd "$tmpdir"
-  curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | HOME="$tmp_home" bash -s -- --verify --summary-only
+  curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | PYTHONDONTWRITEBYTECODE=1 HOME="$tmp_home" bash -s -- --verify --summary-only
   if [ "${KEEP_BOUCLE_REPRO:-0}" = "1" ]; then
     printf 'Temporary HOME: %s\nTemporary project: %s\n' "$tmp_home" "$tmpdir"
   fi
@@ -200,11 +204,13 @@ Replace the sample `.claude/settings.json` with the smallest redacted settings
 file that reproduces the issue. Keep only throwaway hook scripts and placeholder
 paths in the temporary directory. The temporary `HOME` keeps your real
 user-level Claude Code hooks out of the reproduction. The snippet removes the
-temporary directories when it finishes; set `KEEP_BOUCLE_REPRO=1` in the same
-shell before running it if you need to inspect them afterward. If the problem
-does not reproduce there, say that; it usually means the remaining signal is in
-local paths, environment variables, shell startup files, or private hook code
-that should not be posted.
+known throwaway settings file and then removes the temporary directories only if
+they are empty; set `KEEP_BOUCLE_REPRO=1` in the same shell before running it if
+you need to inspect them afterward. If anything unexpected remains, the paths
+are printed so you can inspect and remove them manually. If the problem does not
+reproduce there, say that; it usually means the remaining signal is in local
+paths, environment variables, shell startup files, or private hook code that
+should not be posted.
 
 ## 6. Minimal public report template
 
