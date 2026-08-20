@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1638,
+  "count": 1639,
   "categories": {
     "Hook behavior & events": 217,
     "Permission system": 148,
@@ -11,9 +11,9 @@
     "TUI & display": 37,
     "CLI & terminal": 31,
     "Platform & compatibility": 31,
+    "Configuration behavior": 30,
     "Context & memory": 30,
     "MCP & integrations": 30,
-    "Configuration behavior": 29,
     "Sandbox & permissions": 29,
     "Security & trust boundaries": 29,
     "Cowork & remote": 27,
@@ -191,7 +191,7 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 138,
+    "CRITICAL": 139,
     "HIGH": 903,
     "LOW": 110,
     "MEDIUM": 487
@@ -21072,30 +21072,43 @@
       "date_added": "2026-08-20",
       "description": "A reported Windows 11 Claude Code 2.1.220 setup found that already-installed plugin hook commands were rewritten from a Bash `${CLAUDE_PLUGIN_ROOT}` form into an absolute `cmd /d /s /c ...run-hook.cmd` command while the hook still declared `\"shell\": \"bash\"`. Bash then launched a bare interactive `cmd`, the hook's JSON stdin was echoed into the Windows prompt, and Claude Code recorded the result as `hook_success` with the Windows banner injected as hook context. The reporter classified 119 local session transcripts and found the plugin SessionStart context missing from most sessions across roughly a month, with clean installs later re-mangled by another rewrite.",
       "workaround": "On Windows, do not trust `hook_success` alone for plugin-delivered hooks. Inspect the actual hook attachment or transcript output for shell banners, prompts, or non-JSON context, and run a same-session canary that proves the plugin's expected context appears. If cached plugin `hooks.json` commands have been rewritten into a shell-mismatched `cmd` form, repair them back to a Bash-safe `${CLAUDE_PLUGIN_ROOT}` command or reinstall the plugin, then keep an idempotent audit because later client rewrites can undo the fix."
+    },
+    {
+      "id": "daemon-worker-can-delete-symlinked-settings-json",
+      "title": "Daemon worker can delete symlinked settings.json.",
+      "category": "Configuration behavior",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88307"
+      ],
+      "status": "open",
+      "date_added": "2026-08-20",
+      "description": "A reported Nix/home-manager Claude Code 2.1.219 setup found that a long-lived daemon-hosted `claude bg-spare` worker repeatedly unlinked `~/.claude/settings.json` when that path was a symlink into a read-only store directory. Kernel audit records attributed four successful `unlinkat` deletions to the same idle Claude Code worker within 7 to 69 seconds of the symlink being recreated, while replacing the symlink with a regular file stopped the deletion. Because `settings.json` carries permissions, hooks, sandbox policy, model, env, and status line, this can silently drop every user-level guardrail and make later sessions fall back to defaults with no obvious UI error.",
+      "workaround": "If you manage Claude Code config with Nix, home-manager, stow, or another symlink-based dotfile system, avoid pointing `~/.claude/settings.json` directly at a read-only target until the writer path is fixed. Materialize a regular file under `~/.claude/`, or point the symlink at a writable small directory and monitor it. Add a startup check that fails closed when `~/.claude/settings.json` is missing, not a symlink when you expect one, or lacks sentinel permission and hook rules. After any dotfile switch, restart Claude Code daemon workers and run a harmless permission plus hook canary before trusting user-level enforcement."
     }
   ],
   "status_summary": {
-    "open": 1624,
+    "open": 1625,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 138,
+    "critical": 139,
     "high": 903,
     "low": 110,
     "medium": 487
   },
   "lastUpdated": "2026-08-20",
   "stats": {
-    "total": 1638,
-    "critical": 138,
+    "total": 1639,
+    "critical": 139,
     "high": 903,
     "medium": 487,
     "low": 110,
-    "open": 1624,
+    "open": 1625,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-20",
-  "total": 1638
+  "total": 1639
 }

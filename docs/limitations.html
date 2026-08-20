@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1638</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-20.</span></p>
+        <p class="subtitle"><span id="total-count">1639</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-20.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18390,6 +18390,18 @@
                         <!-- workaround:windows-plugin-hook-command-rewrites-can-report-false-success -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On Windows, do not trust `hook_success` alone for plugin-delivered hooks. Inspect the actual hook attachment or transcript output for shell banners, prompts, or non-JSON context, and run a same-session canary that proves the plugin&#x27;s expected context appears. If cached plugin `hooks.json` commands have been rewritten into a shell-mismatched `cmd` form, repair them back to a Bash-safe `${CLAUDE_PLUGIN_ROOT}` command or reinstall the plugin, then keep an idempotent audit because later client rewrites can undo the fix.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/82893" target="_blank">#82893</a></div>
+        </div>
+        <div class="kl-entry" data-category="Configuration behavior" data-issues="88307" id="daemon-worker-can-delete-symlinked-settings-json" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1639</span>
+                <span class="kl-cat">Configuration behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Daemon worker can delete symlinked settings.json.</h3>
+            <p>A reported Nix/home-manager Claude Code 2.1.219 setup found that a long-lived daemon-hosted `claude bg-spare` worker repeatedly unlinked `~/.claude/settings.json` when that path was a symlink into a read-only store directory. Kernel audit records attributed four successful `unlinkat` deletions to the same idle Claude Code worker within 7 to 69 seconds of the symlink being recreated, while replacing the symlink with a regular file stopped the deletion. Because `settings.json` carries permissions, hooks, sandbox policy, model, env, and status line, this can silently drop every user-level guardrail and make later sessions fall back to defaults with no obvious UI error.</p>
+                        <!-- workaround:daemon-worker-can-delete-symlinked-settings-json -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If you manage Claude Code config with Nix, home-manager, stow, or another symlink-based dotfile system, avoid pointing `~/.claude/settings.json` directly at a read-only target until the writer path is fixed. Materialize a regular file under `~/.claude/`, or point the symlink at a writable small directory and monitor it. Add a startup check that fails closed when `~/.claude/settings.json` is missing, not a symlink when you expect one, or lacks sentinel permission and hook rules. After any dotfile switch, restart Claude Code daemon workers and run a harmless permission plus hook canary before trusting user-level enforcement.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88307" target="_blank">#88307</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
