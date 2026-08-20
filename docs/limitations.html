@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1633</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-20.</span></p>
+        <p class="subtitle"><span id="total-count">1634</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-20.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18328,6 +18328,18 @@
                         <!-- workaround:worktree-command-safety-can-misread-builtin-names-as-invocations -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid English subcommand names or arguments that collide with string-running shell builtins in worktree-isolated Bash calls until the analyzer distinguishes command-head position from later argv tokens. Rename local workflow verbs such as `complete` to collision-free aliases like `finish`, or invoke the underlying code through a wrapper whose visible Bash command line does not contain the flagged token. If the command must keep the name, run it from a non-isolated parent session or an external terminal and record the rationale so the workaround does not normalize obfuscated bypasses.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88047" target="_blank">#88047</a></div>
+        </div>
+        <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="88117" id="flagged-tool-output-can-leak-into-tool-call-input" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1634</span>
+                <span class="kl-cat">Security &amp; trust boundaries</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Flagged tool-output content can leak into a later tool-call input.</h3>
+            <p>A reported Windows 11 Claude Code 2.1.237 session produced a malformed `Read` tool call whose `file_path` began like a truncated local path and then contained roughly 900 words of injected content, including Claude Code&#x27;s own wrapper phrase for suspicious tool output and fake instructions to exfiltrate data. The permission prompt intercepted the malformed call and the user rejected it before execution, but the wrapper phrase appearing inside a new tool input suggests previously flagged content may have crossed from inert tool output into tool-call argument construction.</p>
+                        <!-- workaround:flagged-tool-output-can-leak-into-tool-call-input -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When a tool-call input contains prompt-injection text, wrapper language, or content that cannot be a valid argument, reject the call and stop treating the current session as clean. Preserve the raw JSONL transcript around the malformed call, grep the workspace to distinguish on-disk content from harness leakage, and restart from a clean summary before continuing sensitive work. Do not rely on a single permission prompt as the only containment layer for future calls; add fail-closed hooks or external wrappers around reads and writes that should never accept mixed prompt text as a path or argument.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88117" target="_blank">#88117</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1633,
+  "count": 1634,
   "categories": {
     "Hook behavior & events": 216,
     "Permission system": 148,
@@ -15,7 +15,7 @@
     "MCP & integrations": 30,
     "Configuration behavior": 29,
     "Sandbox & permissions": 29,
-    "Security & trust boundaries": 28,
+    "Security & trust boundaries": 29,
     "Cowork & remote": 27,
     "Performance & cost": 25,
     "VS Code extension": 24,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 138,
-    "HIGH": 898,
+    "HIGH": 899,
     "LOW": 111,
     "MEDIUM": 486
   },
@@ -21000,30 +21000,43 @@
       "date_added": "2026-08-19",
       "description": "A reported Windows 11 worktree-isolated session found that Claude Code's Bash command-safety analyzer refused commands containing shell builtin names such as `complete`, `compgen`, or `compopt` even when those words appeared as ordinary non-leading arguments. The concrete failure was a Python workflow command whose subcommand was named `complete`; the analyzer treated the argument as if Bash would invoke the completion builtin and refused it as unverifiable inside the worktree. Quoting the token and disabling the sandbox did not help because the refusal came from the PreToolUse-layer worktree analyzer, not from the sandbox.",
       "workaround": "Avoid English subcommand names or arguments that collide with string-running shell builtins in worktree-isolated Bash calls until the analyzer distinguishes command-head position from later argv tokens. Rename local workflow verbs such as `complete` to collision-free aliases like `finish`, or invoke the underlying code through a wrapper whose visible Bash command line does not contain the flagged token. If the command must keep the name, run it from a non-isolated parent session or an external terminal and record the rationale so the workaround does not normalize obfuscated bypasses."
+    },
+    {
+      "id": "flagged-tool-output-can-leak-into-tool-call-input",
+      "title": "Flagged tool-output content can leak into a later tool-call input.",
+      "category": "Security & trust boundaries",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88117"
+      ],
+      "status": "open",
+      "date_added": "2026-08-20",
+      "description": "A reported Windows 11 Claude Code 2.1.237 session produced a malformed `Read` tool call whose `file_path` began like a truncated local path and then contained roughly 900 words of injected content, including Claude Code's own wrapper phrase for suspicious tool output and fake instructions to exfiltrate data. The permission prompt intercepted the malformed call and the user rejected it before execution, but the wrapper phrase appearing inside a new tool input suggests previously flagged content may have crossed from inert tool output into tool-call argument construction.",
+      "workaround": "When a tool-call input contains prompt-injection text, wrapper language, or content that cannot be a valid argument, reject the call and stop treating the current session as clean. Preserve the raw JSONL transcript around the malformed call, grep the workspace to distinguish on-disk content from harness leakage, and restart from a clean summary before continuing sensitive work. Do not rely on a single permission prompt as the only containment layer for future calls; add fail-closed hooks or external wrappers around reads and writes that should never accept mixed prompt text as a path or argument."
     }
   ],
   "status_summary": {
-    "open": 1619,
+    "open": 1620,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 138,
-    "high": 898,
+    "high": 899,
     "low": 111,
     "medium": 486
   },
   "lastUpdated": "2026-08-20",
   "stats": {
-    "total": 1633,
+    "total": 1634,
     "critical": 138,
-    "high": 898,
+    "high": 899,
     "medium": 486,
     "low": 111,
-    "open": 1619,
+    "open": 1620,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-20",
-  "total": 1633
+  "total": 1634
 }
