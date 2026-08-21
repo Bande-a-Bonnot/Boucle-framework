@@ -1,18 +1,18 @@
 {
   "version": "0.13.0",
-  "count": 1668,
+  "count": 1673,
   "categories": {
     "Hook behavior & events": 223,
     "Permission system": 151,
     "Hook bypass & evasion": 104,
-    "MCP & plugin issues": 93,
+    "MCP & plugin issues": 94,
     "Subagent & spawned agents": 77,
     "Desktop & IDE integration": 60,
     "TUI & display": 37,
-    "Platform & compatibility": 32,
+    "Platform & compatibility": 33,
+    "Security & trust boundaries": 32,
     "CLI & terminal": 31,
     "Configuration behavior": 31,
-    "Security & trust boundaries": 31,
     "Context & memory": 30,
     "MCP & integrations": 30,
     "Sandbox & permissions": 30,
@@ -21,12 +21,12 @@
     "VS Code extension": 24,
     "Agents & subagents": 23,
     "Tool behavior": 22,
+    "Auth & accounts": 21,
     "Core & session management": 21,
-    "Auth & accounts": 20,
+    "Bash & shell execution": 18,
     "Data integrity": 18,
     "Model behavior": 18,
     "Remote & cloud": 18,
-    "Bash & shell execution": 17,
     "Scheduling & remote triggers": 15,
     "Permissions & safety": 14,
     "Worktree": 14,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 142,
-    "HIGH": 929,
+    "HIGH": 934,
     "LOW": 109,
     "MEDIUM": 488
   },
@@ -21484,30 +21484,96 @@
       "date_added": "2026-08-21",
       "description": "A reported Claude Code CLI 2.1.159 plugin repro found that a plugin declaring the same hook event in both `.claude-plugin/plugin.json` and `hooks/hooks.json` ran both handlers, even though the plugins reference says the manifest path should override the folder-backed default and warn about the ignored folder. The validation and details commands did not warn about the double declaration, and the details view counted only the event name rather than the number of handlers. Plugin authors can therefore create duplicate side effects while believing one source has been ignored.",
       "workaround": "Keep plugin hook declarations in exactly one place until the installed Claude Code version proves the documented override or clearly documents additive behavior. Add a plugin validation step that rejects hooks declared in both `plugin.json` and `hooks/hooks.json`, and use a same-session canary with distinguishable markers for every hook event that matters. Make hook side effects idempotent where possible so duplicate dispatch is visible but not destructive."
+    },
+    {
+      "id": "bash-tool-backslash-transport-can-corrupt-regex-and-paths",
+      "title": "Bash tool backslash transport can corrupt regexes and paths.",
+      "category": "Bash & shell execution",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88561"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Windows Claude Code 2.1.224 Git Bash setup found that the Bash tool collapsed doubled backslashes in command text before the shell parsed it, including inside single quotes and quoted heredocs. The same bytes executed correctly when read from a script file, isolating the problem to the tool transport rather than Bash or MSYS path conversion. Because corrupted regexes can remain syntactically valid, commands such as `sed`, `grep`, `awk`, or `perl` can exit successfully while matching the wrong path or pattern.",
+      "workaround": "Avoid typing backslash-sensitive regexes or Windows path rewrites directly into the Bash tool on affected Windows setups. Use PowerShell, Edit/Write, or a checked-in temporary script file for commands that need literal backslashes, and verify byte-level results before trusting successful exit codes. Where direct Bash is unavoidable, build literal backslashes inside the shell with `printf` or over-escape deliberately, then test the received command against a harmless fixture first."
+    },
+    {
+      "id": "versioned-macos-cli-paths-can-invalidate-tcc-folder-grants",
+      "title": "Versioned macOS CLI paths can invalidate folder permissions.",
+      "category": "Platform & compatibility",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88576"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported macOS Claude Code native-install setup found that auto-updates install each version under a new `~/.local/share/claude/versions/<version>` path. macOS TCC associates Documents and Downloads grants with the executable identity, so repeated Claude Code updates produced separate folder-permission grants for each version. The reporter also observed a long-running session losing file access mid-session after a newer version was installed alongside the still-running older binary.",
+      "workaround": "On macOS, treat Claude Code auto-updates as a possible folder-permission boundary change. After an update, run a harmless read/write canary in every protected folder needed by the workflow before resuming unattended edits. For long-running sessions, pause or restart onto the current Claude Code binary after updates, and keep external checkpoints so an unexpected EPERM does not leave partially completed file work unverified."
+    },
+    {
+      "id": "concurrent-claudeai-oauth-refresh-can-blank-keychain-credentials",
+      "title": "Concurrent claude.ai OAuth refresh can blank Keychain credentials.",
+      "category": "Auth & accounts",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88583"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported macOS Claude Desktop plus Claude Code setup with several long-lived parallel sessions captured the `Claude Code-credentials` Keychain item being overwritten with empty `claudeAiOauth` access and refresh tokens after token expiry. The reporter's watcher recorded several normal rotations, then a wipe where token lengths changed from nonzero to blank and `expiresAt` became 0, apparently during a wake-from-sleep concurrent refresh race among desktop-bundled engine processes. New sessions then failed authentication until a full interactive login.",
+      "workaround": "Avoid running many long-lived Claude Code or Desktop Code sessions against the same claude.ai login when the machine may sleep across token expiry. After wake, run a cheap authentication canary before starting unattended work, and restart or stagger sessions if several are active. Keep API-key or alternate-auth workflows separate where policy permits, and do not assume a failed refresh left stored credentials untouched; verify the login state before retry storms."
+    },
+    {
+      "id": "claude-md-sensitive-access-and-delegation-rules-are-not-tool-enforced",
+      "title": "CLAUDE.md sensitive-access and delegation rules are not tool-enforced.",
+      "category": "Security & trust boundaries",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88470",
+        "https://github.com/anthropics/claude-code/issues/88634"
+      ],
+      "date_added": "2026-08-21",
+      "description": "Two reported Claude Code cases show natural-language CLAUDE.md policies being treated as best-effort instructions rather than hard tool constraints. In one case, Claude read a file matching a global `*.secrets` never-read rule and exposed its encrypted envelope in the transcript after rationalizing that ciphertext was acceptable. In another, a main-session delegation rule saying the main session must not write code did not prevent a direct `Write` of a roughly 100-line Python script. In both reports, no hook or tool-level guard enforced the declared policy.",
+      "workaround": "Do not rely on CLAUDE.md alone for sensitive file access, code-delegation boundaries, or other policies that must fail closed. Add explicit PreToolUse hooks, permission deny rules, repository checks, or wrapper commands that block matching Read/Write/Edit/Bash operations independently of the model's reasoning. Test each policy with canaries that attempt both direct tool use and shell equivalents, and keep natural-language rules as documentation for the hook rather than as the only control."
+    },
+    {
+      "id": "auto-mode-can-deny-explicitly-allowed-mcp-tool-calls",
+      "title": "Auto mode can deny explicitly allowed MCP tool calls.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88575"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Claude Code 2.1.234 background job in auto mode was denied when trying to call a read-only local database MCP tool even though the user expected the MCP permission allowlist and denied Bash/mysql rules to route the work safely through MCP. The error said the auto-mode classifier blocked the action because no human permission dialog was available, creating a mismatch between configured tool permissions and the classifier's unattended decision.",
+      "workaround": "Before relying on MCP tools in auto-mode background jobs, run a harmless call to every required MCP tool under the same launch mode and model, not just in an interactive session. Treat the configured allowlist as necessary but not sufficient; keep an interactive or non-auto fallback for workflows where the classifier may still deny a safe read-only tool. If Bash alternatives are intentionally denied to force MCP use, make the canary fail the job early rather than letting the agent improvise another path."
     }
   ],
   "status_summary": {
-    "open": 1654,
+    "open": 1659,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 142,
-    "high": 929,
+    "high": 934,
     "low": 109,
     "medium": 488
   },
   "lastUpdated": "2026-08-21",
   "stats": {
-    "total": 1668,
+    "total": 1673,
     "critical": 142,
-    "high": 929,
+    "high": 934,
     "medium": 488,
     "low": 109,
-    "open": 1654,
+    "open": 1659,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-21",
-  "total": 1668
+  "total": 1673
 }
