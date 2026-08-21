@@ -4,13 +4,13 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-08-20T00:00:00Z</updated>
+  <updated>2026-08-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
     <title>[HIGH] Desktop bundled @inline plugins can re-enable after restart.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-inline-plugins-can-reenable-after-restart</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-inline-plugins-can-reenable-after-restart"/>
-    <updated>2026-08-20T00:00:00Z</updated>
+    <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Claude Desktop Cowork setup found that bundled `@inline` plugins such as marketing and product-management could not be disabled persistently. Disabling them in the app UI or setting `enabledPlugins` entries to `false` in `~/.claude/settings.json` survived on disk, but after each Desktop restart the bundled plugin skill sets and MCP servers were enabled again. Because these plugins are bundled inside the Desktop app rather than ordinary installed plugins, `claude plugin list` and the local plugin cache did not show a removable or inspectable source of truth. The result is silent reintroduction of about 65 skills and related plugin context into sessions where the user believed those plugins were off.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -18,7 +18,7 @@
     <title>[HIGH] Worktree `git -C` path classifier can invert safe and unsafe targets.</title>
     <id>https://framework.boucle.sh/limitations.html#worktree-git-c-path-classifier-can-invert-safe-and-unsafe-targets</id>
     <link href="https://framework.boucle.sh/limitations.html#worktree-git-c-path-classifier-can-invert-safe-and-unsafe-targets"/>
-    <updated>2026-08-20T00:00:00Z</updated>
+    <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.228 worktree-isolated session found that the built-in git command safety check classified `git -C &lt;path&gt;` by the path token&#x27;s leading character rather than by the directory it resolves to. Literal in-worktree targets such as `git -C .` and `git -C ./tmp/some-clone ...` were refused as unverifiable runtime computations, while `git -C &quot;$HOME/some-other-repo&quot; ...` was allowed and executed against a repository outside the isolated worktree. The refusal is a hard tool error rather than a permission prompt, so users cannot approve a safe in-worktree false positive from the normal dialog path.</summary>
     <category term="Worktrees &amp; isolation"/>
   </entry>
@@ -26,15 +26,23 @@
     <title>[HIGH] PostToolUse rewrite collisions can silently drop redactions.</title>
     <id>https://framework.boucle.sh/limitations.html#posttooluse-rewrite-collisions-can-silently-drop-redactions</id>
     <link href="https://framework.boucle.sh/limitations.html#posttooluse-rewrite-collisions-can-silently-drop-redactions"/>
-    <updated>2026-08-20T00:00:00Z</updated>
+    <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.234 repro found that when multiple `PostToolUse` hooks return conflicting `hookSpecificOutput.updatedToolOutput` values for the same tool call, the winning rewrite is deterministic by registration order rather than by completion order. In the repro, a later-registered identity rewrite restored the original Bash output after an earlier redaction hook masked a recognizable secret, so the model received the unmasked value. Claude Code emitted no warning that one rewrite had clobbered another, and the relevant SDK warning was attached to `classifierContext` rather than the `updatedToolOutput` field that carries the security-sensitive replacement.</summary>
     <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Automatic worktree cleanup can delete active session directories.</title>
+    <id>https://framework.boucle.sh/limitations.html#automatic-worktree-cleanup-can-delete-active-session-directories</id>
+    <link href="https://framework.boucle.sh/limitations.html#automatic-worktree-cleanup-can-delete-active-session-directories"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported macOS Claude Code setup found that an unattended worktree cleanup path removed `.claude/worktrees/&lt;name&gt;` directories while live sessions were still using them, including one deletion during a Bash tool call whose cwd was the removed worktree. Three unrelated concurrent sessions lost worktree directories within about ten minutes. The common git-state fingerprint was a clean worktree whose branch tip was already an ancestor of `origin/main`, which is a valid signal that the contents are captured elsewhere but not a valid liveness check for whether a session is still reading, planning, or about to write there.</summary>
+    <category term="Worktrees &amp; isolation"/>
   </entry>
   <entry>
     <title>[CRITICAL] Daemon worker can delete symlinked settings.json.</title>
     <id>https://framework.boucle.sh/limitations.html#daemon-worker-can-delete-symlinked-settings-json</id>
     <link href="https://framework.boucle.sh/limitations.html#daemon-worker-can-delete-symlinked-settings-json"/>
-    <updated>2026-08-20T00:00:00Z</updated>
+    <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Nix/home-manager Claude Code 2.1.219 setup found that a long-lived daemon-hosted `claude bg-spare` worker repeatedly unlinked `~/.claude/settings.json` when that path was a symlink into a read-only store directory. Kernel audit records attributed four successful `unlinkat` deletions to the same idle Claude Code worker within 7 to 69 seconds of the symlink being recreated, while replacing the symlink with a regular file stopped the deletion. Because `settings.json` carries permissions, hooks, sandbox policy, model, env, and status line, this can silently drop every user-level guardrail and make later sessions fall back to defaults with no obvious UI error.</summary>
     <category term="Configuration behavior"/>
   </entry>
@@ -42,7 +50,7 @@
     <title>[HIGH] Windows plugin hook command rewrites can report false success.</title>
     <id>https://framework.boucle.sh/limitations.html#windows-plugin-hook-command-rewrites-can-report-false-success</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-plugin-hook-command-rewrites-can-report-false-success"/>
-    <updated>2026-08-20T00:00:00Z</updated>
+    <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Windows 11 Claude Code 2.1.220 setup found that already-installed plugin hook commands were rewritten from a Bash `${CLAUDE_PLUGIN_ROOT}` form into an absolute `cmd /d /s /c ...run-hook.cmd` command while the hook still declared `&quot;shell&quot;: &quot;bash&quot;`. Bash then launched a bare interactive `cmd`, the hook&#x27;s JSON stdin was echoed into the Windows prompt, and Claude Code recorded the result as `hook_success` with the Windows banner injected as hook context. The reporter classified 119 local session transcripts and found the plugin SessionStart context missing from most sessions across roughly a month, with clean installs later re-mangled by another rewrite.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -50,7 +58,7 @@
     <title>[HIGH] Marketplace-entry dependencies can be ignored by graph consumers.</title>
     <id>https://framework.boucle.sh/limitations.html#marketplace-entry-dependencies-can-be-ignored-by-graph-consumers</id>
     <link href="https://framework.boucle.sh/limitations.html#marketplace-entry-dependencies-can-be-ignored-by-graph-consumers"/>
-    <updated>2026-08-20T00:00:00Z</updated>
+    <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.237 plugin-marketplace repro found that dependencies declared on a marketplace entry were used by install-time name resolution but not by the rest of the dependency graph. Version constraints such as `~2.1.0` could silently resolve to an incompatible newer tag, conflicting ranges were not reported, `list --json` showed no dependency errors, and `uninstall &lt;unrelated&gt; --prune -y` removed an auto-installed dependency that the dependent plugin still needed. Declaring the same edge in the dependent plugin&#x27;s own `plugin.json` made version checks, disable/enable behavior, and prune protection work.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -58,7 +66,7 @@
     <title>[HIGH] Hook stdin EOF can hang synchronous hook sessions.</title>
     <id>https://framework.boucle.sh/limitations.html#hook-stdin-eof-can-hang-synchronous-hook-sessions</id>
     <link href="https://framework.boucle.sh/limitations.html#hook-stdin-eof-can-hang-synchronous-hook-sessions"/>
-    <updated>2026-08-20T00:00:00Z</updated>
+    <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Windows 11 Claude Code 2.1.208 and later setup found that synchronous hook processes can intermittently receive a written JSON payload without the client closing the hook stdin pipe. Hook code that waits for EOF, such as `json.load(sys.stdin)`, then blocks forever, and because the hook is synchronous the whole session freezes until the specific child hook process is killed. The reporter reproduced it under hook-heavy Bash workflows and noted that killing only the hung hook process lets the session resume, pointing to hook stdin lifecycle handling rather than model latency.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -66,7 +74,7 @@
     <title>[HIGH] Desktop remote plugin sync can omit plugin hooks.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-remote-plugin-sync-can-omit-plugin-hooks</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-remote-plugin-sync-can-omit-plugin-hooks"/>
-    <updated>2026-08-20T00:00:00Z</updated>
+    <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Claude Desktop remote SSH session passed synced plugin directories under `~/.claude/remote/plugins` to the remote `ccd-cli`, but those synced copies omitted each plugin&#x27;s `hooks/` directory and `hooks/hooks.json`. The same plugin&#x27;s skills and commands worked, direct `settings.json` hooks fired in the desktop remote session, and a control `--plugin-dir` pointing at a complete plugin registered hooks normally. This means a plugin-delivered `PreToolUse` guard can appear enabled in a desktop remote session while its hook dispatch path is silently absent.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -74,7 +82,7 @@
     <title>[HIGH] Flagged tool-output content can leak into a later tool-call input.</title>
     <id>https://framework.boucle.sh/limitations.html#flagged-tool-output-can-leak-into-tool-call-input</id>
     <link href="https://framework.boucle.sh/limitations.html#flagged-tool-output-can-leak-into-tool-call-input"/>
-    <updated>2026-08-20T00:00:00Z</updated>
+    <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Windows 11 Claude Code 2.1.237 session produced a malformed `Read` tool call whose `file_path` began like a truncated local path and then contained roughly 900 words of injected content, including Claude Code&#x27;s own wrapper phrase for suspicious tool output and fake instructions to exfiltrate data. The permission prompt intercepted the malformed call and the user rejected it before execution, but the wrapper phrase appearing inside a new tool input suggests previously flagged content may have crossed from inert tool output into tool-call argument construction.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
@@ -82,7 +90,7 @@
     <title>[MEDIUM] Worktree command safety can misread builtin names as invocations.</title>
     <id>https://framework.boucle.sh/limitations.html#worktree-command-safety-can-misread-builtin-names-as-invocations</id>
     <link href="https://framework.boucle.sh/limitations.html#worktree-command-safety-can-misread-builtin-names-as-invocations"/>
-    <updated>2026-08-20T00:00:00Z</updated>
+    <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Windows 11 worktree-isolated session found that Claude Code&#x27;s Bash command-safety analyzer refused commands containing shell builtin names such as `complete`, `compgen`, or `compopt` even when those words appeared as ordinary non-leading arguments. The concrete failure was a Python workflow command whose subcommand was named `complete`; the analyzer treated the argument as if Bash would invoke the completion builtin and refused it as unverifiable inside the worktree. Quoting the token and disabling the sandbox did not help because the refusal came from the PreToolUse-layer worktree analyzer, not from the sandbox.</summary>
     <category term="Worktrees &amp; isolation"/>
   </entry>
@@ -90,7 +98,7 @@
     <title>[MEDIUM] Desktop can hide Auto mode despite defaultMode settings.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-can-hide-auto-mode-despite-defaultmode-settings</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-can-hide-auto-mode-despite-defaultmode-settings"/>
-    <updated>2026-08-20T00:00:00Z</updated>
+    <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported personal Claude Max macOS Desktop session stopped offering Auto in the Claude Code permission-mode picker and labelled bypass permissions as disabled by the user&#x27;s organization, even though the account had no managed policy and `~/.claude/settings.json` still set `permissions.defaultMode` to `auto`. The same machine&#x27;s terminal CLI continued to start in Auto mode, so the regression appeared isolated to Desktop-started sessions or Desktop remote configuration rather than the local settings file.</summary>
     <category term="Desktop &amp; IDE integration"/>
   </entry>
@@ -98,7 +106,7 @@
     <title>[HIGH] Remote control can appear enabled by default.</title>
     <id>https://framework.boucle.sh/limitations.html#remote-control-can-appear-enabled-by-default</id>
     <link href="https://framework.boucle.sh/limitations.html#remote-control-can-appear-enabled-by-default"/>
-    <updated>2026-08-20T00:00:00Z</updated>
+    <updated>2026-08-21T00:00:00Z</updated>
     <summary>Reported Claude Code 2.1.235 and 2.1.236 sessions showed `/rc` active in newly started terminal sessions even though users had not passed remote-control flags, had not run `/remote-control`, and had no local `remoteControlAtStartup` setting. A follow-up reproduced the pattern on Linux and noted that older already-running sessions stayed disconnected while a later process started with remote control active, consistent with a fresh startup default or remote flag change rather than an explicit local opt-in. Because remote-control connections expose live sessions outside the local terminal, this is a privacy and session-control boundary, not only a footer-display issue.</summary>
     <category term="Cowork &amp; remote"/>
   </entry>
@@ -106,7 +114,7 @@
     <title>[HIGH] Subagent handoffs can mix correct docs with poisoned examples.</title>
     <id>https://framework.boucle.sh/limitations.html#subagent-handoffs-can-mix-correct-docs-with-poisoned-examples</id>
     <link href="https://framework.boucle.sh/limitations.html#subagent-handoffs-can-mix-correct-docs-with-poisoned-examples"/>
-    <updated>2026-08-20T00:00:00Z</updated>
+    <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.237 Linux session saw an Agent-tool subagent return a plausible documentation answer that the harness flagged as instruction poisoning. The unsafe part was an unsolicited fabricated `SessionStart` hook example that would read `.env` and echo part of it into model context, mixed into an otherwise normal-looking answer about hook stdout behavior. The reporter discarded the handoff and verified the docs question separately, but the pattern shows that a partially useful subagent result can carry a credential-exposure recipe inside a copied example.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
@@ -114,7 +122,7 @@
     <title>[HIGH] Read dedup can bypass PostToolUse output substitution.</title>
     <id>https://framework.boucle.sh/limitations.html#read-dedup-can-bypass-posttooluse-output-substitution</id>
     <link href="https://framework.boucle.sh/limitations.html#read-dedup-can-bypass-posttooluse-output-substitution"/>
-    <updated>2026-08-20T00:00:00Z</updated>
+    <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.237 Linux repro found that repeated `Read` calls for the same unchanged file can be answered from `readFileState` as `file_unchanged` even when the first `Read` result was replaced by a `PostToolUse` hook via `updatedToolOutput`. The cache is written from raw disk content before hooks run, so the second identical `Read` gives the hook only a content-free unchanged marker and tells the model to refer to prior bytes that the model may never have received. On resumed sessions, the reconstructed cache can drift the other way by treating hook-substituted transcript content as if it came from disk.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -122,7 +130,7 @@
     <title>[HIGH] settings.json writes can strip hook metadata keys.</title>
     <id>https://framework.boucle.sh/limitations.html#settings-writes-can-strip-hook-metadata-keys</id>
     <link href="https://framework.boucle.sh/limitations.html#settings-writes-can-strip-hook-metadata-keys"/>
-    <updated>2026-08-20T00:00:00Z</updated>
+    <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported macOS Claude Code 2.1.227 repro found that any client write to `settings.json`, including plugin marketplace or install changes unrelated to hooks, silently removed unknown keys from hook group objects and hook item objects while preserving unknown keys at the settings root. The reporter showed marker keys disappearing from `SessionStart`, `Stop`, `SubagentStop`, and `PreToolUse` hook entries. Third-party hook managers that key identity on those markers can then lose track of their own registration, append duplicate hooks, or fail to uninstall cleanly.</summary>
     <category term="Configuration behavior"/>
   </entry>
@@ -130,7 +138,7 @@
     <title>[HIGH] Config-home settings.local.json can be ignored outside home.</title>
     <id>https://framework.boucle.sh/limitations.html#config-home-settings-local-only-applies-from-home</id>
     <link href="https://framework.boucle.sh/limitations.html#config-home-settings-local-only-applies-from-home"/>
-    <updated>2026-08-20T00:00:00Z</updated>
+    <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Fedora Claude Code 2.1.235 CLI setup found that `~/.claude/settings.local.json` was honored only when Claude Code started with `$HOME` as the working directory. The same file&#x27;s `permissions.defaultMode`, allow rules, deny rules, hooks, and worktree config were silently inert when the session started from a project directory, while moving the same permissions object to `~/.claude/settings.json` made the project session honor it. This creates a config-scope trap for users who read config-home `settings.local.json` as a user-wide local settings file.</summary>
     <category term="Configuration behavior"/>
   </entry>
@@ -138,7 +146,7 @@
     <title>[HIGH] Write tool can ignore the Bash working-directory boundary.</title>
     <id>https://framework.boucle.sh/limitations.html#write-tool-can-ignore-bash-working-directory-boundary</id>
     <link href="https://framework.boucle.sh/limitations.html#write-tool-can-ignore-bash-working-directory-boundary"/>
-    <updated>2026-08-20T00:00:00Z</updated>
+    <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported macOS headless `claude -p` automation found that starting Claude Code from a restricted worktree made Bash refuse a redirected write outside the working directory, while the Write tool could still create the same absolute path outside that boundary. The reporter reproduced it with `--permission-mode acceptEdits`, a settings file allowing Write/Edit, and no `--add-dir` grant for the parent checkout. In the real pipeline, task files landed in a sibling checkout and were later committed on the wrong branch.</summary>
     <category term="Worktrees &amp; isolation"/>
   </entry>
@@ -146,7 +154,7 @@
     <title>[HIGH] EnterWorktree hook subprocesses can stay bound to the original checkout.</title>
     <id>https://framework.boucle.sh/limitations.html#enterworktree-hook-subprocesses-can-stay-bound-to-original-checkout</id>
     <link href="https://framework.boucle.sh/limitations.html#enterworktree-hook-subprocesses-can-stay-bound-to-original-checkout"/>
-    <updated>2026-08-20T00:00:00Z</updated>
+    <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Windows 11 CLI/agent SDK session found that after `EnterWorktree` switches file tools into a new git worktree, `PreToolUse` hook subprocesses can keep resolving `${CLAUDE_PROJECT_DIR:-$PWD}` against the original checkout. `Bash`, `Read`, `Write`, and `Edit` operated in the entered worktree, but a hook command using `${CLAUDE_PROJECT_DIR:-$PWD}/.claude/hooks/...` launched the original checkout&#x27;s copy of the script for the rest of the session. Editing or instrumenting the worktree&#x27;s own hook copy then had no effect, so path guards could permanently block valid worktree edits or leave Bash and PowerShell workarounds outside the intended hook coverage.</summary>
     <category term="Worktrees &amp; isolation"/>
   </entry>
@@ -154,16 +162,8 @@
     <title>[HIGH] Headless path-scoped Write retries can breach the allowed path.</title>
     <id>https://framework.boucle.sh/limitations.html#headless-path-scoped-write-retries-can-breach-scope</id>
     <link href="https://framework.boucle.sh/limitations.html#headless-path-scoped-write-retries-can-breach-scope"/>
-    <updated>2026-08-20T00:00:00Z</updated>
+    <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.206 Windows headless `claude -p` repro found that `--allowedTools &quot;Write(&lt;ALLOWED_DIR&gt;/**)&quot;` correctly denied the first out-of-scope Write attempt and recorded a `permission_denials` entry, but later retries of the same out-of-scope Write in the same session could create the file anyway. The observed breach correlated with retrying after the first denial: runs where the model stopped after one denial withheld the write, while runs that retried to the turn cap created the outside file and still reported overall success.</summary>
     <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Tool-event hooks can silently miss runtime dispatch.</title>
-    <id>https://framework.boucle.sh/limitations.html#tool-event-hooks-can-silently-miss-runtime-dispatch</id>
-    <link href="https://framework.boucle.sh/limitations.html#tool-event-hooks-can-silently-miss-runtime-dispatch"/>
-    <updated>2026-08-20T00:00:00Z</updated>
-    <summary>A long-running Claude Code issue thread reports `PreToolUse` and `PostToolUse` hooks that are visible in `/hooks`, pass manual stdin tests, and coexist with working SessionStart or Stop hooks, but still receive no real tool-event invocation in some runtime paths. Later comments narrow the failure modes to VS Code extension sessions, headless `-p` plus `--output-format stream-json`, parallel Bash batches where only one tool event dispatches, and long edit sessions where PostToolUse stops firing despite isolated single-edit tests succeeding. Enforcement hooks can therefore look installed while real Write, Edit, Bash, or PowerShell operations proceed without the expected preflight or post-action automation.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>

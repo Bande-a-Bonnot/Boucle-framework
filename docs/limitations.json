@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1643,
+  "count": 1644,
   "categories": {
     "Hook behavior & events": 218,
     "Permission system": 148,
@@ -48,11 +48,11 @@
     "Permissions": 7,
     "Skills & commands": 7,
     "Stability & crashes": 7,
+    "Worktrees & isolation": 7,
     "Authentication & accounts": 6,
     "Memory & context": 6,
     "Model routing & identity": 6,
     "Skills / slash commands": 6,
-    "Worktrees & isolation": 6,
     "CLI / TUI rendering": 5,
     "Cost & usage": 5,
     "Model behavior & compliance": 5,
@@ -191,7 +191,7 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 139,
+    "CRITICAL": 140,
     "HIGH": 908,
     "LOW": 109,
     "MEDIUM": 487
@@ -21102,6 +21102,19 @@
       "workaround": "If you manage Claude Code config with Nix, home-manager, stow, or another symlink-based dotfile system, avoid pointing `~/.claude/settings.json` directly at a read-only target until the writer path is fixed. Materialize a regular file under `~/.claude/`, or point the symlink at a writable small directory and monitor it. Add a startup check that fails closed when `~/.claude/settings.json` is missing, not a symlink when you expect one, or lacks sentinel permission and hook rules. After any dotfile switch, restart Claude Code daemon workers and run a harmless permission plus hook canary before trusting user-level enforcement."
     },
     {
+      "id": "automatic-worktree-cleanup-can-delete-active-session-directories",
+      "title": "Automatic worktree cleanup can delete active session directories.",
+      "category": "Worktrees & isolation",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88255"
+      ],
+      "status": "open",
+      "date_added": "2026-08-21",
+      "description": "A reported macOS Claude Code setup found that an unattended worktree cleanup path removed `.claude/worktrees/<name>` directories while live sessions were still using them, including one deletion during a Bash tool call whose cwd was the removed worktree. Three unrelated concurrent sessions lost worktree directories within about ten minutes. The common git-state fingerprint was a clean worktree whose branch tip was already an ancestor of `origin/main`, which is a valid signal that the contents are captured elsewhere but not a valid liveness check for whether a session is still reading, planning, or about to write there.",
+      "workaround": "Do not treat a clean Claude Code worktree with no unique commits as safe to remove while any session may still be attached to it. Before pruning `.claude/worktrees/`, check both git state and process/session liveness, such as open shells with that cwd, active Claude Code session records, and recent transcript activity. For important work, make an early commit or backup outside the managed worktree, keep a watchdog that reports if the current cwd disappears, and avoid running many concurrent clean worktree sessions until the cleanup path has an explicit live-session guard or opt-out."
+    },
+    {
       "id": "posttooluse-rewrite-collisions-can-silently-drop-redactions",
       "title": "PostToolUse rewrite collisions can silently drop redactions.",
       "category": "Hook behavior & events",
@@ -21142,27 +21155,27 @@
     }
   ],
   "status_summary": {
-    "open": 1629,
+    "open": 1630,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 139,
+    "critical": 140,
     "high": 908,
     "low": 109,
     "medium": 487
   },
-  "lastUpdated": "2026-08-20",
+  "lastUpdated": "2026-08-21",
   "stats": {
-    "total": 1643,
-    "critical": 139,
+    "total": 1644,
+    "critical": 140,
     "high": 908,
     "medium": 487,
     "low": 109,
-    "open": 1629,
+    "open": 1630,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-08-20",
-  "total": 1643
+  "last_updated": "2026-08-21",
+  "total": 1644
 }
