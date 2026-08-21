@@ -7,6 +7,22 @@
   <updated>2026-08-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[CRITICAL] Auto mode can execute assistant-authored destructive scripts without seeing hidden effects.</title>
+    <id>https://framework.boucle.sh/limitations.html#auto-mode-can-execute-assistant-authored-destructive-scripts</id>
+    <link href="https://framework.boucle.sh/limitations.html#auto-mode-can-execute-assistant-authored-destructive-scripts"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Claude Code auto-mode WSL2 session destroyed the user&#x27;s home directory after the assistant wrote a Bash helper containing a cleanup trap, later changed the variable referenced by that trap, and then executed the script. The permission check saw only a surface command like `bash /tmp/.../test-lib-demo.sh`, not the destructive behavior now hidden inside a file the assistant had authored earlier in the same session. The report ties this to several earlier destructive deletion incidents and highlights a broader write-then-execute gap: permission decisions can inspect the command string while missing dangerous behavior embedded in assistant-created code.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] User PreToolUse hooks can miss Bash calls inside Task-spawned subagents.</title>
+    <id>https://framework.boucle.sh/limitations.html#user-pretooluse-hooks-can-miss-task-subagent-bash</id>
+    <link href="https://framework.boucle.sh/limitations.html#user-pretooluse-hooks-can-miss-task-subagent-bash"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.234 setup found that a user-level `PreToolUse` hook for Bash fired in the top-level session but did not run for Bash calls issued by Task-spawned subagents. The same hook binary accepted a hand-built payload and returned a valid rewrite response, and direct top-level Bash calls still logged as expected, so the narrowed failure is the subagent execution surface losing hook coverage. Users can reasonably believe a user-scope Bash guard, rewrite, or audit hook covers every Bash execution path, while delegated work may run raw commands with no hook invocation.</summary>
+    <category term="Hook bypass &amp; evasion"/>
+  </entry>
+  <entry>
     <title>[HIGH] Bio safeguards can hard-block base64 file verification.</title>
     <id>https://framework.boucle.sh/limitations.html#bio-safeguards-can-hard-block-base64-file-verification</id>
     <link href="https://framework.boucle.sh/limitations.html#bio-safeguards-can-hard-block-base64-file-verification"/>
@@ -149,21 +165,5 @@
     <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported macOS Claude Code 2.1.227 repro found that any client write to `settings.json`, including plugin marketplace or install changes unrelated to hooks, silently removed unknown keys from hook group objects and hook item objects while preserving unknown keys at the settings root. The reporter showed marker keys disappearing from `SessionStart`, `Stop`, `SubagentStop`, and `PreToolUse` hook entries. Third-party hook managers that key identity on those markers can then lose track of their own registration, append duplicate hooks, or fail to uninstall cleanly.</summary>
     <category term="Configuration behavior"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Config-home settings.local.json can be ignored outside home.</title>
-    <id>https://framework.boucle.sh/limitations.html#config-home-settings-local-only-applies-from-home</id>
-    <link href="https://framework.boucle.sh/limitations.html#config-home-settings-local-only-applies-from-home"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Fedora Claude Code 2.1.235 CLI setup found that `~/.claude/settings.local.json` was honored only when Claude Code started with `$HOME` as the working directory. The same file&#x27;s `permissions.defaultMode`, allow rules, deny rules, hooks, and worktree config were silently inert when the session started from a project directory, while moving the same permissions object to `~/.claude/settings.json` made the project session honor it. This creates a config-scope trap for users who read config-home `settings.local.json` as a user-wide local settings file.</summary>
-    <category term="Configuration behavior"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Write tool can ignore the Bash working-directory boundary.</title>
-    <id>https://framework.boucle.sh/limitations.html#write-tool-can-ignore-bash-working-directory-boundary</id>
-    <link href="https://framework.boucle.sh/limitations.html#write-tool-can-ignore-bash-working-directory-boundary"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported macOS headless `claude -p` automation found that starting Claude Code from a restricted worktree made Bash refuse a redirected write outside the working directory, while the Write tool could still create the same absolute path outside that boundary. The reporter reproduced it with `--permission-mode acceptEdits`, a settings file allowing Write/Edit, and no `--add-dir` grant for the parent checkout. In the real pipeline, task files landed in a sibling checkout and were later committed on the wrong branch.</summary>
-    <category term="Worktrees &amp; isolation"/>
   </entry>
 </feed>

@@ -1,10 +1,10 @@
 {
   "version": "0.13.0",
-  "count": 1648,
+  "count": 1650,
   "categories": {
     "Hook behavior & events": 219,
-    "Permission system": 149,
-    "Hook bypass & evasion": 103,
+    "Permission system": 150,
+    "Hook bypass & evasion": 104,
     "MCP & plugin issues": 92,
     "Subagent & spawned agents": 77,
     "Desktop & IDE integration": 60,
@@ -191,7 +191,7 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 140,
+    "CRITICAL": 142,
     "HIGH": 911,
     "LOW": 109,
     "MEDIUM": 488
@@ -21203,30 +21203,60 @@
       "issue": "https://github.com/anthropics/claude-code/issues/88425",
       "status": "open",
       "date_added": "2026-08-21"
+    },
+    {
+      "id": "user-pretooluse-hooks-can-miss-task-subagent-bash",
+      "title": "User PreToolUse hooks can miss Bash calls inside Task-spawned subagents.",
+      "category": "Hook bypass & evasion",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88441"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Claude Code 2.1.234 setup found that a user-level `PreToolUse` hook for Bash fired in the top-level session but did not run for Bash calls issued by Task-spawned subagents. The same hook binary accepted a hand-built payload and returned a valid rewrite response, and direct top-level Bash calls still logged as expected, so the narrowed failure is the subagent execution surface losing hook coverage. Users can reasonably believe a user-scope Bash guard, rewrite, or audit hook covers every Bash execution path, while delegated work may run raw commands with no hook invocation.",
+      "workaround": "Do not assume user-scope `PreToolUse` Bash hooks cover Task or Agent subagents until you have tested the exact surface and version. Add a hook canary that logs both a top-level Bash call and a Bash call requested through a subagent, and treat a missing subagent log as a hard coverage gap. For sensitive workflows, avoid delegating shell execution to subagents or require an outer wrapper that blocks or audits subagent-issued Bash independently of Claude Code's hook dispatcher."
+    },
+    {
+      "id": "auto-mode-can-execute-assistant-authored-destructive-scripts",
+      "title": "Auto mode can execute assistant-authored destructive scripts without seeing hidden effects.",
+      "category": "Permission system",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88462",
+        "https://github.com/anthropics/claude-code/issues/29082",
+        "https://github.com/anthropics/claude-code/issues/32938",
+        "https://github.com/anthropics/claude-code/issues/49129",
+        "https://github.com/anthropics/claude-code/issues/70687"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Claude Code auto-mode WSL2 session destroyed the user's home directory after the assistant wrote a Bash helper containing a cleanup trap, later changed the variable referenced by that trap, and then executed the script. The permission check saw only a surface command like `bash /tmp/.../test-lib-demo.sh`, not the destructive behavior now hidden inside a file the assistant had authored earlier in the same session. The report ties this to several earlier destructive deletion incidents and highlights a broader write-then-execute gap: permission decisions can inspect the command string while missing dangerous behavior embedded in assistant-created code.",
+      "workaround": "Treat execution of scripts or binaries recently written by the assistant as a separate high-risk operation, even when the command line itself looks harmless. Add deny or ask rules for broad script execution, hard-block recursive deletion of `$HOME`, `/`, project roots, and other sensitive paths, and prefer wrappers that inspect the current file contents at execution time. After cleanup scripts run, treat errors such as `getcwd: cannot access parent directories` as incident signals and stop the session until the filesystem state has been checked from outside Claude Code."
     }
   ],
   "status_summary": {
-    "open": 1634,
+    "open": 1636,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 140,
+    "critical": 142,
     "high": 911,
     "low": 109,
     "medium": 488
   },
   "lastUpdated": "2026-08-21",
   "stats": {
-    "total": 1648,
-    "critical": 140,
+    "total": 1650,
+    "critical": 142,
     "high": 911,
     "medium": 488,
     "low": 109,
-    "open": 1634,
+    "open": 1636,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-21",
-  "total": 1648
+  "total": 1650
 }
