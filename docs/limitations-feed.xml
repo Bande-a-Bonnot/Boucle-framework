@@ -7,6 +7,22 @@
   <updated>2026-08-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Custom connector Routines can disable Auto-Allow despite admin allow.</title>
+    <id>https://framework.boucle.sh/limitations.html#custom-connector-routines-can-disable-auto-allow-despite-admin-allow</id>
+    <link href="https://framework.boucle.sh/limitations.html#custom-connector-routines-can-disable-auto-allow-despite-admin-allow"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Claude Code Routines setup with an org-managed custom remote MCP connector showed every connector tool as `Auto-Allow disabled by your admin` even though the workspace admin settings were configured to always allow unconfigured connector tools, allow connector-tool auto-allow in Cowork permissions, leave Claude Code managed settings empty, and enable Routines. The routine UI simultaneously claimed unrestricted connector tools could run without asking while marking the same custom-connector tools as restricted, making the unattended runtime behavior unclear and blocking custom-connector automation.</summary>
+    <category term="Scheduled tasks"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Local channel plugin allowlists can be shadowed by remote managed settings.</title>
+    <id>https://framework.boucle.sh/limitations.html#local-channel-plugin-allowlists-can-be-shadowed-by-remote-managed-settings</id>
+    <link href="https://framework.boucle.sh/limitations.html#local-channel-plugin-allowlists-can-be-shadowed-by-remote-managed-settings"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code 2.1.234 setup found that when remote claude.ai org managed settings existed with `channelsEnabled: true` but no `allowedChannelPlugins` key, the local machine managed `allowedChannelPlugins` entry was silently discarded. The same policy chain honored `channelsEnabled`, but `claude --channels` and a `channel_enable` control request still rejected the org-approved local plugin as not on the allowlist, and the error suggested a local development flag instead of pointing to remote managed-settings shadowing.</summary>
+    <category term="Plugin &amp; channel system"/>
+  </entry>
+  <entry>
     <title>[HIGH] Managed permissions validation can drop an entire security object.</title>
     <id>https://framework.boucle.sh/limitations.html#managed-permissions-validation-can-drop-entire-security-object</id>
     <link href="https://framework.boucle.sh/limitations.html#managed-permissions-validation-can-drop-entire-security-object"/>
@@ -149,21 +165,5 @@
     <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.234 repro found that when multiple `PostToolUse` hooks return conflicting `hookSpecificOutput.updatedToolOutput` values for the same tool call, the winning rewrite is deterministic by registration order rather than by completion order. In the repro, a later-registered identity rewrite restored the original Bash output after an earlier redaction hook masked a recognizable secret, so the model received the unmasked value. Claude Code emitted no warning that one rewrite had clobbered another, and the relevant SDK warning was attached to `classifierContext` rather than the `updatedToolOutput` field that carries the security-sensitive replacement.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Automatic worktree cleanup can delete active session directories.</title>
-    <id>https://framework.boucle.sh/limitations.html#automatic-worktree-cleanup-can-delete-active-session-directories</id>
-    <link href="https://framework.boucle.sh/limitations.html#automatic-worktree-cleanup-can-delete-active-session-directories"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported macOS Claude Code setup found that an unattended worktree cleanup path removed `.claude/worktrees/&lt;name&gt;` directories while live sessions were still using them, including one deletion during a Bash tool call whose cwd was the removed worktree. Three unrelated concurrent sessions lost worktree directories within about ten minutes. The common git-state fingerprint was a clean worktree whose branch tip was already an ancestor of `origin/main`, which is a valid signal that the contents are captured elsewhere but not a valid liveness check for whether a session is still reading, planning, or about to write there.</summary>
-    <category term="Worktrees &amp; isolation"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Daemon worker can delete symlinked settings.json.</title>
-    <id>https://framework.boucle.sh/limitations.html#daemon-worker-can-delete-symlinked-settings-json</id>
-    <link href="https://framework.boucle.sh/limitations.html#daemon-worker-can-delete-symlinked-settings-json"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Nix/home-manager Claude Code 2.1.219 setup found that a long-lived daemon-hosted `claude bg-spare` worker repeatedly unlinked `~/.claude/settings.json` when that path was a symlink into a read-only store directory. Kernel audit records attributed four successful `unlinkat` deletions to the same idle Claude Code worker within 7 to 69 seconds of the symlink being recreated, while replacing the symlink with a regular file stopped the deletion. Because `settings.json` carries permissions, hooks, sandbox policy, model, env, and status line, this can silently drop every user-level guardrail and make later sessions fall back to defaults with no obvious UI error.</summary>
-    <category term="Configuration behavior"/>
   </entry>
 </feed>
