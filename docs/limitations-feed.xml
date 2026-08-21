@@ -7,6 +7,22 @@
   <updated>2026-08-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] PowerShell tool can fail under Git Bash plus Haiku without large settings.</title>
+    <id>https://framework.boucle.sh/limitations.html#powershell-tool-can-fail-under-git-bash-haiku-without-large-settings</id>
+    <link href="https://framework.boucle.sh/limitations.html#powershell-tool-can-fail-under-git-bash-haiku-without-large-settings"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Windows 11 Claude Code 2.1.235 regression found that every PowerShell tool call failed before command execution when Claude Code was launched from Git Bash with `--model haiku`. The same command passed when any one factor changed: older 2.1.168, PowerShell or cmd launch, default/Sonnet/Opus model, or non-Haiku mode. The reporter ruled out `permissions.additionalDirectories`, safe mode, most user settings, minimal environment, stdin shape, and first-tool-call ordering, making this distinct from the older large-settings command-line-length report while showing a similar `pwsh exited with code 1` classifier failure.</summary>
+    <category term="Platform &amp; compatibility"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Auto mode can steer edits away from diff-producing tools.</title>
+    <id>https://framework.boucle.sh/limitations.html#auto-mode-bashfirst-can-remove-diff-review-channel</id>
+    <link href="https://framework.boucle.sh/limitations.html#auto-mode-bashfirst-can-remove-diff-review-channel"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.234 Linux issue found that auto mode can receive a built-in Bash-first instruction that prefers shell edits through `sed`, heredocs, or short scripts over the dedicated Edit or Write tools when Bash and file-editing tools are both available. Follow-up comments describe the practical impact: shell-authored edits can hide per-file diffs behind command output, make changes harder to audit, and remove the main accessible review channel for blind users. The reporter and commenters found no documented setting that lets users keep auto approval while disabling this edit-routing preference.</summary>
+    <category term="Bash &amp; shell execution"/>
+  </entry>
+  <entry>
     <title>[HIGH] Large settings.local.json files can hide custom subagents after cold start.</title>
     <id>https://framework.boucle.sh/limitations.html#large-settings-local-can-hide-custom-subagents-after-cold-start</id>
     <link href="https://framework.boucle.sh/limitations.html#large-settings-local-can-hide-custom-subagents-after-cold-start"/>
@@ -149,21 +165,5 @@
     <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Windows 11 Claude Code 2.1.208 and later setup found that synchronous hook processes can intermittently receive a written JSON payload without the client closing the hook stdin pipe. Hook code that waits for EOF, such as `json.load(sys.stdin)`, then blocks forever, and because the hook is synchronous the whole session freezes until the specific child hook process is killed. The reporter reproduced it under hook-heavy Bash workflows and noted that killing only the hung hook process lets the session resume, pointing to hook stdin lifecycle handling rather than model latency.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Desktop remote plugin sync can omit plugin hooks.</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-remote-plugin-sync-can-omit-plugin-hooks</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-remote-plugin-sync-can-omit-plugin-hooks"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Claude Desktop remote SSH session passed synced plugin directories under `~/.claude/remote/plugins` to the remote `ccd-cli`, but those synced copies omitted each plugin&#x27;s `hooks/` directory and `hooks/hooks.json`. The same plugin&#x27;s skills and commands worked, direct `settings.json` hooks fired in the desktop remote session, and a control `--plugin-dir` pointing at a complete plugin registered hooks normally. This means a plugin-delivered `PreToolUse` guard can appear enabled in a desktop remote session while its hook dispatch path is silently absent.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Flagged tool-output content can leak into a later tool-call input.</title>
-    <id>https://framework.boucle.sh/limitations.html#flagged-tool-output-can-leak-into-tool-call-input</id>
-    <link href="https://framework.boucle.sh/limitations.html#flagged-tool-output-can-leak-into-tool-call-input"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Windows 11 Claude Code 2.1.237 session produced a malformed `Read` tool call whose `file_path` began like a truncated local path and then contained roughly 900 words of injected content, including Claude Code&#x27;s own wrapper phrase for suspicious tool output and fake instructions to exfiltrate data. The permission prompt intercepted the malformed call and the user rejected it before execution, but the wrapper phrase appearing inside a new tool input suggests previously flagged content may have crossed from inert tool output into tool-call argument construction.</summary>
-    <category term="Security &amp; trust boundaries"/>
   </entry>
 </feed>

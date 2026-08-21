@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1658</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-21.</span></p>
+        <p class="subtitle"><span id="total-count">1660</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-21.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18632,6 +18632,30 @@
                         <!-- workaround:large-settings-local-can-hide-custom-subagents-after-cold-start -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Keep project `settings.local.json` permission lists bounded and periodically collapse repeated one-off Bash grants into intentional patterns where that is safe. After Claude Code upgrades or cold starts, run a custom-agent canary that lists or invokes a harmless project subagent before relying on Agent-driven governance, review, or automation workflows. If custom agents disappear, back up `settings.local.json`, temporarily move it aside, restart, and bisect large permission sections before restoring unattended workflows.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88556" target="_blank">#88556</a></div>
+        </div>
+        <div class="kl-entry" data-category="Bash &amp; shell execution" data-issues="88041" id="auto-mode-bashfirst-can-remove-diff-review-channel" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1659</span>
+                <span class="kl-cat">Bash &amp; shell execution</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Auto mode can steer edits away from diff-producing tools.</h3>
+            <p>A reported Claude Code 2.1.234 Linux issue found that auto mode can receive a built-in Bash-first instruction that prefers shell edits through `sed`, heredocs, or short scripts over the dedicated Edit or Write tools when Bash and file-editing tools are both available. Follow-up comments describe the practical impact: shell-authored edits can hide per-file diffs behind command output, make changes harder to audit, and remove the main accessible review channel for blind users. The reporter and commenters found no documented setting that lets users keep auto approval while disabling this edit-routing preference.</p>
+                        <!-- workaround:auto-mode-bashfirst-can-remove-diff-review-channel -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For review-sensitive or accessibility-sensitive projects, add explicit project instructions that file modifications must use Edit, MultiEdit, or Write except for approved helper scripts, then verify the transcript after a canary edit in each new Claude Code version or model. Use hooks or wrapper scripts to block shell write patterns such as heredocs, redirections, `sed -i`, and ad hoc rewrite scripts unless explicitly approved. Keep git status, diffs, and filesystem snapshots as the rollback source of truth when auto mode has been allowed to run shell commands.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88041" target="_blank">#88041</a></div>
+        </div>
+        <div class="kl-entry" data-category="Platform &amp; compatibility" data-issues="87980 55671" id="powershell-tool-can-fail-under-git-bash-haiku-without-large-settings" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1660</span>
+                <span class="kl-cat">Platform &amp; compatibility</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>PowerShell tool can fail under Git Bash plus Haiku without large settings.</h3>
+            <p>A reported Windows 11 Claude Code 2.1.235 regression found that every PowerShell tool call failed before command execution when Claude Code was launched from Git Bash with `--model haiku`. The same command passed when any one factor changed: older 2.1.168, PowerShell or cmd launch, default/Sonnet/Opus model, or non-Haiku mode. The reporter ruled out `permissions.additionalDirectories`, safe mode, most user settings, minimal environment, stdin shape, and first-tool-call ordering, making this distinct from the older large-settings command-line-length report while showing a similar `pwsh exited with code 1` classifier failure.</p>
+                        <!-- workaround:powershell-tool-can-fail-under-git-bash-haiku-without-large-settings -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On Windows, avoid the Git Bash plus `--model haiku` combination for Claude Code versions affected by this regression if shell execution matters. Launch from PowerShell or cmd, use the default/Sonnet/Opus model, or pin to a known working Claude Code version until the classifier path is fixed. When PowerShell calls fail with `pwsh exited with code 1`, test one trivial command across launch shells and models before assuming a permission rule, hook, or project setting is responsible.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87980" target="_blank">#87980</a>, <a href="https://github.com/anthropics/claude-code/issues/55671" target="_blank">#55671</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
