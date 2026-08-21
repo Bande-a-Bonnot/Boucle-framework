@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1653,
+  "count": 1654,
   "categories": {
     "Hook behavior & events": 220,
     "Permission system": 151,
@@ -26,8 +26,8 @@
     "Model behavior": 18,
     "Remote & cloud": 18,
     "Data integrity": 17,
+    "Bash & shell execution": 15,
     "Scheduling & remote triggers": 15,
-    "Bash & shell execution": 14,
     "Permissions & safety": 14,
     "Worktree": 14,
     "File system & paths": 13,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 142,
-    "HIGH": 914,
+    "HIGH": 915,
     "LOW": 109,
     "MEDIUM": 488
   },
@@ -21286,30 +21286,43 @@
       "date_added": "2026-08-21",
       "description": "A reported Claude Code auto-mode WSL2 session destroyed the user's home directory after the assistant wrote a Bash helper containing a cleanup trap, later changed the variable referenced by that trap, and then executed the script. The permission check saw only a surface command like `bash /tmp/.../test-lib-demo.sh`, not the destructive behavior now hidden inside a file the assistant had authored earlier in the same session. The report ties this to several earlier destructive deletion incidents and highlights a broader write-then-execute gap: permission decisions can inspect the command string while missing dangerous behavior embedded in assistant-created code.",
       "workaround": "Treat execution of scripts or binaries recently written by the assistant as a separate high-risk operation, even when the command line itself looks harmless. Add deny or ask rules for broad script execution, hard-block recursive deletion of `$HOME`, `/`, project roots, and other sensitive paths, and prefer wrappers that inspect the current file contents at execution time. After cleanup scripts run, treat errors such as `getcwd: cannot access parent directories` as incident signals and stop the session until the filesystem state has been checked from outside Claude Code."
+    },
+    {
+      "id": "bypass-mode-steers-file-work-into-composed-shell-strings",
+      "title": "Bypass mode can steer file work away from typed tools into composed shell strings.",
+      "category": "Bash & shell execution",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88475"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Claude Code 2.1.228 through 2.1.235 behavior found that sessions running in bypass permissions mode receive a built-in instruction to do file reads, searches, and edits through Bash commands such as `cat`, `grep`, `sed`, heredocs, or short scripts where possible, rather than the dedicated Read, Grep, Edit, or Write tools. The reporter tied this to observed composition failures including laundered pipeline exit statuses, broken nested quoting, broad `git add -A` staging, backtick execution inside quoted command bodies, and POSIX awk portability mismatches. Because bypass mode is often used for unattended or headless work, this prompt-level steering can replace typed tool arguments with one-shot shell strings exactly when there may be no human watching the transcript.",
+      "workaround": "For unattended bypass-mode runs, add project or user instructions that prefer dedicated Read, Grep, Edit, and Write tools for file operations, then audit transcripts to verify that the model follows the preference in practice. Keep external guards around broad shell operations such as staging, heredocs, command construction, and script execution, and avoid treating a Bash exit code after a pipeline as proof the intended command succeeded. Where possible, run a small canary task that requires file read, search, and edit operations before trusting a new Claude Code version or model in bypass mode."
     }
   ],
   "status_summary": {
-    "open": 1639,
+    "open": 1640,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 142,
-    "high": 914,
+    "high": 915,
     "low": 109,
     "medium": 488
   },
   "lastUpdated": "2026-08-21",
   "stats": {
-    "total": 1653,
+    "total": 1654,
     "critical": 142,
-    "high": 914,
+    "high": 915,
     "medium": 488,
     "low": 109,
-    "open": 1639,
+    "open": 1640,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-21",
-  "total": 1653
+  "total": 1654
 }

@@ -7,6 +7,14 @@
   <updated>2026-08-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Bypass mode can steer file work away from typed tools into composed shell strings.</title>
+    <id>https://framework.boucle.sh/limitations.html#bypass-mode-steers-file-work-into-composed-shell-strings</id>
+    <link href="https://framework.boucle.sh/limitations.html#bypass-mode-steers-file-work-into-composed-shell-strings"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.228 through 2.1.235 behavior found that sessions running in bypass permissions mode receive a built-in instruction to do file reads, searches, and edits through Bash commands such as `cat`, `grep`, `sed`, heredocs, or short scripts where possible, rather than the dedicated Read, Grep, Edit, or Write tools. The reporter tied this to observed composition failures including laundered pipeline exit statuses, broken nested quoting, broad `git add -A` staging, backtick execution inside quoted command bodies, and POSIX awk portability mismatches. Because bypass mode is often used for unattended or headless work, this prompt-level steering can replace typed tool arguments with one-shot shell strings exactly when there may be no human watching the transcript.</summary>
+    <category term="Bash &amp; shell execution"/>
+  </entry>
+  <entry>
     <title>[CRITICAL] Auto mode can execute assistant-authored destructive scripts without seeing hidden effects.</title>
     <id>https://framework.boucle.sh/limitations.html#auto-mode-can-execute-assistant-authored-destructive-scripts</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-mode-can-execute-assistant-authored-destructive-scripts"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.237 Linux session saw an Agent-tool subagent return a plausible documentation answer that the harness flagged as instruction poisoning. The unsafe part was an unsolicited fabricated `SessionStart` hook example that would read `.env` and echo part of it into model context, mixed into an otherwise normal-looking answer about hook stdout behavior. The reporter discarded the handoff and verified the docs question separately, but the pattern shows that a partially useful subagent result can carry a credential-exposure recipe inside a copied example.</summary>
     <category term="Security &amp; trust boundaries"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Read dedup can bypass PostToolUse output substitution.</title>
-    <id>https://framework.boucle.sh/limitations.html#read-dedup-can-bypass-posttooluse-output-substitution</id>
-    <link href="https://framework.boucle.sh/limitations.html#read-dedup-can-bypass-posttooluse-output-substitution"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.237 Linux repro found that repeated `Read` calls for the same unchanged file can be answered from `readFileState` as `file_unchanged` even when the first `Read` result was replaced by a `PostToolUse` hook via `updatedToolOutput`. The cache is written from raw disk content before hooks run, so the second identical `Read` gives the hook only a content-free unchanged marker and tells the model to refer to prior bytes that the model may never have received. On resumed sessions, the reconstructed cache can drift the other way by treating hook-substituted transcript content as if it came from disk.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>
