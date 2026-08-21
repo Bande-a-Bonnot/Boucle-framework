@@ -3801,14 +3801,15 @@
     },
     {
       "id": "managed-settings-deny-ignored",
-      "title": "Managed settings file deny rules silently ignored on macOS.",
+      "title": "Local managed-settings.json can be ignored or zeroed by managed-policy precedence.",
       "category": "Permission system",
       "severity": "CRITICAL",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/43181"
+        "https://github.com/anthropics/claude-code/issues/43181",
+        "https://github.com/anthropics/claude-code/issues/70181"
       ],
-      "description": "Deny rules in the managed settings file (/Library/Application Support/ClaudeCode/managed-settings.json) are silently ignored. The same rules work correctly in ~/.claude/settings.json. This breaks the enterprise/MDM enforcement path: organization-level security policies deployed via managed settings have no effect.",
-      "workaround": "On macOS, define deny rules in ~/.claude/settings.json instead of the managed settings file. Verify that deny rules are actually enforced by testing with a blocked operation before relying on them for security. Use hook-based enforcement (bash-guard, file-guard) as a backup layer.",
+      "description": "Multiple reports found that local managed settings can appear present and watched while policy controls are not enforced. One macOS report found deny rules in /Library/Application Support/ClaudeCode/managed-settings.json silently ignored while the same rules worked in ~/.claude/settings.json. A later Linux/RHEL report found a valid /etc/claude-code/managed-settings.json zeroed at startup because an empty or cached server-managed settings response was treated as an authoritative policy with zero rules. A 2026-08-21 macOS confirmation widened the symptom beyond permissions.allow and permissions.deny: allowedMcpServers, deniedMcpServers, allowManagedMcpServersOnly, disableSideloadFlags, permissions.disableBypassPermissionsMode, and disableAutoMode in the local managed file had no effect while the file was still watched. This breaks enterprise and shared-machine enforcement because operators can believe local managed policy is active when an empty remote policy path or precedence bug has replaced it with no effective controls.",
+      "workaround": "Do not treat the presence of a managed-settings.json file, /status output, or debug logs showing a watched settings path as proof that policy controls are active. In a fresh session, run sentinel tests for each control that matters, including a blocked Bash command, a denied Write or Read path, a forbidden MCP server, disableSideloadFlags, disableBypassPermissionsMode, and any auto-mode controls. Where policy enforcement matters, pair managed settings with OS-level controls, endpoint management, wrapper scripts, or scheduler permissions that Claude Code cannot override. Hooks may help as defense in depth only after a separate canary proves the managed hook source survived the same precedence path.",
       "status": "open"
     },
     {
