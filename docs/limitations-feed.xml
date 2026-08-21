@@ -7,6 +7,14 @@
   <updated>2026-08-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Interrupted running Bash calls can keep side effects while reporting rejection.</title>
+    <id>https://framework.boucle.sh/limitations.html#interrupted-running-bash-can-keep-side-effects-while-reporting-rejection</id>
+    <link href="https://framework.boucle.sh/limitations.html#interrupted-running-bash-can-keep-side-effects-while-reporting-rejection"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.231 macOS repro found that pressing Esc after a Bash tool call had already started could terminate the process tree after the command&#x27;s durable side effect completed, while the harness still returned the generic pre-execution rejection text saying the tool use was rejected and nothing was written. In the repro, `git commit` updated HEAD and consumed the staged change before the post-commit hook was killed; the session message implied no state had changed.</summary>
+    <category term="Bash &amp; shell execution"/>
+  </entry>
+  <entry>
     <title>[HIGH] Custom connector Routines can disable Auto-Allow despite admin allow.</title>
     <id>https://framework.boucle.sh/limitations.html#custom-connector-routines-can-disable-auto-allow-despite-admin-allow</id>
     <link href="https://framework.boucle.sh/limitations.html#custom-connector-routines-can-disable-auto-allow-despite-admin-allow"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.228 worktree-isolated session found that the built-in git command safety check classified `git -C &lt;path&gt;` by the path token&#x27;s leading character rather than by the directory it resolves to. Literal in-worktree targets such as `git -C .` and `git -C ./tmp/some-clone ...` were refused as unverifiable runtime computations, while `git -C &quot;$HOME/some-other-repo&quot; ...` was allowed and executed against a repository outside the isolated worktree. The refusal is a hard tool error rather than a permission prompt, so users cannot approve a safe in-worktree false positive from the normal dialog path.</summary>
     <category term="Worktrees &amp; isolation"/>
-  </entry>
-  <entry>
-    <title>[HIGH] PostToolUse rewrite collisions can silently drop redactions.</title>
-    <id>https://framework.boucle.sh/limitations.html#posttooluse-rewrite-collisions-can-silently-drop-redactions</id>
-    <link href="https://framework.boucle.sh/limitations.html#posttooluse-rewrite-collisions-can-silently-drop-redactions"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.234 repro found that when multiple `PostToolUse` hooks return conflicting `hookSpecificOutput.updatedToolOutput` values for the same tool call, the winning rewrite is deterministic by registration order rather than by completion order. In the repro, a later-registered identity rewrite restored the original Bash output after an earlier redaction hook masked a recognizable secret, so the model received the unmasked value. Claude Code emitted no warning that one rewrite had clobbered another, and the relevant SDK warning was attached to `classifierContext` rather than the `updatedToolOutput` field that carries the security-sensitive replacement.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>

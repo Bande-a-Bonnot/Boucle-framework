@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1665,
+  "count": 1666,
   "categories": {
     "Hook behavior & events": 223,
     "Permission system": 151,
@@ -26,7 +26,7 @@
     "Data integrity": 18,
     "Model behavior": 18,
     "Remote & cloud": 18,
-    "Bash & shell execution": 16,
+    "Bash & shell execution": 17,
     "Scheduling & remote triggers": 15,
     "Permissions & safety": 14,
     "Worktree": 14,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 142,
-    "HIGH": 926,
+    "HIGH": 927,
     "LOW": 109,
     "MEDIUM": 488
   },
@@ -14405,9 +14405,10 @@
       "severity": "CRITICAL",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/79356",
-        "https://github.com/anthropics/claude-code/issues/87639"
+        "https://github.com/anthropics/claude-code/issues/87639",
+        "https://github.com/anthropics/claude-code/issues/88604"
       ],
-      "description": "A reported Claude Code 2.1.215 Windows session in default permission mode ran tool calls immediately even when `permissions.ask` listed those tools and a PreToolUse hook returned `permissionDecision: \"ask\"` for a dangerous PowerShell command. Follow-up reports on Claude Code 2.1.220 reproduced the same silent fail-open path on Windows and Linux/WSL2: the hook executed, changing only `ask` to `deny` blocked correctly, and settings-level `ask` rules appeared in `/permissions` but did not prompt. A newer Claude Code 2.1.234 Linux interactive auto-mode report narrowed the same checkpoint failure for `git add`/`git commit` rules: user-scope `permissions.ask` and a live PreToolUse hook returning `hookSpecificOutput.permissionDecision: \"ask\"` both let matching Bash commands run without prompting, while moving the same entries to `permissions.deny` blocked and headless `-p --permission-mode auto` control tests prompted.",
+      "description": "A reported Claude Code 2.1.215 Windows session in default permission mode ran tool calls immediately even when `permissions.ask` listed those tools and a PreToolUse hook returned `permissionDecision: \"ask\"` for a dangerous PowerShell command. Follow-up reports on Claude Code 2.1.220 reproduced the same silent fail-open path on Windows and Linux/WSL2: the hook executed, changing only `ask` to `deny` blocked correctly, and settings-level `ask` rules appeared in `/permissions` but did not prompt. A newer Claude Code 2.1.234 Linux interactive auto-mode report narrowed the same checkpoint failure for `git add`/`git commit` rules: user-scope `permissions.ask` and a live PreToolUse hook returning `hookSpecificOutput.permissionDecision: \"ask\"` both let matching Bash commands run without prompting, while moving the same entries to `permissions.deny` blocked and headless `-p --permission-mode auto` control tests prompted. A macOS 2.1.238 report then found a breaking change for long-standing auto-mode `ask` rules such as `Bash(git push:*)` and `Bash(gh pr create:*)`: pushes that had prompted for months began executing without a prompt after the 2.1.236-2.1.238 auto-mode onboarding change, while the classifier still blocked unrelated commands whose message text mentioned pushing.",
       "workaround": "Treat `ask` as advisory until the installed Claude Code version passes a live smoke test on each platform, surface, permission mode, and tool type you rely on. For destructive operations, prefer fail-closed `deny` hooks, OS-level permissions, git hooks, or external wrappers instead of `permissions.ask` or hook-returned `ask`; verify the actual interactive surface, not only headless `-p` controls. On Windows, also wrap PowerShell hooks with an explicit `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File ...` command so hook invocation failures are not mistaken for permission enforcement.",
       "status": "open",
       "date_added": "2026-07-20"
@@ -21444,30 +21445,43 @@
       "date_added": "2026-08-21",
       "description": "A reported Claude Code Routines setup with an org-managed custom remote MCP connector showed every connector tool as `Auto-Allow disabled by your admin` even though the workspace admin settings were configured to always allow unconfigured connector tools, allow connector-tool auto-allow in Cowork permissions, leave Claude Code managed settings empty, and enable Routines. The routine UI simultaneously claimed unrestricted connector tools could run without asking while marking the same custom-connector tools as restricted, making the unattended runtime behavior unclear and blocking custom-connector automation.",
       "workaround": "Do not treat org-level connector allow settings as proof that custom remote MCP connectors will auto-approve inside cloud Routines. Before relying on an unattended Routine, run a harmless custom-connector canary and inspect whether the routine panel marks each required tool as auto-allowable. For critical workflows, keep the equivalent local session or a human-approved path available until the custom-connector routine path is verified, and capture the connector admin settings plus routine UI state when reporting failures."
+    },
+    {
+      "id": "interrupted-running-bash-can-keep-side-effects-while-reporting-rejection",
+      "title": "Interrupted running Bash calls can keep side effects while reporting rejection.",
+      "category": "Bash & shell execution",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88608"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Claude Code 2.1.231 macOS repro found that pressing Esc after a Bash tool call had already started could terminate the process tree after the command's durable side effect completed, while the harness still returned the generic pre-execution rejection text saying the tool use was rejected and nothing was written. In the repro, `git commit` updated HEAD and consumed the staged change before the post-commit hook was killed; the session message implied no state had changed.",
+      "workaround": "Treat Esc or rejection text for an already-started Bash command as inconclusive. After interrupting any command that may mutate state, verify the external state directly with tools such as `git status`, `git log`, filesystem checks, service API reads, or process inspection before continuing. Keep risky commands small and checkpointed, avoid auto-push or cascading hooks on commands that may be interrupted, and prefer explicit pre-execution deny rules or external wrappers when a stop must be fail-closed."
     }
   ],
   "status_summary": {
-    "open": 1651,
+    "open": 1652,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 142,
-    "high": 926,
+    "high": 927,
     "low": 109,
     "medium": 488
   },
   "lastUpdated": "2026-08-21",
   "stats": {
-    "total": 1665,
+    "total": 1666,
     "critical": 142,
-    "high": 926,
+    "high": 927,
     "medium": 488,
     "low": 109,
-    "open": 1651,
+    "open": 1652,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-21",
-  "total": 1665
+  "total": 1666
 }
