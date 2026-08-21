@@ -7,6 +7,30 @@
   <updated>2026-08-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Managed permissions validation can drop an entire security object.</title>
+    <id>https://framework.boucle.sh/limitations.html#managed-permissions-validation-can-drop-entire-security-object</id>
+    <link href="https://framework.boucle.sh/limitations.html#managed-permissions-validation-can-drop-entire-security-object"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported server-managed settings case found that one invalid value inside the `permissions` object caused Claude Code to discard the entire managed `permissions` object from `remote-settings.json`, including unrelated valid security controls such as bypass-mode disabling. The user saw a warning that the `permissions` field was ignored, but the failure mode is broader than a single invalid entry. This can also happen when an admin uses a newly valid schema value that older Claude Code clients do not understand.</summary>
+    <category term="Settings &amp; configuration"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Hook schema and output gaps can hide or inject hook behavior.</title>
+    <id>https://framework.boucle.sh/limitations.html#hook-schema-and-output-gaps-can-hide-or-inject-hook-behavior</id>
+    <link href="https://framework.boucle.sh/limitations.html#hook-schema-and-output-gaps-can-hide-or-inject-hook-behavior"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code 2.1.229 setup found two hook robustness gaps. First, hook entries containing an unrecognized key such as `args` were accepted silently, so only the bare `command` ran and a different program executed than the configuration appeared to describe. Second, hook stdout reached both the user&#x27;s terminal and transcript attachments with ANSI and OSC control sequences intact, allowing a misconfigured or hostile hook to clear the screen, move the cursor, retitle the terminal tab, or inject raw control bytes into the conversation context.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Windows hook commands with backslash paths can silently never execute.</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-hook-backslash-paths-can-silently-disable-hooks</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-hook-backslash-paths-can-silently-disable-hooks"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code desktop setup found that hook commands written with normal Windows backslash paths never executed because the hook launcher ran the command through Git Bash, which stripped the backslashes before invoking the executable. The settings entry looked valid to Windows users and other Windows tools, but non-blocking hooks failed open with no surfaced error or health indicator. In the report, SessionStart, UserPromptSubmit, and PostToolUse memory hooks were silently dead for 46 days, while a separate hook without backslashes still worked and made the hook system appear partially healthy.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] PowerShell tool can fail under Git Bash plus Haiku without large settings.</title>
     <id>https://framework.boucle.sh/limitations.html#powershell-tool-can-fail-under-git-bash-haiku-without-large-settings</id>
     <link href="https://framework.boucle.sh/limitations.html#powershell-tool-can-fail-under-git-bash-haiku-without-large-settings"/>
@@ -141,29 +165,5 @@
     <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Nix/home-manager Claude Code 2.1.219 setup found that a long-lived daemon-hosted `claude bg-spare` worker repeatedly unlinked `~/.claude/settings.json` when that path was a symlink into a read-only store directory. Kernel audit records attributed four successful `unlinkat` deletions to the same idle Claude Code worker within 7 to 69 seconds of the symlink being recreated, while replacing the symlink with a regular file stopped the deletion. Because `settings.json` carries permissions, hooks, sandbox policy, model, env, and status line, this can silently drop every user-level guardrail and make later sessions fall back to defaults with no obvious UI error.</summary>
     <category term="Configuration behavior"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows plugin hook command rewrites can report false success.</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-plugin-hook-command-rewrites-can-report-false-success</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-plugin-hook-command-rewrites-can-report-false-success"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Windows 11 Claude Code 2.1.220 setup found that already-installed plugin hook commands were rewritten from a Bash `${CLAUDE_PLUGIN_ROOT}` form into an absolute `cmd /d /s /c ...run-hook.cmd` command while the hook still declared `&quot;shell&quot;: &quot;bash&quot;`. Bash then launched a bare interactive `cmd`, the hook&#x27;s JSON stdin was echoed into the Windows prompt, and Claude Code recorded the result as `hook_success` with the Windows banner injected as hook context. The reporter classified 119 local session transcripts and found the plugin SessionStart context missing from most sessions across roughly a month, with clean installs later re-mangled by another rewrite.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Marketplace-entry dependencies can be ignored by graph consumers.</title>
-    <id>https://framework.boucle.sh/limitations.html#marketplace-entry-dependencies-can-be-ignored-by-graph-consumers</id>
-    <link href="https://framework.boucle.sh/limitations.html#marketplace-entry-dependencies-can-be-ignored-by-graph-consumers"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.237 plugin-marketplace repro found that dependencies declared on a marketplace entry were used by install-time name resolution but not by the rest of the dependency graph. Version constraints such as `~2.1.0` could silently resolve to an incompatible newer tag, conflicting ranges were not reported, `list --json` showed no dependency errors, and `uninstall &lt;unrelated&gt; --prune -y` removed an auto-installed dependency that the dependent plugin still needed. Declaring the same edge in the dependent plugin&#x27;s own `plugin.json` made version checks, disable/enable behavior, and prune protection work.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Hook stdin EOF can hang synchronous hook sessions.</title>
-    <id>https://framework.boucle.sh/limitations.html#hook-stdin-eof-can-hang-synchronous-hook-sessions</id>
-    <link href="https://framework.boucle.sh/limitations.html#hook-stdin-eof-can-hang-synchronous-hook-sessions"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Windows 11 Claude Code 2.1.208 and later setup found that synchronous hook processes can intermittently receive a written JSON payload without the client closing the hook stdin pipe. Hook code that waits for EOF, such as `json.load(sys.stdin)`, then blocks forever, and because the hook is synchronous the whole session freezes until the specific child hook process is killed. The reporter reproduced it under hook-heavy Bash workflows and noted that killing only the hung hook process lets the session resume, pointing to hook stdin lifecycle handling rather than model latency.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>

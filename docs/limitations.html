@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1660</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-21.</span></p>
+        <p class="subtitle"><span id="total-count">1663</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-21.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18656,6 +18656,42 @@
                         <!-- workaround:powershell-tool-can-fail-under-git-bash-haiku-without-large-settings -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On Windows, avoid the Git Bash plus `--model haiku` combination for Claude Code versions affected by this regression if shell execution matters. Launch from PowerShell or cmd, use the default/Sonnet/Opus model, or pin to a known working Claude Code version until the classifier path is fixed. When PowerShell calls fail with `pwsh exited with code 1`, test one trivial command across launch shells and models before assuming a permission rule, hook, or project setting is responsible.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87980" target="_blank">#87980</a>, <a href="https://github.com/anthropics/claude-code/issues/55671" target="_blank">#55671</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="88578" id="windows-hook-backslash-paths-can-silently-disable-hooks" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1661</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Windows hook commands with backslash paths can silently never execute.</h3>
+            <p>A reported Windows Claude Code desktop setup found that hook commands written with normal Windows backslash paths never executed because the hook launcher ran the command through Git Bash, which stripped the backslashes before invoking the executable. The settings entry looked valid to Windows users and other Windows tools, but non-blocking hooks failed open with no surfaced error or health indicator. In the report, SessionStart, UserPromptSubmit, and PostToolUse memory hooks were silently dead for 46 days, while a separate hook without backslashes still worked and made the hook system appear partially healthy.</p>
+                        <!-- workaround:windows-hook-backslash-paths-can-silently-disable-hooks -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On Windows, write hook commands with quoted forward-slash paths or a shell wrapper that has been tested under the exact shell Claude Code uses to launch hooks. Add a hook health check that writes a timestamped marker from every configured event and verify it after startup, prompt submission, and tool use. Treat hooks with no recent log entry as failed closed, and prefer a startup canary that alerts when a configured hook has never succeeded in the current session.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88578" target="_blank">#88578</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="88563" id="hook-schema-and-output-gaps-can-hide-or-inject-hook-behavior" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1662</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Hook schema and output gaps can hide or inject hook behavior.</h3>
+            <p>A reported Windows Claude Code 2.1.229 setup found two hook robustness gaps. First, hook entries containing an unrecognized key such as `args` were accepted silently, so only the bare `command` ran and a different program executed than the configuration appeared to describe. Second, hook stdout reached both the user&#x27;s terminal and transcript attachments with ANSI and OSC control sequences intact, allowing a misconfigured or hostile hook to clear the screen, move the cursor, retitle the terminal tab, or inject raw control bytes into the conversation context.</p>
+                        <!-- workaround:hook-schema-and-output-gaps-can-hide-or-inject-hook-behavior -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Validate hook settings with a strict schema before trusting them, and fail the session if unknown hook-entry keys are present. Prefer one self-contained command string over unsupported `command` plus `args` shapes unless the installed Claude Code version documents otherwise. Treat hook stdout as untrusted: keep hooks quiet by default, write diagnostics to files or stderr where appropriate, and sanitize or reject ANSI and OSC control sequences before feeding hook output into logs, terminals, or model-visible context.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88563" target="_blank">#88563</a></div>
+        </div>
+        <div class="kl-entry" data-category="Settings &amp; configuration" data-issues="88564" id="managed-permissions-validation-can-drop-entire-security-object" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1663</span>
+                <span class="kl-cat">Settings &amp; configuration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Managed permissions validation can drop an entire security object.</h3>
+            <p>A reported server-managed settings case found that one invalid value inside the `permissions` object caused Claude Code to discard the entire managed `permissions` object from `remote-settings.json`, including unrelated valid security controls such as bypass-mode disabling. The user saw a warning that the `permissions` field was ignored, but the failure mode is broader than a single invalid entry. This can also happen when an admin uses a newly valid schema value that older Claude Code clients do not understand.</p>
+                        <!-- workaround:managed-permissions-validation-can-drop-entire-security-object -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat managed settings schema warnings as policy failures, not cosmetic configuration noise. Before rollout, test managed settings against the oldest Claude Code version still allowed in the fleet and verify the rendered `remote-settings.json` preserves every security-relevant field. Split or stage security controls so one experimental value cannot invalidate the whole permissions object, and add an endpoint or startup check that alerts when managed permissions are absent after schema validation.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88564" target="_blank">#88564</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

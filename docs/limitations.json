@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1660,
+  "count": 1663,
   "categories": {
-    "Hook behavior & events": 221,
+    "Hook behavior & events": 223,
     "Permission system": 151,
     "Hook bypass & evasion": 104,
     "MCP & plugin issues": 92,
@@ -63,6 +63,7 @@
     "Performance & resources": 4,
     "permissions": 4,
     "sandbox": 4,
+    "Settings & configuration": 4,
     "tui": 4,
     "Agent & multi-agent": 3,
     "API & infrastructure": 3,
@@ -76,7 +77,6 @@
     "Remote": 3,
     "Sandbox": 3,
     "Security": 3,
-    "Settings & configuration": 3,
     "Tool availability": 3,
     "Agent control & instruction following": 2,
     "Agents": 2,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 142,
-    "HIGH": 921,
+    "HIGH": 924,
     "LOW": 109,
     "MEDIUM": 488
   },
@@ -21379,30 +21379,69 @@
       "date_added": "2026-08-21",
       "description": "A reported Windows 11 Claude Code 2.1.235 regression found that every PowerShell tool call failed before command execution when Claude Code was launched from Git Bash with `--model haiku`. The same command passed when any one factor changed: older 2.1.168, PowerShell or cmd launch, default/Sonnet/Opus model, or non-Haiku mode. The reporter ruled out `permissions.additionalDirectories`, safe mode, most user settings, minimal environment, stdin shape, and first-tool-call ordering, making this distinct from the older large-settings command-line-length report while showing a similar `pwsh exited with code 1` classifier failure.",
       "workaround": "On Windows, avoid the Git Bash plus `--model haiku` combination for Claude Code versions affected by this regression if shell execution matters. Launch from PowerShell or cmd, use the default/Sonnet/Opus model, or pin to a known working Claude Code version until the classifier path is fixed. When PowerShell calls fail with `pwsh exited with code 1`, test one trivial command across launch shells and models before assuming a permission rule, hook, or project setting is responsible."
+    },
+    {
+      "id": "windows-hook-backslash-paths-can-silently-disable-hooks",
+      "title": "Windows hook commands with backslash paths can silently never execute.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88578"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Windows Claude Code desktop setup found that hook commands written with normal Windows backslash paths never executed because the hook launcher ran the command through Git Bash, which stripped the backslashes before invoking the executable. The settings entry looked valid to Windows users and other Windows tools, but non-blocking hooks failed open with no surfaced error or health indicator. In the report, SessionStart, UserPromptSubmit, and PostToolUse memory hooks were silently dead for 46 days, while a separate hook without backslashes still worked and made the hook system appear partially healthy.",
+      "workaround": "On Windows, write hook commands with quoted forward-slash paths or a shell wrapper that has been tested under the exact shell Claude Code uses to launch hooks. Add a hook health check that writes a timestamped marker from every configured event and verify it after startup, prompt submission, and tool use. Treat hooks with no recent log entry as failed closed, and prefer a startup canary that alerts when a configured hook has never succeeded in the current session."
+    },
+    {
+      "id": "hook-schema-and-output-gaps-can-hide-or-inject-hook-behavior",
+      "title": "Hook schema and output gaps can hide or inject hook behavior.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88563"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Windows Claude Code 2.1.229 setup found two hook robustness gaps. First, hook entries containing an unrecognized key such as `args` were accepted silently, so only the bare `command` ran and a different program executed than the configuration appeared to describe. Second, hook stdout reached both the user's terminal and transcript attachments with ANSI and OSC control sequences intact, allowing a misconfigured or hostile hook to clear the screen, move the cursor, retitle the terminal tab, or inject raw control bytes into the conversation context.",
+      "workaround": "Validate hook settings with a strict schema before trusting them, and fail the session if unknown hook-entry keys are present. Prefer one self-contained command string over unsupported `command` plus `args` shapes unless the installed Claude Code version documents otherwise. Treat hook stdout as untrusted: keep hooks quiet by default, write diagnostics to files or stderr where appropriate, and sanitize or reject ANSI and OSC control sequences before feeding hook output into logs, terminals, or model-visible context."
+    },
+    {
+      "id": "managed-permissions-validation-can-drop-entire-security-object",
+      "title": "Managed permissions validation can drop an entire security object.",
+      "category": "Settings & configuration",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88564"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported server-managed settings case found that one invalid value inside the `permissions` object caused Claude Code to discard the entire managed `permissions` object from `remote-settings.json`, including unrelated valid security controls such as bypass-mode disabling. The user saw a warning that the `permissions` field was ignored, but the failure mode is broader than a single invalid entry. This can also happen when an admin uses a newly valid schema value that older Claude Code clients do not understand.",
+      "workaround": "Treat managed settings schema warnings as policy failures, not cosmetic configuration noise. Before rollout, test managed settings against the oldest Claude Code version still allowed in the fleet and verify the rendered `remote-settings.json` preserves every security-relevant field. Split or stage security controls so one experimental value cannot invalidate the whole permissions object, and add an endpoint or startup check that alerts when managed permissions are absent after schema validation."
     }
   ],
   "status_summary": {
-    "open": 1646,
+    "open": 1649,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 142,
-    "high": 921,
+    "high": 924,
     "low": 109,
     "medium": 488
   },
   "lastUpdated": "2026-08-21",
   "stats": {
-    "total": 1660,
+    "total": 1663,
     "critical": 142,
-    "high": 921,
+    "high": 924,
     "medium": 488,
     "low": 109,
-    "open": 1646,
+    "open": 1649,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-21",
-  "total": 1660
+  "total": 1663
 }
