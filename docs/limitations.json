@@ -1,18 +1,18 @@
 {
   "version": "0.13.0",
-  "count": 1666,
+  "count": 1668,
   "categories": {
     "Hook behavior & events": 223,
     "Permission system": 151,
     "Hook bypass & evasion": 104,
-    "MCP & plugin issues": 92,
+    "MCP & plugin issues": 93,
     "Subagent & spawned agents": 77,
     "Desktop & IDE integration": 60,
     "TUI & display": 37,
     "Platform & compatibility": 32,
     "CLI & terminal": 31,
+    "Configuration behavior": 31,
     "Security & trust boundaries": 31,
-    "Configuration behavior": 30,
     "Context & memory": 30,
     "MCP & integrations": 30,
     "Sandbox & permissions": 30,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 142,
-    "HIGH": 927,
+    "HIGH": 929,
     "LOW": 109,
     "MEDIUM": 488
   },
@@ -21458,30 +21458,56 @@
       "date_added": "2026-08-21",
       "description": "A reported Claude Code 2.1.231 macOS repro found that pressing Esc after a Bash tool call had already started could terminate the process tree after the command's durable side effect completed, while the harness still returned the generic pre-execution rejection text saying the tool use was rejected and nothing was written. In the repro, `git commit` updated HEAD and consumed the staged change before the post-commit hook was killed; the session message implied no state had changed.",
       "workaround": "Treat Esc or rejection text for an already-started Bash command as inconclusive. After interrupting any command that may mutate state, verify the external state directly with tools such as `git status`, `git log`, filesystem checks, service API reads, or process inspection before continuing. Keep risky commands small and checkpointed, avoid auto-push or cascading hooks on commands that may be interrupted, and prefer explicit pre-execution deny rules or external wrappers when a stop must be fail-closed."
+    },
+    {
+      "id": "auto-mode-bash-edits-can-skip-path-scoped-rules",
+      "title": "Auto mode Bash edits can skip path-scoped rules.",
+      "category": "Configuration behavior",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88565"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Claude Code 2.1.238 repro found that path-scoped `.claude/rules/` entries were injected when a matching file was read or edited through dedicated file tools, but not when the same file was modified through Bash with a sed or Python one-liner. Auto mode and bypass permissions mode can instruct the agent to prefer Bash for reads, searches, and edits where possible, so the default edit path can be the one path where the matching rule never enters context. In the reported real-world case, a central config file was changed without the companion-format and checklist rules that governed that path, and a second merge request was needed to repair the missed requirements.",
+      "workaround": "Do not rely on path-scoped rules as the only control for files that can be changed through Bash. For governed paths, add hooks or external checks that inspect the post-command changed-file set, block common shell write patterns unless approved, or run a commit-time validator that enforces the same requirements outside Claude Code. After enabling auto mode or bypass mode, run a canary that edits a rule-scoped file through both Edit and Bash and verify the rule appears in context or that an external guard catches the Bash path."
+    },
+    {
+      "id": "plugin-hooks-can-load-additively-from-manifest-and-hooks-file",
+      "title": "Plugin hooks can load additively from manifest and hooks file.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88650"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Claude Code CLI 2.1.159 plugin repro found that a plugin declaring the same hook event in both `.claude-plugin/plugin.json` and `hooks/hooks.json` ran both handlers, even though the plugins reference says the manifest path should override the folder-backed default and warn about the ignored folder. The validation and details commands did not warn about the double declaration, and the details view counted only the event name rather than the number of handlers. Plugin authors can therefore create duplicate side effects while believing one source has been ignored.",
+      "workaround": "Keep plugin hook declarations in exactly one place until the installed Claude Code version proves the documented override or clearly documents additive behavior. Add a plugin validation step that rejects hooks declared in both `plugin.json` and `hooks/hooks.json`, and use a same-session canary with distinguishable markers for every hook event that matters. Make hook side effects idempotent where possible so duplicate dispatch is visible but not destructive."
     }
   ],
   "status_summary": {
-    "open": 1652,
+    "open": 1654,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 142,
-    "high": 927,
+    "high": 929,
     "low": 109,
     "medium": 488
   },
   "lastUpdated": "2026-08-21",
   "stats": {
-    "total": 1666,
+    "total": 1668,
     "critical": 142,
-    "high": 927,
+    "high": 929,
     "medium": 488,
     "low": 109,
-    "open": 1652,
+    "open": 1654,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-21",
-  "total": 1666
+  "total": 1668
 }

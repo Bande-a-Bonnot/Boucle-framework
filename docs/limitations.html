@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1666</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-21.</span></p>
+        <p class="subtitle"><span id="total-count">1668</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-21.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18728,6 +18728,30 @@
                         <!-- workaround:interrupted-running-bash-can-keep-side-effects-while-reporting-rejection -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat Esc or rejection text for an already-started Bash command as inconclusive. After interrupting any command that may mutate state, verify the external state directly with tools such as `git status`, `git log`, filesystem checks, service API reads, or process inspection before continuing. Keep risky commands small and checkpointed, avoid auto-push or cascading hooks on commands that may be interrupted, and prefer explicit pre-execution deny rules or external wrappers when a stop must be fail-closed.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88608" target="_blank">#88608</a></div>
+        </div>
+        <div class="kl-entry" data-category="Configuration behavior" data-issues="88565" id="auto-mode-bash-edits-can-skip-path-scoped-rules" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1667</span>
+                <span class="kl-cat">Configuration behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Auto mode Bash edits can skip path-scoped rules.</h3>
+            <p>A reported Claude Code 2.1.238 repro found that path-scoped `.claude/rules/` entries were injected when a matching file was read or edited through dedicated file tools, but not when the same file was modified through Bash with a sed or Python one-liner. Auto mode and bypass permissions mode can instruct the agent to prefer Bash for reads, searches, and edits where possible, so the default edit path can be the one path where the matching rule never enters context. In the reported real-world case, a central config file was changed without the companion-format and checklist rules that governed that path, and a second merge request was needed to repair the missed requirements.</p>
+                        <!-- workaround:auto-mode-bash-edits-can-skip-path-scoped-rules -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on path-scoped rules as the only control for files that can be changed through Bash. For governed paths, add hooks or external checks that inspect the post-command changed-file set, block common shell write patterns unless approved, or run a commit-time validator that enforces the same requirements outside Claude Code. After enabling auto mode or bypass mode, run a canary that edits a rule-scoped file through both Edit and Bash and verify the rule appears in context or that an external guard catches the Bash path.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88565" target="_blank">#88565</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="88650" id="plugin-hooks-can-load-additively-from-manifest-and-hooks-file" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1668</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Plugin hooks can load additively from manifest and hooks file.</h3>
+            <p>A reported Claude Code CLI 2.1.159 plugin repro found that a plugin declaring the same hook event in both `.claude-plugin/plugin.json` and `hooks/hooks.json` ran both handlers, even though the plugins reference says the manifest path should override the folder-backed default and warn about the ignored folder. The validation and details commands did not warn about the double declaration, and the details view counted only the event name rather than the number of handlers. Plugin authors can therefore create duplicate side effects while believing one source has been ignored.</p>
+                        <!-- workaround:plugin-hooks-can-load-additively-from-manifest-and-hooks-file -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Keep plugin hook declarations in exactly one place until the installed Claude Code version proves the documented override or clearly documents additive behavior. Add a plugin validation step that rejects hooks declared in both `plugin.json` and `hooks/hooks.json`, and use a same-session canary with distinguishable markers for every hook event that matters. Make hook side effects idempotent where possible so duplicate dispatch is visible but not destructive.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88650" target="_blank">#88650</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

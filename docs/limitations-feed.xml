@@ -7,6 +7,22 @@
   <updated>2026-08-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Plugin hooks can load additively from manifest and hooks file.</title>
+    <id>https://framework.boucle.sh/limitations.html#plugin-hooks-can-load-additively-from-manifest-and-hooks-file</id>
+    <link href="https://framework.boucle.sh/limitations.html#plugin-hooks-can-load-additively-from-manifest-and-hooks-file"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Claude Code CLI 2.1.159 plugin repro found that a plugin declaring the same hook event in both `.claude-plugin/plugin.json` and `hooks/hooks.json` ran both handlers, even though the plugins reference says the manifest path should override the folder-backed default and warn about the ignored folder. The validation and details commands did not warn about the double declaration, and the details view counted only the event name rather than the number of handlers. Plugin authors can therefore create duplicate side effects while believing one source has been ignored.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Auto mode Bash edits can skip path-scoped rules.</title>
+    <id>https://framework.boucle.sh/limitations.html#auto-mode-bash-edits-can-skip-path-scoped-rules</id>
+    <link href="https://framework.boucle.sh/limitations.html#auto-mode-bash-edits-can-skip-path-scoped-rules"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.238 repro found that path-scoped `.claude/rules/` entries were injected when a matching file was read or edited through dedicated file tools, but not when the same file was modified through Bash with a sed or Python one-liner. Auto mode and bypass permissions mode can instruct the agent to prefer Bash for reads, searches, and edits where possible, so the default edit path can be the one path where the matching rule never enters context. In the reported real-world case, a central config file was changed without the companion-format and checklist rules that governed that path, and a second merge request was needed to repair the missed requirements.</summary>
+    <category term="Configuration behavior"/>
+  </entry>
+  <entry>
     <title>[HIGH] Interrupted running Bash calls can keep side effects while reporting rejection.</title>
     <id>https://framework.boucle.sh/limitations.html#interrupted-running-bash-can-keep-side-effects-while-reporting-rejection</id>
     <link href="https://framework.boucle.sh/limitations.html#interrupted-running-bash-can-keep-side-effects-while-reporting-rejection"/>
@@ -149,21 +165,5 @@
     <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Windows Claude Code setup found that `.claude.json` can store the same project directory under multiple raw path spellings, such as lowercase-drive forward-slash, uppercase-drive forward-slash, and uppercase-drive backslash forms. Those records did not carry equivalent state: the backslash spelling held `hasTrustDialogAccepted: true`, while forward-slash records held MCP server and active worktree fields but had trust unset. The visible result is a project that appears to lose configured MCP servers, forget active worktree state, or re-prompt for trust, even though all records refer to the same directory.</summary>
     <category term="Security &amp; trust boundaries"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Desktop bundled @inline plugins can re-enable after restart.</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-inline-plugins-can-reenable-after-restart</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-inline-plugins-can-reenable-after-restart"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Claude Desktop Cowork setup found that bundled `@inline` plugins such as marketing and product-management could not be disabled persistently. Disabling them in the app UI or setting `enabledPlugins` entries to `false` in `~/.claude/settings.json` survived on disk, but after each Desktop restart the bundled plugin skill sets and MCP servers were enabled again. Because these plugins are bundled inside the Desktop app rather than ordinary installed plugins, `claude plugin list` and the local plugin cache did not show a removable or inspectable source of truth. The result is silent reintroduction of about 65 skills and related plugin context into sessions where the user believed those plugins were off.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Worktree `git -C` path classifier can invert safe and unsafe targets.</title>
-    <id>https://framework.boucle.sh/limitations.html#worktree-git-c-path-classifier-can-invert-safe-and-unsafe-targets</id>
-    <link href="https://framework.boucle.sh/limitations.html#worktree-git-c-path-classifier-can-invert-safe-and-unsafe-targets"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.228 worktree-isolated session found that the built-in git command safety check classified `git -C &lt;path&gt;` by the path token&#x27;s leading character rather than by the directory it resolves to. Literal in-worktree targets such as `git -C .` and `git -C ./tmp/some-clone ...` were refused as unverifiable runtime computations, while `git -C &quot;$HOME/some-other-repo&quot; ...` was allowed and executed against a repository outside the isolated worktree. The refusal is a hard tool error rather than a permission prompt, so users cannot approve a safe in-worktree false positive from the normal dialog path.</summary>
-    <category term="Worktrees &amp; isolation"/>
   </entry>
 </feed>
