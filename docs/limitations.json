@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1658,
+  "count": 1660,
   "categories": {
     "Hook behavior & events": 221,
     "Permission system": 151,
@@ -9,8 +9,8 @@
     "Subagent & spawned agents": 77,
     "Desktop & IDE integration": 60,
     "TUI & display": 37,
+    "Platform & compatibility": 32,
     "CLI & terminal": 31,
-    "Platform & compatibility": 31,
     "Security & trust boundaries": 31,
     "Configuration behavior": 30,
     "Context & memory": 30,
@@ -26,7 +26,7 @@
     "Data integrity": 18,
     "Model behavior": 18,
     "Remote & cloud": 18,
-    "Bash & shell execution": 15,
+    "Bash & shell execution": 16,
     "Scheduling & remote triggers": 15,
     "Permissions & safety": 14,
     "Worktree": 14,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 142,
-    "HIGH": 919,
+    "HIGH": 921,
     "LOW": 109,
     "MEDIUM": 488
   },
@@ -21352,30 +21352,57 @@
       "date_added": "2026-08-21",
       "description": "A reported Windows Claude Code 2.1.237 project lost all 10 custom `.claude/agents/*.md` subagents after a full cold start, even though the agent files were valid and had worked previously. The immediate fix was moving the project's valid but very large `.claude/settings.local.json` out of the way; that file had grown to about 348 KB with 2,438 specific `permissions.allow` entries. The failure was silent until the user tried to dispatch a custom Agent type and saw only built-in agents registered.",
       "workaround": "Keep project `settings.local.json` permission lists bounded and periodically collapse repeated one-off Bash grants into intentional patterns where that is safe. After Claude Code upgrades or cold starts, run a custom-agent canary that lists or invokes a harmless project subagent before relying on Agent-driven governance, review, or automation workflows. If custom agents disappear, back up `settings.local.json`, temporarily move it aside, restart, and bisect large permission sections before restoring unattended workflows."
+    },
+    {
+      "id": "auto-mode-bashfirst-can-remove-diff-review-channel",
+      "title": "Auto mode can steer edits away from diff-producing tools.",
+      "category": "Bash & shell execution",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88041"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Claude Code 2.1.234 Linux issue found that auto mode can receive a built-in Bash-first instruction that prefers shell edits through `sed`, heredocs, or short scripts over the dedicated Edit or Write tools when Bash and file-editing tools are both available. Follow-up comments describe the practical impact: shell-authored edits can hide per-file diffs behind command output, make changes harder to audit, and remove the main accessible review channel for blind users. The reporter and commenters found no documented setting that lets users keep auto approval while disabling this edit-routing preference.",
+      "workaround": "For review-sensitive or accessibility-sensitive projects, add explicit project instructions that file modifications must use Edit, MultiEdit, or Write except for approved helper scripts, then verify the transcript after a canary edit in each new Claude Code version or model. Use hooks or wrapper scripts to block shell write patterns such as heredocs, redirections, `sed -i`, and ad hoc rewrite scripts unless explicitly approved. Keep git status, diffs, and filesystem snapshots as the rollback source of truth when auto mode has been allowed to run shell commands."
+    },
+    {
+      "id": "powershell-tool-can-fail-under-git-bash-haiku-without-large-settings",
+      "title": "PowerShell tool can fail under Git Bash plus Haiku without large settings.",
+      "category": "Platform & compatibility",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87980",
+        "https://github.com/anthropics/claude-code/issues/55671"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Windows 11 Claude Code 2.1.235 regression found that every PowerShell tool call failed before command execution when Claude Code was launched from Git Bash with `--model haiku`. The same command passed when any one factor changed: older 2.1.168, PowerShell or cmd launch, default/Sonnet/Opus model, or non-Haiku mode. The reporter ruled out `permissions.additionalDirectories`, safe mode, most user settings, minimal environment, stdin shape, and first-tool-call ordering, making this distinct from the older large-settings command-line-length report while showing a similar `pwsh exited with code 1` classifier failure.",
+      "workaround": "On Windows, avoid the Git Bash plus `--model haiku` combination for Claude Code versions affected by this regression if shell execution matters. Launch from PowerShell or cmd, use the default/Sonnet/Opus model, or pin to a known working Claude Code version until the classifier path is fixed. When PowerShell calls fail with `pwsh exited with code 1`, test one trivial command across launch shells and models before assuming a permission rule, hook, or project setting is responsible."
     }
   ],
   "status_summary": {
-    "open": 1644,
+    "open": 1646,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 142,
-    "high": 919,
+    "high": 921,
     "low": 109,
     "medium": 488
   },
   "lastUpdated": "2026-08-21",
   "stats": {
-    "total": 1658,
+    "total": 1660,
     "critical": 142,
-    "high": 919,
+    "high": 921,
     "medium": 488,
     "low": 109,
-    "open": 1644,
+    "open": 1646,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-21",
-  "total": 1658
+  "total": 1660
 }
