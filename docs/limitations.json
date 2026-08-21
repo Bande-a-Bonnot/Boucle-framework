@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1673,
+  "count": 1676,
   "categories": {
-    "Hook behavior & events": 223,
+    "Hook behavior & events": 224,
     "Permission system": 151,
     "Hook bypass & evasion": 104,
     "MCP & plugin issues": 94,
@@ -23,8 +23,8 @@
     "Tool behavior": 22,
     "Auth & accounts": 21,
     "Core & session management": 21,
-    "Bash & shell execution": 18,
-    "Data integrity": 18,
+    "Bash & shell execution": 19,
+    "Data integrity": 19,
     "Model behavior": 18,
     "Remote & cloud": 18,
     "Scheduling & remote triggers": 15,
@@ -191,8 +191,8 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 142,
-    "HIGH": 934,
+    "CRITICAL": 143,
+    "HIGH": 936,
     "LOW": 109,
     "MEDIUM": 488
   },
@@ -21550,30 +21550,69 @@
       "date_added": "2026-08-21",
       "description": "A reported Claude Code 2.1.234 background job in auto mode was denied when trying to call a read-only local database MCP tool even though the user expected the MCP permission allowlist and denied Bash/mysql rules to route the work safely through MCP. The error said the auto-mode classifier blocked the action because no human permission dialog was available, creating a mismatch between configured tool permissions and the classifier's unattended decision.",
       "workaround": "Before relying on MCP tools in auto-mode background jobs, run a harmless call to every required MCP tool under the same launch mode and model, not just in an interactive session. Treat the configured allowlist as necessary but not sufficient; keep an interactive or non-auto fallback for workflows where the classifier may still deny a safe read-only tool. If Bash alternatives are intentionally denied to force MCP use, make the canary fail the job early rather than letting the agent improvise another path."
+    },
+    {
+      "id": "exit-cleanup-can-delete-home-instead-of-session-directory",
+      "title": "Exit cleanup can delete $HOME instead of a session directory.",
+      "category": "Data integrity",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88605"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Linux Claude Code 2.1.238 incident found that typing `/exit` in an interactive session managing two still-running background agent sessions in managed worktrees coincided with recursive deletion of the user's entire home directory. The reporter reconstructed transcripts, system journal events, ext4 deletion timing, and surviving process memory, and found no shell command or user action that performed the deletion. The evidence points to an in-process recursive cleanup path resolving to `$HOME` instead of the intended worktree, job, or session directory during exit-time teardown.",
+      "workaround": "Treat managed worktree cleanup and `/exit` as high-risk when background sessions are still alive. Before exiting an orchestrator that spawned background worktree agents, stop or detach the child sessions deliberately, snapshot important state outside `$HOME` where possible, and verify live processes plus `.claude/worktrees` ownership before cleanup. On systems running affected versions, avoid unattended `/exit` teardown around managed worktrees until a guarded cleanup path refuses to delete `$HOME`, ancestors of `$HOME`, or paths outside known session/worktree roots."
+    },
+    {
+      "id": "background-permissionrequest-decisions-can-be-discarded",
+      "title": "Background PermissionRequest hook decisions can be discarded.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88698"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Claude Code 2.1.238 macOS repro found that `PermissionRequest` hooks in `claude --bg` sessions fired with the expected Bash payload but their returned allow or deny decisions were ignored. The background session stayed blocked on `waitingFor: \"permission prompt\"` for both `permissions.ask` rules and `PreToolUse` hooks that escalated to ask, while the same setup showed the hook had run by writing a payload log. This leaves non-interactive background approval services unable to resolve prompts even though the hook event was dispatched.",
+      "workaround": "Do not rely on `PermissionRequest` as the only decision channel for `claude --bg` sessions until the installed version proves allow and deny both resolve the prompt. Prefer explicit `permissions.allow` and `permissions.deny` rules for known operations, and add a background canary that forces a harmless ask and fails the job if the session remains blocked. For external approval services, keep a human-interactive fallback or avoid background launch modes for operations that require dynamic permission prompts."
+    },
+    {
+      "id": "background-bash-timeout-can-be-ignored-with-no-notification",
+      "title": "Background Bash timeouts can be ignored with no notification.",
+      "category": "Bash & shell execution",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88702"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Claude Code 2.1.236 and 2.1.239 macOS repro found that a Bash tool call with `run_in_background: true` ignored its declared `timeout`; a command with a 5 second timeout still ran for 90 seconds and completed normally. The same report describes a malformed background polling loop that kept running for roughly 13 hours after the session ended its turn waiting for the task, with no timeout notification or idle-task signal delivered to re-enter the session.",
+      "workaround": "Do not assume the Bash tool's `timeout` field constrains background tasks in affected versions. Wrap background commands in an in-command deadline such as `timeout` or `gtimeout`, bound polling loops with explicit iteration limits, and add a `PreToolUse` hook that rejects unbounded background `while` or `until` loops unless they contain their own deadline. Pair long background waits with an external monitor, process cleanup path, or scheduled fallback that can wake the session or kill the process group if Claude Code never reports completion."
     }
   ],
   "status_summary": {
-    "open": 1659,
+    "open": 1662,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 142,
-    "high": 934,
+    "critical": 143,
+    "high": 936,
     "low": 109,
     "medium": 488
   },
   "lastUpdated": "2026-08-21",
   "stats": {
-    "total": 1673,
-    "critical": 142,
-    "high": 934,
+    "total": 1676,
+    "critical": 143,
+    "high": 936,
     "medium": 488,
     "low": 109,
-    "open": 1659,
+    "open": 1662,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-21",
-  "total": 1673
+  "total": 1676
 }
