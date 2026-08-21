@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1652,
+  "count": 1653,
   "categories": {
     "Hook behavior & events": 220,
     "Permission system": 151,
@@ -43,12 +43,12 @@
     "auth": 8,
     "Desktop & platform bugs": 8,
     "Hook execution & lifecycle": 8,
+    "Worktrees & isolation": 8,
     "MCP": 7,
     "Model behavior & output": 7,
     "Permissions": 7,
     "Skills & commands": 7,
     "Stability & crashes": 7,
-    "Worktrees & isolation": 7,
     "Authentication & accounts": 6,
     "Memory & context": 6,
     "Model routing & identity": 6,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 142,
-    "HIGH": 913,
+    "HIGH": 914,
     "LOW": 109,
     "MEDIUM": 488
   },
@@ -21258,6 +21258,19 @@
       "workaround": "Do not assume user-scope `PreToolUse` Bash hooks cover Task or Agent subagents until you have tested the exact surface and version. Add a hook canary that logs both a top-level Bash call and a Bash call requested through a subagent, and treat a missing subagent log as a hard coverage gap. For sensitive workflows, avoid delegating shell execution to subagents or require an outer wrapper that blocks or audits subagent-issued Bash independently of Claude Code's hook dispatcher."
     },
     {
+      "id": "worktree-bash-guard-can-block-git-free-commands",
+      "title": "Worktree Bash guard can block git-free commands.",
+      "category": "Worktrees & isolation",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/87959"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Claude Code 2.1.235 macOS worktree-isolated session saw the built-in Bash guard refuse ordinary multi-step shell commands with a message about unverifiable worktree git operations even when the command had no git token and no path outside the worktree. A later Linux 2.1.238 matrix narrowed the behavior: some compound forms are allowed, but simple loops, assignments, and variable-expanded reads can still be false positives, while `bash -c 'git -C <main> ...'` was allowed and ran against the main checkout. A larger local transcript corpus then found 2,628 such refusals across 591 of 12,623 sessions, with 73.2% of matched refused commands containing no git token and 274 refusals involving the session scratchpad the harness itself instructed agents to use.",
+      "workaround": "In worktree-isolated sessions, treat the Bash guard as both conservative and incomplete rather than as a precise proof of repository safety. Break high-friction shell work into simple commands when possible, but use file tools or checked-in helper scripts for heredocs, loops, and scratchpad generation that the guard may misclassify. Do not route dangerous git work through `bash -c` or `sh -c` merely because the guard allows it; verify `pwd`, `git rev-parse --show-toplevel`, and the target repository before and after any git command. If a refusal cites worktree git safety for a git-free command, record the exact command shape instead of assuming the command actually targeted another checkout."
+    },
+    {
       "id": "auto-mode-can-execute-assistant-authored-destructive-scripts",
       "title": "Auto mode can execute assistant-authored destructive scripts without seeing hidden effects.",
       "category": "Permission system",
@@ -21276,27 +21289,27 @@
     }
   ],
   "status_summary": {
-    "open": 1638,
+    "open": 1639,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 142,
-    "high": 913,
+    "high": 914,
     "low": 109,
     "medium": 488
   },
   "lastUpdated": "2026-08-21",
   "stats": {
-    "total": 1652,
+    "total": 1653,
     "critical": 142,
-    "high": 913,
+    "high": 914,
     "medium": 488,
     "low": 109,
-    "open": 1638,
+    "open": 1639,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-21",
-  "total": 1652
+  "total": 1653
 }

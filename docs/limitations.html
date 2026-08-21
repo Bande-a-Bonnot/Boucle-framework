@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1652</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-21.</span></p>
+        <p class="subtitle"><span id="total-count">1653</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-21.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18549,9 +18549,21 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume user-scope `PreToolUse` Bash hooks cover Task or Agent subagents until you have tested the exact surface and version. Add a hook canary that logs both a top-level Bash call and a Bash call requested through a subagent, and treat a missing subagent log as a hard coverage gap. For sensitive workflows, avoid delegating shell execution to subagents or require an outer wrapper that blocks or audits subagent-issued Bash independently of Claude Code&#x27;s hook dispatcher.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88441" target="_blank">#88441</a></div>
         </div>
-        <div class="kl-entry" data-category="Permission system" data-issues="88462 29082 32938 49129 70687" id="auto-mode-can-execute-assistant-authored-destructive-scripts" data-severity="critical" data-status="open">
+        <div class="kl-entry" data-category="Worktrees &amp; isolation" data-issues="87959" id="worktree-bash-guard-can-block-git-free-commands" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1652</span>
+                <span class="kl-cat">Worktrees &amp; isolation</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Worktree Bash guard can block git-free commands.</h3>
+            <p>A reported Claude Code 2.1.235 macOS worktree-isolated session saw the built-in Bash guard refuse ordinary multi-step shell commands with a message about unverifiable worktree git operations even when the command had no git token and no path outside the worktree. A later Linux 2.1.238 matrix narrowed the behavior: some compound forms are allowed, but simple loops, assignments, and variable-expanded reads can still be false positives, while `bash -c &#x27;git -C &lt;main&gt; ...&#x27;` was allowed and ran against the main checkout. A larger local transcript corpus then found 2,628 such refusals across 591 of 12,623 sessions, with 73.2% of matched refused commands containing no git token and 274 refusals involving the session scratchpad the harness itself instructed agents to use.</p>
+                        <!-- workaround:worktree-bash-guard-can-block-git-free-commands -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> In worktree-isolated sessions, treat the Bash guard as both conservative and incomplete rather than as a precise proof of repository safety. Break high-friction shell work into simple commands when possible, but use file tools or checked-in helper scripts for heredocs, loops, and scratchpad generation that the guard may misclassify. Do not route dangerous git work through `bash -c` or `sh -c` merely because the guard allows it; verify `pwd`, `git rev-parse --show-toplevel`, and the target repository before and after any git command. If a refusal cites worktree git safety for a git-free command, record the exact command shape instead of assuming the command actually targeted another checkout.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/87959" target="_blank">#87959</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="88462 29082 32938 49129 70687" id="auto-mode-can-execute-assistant-authored-destructive-scripts" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1653</span>
                 <span class="kl-cat">Permission system</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
             </div>
