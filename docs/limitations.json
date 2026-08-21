@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1644,
+  "count": 1645,
   "categories": {
     "Hook behavior & events": 218,
     "Permission system": 148,
@@ -14,8 +14,8 @@
     "Configuration behavior": 30,
     "Context & memory": 30,
     "MCP & integrations": 30,
+    "Security & trust boundaries": 30,
     "Sandbox & permissions": 29,
-    "Security & trust boundaries": 29,
     "Cowork & remote": 27,
     "Performance & cost": 25,
     "VS Code extension": 24,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 140,
-    "HIGH": 908,
+    "HIGH": 909,
     "LOW": 109,
     "MEDIUM": 487
   },
@@ -21152,30 +21152,43 @@
       "date_added": "2026-08-20",
       "description": "A reported Claude Desktop Cowork setup found that bundled `@inline` plugins such as marketing and product-management could not be disabled persistently. Disabling them in the app UI or setting `enabledPlugins` entries to `false` in `~/.claude/settings.json` survived on disk, but after each Desktop restart the bundled plugin skill sets and MCP servers were enabled again. Because these plugins are bundled inside the Desktop app rather than ordinary installed plugins, `claude plugin list` and the local plugin cache did not show a removable or inspectable source of truth. The result is silent reintroduction of about 65 skills and related plugin context into sessions where the user believed those plugins were off.",
       "workaround": "Do not treat `enabledPlugins: false` as sufficient proof that Desktop bundled `@inline` plugins are absent after restart. For sensitive Cowork sessions, start a fresh session after every Desktop restart and verify the loaded skill/plugin context before sharing private task details. If the bundled skills still appear, use a plain Claude Code terminal session or another surface that does not inject the Desktop inline bundle for plugin-sensitive work until the Desktop app persists the disable state or documents a supported opt-out."
+    },
+    {
+      "id": "windows-project-path-spelling-can-split-trust-mcp-and-worktree-state",
+      "title": "Windows project path spelling can split trust, MCP, and worktree state.",
+      "category": "Security & trust boundaries",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88418"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Windows Claude Code setup found that `.claude.json` can store the same project directory under multiple raw path spellings, such as lowercase-drive forward-slash, uppercase-drive forward-slash, and uppercase-drive backslash forms. Those records did not carry equivalent state: the backslash spelling held `hasTrustDialogAccepted: true`, while forward-slash records held MCP server and active worktree fields but had trust unset. The visible result is a project that appears to lose configured MCP servers, forget active worktree state, or re-prompt for trust, even though all records refer to the same directory.",
+      "workaround": "On Windows, audit `.claude.json` for project keys that normalize to the same path but differ by drive-letter case or slash direction before trusting MCP, worktree, or trust-dialog state. Treat duplicated normalized paths as evidence that the project record is split rather than that MCP servers were intentionally removed. Back up the config before any manual repair, merge colliding records conservatively, and restart Claude Code after the merge. Until Claude Code normalizes and migrates these keys itself, prefer launching sessions from one canonical path spelling and recheck the file after updates."
     }
   ],
   "status_summary": {
-    "open": 1630,
+    "open": 1631,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 140,
-    "high": 908,
+    "high": 909,
     "low": 109,
     "medium": 487
   },
   "lastUpdated": "2026-08-21",
   "stats": {
-    "total": 1644,
+    "total": 1645,
     "critical": 140,
-    "high": 908,
+    "high": 909,
     "medium": 487,
     "low": 109,
-    "open": 1630,
+    "open": 1631,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-21",
-  "total": 1644
+  "total": 1645
 }
