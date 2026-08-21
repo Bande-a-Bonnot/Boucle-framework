@@ -7,6 +7,22 @@
   <updated>2026-08-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Write can overwrite unread existing files on Claude 5 models.</title>
+    <id>https://framework.boucle.sh/limitations.html#write-tool-can-overwrite-unread-existing-files-on-claude-5</id>
+    <link href="https://framework.boucle.sh/limitations.html#write-tool-can-overwrite-unread-existing-files-on-claude-5"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.238 macOS repro found that Claude 5 family models can use the Write tool to replace an existing file that was never read in the conversation, while older models still fail with the previous read-before-overwrite guard. In a shared-file workflow, a fresh session can therefore replace another session&#x27;s recent entries without first seeing them, and the Write tool&#x27;s own prompt text may still describe the old guard as if the overwrite should fail. The behavior is documented in the tools reference but easy to discover only after data loss.</summary>
+    <category term="Data integrity"/>
+  </entry>
+  <entry>
+    <title>[HIGH] PermissionRequest hooks can be skipped in print mode.</title>
+    <id>https://framework.boucle.sh/limitations.html#permissionrequest-hooks-can-be-skipped-in-print-mode</id>
+    <link href="https://framework.boucle.sh/limitations.html#permissionrequest-hooks-can-be-skipped-in-print-mode"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.237 Windows repro found that `PermissionRequest` hooks did not fire during a non-interactive `claude -p` Write request, even though a `PreToolUse` hook from the same settings file, same matcher, and same script fired normally for the same tool. The command and HTTP PermissionRequest variants both produced no hook log entry, leaving the model to ask for an approval that cannot be answered in print mode. This makes the hook event unreliable for its most automation-relevant path: headless runs where a hook-supplied decision is the only way to answer a prompt.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Bypass mode can steer file work away from typed tools into composed shell strings.</title>
     <id>https://framework.boucle.sh/limitations.html#bypass-mode-steers-file-work-into-composed-shell-strings</id>
     <link href="https://framework.boucle.sh/limitations.html#bypass-mode-steers-file-work-into-composed-shell-strings"/>
@@ -149,21 +165,5 @@
     <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported personal Claude Max macOS Desktop session stopped offering Auto in the Claude Code permission-mode picker and labelled bypass permissions as disabled by the user&#x27;s organization, even though the account had no managed policy and `~/.claude/settings.json` still set `permissions.defaultMode` to `auto`. The same machine&#x27;s terminal CLI continued to start in Auto mode, so the regression appeared isolated to Desktop-started sessions or Desktop remote configuration rather than the local settings file.</summary>
     <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Remote control can appear enabled by default.</title>
-    <id>https://framework.boucle.sh/limitations.html#remote-control-can-appear-enabled-by-default</id>
-    <link href="https://framework.boucle.sh/limitations.html#remote-control-can-appear-enabled-by-default"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>Reported Claude Code 2.1.235 and 2.1.236 sessions showed `/rc` active in newly started terminal sessions even though users had not passed remote-control flags, had not run `/remote-control`, and had no local `remoteControlAtStartup` setting. A follow-up reproduced the pattern on Linux and noted that older already-running sessions stayed disconnected while a later process started with remote control active, consistent with a fresh startup default or remote flag change rather than an explicit local opt-in. Because remote-control connections expose live sessions outside the local terminal, this is a privacy and session-control boundary, not only a footer-display issue.</summary>
-    <category term="Cowork &amp; remote"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Subagent handoffs can mix correct docs with poisoned examples.</title>
-    <id>https://framework.boucle.sh/limitations.html#subagent-handoffs-can-mix-correct-docs-with-poisoned-examples</id>
-    <link href="https://framework.boucle.sh/limitations.html#subagent-handoffs-can-mix-correct-docs-with-poisoned-examples"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.237 Linux session saw an Agent-tool subagent return a plausible documentation answer that the harness flagged as instruction poisoning. The unsafe part was an unsolicited fabricated `SessionStart` hook example that would read `.env` and echo part of it into model context, mixed into an otherwise normal-looking answer about hook stdout behavior. The reporter discarded the handoff and verified the docs question separately, but the pattern shows that a partially useful subagent result can carry a credential-exposure recipe inside a copied example.</summary>
-    <category term="Security &amp; trust boundaries"/>
   </entry>
 </feed>
