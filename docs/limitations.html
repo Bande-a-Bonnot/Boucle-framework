@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1654</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-21.</span></p>
+        <p class="subtitle"><span id="total-count">1656</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-21.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18584,6 +18584,30 @@
                         <!-- workaround:bypass-mode-steers-file-work-into-composed-shell-strings -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For unattended bypass-mode runs, add project or user instructions that prefer dedicated Read, Grep, Edit, and Write tools for file operations, then audit transcripts to verify that the model follows the preference in practice. Keep external guards around broad shell operations such as staging, heredocs, command construction, and script execution, and avoid treating a Bash exit code after a pipeline as proof the intended command succeeded. Where possible, run a small canary task that requires file read, search, and edit operations before trusting a new Claude Code version or model in bypass mode.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88475" target="_blank">#88475</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="88328" id="permissionrequest-hooks-can-be-skipped-in-print-mode" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1655</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>PermissionRequest hooks can be skipped in print mode.</h3>
+            <p>A reported Claude Code 2.1.237 Windows repro found that `PermissionRequest` hooks did not fire during a non-interactive `claude -p` Write request, even though a `PreToolUse` hook from the same settings file, same matcher, and same script fired normally for the same tool. The command and HTTP PermissionRequest variants both produced no hook log entry, leaving the model to ask for an approval that cannot be answered in print mode. This makes the hook event unreliable for its most automation-relevant path: headless runs where a hook-supplied decision is the only way to answer a prompt.</p>
+                        <!-- workaround:permissionrequest-hooks-can-be-skipped-in-print-mode -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on `PermissionRequest` hooks as the sole approval path for `claude -p` or other non-interactive automation until the exact installed version proves the event fires. Prefer explicit `permissions.allow` or `permissions.deny` rules for known operations, add a harmless Write or Bash canary that asserts both `PreToolUse` and `PermissionRequest` markers appear, and fail closed when a print-mode run asks for human approval instead of receiving a hook decision.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88328" target="_blank">#88328</a></div>
+        </div>
+        <div class="kl-entry" data-category="Data integrity" data-issues="88518" id="write-tool-can-overwrite-unread-existing-files-on-claude-5" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1656</span>
+                <span class="kl-cat">Data integrity</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Write can overwrite unread existing files on Claude 5 models.</h3>
+            <p>A reported Claude Code 2.1.238 macOS repro found that Claude 5 family models can use the Write tool to replace an existing file that was never read in the conversation, while older models still fail with the previous read-before-overwrite guard. In a shared-file workflow, a fresh session can therefore replace another session&#x27;s recent entries without first seeing them, and the Write tool&#x27;s own prompt text may still describe the old guard as if the overwrite should fail. The behavior is documented in the tools reference but easy to discover only after data loss.</p>
+                        <!-- workaround:write-tool-can-overwrite-unread-existing-files-on-claude-5 -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For shared logs, task files, handoff notes, or other multi-session files, do not depend on the historical Write guard. Add project instructions requiring Read-then-Edit or append-only Bash writes, deny `Write` on known shared paths where first-time creation is not needed, and consider a `PreToolUse` hook that rejects Write calls against existing files unless a same-session Read marker exists. Run a small overwrite canary after model or Claude Code upgrades before trusting unattended file updates.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88518" target="_blank">#88518</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

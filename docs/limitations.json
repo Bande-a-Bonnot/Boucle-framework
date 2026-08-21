@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1654,
+  "count": 1656,
   "categories": {
-    "Hook behavior & events": 220,
+    "Hook behavior & events": 221,
     "Permission system": 151,
     "Hook bypass & evasion": 104,
     "MCP & plugin issues": 92,
@@ -23,9 +23,9 @@
     "Tool behavior": 22,
     "Core & session management": 21,
     "Auth & accounts": 20,
+    "Data integrity": 18,
     "Model behavior": 18,
     "Remote & cloud": 18,
-    "Data integrity": 17,
     "Bash & shell execution": 15,
     "Scheduling & remote triggers": 15,
     "Permissions & safety": 14,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 142,
-    "HIGH": 915,
+    "HIGH": 917,
     "LOW": 109,
     "MEDIUM": 488
   },
@@ -21300,30 +21300,56 @@
       "date_added": "2026-08-21",
       "description": "A reported Claude Code 2.1.228 through 2.1.235 behavior found that sessions running in bypass permissions mode receive a built-in instruction to do file reads, searches, and edits through Bash commands such as `cat`, `grep`, `sed`, heredocs, or short scripts where possible, rather than the dedicated Read, Grep, Edit, or Write tools. The reporter tied this to observed composition failures including laundered pipeline exit statuses, broken nested quoting, broad `git add -A` staging, backtick execution inside quoted command bodies, and POSIX awk portability mismatches. Because bypass mode is often used for unattended or headless work, this prompt-level steering can replace typed tool arguments with one-shot shell strings exactly when there may be no human watching the transcript.",
       "workaround": "For unattended bypass-mode runs, add project or user instructions that prefer dedicated Read, Grep, Edit, and Write tools for file operations, then audit transcripts to verify that the model follows the preference in practice. Keep external guards around broad shell operations such as staging, heredocs, command construction, and script execution, and avoid treating a Bash exit code after a pipeline as proof the intended command succeeded. Where possible, run a small canary task that requires file read, search, and edit operations before trusting a new Claude Code version or model in bypass mode."
+    },
+    {
+      "id": "permissionrequest-hooks-can-be-skipped-in-print-mode",
+      "title": "PermissionRequest hooks can be skipped in print mode.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88328"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Claude Code 2.1.237 Windows repro found that `PermissionRequest` hooks did not fire during a non-interactive `claude -p` Write request, even though a `PreToolUse` hook from the same settings file, same matcher, and same script fired normally for the same tool. The command and HTTP PermissionRequest variants both produced no hook log entry, leaving the model to ask for an approval that cannot be answered in print mode. This makes the hook event unreliable for its most automation-relevant path: headless runs where a hook-supplied decision is the only way to answer a prompt.",
+      "workaround": "Do not rely on `PermissionRequest` hooks as the sole approval path for `claude -p` or other non-interactive automation until the exact installed version proves the event fires. Prefer explicit `permissions.allow` or `permissions.deny` rules for known operations, add a harmless Write or Bash canary that asserts both `PreToolUse` and `PermissionRequest` markers appear, and fail closed when a print-mode run asks for human approval instead of receiving a hook decision."
+    },
+    {
+      "id": "write-tool-can-overwrite-unread-existing-files-on-claude-5",
+      "title": "Write can overwrite unread existing files on Claude 5 models.",
+      "category": "Data integrity",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88518"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Claude Code 2.1.238 macOS repro found that Claude 5 family models can use the Write tool to replace an existing file that was never read in the conversation, while older models still fail with the previous read-before-overwrite guard. In a shared-file workflow, a fresh session can therefore replace another session's recent entries without first seeing them, and the Write tool's own prompt text may still describe the old guard as if the overwrite should fail. The behavior is documented in the tools reference but easy to discover only after data loss.",
+      "workaround": "For shared logs, task files, handoff notes, or other multi-session files, do not depend on the historical Write guard. Add project instructions requiring Read-then-Edit or append-only Bash writes, deny `Write` on known shared paths where first-time creation is not needed, and consider a `PreToolUse` hook that rejects Write calls against existing files unless a same-session Read marker exists. Run a small overwrite canary after model or Claude Code upgrades before trusting unattended file updates."
     }
   ],
   "status_summary": {
-    "open": 1640,
+    "open": 1642,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 142,
-    "high": 915,
+    "high": 917,
     "low": 109,
     "medium": 488
   },
   "lastUpdated": "2026-08-21",
   "stats": {
-    "total": 1654,
+    "total": 1656,
     "critical": 142,
-    "high": 915,
+    "high": 917,
     "medium": 488,
     "low": 109,
-    "open": 1640,
+    "open": 1642,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-21",
-  "total": 1654
+  "total": 1656
 }
