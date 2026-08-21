@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1645,
+  "count": 1646,
   "categories": {
     "Hook behavior & events": 218,
     "Permission system": 148,
@@ -11,10 +11,10 @@
     "TUI & display": 37,
     "CLI & terminal": 31,
     "Platform & compatibility": 31,
+    "Security & trust boundaries": 31,
     "Configuration behavior": 30,
     "Context & memory": 30,
     "MCP & integrations": 30,
-    "Security & trust boundaries": 30,
     "Sandbox & permissions": 29,
     "Cowork & remote": 27,
     "Performance & cost": 25,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 140,
-    "HIGH": 909,
+    "HIGH": 910,
     "LOW": 109,
     "MEDIUM": 487
   },
@@ -21165,30 +21165,41 @@
       "date_added": "2026-08-21",
       "description": "A reported Windows Claude Code setup found that `.claude.json` can store the same project directory under multiple raw path spellings, such as lowercase-drive forward-slash, uppercase-drive forward-slash, and uppercase-drive backslash forms. Those records did not carry equivalent state: the backslash spelling held `hasTrustDialogAccepted: true`, while forward-slash records held MCP server and active worktree fields but had trust unset. The visible result is a project that appears to lose configured MCP servers, forget active worktree state, or re-prompt for trust, even though all records refer to the same directory.",
       "workaround": "On Windows, audit `.claude.json` for project keys that normalize to the same path but differ by drive-letter case or slash direction before trusting MCP, worktree, or trust-dialog state. Treat duplicated normalized paths as evidence that the project record is split rather than that MCP servers were intentionally removed. Back up the config before any manual repair, merge colliding records conservatively, and restart Claude Code after the merge. Until Claude Code normalizes and migrates these keys itself, prefer launching sessions from one canonical path spelling and recheck the file after updates."
+    },
+    {
+      "id": "bio-safeguards-can-hard-block-base64-file-verification",
+      "title": "Bio safeguards can hard-block base64 file verification.",
+      "severity": "HIGH",
+      "category": "Security & trust boundaries",
+      "description": "A reported Claude Code desktop session doing ordinary Markdown file editing and byte-verification work was flagged by the `[bio]` safeguard after base64 file-comparison steps, then later hard-blocked plain-English and grep-only follow-up turns in the same conversation. The report includes request IDs for two hard blocks and suggests the classifier may be scoring accumulated connector/tool context, including large opaque base64 blobs, rather than only the current user message. For agentic coding sessions this turns benign file-integrity work into a persistent session-level interruption where the user may need to rebuild context in a new conversation.",
+      "workaround": "For file-integrity or connector workflows, keep large base64 blobs and byte-comparison output out of the model transcript when possible. Prefer deterministic local scripts that write digest summaries, lengths, and explicit pass/fail results instead of printing encoded content. If a safeguard notice appears, checkpoint the task state outside the conversation, preserve request IDs and timestamps for support, and assume later turns in the same session may remain at elevated block risk even when the immediate request is benign.",
+      "issue": "https://github.com/anthropics/claude-code/issues/88425",
+      "status": "open",
+      "date_added": "2026-08-21"
     }
   ],
   "status_summary": {
-    "open": 1631,
+    "open": 1632,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 140,
-    "high": 909,
+    "high": 910,
     "low": 109,
     "medium": 487
   },
   "lastUpdated": "2026-08-21",
   "stats": {
-    "total": 1645,
+    "total": 1646,
     "critical": 140,
-    "high": 909,
+    "high": 910,
     "medium": 487,
     "low": 109,
-    "open": 1631,
+    "open": 1632,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-21",
-  "total": 1645
+  "total": 1646
 }
