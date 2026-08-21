@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1646,
+  "count": 1647,
   "categories": {
-    "Hook behavior & events": 218,
+    "Hook behavior & events": 219,
     "Permission system": 148,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 92,
@@ -194,9 +194,22 @@
     "CRITICAL": 140,
     "HIGH": 910,
     "LOW": 109,
-    "MEDIUM": 487
+    "MEDIUM": 488
   },
   "entries": [
+    {
+      "id": "subagent-hook-coverage-managed-settings-tamper-resistance-undocumented",
+      "title": "Sub-agent hook coverage and managed-settings tamper resistance are undocumented.",
+      "category": "Hook behavior & events",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/77611"
+      ],
+      "date_added": "2026-08-21",
+      "description": "Claude Code's hooks documentation does not explicitly state whether user, project, or managed `PreToolUse` hooks intercept tool calls made by sub-agents spawned through Agent or Task, rather than only calls from the main session. The same report notes that managed settings are documented as non-overridable, but not whether that guarantee is enforced inside Claude Code or depends entirely on OS permissions protecting the managed-settings file from the running session. Operators building destructive-action guardrails therefore cannot tell from the docs whether a managed hook policy covers sub-agent tool calls or whether a privileged session could alter the managed policy file it is meant to obey.",
+      "workaround": "Treat sub-agent hook coverage and managed-settings tamper resistance as deployment-specific until verified. Add a harmless sub-agent canary that must trigger the managed or project `PreToolUse` hook before relying on spawned-agent enforcement, and keep managed settings owned and permissioned so the Claude Code process cannot modify them. For high-risk workflows, pair Claude Code hooks with external wrappers, file permissions, or CI checks that do not rely on an undocumented in-app guarantee."
+    },
     {
       "id": "desktop-ghrestclient-can-burn-shared-github-graphql-quota",
       "title": "Desktop app GitHub polling can burn the user's shared GraphQL quota.",
@@ -312,8 +325,8 @@
         "https://github.com/anthropics/claude-code/issues/87012"
       ],
       "date_added": "2026-08-15",
-      "description": "A reported Claude Code 2.1.232 workspace trust dialog showed only the first few entries from a large `.claude/settings.local.json` permission set, truncated individual entries, collapsed the remainder behind an \"and N more\" summary, and offered only trust-or-exit choices. The same dialog did not mention other trust-sensitive project surfaces such as `.claude/settings.json` hooks, `.mcp.json` servers, or `CLAUDE.md`. A user can therefore be asked to accept all pre-approved tool permissions for a repository without seeing the full list or reviewing broad entries such as sudo, ssh, arbitrary shell, or paths outside the project.",
-      "workaround": "Before trusting a repository with existing Claude Code config, inspect `.claude/settings.local.json`, `.claude/settings.json`, `.mcp.json`, and project hooks outside the trust dialog. Remove stale or broad stored permissions before launching the session, prefer narrow allow rules over accumulated \"always allow\" entries, and run `safety-check --verify --summary-only` after trust to catch obvious hook/settings drift. Treat a truncated trust dialog as an incomplete review, not as proof that the hidden entries are harmless."
+      "description": "A reported Claude Code 2.1.232 workspace trust dialog showed only the first few entries from a large `.claude/settings.local.json` permission set, truncated individual entries, and collapsed the remainder behind an \"and N more\" summary. A 2.1.234 follow-up says the dialog now offers a path to continue without those pre-approvals, but the permission list itself is still fixed, unscrollable, and incomplete: a synthetic 35-rule config showed eight named rules, one truncated mid-rule, and 26 hidden rules. The dialog also did not mention other trust-sensitive project surfaces such as `.claude/settings.json` hooks, `.mcp.json` servers, or `CLAUDE.md`. A user can therefore be asked to accept or decline a stored permission set without seeing the full list or reviewing broad entries such as sudo, ssh, arbitrary shell, or paths outside the project.",
+      "workaround": "Before trusting a repository with existing Claude Code config, inspect `.claude/settings.local.json`, `.claude/settings.json`, `.mcp.json`, and project hooks outside the trust dialog. Remove stale or broad stored permissions before launching the session, prefer narrow allow rules over accumulated \"always allow\" entries, and run `safety-check --verify --summary-only` after trust to catch obvious hook/settings drift. Treat a truncated trust dialog as an incomplete review even when the UI offers to continue without pre-approvals."
     },
     {
       "id": "vscode-ask-permissions-can-silently-allow",
@@ -21179,7 +21192,7 @@
     }
   ],
   "status_summary": {
-    "open": 1632,
+    "open": 1633,
     "fixed": 13,
     "mitigated": 1
   },
@@ -21187,19 +21200,19 @@
     "critical": 140,
     "high": 910,
     "low": 109,
-    "medium": 487
+    "medium": 488
   },
   "lastUpdated": "2026-08-21",
   "stats": {
-    "total": 1646,
+    "total": 1647,
     "critical": 140,
     "high": 910,
-    "medium": 487,
+    "medium": 488,
     "low": 109,
-    "open": 1632,
+    "open": 1633,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-21",
-  "total": 1646
+  "total": 1647
 }
