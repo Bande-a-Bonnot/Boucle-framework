@@ -7,6 +7,22 @@
   <updated>2026-08-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Large settings.local.json files can hide custom subagents after cold start.</title>
+    <id>https://framework.boucle.sh/limitations.html#large-settings-local-can-hide-custom-subagents-after-cold-start</id>
+    <link href="https://framework.boucle.sh/limitations.html#large-settings-local-can-hide-custom-subagents-after-cold-start"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code 2.1.237 project lost all 10 custom `.claude/agents/*.md` subagents after a full cold start, even though the agent files were valid and had worked previously. The immediate fix was moving the project&#x27;s valid but very large `.claude/settings.local.json` out of the way; that file had grown to about 348 KB with 2,438 specific `permissions.allow` entries. The failure was silent until the user tried to dispatch a custom Agent type and saw only built-in agents registered.</summary>
+    <category term="Agents &amp; subagents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Sandbox network allowlists can be intermittently bypassed.</title>
+    <id>https://framework.boucle.sh/limitations.html#sandbox-egress-allowlist-can-be-intermittently-bypassed</id>
+    <link href="https://framework.boucle.sh/limitations.html#sandbox-egress-allowlist-can-be-intermittently-bypassed"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.238 macOS sandbox setup found that Bash commands could intermittently reach non-allowlisted HTTPS hosts even though `permissions.sandbox.enabled` and `failIfUnavailable` were set and the tool description showed a fixed `allowedHosts` list. In the repro, batched `curl` calls to hosts outside that list returned real HTTP responses, while a separate isolated call could be blocked correctly. The reporter suspected a race or initialization timing gap around the sandbox&#x27;s CONNECT proxy path.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
     <title>[HIGH] Write can overwrite unread existing files on Claude 5 models.</title>
     <id>https://framework.boucle.sh/limitations.html#write-tool-can-overwrite-unread-existing-files-on-claude-5</id>
     <link href="https://framework.boucle.sh/limitations.html#write-tool-can-overwrite-unread-existing-files-on-claude-5"/>
@@ -149,21 +165,5 @@
     <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Windows 11 Claude Code 2.1.237 session produced a malformed `Read` tool call whose `file_path` began like a truncated local path and then contained roughly 900 words of injected content, including Claude Code&#x27;s own wrapper phrase for suspicious tool output and fake instructions to exfiltrate data. The permission prompt intercepted the malformed call and the user rejected it before execution, but the wrapper phrase appearing inside a new tool input suggests previously flagged content may have crossed from inert tool output into tool-call argument construction.</summary>
     <category term="Security &amp; trust boundaries"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Worktree command safety can misread builtin names as invocations.</title>
-    <id>https://framework.boucle.sh/limitations.html#worktree-command-safety-can-misread-builtin-names-as-invocations</id>
-    <link href="https://framework.boucle.sh/limitations.html#worktree-command-safety-can-misread-builtin-names-as-invocations"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Windows 11 worktree-isolated session found that Claude Code&#x27;s Bash command-safety analyzer refused commands containing shell builtin names such as `complete`, `compgen`, or `compopt` even when those words appeared as ordinary non-leading arguments. The concrete failure was a Python workflow command whose subcommand was named `complete`; the analyzer treated the argument as if Bash would invoke the completion builtin and refused it as unverifiable inside the worktree. Quoting the token and disabling the sandbox did not help because the refusal came from the PreToolUse-layer worktree analyzer, not from the sandbox.</summary>
-    <category term="Worktrees &amp; isolation"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Desktop can hide Auto mode despite defaultMode settings.</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-can-hide-auto-mode-despite-defaultmode-settings</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-can-hide-auto-mode-despite-defaultmode-settings"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported personal Claude Max macOS Desktop session stopped offering Auto in the Claude Code permission-mode picker and labelled bypass permissions as disabled by the user&#x27;s organization, even though the account had no managed policy and `~/.claude/settings.json` still set `permissions.defaultMode` to `auto`. The same machine&#x27;s terminal CLI continued to start in Auto mode, so the regression appeared isolated to Desktop-started sessions or Desktop remote configuration rather than the local settings file.</summary>
-    <category term="Desktop &amp; IDE integration"/>
   </entry>
 </feed>

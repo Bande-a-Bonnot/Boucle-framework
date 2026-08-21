@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1656</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-21.</span></p>
+        <p class="subtitle"><span id="total-count">1658</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-21.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18608,6 +18608,30 @@
                         <!-- workaround:write-tool-can-overwrite-unread-existing-files-on-claude-5 -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For shared logs, task files, handoff notes, or other multi-session files, do not depend on the historical Write guard. Add project instructions requiring Read-then-Edit or append-only Bash writes, deny `Write` on known shared paths where first-time creation is not needed, and consider a `PreToolUse` hook that rejects Write calls against existing files unless a same-session Read marker exists. Run a small overwrite canary after model or Claude Code upgrades before trusting unattended file updates.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88518" target="_blank">#88518</a></div>
+        </div>
+        <div class="kl-entry" data-category="Sandbox &amp; permissions" data-issues="88553" id="sandbox-egress-allowlist-can-be-intermittently-bypassed" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1657</span>
+                <span class="kl-cat">Sandbox &amp; permissions</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Sandbox network allowlists can be intermittently bypassed.</h3>
+            <p>A reported Claude Code 2.1.238 macOS sandbox setup found that Bash commands could intermittently reach non-allowlisted HTTPS hosts even though `permissions.sandbox.enabled` and `failIfUnavailable` were set and the tool description showed a fixed `allowedHosts` list. In the repro, batched `curl` calls to hosts outside that list returned real HTTP responses, while a separate isolated call could be blocked correctly. The reporter suspected a race or initialization timing gap around the sandbox&#x27;s CONNECT proxy path.</p>
+                        <!-- workaround:sandbox-egress-allowlist-can-be-intermittently-bypassed -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on Claude Code&#x27;s sandbox network allowlist as the only egress control for secrets, untrusted scripts, or policy-sensitive automation. Put high-consequence runs behind OS, container, firewall, VPN, or proxy controls that enforce host allowlists outside Claude Code, and add a startup canary that checks several denied hosts before granting unattended work. Treat any successful connection to a denied host as a hard failure and restart the session before continuing.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88553" target="_blank">#88553</a></div>
+        </div>
+        <div class="kl-entry" data-category="Agents &amp; subagents" data-issues="88556" id="large-settings-local-can-hide-custom-subagents-after-cold-start" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1658</span>
+                <span class="kl-cat">Agents &amp; subagents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Large settings.local.json files can hide custom subagents after cold start.</h3>
+            <p>A reported Windows Claude Code 2.1.237 project lost all 10 custom `.claude/agents/*.md` subagents after a full cold start, even though the agent files were valid and had worked previously. The immediate fix was moving the project&#x27;s valid but very large `.claude/settings.local.json` out of the way; that file had grown to about 348 KB with 2,438 specific `permissions.allow` entries. The failure was silent until the user tried to dispatch a custom Agent type and saw only built-in agents registered.</p>
+                        <!-- workaround:large-settings-local-can-hide-custom-subagents-after-cold-start -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Keep project `settings.local.json` permission lists bounded and periodically collapse repeated one-off Bash grants into intentional patterns where that is safe. After Claude Code upgrades or cold starts, run a custom-agent canary that lists or invokes a harmless project subagent before relying on Agent-driven governance, review, or automation workflows. If custom agents disappear, back up `settings.local.json`, temporarily move it aside, restart, and bisect large permission sections before restoring unattended workflows.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88556" target="_blank">#88556</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1656,
+  "count": 1658,
   "categories": {
     "Hook behavior & events": 221,
     "Permission system": 151,
@@ -15,11 +15,11 @@
     "Configuration behavior": 30,
     "Context & memory": 30,
     "MCP & integrations": 30,
-    "Sandbox & permissions": 29,
+    "Sandbox & permissions": 30,
     "Cowork & remote": 27,
     "Performance & cost": 25,
     "VS Code extension": 24,
-    "Agents & subagents": 22,
+    "Agents & subagents": 23,
     "Tool behavior": 22,
     "Core & session management": 21,
     "Auth & accounts": 20,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 142,
-    "HIGH": 917,
+    "HIGH": 919,
     "LOW": 109,
     "MEDIUM": 488
   },
@@ -21326,30 +21326,56 @@
       "date_added": "2026-08-21",
       "description": "A reported Claude Code 2.1.238 macOS repro found that Claude 5 family models can use the Write tool to replace an existing file that was never read in the conversation, while older models still fail with the previous read-before-overwrite guard. In a shared-file workflow, a fresh session can therefore replace another session's recent entries without first seeing them, and the Write tool's own prompt text may still describe the old guard as if the overwrite should fail. The behavior is documented in the tools reference but easy to discover only after data loss.",
       "workaround": "For shared logs, task files, handoff notes, or other multi-session files, do not depend on the historical Write guard. Add project instructions requiring Read-then-Edit or append-only Bash writes, deny `Write` on known shared paths where first-time creation is not needed, and consider a `PreToolUse` hook that rejects Write calls against existing files unless a same-session Read marker exists. Run a small overwrite canary after model or Claude Code upgrades before trusting unattended file updates."
+    },
+    {
+      "id": "sandbox-egress-allowlist-can-be-intermittently-bypassed",
+      "title": "Sandbox network allowlists can be intermittently bypassed.",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88553"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Claude Code 2.1.238 macOS sandbox setup found that Bash commands could intermittently reach non-allowlisted HTTPS hosts even though `permissions.sandbox.enabled` and `failIfUnavailable` were set and the tool description showed a fixed `allowedHosts` list. In the repro, batched `curl` calls to hosts outside that list returned real HTTP responses, while a separate isolated call could be blocked correctly. The reporter suspected a race or initialization timing gap around the sandbox's CONNECT proxy path.",
+      "workaround": "Do not rely on Claude Code's sandbox network allowlist as the only egress control for secrets, untrusted scripts, or policy-sensitive automation. Put high-consequence runs behind OS, container, firewall, VPN, or proxy controls that enforce host allowlists outside Claude Code, and add a startup canary that checks several denied hosts before granting unattended work. Treat any successful connection to a denied host as a hard failure and restart the session before continuing."
+    },
+    {
+      "id": "large-settings-local-can-hide-custom-subagents-after-cold-start",
+      "title": "Large settings.local.json files can hide custom subagents after cold start.",
+      "category": "Agents & subagents",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88556"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Windows Claude Code 2.1.237 project lost all 10 custom `.claude/agents/*.md` subagents after a full cold start, even though the agent files were valid and had worked previously. The immediate fix was moving the project's valid but very large `.claude/settings.local.json` out of the way; that file had grown to about 348 KB with 2,438 specific `permissions.allow` entries. The failure was silent until the user tried to dispatch a custom Agent type and saw only built-in agents registered.",
+      "workaround": "Keep project `settings.local.json` permission lists bounded and periodically collapse repeated one-off Bash grants into intentional patterns where that is safe. After Claude Code upgrades or cold starts, run a custom-agent canary that lists or invokes a harmless project subagent before relying on Agent-driven governance, review, or automation workflows. If custom agents disappear, back up `settings.local.json`, temporarily move it aside, restart, and bisect large permission sections before restoring unattended workflows."
     }
   ],
   "status_summary": {
-    "open": 1642,
+    "open": 1644,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 142,
-    "high": 917,
+    "high": 919,
     "low": 109,
     "medium": 488
   },
   "lastUpdated": "2026-08-21",
   "stats": {
-    "total": 1656,
+    "total": 1658,
     "critical": 142,
-    "high": 917,
+    "high": 919,
     "medium": 488,
     "low": 109,
-    "open": 1642,
+    "open": 1644,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-21",
-  "total": 1656
+  "total": 1658
 }
