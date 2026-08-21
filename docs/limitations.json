@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1647,
+  "count": 1648,
   "categories": {
     "Hook behavior & events": 219,
-    "Permission system": 148,
+    "Permission system": 149,
     "Hook bypass & evasion": 103,
     "MCP & plugin issues": 92,
     "Subagent & spawned agents": 77,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 140,
-    "HIGH": 910,
+    "HIGH": 911,
     "LOW": 109,
     "MEDIUM": 488
   },
@@ -20830,6 +20830,19 @@
       "workaround": "Keep `autoMode` policy in trusted user, managed, or CLI flag settings rather than checked-in or local project settings until Claude Code warns on ignored project-scope blocks. After changing auto-mode rules, run `claude auto-mode config` and search for a unique sentinel from the intended rule. Treat a default-looking config as unverified, not as success, and add a setup check that fails when `.claude/settings.json` or `.claude/settings.local.json` contains an `autoMode` key."
     },
     {
+      "id": "automode-classifier-can-block-policy-repair",
+      "title": "Auto-mode classifier can block deterministic policy repair.",
+      "severity": "HIGH",
+      "category": "Permission system",
+      "description": "A reported Claude Code session found that auto mode's classifier blocked a read-only `kubectl exec ... ls` inspection, then also blocked the user's attempt to configure a narrow deterministic `PreToolUse` hook for that exact safe case. The blocked repair path included creating a hooks directory, writing the hook script, and editing `settings.json` to register an adjacent MCP-tool matcher. The same report also describes a channel split: local CLI hooks can cover Bash or local MCP shapes on one machine, but claude.ai/web and other installs do not share those local shell hooks or necessarily route the same action through the same tool surface. Users can therefore have a project-level permission and hook setup that looks deliberate, but a separate opaque auto-mode classifier may override it, and the configuration needed to make the policy safer can be gated by the same classifier.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88330"
+      ],
+      "status": "open",
+      "date_added": "2026-08-21",
+      "workaround": "Do not assume auto mode composes with custom hooks, MCP governance, project instructions, or saved permissions until the exact channel and tool path are tested. Keep critical rules in a source-controlled settings or managed-settings path where possible, verify both Bash and MCP variants of the same action, and document which surfaces cannot execute local hooks. For sensitive workflows, prefer explicit deny rules or a manual approval path over relying on auto-mode classification, and keep a canary that proves policy changes can still be installed before starting work."
+    },
+    {
       "id": "auto-mode-bash-edits-can-escape-rewind",
       "title": "Auto mode Bash edits can escape /rewind checkpoints.",
       "severity": "HIGH",
@@ -21193,27 +21206,27 @@
     }
   ],
   "status_summary": {
-    "open": 1633,
+    "open": 1634,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 140,
-    "high": 910,
+    "high": 911,
     "low": 109,
     "medium": 488
   },
   "lastUpdated": "2026-08-21",
   "stats": {
-    "total": 1647,
+    "total": 1648,
     "critical": 140,
-    "high": 910,
+    "high": 911,
     "medium": 488,
     "low": 109,
-    "open": 1633,
+    "open": 1634,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-21",
-  "total": 1647
+  "total": 1648
 }
