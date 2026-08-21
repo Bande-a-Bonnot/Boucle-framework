@@ -15,6 +15,14 @@
     <category term="Permission system"/>
   </entry>
   <entry>
+    <title>[HIGH] Worktree Bash guard can block git-free commands.</title>
+    <id>https://framework.boucle.sh/limitations.html#worktree-bash-guard-can-block-git-free-commands</id>
+    <link href="https://framework.boucle.sh/limitations.html#worktree-bash-guard-can-block-git-free-commands"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.235 macOS worktree-isolated session saw the built-in Bash guard refuse ordinary multi-step shell commands with a message about unverifiable worktree git operations even when the command had no git token and no path outside the worktree. A later Linux 2.1.238 matrix narrowed the behavior: some compound forms are allowed, but simple loops, assignments, and variable-expanded reads can still be false positives, while `bash -c &#x27;git -C &lt;main&gt; ...&#x27;` was allowed and ran against the main checkout. A larger local transcript corpus then found 2,628 such refusals across 591 of 12,623 sessions, with 73.2% of matched refused commands containing no git token and 274 refusals involving the session scratchpad the harness itself instructed agents to use.</summary>
+    <category term="Worktrees &amp; isolation"/>
+  </entry>
+  <entry>
     <title>[CRITICAL] User PreToolUse hooks can miss Bash calls inside Task-spawned subagents.</title>
     <id>https://framework.boucle.sh/limitations.html#user-pretooluse-hooks-can-miss-task-subagent-bash</id>
     <link href="https://framework.boucle.sh/limitations.html#user-pretooluse-hooks-can-miss-task-subagent-bash"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.237 Linux repro found that repeated `Read` calls for the same unchanged file can be answered from `readFileState` as `file_unchanged` even when the first `Read` result was replaced by a `PostToolUse` hook via `updatedToolOutput`. The cache is written from raw disk content before hooks run, so the second identical `Read` gives the hook only a content-free unchanged marker and tells the model to refer to prior bytes that the model may never have received. On resumed sessions, the reconstructed cache can drift the other way by treating hook-substituted transcript content as if it came from disk.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] settings.json writes can strip hook metadata keys.</title>
-    <id>https://framework.boucle.sh/limitations.html#settings-writes-can-strip-hook-metadata-keys</id>
-    <link href="https://framework.boucle.sh/limitations.html#settings-writes-can-strip-hook-metadata-keys"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported macOS Claude Code 2.1.227 repro found that any client write to `settings.json`, including plugin marketplace or install changes unrelated to hooks, silently removed unknown keys from hook group objects and hook item objects while preserving unknown keys at the settings root. The reporter showed marker keys disappearing from `SessionStart`, `Stop`, `SubagentStop`, and `PreToolUse` hook entries. Third-party hook managers that key identity on those markers can then lose track of their own registration, append duplicate hooks, or fail to uninstall cleanly.</summary>
-    <category term="Configuration behavior"/>
   </entry>
 </feed>
