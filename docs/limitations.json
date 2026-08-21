@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1663,
+  "count": 1665,
   "categories": {
     "Hook behavior & events": 223,
     "Permission system": 151,
@@ -32,9 +32,9 @@
     "Worktree": 14,
     "File system & paths": 13,
     "MCP integration": 13,
+    "Plugin & channel system": 12,
+    "Scheduled tasks": 12,
     "Git & repository safety": 11,
-    "Plugin & channel system": 11,
-    "Scheduled tasks": 11,
     "UX & display": 11,
     "Configuration & settings": 10,
     "Skills": 10,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 142,
-    "HIGH": 924,
+    "HIGH": 926,
     "LOW": 109,
     "MEDIUM": 488
   },
@@ -21418,30 +21418,56 @@
       "date_added": "2026-08-21",
       "description": "A reported server-managed settings case found that one invalid value inside the `permissions` object caused Claude Code to discard the entire managed `permissions` object from `remote-settings.json`, including unrelated valid security controls such as bypass-mode disabling. The user saw a warning that the `permissions` field was ignored, but the failure mode is broader than a single invalid entry. This can also happen when an admin uses a newly valid schema value that older Claude Code clients do not understand.",
       "workaround": "Treat managed settings schema warnings as policy failures, not cosmetic configuration noise. Before rollout, test managed settings against the oldest Claude Code version still allowed in the fleet and verify the rendered `remote-settings.json` preserves every security-relevant field. Split or stage security controls so one experimental value cannot invalidate the whole permissions object, and add an endpoint or startup check that alerts when managed permissions are absent after schema validation."
+    },
+    {
+      "id": "local-channel-plugin-allowlists-can-be-shadowed-by-remote-managed-settings",
+      "title": "Local channel plugin allowlists can be shadowed by remote managed settings.",
+      "category": "Plugin & channel system",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88590"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Windows Claude Code 2.1.234 setup found that when remote claude.ai org managed settings existed with `channelsEnabled: true` but no `allowedChannelPlugins` key, the local machine managed `allowedChannelPlugins` entry was silently discarded. The same policy chain honored `channelsEnabled`, but `claude --channels` and a `channel_enable` control request still rejected the org-approved local plugin as not on the allowlist, and the error suggested a local development flag instead of pointing to remote managed-settings shadowing.",
+      "workaround": "Do not assume local managed `allowedChannelPlugins` entries survive when remote org settings are enabled. Verify channel plugins in the exact launch mode with `claude --channels` or a harmless `channel_enable` canary, and treat an allowlist rejection as possible remote-policy shadowing even when local files are readable. Where possible, put the channel allowlist in the remote managed policy itself, or keep an explicit deployment check that fails before unattended channel hosts start."
+    },
+    {
+      "id": "custom-connector-routines-can-disable-auto-allow-despite-admin-allow",
+      "title": "Custom connector Routines can disable Auto-Allow despite admin allow.",
+      "category": "Scheduled tasks",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88594"
+      ],
+      "date_added": "2026-08-21",
+      "description": "A reported Claude Code Routines setup with an org-managed custom remote MCP connector showed every connector tool as `Auto-Allow disabled by your admin` even though the workspace admin settings were configured to always allow unconfigured connector tools, allow connector-tool auto-allow in Cowork permissions, leave Claude Code managed settings empty, and enable Routines. The routine UI simultaneously claimed unrestricted connector tools could run without asking while marking the same custom-connector tools as restricted, making the unattended runtime behavior unclear and blocking custom-connector automation.",
+      "workaround": "Do not treat org-level connector allow settings as proof that custom remote MCP connectors will auto-approve inside cloud Routines. Before relying on an unattended Routine, run a harmless custom-connector canary and inspect whether the routine panel marks each required tool as auto-allowable. For critical workflows, keep the equivalent local session or a human-approved path available until the custom-connector routine path is verified, and capture the connector admin settings plus routine UI state when reporting failures."
     }
   ],
   "status_summary": {
-    "open": 1649,
+    "open": 1651,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 142,
-    "high": 924,
+    "high": 926,
     "low": 109,
     "medium": 488
   },
   "lastUpdated": "2026-08-21",
   "stats": {
-    "total": 1663,
+    "total": 1665,
     "critical": 142,
-    "high": 924,
+    "high": 926,
     "medium": 488,
     "low": 109,
-    "open": 1649,
+    "open": 1651,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-21",
-  "total": 1663
+  "total": 1665
 }

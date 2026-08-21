@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1663</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-21.</span></p>
+        <p class="subtitle"><span id="total-count">1665</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-21.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18692,6 +18692,30 @@
                         <!-- workaround:managed-permissions-validation-can-drop-entire-security-object -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat managed settings schema warnings as policy failures, not cosmetic configuration noise. Before rollout, test managed settings against the oldest Claude Code version still allowed in the fleet and verify the rendered `remote-settings.json` preserves every security-relevant field. Split or stage security controls so one experimental value cannot invalidate the whole permissions object, and add an endpoint or startup check that alerts when managed permissions are absent after schema validation.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88564" target="_blank">#88564</a></div>
+        </div>
+        <div class="kl-entry" data-category="Plugin &amp; channel system" data-issues="88590" id="local-channel-plugin-allowlists-can-be-shadowed-by-remote-managed-settings" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1664</span>
+                <span class="kl-cat">Plugin &amp; channel system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Local channel plugin allowlists can be shadowed by remote managed settings.</h3>
+            <p>A reported Windows Claude Code 2.1.234 setup found that when remote claude.ai org managed settings existed with `channelsEnabled: true` but no `allowedChannelPlugins` key, the local machine managed `allowedChannelPlugins` entry was silently discarded. The same policy chain honored `channelsEnabled`, but `claude --channels` and a `channel_enable` control request still rejected the org-approved local plugin as not on the allowlist, and the error suggested a local development flag instead of pointing to remote managed-settings shadowing.</p>
+                        <!-- workaround:local-channel-plugin-allowlists-can-be-shadowed-by-remote-managed-settings -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume local managed `allowedChannelPlugins` entries survive when remote org settings are enabled. Verify channel plugins in the exact launch mode with `claude --channels` or a harmless `channel_enable` canary, and treat an allowlist rejection as possible remote-policy shadowing even when local files are readable. Where possible, put the channel allowlist in the remote managed policy itself, or keep an explicit deployment check that fails before unattended channel hosts start.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88590" target="_blank">#88590</a></div>
+        </div>
+        <div class="kl-entry" data-category="Scheduled tasks" data-issues="88594" id="custom-connector-routines-can-disable-auto-allow-despite-admin-allow" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1665</span>
+                <span class="kl-cat">Scheduled tasks</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Custom connector Routines can disable Auto-Allow despite admin allow.</h3>
+            <p>A reported Claude Code Routines setup with an org-managed custom remote MCP connector showed every connector tool as `Auto-Allow disabled by your admin` even though the workspace admin settings were configured to always allow unconfigured connector tools, allow connector-tool auto-allow in Cowork permissions, leave Claude Code managed settings empty, and enable Routines. The routine UI simultaneously claimed unrestricted connector tools could run without asking while marking the same custom-connector tools as restricted, making the unattended runtime behavior unclear and blocking custom-connector automation.</p>
+                        <!-- workaround:custom-connector-routines-can-disable-auto-allow-despite-admin-allow -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat org-level connector allow settings as proof that custom remote MCP connectors will auto-approve inside cloud Routines. Before relying on an unattended Routine, run a harmless custom-connector canary and inspect whether the routine panel marks each required tool as auto-allowable. For critical workflows, keep the equivalent local session or a human-approved path available until the custom-connector routine path is verified, and capture the connector admin settings plus routine UI state when reporting failures.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88594" target="_blank">#88594</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
