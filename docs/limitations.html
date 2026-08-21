@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1673</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-21.</span></p>
+        <p class="subtitle"><span id="total-count">1676</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-21.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18812,6 +18812,42 @@
                         <!-- workaround:auto-mode-can-deny-explicitly-allowed-mcp-tool-calls -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before relying on MCP tools in auto-mode background jobs, run a harmless call to every required MCP tool under the same launch mode and model, not just in an interactive session. Treat the configured allowlist as necessary but not sufficient; keep an interactive or non-auto fallback for workflows where the classifier may still deny a safe read-only tool. If Bash alternatives are intentionally denied to force MCP use, make the canary fail the job early rather than letting the agent improvise another path.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88575" target="_blank">#88575</a></div>
+        </div>
+        <div class="kl-entry" data-category="Data integrity" data-issues="88605" id="exit-cleanup-can-delete-home-instead-of-session-directory" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1674</span>
+                <span class="kl-cat">Data integrity</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Exit cleanup can delete $HOME instead of a session directory.</h3>
+            <p>A reported Linux Claude Code 2.1.238 incident found that typing `/exit` in an interactive session managing two still-running background agent sessions in managed worktrees coincided with recursive deletion of the user&#x27;s entire home directory. The reporter reconstructed transcripts, system journal events, ext4 deletion timing, and surviving process memory, and found no shell command or user action that performed the deletion. The evidence points to an in-process recursive cleanup path resolving to `$HOME` instead of the intended worktree, job, or session directory during exit-time teardown.</p>
+                        <!-- workaround:exit-cleanup-can-delete-home-instead-of-session-directory -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat managed worktree cleanup and `/exit` as high-risk when background sessions are still alive. Before exiting an orchestrator that spawned background worktree agents, stop or detach the child sessions deliberately, snapshot important state outside `$HOME` where possible, and verify live processes plus `.claude/worktrees` ownership before cleanup. On systems running affected versions, avoid unattended `/exit` teardown around managed worktrees until a guarded cleanup path refuses to delete `$HOME`, ancestors of `$HOME`, or paths outside known session/worktree roots.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88605" target="_blank">#88605</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="88698" id="background-permissionrequest-decisions-can-be-discarded" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1675</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Background PermissionRequest hook decisions can be discarded.</h3>
+            <p>A reported Claude Code 2.1.238 macOS repro found that `PermissionRequest` hooks in `claude --bg` sessions fired with the expected Bash payload but their returned allow or deny decisions were ignored. The background session stayed blocked on `waitingFor: &quot;permission prompt&quot;` for both `permissions.ask` rules and `PreToolUse` hooks that escalated to ask, while the same setup showed the hook had run by writing a payload log. This leaves non-interactive background approval services unable to resolve prompts even though the hook event was dispatched.</p>
+                        <!-- workaround:background-permissionrequest-decisions-can-be-discarded -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on `PermissionRequest` as the only decision channel for `claude --bg` sessions until the installed version proves allow and deny both resolve the prompt. Prefer explicit `permissions.allow` and `permissions.deny` rules for known operations, and add a background canary that forces a harmless ask and fails the job if the session remains blocked. For external approval services, keep a human-interactive fallback or avoid background launch modes for operations that require dynamic permission prompts.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88698" target="_blank">#88698</a></div>
+        </div>
+        <div class="kl-entry" data-category="Bash &amp; shell execution" data-issues="88702" id="background-bash-timeout-can-be-ignored-with-no-notification" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1676</span>
+                <span class="kl-cat">Bash &amp; shell execution</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Background Bash timeouts can be ignored with no notification.</h3>
+            <p>A reported Claude Code 2.1.236 and 2.1.239 macOS repro found that a Bash tool call with `run_in_background: true` ignored its declared `timeout`; a command with a 5 second timeout still ran for 90 seconds and completed normally. The same report describes a malformed background polling loop that kept running for roughly 13 hours after the session ended its turn waiting for the task, with no timeout notification or idle-task signal delivered to re-enter the session.</p>
+                        <!-- workaround:background-bash-timeout-can-be-ignored-with-no-notification -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume the Bash tool&#x27;s `timeout` field constrains background tasks in affected versions. Wrap background commands in an in-command deadline such as `timeout` or `gtimeout`, bound polling loops with explicit iteration limits, and add a `PreToolUse` hook that rejects unbounded background `while` or `until` loops unless they contain their own deadline. Pair long background waits with an external monitor, process cleanup path, or scheduled fallback that can wake the session or kill the process group if Claude Code never reports completion.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88702" target="_blank">#88702</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

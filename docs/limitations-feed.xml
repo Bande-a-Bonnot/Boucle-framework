@@ -7,6 +7,30 @@
   <updated>2026-08-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Background Bash timeouts can be ignored with no notification.</title>
+    <id>https://framework.boucle.sh/limitations.html#background-bash-timeout-can-be-ignored-with-no-notification</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-bash-timeout-can-be-ignored-with-no-notification"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.236 and 2.1.239 macOS repro found that a Bash tool call with `run_in_background: true` ignored its declared `timeout`; a command with a 5 second timeout still ran for 90 seconds and completed normally. The same report describes a malformed background polling loop that kept running for roughly 13 hours after the session ended its turn waiting for the task, with no timeout notification or idle-task signal delivered to re-enter the session.</summary>
+    <category term="Bash &amp; shell execution"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Background PermissionRequest hook decisions can be discarded.</title>
+    <id>https://framework.boucle.sh/limitations.html#background-permissionrequest-decisions-can-be-discarded</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-permissionrequest-decisions-can-be-discarded"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.238 macOS repro found that `PermissionRequest` hooks in `claude --bg` sessions fired with the expected Bash payload but their returned allow or deny decisions were ignored. The background session stayed blocked on `waitingFor: &quot;permission prompt&quot;` for both `permissions.ask` rules and `PreToolUse` hooks that escalated to ask, while the same setup showed the hook had run by writing a payload log. This leaves non-interactive background approval services unable to resolve prompts even though the hook event was dispatched.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Exit cleanup can delete $HOME instead of a session directory.</title>
+    <id>https://framework.boucle.sh/limitations.html#exit-cleanup-can-delete-home-instead-of-session-directory</id>
+    <link href="https://framework.boucle.sh/limitations.html#exit-cleanup-can-delete-home-instead-of-session-directory"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Linux Claude Code 2.1.238 incident found that typing `/exit` in an interactive session managing two still-running background agent sessions in managed worktrees coincided with recursive deletion of the user&#x27;s entire home directory. The reporter reconstructed transcripts, system journal events, ext4 deletion timing, and surviving process memory, and found no shell command or user action that performed the deletion. The evidence points to an in-process recursive cleanup path resolving to `$HOME` instead of the intended worktree, job, or session directory during exit-time teardown.</summary>
+    <category term="Data integrity"/>
+  </entry>
+  <entry>
     <title>[HIGH] Auto mode can deny explicitly allowed MCP tool calls.</title>
     <id>https://framework.boucle.sh/limitations.html#auto-mode-can-deny-explicitly-allowed-mcp-tool-calls</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-mode-can-deny-explicitly-allowed-mcp-tool-calls"/>
@@ -141,29 +165,5 @@
     <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.238 macOS sandbox setup found that Bash commands could intermittently reach non-allowlisted HTTPS hosts even though `permissions.sandbox.enabled` and `failIfUnavailable` were set and the tool description showed a fixed `allowedHosts` list. In the repro, batched `curl` calls to hosts outside that list returned real HTTP responses, while a separate isolated call could be blocked correctly. The reporter suspected a race or initialization timing gap around the sandbox&#x27;s CONNECT proxy path.</summary>
     <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Write can overwrite unread existing files on Claude 5 models.</title>
-    <id>https://framework.boucle.sh/limitations.html#write-tool-can-overwrite-unread-existing-files-on-claude-5</id>
-    <link href="https://framework.boucle.sh/limitations.html#write-tool-can-overwrite-unread-existing-files-on-claude-5"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.238 macOS repro found that Claude 5 family models can use the Write tool to replace an existing file that was never read in the conversation, while older models still fail with the previous read-before-overwrite guard. In a shared-file workflow, a fresh session can therefore replace another session&#x27;s recent entries without first seeing them, and the Write tool&#x27;s own prompt text may still describe the old guard as if the overwrite should fail. The behavior is documented in the tools reference but easy to discover only after data loss.</summary>
-    <category term="Data integrity"/>
-  </entry>
-  <entry>
-    <title>[HIGH] PermissionRequest hooks can be skipped in print mode.</title>
-    <id>https://framework.boucle.sh/limitations.html#permissionrequest-hooks-can-be-skipped-in-print-mode</id>
-    <link href="https://framework.boucle.sh/limitations.html#permissionrequest-hooks-can-be-skipped-in-print-mode"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.237 Windows repro found that `PermissionRequest` hooks did not fire during a non-interactive `claude -p` Write request, even though a `PreToolUse` hook from the same settings file, same matcher, and same script fired normally for the same tool. The command and HTTP PermissionRequest variants both produced no hook log entry, leaving the model to ask for an approval that cannot be answered in print mode. This makes the hook event unreliable for its most automation-relevant path: headless runs where a hook-supplied decision is the only way to answer a prompt.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Bypass mode can steer file work away from typed tools into composed shell strings.</title>
-    <id>https://framework.boucle.sh/limitations.html#bypass-mode-steers-file-work-into-composed-shell-strings</id>
-    <link href="https://framework.boucle.sh/limitations.html#bypass-mode-steers-file-work-into-composed-shell-strings"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.228 through 2.1.235 behavior found that sessions running in bypass permissions mode receive a built-in instruction to do file reads, searches, and edits through Bash commands such as `cat`, `grep`, `sed`, heredocs, or short scripts where possible, rather than the dedicated Read, Grep, Edit, or Write tools. The reporter tied this to observed composition failures including laundered pipeline exit statuses, broken nested quoting, broad `git add -A` staging, backtick execution inside quoted command bodies, and POSIX awk portability mismatches. Because bypass mode is often used for unattended or headless work, this prompt-level steering can replace typed tool arguments with one-shot shell strings exactly when there may be no human watching the transcript.</summary>
-    <category term="Bash &amp; shell execution"/>
   </entry>
 </feed>
