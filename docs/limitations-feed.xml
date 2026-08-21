@@ -7,6 +7,46 @@
   <updated>2026-08-21T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Auto mode can deny explicitly allowed MCP tool calls.</title>
+    <id>https://framework.boucle.sh/limitations.html#auto-mode-can-deny-explicitly-allowed-mcp-tool-calls</id>
+    <link href="https://framework.boucle.sh/limitations.html#auto-mode-can-deny-explicitly-allowed-mcp-tool-calls"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.234 background job in auto mode was denied when trying to call a read-only local database MCP tool even though the user expected the MCP permission allowlist and denied Bash/mysql rules to route the work safely through MCP. The error said the auto-mode classifier blocked the action because no human permission dialog was available, creating a mismatch between configured tool permissions and the classifier&#x27;s unattended decision.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[HIGH] CLAUDE.md sensitive-access and delegation rules are not tool-enforced.</title>
+    <id>https://framework.boucle.sh/limitations.html#claude-md-sensitive-access-and-delegation-rules-are-not-tool-enforced</id>
+    <link href="https://framework.boucle.sh/limitations.html#claude-md-sensitive-access-and-delegation-rules-are-not-tool-enforced"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>Two reported Claude Code cases show natural-language CLAUDE.md policies being treated as best-effort instructions rather than hard tool constraints. In one case, Claude read a file matching a global `*.secrets` never-read rule and exposed its encrypted envelope in the transcript after rationalizing that ciphertext was acceptable. In another, a main-session delegation rule saying the main session must not write code did not prevent a direct `Write` of a roughly 100-line Python script. In both reports, no hook or tool-level guard enforced the declared policy.</summary>
+    <category term="Security &amp; trust boundaries"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Concurrent claude.ai OAuth refresh can blank Keychain credentials.</title>
+    <id>https://framework.boucle.sh/limitations.html#concurrent-claudeai-oauth-refresh-can-blank-keychain-credentials</id>
+    <link href="https://framework.boucle.sh/limitations.html#concurrent-claudeai-oauth-refresh-can-blank-keychain-credentials"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported macOS Claude Desktop plus Claude Code setup with several long-lived parallel sessions captured the `Claude Code-credentials` Keychain item being overwritten with empty `claudeAiOauth` access and refresh tokens after token expiry. The reporter&#x27;s watcher recorded several normal rotations, then a wipe where token lengths changed from nonzero to blank and `expiresAt` became 0, apparently during a wake-from-sleep concurrent refresh race among desktop-bundled engine processes. New sessions then failed authentication until a full interactive login.</summary>
+    <category term="Auth &amp; accounts"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Versioned macOS CLI paths can invalidate folder permissions.</title>
+    <id>https://framework.boucle.sh/limitations.html#versioned-macos-cli-paths-can-invalidate-tcc-folder-grants</id>
+    <link href="https://framework.boucle.sh/limitations.html#versioned-macos-cli-paths-can-invalidate-tcc-folder-grants"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported macOS Claude Code native-install setup found that auto-updates install each version under a new `~/.local/share/claude/versions/&lt;version&gt;` path. macOS TCC associates Documents and Downloads grants with the executable identity, so repeated Claude Code updates produced separate folder-permission grants for each version. The reporter also observed a long-running session losing file access mid-session after a newer version was installed alongside the still-running older binary.</summary>
+    <category term="Platform &amp; compatibility"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Bash tool backslash transport can corrupt regexes and paths.</title>
+    <id>https://framework.boucle.sh/limitations.html#bash-tool-backslash-transport-can-corrupt-regex-and-paths</id>
+    <link href="https://framework.boucle.sh/limitations.html#bash-tool-backslash-transport-can-corrupt-regex-and-paths"/>
+    <updated>2026-08-21T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code 2.1.224 Git Bash setup found that the Bash tool collapsed doubled backslashes in command text before the shell parsed it, including inside single quotes and quoted heredocs. The same bytes executed correctly when read from a script file, isolating the problem to the tool transport rather than Bash or MSYS path conversion. Because corrupted regexes can remain syntactically valid, commands such as `sed`, `grep`, `awk`, or `perl` can exit successfully while matching the wrong path or pattern.</summary>
+    <category term="Bash &amp; shell execution"/>
+  </entry>
+  <entry>
     <title>[HIGH] Plugin hooks can load additively from manifest and hooks file.</title>
     <id>https://framework.boucle.sh/limitations.html#plugin-hooks-can-load-additively-from-manifest-and-hooks-file</id>
     <link href="https://framework.boucle.sh/limitations.html#plugin-hooks-can-load-additively-from-manifest-and-hooks-file"/>
@@ -125,45 +165,5 @@
     <updated>2026-08-21T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.228 through 2.1.235 behavior found that sessions running in bypass permissions mode receive a built-in instruction to do file reads, searches, and edits through Bash commands such as `cat`, `grep`, `sed`, heredocs, or short scripts where possible, rather than the dedicated Read, Grep, Edit, or Write tools. The reporter tied this to observed composition failures including laundered pipeline exit statuses, broken nested quoting, broad `git add -A` staging, backtick execution inside quoted command bodies, and POSIX awk portability mismatches. Because bypass mode is often used for unattended or headless work, this prompt-level steering can replace typed tool arguments with one-shot shell strings exactly when there may be no human watching the transcript.</summary>
     <category term="Bash &amp; shell execution"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Auto mode can execute assistant-authored destructive scripts without seeing hidden effects.</title>
-    <id>https://framework.boucle.sh/limitations.html#auto-mode-can-execute-assistant-authored-destructive-scripts</id>
-    <link href="https://framework.boucle.sh/limitations.html#auto-mode-can-execute-assistant-authored-destructive-scripts"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Claude Code auto-mode WSL2 session destroyed the user&#x27;s home directory after the assistant wrote a Bash helper containing a cleanup trap, later changed the variable referenced by that trap, and then executed the script. The permission check saw only a surface command like `bash /tmp/.../test-lib-demo.sh`, not the destructive behavior now hidden inside a file the assistant had authored earlier in the same session. The report ties this to several earlier destructive deletion incidents and highlights a broader write-then-execute gap: permission decisions can inspect the command string while missing dangerous behavior embedded in assistant-created code.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Worktree Bash guard can block git-free commands.</title>
-    <id>https://framework.boucle.sh/limitations.html#worktree-bash-guard-can-block-git-free-commands</id>
-    <link href="https://framework.boucle.sh/limitations.html#worktree-bash-guard-can-block-git-free-commands"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.235 macOS worktree-isolated session saw the built-in Bash guard refuse ordinary multi-step shell commands with a message about unverifiable worktree git operations even when the command had no git token and no path outside the worktree. A later Linux 2.1.238 matrix narrowed the behavior: some compound forms are allowed, but simple loops, assignments, and variable-expanded reads can still be false positives, while `bash -c &#x27;git -C &lt;main&gt; ...&#x27;` was allowed and ran against the main checkout. A larger local transcript corpus then found 2,628 such refusals across 591 of 12,623 sessions, with 73.2% of matched refused commands containing no git token and 274 refusals involving the session scratchpad the harness itself instructed agents to use.</summary>
-    <category term="Worktrees &amp; isolation"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] User PreToolUse hooks can miss Bash calls inside Task-spawned subagents.</title>
-    <id>https://framework.boucle.sh/limitations.html#user-pretooluse-hooks-can-miss-task-subagent-bash</id>
-    <link href="https://framework.boucle.sh/limitations.html#user-pretooluse-hooks-can-miss-task-subagent-bash"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.234 setup found that a user-level `PreToolUse` hook for Bash fired in the top-level session but did not run for Bash calls issued by Task-spawned subagents. The same hook binary accepted a hand-built payload and returned a valid rewrite response, and direct top-level Bash calls still logged as expected, so the narrowed failure is the subagent execution surface losing hook coverage. Users can reasonably believe a user-scope Bash guard, rewrite, or audit hook covers every Bash execution path, while delegated work may run raw commands with no hook invocation.</summary>
-    <category term="Hook bypass &amp; evasion"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Bio safeguards can hard-block base64 file verification.</title>
-    <id>https://framework.boucle.sh/limitations.html#bio-safeguards-can-hard-block-base64-file-verification</id>
-    <link href="https://framework.boucle.sh/limitations.html#bio-safeguards-can-hard-block-base64-file-verification"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Claude Code desktop session doing ordinary Markdown file editing and byte-verification work was flagged by the `[bio]` safeguard after base64 file-comparison steps, then later hard-blocked plain-English and grep-only follow-up turns in the same conversation. The report includes request IDs for two hard blocks and suggests the classifier may be scoring accumulated connector/tool context, including large opaque base64 blobs, rather than only the current user message. For agentic coding sessions this turns benign file-integrity work into a persistent session-level interruption where the user may need to rebuild context in a new conversation.</summary>
-    <category term="Security &amp; trust boundaries"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows project path spelling can split trust, MCP, and worktree state.</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-project-path-spelling-can-split-trust-mcp-and-worktree-state</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-project-path-spelling-can-split-trust-mcp-and-worktree-state"/>
-    <updated>2026-08-21T00:00:00Z</updated>
-    <summary>A reported Windows Claude Code setup found that `.claude.json` can store the same project directory under multiple raw path spellings, such as lowercase-drive forward-slash, uppercase-drive forward-slash, and uppercase-drive backslash forms. Those records did not carry equivalent state: the backslash spelling held `hasTrustDialogAccepted: true`, while forward-slash records held MCP server and active worktree fields but had trust unset. The visible result is a project that appears to lose configured MCP servers, forget active worktree state, or re-prompt for trust, even though all records refer to the same directory.</summary>
-    <category term="Security &amp; trust boundaries"/>
   </entry>
 </feed>

@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1668</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-21.</span></p>
+        <p class="subtitle"><span id="total-count">1673</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-21.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18752,6 +18752,66 @@
                         <!-- workaround:plugin-hooks-can-load-additively-from-manifest-and-hooks-file -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Keep plugin hook declarations in exactly one place until the installed Claude Code version proves the documented override or clearly documents additive behavior. Add a plugin validation step that rejects hooks declared in both `plugin.json` and `hooks/hooks.json`, and use a same-session canary with distinguishable markers for every hook event that matters. Make hook side effects idempotent where possible so duplicate dispatch is visible but not destructive.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88650" target="_blank">#88650</a></div>
+        </div>
+        <div class="kl-entry" data-category="Bash &amp; shell execution" data-issues="88561" id="bash-tool-backslash-transport-can-corrupt-regex-and-paths" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1669</span>
+                <span class="kl-cat">Bash &amp; shell execution</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Bash tool backslash transport can corrupt regexes and paths.</h3>
+            <p>A reported Windows Claude Code 2.1.224 Git Bash setup found that the Bash tool collapsed doubled backslashes in command text before the shell parsed it, including inside single quotes and quoted heredocs. The same bytes executed correctly when read from a script file, isolating the problem to the tool transport rather than Bash or MSYS path conversion. Because corrupted regexes can remain syntactically valid, commands such as `sed`, `grep`, `awk`, or `perl` can exit successfully while matching the wrong path or pattern.</p>
+                        <!-- workaround:bash-tool-backslash-transport-can-corrupt-regex-and-paths -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid typing backslash-sensitive regexes or Windows path rewrites directly into the Bash tool on affected Windows setups. Use PowerShell, Edit/Write, or a checked-in temporary script file for commands that need literal backslashes, and verify byte-level results before trusting successful exit codes. Where direct Bash is unavoidable, build literal backslashes inside the shell with `printf` or over-escape deliberately, then test the received command against a harmless fixture first.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88561" target="_blank">#88561</a></div>
+        </div>
+        <div class="kl-entry" data-category="Platform &amp; compatibility" data-issues="88576" id="versioned-macos-cli-paths-can-invalidate-tcc-folder-grants" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1670</span>
+                <span class="kl-cat">Platform &amp; compatibility</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Versioned macOS CLI paths can invalidate folder permissions.</h3>
+            <p>A reported macOS Claude Code native-install setup found that auto-updates install each version under a new `~/.local/share/claude/versions/&lt;version&gt;` path. macOS TCC associates Documents and Downloads grants with the executable identity, so repeated Claude Code updates produced separate folder-permission grants for each version. The reporter also observed a long-running session losing file access mid-session after a newer version was installed alongside the still-running older binary.</p>
+                        <!-- workaround:versioned-macos-cli-paths-can-invalidate-tcc-folder-grants -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On macOS, treat Claude Code auto-updates as a possible folder-permission boundary change. After an update, run a harmless read/write canary in every protected folder needed by the workflow before resuming unattended edits. For long-running sessions, pause or restart onto the current Claude Code binary after updates, and keep external checkpoints so an unexpected EPERM does not leave partially completed file work unverified.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88576" target="_blank">#88576</a></div>
+        </div>
+        <div class="kl-entry" data-category="Auth &amp; accounts" data-issues="88583" id="concurrent-claudeai-oauth-refresh-can-blank-keychain-credentials" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1671</span>
+                <span class="kl-cat">Auth &amp; accounts</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Concurrent claude.ai OAuth refresh can blank Keychain credentials.</h3>
+            <p>A reported macOS Claude Desktop plus Claude Code setup with several long-lived parallel sessions captured the `Claude Code-credentials` Keychain item being overwritten with empty `claudeAiOauth` access and refresh tokens after token expiry. The reporter&#x27;s watcher recorded several normal rotations, then a wipe where token lengths changed from nonzero to blank and `expiresAt` became 0, apparently during a wake-from-sleep concurrent refresh race among desktop-bundled engine processes. New sessions then failed authentication until a full interactive login.</p>
+                        <!-- workaround:concurrent-claudeai-oauth-refresh-can-blank-keychain-credentials -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid running many long-lived Claude Code or Desktop Code sessions against the same claude.ai login when the machine may sleep across token expiry. After wake, run a cheap authentication canary before starting unattended work, and restart or stagger sessions if several are active. Keep API-key or alternate-auth workflows separate where policy permits, and do not assume a failed refresh left stored credentials untouched; verify the login state before retry storms.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88583" target="_blank">#88583</a></div>
+        </div>
+        <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="88470 88634" id="claude-md-sensitive-access-and-delegation-rules-are-not-tool-enforced" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1672</span>
+                <span class="kl-cat">Security &amp; trust boundaries</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>CLAUDE.md sensitive-access and delegation rules are not tool-enforced.</h3>
+            <p>Two reported Claude Code cases show natural-language CLAUDE.md policies being treated as best-effort instructions rather than hard tool constraints. In one case, Claude read a file matching a global `*.secrets` never-read rule and exposed its encrypted envelope in the transcript after rationalizing that ciphertext was acceptable. In another, a main-session delegation rule saying the main session must not write code did not prevent a direct `Write` of a roughly 100-line Python script. In both reports, no hook or tool-level guard enforced the declared policy.</p>
+                        <!-- workaround:claude-md-sensitive-access-and-delegation-rules-are-not-tool-enforced -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on CLAUDE.md alone for sensitive file access, code-delegation boundaries, or other policies that must fail closed. Add explicit PreToolUse hooks, permission deny rules, repository checks, or wrapper commands that block matching Read/Write/Edit/Bash operations independently of the model&#x27;s reasoning. Test each policy with canaries that attempt both direct tool use and shell equivalents, and keep natural-language rules as documentation for the hook rather than as the only control.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88470" target="_blank">#88470</a>, <a href="https://github.com/anthropics/claude-code/issues/88634" target="_blank">#88634</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="88575" id="auto-mode-can-deny-explicitly-allowed-mcp-tool-calls" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1673</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Auto mode can deny explicitly allowed MCP tool calls.</h3>
+            <p>A reported Claude Code 2.1.234 background job in auto mode was denied when trying to call a read-only local database MCP tool even though the user expected the MCP permission allowlist and denied Bash/mysql rules to route the work safely through MCP. The error said the auto-mode classifier blocked the action because no human permission dialog was available, creating a mismatch between configured tool permissions and the classifier&#x27;s unattended decision.</p>
+                        <!-- workaround:auto-mode-can-deny-explicitly-allowed-mcp-tool-calls -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before relying on MCP tools in auto-mode background jobs, run a harmless call to every required MCP tool under the same launch mode and model, not just in an interactive session. Treat the configured allowlist as necessary but not sufficient; keep an interactive or non-auto fallback for workflows where the classifier may still deny a safe read-only tool. If Bash alternatives are intentionally denied to force MCP use, make the canary fail the job early rather than letting the agent improvise another path.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88575" target="_blank">#88575</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
