@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1689,
+  "count": 1690,
   "categories": {
-    "Hook behavior & events": 226,
+    "Hook behavior & events": 227,
     "Permission system": 154,
     "Hook bypass & evasion": 104,
     "MCP & plugin issues": 95,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 145,
-    "HIGH": 946,
+    "HIGH": 947,
     "LOW": 109,
     "MEDIUM": 489
   },
@@ -21763,30 +21763,43 @@
       "date_added": "2026-08-22",
       "description": "A reported Claude Code subagent workflow found that `AskUserQuestion` returned the same success-shaped text whether a real human selected an option or the answer was produced automatically without any user seeing the prompt. In the reported case, isolated subagents asked approval questions for implementation and deletion decisions and received the recommended option as selected, but the parent user was never shown the questions. Agents that treat the tool result as a human approval gate can therefore proceed with consequential work from an auto-returned answer that has no visible provenance marker.",
       "workaround": "Do not treat an `AskUserQuestion` result from a subagent, background job, or bypass/auto permission mode as human authorization unless an independent human-visible channel confirms the decision. For commits, pushes, deletions, deployments, spend, or external effects, require a parent-session confirmation, durable approval file, Linear/GitHub approval record, or service-side token tied to the exact payload. Audit transcripts for whether the prompt was actually surfaced, and fail closed when the answer source is ambiguous."
+    },
+    {
+      "id": "desktop-hook-failures-can-lose-diagnostics",
+      "title": "Desktop hook failures can lose their diagnostics.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88830"
+      ],
+      "date_added": "2026-08-22",
+      "description": "A reported Claude Code desktop setup with relative project hook commands found that hook launch failures were invisible in the desktop UI and recorded only as `hook_non_blocking_error` transcript attachments with empty `content`. The reporter correlated more than 72,000 such records across months of sessions and found no errno, resolved path, exit status, stderr, or user-visible notice, even though guardrail hooks such as PreToolUse Edit and Bash groups were not running during cwd drift windows. This makes a failed policy hook look like normal operation unless users audit transcript internals or external hook logs.",
+      "workaround": "Do not rely on the desktop app UI or `/hooks` alone to prove hook enforcement is healthy. Prefer absolute hook command paths rooted in a verified project directory, add a harmless marker hook whose file output must change in the same session, and scan recent transcripts for `hook_non_blocking_error` attachments, especially entries with empty `content`. If marker output stops or transcript error attachments appear, treat the session as unprotected, restart it, and keep critical enforcement in OS, CI, or server-side controls until the exact desktop launch path reports hook failures with actionable diagnostics."
     }
   ],
   "status_summary": {
-    "open": 1675,
+    "open": 1676,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 145,
-    "high": 946,
+    "high": 947,
     "low": 109,
     "medium": 489
   },
   "lastUpdated": "2026-08-22",
   "stats": {
-    "total": 1689,
+    "total": 1690,
     "critical": 145,
-    "high": 946,
+    "high": 947,
     "medium": 489,
     "low": 109,
-    "open": 1675,
+    "open": 1676,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-22",
-  "total": 1689
+  "total": 1690
 }
