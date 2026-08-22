@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1693,
+  "count": 1694,
   "categories": {
-    "Hook behavior & events": 227,
+    "Hook behavior & events": 228,
     "Permission system": 155,
     "Hook bypass & evasion": 104,
     "MCP & plugin issues": 95,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 146,
-    "HIGH": 949,
+    "HIGH": 950,
     "LOW": 109,
     "MEDIUM": 489
   },
@@ -21815,30 +21815,43 @@
       "date_added": "2026-08-22",
       "description": "A reported Claude Code Windows Git Bash session with `permissions.defaultMode: \"acceptEdits\"` found that destructive Git deny rules such as `Bash(git checkout -- *)`, `Bash(git restore *)`, `Bash(git reset --hard *)`, and `Bash(git branch -D *)` matched the bare command form but were bypassed when a flag appeared before the subcommand, for example `git -C <repo> checkout -- <file>`. The prefixed command matched neither the user's allow nor deny pattern and still executed without a confirmation prompt, silently discarding an uncommitted file change in the repro. This makes raw command-prefix matching unsafe for destructive Bash policies because common git flags such as `-C`, `-c`, `--git-dir`, or `--work-tree` can move the dangerous verb away from the literal start of the command.",
       "workaround": "Do not rely on single literal Bash deny patterns for destructive Git commands in `acceptEdits` or unattended modes. Add flag-tolerant duplicate denies for known forms such as `Bash(git * checkout -- *)`, `Bash(git * restore *)`, `Bash(git * reset --hard *)`, and `Bash(git * branch -D *)`, then run real permission probes that include `git -C`, `git -c`, `--git-dir`, and `--work-tree` variants before trusting the policy. For higher-risk repositories, use a PreToolUse hook or wrapper that parses the Bash command, resolves the target repository, and blocks destructive Git verbs directly instead of delegating final enforcement to raw prefix-pattern matching."
+    },
+    {
+      "id": "nested-repository-hooks-are-not-loaded-from-parent-sessions",
+      "title": "Nested repository hooks are not loaded from parent-root sessions.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88871"
+      ],
+      "date_added": "2026-08-22",
+      "description": "A reported Claude Code multi-repo workflow keeps dependent checkouts inside a parent workspace and starts the session at the parent root. When tool calls operate inside a nested repository, that nested repo's `.claude/settings.json` hooks are not discovered or loaded, and directories added with `--add-dir` are documented as file-access grants rather than settings or hook roots. This means a child checkout can carry project-specific PreToolUse, lint, test, protected-path, or custody hooks that never fire while the parent session edits it. Parent hooks can still fire in the child cwd, so users may see hook activity while the child repo's own guardrails remain absent. The reporter explicitly notes that arbitrary nested hook auto-loading would be unsafe without a separate trust decision, making the practical gap a missing trust-gated way to opt into nested hook roots.",
+      "workaround": "Do not assume hooks from nested checkouts or `--add-dir` folders load in a parent-root session. For multi-repo work, either start a separate Claude Code session from the child repository root and accept trust there, or put load-bearing enforcement in a parent hook dispatcher that detects the target repo, suppresses parent-only checks where appropriate, and runs child-repo guards behind an explicit local trust record. Add a hook canary in each dependent checkout and test an edit from the parent session before trusting its policy. Use `$CLAUDE_PROJECT_DIR` in parent hooks so parent-relative commands do not fail or misfire when cwd moves into a nested repo."
     }
   ],
   "status_summary": {
-    "open": 1679,
+    "open": 1680,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 146,
-    "high": 949,
+    "high": 950,
     "low": 109,
     "medium": 489
   },
   "lastUpdated": "2026-08-22",
   "stats": {
-    "total": 1693,
+    "total": 1694,
     "critical": 146,
-    "high": 949,
+    "high": 950,
     "medium": 489,
     "low": 109,
-    "open": 1679,
+    "open": 1680,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-22",
-  "total": 1693
+  "total": 1694
 }
