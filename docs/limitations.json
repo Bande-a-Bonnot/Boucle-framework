@@ -1,12 +1,12 @@
 {
   "version": "0.13.0",
-  "count": 1694,
+  "count": 1695,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 155,
     "Hook bypass & evasion": 104,
     "MCP & plugin issues": 95,
-    "Subagent & spawned agents": 78,
+    "Subagent & spawned agents": 79,
     "Desktop & IDE integration": 60,
     "TUI & display": 37,
     "Platform & compatibility": 33,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 146,
-    "HIGH": 950,
+    "HIGH": 951,
     "LOW": 109,
     "MEDIUM": 489
   },
@@ -21828,30 +21828,43 @@
       "date_added": "2026-08-22",
       "description": "A reported Claude Code multi-repo workflow keeps dependent checkouts inside a parent workspace and starts the session at the parent root. When tool calls operate inside a nested repository, that nested repo's `.claude/settings.json` hooks are not discovered or loaded, and directories added with `--add-dir` are documented as file-access grants rather than settings or hook roots. This means a child checkout can carry project-specific PreToolUse, lint, test, protected-path, or custody hooks that never fire while the parent session edits it. Parent hooks can still fire in the child cwd, so users may see hook activity while the child repo's own guardrails remain absent. The reporter explicitly notes that arbitrary nested hook auto-loading would be unsafe without a separate trust decision, making the practical gap a missing trust-gated way to opt into nested hook roots.",
       "workaround": "Do not assume hooks from nested checkouts or `--add-dir` folders load in a parent-root session. For multi-repo work, either start a separate Claude Code session from the child repository root and accept trust there, or put load-bearing enforcement in a parent hook dispatcher that detects the target repo, suppresses parent-only checks where appropriate, and runs child-repo guards behind an explicit local trust record. Add a hook canary in each dependent checkout and test an edit from the parent session before trusting its policy. Use `$CLAUDE_PROJECT_DIR` in parent hooks so parent-relative commands do not fail or misfire when cwd moves into a nested repo."
+    },
+    {
+      "id": "subagents-can-inherit-stale-claude-md-and-memory-snapshots",
+      "title": "Subagents can inherit stale CLAUDE.md and memory snapshots.",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88886"
+      ],
+      "date_added": "2026-08-22",
+      "description": "A reported Claude Code 2.1.237 Linux session found that Agent-tool subagents received the CLAUDE.md and memory content captured when the parent session started, not the files as they existed when the subagent was spawned. In the report, a parent session started at 12:31 and dispatched a subagent at 21:10, so the subagent saw context that was 8h39m old. A memory file deleted from disk after parent startup still appeared in the child context, while memory files written later were absent. Because the stale instructions were not marked stale, the subagent could confidently act on a superseded rule that no longer existed on disk.",
+      "workaround": "Do not assume subagents have a fresh view of CLAUDE.md or project memory in long-running sessions. Restart the parent session before delegating policy-sensitive work, or make the subagent's first step a filesystem freshness check against the live files it depends on. For git-backed memory, compare the session start time or last known parent snapshot against current file mtimes and git diffs before treating child context as authoritative. Keep load-bearing rules in hooks, CI, or another live enforcement path rather than relying only on context inherited by subagents."
     }
   ],
   "status_summary": {
-    "open": 1680,
+    "open": 1681,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 146,
-    "high": 950,
+    "high": 951,
     "low": 109,
     "medium": 489
   },
   "lastUpdated": "2026-08-22",
   "stats": {
-    "total": 1694,
+    "total": 1695,
     "critical": 146,
-    "high": 950,
+    "high": 951,
     "medium": 489,
     "low": 109,
-    "open": 1680,
+    "open": 1681,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-22",
-  "total": 1694
+  "total": 1695
 }
