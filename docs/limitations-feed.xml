@@ -7,6 +7,22 @@
   <updated>2026-08-22T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] SessionStart hooks can fire for phantom startup sessions.</title>
+    <id>https://framework.boucle.sh/limitations.html#sessionstart-hooks-can-fire-for-phantom-startup-sessions</id>
+    <link href="https://framework.boucle.sh/limitations.html#sessionstart-hooks-can-fire-for-phantom-startup-sessions"/>
+    <updated>2026-08-22T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.237 desktop setup logged many `SessionStart` hook invocations with `source=startup` whose `transcript_path` never appeared on disk. The reporter counted 83 startup SessionStart events in one day, of which 68 had no transcript file. Hooks that deliver messages, mutate state, or mark work as read can therefore attribute side effects to sessions that never actually ran, making delivery look successful while no model turn consumed the context.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] PreToolUse hooks can silently stop firing mid-session.</title>
+    <id>https://framework.boucle.sh/limitations.html#pretooluse-hooks-can-silently-stop-mid-session</id>
+    <link href="https://framework.boucle.sh/limitations.html#pretooluse-hooks-can-silently-stop-mid-session"/>
+    <updated>2026-08-22T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.238 Windows interactive session ran a project-scoped Python PreToolUse hook normally for hours, then stopped invoking it for every later Bash, PowerShell, Edit, and Write-class call in that one session. A concurrent session in the same project with the same settings file continued logging hook calls, and the affected hook&#x27;s stderr file was untouched, indicating the hook process was not launched and failed silently rather than crashing. The affected settings file lived on a DriveFS virtual volume, but the root cause was not reproduced or isolated.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] /clear can silently terminate persistent Monitor background tasks.</title>
     <id>https://framework.boucle.sh/limitations.html#clear-can-silently-terminate-persistent-monitor-background-tasks</id>
     <link href="https://framework.boucle.sh/limitations.html#clear-can-silently-terminate-persistent-monitor-background-tasks"/>
@@ -149,21 +165,5 @@
     <updated>2026-08-22T00:00:00Z</updated>
     <summary>A reported Windows Claude Code 2.1.229 setup found two hook robustness gaps. First, hook entries containing an unrecognized key such as `args` were accepted silently, so only the bare `command` ran and a different program executed than the configuration appeared to describe. Second, hook stdout reached both the user&#x27;s terminal and transcript attachments with ANSI and OSC control sequences intact, allowing a misconfigured or hostile hook to clear the screen, move the cursor, retitle the terminal tab, or inject raw control bytes into the conversation context.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows hook commands with backslash paths can silently never execute.</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-hook-backslash-paths-can-silently-disable-hooks</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-hook-backslash-paths-can-silently-disable-hooks"/>
-    <updated>2026-08-22T00:00:00Z</updated>
-    <summary>A reported Windows Claude Code desktop setup found that hook commands written with normal Windows backslash paths never executed because the hook launcher ran the command through Git Bash, which stripped the backslashes before invoking the executable. The settings entry looked valid to Windows users and other Windows tools, but non-blocking hooks failed open with no surfaced error or health indicator. In the report, SessionStart, UserPromptSubmit, and PostToolUse memory hooks were silently dead for 46 days, while a separate hook without backslashes still worked and made the hook system appear partially healthy.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] PowerShell tool can fail under Git Bash plus Haiku without large settings.</title>
-    <id>https://framework.boucle.sh/limitations.html#powershell-tool-can-fail-under-git-bash-haiku-without-large-settings</id>
-    <link href="https://framework.boucle.sh/limitations.html#powershell-tool-can-fail-under-git-bash-haiku-without-large-settings"/>
-    <updated>2026-08-22T00:00:00Z</updated>
-    <summary>A reported Windows 11 Claude Code 2.1.235 regression found that every PowerShell tool call failed before command execution when Claude Code was launched from Git Bash with `--model haiku`. The same command passed when any one factor changed: older 2.1.168, PowerShell or cmd launch, default/Sonnet/Opus model, or non-Haiku mode. The reporter ruled out `permissions.additionalDirectories`, safe mode, most user settings, minimal environment, stdin shape, and first-tool-call ordering, making this distinct from the older large-settings command-line-length report while showing a similar `pwsh exited with code 1` classifier failure.</summary>
-    <category term="Platform &amp; compatibility"/>
   </entry>
 </feed>

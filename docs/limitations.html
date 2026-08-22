@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1679</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-22.</span></p>
+        <p class="subtitle"><span id="total-count">1681</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-22.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18884,6 +18884,30 @@
                         <!-- workaround:clear-can-silently-terminate-persistent-monitor-background-tasks -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat `/clear` as safe in sessions whose only wake path is a persistent `Monitor` task. Before clearing, stop or snapshot the expected monitor processes and plan an explicit human turn that re-arms them afterward. For unattended fleets, add an external watchdog that checks for each monitor command by process table or heartbeat file and alerts when it disappears; in-session SessionStart context alone is not enough if no model turn follows the clear. Prefer a fresh session restart plus explicit monitor setup when losing a monitor would strand work.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88732" target="_blank">#88732</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="88738" id="pretooluse-hooks-can-silently-stop-mid-session" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1680</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>PreToolUse hooks can silently stop firing mid-session.</h3>
+            <p>A reported Claude Code 2.1.238 Windows interactive session ran a project-scoped Python PreToolUse hook normally for hours, then stopped invoking it for every later Bash, PowerShell, Edit, and Write-class call in that one session. A concurrent session in the same project with the same settings file continued logging hook calls, and the affected hook&#x27;s stderr file was untouched, indicating the hook process was not launched and failed silently rather than crashing. The affected settings file lived on a DriveFS virtual volume, but the root cause was not reproduced or isolated.</p>
+                        <!-- workaround:pretooluse-hooks-can-silently-stop-mid-session -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat a successful `/hooks` listing or earlier hook log as insufficient proof that a long-lived session is still protected. For high-risk work, add a cheap heartbeat hook or write-class canary that must append a per-invocation marker before protected operations continue, and compare transcript tool calls against hook logs when auditing. Keep critical write barriers fail-closed outside the session where possible, restart long-running sessions after virtual-filesystem interruptions or long idle periods, and do not let a hook that merely allows everything be the only evidence that the hook runner is still alive.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88738" target="_blank">#88738</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="88739" id="sessionstart-hooks-can-fire-for-phantom-startup-sessions" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1681</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>SessionStart hooks can fire for phantom startup sessions.</h3>
+            <p>A reported Claude Code 2.1.237 desktop setup logged many `SessionStart` hook invocations with `source=startup` whose `transcript_path` never appeared on disk. The reporter counted 83 startup SessionStart events in one day, of which 68 had no transcript file. Hooks that deliver messages, mutate state, or mark work as read can therefore attribute side effects to sessions that never actually ran, making delivery look successful while no model turn consumed the context.</p>
+                        <!-- workaround:sessionstart-hooks-can-fire-for-phantom-startup-sessions -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Make SessionStart hooks idempotent and avoid destructive or read-marking side effects until the session is proven real. At minimum, check that `transcript_path` exists before marking messages delivered, consuming queue items, or changing external state; if the transcript is missing, return success without side effects and let a later real session or external watchdog handle delivery. For startup context injection, include a first-turn acknowledgement canary before treating a message as read.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88739" target="_blank">#88739</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

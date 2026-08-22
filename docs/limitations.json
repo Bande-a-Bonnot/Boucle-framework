@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1679,
+  "count": 1681,
   "categories": {
-    "Hook behavior & events": 224,
+    "Hook behavior & events": 226,
     "Permission system": 152,
     "Hook bypass & evasion": 104,
     "MCP & plugin issues": 94,
@@ -191,8 +191,8 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 143,
-    "HIGH": 938,
+    "CRITICAL": 144,
+    "HIGH": 939,
     "LOW": 109,
     "MEDIUM": 489
   },
@@ -21628,30 +21628,56 @@
       "date_added": "2026-08-22",
       "description": "A reported Claude Code 2.1.237 Windows setup found that a `Monitor({persistent: true})` background task was terminated after the owning session ran `/clear`, with no transcript notice, no notification, and no visible status that the session had lost its wake mechanism. The reporter observed two independent sessions where monitor parent and child processes existed before `/clear` and were gone immediately afterward. A SessionStart hook message telling the session to re-arm was marked read, but the monitor stayed absent because the model never took another turn. Older 2.1.229 behavior reportedly left orphaned child processes instead, which still broke notification delivery while looking alive.",
       "workaround": "Do not treat `/clear` as safe in sessions whose only wake path is a persistent `Monitor` task. Before clearing, stop or snapshot the expected monitor processes and plan an explicit human turn that re-arms them afterward. For unattended fleets, add an external watchdog that checks for each monitor command by process table or heartbeat file and alerts when it disappears; in-session SessionStart context alone is not enough if no model turn follows the clear. Prefer a fresh session restart plus explicit monitor setup when losing a monitor would strand work."
+    },
+    {
+      "id": "pretooluse-hooks-can-silently-stop-mid-session",
+      "title": "PreToolUse hooks can silently stop firing mid-session.",
+      "category": "Hook behavior & events",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88738"
+      ],
+      "date_added": "2026-08-22",
+      "description": "A reported Claude Code 2.1.238 Windows interactive session ran a project-scoped Python PreToolUse hook normally for hours, then stopped invoking it for every later Bash, PowerShell, Edit, and Write-class call in that one session. A concurrent session in the same project with the same settings file continued logging hook calls, and the affected hook's stderr file was untouched, indicating the hook process was not launched and failed silently rather than crashing. The affected settings file lived on a DriveFS virtual volume, but the root cause was not reproduced or isolated.",
+      "workaround": "Treat a successful `/hooks` listing or earlier hook log as insufficient proof that a long-lived session is still protected. For high-risk work, add a cheap heartbeat hook or write-class canary that must append a per-invocation marker before protected operations continue, and compare transcript tool calls against hook logs when auditing. Keep critical write barriers fail-closed outside the session where possible, restart long-running sessions after virtual-filesystem interruptions or long idle periods, and do not let a hook that merely allows everything be the only evidence that the hook runner is still alive."
+    },
+    {
+      "id": "sessionstart-hooks-can-fire-for-phantom-startup-sessions",
+      "title": "SessionStart hooks can fire for phantom startup sessions.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88739"
+      ],
+      "date_added": "2026-08-22",
+      "description": "A reported Claude Code 2.1.237 desktop setup logged many `SessionStart` hook invocations with `source=startup` whose `transcript_path` never appeared on disk. The reporter counted 83 startup SessionStart events in one day, of which 68 had no transcript file. Hooks that deliver messages, mutate state, or mark work as read can therefore attribute side effects to sessions that never actually ran, making delivery look successful while no model turn consumed the context.",
+      "workaround": "Make SessionStart hooks idempotent and avoid destructive or read-marking side effects until the session is proven real. At minimum, check that `transcript_path` exists before marking messages delivered, consuming queue items, or changing external state; if the transcript is missing, return success without side effects and let a later real session or external watchdog handle delivery. For startup context injection, include a first-turn acknowledgement canary before treating a message as read."
     }
   ],
   "status_summary": {
-    "open": 1665,
+    "open": 1667,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 143,
-    "high": 938,
+    "critical": 144,
+    "high": 939,
     "low": 109,
     "medium": 489
   },
   "lastUpdated": "2026-08-22",
   "stats": {
-    "total": 1679,
-    "critical": 143,
-    "high": 938,
+    "total": 1681,
+    "critical": 144,
+    "high": 939,
     "medium": 489,
     "low": 109,
-    "open": 1665,
+    "open": 1667,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-22",
-  "total": 1679
+  "total": 1681
 }
