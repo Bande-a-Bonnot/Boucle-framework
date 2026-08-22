@@ -21509,11 +21509,12 @@
       "severity": "HIGH",
       "status": "open",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/88576"
+        "https://github.com/anthropics/claude-code/issues/88576",
+        "https://github.com/anthropics/claude-code/issues/88805"
       ],
       "date_added": "2026-08-21",
-      "description": "A reported macOS Claude Code native-install setup found that auto-updates install each version under a new `~/.local/share/claude/versions/<version>` path. macOS TCC associates Documents and Downloads grants with the executable identity, so repeated Claude Code updates produced separate folder-permission grants for each version. The reporter also observed a long-running session losing file access mid-session after a newer version was installed alongside the still-running older binary.",
-      "workaround": "On macOS, treat Claude Code auto-updates as a possible folder-permission boundary change. After an update, run a harmless read/write canary in every protected folder needed by the workflow before resuming unattended edits. For long-running sessions, pause or restart onto the current Claude Code binary after updates, and keep external checkpoints so an unexpected EPERM does not leave partially completed file work unverified."
+      "description": "Reported macOS Claude Code native-install setups found that auto-updates install each version under a new `~/.local/share/claude/versions/<version>` path. macOS TCC associates Documents, Downloads, and network-volume grants with the executable identity, so repeated Claude Code updates produced separate folder-permission grants for each version. Later evidence from an SMB-mounted `/Volumes/<share>` workflow found that after an update, `ls` and `stat` still succeeded while `Read`, `cat`, `head`, and `touch` failed with `EPERM`, matching a stale `kTCCServiceSystemPolicyNetworkVolumes` grant rather than an SMB outage. A reporter also observed a long-running session losing file access mid-session after a newer version was installed alongside the still-running older binary.",
+      "workaround": "On macOS, treat Claude Code auto-updates as a possible folder-permission boundary change. After an update, run a harmless open/read/write canary in every protected folder and network volume needed by the workflow before resuming unattended edits; directory listing alone is not enough because TCC can still allow `ls` while denying file opens. If an SMB or NAS path starts returning `EPERM`, re-approve Claude Code in Files and Folders or use SSH access to the host until the installed binary has a stable TCC identity. For long-running sessions, pause or restart onto the current Claude Code binary after updates, and keep external checkpoints so an unexpected EPERM does not leave partially completed file work unverified."
     },
     {
       "id": "concurrent-claudeai-oauth-refresh-can-blank-keychain-credentials",
