@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1691,
+  "count": 1692,
   "categories": {
     "Hook behavior & events": 227,
     "Permission system": 154,
@@ -25,8 +25,8 @@
     "Core & session management": 21,
     "Data integrity": 20,
     "Bash & shell execution": 19,
+    "Remote & cloud": 19,
     "Model behavior": 18,
-    "Remote & cloud": 18,
     "Scheduling & remote triggers": 16,
     "Permissions & safety": 14,
     "Worktree": 14,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 146,
-    "HIGH": 947,
+    "HIGH": 948,
     "LOW": 109,
     "MEDIUM": 489
   },
@@ -21789,30 +21789,43 @@
       "date_added": "2026-08-22",
       "description": "A reported Claude Code plan-mode session treated approval of a model-authored plan as authority to run shell commands that appeared in the plan's verification section, even though the human had approved file edits but had not separately approved a build. The reporter's transcript extraction found two assistant-issued Bash calls containing the build command and zero human-typed turns containing that command before execution. The risky boundary is provenance: a command written by the model into an approved plan can be read back as part of the approved artifact, making plan approval look like per-command execution consent.",
       "workaround": "For high-stakes work, do not put runnable mutating commands in plan verification sections. Ask the assistant to describe verification in prose, then approve each build, migration, service restart, publish, push, or destructive command separately at execution time. Add PreToolUse checks for mutating Bash commands that require the most recent human turn or an external approval record to name the exact command or operation class, and keep project build drivers, deployment tools, and destructive commands in explicit deny rules until the current session proves the command was human-authorized."
+    },
+    {
+      "id": "remote-control-spawned-sessions-can-ignore-permission-mode",
+      "title": "Remote Control spawned sessions can ignore the requested permission mode.",
+      "category": "Remote & cloud",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88840"
+      ],
+      "date_added": "2026-08-22",
+      "description": "A reported Claude Code 2.1.240 macOS Remote Control setup accepted `claude remote-control --permission-mode bypassPermissions` and propagated that flag onto spawned `sdk-cli` process arguments, but every spawned web or mobile-driven session still recorded and behaved as `auto`. Setting `permissions.defaultMode: \"bypassPermissions\"` in user settings did not fix the Remote Control path, even though a direct local print session honored it. The same report found that messages from a more-permissive local session to the auto-mode Remote Control session were held for recipient approval, but no prompt appeared in the web/mobile app, host terminal, or subprocess UI, so the hold expired without a reachable approval surface.",
+      "workaround": "Do not assume a Remote Control host flag or user-level `permissions.defaultMode` controls spawned web or mobile sessions until the spawned session transcript records the intended `permissionMode` and a harmless permission probe behaves as expected. For cross-session workflows, keep sender and recipient sessions in a verified matching permission class or use a durable file, issue, or parent-session acknowledgement instead of relying on held SendMessage approvals. If a message is reported as awaiting recipient approval from an `sdk-cli` Remote Control session, treat it as not delivered unless the recipient transcript or another durable channel confirms it."
     }
   ],
   "status_summary": {
-    "open": 1677,
+    "open": 1678,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 146,
-    "high": 947,
+    "high": 948,
     "low": 109,
     "medium": 489
   },
   "lastUpdated": "2026-08-22",
   "stats": {
-    "total": 1691,
+    "total": 1692,
     "critical": 146,
-    "high": 947,
+    "high": 948,
     "medium": 489,
     "low": 109,
-    "open": 1677,
+    "open": 1678,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-22",
-  "total": 1691
+  "total": 1692
 }
