@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1676,
+  "count": 1677,
   "categories": {
     "Hook behavior & events": 224,
     "Permission system": 151,
@@ -10,9 +10,9 @@
     "Desktop & IDE integration": 60,
     "TUI & display": 37,
     "Platform & compatibility": 33,
+    "Configuration behavior": 32,
     "Security & trust boundaries": 32,
     "CLI & terminal": 31,
-    "Configuration behavior": 31,
     "Context & memory": 30,
     "MCP & integrations": 30,
     "Sandbox & permissions": 30,
@@ -194,7 +194,7 @@
     "CRITICAL": 143,
     "HIGH": 936,
     "LOW": 109,
-    "MEDIUM": 488
+    "MEDIUM": 489
   },
   "entries": [
     {
@@ -21589,10 +21589,23 @@
       "date_added": "2026-08-21",
       "description": "A reported Claude Code 2.1.236 and 2.1.239 macOS repro found that a Bash tool call with `run_in_background: true` ignored its declared `timeout`; a command with a 5 second timeout still ran for 90 seconds and completed normally. The same report describes a malformed background polling loop that kept running for roughly 13 hours after the session ended its turn waiting for the task, with no timeout notification or idle-task signal delivered to re-enter the session.",
       "workaround": "Do not assume the Bash tool's `timeout` field constrains background tasks in affected versions. Wrap background commands in an in-command deadline such as `timeout` or `gtimeout`, bound polling loops with explicit iteration limits, and add a `PreToolUse` hook that rejects unbounded background `while` or `until` loops unless they contain their own deadline. Pair long background waits with an external monitor, process cleanup path, or scheduled fallback that can wake the session or kill the process group if Claude Code never reports completion."
+    },
+    {
+      "id": "sandbox-allowlist-edits-reload-live-but-docs-do-not-say-so",
+      "title": "Sandbox allowlist edits reload live but docs do not say so.",
+      "category": "Configuration behavior",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88708"
+      ],
+      "date_added": "2026-08-22",
+      "description": "A reported Claude Code 2.1.238 macOS documentation gap found that `sandbox.filesystem.allowWrite` changes in `~/.claude/settings.json` applied to the same running session without restart, and reverting the entry removed access again. The docs' `When edits take effect` section listed live-reload keys such as permissions and hooks but did not mention sandbox settings, leaving users unable to distinguish a stale config hypothesis from an insufficient allowlist grant during controlled tests. The same report observed that `~` in a filesystem allowlist entry expanded to the user's home directory when config was loaded.",
+      "workaround": "When changing sandbox filesystem allowlists, run a harmless before-and-after canary in the same session and record whether the exact path becomes writable or blocked. Do not assume a restart is required before testing the grant, but preserve Claude Code version, settings path, expanded effective path, and revert behavior when reporting docs or sandbox-policy issues. Prefer absolute paths in shared examples until tilde expansion is explicitly documented for the installed version."
     }
   ],
   "status_summary": {
-    "open": 1662,
+    "open": 1663,
     "fixed": 13,
     "mitigated": 1
   },
@@ -21600,19 +21613,19 @@
     "critical": 143,
     "high": 936,
     "low": 109,
-    "medium": 488
+    "medium": 489
   },
-  "lastUpdated": "2026-08-21",
+  "lastUpdated": "2026-08-22",
   "stats": {
-    "total": 1676,
+    "total": 1677,
     "critical": 143,
     "high": 936,
-    "medium": 488,
+    "medium": 489,
     "low": 109,
-    "open": 1662,
+    "open": 1663,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-08-21",
-  "total": 1676
+  "last_updated": "2026-08-22",
+  "total": 1677
 }
