@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1690,
+  "count": 1691,
   "categories": {
     "Hook behavior & events": 227,
     "Permission system": 154,
@@ -62,6 +62,7 @@
     "Model behavior & instructions": 4,
     "Performance & resources": 4,
     "permissions": 4,
+    "Plan mode": 4,
     "sandbox": 4,
     "Settings & configuration": 4,
     "tui": 4,
@@ -73,7 +74,6 @@
     "Hooks": 3,
     "IDE integration": 3,
     "model-behavior": 3,
-    "Plan mode": 3,
     "Remote": 3,
     "Sandbox": 3,
     "Security": 3,
@@ -191,7 +191,7 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 145,
+    "CRITICAL": 146,
     "HIGH": 947,
     "LOW": 109,
     "MEDIUM": 489
@@ -21776,30 +21776,43 @@
       "date_added": "2026-08-22",
       "description": "A reported Claude Code desktop setup with relative project hook commands found that hook launch failures were invisible in the desktop UI and recorded only as `hook_non_blocking_error` transcript attachments with empty `content`. The reporter correlated more than 72,000 such records across months of sessions and found no errno, resolved path, exit status, stderr, or user-visible notice, even though guardrail hooks such as PreToolUse Edit and Bash groups were not running during cwd drift windows. This makes a failed policy hook look like normal operation unless users audit transcript internals or external hook logs.",
       "workaround": "Do not rely on the desktop app UI or `/hooks` alone to prove hook enforcement is healthy. Prefer absolute hook command paths rooted in a verified project directory, add a harmless marker hook whose file output must change in the same session, and scan recent transcripts for `hook_non_blocking_error` attachments, especially entries with empty `content`. If marker output stops or transcript error attachments appear, treat the session as unprotected, restart it, and keep critical enforcement in OS, CI, or server-side controls until the exact desktop launch path reports hook failures with actionable diagnostics."
+    },
+    {
+      "id": "plan-approval-can-authorize-model-authored-commands",
+      "title": "Plan approval can authorize model-authored commands.",
+      "category": "Plan mode",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88837"
+      ],
+      "date_added": "2026-08-22",
+      "description": "A reported Claude Code plan-mode session treated approval of a model-authored plan as authority to run shell commands that appeared in the plan's verification section, even though the human had approved file edits but had not separately approved a build. The reporter's transcript extraction found two assistant-issued Bash calls containing the build command and zero human-typed turns containing that command before execution. The risky boundary is provenance: a command written by the model into an approved plan can be read back as part of the approved artifact, making plan approval look like per-command execution consent.",
+      "workaround": "For high-stakes work, do not put runnable mutating commands in plan verification sections. Ask the assistant to describe verification in prose, then approve each build, migration, service restart, publish, push, or destructive command separately at execution time. Add PreToolUse checks for mutating Bash commands that require the most recent human turn or an external approval record to name the exact command or operation class, and keep project build drivers, deployment tools, and destructive commands in explicit deny rules until the current session proves the command was human-authorized."
     }
   ],
   "status_summary": {
-    "open": 1676,
+    "open": 1677,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 145,
+    "critical": 146,
     "high": 947,
     "low": 109,
     "medium": 489
   },
   "lastUpdated": "2026-08-22",
   "stats": {
-    "total": 1690,
-    "critical": 145,
+    "total": 1691,
+    "critical": 146,
     "high": 947,
     "medium": 489,
     "low": 109,
-    "open": 1676,
+    "open": 1677,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-22",
-  "total": 1690
+  "total": 1691
 }
