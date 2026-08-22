@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1695</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-22.</span></p>
+        <p class="subtitle"><span id="total-count">1696</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-22.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -19076,6 +19076,18 @@
                         <!-- workaround:subagents-can-inherit-stale-claude-md-and-memory-snapshots -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume subagents have a fresh view of CLAUDE.md or project memory in long-running sessions. Restart the parent session before delegating policy-sensitive work, or make the subagent&#x27;s first step a filesystem freshness check against the live files it depends on. For git-backed memory, compare the session start time or last known parent snapshot against current file mtimes and git diffs before treating child context as authoritative. Keep load-bearing rules in hooks, CI, or another live enforcement path rather than relying only on context inherited by subagents.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88886" target="_blank">#88886</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="88891" id="custom-auto-mode-deny-rules-can-be-loaded-but-inert" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1696</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Custom auto-mode deny rules can be loaded but inert.</h3>
+            <p>A reported Claude Code 2.1.240 Fedora repro found that user-level `autoMode.hard_deny` and `autoMode.soft_deny` entries could be parsed, merged with `$defaults`, and displayed by `claude auto-mode config` while still failing to affect classifier behavior. Matched scratch-HOME trials differed only by the custom deny rule, but both allowed the forbidden `rm victim.txt` action to delete the target file. The reporter also observed real custom hard-deny floors failing to block off-allowlist `git push` attempts in interactive sessions, while custom `autoMode.allow` entries did appear to change behavior. This makes `auto-mode config` output insufficient proof that a user-authored deny floor is actually enforced.</p>
+                        <!-- workaround:custom-auto-mode-deny-rules-can-be-loaded-but-inert -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> After adding any custom `autoMode.hard_deny` or `autoMode.soft_deny` rule, verify it with a harmless ground-truth probe under the exact launch mode, such as checking whether a scratch file survived a forbidden command. Do not rely on `claude auto-mode config` or the presence of the rule text as enforcement evidence. For commands that must never run, keep deterministic PreToolUse hooks, shell wrappers, git hooks, CI checks, or OS-level controls in the path, and make the first session step a canary that fails closed if the custom deny rule is not observed to block.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88891" target="_blank">#88891</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

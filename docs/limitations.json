@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1695,
+  "count": 1696,
   "categories": {
     "Hook behavior & events": 228,
-    "Permission system": 155,
+    "Permission system": 156,
     "Hook bypass & evasion": 104,
     "MCP & plugin issues": 95,
     "Subagent & spawned agents": 79,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 146,
-    "HIGH": 951,
+    "HIGH": 952,
     "LOW": 109,
     "MEDIUM": 489
   },
@@ -21841,30 +21841,43 @@
       "date_added": "2026-08-22",
       "description": "A reported Claude Code 2.1.237 Linux session found that Agent-tool subagents received the CLAUDE.md and memory content captured when the parent session started, not the files as they existed when the subagent was spawned. In the report, a parent session started at 12:31 and dispatched a subagent at 21:10, so the subagent saw context that was 8h39m old. A memory file deleted from disk after parent startup still appeared in the child context, while memory files written later were absent. Because the stale instructions were not marked stale, the subagent could confidently act on a superseded rule that no longer existed on disk.",
       "workaround": "Do not assume subagents have a fresh view of CLAUDE.md or project memory in long-running sessions. Restart the parent session before delegating policy-sensitive work, or make the subagent's first step a filesystem freshness check against the live files it depends on. For git-backed memory, compare the session start time or last known parent snapshot against current file mtimes and git diffs before treating child context as authoritative. Keep load-bearing rules in hooks, CI, or another live enforcement path rather than relying only on context inherited by subagents."
+    },
+    {
+      "id": "custom-auto-mode-deny-rules-can-be-loaded-but-inert",
+      "title": "Custom auto-mode deny rules can be loaded but inert.",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88891"
+      ],
+      "date_added": "2026-08-22",
+      "description": "A reported Claude Code 2.1.240 Fedora repro found that user-level `autoMode.hard_deny` and `autoMode.soft_deny` entries could be parsed, merged with `$defaults`, and displayed by `claude auto-mode config` while still failing to affect classifier behavior. Matched scratch-HOME trials differed only by the custom deny rule, but both allowed the forbidden `rm victim.txt` action to delete the target file. The reporter also observed real custom hard-deny floors failing to block off-allowlist `git push` attempts in interactive sessions, while custom `autoMode.allow` entries did appear to change behavior. This makes `auto-mode config` output insufficient proof that a user-authored deny floor is actually enforced.",
+      "workaround": "After adding any custom `autoMode.hard_deny` or `autoMode.soft_deny` rule, verify it with a harmless ground-truth probe under the exact launch mode, such as checking whether a scratch file survived a forbidden command. Do not rely on `claude auto-mode config` or the presence of the rule text as enforcement evidence. For commands that must never run, keep deterministic PreToolUse hooks, shell wrappers, git hooks, CI checks, or OS-level controls in the path, and make the first session step a canary that fails closed if the custom deny rule is not observed to block."
     }
   ],
   "status_summary": {
-    "open": 1681,
+    "open": 1682,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 146,
-    "high": 951,
+    "high": 952,
     "low": 109,
     "medium": 489
   },
   "lastUpdated": "2026-08-22",
   "stats": {
-    "total": 1695,
+    "total": 1696,
     "critical": 146,
-    "high": 951,
+    "high": 952,
     "medium": 489,
     "low": 109,
-    "open": 1681,
+    "open": 1682,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-22",
-  "total": 1695
+  "total": 1696
 }
