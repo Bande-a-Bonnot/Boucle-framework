@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1686,
+  "count": 1687,
   "categories": {
     "Hook behavior & events": 226,
     "Permission system": 153,
@@ -17,7 +17,7 @@
     "MCP & integrations": 30,
     "Sandbox & permissions": 30,
     "Cowork & remote": 27,
-    "Performance & cost": 25,
+    "Performance & cost": 26,
     "VS Code extension": 24,
     "Agents & subagents": 23,
     "Tool behavior": 22,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 145,
-    "HIGH": 943,
+    "HIGH": 944,
     "LOW": 109,
     "MEDIUM": 489
   },
@@ -19635,10 +19635,11 @@
       "severity": "HIGH",
       "status": "open",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/80988"
+        "https://github.com/anthropics/claude-code/issues/80988",
+        "https://github.com/anthropics/claude-code/issues/88778"
       ],
       "date_added": "2026-08-14",
-      "description": "A reported Claude Code 2.1.219 through 2.1.232 Opus 5 path injects a dynamic prompt section called `heron_brook` that tells the model not to call AgentTool or workflows unless the user requested them. Reports say the section is model-gated, has no documented settings or environment opt-out, is not recorded in normal transcripts, and can make project CLAUDE.md, Skill, or agent-description delegation policies silently degrade unless the current user turn asks for delegation explicitly.",
+      "description": "Reported Claude Code 2.1.219 through 2.1.239 Opus 5 paths inject dynamic prompt text, described as `heron_brook` or the `opus_5_prompt_bundle`, telling the model not to call AgentTool or workflows unless the user requested them. Reports say the section is model-gated, has no documented settings or environment opt-out, is not recorded in normal transcripts, and can make project CLAUDE.md, Skill, or agent-description delegation policies silently degrade unless the current user turn asks for delegation explicitly.",
       "workaround": "For workflows that depend on subagents, state the delegation request explicitly in the user prompt and verify the transcript for actual Agent or Task calls before trusting the result. Put narrow delegation triggers in CLAUDE.md as a backup, test behavior across the intended model family, and treat missing subagent fan-out on Opus 5 as a possible active prompt-section effect rather than only a local configuration mistake."
     },
     {
@@ -21669,6 +21670,19 @@
       "workaround": "Do not rely on custom subagents as the sole enforcement layer for irreversible actions unless their availability is checked in the live session. At session start, run a harmless inventory or smoke call for every gate subagent named in CLAUDE.md, fail closed if any expected agent is absent, and keep critical push, release, migration, or destructive-operation checks in hooks or CI as well as in subagent routing. If many custom agents are configured, prefer explicit naming and a preflight that proves the exact safety-gate agent can be invoked before continuing."
     },
     {
+      "id": "auto-resume-can-spend-fresh-weekly-quota",
+      "title": "Auto-resume after a weekly limit reset can look like user authorization.",
+      "category": "Performance & cost",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88782"
+      ],
+      "date_added": "2026-08-22",
+      "description": "A reported Claude Code 2.1.239 session hit the weekly usage limit during an intentionally time-boxed heavy multi-agent workflow, then auto-injected a continuation message after the reset in a form that looked like a user turn. The prior user instruction was to use leftover quota before the reset and downgrade afterward, but the model treated the auto-continuation as current authorization to keep using the costly model and workflow, consuming roughly 20% of the fresh weekly quota before the user noticed.",
+      "workaround": "Before running quota-draining workflows near a reset boundary, put the post-reset model and spend rule in the active prompt and verify `/model` or transcript model fields after any limit interruption. Treat automatic resume text as a system nudge, not user consent, and pause or stop long-running agents when a reset is close unless a human explicitly reauthorizes continued work. Keep external usage alerts for costly runs because the transcript can make carryover spend look authorized."
+    },
+    {
       "id": "worktree-creation-can-pin-hooks-to-main-checkout",
       "title": "Worktree creation can pin hooks to the main checkout.",
       "category": "Worktrees & isolation",
@@ -21722,27 +21736,27 @@
     }
   ],
   "status_summary": {
-    "open": 1672,
+    "open": 1673,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 145,
-    "high": 943,
+    "high": 944,
     "low": 109,
     "medium": 489
   },
   "lastUpdated": "2026-08-22",
   "stats": {
-    "total": 1686,
+    "total": 1687,
     "critical": 145,
-    "high": 943,
+    "high": 944,
     "medium": 489,
     "low": 109,
-    "open": 1672,
+    "open": 1673,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-22",
-  "total": 1686
+  "total": 1687
 }
