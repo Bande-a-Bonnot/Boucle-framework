@@ -7,6 +7,22 @@
   <updated>2026-08-22T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] /clear can silently terminate persistent Monitor background tasks.</title>
+    <id>https://framework.boucle.sh/limitations.html#clear-can-silently-terminate-persistent-monitor-background-tasks</id>
+    <link href="https://framework.boucle.sh/limitations.html#clear-can-silently-terminate-persistent-monitor-background-tasks"/>
+    <updated>2026-08-22T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.237 Windows setup found that a `Monitor({persistent: true})` background task was terminated after the owning session ran `/clear`, with no transcript notice, no notification, and no visible status that the session had lost its wake mechanism. The reporter observed two independent sessions where monitor parent and child processes existed before `/clear` and were gone immediately afterward. A SessionStart hook message telling the session to re-arm was marked read, but the monitor stayed absent because the model never took another turn. Older 2.1.229 behavior reportedly left orphaned child processes instead, which still broke notification delivery while looking alive.</summary>
+    <category term="Scheduling &amp; remote triggers"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Workflow scriptPath size can trigger a false control-character rejection.</title>
+    <id>https://framework.boucle.sh/limitations.html#workflow-scriptpath-size-can-trigger-false-control-character-rejection</id>
+    <link href="https://framework.boucle.sh/limitations.html#workflow-scriptpath-size-can-trigger-false-control-character-rejection"/>
+    <updated>2026-08-22T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.239 Windows repro found that `Workflow({scriptPath})` can reject pure ASCII scripts once total file size crosses a low threshold, somewhere above about 850 bytes and below about 2.1 KB, even when every line is short and the file contains no hidden control characters. The rejection message blames hidden control characters in the approval dialog and points users toward `canUseTool`, `PermissionRequest`, permission-prompt tooling, and hook configuration, but the same session had no matching Workflow hook or permission rule. Passing larger content inline through `script` worked, suggesting the failure is in the approval handler&#x27;s `updatedInput` construction for file-backed scripts rather than in the workflow script itself.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Sandbox allowlist edits reload live but docs do not say so.</title>
     <id>https://framework.boucle.sh/limitations.html#sandbox-allowlist-edits-reload-live-but-docs-do-not-say-so</id>
     <link href="https://framework.boucle.sh/limitations.html#sandbox-allowlist-edits-reload-live-but-docs-do-not-say-so"/>
@@ -149,21 +165,5 @@
     <updated>2026-08-22T00:00:00Z</updated>
     <summary>A reported Windows 11 Claude Code 2.1.235 regression found that every PowerShell tool call failed before command execution when Claude Code was launched from Git Bash with `--model haiku`. The same command passed when any one factor changed: older 2.1.168, PowerShell or cmd launch, default/Sonnet/Opus model, or non-Haiku mode. The reporter ruled out `permissions.additionalDirectories`, safe mode, most user settings, minimal environment, stdin shape, and first-tool-call ordering, making this distinct from the older large-settings command-line-length report while showing a similar `pwsh exited with code 1` classifier failure.</summary>
     <category term="Platform &amp; compatibility"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Auto mode can steer edits away from diff-producing tools.</title>
-    <id>https://framework.boucle.sh/limitations.html#auto-mode-bashfirst-can-remove-diff-review-channel</id>
-    <link href="https://framework.boucle.sh/limitations.html#auto-mode-bashfirst-can-remove-diff-review-channel"/>
-    <updated>2026-08-22T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.234 Linux issue found that auto mode can receive a built-in Bash-first instruction that prefers shell edits through `sed`, heredocs, or short scripts over the dedicated Edit or Write tools when Bash and file-editing tools are both available. Follow-up comments describe the practical impact: shell-authored edits can hide per-file diffs behind command output, make changes harder to audit, and remove the main accessible review channel for blind users. The reporter and commenters found no documented setting that lets users keep auto approval while disabling this edit-routing preference.</summary>
-    <category term="Bash &amp; shell execution"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Large settings.local.json files can hide custom subagents after cold start.</title>
-    <id>https://framework.boucle.sh/limitations.html#large-settings-local-can-hide-custom-subagents-after-cold-start</id>
-    <link href="https://framework.boucle.sh/limitations.html#large-settings-local-can-hide-custom-subagents-after-cold-start"/>
-    <updated>2026-08-22T00:00:00Z</updated>
-    <summary>A reported Windows Claude Code 2.1.237 project lost all 10 custom `.claude/agents/*.md` subagents after a full cold start, even though the agent files were valid and had worked previously. The immediate fix was moving the project&#x27;s valid but very large `.claude/settings.local.json` out of the way; that file had grown to about 348 KB with 2,438 specific `permissions.allow` entries. The failure was silent until the user tried to dispatch a custom Agent type and saw only built-in agents registered.</summary>
-    <category term="Agents &amp; subagents"/>
   </entry>
 </feed>
