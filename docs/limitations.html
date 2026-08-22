@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1681</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-22.</span></p>
+        <p class="subtitle"><span id="total-count">1683</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-22.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18908,6 +18908,30 @@
                         <!-- workaround:sessionstart-hooks-can-fire-for-phantom-startup-sessions -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Make SessionStart hooks idempotent and avoid destructive or read-marking side effects until the session is proven real. At minimum, check that `transcript_path` exists before marking messages delivered, consuming queue items, or changing external state; if the transcript is missing, return success without side effects and let a later real session or external watchdog handle delivery. For startup context injection, include a first-turn acknowledgement canary before treating a message as read.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88739" target="_blank">#88739</a></div>
+        </div>
+        <div class="kl-entry" data-category="Worktrees &amp; isolation" data-issues="88747" id="worktree-creation-can-pin-hooks-to-main-checkout" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1682</span>
+                <span class="kl-cat">Worktrees &amp; isolation</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Worktree creation can pin hooks to the main checkout.</h3>
+            <p>A reported Claude Code 2.1.237 macOS setup found that `EnterWorktree` and `Agent` worktree isolation created per-worktree `config.worktree` entries with an absolute `core.hooksPath` pointing at the main checkout&#x27;s `.husky/_` directory. Git worktree config outranks the shared repository config, so hooks fired from the isolated worktree executed the main checkout&#x27;s hook scripts instead of the worktree&#x27;s own branch. A PR that adds a hook step can therefore get no local exercise, while a PR that weakens or removes a hook can still pass because the stronger hook from a different branch ran silently.</p>
+                        <!-- workaround:worktree-creation-can-pin-hooks-to-main-checkout -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> After Claude Code creates a worktree, run `git config --show-scope --get-all core.hooksPath` inside it and verify the winning worktree value does not point at another checkout. If the worktree has its own `.husky/_` shim, repair only that worktree with `git config --worktree core.hooksPath .husky/_`; if the shim is absent, do not set a relative path because that can disable hooks entirely. For safety-critical hooks, add a branch-specific canary line or script-path log so CI and pre-push output prove which checkout&#x27;s hook actually ran.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88747" target="_blank">#88747</a></div>
+        </div>
+        <div class="kl-entry" data-category="Data integrity" data-issues="88753" id="compaction-can-drop-destructive-operation-target-facts" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1683</span>
+                <span class="kl-cat">Data integrity</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Compaction can drop destructive-operation target facts.</h3>
+            <p>A reported Claude Code auto-mode incident described context compaction dropping a previously established database target fact during live integration testing. After compaction, the agent re-derived a connection string from a commented-out config line and ran destructive SQL against a real AWS RDS Postgres instance instead of the intended local database, including `TRUNCATE` statements that removed staging event rows. The failure was not caught by the agent&#x27;s own belief about the target, and the remote database returned plausible real data, so query results did not make the wrong target obvious.</p>
+                        <!-- workaround:compaction-can-drop-destructive-operation-target-facts -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat compaction as invalidating safety-critical target facts for destructive operations. Before `TRUNCATE`, `DROP`, unscoped `DELETE`, destructive migrations, or cleanup scripts, re-confirm the resolved host, database name, environment, config source line, and whether the endpoint is local or cloud-managed; require explicit user confirmation when the target is remote, shared, or includes markers such as `rds.amazonaws.com`. Put an external SQL guard or hook around destructive statements where possible, and make it fail closed unless the target matches a freshly confirmed safe pattern.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88753" target="_blank">#88753</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

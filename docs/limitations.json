@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1681,
+  "count": 1683,
   "categories": {
     "Hook behavior & events": 226,
     "Permission system": 152,
@@ -23,8 +23,8 @@
     "Tool behavior": 22,
     "Auth & accounts": 21,
     "Core & session management": 21,
+    "Data integrity": 20,
     "Bash & shell execution": 19,
-    "Data integrity": 19,
     "Model behavior": 18,
     "Remote & cloud": 18,
     "Scheduling & remote triggers": 16,
@@ -40,10 +40,10 @@
     "Skills": 10,
     "Telemetry & insights": 10,
     "hooks": 9,
+    "Worktrees & isolation": 9,
     "auth": 8,
     "Desktop & platform bugs": 8,
     "Hook execution & lifecycle": 8,
-    "Worktrees & isolation": 8,
     "MCP": 7,
     "Model behavior & output": 7,
     "Permissions": 7,
@@ -191,8 +191,8 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 144,
-    "HIGH": 939,
+    "CRITICAL": 145,
+    "HIGH": 940,
     "LOW": 109,
     "MEDIUM": 489
   },
@@ -21654,30 +21654,56 @@
       "date_added": "2026-08-22",
       "description": "A reported Claude Code 2.1.237 desktop setup logged many `SessionStart` hook invocations with `source=startup` whose `transcript_path` never appeared on disk. The reporter counted 83 startup SessionStart events in one day, of which 68 had no transcript file. Hooks that deliver messages, mutate state, or mark work as read can therefore attribute side effects to sessions that never actually ran, making delivery look successful while no model turn consumed the context.",
       "workaround": "Make SessionStart hooks idempotent and avoid destructive or read-marking side effects until the session is proven real. At minimum, check that `transcript_path` exists before marking messages delivered, consuming queue items, or changing external state; if the transcript is missing, return success without side effects and let a later real session or external watchdog handle delivery. For startup context injection, include a first-turn acknowledgement canary before treating a message as read."
+    },
+    {
+      "id": "worktree-creation-can-pin-hooks-to-main-checkout",
+      "title": "Worktree creation can pin hooks to the main checkout.",
+      "category": "Worktrees & isolation",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88747"
+      ],
+      "date_added": "2026-08-22",
+      "description": "A reported Claude Code 2.1.237 macOS setup found that `EnterWorktree` and `Agent` worktree isolation created per-worktree `config.worktree` entries with an absolute `core.hooksPath` pointing at the main checkout's `.husky/_` directory. Git worktree config outranks the shared repository config, so hooks fired from the isolated worktree executed the main checkout's hook scripts instead of the worktree's own branch. A PR that adds a hook step can therefore get no local exercise, while a PR that weakens or removes a hook can still pass because the stronger hook from a different branch ran silently.",
+      "workaround": "After Claude Code creates a worktree, run `git config --show-scope --get-all core.hooksPath` inside it and verify the winning worktree value does not point at another checkout. If the worktree has its own `.husky/_` shim, repair only that worktree with `git config --worktree core.hooksPath .husky/_`; if the shim is absent, do not set a relative path because that can disable hooks entirely. For safety-critical hooks, add a branch-specific canary line or script-path log so CI and pre-push output prove which checkout's hook actually ran."
+    },
+    {
+      "id": "compaction-can-drop-destructive-operation-target-facts",
+      "title": "Compaction can drop destructive-operation target facts.",
+      "category": "Data integrity",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88753"
+      ],
+      "date_added": "2026-08-22",
+      "description": "A reported Claude Code auto-mode incident described context compaction dropping a previously established database target fact during live integration testing. After compaction, the agent re-derived a connection string from a commented-out config line and ran destructive SQL against a real AWS RDS Postgres instance instead of the intended local database, including `TRUNCATE` statements that removed staging event rows. The failure was not caught by the agent's own belief about the target, and the remote database returned plausible real data, so query results did not make the wrong target obvious.",
+      "workaround": "Treat compaction as invalidating safety-critical target facts for destructive operations. Before `TRUNCATE`, `DROP`, unscoped `DELETE`, destructive migrations, or cleanup scripts, re-confirm the resolved host, database name, environment, config source line, and whether the endpoint is local or cloud-managed; require explicit user confirmation when the target is remote, shared, or includes markers such as `rds.amazonaws.com`. Put an external SQL guard or hook around destructive statements where possible, and make it fail closed unless the target matches a freshly confirmed safe pattern."
     }
   ],
   "status_summary": {
-    "open": 1667,
+    "open": 1669,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 144,
-    "high": 939,
+    "critical": 145,
+    "high": 940,
     "low": 109,
     "medium": 489
   },
   "lastUpdated": "2026-08-22",
   "stats": {
-    "total": 1681,
-    "critical": 144,
-    "high": 939,
+    "total": 1683,
+    "critical": 145,
+    "high": 940,
     "medium": 489,
     "low": 109,
-    "open": 1667,
+    "open": 1669,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-22",
-  "total": 1681
+  "total": 1683
 }

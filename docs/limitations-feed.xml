@@ -7,6 +7,22 @@
   <updated>2026-08-22T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[CRITICAL] Compaction can drop destructive-operation target facts.</title>
+    <id>https://framework.boucle.sh/limitations.html#compaction-can-drop-destructive-operation-target-facts</id>
+    <link href="https://framework.boucle.sh/limitations.html#compaction-can-drop-destructive-operation-target-facts"/>
+    <updated>2026-08-22T00:00:00Z</updated>
+    <summary>A reported Claude Code auto-mode incident described context compaction dropping a previously established database target fact during live integration testing. After compaction, the agent re-derived a connection string from a commented-out config line and ran destructive SQL against a real AWS RDS Postgres instance instead of the intended local database, including `TRUNCATE` statements that removed staging event rows. The failure was not caught by the agent&#x27;s own belief about the target, and the remote database returned plausible real data, so query results did not make the wrong target obvious.</summary>
+    <category term="Data integrity"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Worktree creation can pin hooks to the main checkout.</title>
+    <id>https://framework.boucle.sh/limitations.html#worktree-creation-can-pin-hooks-to-main-checkout</id>
+    <link href="https://framework.boucle.sh/limitations.html#worktree-creation-can-pin-hooks-to-main-checkout"/>
+    <updated>2026-08-22T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.237 macOS setup found that `EnterWorktree` and `Agent` worktree isolation created per-worktree `config.worktree` entries with an absolute `core.hooksPath` pointing at the main checkout&#x27;s `.husky/_` directory. Git worktree config outranks the shared repository config, so hooks fired from the isolated worktree executed the main checkout&#x27;s hook scripts instead of the worktree&#x27;s own branch. A PR that adds a hook step can therefore get no local exercise, while a PR that weakens or removes a hook can still pass because the stronger hook from a different branch ran silently.</summary>
+    <category term="Worktrees &amp; isolation"/>
+  </entry>
+  <entry>
     <title>[HIGH] SessionStart hooks can fire for phantom startup sessions.</title>
     <id>https://framework.boucle.sh/limitations.html#sessionstart-hooks-can-fire-for-phantom-startup-sessions</id>
     <link href="https://framework.boucle.sh/limitations.html#sessionstart-hooks-can-fire-for-phantom-startup-sessions"/>
@@ -149,21 +165,5 @@
     <updated>2026-08-22T00:00:00Z</updated>
     <summary>A reported Windows Claude Code 2.1.234 setup found that when remote claude.ai org managed settings existed with `channelsEnabled: true` but no `allowedChannelPlugins` key, the local machine managed `allowedChannelPlugins` entry was silently discarded. The same policy chain honored `channelsEnabled`, but `claude --channels` and a `channel_enable` control request still rejected the org-approved local plugin as not on the allowlist, and the error suggested a local development flag instead of pointing to remote managed-settings shadowing.</summary>
     <category term="Plugin &amp; channel system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Managed permissions validation can drop an entire security object.</title>
-    <id>https://framework.boucle.sh/limitations.html#managed-permissions-validation-can-drop-entire-security-object</id>
-    <link href="https://framework.boucle.sh/limitations.html#managed-permissions-validation-can-drop-entire-security-object"/>
-    <updated>2026-08-22T00:00:00Z</updated>
-    <summary>A reported server-managed settings case found that one invalid value inside the `permissions` object caused Claude Code to discard the entire managed `permissions` object from `remote-settings.json`, including unrelated valid security controls such as bypass-mode disabling. The user saw a warning that the `permissions` field was ignored, but the failure mode is broader than a single invalid entry. This can also happen when an admin uses a newly valid schema value that older Claude Code clients do not understand.</summary>
-    <category term="Settings &amp; configuration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Hook schema and output gaps can hide or inject hook behavior.</title>
-    <id>https://framework.boucle.sh/limitations.html#hook-schema-and-output-gaps-can-hide-or-inject-hook-behavior</id>
-    <link href="https://framework.boucle.sh/limitations.html#hook-schema-and-output-gaps-can-hide-or-inject-hook-behavior"/>
-    <updated>2026-08-22T00:00:00Z</updated>
-    <summary>A reported Windows Claude Code 2.1.229 setup found two hook robustness gaps. First, hook entries containing an unrecognized key such as `args` were accepted silently, so only the bare `command` ran and a different program executed than the configuration appeared to describe. Second, hook stdout reached both the user&#x27;s terminal and transcript attachments with ANSI and OSC control sequences intact, allowing a misconfigured or hostile hook to clear the screen, move the cursor, retitle the terminal tab, or inject raw control bytes into the conversation context.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>
