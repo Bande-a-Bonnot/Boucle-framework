@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1684,
+  "count": 1685,
   "categories": {
     "Hook behavior & events": 226,
     "Permission system": 152,
@@ -10,9 +10,9 @@
     "Desktop & IDE integration": 60,
     "TUI & display": 37,
     "Platform & compatibility": 33,
+    "CLI & terminal": 32,
     "Configuration behavior": 32,
     "Security & trust boundaries": 32,
-    "CLI & terminal": 31,
     "Context & memory": 30,
     "MCP & integrations": 30,
     "Sandbox & permissions": 30,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 145,
-    "HIGH": 941,
+    "HIGH": 942,
     "LOW": 109,
     "MEDIUM": 489
   },
@@ -21693,30 +21693,43 @@
       "date_added": "2026-08-22",
       "description": "A reported Claude Code auto-mode incident described context compaction dropping a previously established database target fact during live integration testing. After compaction, the agent re-derived a connection string from a commented-out config line and ran destructive SQL against a real AWS RDS Postgres instance instead of the intended local database, including `TRUNCATE` statements that removed staging event rows. The failure was not caught by the agent's own belief about the target, and the remote database returned plausible real data, so query results did not make the wrong target obvious.",
       "workaround": "Treat compaction as invalidating safety-critical target facts for destructive operations. Before `TRUNCATE`, `DROP`, unscoped `DELETE`, destructive migrations, or cleanup scripts, re-confirm the resolved host, database name, environment, config source line, and whether the endpoint is local or cloud-managed; require explicit user confirmation when the target is remote, shared, or includes markers such as `rds.amazonaws.com`. Put an external SQL guard or hook around destructive statements where possible, and make it fail closed unless the target matches a freshly confirmed safe pattern."
+    },
+    {
+      "id": "print-mode-read-audits-can-finish-with-zero-output",
+      "title": "Print-mode read audits can finish with zero output.",
+      "category": "CLI & terminal",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88752"
+      ],
+      "date_added": "2026-08-22",
+      "description": "A reported Claude Code 2.1.235 macOS print-mode repro found that `claude -p --no-session-persistence --permission-mode dontAsk --tools Read --output-format text` could complete a multi-file read-only audit with no stdout, no stderr, and a zero-byte redirected output file. Simple controls still worked: a tools-disabled PONG prompt and a one-file Read followed by PONG both returned output. The failure therefore leaves automation unable to distinguish a completed but lost audit report from a valid empty result unless the wrapper checks for content.",
+      "workaround": "Do not treat exit success from `claude -p` as proof that an audit result was delivered. For non-interactive audits, require a non-empty final response plus an explicit sentinel string or structured JSON field, and fail closed on zero-byte stdout/stderr. Split large multi-file read audits into smaller batches or rerun with streaming logs when the sentinel is absent, and make CI wrappers preserve command, exit code, byte count, and transcript/log paths so silent output loss becomes visible."
     }
   ],
   "status_summary": {
-    "open": 1670,
+    "open": 1671,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 145,
-    "high": 941,
+    "high": 942,
     "low": 109,
     "medium": 489
   },
   "lastUpdated": "2026-08-22",
   "stats": {
-    "total": 1684,
+    "total": 1685,
     "critical": 145,
-    "high": 941,
+    "high": 942,
     "medium": 489,
     "low": 109,
-    "open": 1670,
+    "open": 1671,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-22",
-  "total": 1684
+  "total": 1685
 }
