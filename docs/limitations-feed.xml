@@ -7,6 +7,14 @@
   <updated>2026-08-22T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Nested repository hooks are not loaded from parent-root sessions.</title>
+    <id>https://framework.boucle.sh/limitations.html#nested-repository-hooks-are-not-loaded-from-parent-sessions</id>
+    <link href="https://framework.boucle.sh/limitations.html#nested-repository-hooks-are-not-loaded-from-parent-sessions"/>
+    <updated>2026-08-22T00:00:00Z</updated>
+    <summary>A reported Claude Code multi-repo workflow keeps dependent checkouts inside a parent workspace and starts the session at the parent root. When tool calls operate inside a nested repository, that nested repo&#x27;s `.claude/settings.json` hooks are not discovered or loaded, and directories added with `--add-dir` are documented as file-access grants rather than settings or hook roots. This means a child checkout can carry project-specific PreToolUse, lint, test, protected-path, or custody hooks that never fire while the parent session edits it. Parent hooks can still fire in the child cwd, so users may see hook activity while the child repo&#x27;s own guardrails remain absent. The reporter explicitly notes that arbitrary nested hook auto-loading would be unsafe without a separate trust decision, making the practical gap a missing trust-gated way to opt into nested hook roots.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Bash deny patterns can be bypassed by git flag prefixes.</title>
     <id>https://framework.boucle.sh/limitations.html#bash-deny-patterns-can-be-bypassed-by-git-flag-prefixes</id>
     <link href="https://framework.boucle.sh/limitations.html#bash-deny-patterns-can-be-bypassed-by-git-flag-prefixes"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-22T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.238 macOS repro found that `PermissionRequest` hooks in `claude --bg` sessions fired with the expected Bash payload but their returned allow or deny decisions were ignored. The background session stayed blocked on `waitingFor: &quot;permission prompt&quot;` for both `permissions.ask` rules and `PreToolUse` hooks that escalated to ask, while the same setup showed the hook had run by writing a payload log. This leaves non-interactive background approval services unable to resolve prompts even though the hook event was dispatched.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Exit cleanup can delete $HOME instead of a session directory.</title>
-    <id>https://framework.boucle.sh/limitations.html#exit-cleanup-can-delete-home-instead-of-session-directory</id>
-    <link href="https://framework.boucle.sh/limitations.html#exit-cleanup-can-delete-home-instead-of-session-directory"/>
-    <updated>2026-08-22T00:00:00Z</updated>
-    <summary>A reported Linux Claude Code 2.1.238 incident found that typing `/exit` in an interactive session managing two still-running background agent sessions in managed worktrees coincided with recursive deletion of the user&#x27;s entire home directory. The reporter reconstructed transcripts, system journal events, ext4 deletion timing, and surviving process memory, and found no shell command or user action that performed the deletion. The evidence points to an in-process recursive cleanup path resolving to `$HOME` instead of the intended worktree, job, or session directory during exit-time teardown.</summary>
-    <category term="Data integrity"/>
   </entry>
 </feed>
