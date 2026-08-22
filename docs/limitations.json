@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1685,
+  "count": 1686,
   "categories": {
     "Hook behavior & events": 226,
-    "Permission system": 152,
+    "Permission system": 153,
     "Hook bypass & evasion": 104,
     "MCP & plugin issues": 94,
     "Subagent & spawned agents": 78,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 145,
-    "HIGH": 942,
+    "HIGH": 943,
     "LOW": 109,
     "MEDIUM": 489
   },
@@ -21706,30 +21706,43 @@
       "date_added": "2026-08-22",
       "description": "A reported Claude Code 2.1.235 macOS print-mode repro found that `claude -p --no-session-persistence --permission-mode dontAsk --tools Read --output-format text` could complete a multi-file read-only audit with no stdout, no stderr, and a zero-byte redirected output file. Simple controls still worked: a tools-disabled PONG prompt and a one-file Read followed by PONG both returned output. The failure therefore leaves automation unable to distinguish a completed but lost audit report from a valid empty result unless the wrapper checks for content.",
       "workaround": "Do not treat exit success from `claude -p` as proof that an audit result was delivered. For non-interactive audits, require a non-empty final response plus an explicit sentinel string or structured JSON field, and fail closed on zero-byte stdout/stderr. Split large multi-file read audits into smaller batches or rerun with streaming logs when the sentinel is absent, and make CI wrappers preserve command, exit code, byte count, and transcript/log paths so silent output loss becomes visible."
+    },
+    {
+      "id": "auto-mode-can-bypass-explicit-bash-deny-rules",
+      "title": "Auto Mode can bypass explicit Bash deny rules.",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88770"
+      ],
+      "date_added": "2026-08-22",
+      "description": "A reported Claude Code 2.1.239 macOS setup found that an explicit `permissions.deny` rule such as `Bash(curl *)` was enforced when the same session was switched to manual mode, but the identical `curl https://example.com` Bash command executed successfully while Auto Mode was active. The reporter reproduced the behavior in both a standalone CLI install and Claude Desktop's bundled Claude Code with the same settings excerpt, making the risk a mode-dependent gap rather than a missing rule. Users who treat static deny rules as a hard network-egress boundary can therefore get a silent allow when the auto-mode classifier considers a denied command benign.",
+      "workaround": "Do not rely on Auto Mode plus static `permissions.deny` as the only boundary for network egress, destructive shell commands, or other must-stop operations until the exact installed version proves the deny rule wins in auto mode. Keep a harmless denied-command canary such as `curl https://example.com` or `wget https://example.com` and require it to fail before unattended work, prefer manual mode or explicit hard hooks for sensitive shells, and add OS, container, proxy, or firewall egress controls where network blocking is security-critical."
     }
   ],
   "status_summary": {
-    "open": 1671,
+    "open": 1672,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 145,
-    "high": 942,
+    "high": 943,
     "low": 109,
     "medium": 489
   },
   "lastUpdated": "2026-08-22",
   "stats": {
-    "total": 1685,
+    "total": 1686,
     "critical": 145,
-    "high": 942,
+    "high": 943,
     "medium": 489,
     "low": 109,
-    "open": 1671,
+    "open": 1672,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-22",
-  "total": 1685
+  "total": 1686
 }
