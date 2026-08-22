@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1692,
+  "count": 1693,
   "categories": {
     "Hook behavior & events": 227,
-    "Permission system": 154,
+    "Permission system": 155,
     "Hook bypass & evasion": 104,
     "MCP & plugin issues": 95,
     "Subagent & spawned agents": 78,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 146,
-    "HIGH": 948,
+    "HIGH": 949,
     "LOW": 109,
     "MEDIUM": 489
   },
@@ -21802,30 +21802,43 @@
       "date_added": "2026-08-22",
       "description": "A reported Claude Code 2.1.240 macOS Remote Control setup accepted `claude remote-control --permission-mode bypassPermissions` and propagated that flag onto spawned `sdk-cli` process arguments, but every spawned web or mobile-driven session still recorded and behaved as `auto`. Setting `permissions.defaultMode: \"bypassPermissions\"` in user settings did not fix the Remote Control path, even though a direct local print session honored it. The same report found that messages from a more-permissive local session to the auto-mode Remote Control session were held for recipient approval, but no prompt appeared in the web/mobile app, host terminal, or subprocess UI, so the hold expired without a reachable approval surface.",
       "workaround": "Do not assume a Remote Control host flag or user-level `permissions.defaultMode` controls spawned web or mobile sessions until the spawned session transcript records the intended `permissionMode` and a harmless permission probe behaves as expected. For cross-session workflows, keep sender and recipient sessions in a verified matching permission class or use a durable file, issue, or parent-session acknowledgement instead of relying on held SendMessage approvals. If a message is reported as awaiting recipient approval from an `sdk-cli` Remote Control session, treat it as not delivered unless the recipient transcript or another durable channel confirms it."
+    },
+    {
+      "id": "bash-deny-patterns-can-be-bypassed-by-git-flag-prefixes",
+      "title": "Bash deny patterns can be bypassed by git flag prefixes.",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88857"
+      ],
+      "date_added": "2026-08-22",
+      "description": "A reported Claude Code Windows Git Bash session with `permissions.defaultMode: \"acceptEdits\"` found that destructive Git deny rules such as `Bash(git checkout -- *)`, `Bash(git restore *)`, `Bash(git reset --hard *)`, and `Bash(git branch -D *)` matched the bare command form but were bypassed when a flag appeared before the subcommand, for example `git -C <repo> checkout -- <file>`. The prefixed command matched neither the user's allow nor deny pattern and still executed without a confirmation prompt, silently discarding an uncommitted file change in the repro. This makes raw command-prefix matching unsafe for destructive Bash policies because common git flags such as `-C`, `-c`, `--git-dir`, or `--work-tree` can move the dangerous verb away from the literal start of the command.",
+      "workaround": "Do not rely on single literal Bash deny patterns for destructive Git commands in `acceptEdits` or unattended modes. Add flag-tolerant duplicate denies for known forms such as `Bash(git * checkout -- *)`, `Bash(git * restore *)`, `Bash(git * reset --hard *)`, and `Bash(git * branch -D *)`, then run real permission probes that include `git -C`, `git -c`, `--git-dir`, and `--work-tree` variants before trusting the policy. For higher-risk repositories, use a PreToolUse hook or wrapper that parses the Bash command, resolves the target repository, and blocks destructive Git verbs directly instead of delegating final enforcement to raw prefix-pattern matching."
     }
   ],
   "status_summary": {
-    "open": 1678,
+    "open": 1679,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 146,
-    "high": 948,
+    "high": 949,
     "low": 109,
     "medium": 489
   },
   "lastUpdated": "2026-08-22",
   "stats": {
-    "total": 1692,
+    "total": 1693,
     "critical": 146,
-    "high": 948,
+    "high": 949,
     "medium": 489,
     "low": 109,
-    "open": 1678,
+    "open": 1679,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-22",
-  "total": 1692
+  "total": 1693
 }
