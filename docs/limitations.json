@@ -1,12 +1,12 @@
 {
   "version": "0.13.0",
-  "count": 1683,
+  "count": 1684,
   "categories": {
     "Hook behavior & events": 226,
     "Permission system": 152,
     "Hook bypass & evasion": 104,
     "MCP & plugin issues": 94,
-    "Subagent & spawned agents": 77,
+    "Subagent & spawned agents": 78,
     "Desktop & IDE integration": 60,
     "TUI & display": 37,
     "Platform & compatibility": 33,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 145,
-    "HIGH": 940,
+    "HIGH": 941,
     "LOW": 109,
     "MEDIUM": 489
   },
@@ -21656,6 +21656,19 @@
       "workaround": "Make SessionStart hooks idempotent and avoid destructive or read-marking side effects until the session is proven real. At minimum, check that `transcript_path` exists before marking messages delivered, consuming queue items, or changing external state; if the transcript is missing, return success without side effects and let a later real session or external watchdog handle delivery. For startup context injection, include a first-turn acknowledgement canary before treating a message as read."
     },
     {
+      "id": "custom-subagent-registry-can-silently-drop-safety-gate-agents",
+      "title": "Custom subagent registry can silently drop safety-gate agents.",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88735"
+      ],
+      "date_added": "2026-08-22",
+      "description": "A reported Claude Code Windows setup found that defining five custom agents under `.claude/agents` or `~/.claude/agents` loaded only three, with the alphabetically last two custom agents missing and no startup warning. Splitting the same files across user and project scopes did not avoid the effective cap. The failure only surfaced later as `Agent type ... not found`, which is easy to miss if a CLAUDE.md workflow treats a missing `risk-reviewer` or similar subagent as a soft checklist step before pushes or scoring changes.",
+      "workaround": "Do not rely on custom subagents as the sole enforcement layer for irreversible actions unless their availability is checked in the live session. At session start, run a harmless inventory or smoke call for every gate subagent named in CLAUDE.md, fail closed if any expected agent is absent, and keep critical push, release, migration, or destructive-operation checks in hooks or CI as well as in subagent routing. If many custom agents are configured, prefer explicit naming and a preflight that proves the exact safety-gate agent can be invoked before continuing."
+    },
+    {
       "id": "worktree-creation-can-pin-hooks-to-main-checkout",
       "title": "Worktree creation can pin hooks to the main checkout.",
       "category": "Worktrees & isolation",
@@ -21683,27 +21696,27 @@
     }
   ],
   "status_summary": {
-    "open": 1669,
+    "open": 1670,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 145,
-    "high": 940,
+    "high": 941,
     "low": 109,
     "medium": 489
   },
   "lastUpdated": "2026-08-22",
   "stats": {
-    "total": 1683,
+    "total": 1684,
     "critical": 145,
-    "high": 940,
+    "high": 941,
     "medium": 489,
     "low": 109,
-    "open": 1669,
+    "open": 1670,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-22",
-  "total": 1683
+  "total": 1684
 }
