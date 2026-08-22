@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1677,
+  "count": 1679,
   "categories": {
     "Hook behavior & events": 224,
-    "Permission system": 151,
+    "Permission system": 152,
     "Hook bypass & evasion": 104,
     "MCP & plugin issues": 94,
     "Subagent & spawned agents": 77,
@@ -27,7 +27,7 @@
     "Data integrity": 19,
     "Model behavior": 18,
     "Remote & cloud": 18,
-    "Scheduling & remote triggers": 15,
+    "Scheduling & remote triggers": 16,
     "Permissions & safety": 14,
     "Worktree": 14,
     "File system & paths": 13,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 143,
-    "HIGH": 936,
+    "HIGH": 938,
     "LOW": 109,
     "MEDIUM": 489
   },
@@ -21602,30 +21602,56 @@
       "date_added": "2026-08-22",
       "description": "A reported Claude Code 2.1.238 macOS documentation gap found that `sandbox.filesystem.allowWrite` changes in `~/.claude/settings.json` applied to the same running session without restart, and reverting the entry removed access again. The docs' `When edits take effect` section listed live-reload keys such as permissions and hooks but did not mention sandbox settings, leaving users unable to distinguish a stale config hypothesis from an insufficient allowlist grant during controlled tests. The same report observed that `~` in a filesystem allowlist entry expanded to the user's home directory when config was loaded.",
       "workaround": "When changing sandbox filesystem allowlists, run a harmless before-and-after canary in the same session and record whether the exact path becomes writable or blocked. Do not assume a restart is required before testing the grant, but preserve Claude Code version, settings path, expanded effective path, and revert behavior when reporting docs or sandbox-policy issues. Prefer absolute paths in shared examples until tilde expansion is explicitly documented for the installed version."
+    },
+    {
+      "id": "workflow-scriptpath-size-can-trigger-false-control-character-rejection",
+      "title": "Workflow scriptPath size can trigger a false control-character rejection.",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88716"
+      ],
+      "date_added": "2026-08-22",
+      "description": "A reported Claude Code 2.1.239 Windows repro found that `Workflow({scriptPath})` can reject pure ASCII scripts once total file size crosses a low threshold, somewhere above about 850 bytes and below about 2.1 KB, even when every line is short and the file contains no hidden control characters. The rejection message blames hidden control characters in the approval dialog and points users toward `canUseTool`, `PermissionRequest`, permission-prompt tooling, and hook configuration, but the same session had no matching Workflow hook or permission rule. Passing larger content inline through `script` worked, suggesting the failure is in the approval handler's `updatedInput` construction for file-backed scripts rather than in the workflow script itself.",
+      "workaround": "For non-trivial workflows, test the first launch path with a small file-size canary before relying on `scriptPath`. If the false rejection appears, emit the workflow once inline with `script` and then reuse the workflow-managed `scriptPath` returned from that launch, or move large prompt text and static instructions into runtime-read Markdown files so the initial workflow script stays small. When debugging, check total bytes as well as longest line length before spending time scanning for control characters or unrelated hooks."
+    },
+    {
+      "id": "clear-can-silently-terminate-persistent-monitor-background-tasks",
+      "title": "/clear can silently terminate persistent Monitor background tasks.",
+      "category": "Scheduling & remote triggers",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88732"
+      ],
+      "date_added": "2026-08-22",
+      "description": "A reported Claude Code 2.1.237 Windows setup found that a `Monitor({persistent: true})` background task was terminated after the owning session ran `/clear`, with no transcript notice, no notification, and no visible status that the session had lost its wake mechanism. The reporter observed two independent sessions where monitor parent and child processes existed before `/clear` and were gone immediately afterward. A SessionStart hook message telling the session to re-arm was marked read, but the monitor stayed absent because the model never took another turn. Older 2.1.229 behavior reportedly left orphaned child processes instead, which still broke notification delivery while looking alive.",
+      "workaround": "Do not treat `/clear` as safe in sessions whose only wake path is a persistent `Monitor` task. Before clearing, stop or snapshot the expected monitor processes and plan an explicit human turn that re-arms them afterward. For unattended fleets, add an external watchdog that checks for each monitor command by process table or heartbeat file and alerts when it disappears; in-session SessionStart context alone is not enough if no model turn follows the clear. Prefer a fresh session restart plus explicit monitor setup when losing a monitor would strand work."
     }
   ],
   "status_summary": {
-    "open": 1663,
+    "open": 1665,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 143,
-    "high": 936,
+    "high": 938,
     "low": 109,
     "medium": 489
   },
   "lastUpdated": "2026-08-22",
   "stats": {
-    "total": 1677,
+    "total": 1679,
     "critical": 143,
-    "high": 936,
+    "high": 938,
     "medium": 489,
     "low": 109,
-    "open": 1663,
+    "open": 1665,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-22",
-  "total": 1677
+  "total": 1679
 }
