@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1683</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-22.</span></p>
+        <p class="subtitle"><span id="total-count">1684</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-22.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -18909,9 +18909,21 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Make SessionStart hooks idempotent and avoid destructive or read-marking side effects until the session is proven real. At minimum, check that `transcript_path` exists before marking messages delivered, consuming queue items, or changing external state; if the transcript is missing, return success without side effects and let a later real session or external watchdog handle delivery. For startup context injection, include a first-turn acknowledgement canary before treating a message as read.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88739" target="_blank">#88739</a></div>
         </div>
-        <div class="kl-entry" data-category="Worktrees &amp; isolation" data-issues="88747" id="worktree-creation-can-pin-hooks-to-main-checkout" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="88735" id="custom-subagent-registry-can-silently-drop-safety-gate-agents" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1682</span>
+                <span class="kl-cat">Subagent &amp; spawned agents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Custom subagent registry can silently drop safety-gate agents.</h3>
+            <p>A reported Claude Code Windows setup found that defining five custom agents under `.claude/agents` or `~/.claude/agents` loaded only three, with the alphabetically last two custom agents missing and no startup warning. Splitting the same files across user and project scopes did not avoid the effective cap. The failure only surfaced later as `Agent type ... not found`, which is easy to miss if a CLAUDE.md workflow treats a missing `risk-reviewer` or similar subagent as a soft checklist step before pushes or scoring changes.</p>
+                        <!-- workaround:custom-subagent-registry-can-silently-drop-safety-gate-agents -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on custom subagents as the sole enforcement layer for irreversible actions unless their availability is checked in the live session. At session start, run a harmless inventory or smoke call for every gate subagent named in CLAUDE.md, fail closed if any expected agent is absent, and keep critical push, release, migration, or destructive-operation checks in hooks or CI as well as in subagent routing. If many custom agents are configured, prefer explicit naming and a preflight that proves the exact safety-gate agent can be invoked before continuing.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88735" target="_blank">#88735</a></div>
+        </div>
+        <div class="kl-entry" data-category="Worktrees &amp; isolation" data-issues="88747" id="worktree-creation-can-pin-hooks-to-main-checkout" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1683</span>
                 <span class="kl-cat">Worktrees &amp; isolation</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
@@ -18923,7 +18935,7 @@
         </div>
         <div class="kl-entry" data-category="Data integrity" data-issues="88753" id="compaction-can-drop-destructive-operation-target-facts" data-severity="critical" data-status="open">
             <div class="kl-header">
-                <span class="kl-num">#1683</span>
+                <span class="kl-num">#1684</span>
                 <span class="kl-cat">Data integrity</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
             </div>
