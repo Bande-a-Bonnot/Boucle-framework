@@ -19944,11 +19944,14 @@
       "title": "The `Read` tool can ignore active `permissions.deny` rules.",
       "severity": "HIGH",
       "category": "Permission system",
-      "description": "A reported Claude Code 2.1.223 Linux CLI session showed `Read(/etc/**)` and `Read(/home/**)` deny rules present and active in the `/permissions` Deny tab, including the UI text that denied tools are always rejected, while direct Read tool calls still returned files such as `/etc/passwd`, `/etc/hosts`, nested `/etc` files, and a home-directory dotfile. The same setup's Bash sandbox hid the equivalent outside-project path, so the report narrows the problem to built-in file-tool permission matching rather than the whole project policy being absent.",
-      "issue": "84634",
+      "description": "A reported Claude Code 2.1.223 Linux CLI session showed `Read(/etc/**)` and `Read(/home/**)` deny rules present and active in the `/permissions` Deny tab, including the UI text that denied tools are always rejected, while direct Read tool calls still returned files such as `/etc/passwd`, `/etc/hosts`, nested `/etc` files, and a home-directory dotfile. A later Claude Code VS Code report found the same shape with `Read(/Users)` and `Read(/Users/**)` entries in both MDM-deployed `managed-settings.json` and `~/.claude/settings.json`: the Read tool returned home-directory file contents while the equivalent Bash filesystem access was blocked by OS-level sandbox enforcement. These reports narrow the problem to built-in Read-tool permission matching rather than the whole project policy or sandbox being absent.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/84634",
+        "https://github.com/anthropics/claude-code/issues/88795"
+      ],
       "status": "open",
       "date_added": "2026-08-15",
-      "workaround": "Do not treat `/permissions` display as proof that file-tool deny rules are enforcing. Add an end-to-end canary that attempts a harmless `Read` covered by each critical deny pattern in a fresh session, and fail closed if it returns content. Keep secrets and sibling projects behind OS permissions, separate users, or a PreToolUse/file-guard layer that has been tested against real Read calls, not only against settings validation."
+      "workaround": "Do not treat `/permissions` display, managed-settings presence, or a working Bash sandbox denial as proof that file-tool deny rules are enforcing. Add an end-to-end canary that attempts a harmless `Read` covered by each critical deny pattern in a fresh session and in the exact client mode users run, then fail closed if it returns content. Keep secrets and sibling projects behind OS permissions, separate users, or a PreToolUse/file-guard layer that has been tested against real Read calls, not only against settings validation."
     },
     {
       "id": "policy-limits-security-key-can-be-silently-removed",
