@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1697,
+  "count": 1699,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 156,
@@ -17,8 +17,8 @@
     "MCP & integrations": 30,
     "Sandbox & permissions": 30,
     "Cowork & remote": 27,
-    "Performance & cost": 26,
-    "VS Code extension": 24,
+    "Performance & cost": 27,
+    "VS Code extension": 25,
     "Agents & subagents": 23,
     "Tool behavior": 22,
     "Auth & accounts": 21,
@@ -192,9 +192,9 @@
   },
   "severity_counts": {
     "CRITICAL": 146,
-    "HIGH": 953,
+    "HIGH": 954,
     "LOW": 109,
-    "MEDIUM": 489
+    "MEDIUM": 490
   },
   "entries": [
     {
@@ -21857,6 +21857,32 @@
       "workaround": "Do not treat MCP `elicitation` capability advertisement from Desktop, Cowork, or other embedded claude-code surfaces as enough proof that a human approval UI exists. Before enabling destructive or approval-gated tools, run a harmless startup elicitation probe and require an accepted response from the exact session surface. Provide a fallback approval path such as a deep link, out-of-band token, or manual confirmation command, and fail closed when a request times out or cancels without a transcript-visible user decision."
     },
     {
+      "id": "windows-vscode-extension-file-watcher-can-pin-one-cpu-core",
+      "title": "Windows VS Code extension file watching can pin one CPU core.",
+      "category": "VS Code extension",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88913"
+      ],
+      "date_added": "2026-08-23",
+      "description": "A reported Claude Code 2.1.240 VS Code extension setup on Windows 11 repeatedly left an extension host pinned at 95-100% of one performance core for hours while Claude Code's own extension log showed only idle heartbeats. The reporter sampled the spinning process at about 245,000 other I/O operations per second with essentially zero reads, matching a native watched-directory busy-loop rather than ordinary JavaScript or scan work. Duplicate watch paths through NTFS junctions into shared Claude config trees and bulk skill rewrites appeared to amplify the problem, but one spin latched about 35 minutes after the last file change and persisted until the extension host was killed.",
+      "workaround": "On Windows VS Code hosts, treat sustained single-core CPU from an otherwise idle extension host as a watcher failure even when Claude logs are quiet. Kill or restart only the spinning extension host/window to clear the latch, avoid sharing the same physical `~/.claude` skills, agents, commands, or hooks tree through multiple logical paths while several windows are open, and close extra Claude-enabled windows during bulk config rewrites. If reporting recurrence, capture per-process CPU plus I/O counters or ETW evidence so watcher churn can be distinguished from model, GC, or child-process work."
+    },
+    {
+      "id": "idle-claude-code-sessions-can-burn-cpu-through-timer-triggered-gc",
+      "title": "Idle Claude Code sessions can burn CPU through timer-triggered garbage collection.",
+      "category": "Performance & cost",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88914"
+      ],
+      "date_added": "2026-08-23",
+      "description": "A reported Claude Code 2.1.240 Linux native session continued using measurable CPU while parked at the input prompt with no active turn. Controlled 30-second samples showed a pristine config using about 0.3-0.8% CPU and a typical config with plugins, hooks, one MCP server, and CLAUDE.md using about 1.46% CPU; longer production sessions measured about 1.4-5% while idle. The reporter traced the idle cost to short timers waking the event loop roughly 20-26 times per second in a typical config, about one Eden garbage collection per second, and repeated wakeups of JavaScriptCore helper threads and mimalloc cleanup work even when the terminal output did not change.",
+      "workaround": "Do not leave many long-lived Claude Code sessions parked at prompts without monitoring host CPU and memory. If idle sessions accumulate sustained CPU, compare a fresh session with a pristine `CLAUDE_CONFIG_DIR` against the normal config, restart aged sessions, disable nonessential plugins or MCP servers, and capture whole-process CPU, per-thread wakeups, and syscall or GC evidence before filing a runtime report. For unattended agent fleets, budget for idle CPU separately from API usage and prefer session recycling over assuming an input prompt is cost-free."
+    },
+    {
       "id": "custom-auto-mode-deny-rules-can-be-loaded-but-inert",
       "title": "Custom auto-mode deny rules can be loaded but inert.",
       "category": "Permission system",
@@ -21871,27 +21897,27 @@
     }
   ],
   "status_summary": {
-    "open": 1683,
+    "open": 1685,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 146,
-    "high": 953,
+    "high": 954,
     "low": 109,
-    "medium": 489
+    "medium": 490
   },
-  "lastUpdated": "2026-08-22",
+  "lastUpdated": "2026-08-23",
   "stats": {
-    "total": 1697,
+    "total": 1699,
     "critical": 146,
-    "high": 953,
-    "medium": 489,
+    "high": 954,
+    "medium": 490,
     "low": 109,
-    "open": 1683,
+    "open": 1685,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-08-22",
-  "total": 1697
+  "last_updated": "2026-08-23",
+  "total": 1699
 }
