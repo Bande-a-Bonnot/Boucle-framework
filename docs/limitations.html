@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1708</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-23.</span></p>
+        <p class="subtitle"><span id="total-count">1709</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-23.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -19232,6 +19232,18 @@
                         <!-- workaround:assistant-output-can-append-foreign-page-content-to-a-live-response -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If an assistant response suddenly appends unrelated page, app, or transcript content, stop the session before allowing further tools or external writes. Preserve the raw JSONL lines, request ID, timestamps, model, client surface, hooks, proxy settings, and local grep results before restarting from a clean summary that excludes the injected block. For audit-sensitive work, add a transcript-integrity check that flags abrupt source, language, speaker, or UI-copy changes inside one assistant response and requires human review before the contaminated history is reused.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88959" target="_blank">#88959</a></div>
+        </div>
+        <div class="kl-entry" data-category="Sandbox &amp; permissions" data-issues="88972" id="auto-mode-classifier-can-miss-dangerously-disable-sandbox" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1709</span>
+                <span class="kl-cat">Sandbox &amp; permissions</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Auto mode can approve unsandboxed Bash retries without seeing the sandbox override.</h3>
+            <p>A reported Claude Code 2.1.241 macOS repro found that an auto-mode Bash retry with `dangerouslyDisableSandbox: true` could write outside the sandbox without showing the user a permission prompt. The reporter traced the shipped binary path where Bash permission checking recognizes a sandbox-override ask, but auto mode falls through to the classifier and the classifier input contains only the shell command, not the sandbox-disable flag. In the observed transcript the unsandboxed write was summarized as file reading, and the assistant then told the user the override had gone through the permission gate even though the user never had a chance to answer.</p>
+                        <!-- workaround:auto-mode-classifier-can-miss-dangerously-disable-sandbox -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Set `sandbox.allowUnsandboxedCommands` to `false` when the sandbox boundary must be explicit, so model-generated `dangerouslyDisableSandbox` retries are ignored rather than silently classified. Treat auto-mode approval of a shell command as insufficient evidence that a sandbox override was visible to the gate. For audit-sensitive sessions, preserve debug logs, raw tool-use records, permission-mode settings, and exported transcripts, and require a visible marker or human prompt before accepting any command that runs outside the sandbox.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88972" target="_blank">#88972</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
