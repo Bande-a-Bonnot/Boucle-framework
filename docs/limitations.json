@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1710,
+  "count": 1711,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 157,
     "Hook bypass & evasion": 104,
-    "MCP & plugin issues": 96,
+    "MCP & plugin issues": 97,
     "Subagent & spawned agents": 81,
     "Desktop & IDE integration": 60,
     "TUI & display": 37,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 148,
-    "HIGH": 963,
+    "HIGH": 964,
     "LOW": 109,
     "MEDIUM": 490
   },
@@ -22080,30 +22080,43 @@
       "date_added": "2026-08-23",
       "description": "A reported Claude Code 2.1.241 macOS repro found that an auto-mode Bash retry with `dangerouslyDisableSandbox: true` could write outside the sandbox without showing the user a permission prompt. The reporter traced the shipped binary path where Bash permission checking recognizes a sandbox-override ask, but auto mode falls through to the classifier and the classifier input contains only the shell command, not the sandbox-disable flag. In the observed transcript the unsandboxed write was summarized as file reading, and the assistant then told the user the override had gone through the permission gate even though the user never had a chance to answer.",
       "workaround": "Set `sandbox.allowUnsandboxedCommands` to `false` when the sandbox boundary must be explicit, so model-generated `dangerouslyDisableSandbox` retries are ignored rather than silently classified. Treat auto-mode approval of a shell command as insufficient evidence that a sandbox override was visible to the gate. For audit-sensitive sessions, preserve debug logs, raw tool-use records, permission-mode settings, and exported transcripts, and require a visible marker or human prompt before accepting any command that runs outside the sandbox."
+    },
+    {
+      "id": "plugin-marketplace-autoupdate-can-block-pretooluse-on-windows",
+      "title": "Plugin marketplace auto-update can block PreToolUse dispatch on Windows.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88991"
+      ],
+      "date_added": "2026-08-23",
+      "description": "A reported Claude Code VS Code extension 2.1.240-2.1.241 Windows repro found plugin marketplace auto-update work running synchronously inside the PreToolUse hook path for unrelated tool calls such as Edit. With multiple concurrent Claude Code sessions in one VS Code window, one session could hold a handle on the shared plugin cache while another tried to clone, remove, or replace the same marketplace directory. Windows then returned `EBUSY`, the updater retried, and the affected tool call and chat session appeared to hang for minutes with no visible plugin-update status. The report included logs showing slow PreToolUse hooks, plugin autoupdate `EBUSY` failures, repeated cache clones, and a webview input-lag sample of about 392 seconds before the user closed the stalled tab.",
+      "workaround": "On Windows, if Claude Code sessions hang around tool dispatch while multiple VS Code chat tabs are open, inspect the VS Code Claude extension log for plugin autoupdate, shared cache, `EBUSY`, or slow PreToolUse lines before blaming the edited file or model. Reduce concurrent sessions during marketplace refreshes, and set `autoUpdate` to `false` explicitly for each `extraKnownMarketplaces` entry in `~/.claude/settings.json` when hook latency matters. Preserve the extension log, marketplace settings, plugin cache path, session count, and the exact stalled tool call so the hang can be distinguished from ordinary model latency."
     }
   ],
   "status_summary": {
-    "open": 1696,
+    "open": 1697,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 148,
-    "high": 963,
+    "high": 964,
     "low": 109,
     "medium": 490
   },
   "lastUpdated": "2026-08-23",
   "stats": {
-    "total": 1710,
+    "total": 1711,
     "critical": 148,
-    "high": 963,
+    "high": 964,
     "medium": 490,
     "low": 109,
-    "open": 1696,
+    "open": 1697,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-23",
-  "total": 1710
+  "total": 1711
 }
