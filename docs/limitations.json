@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1717,
+  "count": 1720,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 158,
@@ -20,7 +20,7 @@
     "Performance & cost": 27,
     "VS Code extension": 25,
     "Agents & subagents": 23,
-    "Tool behavior": 22,
+    "Tool behavior": 23,
     "Auth & accounts": 21,
     "Core & session management": 21,
     "Data integrity": 21,
@@ -36,22 +36,22 @@
     "Scheduled tasks": 12,
     "Git & repository safety": 11,
     "UX & display": 11,
+    "Worktrees & isolation": 11,
     "Configuration & settings": 10,
     "Skills": 10,
     "Telemetry & insights": 10,
-    "Worktrees & isolation": 10,
     "hooks": 9,
     "Model behavior & output": 9,
     "auth": 8,
     "Desktop & platform bugs": 8,
     "Hook execution & lifecycle": 8,
     "MCP": 7,
+    "Model routing & identity": 7,
     "Permissions": 7,
     "Skills & commands": 7,
     "Stability & crashes": 7,
     "Authentication & accounts": 6,
     "Memory & context": 6,
-    "Model routing & identity": 6,
     "Skills / slash commands": 6,
     "CLI / TUI rendering": 5,
     "Cost & usage": 5,
@@ -192,9 +192,9 @@
   },
   "severity_counts": {
     "CRITICAL": 151,
-    "HIGH": 966,
+    "HIGH": 968,
     "LOW": 109,
-    "MEDIUM": 491
+    "MEDIUM": 492
   },
   "entries": [
     {
@@ -22203,30 +22203,93 @@
       "date_added": "2026-08-23",
       "description": "A reported Claude Code VS Code extension 2.1.240-2.1.241 Windows repro found plugin marketplace auto-update work running synchronously inside the PreToolUse hook path for unrelated tool calls such as Edit. With multiple concurrent Claude Code sessions in one VS Code window, one session could hold a handle on the shared plugin cache while another tried to clone, remove, or replace the same marketplace directory. Windows then returned `EBUSY`, the updater retried, and the affected tool call and chat session appeared to hang for minutes with no visible plugin-update status. The report included logs showing slow PreToolUse hooks, plugin autoupdate `EBUSY` failures, repeated cache clones, and a webview input-lag sample of about 392 seconds before the user closed the stalled tab.",
       "workaround": "On Windows, if Claude Code sessions hang around tool dispatch while multiple VS Code chat tabs are open, inspect the VS Code Claude extension log for plugin autoupdate, shared cache, `EBUSY`, or slow PreToolUse lines before blaming the edited file or model. Reduce concurrent sessions during marketplace refreshes, and set `autoUpdate` to `false` explicitly for each `extraKnownMarketplaces` entry in `~/.claude/settings.json` when hook latency matters. Preserve the extension log, marketplace settings, plugin cache path, session count, and the exact stalled tool call so the hang can be distinguished from ordinary model latency."
+    },
+    {
+      "id": "worktreecreate-can-reject-valid-external-worktrees",
+      "title": "`WorktreeCreate` can reject valid worktrees outside the repository.",
+      "category": "Worktrees & isolation",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89076"
+      ],
+      "date_added": "2026-08-23",
+      "description": "A reported Claude Code 2.1.241 macOS session found that a `WorktreeCreate` hook could successfully create and register a git worktree outside the repository, print only that external path, and still have Claude Code refuse to enter it with a `git could not be run to resolve it` identity-verification error. The same hook was accepted when it returned an otherwise identical path under `$repo_root/.claude/worktrees`, and the external worktree passed `git worktree list` plus `git -C <path> status`. The refusal reproduced across `claude --worktree`, `EnterWorktree`, and `Agent(isolation: \"worktree\")`, before any documented one-time external-directory approval prompt could appear.",
+      "workaround": "Do not assume a custom `WorktreeCreate` hook can currently place isolation worktrees outside the repository, even though the docs describe hooks replacing the default git behavior. If your automation needs custom setup, prefer an in-repository `.claude/worktrees/<name>` location until external paths are verified on your installed Claude Code version. When testing external paths, check both the hook result and the actual Claude Code entry path, because a healthy git worktree can still be refused by Claude Code's identity check.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "worktrees",
+        "hooks",
+        "isolation",
+        "external-directories",
+        "git"
+      ]
+    },
+    {
+      "id": "workflow-permission-approval-can-reject-clean-scripts",
+      "title": "Workflow permission approval can reject clean scripts before execution.",
+      "category": "Tool behavior",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89054"
+      ],
+      "date_added": "2026-08-23",
+      "description": "A reported Claude Code 2.1.241 Windows session found that invoking the `Workflow` tool by either workflow name or explicit `.claude/workflows/*.js` path failed before the workflow started. The permission handler returned an `updatedInput` whose `script` field failed schema validation for alleged hidden control characters, while the reporter's script scan found no control characters beyond normal newline, carriage-return, and tab, and the repo had no custom permission hook or permission-prompt tool for `Workflow`. The failure made named and path-based workflows unusable in that repo even though the model's original tool input was valid.",
+      "workaround": "Treat Workflow approval as a separate failure point from the workflow script itself. If a clean script is rejected for hidden control characters, preserve the original workflow file, the exact `Workflow` invocation form, and the settings/hooks that were loaded, then try a minimal fresh workflow in a clean repo before rewriting the real script. For critical automation, keep a Bash or direct-command fallback path until the installed Claude Code version can approve and launch the workflow reliably.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "workflow",
+        "permissions",
+        "approval",
+        "schema-validation",
+        "windows"
+      ]
+    },
+    {
+      "id": "effort-picker-can-display-a-higher-level-than-is-applied",
+      "title": "The effort picker can display a higher level than Claude Code actually applies.",
+      "category": "Model routing & identity",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89080"
+      ],
+      "date_added": "2026-08-23",
+      "description": "A reported Claude Code VS Code extension 2.1.241 macOS session showed `Extra high` selected in the Shift+Tab effort picker while completed assistant turns in the session transcript were recorded with `effort: high` for roughly an hour. Re-opening the picker and selecting `Extra high` again, despite the UI already showing it selected, caused subsequent turns to record `effort: xhigh`. The mismatch was invisible in the normal UI and required inspecting the JSONL transcript to notice that the applied effort was lower than the displayed selection.",
+      "workaround": "Do not rely only on the picker display when reasoning effort materially affects the task. After changing effort defaults, reloading VS Code, or resuming a long session, explicitly re-select the desired effort level and spot-check the session transcript's assistant `effort` fields when the distinction matters. If transcripts show a lower applied level than the UI, capture both the UI state and the JSONL evidence before restarting or changing settings.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "effort",
+        "vs-code",
+        "model-routing",
+        "ui-state",
+        "transcripts"
+      ]
     }
   ],
   "status_summary": {
-    "open": 1703,
+    "open": 1706,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 151,
-    "high": 966,
+    "high": 968,
     "low": 109,
-    "medium": 491
+    "medium": 492
   },
   "lastUpdated": "2026-08-23",
   "stats": {
-    "total": 1717,
+    "total": 1720,
     "critical": 151,
-    "high": 966,
-    "medium": 491,
+    "high": 968,
+    "medium": 492,
     "low": 109,
-    "open": 1703,
+    "open": 1706,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-23",
-  "total": 1717
+  "total": 1720
 }

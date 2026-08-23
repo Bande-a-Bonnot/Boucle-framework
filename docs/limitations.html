@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1717</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-23.</span></p>
+        <p class="subtitle"><span id="total-count">1720</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-23.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -19340,6 +19340,42 @@
                         <!-- workaround:plugin-marketplace-autoupdate-can-block-pretooluse-on-windows -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On Windows, if Claude Code sessions hang around tool dispatch while multiple VS Code chat tabs are open, inspect the VS Code Claude extension log for plugin autoupdate, shared cache, `EBUSY`, or slow PreToolUse lines before blaming the edited file or model. Reduce concurrent sessions during marketplace refreshes, and set `autoUpdate` to `false` explicitly for each `extraKnownMarketplaces` entry in `~/.claude/settings.json` when hook latency matters. Preserve the extension log, marketplace settings, plugin cache path, session count, and the exact stalled tool call so the hang can be distinguished from ordinary model latency.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88991" target="_blank">#88991</a></div>
+        </div>
+        <div class="kl-entry" data-category="Worktrees &amp; isolation" data-issues="89076" id="worktreecreate-can-reject-valid-external-worktrees" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1718</span>
+                <span class="kl-cat">Worktrees &amp; isolation</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>`WorktreeCreate` can reject valid worktrees outside the repository.</h3>
+            <p>A reported Claude Code 2.1.241 macOS session found that a `WorktreeCreate` hook could successfully create and register a git worktree outside the repository, print only that external path, and still have Claude Code refuse to enter it with a `git could not be run to resolve it` identity-verification error. The same hook was accepted when it returned an otherwise identical path under `$repo_root/.claude/worktrees`, and the external worktree passed `git worktree list` plus `git -C &lt;path&gt; status`. The refusal reproduced across `claude --worktree`, `EnterWorktree`, and `Agent(isolation: &quot;worktree&quot;)`, before any documented one-time external-directory approval prompt could appear.</p>
+                        <!-- workaround:worktreecreate-can-reject-valid-external-worktrees -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume a custom `WorktreeCreate` hook can currently place isolation worktrees outside the repository, even though the docs describe hooks replacing the default git behavior. If your automation needs custom setup, prefer an in-repository `.claude/worktrees/&lt;name&gt;` location until external paths are verified on your installed Claude Code version. When testing external paths, check both the hook result and the actual Claude Code entry path, because a healthy git worktree can still be refused by Claude Code&#x27;s identity check.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89076" target="_blank">#89076</a></div>
+        </div>
+        <div class="kl-entry" data-category="Tool behavior" data-issues="89054" id="workflow-permission-approval-can-reject-clean-scripts" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1719</span>
+                <span class="kl-cat">Tool behavior</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Workflow permission approval can reject clean scripts before execution.</h3>
+            <p>A reported Claude Code 2.1.241 Windows session found that invoking the `Workflow` tool by either workflow name or explicit `.claude/workflows/*.js` path failed before the workflow started. The permission handler returned an `updatedInput` whose `script` field failed schema validation for alleged hidden control characters, while the reporter&#x27;s script scan found no control characters beyond normal newline, carriage-return, and tab, and the repo had no custom permission hook or permission-prompt tool for `Workflow`. The failure made named and path-based workflows unusable in that repo even though the model&#x27;s original tool input was valid.</p>
+                        <!-- workaround:workflow-permission-approval-can-reject-clean-scripts -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat Workflow approval as a separate failure point from the workflow script itself. If a clean script is rejected for hidden control characters, preserve the original workflow file, the exact `Workflow` invocation form, and the settings/hooks that were loaded, then try a minimal fresh workflow in a clean repo before rewriting the real script. For critical automation, keep a Bash or direct-command fallback path until the installed Claude Code version can approve and launch the workflow reliably.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89054" target="_blank">#89054</a></div>
+        </div>
+        <div class="kl-entry" data-category="Model routing &amp; identity" data-issues="89080" id="effort-picker-can-display-a-higher-level-than-is-applied" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1720</span>
+                <span class="kl-cat">Model routing &amp; identity</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>The effort picker can display a higher level than Claude Code actually applies.</h3>
+            <p>A reported Claude Code VS Code extension 2.1.241 macOS session showed `Extra high` selected in the Shift+Tab effort picker while completed assistant turns in the session transcript were recorded with `effort: high` for roughly an hour. Re-opening the picker and selecting `Extra high` again, despite the UI already showing it selected, caused subsequent turns to record `effort: xhigh`. The mismatch was invisible in the normal UI and required inspecting the JSONL transcript to notice that the applied effort was lower than the displayed selection.</p>
+                        <!-- workaround:effort-picker-can-display-a-higher-level-than-is-applied -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely only on the picker display when reasoning effort materially affects the task. After changing effort defaults, reloading VS Code, or resuming a long session, explicitly re-select the desired effort level and spot-check the session transcript&#x27;s assistant `effort` fields when the distinction matters. If transcripts show a lower applied level than the UI, capture both the UI state and the JSONL evidence before restarting or changing settings.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89080" target="_blank">#89080</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
