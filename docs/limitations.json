@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1704,
+  "count": 1705,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 157,
@@ -9,9 +9,9 @@
     "Subagent & spawned agents": 80,
     "Desktop & IDE integration": 60,
     "TUI & display": 37,
+    "Configuration behavior": 33,
     "Platform & compatibility": 33,
     "CLI & terminal": 32,
-    "Configuration behavior": 32,
     "Security & trust boundaries": 32,
     "Context & memory": 30,
     "MCP & integrations": 30,
@@ -192,11 +192,32 @@
   },
   "severity_counts": {
     "CRITICAL": 148,
-    "HIGH": 957,
+    "HIGH": 958,
     "LOW": 109,
     "MEDIUM": 490
   },
   "entries": [
+    {
+      "id": "path-scoped-rules-cannot-address-out-of-root-files",
+      "title": "Path-scoped rules cannot match files outside the project root.",
+      "category": "Configuration behavior",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88945"
+      ],
+      "date_added": "2026-08-23",
+      "description": "A reported Claude Code 2.1.241 macOS repro found that `.claude/rules/` `paths:` globs are evaluated only against project-relative paths. A matching markdown file under the project root injected the rule, but the same basename and glob did not match an out-of-root file under `/tmp`, and absolute globs also failed. The practical gap is auto-memory: files under `~/.claude/projects/<sanitized-cwd>/memory/*.md` are first-class Claude Code state, but path-scoped rules such as `**/.claude/**/*.md` cannot govern them because those files have no project-relative path. No warning appears when a pattern can never match.",
+      "workaround": "Do not rely on path-scoped rules for auto-memory or other files outside the project root unless you have verified the exact path with a cold-session canary. Put critical memory-file policy in an unscoped rule, a SessionStart/PreToolUse hook, or an external validator that checks the resolved absolute path. If you use `--add-dir` as a workaround, test whether that directory participates in path-glob matching before depending on it.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "rules",
+        "paths",
+        "auto-memory",
+        "project-root",
+        "configuration"
+      ]
+    },
     {
       "id": "enterworktree-can-leave-project-skill-discovery-on-launch-checkout",
       "title": "EnterWorktree can leave project-skill discovery rooted at the launch checkout.",
@@ -21981,27 +22002,27 @@
     }
   ],
   "status_summary": {
-    "open": 1690,
+    "open": 1691,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 148,
-    "high": 957,
+    "high": 958,
     "low": 109,
     "medium": 490
   },
   "lastUpdated": "2026-08-23",
   "stats": {
-    "total": 1704,
+    "total": 1705,
     "critical": 148,
-    "high": 957,
+    "high": 958,
     "medium": 490,
     "low": 109,
-    "open": 1690,
+    "open": 1691,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-23",
-  "total": 1704
+  "total": 1705
 }
