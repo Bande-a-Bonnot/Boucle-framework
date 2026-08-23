@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1710</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-23.</span></p>
+        <p class="subtitle"><span id="total-count">1711</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-23.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -19256,6 +19256,18 @@
                         <!-- workaround:auto-mode-classifier-can-miss-dangerously-disable-sandbox -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Set `sandbox.allowUnsandboxedCommands` to `false` when the sandbox boundary must be explicit, so model-generated `dangerouslyDisableSandbox` retries are ignored rather than silently classified. Treat auto-mode approval of a shell command as insufficient evidence that a sandbox override was visible to the gate. For audit-sensitive sessions, preserve debug logs, raw tool-use records, permission-mode settings, and exported transcripts, and require a visible marker or human prompt before accepting any command that runs outside the sandbox.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88972" target="_blank">#88972</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="88991" id="plugin-marketplace-autoupdate-can-block-pretooluse-on-windows" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1711</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Plugin marketplace auto-update can block PreToolUse dispatch on Windows.</h3>
+            <p>A reported Claude Code VS Code extension 2.1.240-2.1.241 Windows repro found plugin marketplace auto-update work running synchronously inside the PreToolUse hook path for unrelated tool calls such as Edit. With multiple concurrent Claude Code sessions in one VS Code window, one session could hold a handle on the shared plugin cache while another tried to clone, remove, or replace the same marketplace directory. Windows then returned `EBUSY`, the updater retried, and the affected tool call and chat session appeared to hang for minutes with no visible plugin-update status. The report included logs showing slow PreToolUse hooks, plugin autoupdate `EBUSY` failures, repeated cache clones, and a webview input-lag sample of about 392 seconds before the user closed the stalled tab.</p>
+                        <!-- workaround:plugin-marketplace-autoupdate-can-block-pretooluse-on-windows -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On Windows, if Claude Code sessions hang around tool dispatch while multiple VS Code chat tabs are open, inspect the VS Code Claude extension log for plugin autoupdate, shared cache, `EBUSY`, or slow PreToolUse lines before blaming the edited file or model. Reduce concurrent sessions during marketplace refreshes, and set `autoUpdate` to `false` explicitly for each `extraKnownMarketplaces` entry in `~/.claude/settings.json` when hook latency matters. Preserve the extension log, marketplace settings, plugin cache path, session count, and the exact stalled tool call so the hang can be distinguished from ordinary model latency.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88991" target="_blank">#88991</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
