@@ -1432,9 +1432,10 @@
       "category": "Hook behavior & events",
       "severity": "MEDIUM",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/40207"
+        "https://github.com/anthropics/claude-code/issues/40207",
+        "https://github.com/anthropics/claude-code/issues/88940"
       ],
-      "description": "After successful connection and handshake, Claude Code terminates all stdio-based MCP servers simultaneously with no preceding error. The timeout interval shrinks over the session lifetime (60s \u2192 30s \u2192 10s). Cloud-hosted MCPs are unaffected (different transport). The only recovery is manual /mcp reconnection, which itself gets killed again. Not hookable \u2014 the kill signal originates from the runtim",
+      "description": "After successful connection and handshake, Claude Code can terminate healthy stdio-based MCP servers with no preceding error. Older reports described simultaneous SIGTERM to all stdio servers with a timeout interval that shrank over the session lifetime (60s \u2192 30s \u2192 10s). A newer Claude Code 2.1.239 macOS report saw a single stdio MCP child disappear roughly 53 seconds after reconnect, with no uncaught exception or unhandled rejection recorded inside the process, aligning with the same 10-60s failure window. Cloud-hosted MCPs are unaffected by this stdio child-process lifecycle path.",
       "status": "open"
     },
     {
@@ -3825,9 +3826,10 @@
       "category": "Hook behavior & events",
       "severity": "MEDIUM",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/43177"
+        "https://github.com/anthropics/claude-code/issues/43177",
+        "https://github.com/anthropics/claude-code/issues/88940"
       ],
-      "description": "When a stdio-type MCP server process dies or disconnects, Claude Code marks it as failed and never attempts reconnection. HTTP/SSE/WebSocket servers get automatic reconnection with exponential backoff (5 attempts), but stdio servers are explicitly excluded. Users must manually run /mcp to reconnect. This affects any MCP integration that uses stdio transport (the most common local MCP pattern).",
+      "description": "When a stdio-type MCP server process dies or disconnects, Claude Code marks it as failed and never attempts reconnection. HTTP/SSE/WebSocket servers get automatic reconnection with exponential backoff (5 attempts), but stdio servers are explicitly excluded. Users must manually run /mcp to reconnect. This affects any MCP integration that uses stdio transport, and it compounds unexplained stdio child deaths such as the roughly 53-second reconnect failure reported in #88940.",
       "status": "open"
     },
     {
@@ -14312,14 +14314,15 @@
     },
     {
       "id": "ctrl-c-can-kill-background-agents-while-clearing-draft-text",
-      "title": "Ctrl-C can kill background agents when the user only meant to clear draft text",
+      "title": "Interrupt controls can kill background agents when the user only meant to steer the main turn",
       "category": "Agents & subagents",
       "severity": "MEDIUM",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/79591"
+        "https://github.com/anthropics/claude-code/issues/79591",
+        "https://github.com/anthropics/claude-code/issues/88942"
       ],
-      "description": "A reported TUI feature request highlights that the same Ctrl-C shortcut can clear drafted text, exit the application, and terminate subagents or background processes. When unsent composer text is present, a user may press Ctrl-C intending only to clear the draft while unintentionally triggering the more destructive background-agent cancellation path.",
-      "workaround": "Avoid using Ctrl-C casually in sessions with active background agents. Clear draft text with ordinary editing shortcuts where possible, checkpoint agent outputs before interrupting, and verify the background-agent list after any Ctrl-C press. For workflows that depend on background tasks, prefer explicit stop commands or a two-step confirmation wrapper where available.",
+      "description": "Reported Claude Code sessions can route ordinary interrupt affordances into background-agent cancellation. One TUI report noted that Ctrl-C can clear drafted text, exit the application, and terminate subagents or background processes, so a user trying to clear the composer can kill work. A newer Desktop report says pressing stop during a parent turn killed a `run_in_background: true` agent that the user expected to keep working, discarding in-context state and making interactive steering risky while durable workers are active.",
+      "workaround": "Avoid using Ctrl-C or stop casually in sessions with active background agents. Clear draft text with ordinary editing shortcuts where possible, checkpoint agent outputs before interrupting, and verify the background-agent list after any interrupt. For workflows that depend on background tasks, require periodic disk checkpoints, keep a parent-side task ledger, and prefer explicit stop commands or two-step confirmation where available.",
       "status": "open",
       "date_added": "2026-07-20"
     },
