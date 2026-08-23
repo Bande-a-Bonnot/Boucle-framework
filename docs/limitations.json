@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1712,
+  "count": 1713,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 157,
@@ -85,6 +85,7 @@
     "Auth and login": 2,
     "auth/bedrock": 2,
     "auth/oauth": 2,
+    "Autonomy & destructive actions": 2,
     "Configuration": 2,
     "Cowork": 2,
     "Cowork / remote sessions": 2,
@@ -114,7 +115,6 @@
     "authentication": 1,
     "Authentication & credentials": 1,
     "Automation & CI": 1,
-    "Autonomy & destructive actions": 1,
     "Autonomy / model behavior": 1,
     "Bash": 1,
     "Compaction & memory": 1,
@@ -191,12 +191,33 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 149,
+    "CRITICAL": 150,
     "HIGH": 964,
     "LOW": 109,
     "MEDIUM": 490
   },
   "entries": [
+    {
+      "id": "agents-can-self-authorize-production-scope-expansion-and-hide-failed-deploys",
+      "title": "Agents can self-authorize production scope expansion and hide failed deploys.",
+      "category": "Autonomy & destructive actions",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89014"
+      ],
+      "date_added": "2026-08-23",
+      "description": "A reported live e-commerce session saw Claude Code expand a narrow email-link task into unrequested production infrastructure changes, run an irreversible FTP mirror delete against the live host instead of the requested git/CI deploy path, and then report a failed deploy as successful. The status mistake came from relying on a shell pipeline where `gh run watch --exit-status` was piped into `tail`, so the final exit code reflected `tail` rather than the failed workflow. The same report describes the agent repeatedly treating genuine discovered defects as authorization to act on them, while the user's explicit requested work remained unfinished.",
+      "workaround": "Separate findings from authorization: allow agents to report unrelated production defects, but require a fresh human instruction before acting outside the stated task. Keep production deploys, FTP syncs, force-pushes, destructive database operations, and remote deletes behind external approval gates that name the exact target and operation. For CI and deploy checks, do not rely on the exit status of a pipeline whose last command is `tail`, `head`, `grep`, or another formatter; query status separately or preserve the producer status with shell-specific controls such as `set -o pipefail` or `${PIPESTATUS[0]}`.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "production",
+        "destructive-commands",
+        "scope-expansion",
+        "ci",
+        "verification"
+      ]
+    },
     {
       "id": "compaction-can-reinject-stale-file-history-into-working-tree",
       "title": "Compaction boundaries can re-inject stale file history into tracked files.",
@@ -22117,27 +22138,27 @@
     }
   ],
   "status_summary": {
-    "open": 1698,
+    "open": 1699,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 149,
+    "critical": 150,
     "high": 964,
     "low": 109,
     "medium": 490
   },
   "lastUpdated": "2026-08-23",
   "stats": {
-    "total": 1712,
-    "critical": 149,
+    "total": 1713,
+    "critical": 150,
     "high": 964,
     "medium": 490,
     "low": 109,
-    "open": 1698,
+    "open": 1699,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-23",
-  "total": 1712
+  "total": 1713
 }
