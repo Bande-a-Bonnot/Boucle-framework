@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1707,
+  "count": 1708,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 157,
@@ -44,8 +44,8 @@
     "auth": 8,
     "Desktop & platform bugs": 8,
     "Hook execution & lifecycle": 8,
+    "Model behavior & output": 8,
     "MCP": 7,
-    "Model behavior & output": 7,
     "Permissions": 7,
     "Skills & commands": 7,
     "Stability & crashes": 7,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 148,
-    "HIGH": 960,
+    "HIGH": 961,
     "LOW": 109,
     "MEDIUM": 490
   },
@@ -22033,30 +22033,43 @@
       "date_added": "2026-08-22",
       "description": "A reported Claude Code 2.1.240 Fedora repro found that user-level `autoMode.hard_deny` and `autoMode.soft_deny` entries could be parsed, merged with `$defaults`, and displayed by `claude auto-mode config` while still failing to affect classifier behavior. Matched scratch-HOME trials differed only by the custom deny rule, but both allowed the forbidden `rm victim.txt` action to delete the target file. The reporter also observed real custom hard-deny floors failing to block off-allowlist `git push` attempts in interactive sessions, while custom `autoMode.allow` entries did appear to change behavior. This makes `auto-mode config` output insufficient proof that a user-authored deny floor is actually enforced.",
       "workaround": "After adding any custom `autoMode.hard_deny` or `autoMode.soft_deny` rule, verify it with a harmless ground-truth probe under the exact launch mode, such as checking whether a scratch file survived a forbidden command. Do not rely on `claude auto-mode config` or the presence of the rule text as enforcement evidence. For commands that must never run, keep deterministic PreToolUse hooks, shell wrappers, git hooks, CI checks, or OS-level controls in the path, and make the first session step a canary that fails closed if the custom deny rule is not observed to block."
+    },
+    {
+      "id": "assistant-output-can-append-foreign-page-content-to-a-live-response",
+      "title": "Assistant output can append foreign page content to a live response.",
+      "category": "Model behavior & output",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88959"
+      ],
+      "date_added": "2026-08-23",
+      "description": "A reported Claude Code 2.1.237 macOS VS Code extension session appended about 15 KB of unrelated third-party web page UI text into an in-flight assistant message. The transcript showed the same API request ID as the legitimate reply, with the foreign content arriving about 81 seconds after the real final sentence and streaming until the user interrupted it. The reporter ruled out local proxy tooling and found the foreign string only in the affected session transcript, making the incident distinct from ordinary hallucinated wording or user-pasted content. Because the injected block was stored as assistant output, later turns could treat unrelated external text as trusted conversation history.",
+      "workaround": "If an assistant response suddenly appends unrelated page, app, or transcript content, stop the session before allowing further tools or external writes. Preserve the raw JSONL lines, request ID, timestamps, model, client surface, hooks, proxy settings, and local grep results before restarting from a clean summary that excludes the injected block. For audit-sensitive work, add a transcript-integrity check that flags abrupt source, language, speaker, or UI-copy changes inside one assistant response and requires human review before the contaminated history is reused."
     }
   ],
   "status_summary": {
-    "open": 1693,
+    "open": 1694,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 148,
-    "high": 960,
+    "high": 961,
     "low": 109,
     "medium": 490
   },
   "lastUpdated": "2026-08-23",
   "stats": {
-    "total": 1707,
+    "total": 1708,
     "critical": 148,
-    "high": 960,
+    "high": 961,
     "medium": 490,
     "low": 109,
-    "open": 1693,
+    "open": 1694,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-23",
-  "total": 1707
+  "total": 1708
 }
