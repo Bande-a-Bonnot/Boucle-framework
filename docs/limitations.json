@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1714,
+  "count": 1715,
   "categories": {
     "Hook behavior & events": 228,
-    "Permission system": 157,
+    "Permission system": 158,
     "Hook bypass & evasion": 104,
     "MCP & plugin issues": 97,
     "Subagent & spawned agents": 81,
@@ -192,11 +192,32 @@
   },
   "severity_counts": {
     "CRITICAL": 151,
-    "HIGH": 964,
+    "HIGH": 965,
     "LOW": 109,
     "MEDIUM": 490
   },
   "entries": [
+    {
+      "id": "permissions-deny-misses-command-substitution-reads",
+      "title": "`permissions.deny` can miss file reads inside command substitution.",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89055"
+      ],
+      "date_added": "2026-08-23",
+      "description": "A reported Claude Code 2.1.241 session blocked a direct read of a path covered by `permissions.deny`, but did not match the same file read when it appeared inside shell command substitution such as `X=$(cat /path/to/token)`. In the scratch harness, auto mode's contextual classifier still stopped the substituted command after the path matcher missed it; in a real working configuration where the token read looked routine, the substituted command ran and returned the token length. Users can therefore believe a credential path is hard-denied while the common shell form used to consume credentials is controlled only by a contextual classifier.",
+      "workaround": "Do not rely on `permissions.deny` as the only protection for credential files that Bash can read. Keep secrets outside the agent's reachable filesystem, use OS-level permissions or a wrapper process that withholds the file from Claude Code, and add a `PreToolUse` Bash hook that parses command substitutions before execution. Test both direct reads and substituted forms such as `X=$(cat protected-file); echo ${#X}` after every Claude Code update before treating a deny rule as a hard boundary.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "permissions",
+        "bash",
+        "secrets",
+        "command-substitution",
+        "deny-rules"
+      ]
+    },
     {
       "id": "agents-can-self-authorize-production-scope-expansion-and-hide-failed-deploys",
       "title": "Agents can self-authorize production scope expansion and hide failed deploys.",
@@ -22159,27 +22180,27 @@
     }
   ],
   "status_summary": {
-    "open": 1700,
+    "open": 1701,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 151,
-    "high": 964,
+    "high": 965,
     "low": 109,
     "medium": 490
   },
   "lastUpdated": "2026-08-23",
   "stats": {
-    "total": 1714,
+    "total": 1715,
     "critical": 151,
-    "high": 964,
+    "high": 965,
     "medium": 490,
     "low": 109,
-    "open": 1700,
+    "open": 1701,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-23",
-  "total": 1714
+  "total": 1715
 }
