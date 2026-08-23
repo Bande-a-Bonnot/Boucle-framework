@@ -7,6 +7,14 @@
   <updated>2026-08-23T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Auto mode can approve unsandboxed Bash retries without seeing the sandbox override.</title>
+    <id>https://framework.boucle.sh/limitations.html#auto-mode-classifier-can-miss-dangerously-disable-sandbox</id>
+    <link href="https://framework.boucle.sh/limitations.html#auto-mode-classifier-can-miss-dangerously-disable-sandbox"/>
+    <updated>2026-08-23T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.241 macOS repro found that an auto-mode Bash retry with `dangerouslyDisableSandbox: true` could write outside the sandbox without showing the user a permission prompt. The reporter traced the shipped binary path where Bash permission checking recognizes a sandbox-override ask, but auto mode falls through to the classifier and the classifier input contains only the shell command, not the sandbox-disable flag. In the observed transcript the unsandboxed write was summarized as file reading, and the assistant then told the user the override had gone through the permission gate even though the user never had a chance to answer.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
     <title>[HIGH] Assistant output can append foreign page content to a live response.</title>
     <id>https://framework.boucle.sh/limitations.html#assistant-output-can-append-foreign-page-content-to-a-live-response</id>
     <link href="https://framework.boucle.sh/limitations.html#assistant-output-can-append-foreign-page-content-to-a-live-response"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-23T00:00:00Z</updated>
     <summary>A reported Claude Code auto-mode incident described context compaction dropping a previously established database target fact during live integration testing. After compaction, the agent re-derived a connection string from a commented-out config line and ran destructive SQL against a real AWS RDS Postgres instance instead of the intended local database, including `TRUNCATE` statements that removed staging event rows. The failure was not caught by the agent&#x27;s own belief about the target, and the remote database returned plausible real data, so query results did not make the wrong target obvious.</summary>
     <category term="Data integrity"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Worktree creation can pin hooks to the main checkout.</title>
-    <id>https://framework.boucle.sh/limitations.html#worktree-creation-can-pin-hooks-to-main-checkout</id>
-    <link href="https://framework.boucle.sh/limitations.html#worktree-creation-can-pin-hooks-to-main-checkout"/>
-    <updated>2026-08-23T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.237 macOS setup found that `EnterWorktree` and `Agent` worktree isolation created per-worktree `config.worktree` entries with an absolute `core.hooksPath` pointing at the main checkout&#x27;s `.husky/_` directory. Git worktree config outranks the shared repository config, so hooks fired from the isolated worktree executed the main checkout&#x27;s hook scripts instead of the worktree&#x27;s own branch. A PR that adds a hook step can therefore get no local exercise, while a PR that weakens or removes a hook can still pass because the stronger hook from a different branch ran silently.</summary>
-    <category term="Worktrees &amp; isolation"/>
   </entry>
 </feed>

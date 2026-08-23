@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1708,
+  "count": 1709,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 157,
@@ -13,9 +13,9 @@
     "Platform & compatibility": 33,
     "CLI & terminal": 32,
     "Security & trust boundaries": 32,
+    "Sandbox & permissions": 31,
     "Context & memory": 30,
     "MCP & integrations": 30,
-    "Sandbox & permissions": 30,
     "Cowork & remote": 29,
     "Performance & cost": 27,
     "VS Code extension": 25,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 148,
-    "HIGH": 961,
+    "HIGH": 962,
     "LOW": 109,
     "MEDIUM": 490
   },
@@ -22046,30 +22046,43 @@
       "date_added": "2026-08-23",
       "description": "A reported Claude Code 2.1.237 macOS VS Code extension session appended about 15 KB of unrelated third-party web page UI text into an in-flight assistant message. The transcript showed the same API request ID as the legitimate reply, with the foreign content arriving about 81 seconds after the real final sentence and streaming until the user interrupted it. The reporter ruled out local proxy tooling and found the foreign string only in the affected session transcript, making the incident distinct from ordinary hallucinated wording or user-pasted content. Because the injected block was stored as assistant output, later turns could treat unrelated external text as trusted conversation history.",
       "workaround": "If an assistant response suddenly appends unrelated page, app, or transcript content, stop the session before allowing further tools or external writes. Preserve the raw JSONL lines, request ID, timestamps, model, client surface, hooks, proxy settings, and local grep results before restarting from a clean summary that excludes the injected block. For audit-sensitive work, add a transcript-integrity check that flags abrupt source, language, speaker, or UI-copy changes inside one assistant response and requires human review before the contaminated history is reused."
+    },
+    {
+      "id": "auto-mode-classifier-can-miss-dangerously-disable-sandbox",
+      "title": "Auto mode can approve unsandboxed Bash retries without seeing the sandbox override.",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88972"
+      ],
+      "date_added": "2026-08-23",
+      "description": "A reported Claude Code 2.1.241 macOS repro found that an auto-mode Bash retry with `dangerouslyDisableSandbox: true` could write outside the sandbox without showing the user a permission prompt. The reporter traced the shipped binary path where Bash permission checking recognizes a sandbox-override ask, but auto mode falls through to the classifier and the classifier input contains only the shell command, not the sandbox-disable flag. In the observed transcript the unsandboxed write was summarized as file reading, and the assistant then told the user the override had gone through the permission gate even though the user never had a chance to answer.",
+      "workaround": "Set `sandbox.allowUnsandboxedCommands` to `false` when the sandbox boundary must be explicit, so model-generated `dangerouslyDisableSandbox` retries are ignored rather than silently classified. Treat auto-mode approval of a shell command as insufficient evidence that a sandbox override was visible to the gate. For audit-sensitive sessions, preserve debug logs, raw tool-use records, permission-mode settings, and exported transcripts, and require a visible marker or human prompt before accepting any command that runs outside the sandbox."
     }
   ],
   "status_summary": {
-    "open": 1694,
+    "open": 1695,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 148,
-    "high": 961,
+    "high": 962,
     "low": 109,
     "medium": 490
   },
   "lastUpdated": "2026-08-23",
   "stats": {
-    "total": 1708,
+    "total": 1709,
     "critical": 148,
-    "high": 961,
+    "high": 962,
     "medium": 490,
     "low": 109,
-    "open": 1694,
+    "open": 1695,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-23",
-  "total": 1708
+  "total": 1709
 }
