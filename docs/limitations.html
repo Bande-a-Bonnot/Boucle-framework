@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1715</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-23.</span></p>
+        <p class="subtitle"><span id="total-count">1717</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-23.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -19305,9 +19305,33 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Set `sandbox.allowUnsandboxedCommands` to `false` when the sandbox boundary must be explicit, so model-generated `dangerouslyDisableSandbox` retries are ignored rather than silently classified. Treat auto-mode approval of a shell command as insufficient evidence that a sandbox override was visible to the gate. For audit-sensitive sessions, preserve debug logs, raw tool-use records, permission-mode settings, and exported transcripts, and require a visible marker or human prompt before accepting any command that runs outside the sandbox.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88972" target="_blank">#88972</a></div>
         </div>
-        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="88991" id="plugin-marketplace-autoupdate-can-block-pretooluse-on-windows" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="89063" id="mcp-requires-user-interaction-can-offer-dead-do-not-ask-again-rules" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1715</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>MCP `requiresUserInteraction` tools can offer dead `don&#x27;t ask again` rules.</h3>
+            <p>A reported Claude Code 2.1.241 local MCP repro found that a tool annotated with `_meta[&quot;anthropic/requiresUserInteraction&quot;]: true` still showed a `Yes, and don&#x27;t ask again` option. Selecting it wrote an allow rule such as `mcp__&lt;server&gt;__write` into `.claude/settings.local.json`, but the same annotated tool continued prompting on every call, which is consistent with the annotation and inconsistent with the prompt option. The reporter also identified a permission-result path where empty suggestions do not suppress synthesis of a whole-tool allow rule.</p>
+                        <!-- workaround:mcp-requires-user-interaction-can-offer-dead-do-not-ask-again-rules -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For MCP tools that require per-call user interaction, do not treat a saved `mcp__server__tool` allow rule as evidence that future calls will run unattended. Audit `.claude/settings.local.json` for dead or misleading MCP allow entries after testing annotated tools, keep sensitive MCP operations behind server-side authorization, and rerun a prompt canary whenever the server changes its `_meta` annotations. If a server later removes `requiresUserInteraction`, review any old allow rules before trusting them as deliberate persistent consent.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89063" target="_blank">#89063</a></div>
+        </div>
+        <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="89064" id="workflow-subagents-can-inherit-manual-mode-despite-acceptedits-docs" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1716</span>
+                <span class="kl-cat">Subagent &amp; spawned agents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Workflow subagents can inherit manual mode despite `acceptEdits` documentation.</h3>
+            <p>A reported Claude Code 2.1.241 WSL2 repro found that Workflow subagents did not always run with auto-approved file edits despite documentation saying they always run in `acceptEdits` and inherit only the tool allowlist. A simple workflow that asked an agent to edit one file raised a normal edit permission prompt when the parent session was in manual mode, but completed unattended after switching the parent session to accept-edits mode. The observed matrix suggests the subagent inherits the parent permission mode rather than forcing `acceptEdits`.</p>
+                        <!-- workaround:workflow-subagents-can-inherit-manual-mode-despite-acceptedits-docs -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Before launching long fan-out workflows that must run unattended, run a one-file edit canary under the exact parent permission mode and verify whether a subagent edit prompts. If the parent session is manual, assume workflow workers may block on file-edit prompts until the installed version or docs prove otherwise. Keep workflow phases idempotent, checkpoint outputs before blocked subagents, and prefer an explicit accept-edits parent session only when unattended edits are intended and safe.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89064" target="_blank">#89064</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="88991" id="plugin-marketplace-autoupdate-can-block-pretooluse-on-windows" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1717</span>
                 <span class="kl-cat">MCP &amp; plugin issues</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
