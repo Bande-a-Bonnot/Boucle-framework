@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1699</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-23.</span></p>
+        <p class="subtitle"><span id="total-count">1702</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-23.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -19113,9 +19113,45 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not leave many long-lived Claude Code sessions parked at prompts without monitoring host CPU and memory. If idle sessions accumulate sustained CPU, compare a fresh session with a pristine `CLAUDE_CONFIG_DIR` against the normal config, restart aged sessions, disable nonessential plugins or MCP servers, and capture whole-process CPU, per-thread wakeups, and syscall or GC evidence before filing a runtime report. For unattended agent fleets, budget for idle CPU separately from API usage and prefer session recycling over assuming an input prompt is cost-free.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88914" target="_blank">#88914</a></div>
         </div>
-        <div class="kl-entry" data-category="Permission system" data-issues="88891" id="custom-auto-mode-deny-rules-can-be-loaded-but-inert" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="Scheduling &amp; remote triggers" data-issues="88918" id="scheduled-task-runs-can-leak-completed-session-process-pairs" data-severity="critical" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1699</span>
+                <span class="kl-cat">Scheduling &amp; remote triggers</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Scheduled-task runs can leak completed session process pairs.</h3>
+            <p>A reported macOS Claude Code 2.1.237 Desktop scheduled-task setup completed each task normally, wrote an `end_turn` transcript, then left both the `Contents/Helpers/disclaimer` parent and `claude` child process alive indefinitely. The reporter found 33 leaked sessions across 8 scheduled tasks, including a 21-second job still resident 29 hours later, with each child holding API connections and about 220 MB. On a host with one hourly task plus several daily tasks, the accumulated leak was estimated around 16 GB of resident memory per day.</p>
+                        <!-- workaround:scheduled-task-runs-can-leak-completed-session-process-pairs -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Audit scheduled-task hosts for completed `claude` process pairs whose elapsed time is far longer than the task runtime, especially processes launched with the scheduled-task runner signature. Do not treat a clean transcript or responsive process as proof of teardown. Until the runner exits reliably, add a conservative external cleanup or alert that targets only completed scheduled-task sessions, preserve transcript end times, process ages, open connections, and bridge-session evidence, and avoid dense unattended schedules on memory-constrained machines.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88918" target="_blank">#88918</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="88919" id="always-allow-for-shell-redirects-can-write-noop-rules" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1700</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Always Allow for shell redirects can write rules that never satisfy the blocked gate.</h3>
+            <p>A reported Claude Code 2.1.241 repro found that when a Bash command is blocked because shell output redirection writes outside the session working directory, the permission prompt can still offer an `Always Allow` option that persists Bash and Read rules. Those rules do not cover the filesystem write gate that actually blocked the redirect, so the byte-identical command prompts again one tool call later and keeps proposing the same ineffective persistent grant. Repeated approvals accumulate allow entries while never terminating the prompt loop.</p>
+                        <!-- workaround:always-allow-for-shell-redirects-can-write-noop-rules -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat repeated `Always Allow` prompts for the same redirected Bash command as a permission-system mismatch, not user error. Prefer an explicit allowed working directory, a project-local output path followed by a separate supervised copy, or a narrower workflow that avoids out-of-cwd redirection until the prompt can represent the real gate. If the prompt loops, stop adding broad allow rules, inspect `.claude/settings.local.json` for redundant entries, and avoid switching to `--dangerously-skip-permissions` just to escape the broken approval path.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88919" target="_blank">#88919</a></div>
+        </div>
+        <div class="kl-entry" data-category="Cowork &amp; remote" data-issues="88921" id="windows-cowork-vm-service-can-loop-before-configuring-workspace" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1701</span>
+                <span class="kl-cat">Cowork &amp; remote</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Windows CoworkVMService can loop before configuring the isolated workspace.</h3>
+            <p>A reported Windows 11 Claude Desktop Cowork setup could not start the isolated Linux workspace used by `device_bash`: every shell attempt returned `Workspace unavailable`, while file-based bridge tools still worked. `CoworkVMService` started, initialized HCS and HCN, opened its named pipe server, and logged signature-verification setup, but then only logged repeated `[Server] Client connected` lines for hours. It never logged a configure call, VM creation attempt, timeout, or explanatory error, and the behavior persisted after enabling Hyper-V, confirming Windows Hypervisor Platform, deleting the service, clearing `C:\ProgramData\Claude`, reinstalling, and rebooting.</p>
+                        <!-- workaround:windows-cowork-vm-service-can-loop-before-configuring-workspace -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When Cowork shell tools report `Workspace unavailable` on Windows, distinguish a VM-handshake failure from general bridge loss by testing file bridge tools and inspecting `C:\ProgramData\Claude\Logs\cowork-service.log`. If the log repeats `Client connected` without any configure or VM-creation line, preserve the startup block, package version, Windows virtualization state, Code Integrity findings, and reinstall attempts before changing more system settings. Use non-shell bridge tools or another host for shell-dependent work, and bound log growth with a temporary local rotation only as a stopgap.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88921" target="_blank">#88921</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="88891" id="custom-auto-mode-deny-rules-can-be-loaded-but-inert" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1702</span>
                 <span class="kl-cat">Permission system</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>

@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1699,
+  "count": 1702,
   "categories": {
     "Hook behavior & events": 228,
-    "Permission system": 156,
+    "Permission system": 157,
     "Hook bypass & evasion": 104,
     "MCP & plugin issues": 96,
     "Subagent & spawned agents": 79,
@@ -16,7 +16,7 @@
     "Context & memory": 30,
     "MCP & integrations": 30,
     "Sandbox & permissions": 30,
-    "Cowork & remote": 27,
+    "Cowork & remote": 28,
     "Performance & cost": 27,
     "VS Code extension": 25,
     "Agents & subagents": 23,
@@ -27,7 +27,7 @@
     "Bash & shell execution": 19,
     "Remote & cloud": 19,
     "Model behavior": 18,
-    "Scheduling & remote triggers": 16,
+    "Scheduling & remote triggers": 17,
     "Permissions & safety": 14,
     "Worktree": 14,
     "File system & paths": 13,
@@ -191,8 +191,8 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 146,
-    "HIGH": 954,
+    "CRITICAL": 147,
+    "HIGH": 956,
     "LOW": 109,
     "MEDIUM": 490
   },
@@ -21883,6 +21883,45 @@
       "workaround": "Do not leave many long-lived Claude Code sessions parked at prompts without monitoring host CPU and memory. If idle sessions accumulate sustained CPU, compare a fresh session with a pristine `CLAUDE_CONFIG_DIR` against the normal config, restart aged sessions, disable nonessential plugins or MCP servers, and capture whole-process CPU, per-thread wakeups, and syscall or GC evidence before filing a runtime report. For unattended agent fleets, budget for idle CPU separately from API usage and prefer session recycling over assuming an input prompt is cost-free."
     },
     {
+      "id": "scheduled-task-runs-can-leak-completed-session-process-pairs",
+      "title": "Scheduled-task runs can leak completed session process pairs.",
+      "category": "Scheduling & remote triggers",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88918"
+      ],
+      "date_added": "2026-08-23",
+      "description": "A reported macOS Claude Code 2.1.237 Desktop scheduled-task setup completed each task normally, wrote an `end_turn` transcript, then left both the `Contents/Helpers/disclaimer` parent and `claude` child process alive indefinitely. The reporter found 33 leaked sessions across 8 scheduled tasks, including a 21-second job still resident 29 hours later, with each child holding API connections and about 220 MB. On a host with one hourly task plus several daily tasks, the accumulated leak was estimated around 16 GB of resident memory per day.",
+      "workaround": "Audit scheduled-task hosts for completed `claude` process pairs whose elapsed time is far longer than the task runtime, especially processes launched with the scheduled-task runner signature. Do not treat a clean transcript or responsive process as proof of teardown. Until the runner exits reliably, add a conservative external cleanup or alert that targets only completed scheduled-task sessions, preserve transcript end times, process ages, open connections, and bridge-session evidence, and avoid dense unattended schedules on memory-constrained machines."
+    },
+    {
+      "id": "always-allow-for-shell-redirects-can-write-noop-rules",
+      "title": "Always Allow for shell redirects can write rules that never satisfy the blocked gate.",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88919"
+      ],
+      "date_added": "2026-08-23",
+      "description": "A reported Claude Code 2.1.241 repro found that when a Bash command is blocked because shell output redirection writes outside the session working directory, the permission prompt can still offer an `Always Allow` option that persists Bash and Read rules. Those rules do not cover the filesystem write gate that actually blocked the redirect, so the byte-identical command prompts again one tool call later and keeps proposing the same ineffective persistent grant. Repeated approvals accumulate allow entries while never terminating the prompt loop.",
+      "workaround": "Treat repeated `Always Allow` prompts for the same redirected Bash command as a permission-system mismatch, not user error. Prefer an explicit allowed working directory, a project-local output path followed by a separate supervised copy, or a narrower workflow that avoids out-of-cwd redirection until the prompt can represent the real gate. If the prompt loops, stop adding broad allow rules, inspect `.claude/settings.local.json` for redundant entries, and avoid switching to `--dangerously-skip-permissions` just to escape the broken approval path."
+    },
+    {
+      "id": "windows-cowork-vm-service-can-loop-before-configuring-workspace",
+      "title": "Windows CoworkVMService can loop before configuring the isolated workspace.",
+      "category": "Cowork & remote",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88921"
+      ],
+      "date_added": "2026-08-23",
+      "description": "A reported Windows 11 Claude Desktop Cowork setup could not start the isolated Linux workspace used by `device_bash`: every shell attempt returned `Workspace unavailable`, while file-based bridge tools still worked. `CoworkVMService` started, initialized HCS and HCN, opened its named pipe server, and logged signature-verification setup, but then only logged repeated `[Server] Client connected` lines for hours. It never logged a configure call, VM creation attempt, timeout, or explanatory error, and the behavior persisted after enabling Hyper-V, confirming Windows Hypervisor Platform, deleting the service, clearing `C:\\ProgramData\\Claude`, reinstalling, and rebooting.",
+      "workaround": "When Cowork shell tools report `Workspace unavailable` on Windows, distinguish a VM-handshake failure from general bridge loss by testing file bridge tools and inspecting `C:\\ProgramData\\Claude\\Logs\\cowork-service.log`. If the log repeats `Client connected` without any configure or VM-creation line, preserve the startup block, package version, Windows virtualization state, Code Integrity findings, and reinstall attempts before changing more system settings. Use non-shell bridge tools or another host for shell-dependent work, and bound log growth with a temporary local rotation only as a stopgap."
+    },
+    {
       "id": "custom-auto-mode-deny-rules-can-be-loaded-but-inert",
       "title": "Custom auto-mode deny rules can be loaded but inert.",
       "category": "Permission system",
@@ -21897,27 +21936,27 @@
     }
   ],
   "status_summary": {
-    "open": 1685,
+    "open": 1688,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 146,
-    "high": 954,
+    "critical": 147,
+    "high": 956,
     "low": 109,
     "medium": 490
   },
   "lastUpdated": "2026-08-23",
   "stats": {
-    "total": 1699,
-    "critical": 146,
-    "high": 954,
+    "total": 1702,
+    "critical": 147,
+    "high": 956,
     "medium": 490,
     "low": 109,
-    "open": 1685,
+    "open": 1688,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-23",
-  "total": 1699
+  "total": 1702
 }
