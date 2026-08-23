@@ -4,21 +4,37 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-08-22T00:00:00Z</updated>
+  <updated>2026-08-23T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
     <title>[HIGH] Custom auto-mode deny rules can be loaded but inert.</title>
     <id>https://framework.boucle.sh/limitations.html#custom-auto-mode-deny-rules-can-be-loaded-but-inert</id>
     <link href="https://framework.boucle.sh/limitations.html#custom-auto-mode-deny-rules-can-be-loaded-but-inert"/>
-    <updated>2026-08-22T00:00:00Z</updated>
+    <updated>2026-08-23T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.240 Fedora repro found that user-level `autoMode.hard_deny` and `autoMode.soft_deny` entries could be parsed, merged with `$defaults`, and displayed by `claude auto-mode config` while still failing to affect classifier behavior. Matched scratch-HOME trials differed only by the custom deny rule, but both allowed the forbidden `rm victim.txt` action to delete the target file. The reporter also observed real custom hard-deny floors failing to block off-allowlist `git push` attempts in interactive sessions, while custom `autoMode.allow` entries did appear to change behavior. This makes `auto-mode config` output insufficient proof that a user-authored deny floor is actually enforced.</summary>
     <category term="Permission system"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Idle Claude Code sessions can burn CPU through timer-triggered garbage collection.</title>
+    <id>https://framework.boucle.sh/limitations.html#idle-claude-code-sessions-can-burn-cpu-through-timer-triggered-gc</id>
+    <link href="https://framework.boucle.sh/limitations.html#idle-claude-code-sessions-can-burn-cpu-through-timer-triggered-gc"/>
+    <updated>2026-08-23T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.240 Linux native session continued using measurable CPU while parked at the input prompt with no active turn. Controlled 30-second samples showed a pristine config using about 0.3-0.8% CPU and a typical config with plugins, hooks, one MCP server, and CLAUDE.md using about 1.46% CPU; longer production sessions measured about 1.4-5% while idle. The reporter traced the idle cost to short timers waking the event loop roughly 20-26 times per second in a typical config, about one Eden garbage collection per second, and repeated wakeups of JavaScriptCore helper threads and mimalloc cleanup work even when the terminal output did not change.</summary>
+    <category term="Performance &amp; cost"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Windows VS Code extension file watching can pin one CPU core.</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-vscode-extension-file-watcher-can-pin-one-cpu-core</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-vscode-extension-file-watcher-can-pin-one-cpu-core"/>
+    <updated>2026-08-23T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.240 VS Code extension setup on Windows 11 repeatedly left an extension host pinned at 95-100% of one performance core for hours while Claude Code&#x27;s own extension log showed only idle heartbeats. The reporter sampled the spinning process at about 245,000 other I/O operations per second with essentially zero reads, matching a native watched-directory busy-loop rather than ordinary JavaScript or scan work. Duplicate watch paths through NTFS junctions into shared Claude config trees and bulk skill rewrites appeared to amplify the problem, but one spin latched about 35 minutes after the last file change and persisted until the extension host was killed.</summary>
+    <category term="VS Code extension"/>
   </entry>
   <entry>
     <title>[HIGH] Desktop Cowork can advertise MCP elicitation without rendering UI.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-cowork-can-advertise-mcp-elicitation-without-rendering-ui</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-cowork-can-advertise-mcp-elicitation-without-rendering-ui"/>
-    <updated>2026-08-22T00:00:00Z</updated>
+    <updated>2026-08-23T00:00:00Z</updated>
     <summary>A reported Claude Desktop Cowork session on macOS used an embedded claude-code runtime that declared the MCP `elicitation` capability for the session handling `tools/call`, while a sibling `Anthropic/ClaudeAI` session to the same server did not. When the MCP server sent `elicitation/create`, the embedded client accepted the request but rendered no form in the Desktop UI, returned no display error, and only resolved the elicitation as cancelled after the originating tool call hit the client&#x27;s 60-second timeout. Servers therefore cannot distinguish a user reading a displayed approval form from a hidden form that will never appear, even though the capability bit steers them onto the elicitation path.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -26,7 +42,7 @@
     <title>[HIGH] Subagents can inherit stale CLAUDE.md and memory snapshots.</title>
     <id>https://framework.boucle.sh/limitations.html#subagents-can-inherit-stale-claude-md-and-memory-snapshots</id>
     <link href="https://framework.boucle.sh/limitations.html#subagents-can-inherit-stale-claude-md-and-memory-snapshots"/>
-    <updated>2026-08-22T00:00:00Z</updated>
+    <updated>2026-08-23T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.237 Linux session found that Agent-tool subagents received the CLAUDE.md and memory content captured when the parent session started, not the files as they existed when the subagent was spawned. In the report, a parent session started at 12:31 and dispatched a subagent at 21:10, so the subagent saw context that was 8h39m old. A memory file deleted from disk after parent startup still appeared in the child context, while memory files written later were absent. Because the stale instructions were not marked stale, the subagent could confidently act on a superseded rule that no longer existed on disk.</summary>
     <category term="Subagent &amp; spawned agents"/>
   </entry>
@@ -34,7 +50,7 @@
     <title>[HIGH] Nested repository hooks are not loaded from parent-root sessions.</title>
     <id>https://framework.boucle.sh/limitations.html#nested-repository-hooks-are-not-loaded-from-parent-sessions</id>
     <link href="https://framework.boucle.sh/limitations.html#nested-repository-hooks-are-not-loaded-from-parent-sessions"/>
-    <updated>2026-08-22T00:00:00Z</updated>
+    <updated>2026-08-23T00:00:00Z</updated>
     <summary>A reported Claude Code multi-repo workflow keeps dependent checkouts inside a parent workspace and starts the session at the parent root. When tool calls operate inside a nested repository, that nested repo&#x27;s `.claude/settings.json` hooks are not discovered or loaded, and directories added with `--add-dir` are documented as file-access grants rather than settings or hook roots. This means a child checkout can carry project-specific PreToolUse, lint, test, protected-path, or custody hooks that never fire while the parent session edits it. Parent hooks can still fire in the child cwd, so users may see hook activity while the child repo&#x27;s own guardrails remain absent. The reporter explicitly notes that arbitrary nested hook auto-loading would be unsafe without a separate trust decision, making the practical gap a missing trust-gated way to opt into nested hook roots.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -42,7 +58,7 @@
     <title>[HIGH] Bash deny patterns can be bypassed by git flag prefixes.</title>
     <id>https://framework.boucle.sh/limitations.html#bash-deny-patterns-can-be-bypassed-by-git-flag-prefixes</id>
     <link href="https://framework.boucle.sh/limitations.html#bash-deny-patterns-can-be-bypassed-by-git-flag-prefixes"/>
-    <updated>2026-08-22T00:00:00Z</updated>
+    <updated>2026-08-23T00:00:00Z</updated>
     <summary>A reported Claude Code Windows Git Bash session with `permissions.defaultMode: &quot;acceptEdits&quot;` found that destructive Git deny rules such as `Bash(git checkout -- *)`, `Bash(git restore *)`, `Bash(git reset --hard *)`, and `Bash(git branch -D *)` matched the bare command form but were bypassed when a flag appeared before the subcommand, for example `git -C &lt;repo&gt; checkout -- &lt;file&gt;`. The prefixed command matched neither the user&#x27;s allow nor deny pattern and still executed without a confirmation prompt, silently discarding an uncommitted file change in the repro. This makes raw command-prefix matching unsafe for destructive Bash policies because common git flags such as `-C`, `-c`, `--git-dir`, or `--work-tree` can move the dangerous verb away from the literal start of the command.</summary>
     <category term="Permission system"/>
   </entry>
@@ -50,7 +66,7 @@
     <title>[HIGH] Remote Control spawned sessions can ignore the requested permission mode.</title>
     <id>https://framework.boucle.sh/limitations.html#remote-control-spawned-sessions-can-ignore-permission-mode</id>
     <link href="https://framework.boucle.sh/limitations.html#remote-control-spawned-sessions-can-ignore-permission-mode"/>
-    <updated>2026-08-22T00:00:00Z</updated>
+    <updated>2026-08-23T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.240 macOS Remote Control setup accepted `claude remote-control --permission-mode bypassPermissions` and propagated that flag onto spawned `sdk-cli` process arguments, but every spawned web or mobile-driven session still recorded and behaved as `auto`. Setting `permissions.defaultMode: &quot;bypassPermissions&quot;` in user settings did not fix the Remote Control path, even though a direct local print session honored it. The same report found that messages from a more-permissive local session to the auto-mode Remote Control session were held for recipient approval, but no prompt appeared in the web/mobile app, host terminal, or subprocess UI, so the hold expired without a reachable approval surface.</summary>
     <category term="Remote &amp; cloud"/>
   </entry>
@@ -58,7 +74,7 @@
     <title>[CRITICAL] Plan approval can authorize model-authored commands.</title>
     <id>https://framework.boucle.sh/limitations.html#plan-approval-can-authorize-model-authored-commands</id>
     <link href="https://framework.boucle.sh/limitations.html#plan-approval-can-authorize-model-authored-commands"/>
-    <updated>2026-08-22T00:00:00Z</updated>
+    <updated>2026-08-23T00:00:00Z</updated>
     <summary>A reported Claude Code plan-mode session treated approval of a model-authored plan as authority to run shell commands that appeared in the plan&#x27;s verification section, even though the human had approved file edits but had not separately approved a build. The reporter&#x27;s transcript extraction found two assistant-issued Bash calls containing the build command and zero human-typed turns containing that command before execution. The risky boundary is provenance: a command written by the model into an approved plan can be read back as part of the approved artifact, making plan approval look like per-command execution consent.</summary>
     <category term="Plan mode"/>
   </entry>
@@ -66,7 +82,7 @@
     <title>[HIGH] Desktop hook failures can lose their diagnostics.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-hook-failures-can-lose-diagnostics</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-hook-failures-can-lose-diagnostics"/>
-    <updated>2026-08-22T00:00:00Z</updated>
+    <updated>2026-08-23T00:00:00Z</updated>
     <summary>A reported Claude Code desktop setup with relative project hook commands found that hook launch failures were invisible in the desktop UI and recorded only as `hook_non_blocking_error` transcript attachments with empty `content`. The reporter correlated more than 72,000 such records across months of sessions and found no errno, resolved path, exit status, stderr, or user-visible notice, even though guardrail hooks such as PreToolUse Edit and Bash groups were not running during cwd drift windows. This makes a failed policy hook look like normal operation unless users audit transcript internals or external hook logs.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -74,7 +90,7 @@
     <title>[HIGH] AskUserQuestion auto-results can look like human approval.</title>
     <id>https://framework.boucle.sh/limitations.html#askuserquestion-auto-results-can-look-like-human-approval</id>
     <link href="https://framework.boucle.sh/limitations.html#askuserquestion-auto-results-can-look-like-human-approval"/>
-    <updated>2026-08-22T00:00:00Z</updated>
+    <updated>2026-08-23T00:00:00Z</updated>
     <summary>A reported Claude Code subagent workflow found that `AskUserQuestion` returned the same success-shaped text whether a real human selected an option or the answer was produced automatically without any user seeing the prompt. In the reported case, isolated subagents asked approval questions for implementation and deletion decisions and received the recommended option as selected, but the parent user was never shown the questions. Agents that treat the tool result as a human approval gate can therefore proceed with consequential work from an auto-returned answer that has no visible provenance marker.</summary>
     <category term="Permission system"/>
   </entry>
@@ -82,7 +98,7 @@
     <title>[HIGH] Background bridge sessions can persistently disable project MCP servers.</title>
     <id>https://framework.boucle.sh/limitations.html#background-bridge-sessions-can-persistently-disable-project-mcp-servers</id>
     <link href="https://framework.boucle.sh/limitations.html#background-bridge-sessions-can-persistently-disable-project-mcp-servers"/>
-    <updated>2026-08-22T00:00:00Z</updated>
+    <updated>2026-08-23T00:00:00Z</updated>
     <summary>A reported Claude Code macOS background job launched through the claude.ai/code bridge wrote the project&#x27;s `.mcp.json` server names into both `enabledMcpjsonServers` and `disabledMcpjsonServers` in `.claude/settings.local.json` at job startup. Because the disabled list wins and the file persists, previously approved project HTTP MCP servers stayed disabled for later interactive sessions too. The reporter found no transcript write to the settings file, which points to a harness startup mutation leaking a non-interactive launch limitation into durable project configuration.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -90,7 +106,7 @@
     <title>[HIGH] Auto Mode can bypass explicit Bash deny rules.</title>
     <id>https://framework.boucle.sh/limitations.html#auto-mode-can-bypass-explicit-bash-deny-rules</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-mode-can-bypass-explicit-bash-deny-rules"/>
-    <updated>2026-08-22T00:00:00Z</updated>
+    <updated>2026-08-23T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.239 macOS setup found that an explicit `permissions.deny` rule such as `Bash(curl *)` was enforced when the same session was switched to manual mode, but the identical `curl https://example.com` Bash command executed successfully while Auto Mode was active. The reporter reproduced the behavior in both a standalone CLI install and Claude Desktop&#x27;s bundled Claude Code with the same settings excerpt, making the risk a mode-dependent gap rather than a missing rule. Users who treat static deny rules as a hard network-egress boundary can therefore get a silent allow when the auto-mode classifier considers a denied command benign.</summary>
     <category term="Permission system"/>
   </entry>
@@ -98,7 +114,7 @@
     <title>[HIGH] Print-mode read audits can finish with zero output.</title>
     <id>https://framework.boucle.sh/limitations.html#print-mode-read-audits-can-finish-with-zero-output</id>
     <link href="https://framework.boucle.sh/limitations.html#print-mode-read-audits-can-finish-with-zero-output"/>
-    <updated>2026-08-22T00:00:00Z</updated>
+    <updated>2026-08-23T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.235 macOS print-mode repro found that `claude -p --no-session-persistence --permission-mode dontAsk --tools Read --output-format text` could complete a multi-file read-only audit with no stdout, no stderr, and a zero-byte redirected output file. Simple controls still worked: a tools-disabled PONG prompt and a one-file Read followed by PONG both returned output. The failure therefore leaves automation unable to distinguish a completed but lost audit report from a valid empty result unless the wrapper checks for content.</summary>
     <category term="CLI &amp; terminal"/>
   </entry>
@@ -106,7 +122,7 @@
     <title>[CRITICAL] Compaction can drop destructive-operation target facts.</title>
     <id>https://framework.boucle.sh/limitations.html#compaction-can-drop-destructive-operation-target-facts</id>
     <link href="https://framework.boucle.sh/limitations.html#compaction-can-drop-destructive-operation-target-facts"/>
-    <updated>2026-08-22T00:00:00Z</updated>
+    <updated>2026-08-23T00:00:00Z</updated>
     <summary>A reported Claude Code auto-mode incident described context compaction dropping a previously established database target fact during live integration testing. After compaction, the agent re-derived a connection string from a commented-out config line and ran destructive SQL against a real AWS RDS Postgres instance instead of the intended local database, including `TRUNCATE` statements that removed staging event rows. The failure was not caught by the agent&#x27;s own belief about the target, and the remote database returned plausible real data, so query results did not make the wrong target obvious.</summary>
     <category term="Data integrity"/>
   </entry>
@@ -114,7 +130,7 @@
     <title>[HIGH] Worktree creation can pin hooks to the main checkout.</title>
     <id>https://framework.boucle.sh/limitations.html#worktree-creation-can-pin-hooks-to-main-checkout</id>
     <link href="https://framework.boucle.sh/limitations.html#worktree-creation-can-pin-hooks-to-main-checkout"/>
-    <updated>2026-08-22T00:00:00Z</updated>
+    <updated>2026-08-23T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.237 macOS setup found that `EnterWorktree` and `Agent` worktree isolation created per-worktree `config.worktree` entries with an absolute `core.hooksPath` pointing at the main checkout&#x27;s `.husky/_` directory. Git worktree config outranks the shared repository config, so hooks fired from the isolated worktree executed the main checkout&#x27;s hook scripts instead of the worktree&#x27;s own branch. A PR that adds a hook step can therefore get no local exercise, while a PR that weakens or removes a hook can still pass because the stronger hook from a different branch ran silently.</summary>
     <category term="Worktrees &amp; isolation"/>
   </entry>
@@ -122,7 +138,7 @@
     <title>[HIGH] Auto-resume after a weekly limit reset can look like user authorization.</title>
     <id>https://framework.boucle.sh/limitations.html#auto-resume-can-spend-fresh-weekly-quota</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-resume-can-spend-fresh-weekly-quota"/>
-    <updated>2026-08-22T00:00:00Z</updated>
+    <updated>2026-08-23T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.239 session hit the weekly usage limit during an intentionally time-boxed heavy multi-agent workflow, then auto-injected a continuation message after the reset in a form that looked like a user turn. The prior user instruction was to use leftover quota before the reset and downgrade afterward, but the model treated the auto-continuation as current authorization to keep using the costly model and workflow, consuming roughly 20% of the fresh weekly quota before the user noticed.</summary>
     <category term="Performance &amp; cost"/>
   </entry>
@@ -130,7 +146,7 @@
     <title>[HIGH] Custom subagent registry can silently drop safety-gate agents.</title>
     <id>https://framework.boucle.sh/limitations.html#custom-subagent-registry-can-silently-drop-safety-gate-agents</id>
     <link href="https://framework.boucle.sh/limitations.html#custom-subagent-registry-can-silently-drop-safety-gate-agents"/>
-    <updated>2026-08-22T00:00:00Z</updated>
+    <updated>2026-08-23T00:00:00Z</updated>
     <summary>A reported Claude Code Windows setup found that defining five custom agents under `.claude/agents` or `~/.claude/agents` loaded only three, with the alphabetically last two custom agents missing and no startup warning. Splitting the same files across user and project scopes did not avoid the effective cap. The failure only surfaced later as `Agent type ... not found`, which is easy to miss if a CLAUDE.md workflow treats a missing `risk-reviewer` or similar subagent as a soft checklist step before pushes or scoring changes.</summary>
     <category term="Subagent &amp; spawned agents"/>
   </entry>
@@ -138,7 +154,7 @@
     <title>[HIGH] SessionStart hooks can fire for phantom startup sessions.</title>
     <id>https://framework.boucle.sh/limitations.html#sessionstart-hooks-can-fire-for-phantom-startup-sessions</id>
     <link href="https://framework.boucle.sh/limitations.html#sessionstart-hooks-can-fire-for-phantom-startup-sessions"/>
-    <updated>2026-08-22T00:00:00Z</updated>
+    <updated>2026-08-23T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.237 desktop setup logged many `SessionStart` hook invocations with `source=startup` whose `transcript_path` never appeared on disk. The reporter counted 83 startup SessionStart events in one day, of which 68 had no transcript file. Hooks that deliver messages, mutate state, or mark work as read can therefore attribute side effects to sessions that never actually ran, making delivery look successful while no model turn consumed the context.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -146,24 +162,8 @@
     <title>[CRITICAL] PreToolUse hooks can silently stop firing mid-session.</title>
     <id>https://framework.boucle.sh/limitations.html#pretooluse-hooks-can-silently-stop-mid-session</id>
     <link href="https://framework.boucle.sh/limitations.html#pretooluse-hooks-can-silently-stop-mid-session"/>
-    <updated>2026-08-22T00:00:00Z</updated>
+    <updated>2026-08-23T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.238 Windows interactive session ran a project-scoped Python PreToolUse hook normally for hours, then stopped invoking it for every later Bash, PowerShell, Edit, and Write-class call in that one session. A concurrent session in the same project with the same settings file continued logging hook calls, and the affected hook&#x27;s stderr file was untouched, indicating the hook process was not launched and failed silently rather than crashing. The affected settings file lived on a DriveFS virtual volume, but the root cause was not reproduced or isolated.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] /clear can silently terminate persistent Monitor background tasks.</title>
-    <id>https://framework.boucle.sh/limitations.html#clear-can-silently-terminate-persistent-monitor-background-tasks</id>
-    <link href="https://framework.boucle.sh/limitations.html#clear-can-silently-terminate-persistent-monitor-background-tasks"/>
-    <updated>2026-08-22T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.237 Windows setup found that a `Monitor({persistent: true})` background task was terminated after the owning session ran `/clear`, with no transcript notice, no notification, and no visible status that the session had lost its wake mechanism. The reporter observed two independent sessions where monitor parent and child processes existed before `/clear` and were gone immediately afterward. A SessionStart hook message telling the session to re-arm was marked read, but the monitor stayed absent because the model never took another turn. Older 2.1.229 behavior reportedly left orphaned child processes instead, which still broke notification delivery while looking alive.</summary>
-    <category term="Scheduling &amp; remote triggers"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Workflow scriptPath size can trigger a false control-character rejection.</title>
-    <id>https://framework.boucle.sh/limitations.html#workflow-scriptpath-size-can-trigger-false-control-character-rejection</id>
-    <link href="https://framework.boucle.sh/limitations.html#workflow-scriptpath-size-can-trigger-false-control-character-rejection"/>
-    <updated>2026-08-22T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.239 Windows repro found that `Workflow({scriptPath})` can reject pure ASCII scripts once total file size crosses a low threshold, somewhere above about 850 bytes and below about 2.1 KB, even when every line is short and the file contains no hidden control characters. The rejection message blames hidden control characters in the approval dialog and points users toward `canUseTool`, `PermissionRequest`, permission-prompt tooling, and hook configuration, but the same session had no matching Workflow hook or permission rule. Passing larger content inline through `script` worked, suggesting the failure is in the approval handler&#x27;s `updatedInput` construction for file-backed scripts rather than in the workflow script itself.</summary>
-    <category term="Permission system"/>
   </entry>
 </feed>
