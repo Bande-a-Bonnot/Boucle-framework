@@ -1,12 +1,12 @@
 {
   "version": "0.13.0",
-  "count": 1715,
+  "count": 1717,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 158,
     "Hook bypass & evasion": 104,
-    "MCP & plugin issues": 97,
-    "Subagent & spawned agents": 81,
+    "MCP & plugin issues": 98,
+    "Subagent & spawned agents": 82,
     "Desktop & IDE integration": 60,
     "TUI & display": 37,
     "Configuration behavior": 33,
@@ -192,9 +192,9 @@
   },
   "severity_counts": {
     "CRITICAL": 151,
-    "HIGH": 965,
+    "HIGH": 966,
     "LOW": 109,
-    "MEDIUM": 490
+    "MEDIUM": 491
   },
   "entries": [
     {
@@ -22166,6 +22166,32 @@
       "workaround": "Set `sandbox.allowUnsandboxedCommands` to `false` when the sandbox boundary must be explicit, so model-generated `dangerouslyDisableSandbox` retries are ignored rather than silently classified. Treat auto-mode approval of a shell command as insufficient evidence that a sandbox override was visible to the gate. For audit-sensitive sessions, preserve debug logs, raw tool-use records, permission-mode settings, and exported transcripts, and require a visible marker or human prompt before accepting any command that runs outside the sandbox."
     },
     {
+      "id": "mcp-requires-user-interaction-can-offer-dead-do-not-ask-again-rules",
+      "title": "MCP `requiresUserInteraction` tools can offer dead `don't ask again` rules.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89063"
+      ],
+      "date_added": "2026-08-23",
+      "description": "A reported Claude Code 2.1.241 local MCP repro found that a tool annotated with `_meta[\"anthropic/requiresUserInteraction\"]: true` still showed a `Yes, and don't ask again` option. Selecting it wrote an allow rule such as `mcp__<server>__write` into `.claude/settings.local.json`, but the same annotated tool continued prompting on every call, which is consistent with the annotation and inconsistent with the prompt option. The reporter also identified a permission-result path where empty suggestions do not suppress synthesis of a whole-tool allow rule.",
+      "workaround": "For MCP tools that require per-call user interaction, do not treat a saved `mcp__server__tool` allow rule as evidence that future calls will run unattended. Audit `.claude/settings.local.json` for dead or misleading MCP allow entries after testing annotated tools, keep sensitive MCP operations behind server-side authorization, and rerun a prompt canary whenever the server changes its `_meta` annotations. If a server later removes `requiresUserInteraction`, review any old allow rules before trusting them as deliberate persistent consent."
+    },
+    {
+      "id": "workflow-subagents-can-inherit-manual-mode-despite-acceptedits-docs",
+      "title": "Workflow subagents can inherit manual mode despite `acceptEdits` documentation.",
+      "category": "Subagent & spawned agents",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89064"
+      ],
+      "date_added": "2026-08-23",
+      "description": "A reported Claude Code 2.1.241 WSL2 repro found that Workflow subagents did not always run with auto-approved file edits despite documentation saying they always run in `acceptEdits` and inherit only the tool allowlist. A simple workflow that asked an agent to edit one file raised a normal edit permission prompt when the parent session was in manual mode, but completed unattended after switching the parent session to accept-edits mode. The observed matrix suggests the subagent inherits the parent permission mode rather than forcing `acceptEdits`.",
+      "workaround": "Before launching long fan-out workflows that must run unattended, run a one-file edit canary under the exact parent permission mode and verify whether a subagent edit prompts. If the parent session is manual, assume workflow workers may block on file-edit prompts until the installed version or docs prove otherwise. Keep workflow phases idempotent, checkpoint outputs before blocked subagents, and prefer an explicit accept-edits parent session only when unattended edits are intended and safe."
+    },
+    {
       "id": "plugin-marketplace-autoupdate-can-block-pretooluse-on-windows",
       "title": "Plugin marketplace auto-update can block PreToolUse dispatch on Windows.",
       "category": "MCP & plugin issues",
@@ -22180,27 +22206,27 @@
     }
   ],
   "status_summary": {
-    "open": 1701,
+    "open": 1703,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 151,
-    "high": 965,
+    "high": 966,
     "low": 109,
-    "medium": 490
+    "medium": 491
   },
   "lastUpdated": "2026-08-23",
   "stats": {
-    "total": 1715,
+    "total": 1717,
     "critical": 151,
-    "high": 965,
-    "medium": 490,
+    "high": 966,
+    "medium": 491,
     "low": 109,
-    "open": 1701,
+    "open": 1703,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-23",
-  "total": 1715
+  "total": 1717
 }
