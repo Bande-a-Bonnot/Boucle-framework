@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1709,
+  "count": 1710,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 157,
@@ -15,8 +15,8 @@
     "Security & trust boundaries": 32,
     "Sandbox & permissions": 31,
     "Context & memory": 30,
+    "Cowork & remote": 30,
     "MCP & integrations": 30,
-    "Cowork & remote": 29,
     "Performance & cost": 27,
     "VS Code extension": 25,
     "Agents & subagents": 23,
@@ -192,11 +192,32 @@
   },
   "severity_counts": {
     "CRITICAL": 148,
-    "HIGH": 962,
+    "HIGH": 963,
     "LOW": 109,
     "MEDIUM": 490
   },
   "entries": [
+    {
+      "id": "remote-control-flags-can-break-after-global-cli-flags",
+      "title": "Remote Control flags can be rejected when global CLI flags precede the subcommand.",
+      "category": "Cowork & remote",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/88980"
+      ],
+      "date_added": "2026-08-23",
+      "description": "A reported Claude Code 2.1.240-2.1.241 repro found that `claude remote-control` can reject its own documented flags when any global Claude CLI flag appears before the `remote-control` subcommand. The normal `claude remote-control --spawn bogus` path reaches Remote Control validation, but `claude --debug remote-control --spawn bogus` fails earlier with `unknown option '--spawn'`. The report traces the fallback path to argument slicing that assumes the subcommand is always at a fixed argv position, so wrappers that inject global flags such as session identifiers, plugin directories, verbose mode, or development-channel flags can make `--name`, `--spawn`, `--capacity`, `--session-id`, `--continue`, `--sandbox`, and related Remote Control options unusable before the Remote Control parser runs.",
+      "workaround": "When diagnosing Remote Control option failures, first reproduce with a stock command that places `remote-control` before all Remote Control flags and avoids wrapper-injected global flags. If a wrapper or package manager injects global options before the subcommand, configure an explicit Remote Control passthrough or run the underlying Claude Code binary directly for bridge startup. Preserve both the failing global-flag command and the stock command output, because `unknown option` can mean the main CLI parser consumed the invocation before Remote Control validation saw it.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "remote-control",
+        "cli",
+        "flags",
+        "wrappers",
+        "argv"
+      ]
+    },
     {
       "id": "remote-control-startup-registration-can-silently-noop",
       "title": "Remote Control startup registration can silently no-op.",
@@ -22062,27 +22083,27 @@
     }
   ],
   "status_summary": {
-    "open": 1695,
+    "open": 1696,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 148,
-    "high": 962,
+    "high": 963,
     "low": 109,
     "medium": 490
   },
   "lastUpdated": "2026-08-23",
   "stats": {
-    "total": 1709,
+    "total": 1710,
     "critical": 148,
-    "high": 962,
+    "high": 963,
     "medium": 490,
     "low": 109,
-    "open": 1695,
+    "open": 1696,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-23",
-  "total": 1709
+  "total": 1710
 }
