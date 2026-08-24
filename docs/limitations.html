@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1747</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-24.</span></p>
+        <p class="subtitle"><span id="total-count">1749</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-24.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -16977,17 +16977,17 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Start Claude Code from the repository root when shared project hooks, allow rules, plugins, or deny rules are part of the safety boundary, or use a shell wrapper that cd&#x27;s to `git rev-parse --show-toplevel` before launching Claude. After any startup-path change, run a harmless payload that the shared hook must block and record an explicit hook-fired marker. Do not treat CLAUDE.md loading, `.claude/settings.local.json` loading, or workspace trust as proof that the checked-in `.claude/settings.json` loaded too.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/86187" target="_blank">#86187</a>, <a href="https://github.com/anthropics/claude-code/issues/85613" target="_blank">#85613</a>, <a href="https://github.com/anthropics/claude-code/issues/74023" target="_blank">#74023</a></div>
         </div>
-        <div class="kl-entry" data-category="Configuration &amp; settings" data-issues="78505" id="cloud-multirepo-sessions-skip-repo-settings" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="Configuration &amp; settings" data-issues="78505 89215" id="cloud-multirepo-sessions-skip-repo-settings" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1521</span>
                 <span class="kl-cat">Configuration &amp; settings</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
             <h3>Cloud multi-repo sessions can skip repo `.claude/settings.json`.</h3>
-            <p>A Claude Code web report says cloud sessions opened with multiple repositories load repo CLAUDE.md, rules, skills, and plugins while never applying each repo&#x27;s .claude/settings.json. SessionStart hooks defined only in repo settings do not register, and CLAUDE_PROJECT_DIR is an empty string while the working directory is the parent directory above the cloned repos. This can silently drop hooks and other settings.json-only configuration in multi-repo cloud sessions even though most of the repo .claude directory appears active.</p>
+            <p>Claude Code web reports say cloud sessions opened with multiple repositories can load repo CLAUDE.md, rules, skills, or plugins while never applying each repo&#x27;s .claude/settings.json. SessionStart hooks defined only in repo settings do not register, CLAUDE_PROJECT_DIR can be empty in the hook process, and the effective project directory can be the common parent above the checked-out repos. This can silently drop hooks and other settings.json-only configuration in multi-repo cloud sessions even though repo files appear discoverable.</p>
                         <!-- workaround:cloud-multirepo-sessions-skip-repo-settings -->
-            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> In Claude Code web multi-repo sessions, do not treat CLAUDE.md, rules, skills, or plugin loading as proof that repo .claude/settings.json loaded. Put required SessionStart hooks in the user or environment setup layer with absolute repo paths, and verify a visible hook marker in each cloud session before relying on repo-scoped settings. Avoid hook commands that depend only on CLAUDE_PROJECT_DIR until it is non-empty in that environment.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78505" target="_blank">#78505</a></div>
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> In Claude Code web multi-repo sessions, do not treat CLAUDE.md, rules, skills, or plugin loading as proof that repo .claude/settings.json loaded. Put required SessionStart hooks in the user or environment setup layer with absolute repo paths, preserve any launcher hooks when merging settings, and verify a visible hook marker in each cloud session before relying on repo-scoped settings. Avoid hook commands that depend only on CLAUDE_PROJECT_DIR until it is non-empty in that environment.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/78505" target="_blank">#78505</a>, <a href="https://github.com/anthropics/claude-code/issues/89215" target="_blank">#89215</a></div>
         </div>
         <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="82642" id="pretooluse-denials-drop-hook-identity-from-transcripts" data-severity="high" data-status="open">
             <div class="kl-header">
@@ -19689,9 +19689,33 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For background work on repositories nested under a plain parent workspace, launch Claude Code from the target repository root or from an already verified worktree instead of the parent directory. Before trusting background isolation, run `git rev-parse --show-toplevel`, confirm where `.claude/settings.json` resolves, and try one harmless write-path canary. If the guard demands `EnterWorktree` but `EnterWorktree` says the cwd is not a git repository, stop and restart from the target repo rather than bypassing the guard with ad hoc clones or absolute paths.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89188" target="_blank">#89188</a></div>
         </div>
-        <div class="kl-entry" data-category="Permission system" data-issues="89176" id="auto-mode-can-start-enabled-despite-default-off-flag" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="MCP integrations" data-issues="89172" id="oauth-http-mcp-url-dedup-can-cross-tenant-identity" data-severity="critical" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1747</span>
+                <span class="kl-cat">MCP integrations</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>OAuth HTTP MCP URL dedup can expose one tenant under another server name.</h3>
+            <p>A reported Claude Code 2.1.241 setup declared two OAuth-authenticated HTTP MCP servers with different names but the same Atlassian remote MCP URL, intending each entry to authenticate against a different tenant/account. Claude Code silently deduplicated by URL: only one server&#x27;s tools appeared, and a tool call under the surviving server name returned resources from the other tenant that had completed OAuth. Because the configured server name no longer matched the authenticated identity, users could reasonably believe they were querying or acting on one Jira/Confluence site while the tool was actually connected to another.</p>
+                        <!-- workaround:oauth-http-mcp-url-dedup-can-cross-tenant-identity -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not configure multiple OAuth HTTP MCP entries with the same URL as independent tenant boundaries until the installed Claude Code version proves per-entry OAuth isolation. Give each tenant a distinct MCP endpoint if the provider supports it, or run separate Claude Code sessions/profiles with only one tenant entry enabled at a time. Before any cross-tenant operation, call a harmless identity or accessible-resources tool and verify the returned account/site matches the configured server name; treat `/mcp` and tool-name prefixes as insufficient proof of identity.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89172" target="_blank">#89172</a></div>
+        </div>
+        <div class="kl-entry" data-category="Scheduled tasks" data-issues="89205" id="scheduled-task-session-processes-can-leak-and-spin-cpu" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1748</span>
+                <span class="kl-cat">Scheduled tasks</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Scheduled-task session processes can leak and keep spinning CPU.</h3>
+            <p>A reported Claude Desktop 1.34493.1 / Claude Code 2.1.237 macOS setup found that sessions spawned for scheduled-task runs stayed resident after the app considered them finished. After three days, 24 orphaned Claude Code session processes consumed about 2.7 GB RSS and roughly 234% CPU in aggregate, with each old process still advancing its CPU clock despite no active transcript writes or running session state. The reporter tied process start times to scheduled task fires and found manual termination non-destructive because sessions resumed from transcript state.</p>
+                        <!-- workaround:scheduled-task-session-processes-can-leak-and-spin-cpu -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On machines using scheduled tasks, monitor Claude Code child processes as well as the app&#x27;s session-running state. If stale scheduled-task processes accumulate, restart the desktop app or use a conservative local reaper that maps each process to its transcript and only terminates sessions idle past a threshold, never the newest active session. Preserve process trees, transcript mtimes, scheduled-task fire times, CPU samples, and Claude Desktop/Code versions when reporting lifecycle leaks.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89205" target="_blank">#89205</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="89176" id="auto-mode-can-start-enabled-despite-default-off-flag" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1749</span>
                 <span class="kl-cat">Permission system</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>

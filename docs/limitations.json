@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1747,
+  "count": 1749,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 161,
@@ -29,11 +29,11 @@
     "Model behavior": 18,
     "Scheduling & remote triggers": 17,
     "Permissions & safety": 14,
+    "Scheduled tasks": 14,
     "Worktree": 14,
     "Worktrees & isolation": 14,
     "File system & paths": 13,
     "MCP integration": 13,
-    "Scheduled tasks": 13,
     "Git & repository safety": 12,
     "Plugin & channel system": 12,
     "Skills": 11,
@@ -139,6 +139,7 @@
     "instruction-following": 1,
     "MCP & plugin integration": 1,
     "MCP & tool infrastructure": 1,
+    "MCP integrations": 1,
     "MCP servers": 1,
     "MCP tools": 1,
     "Memory & state": 1,
@@ -191,8 +192,8 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 153,
-    "HIGH": 986,
+    "CRITICAL": 154,
+    "HIGH": 987,
     "LOW": 109,
     "MEDIUM": 499
   },
@@ -19714,11 +19715,14 @@
       "title": "Cloud multi-repo sessions can skip repo `.claude/settings.json`.",
       "severity": "HIGH",
       "category": "Configuration & settings",
-      "description": "A Claude Code web report says cloud sessions opened with multiple repositories load repo CLAUDE.md, rules, skills, and plugins while never applying each repo's .claude/settings.json. SessionStart hooks defined only in repo settings do not register, and CLAUDE_PROJECT_DIR is an empty string while the working directory is the parent directory above the cloned repos. This can silently drop hooks and other settings.json-only configuration in multi-repo cloud sessions even though most of the repo .claude directory appears active.",
-      "issue": "78505",
+      "description": "Claude Code web reports say cloud sessions opened with multiple repositories can load repo CLAUDE.md, rules, skills, or plugins while never applying each repo's .claude/settings.json. SessionStart hooks defined only in repo settings do not register, CLAUDE_PROJECT_DIR can be empty in the hook process, and the effective project directory can be the common parent above the checked-out repos. This can silently drop hooks and other settings.json-only configuration in multi-repo cloud sessions even though repo files appear discoverable.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/78505",
+        "https://github.com/anthropics/claude-code/issues/89215"
+      ],
       "status": "open",
       "date_added": "2026-08-14",
-      "workaround": "In Claude Code web multi-repo sessions, do not treat CLAUDE.md, rules, skills, or plugin loading as proof that repo .claude/settings.json loaded. Put required SessionStart hooks in the user or environment setup layer with absolute repo paths, and verify a visible hook marker in each cloud session before relying on repo-scoped settings. Avoid hook commands that depend only on CLAUDE_PROJECT_DIR until it is non-empty in that environment."
+      "workaround": "In Claude Code web multi-repo sessions, do not treat CLAUDE.md, rules, skills, or plugin loading as proof that repo .claude/settings.json loaded. Put required SessionStart hooks in the user or environment setup layer with absolute repo paths, preserve any launcher hooks when merging settings, and verify a visible hook marker in each cloud session before relying on repo-scoped settings. Avoid hook commands that depend only on CLAUDE_PROJECT_DIR until it is non-empty in that environment."
     },
     {
       "id": "pretooluse-denials-drop-hook-identity-from-transcripts",
@@ -22607,6 +22611,32 @@
       "workaround": "For background work on repositories nested under a plain parent workspace, launch Claude Code from the target repository root or from an already verified worktree instead of the parent directory. Before trusting background isolation, run `git rev-parse --show-toplevel`, confirm where `.claude/settings.json` resolves, and try one harmless write-path canary. If the guard demands `EnterWorktree` but `EnterWorktree` says the cwd is not a git repository, stop and restart from the target repo rather than bypassing the guard with ad hoc clones or absolute paths."
     },
     {
+      "id": "oauth-http-mcp-url-dedup-can-cross-tenant-identity",
+      "title": "OAuth HTTP MCP URL dedup can expose one tenant under another server name.",
+      "category": "MCP integrations",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89172"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code 2.1.241 setup declared two OAuth-authenticated HTTP MCP servers with different names but the same Atlassian remote MCP URL, intending each entry to authenticate against a different tenant/account. Claude Code silently deduplicated by URL: only one server's tools appeared, and a tool call under the surviving server name returned resources from the other tenant that had completed OAuth. Because the configured server name no longer matched the authenticated identity, users could reasonably believe they were querying or acting on one Jira/Confluence site while the tool was actually connected to another.",
+      "workaround": "Do not configure multiple OAuth HTTP MCP entries with the same URL as independent tenant boundaries until the installed Claude Code version proves per-entry OAuth isolation. Give each tenant a distinct MCP endpoint if the provider supports it, or run separate Claude Code sessions/profiles with only one tenant entry enabled at a time. Before any cross-tenant operation, call a harmless identity or accessible-resources tool and verify the returned account/site matches the configured server name; treat `/mcp` and tool-name prefixes as insufficient proof of identity."
+    },
+    {
+      "id": "scheduled-task-session-processes-can-leak-and-spin-cpu",
+      "title": "Scheduled-task session processes can leak and keep spinning CPU.",
+      "category": "Scheduled tasks",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89205"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Desktop 1.34493.1 / Claude Code 2.1.237 macOS setup found that sessions spawned for scheduled-task runs stayed resident after the app considered them finished. After three days, 24 orphaned Claude Code session processes consumed about 2.7 GB RSS and roughly 234% CPU in aggregate, with each old process still advancing its CPU clock despite no active transcript writes or running session state. The reporter tied process start times to scheduled task fires and found manual termination non-destructive because sessions resumed from transcript state.",
+      "workaround": "On machines using scheduled tasks, monitor Claude Code child processes as well as the app's session-running state. If stale scheduled-task processes accumulate, restart the desktop app or use a conservative local reaper that maps each process to its transcript and only terminates sessions idle past a threshold, never the newest active session. Preserve process trees, transcript mtimes, scheduled-task fire times, CPU samples, and Claude Desktop/Code versions when reporting lifecycle leaks."
+    },
+    {
       "id": "auto-mode-can-start-enabled-despite-default-off-flag",
       "title": "Auto mode can start enabled despite a default-off flag.",
       "category": "Permission system",
@@ -22621,27 +22651,27 @@
     }
   ],
   "status_summary": {
-    "open": 1733,
+    "open": 1735,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 153,
-    "high": 986,
+    "critical": 154,
+    "high": 987,
     "low": 109,
     "medium": 499
   },
   "lastUpdated": "2026-08-24",
   "stats": {
-    "total": 1747,
-    "critical": 153,
-    "high": 986,
+    "total": 1749,
+    "critical": 154,
+    "high": 987,
     "medium": 499,
     "low": 109,
-    "open": 1733,
+    "open": 1735,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-24",
-  "total": 1747
+  "total": 1749
 }
