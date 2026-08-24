@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1753</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-24.</span></p>
+        <p class="subtitle"><span id="total-count">1758</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-24.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -19772,6 +19772,66 @@
                         <!-- workaround:marketplace-autoupdate-can-leave-installed-plugins-pinned -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat marketplace `autoUpdate: true` as proof that deployed plugins have refreshed. For managed plugin fleets, add an explicit update or cache-bust step that verifies the marketplace clone HEAD and each installed plugin&#x27;s `gitCommitSha` before starting Claude Code. Avoid mutating `installed_plugins.json` by hand unless there is no supported alternative, and preserve `known_marketplaces.json`, `installed_plugins.json`, marketplace clone state, and the Claude Code version when reporting update drift.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89243" target="_blank">#89243</a></div>
+        </div>
+        <div class="kl-entry" data-category="Git &amp; repository safety" data-issues="89273" id="git-commit-secret-leaks-have-no-built-in-pre-push-guard" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1754</span>
+                <span class="kl-cat">Git &amp; repository safety</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Git commits can leak plaintext credentials before any built-in guard reacts.</h3>
+            <p>A reported Claude Code desktop auto-mode session bulk-staged 66 files, committed a plaintext credential, and pushed it before any product guardrail warned or blocked. The reporter notes that `PostToolUse` can only observe a Bash `git commit` or `git push` after the side effect exists, while a broad `PreToolUse(Bash)` secret-scanning hook must usually fail open on parser or runtime errors to avoid blocking every shell command. This leaves the default last line of defense as post-hoc review after the secret may already be reachable by commit SHA.</p>
+                        <!-- workaround:git-commit-secret-leaks-have-no-built-in-pre-push-guard -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on Claude Code defaults to catch secrets before git commits or pushes. Install a dedicated pre-commit or pre-push secret scanner outside Claude Code, keep high-risk `git add`, `git commit`, and `git push` operations behind explicit prompts, and avoid broad `git add .` in unattended or auto-mode sessions. If using a `PreToolUse(Bash)` hook for secret scanning, add a health check that proves the hook is still executing and decide explicitly which parser failures should block rather than silently allowing the command.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89273" target="_blank">#89273</a></div>
+        </div>
+        <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="89277" id="fork-subagents-can-write-despite-read-only-prompt-instructions" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1755</span>
+                <span class="kl-cat">Subagent &amp; spawned agents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Fork subagents can write files despite read-only prompt instructions.</h3>
+            <p>A reported Claude Code 2.1.241 fork subagent was asked to inspect documents and report back without writing files, but wrote substantial content directly into multiple repository files. The report says fork subagents inherit the parent conversation, tool access, and permission mode, so read-only wording in the delegated prompt was advisory rather than an enforced runtime constraint. In auto or permissive modes, those inherited Write, Edit, and Bash calls can complete without surfacing to the parent in real time.</p>
+                        <!-- workaround:fork-subagents-can-write-despite-read-only-prompt-instructions -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not use `subagent_type: &quot;fork&quot;` for research-only tasks when write prevention matters. Prefer an agent type or workflow whose registered tools are actually read-only, or run the subtask in a separate checkout with filesystem permissions that prevent writes. At minimum, require the subagent to report its available tools before starting and verify `git status` plus file mtimes after it returns rather than trusting a natural-language `do not write` instruction.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89277" target="_blank">#89277</a></div>
+        </div>
+        <div class="kl-entry" data-category="Cowork &amp; remote" data-issues="89279" id="cowork-folder-revocation-can-leave-active-session-access-live" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1756</span>
+                <span class="kl-cat">Cowork &amp; remote</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Cowork folder revocation can leave an active session mount live.</h3>
+            <p>A reported Claude Desktop for macOS Cowork session kept live read and write access to a connected folder after the user removed the folder from the app&#x27;s connected-folders list and also revoked Files and Folders permission in macOS System Settings. The reporter confirmed the access was not merely cached by writing a new file after both revocations, with access persisting for about 40 minutes until the conversation was abandoned. Revocation controls that apply only to future sessions can mislead users into believing sensitive local folders are no longer exposed.</p>
+                        <!-- workaround:cowork-folder-revocation-can-leave-active-session-access-live -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat connected-folder revocation as unproven for already-running Cowork sessions. After removing a folder, end the conversation or quit the app before assuming access stopped, then verify from a fresh session that the folder is no longer listed or writable. Avoid connecting broad roots such as iCloud Drive or home directories, and prefer a narrow temporary folder containing only the files needed for the task until active-session revocation has been proven on your installed version.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89279" target="_blank">#89279</a></div>
+        </div>
+        <div class="kl-entry" data-category="Context &amp; memory" data-issues="89281" id="compaction-summaries-can-grow-and-cross-session-inherit" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1757</span>
+                <span class="kl-cat">Context &amp; memory</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Compaction summaries can grow and carry across resumed sessions.</h3>
+            <p>A reported analysis of 50 Claude Code sessions across 8 projects found 601 compactions, with many injected compact summaries growing across repeated compactions instead of staying bounded. The report says one resumed successor session inherited the predecessor&#x27;s final large summary by timestamp and byte size, so starting from the prior session did not reset the context pressure. The same report also found individual `tool_result` payloads large enough to exceed a normal context window, making both summary growth and unbounded tool-result admission separate failure paths for long engineering sessions.</p>
+                        <!-- workaround:compaction-summaries-can-grow-and-cross-session-inherit -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not wait for repeated automatic compactions to preserve long-session state. Write concise handoff files, commit or stash completed work early, and split multi-hour tasks into fresh sessions before compaction cadence tightens. If a session starts compacting every few turns, stop and start a clean handoff rather than resuming from the bloated chain. For tooling, cap command output before it reaches Claude Code and keep raw logs in files referenced by path rather than pasted or emitted wholesale into tool results.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89281" target="_blank">#89281</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="89288" id="account-custom-mcp-connectors-can-dedupe-by-host" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1758</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Account custom MCP connectors can silently dedupe by host in the CLI.</h3>
+            <p>A reported Claude Code CLI 2.1.241 Windows setup synced only one of three claude.ai account custom MCP connectors that pointed at the same provider host with different query-string scopes. Claude Desktop saw all three connectors and could use their tools, while `claude mcp list` showed only one and `claude mcp login` for the missing names said no such server existed. The reporter confirmed the missing URLs worked when added directly as local HTTP MCP servers, suggesting the CLI account-connector sync may silently dedupe or filter by host rather than full connector identity.</p>
+                        <!-- workaround:account-custom-mcp-connectors-can-dedupe-by-host -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume account-level custom MCP connectors with the same host but different path or query scope all reach Claude Code CLI. After adding or changing connectors, run `claude mcp list` in the target environment and verify every expected server name appears. For scoped databases or tenants, register critical connectors locally with unique names and full URLs, then run a harmless read-only tool call against each one before relying on the connector list for production or customer data.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89288" target="_blank">#89288</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

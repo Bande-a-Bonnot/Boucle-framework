@@ -1,20 +1,20 @@
 {
   "version": "0.13.0",
-  "count": 1753,
+  "count": 1758,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 162,
     "Hook bypass & evasion": 104,
-    "MCP & plugin issues": 101,
-    "Subagent & spawned agents": 84,
+    "MCP & plugin issues": 102,
+    "Subagent & spawned agents": 85,
     "Desktop & IDE integration": 62,
     "TUI & display": 37,
     "Platform & compatibility": 35,
     "CLI & terminal": 33,
     "Configuration behavior": 33,
+    "Cowork & remote": 33,
     "Security & trust boundaries": 33,
-    "Cowork & remote": 32,
-    "Context & memory": 31,
+    "Context & memory": 32,
     "Sandbox & permissions": 31,
     "MCP & integrations": 30,
     "Performance & cost": 27,
@@ -33,9 +33,9 @@
     "Worktree": 14,
     "Worktrees & isolation": 14,
     "File system & paths": 13,
+    "Git & repository safety": 13,
     "MCP integration": 13,
     "Skills": 13,
-    "Git & repository safety": 12,
     "Plugin & channel system": 12,
     "UX & display": 11,
     "Configuration & settings": 10,
@@ -193,7 +193,7 @@
   },
   "severity_counts": {
     "CRITICAL": 154,
-    "HIGH": 990,
+    "HIGH": 995,
     "LOW": 109,
     "MEDIUM": 500
   },
@@ -22700,30 +22700,95 @@
       "date_added": "2026-08-24",
       "description": "A reported Claude Code plugin marketplace setup found that `autoUpdate: true` in `known_marketplaces.json` did not pull new commits on startup. The marketplace clone under `~/.claude/plugins/marketplaces/` stayed at its original commit, `lastUpdated` did not advance, and installed plugin records in `installed_plugins.json` kept pointing at the stale `gitCommitSha` and install path. Managed deployments can therefore believe plugin updates are automatic while skills, hooks, or MCP definitions remain pinned to the version first installed.",
       "workaround": "Do not treat marketplace `autoUpdate: true` as proof that deployed plugins have refreshed. For managed plugin fleets, add an explicit update or cache-bust step that verifies the marketplace clone HEAD and each installed plugin's `gitCommitSha` before starting Claude Code. Avoid mutating `installed_plugins.json` by hand unless there is no supported alternative, and preserve `known_marketplaces.json`, `installed_plugins.json`, marketplace clone state, and the Claude Code version when reporting update drift."
+    },
+    {
+      "id": "git-commit-secret-leaks-have-no-built-in-pre-push-guard",
+      "title": "Git commits can leak plaintext credentials before any built-in guard reacts.",
+      "category": "Git & repository safety",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89273"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code desktop auto-mode session bulk-staged 66 files, committed a plaintext credential, and pushed it before any product guardrail warned or blocked. The reporter notes that `PostToolUse` can only observe a Bash `git commit` or `git push` after the side effect exists, while a broad `PreToolUse(Bash)` secret-scanning hook must usually fail open on parser or runtime errors to avoid blocking every shell command. This leaves the default last line of defense as post-hoc review after the secret may already be reachable by commit SHA.",
+      "workaround": "Do not rely on Claude Code defaults to catch secrets before git commits or pushes. Install a dedicated pre-commit or pre-push secret scanner outside Claude Code, keep high-risk `git add`, `git commit`, and `git push` operations behind explicit prompts, and avoid broad `git add .` in unattended or auto-mode sessions. If using a `PreToolUse(Bash)` hook for secret scanning, add a health check that proves the hook is still executing and decide explicitly which parser failures should block rather than silently allowing the command."
+    },
+    {
+      "id": "fork-subagents-can-write-despite-read-only-prompt-instructions",
+      "title": "Fork subagents can write files despite read-only prompt instructions.",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89277"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code 2.1.241 fork subagent was asked to inspect documents and report back without writing files, but wrote substantial content directly into multiple repository files. The report says fork subagents inherit the parent conversation, tool access, and permission mode, so read-only wording in the delegated prompt was advisory rather than an enforced runtime constraint. In auto or permissive modes, those inherited Write, Edit, and Bash calls can complete without surfacing to the parent in real time.",
+      "workaround": "Do not use `subagent_type: \"fork\"` for research-only tasks when write prevention matters. Prefer an agent type or workflow whose registered tools are actually read-only, or run the subtask in a separate checkout with filesystem permissions that prevent writes. At minimum, require the subagent to report its available tools before starting and verify `git status` plus file mtimes after it returns rather than trusting a natural-language `do not write` instruction."
+    },
+    {
+      "id": "cowork-folder-revocation-can-leave-active-session-access-live",
+      "title": "Cowork folder revocation can leave an active session mount live.",
+      "category": "Cowork & remote",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89279"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Desktop for macOS Cowork session kept live read and write access to a connected folder after the user removed the folder from the app's connected-folders list and also revoked Files and Folders permission in macOS System Settings. The reporter confirmed the access was not merely cached by writing a new file after both revocations, with access persisting for about 40 minutes until the conversation was abandoned. Revocation controls that apply only to future sessions can mislead users into believing sensitive local folders are no longer exposed.",
+      "workaround": "Treat connected-folder revocation as unproven for already-running Cowork sessions. After removing a folder, end the conversation or quit the app before assuming access stopped, then verify from a fresh session that the folder is no longer listed or writable. Avoid connecting broad roots such as iCloud Drive or home directories, and prefer a narrow temporary folder containing only the files needed for the task until active-session revocation has been proven on your installed version."
+    },
+    {
+      "id": "compaction-summaries-can-grow-and-cross-session-inherit",
+      "title": "Compaction summaries can grow and carry across resumed sessions.",
+      "category": "Context & memory",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89281"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "A reported analysis of 50 Claude Code sessions across 8 projects found 601 compactions, with many injected compact summaries growing across repeated compactions instead of staying bounded. The report says one resumed successor session inherited the predecessor's final large summary by timestamp and byte size, so starting from the prior session did not reset the context pressure. The same report also found individual `tool_result` payloads large enough to exceed a normal context window, making both summary growth and unbounded tool-result admission separate failure paths for long engineering sessions.",
+      "workaround": "Do not wait for repeated automatic compactions to preserve long-session state. Write concise handoff files, commit or stash completed work early, and split multi-hour tasks into fresh sessions before compaction cadence tightens. If a session starts compacting every few turns, stop and start a clean handoff rather than resuming from the bloated chain. For tooling, cap command output before it reaches Claude Code and keep raw logs in files referenced by path rather than pasted or emitted wholesale into tool results."
+    },
+    {
+      "id": "account-custom-mcp-connectors-can-dedupe-by-host",
+      "title": "Account custom MCP connectors can silently dedupe by host in the CLI.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89288"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code CLI 2.1.241 Windows setup synced only one of three claude.ai account custom MCP connectors that pointed at the same provider host with different query-string scopes. Claude Desktop saw all three connectors and could use their tools, while `claude mcp list` showed only one and `claude mcp login` for the missing names said no such server existed. The reporter confirmed the missing URLs worked when added directly as local HTTP MCP servers, suggesting the CLI account-connector sync may silently dedupe or filter by host rather than full connector identity.",
+      "workaround": "Do not assume account-level custom MCP connectors with the same host but different path or query scope all reach Claude Code CLI. After adding or changing connectors, run `claude mcp list` in the target environment and verify every expected server name appears. For scoped databases or tenants, register critical connectors locally with unique names and full URLs, then run a harmless read-only tool call against each one before relying on the connector list for production or customer data."
     }
   ],
   "status_summary": {
-    "open": 1739,
+    "open": 1744,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 154,
-    "high": 990,
+    "high": 995,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-24",
   "stats": {
-    "total": 1753,
+    "total": 1758,
     "critical": 154,
-    "high": 990,
+    "high": 995,
     "medium": 500,
     "low": 109,
-    "open": 1739,
+    "open": 1744,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-24",
-  "total": 1753
+  "total": 1758
 }
