@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1745,
+  "count": 1746,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 161,
@@ -30,10 +30,10 @@
     "Scheduling & remote triggers": 17,
     "Permissions & safety": 14,
     "Worktree": 14,
+    "Worktrees & isolation": 14,
     "File system & paths": 13,
     "MCP integration": 13,
     "Scheduled tasks": 13,
-    "Worktrees & isolation": 13,
     "Git & repository safety": 12,
     "Plugin & channel system": 12,
     "UX & display": 11,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 153,
-    "HIGH": 984,
+    "HIGH": 985,
     "LOW": 109,
     "MEDIUM": 499
   },
@@ -22581,6 +22581,19 @@
       "workaround": "Do not assume attribution settings apply uniformly across CLI, VS Code extension, and Agent SDK surfaces. For repositories with strict commit-message policy, inspect generated commits before pushing and add an explicit checked-in instruction such as `Never add Generated-with or Co-Authored-By AI attribution trailers to commits or merge requests` until the target surface proves it injects the resolved settings. Preserve the settings file, prompt-surface evidence, extension version, and model when reporting attribution drift."
     },
     {
+      "id": "background-worktree-guard-can-deadlock-on-nested-repos",
+      "title": "Background worktree guard can deadlock on nested repositories.",
+      "category": "Worktrees & isolation",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89188"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code 2.1.237 macOS background session launched from a non-git parent directory could not edit a file in a nested git repository: the write guard demanded `EnterWorktree` first, while `EnterWorktree` refused because the session cwd was not itself a git repo. The suggested `worktree.bgIsolation: none` opt-out was also unreachable because settings resolved from the launch cwd rather than the nested repo owning the target file. The same report observed other sessions editing through hand-made worktrees or fresh clones without triggering the guard, so the restriction appeared tied to recognized path shape rather than the actual shared-checkout risk.",
+      "workaround": "For background work on repositories nested under a plain parent workspace, launch Claude Code from the target repository root or from an already verified worktree instead of the parent directory. Before trusting background isolation, run `git rev-parse --show-toplevel`, confirm where `.claude/settings.json` resolves, and try one harmless write-path canary. If the guard demands `EnterWorktree` but `EnterWorktree` says the cwd is not a git repository, stop and restart from the target repo rather than bypassing the guard with ad hoc clones or absolute paths."
+    },
+    {
       "id": "auto-mode-can-start-enabled-despite-default-off-flag",
       "title": "Auto mode can start enabled despite a default-off flag.",
       "category": "Permission system",
@@ -22595,27 +22608,27 @@
     }
   ],
   "status_summary": {
-    "open": 1731,
+    "open": 1732,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 153,
-    "high": 984,
+    "high": 985,
     "low": 109,
     "medium": 499
   },
   "lastUpdated": "2026-08-24",
   "stats": {
-    "total": 1745,
+    "total": 1746,
     "critical": 153,
-    "high": 984,
+    "high": 985,
     "medium": 499,
     "low": 109,
-    "open": 1731,
+    "open": 1732,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-24",
-  "total": 1745
+  "total": 1746
 }
