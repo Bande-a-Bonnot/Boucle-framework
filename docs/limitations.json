@@ -1,21 +1,21 @@
 {
   "version": "0.13.0",
-  "count": 1758,
+  "count": 1762,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 162,
     "Hook bypass & evasion": 104,
-    "MCP & plugin issues": 102,
+    "MCP & plugin issues": 103,
     "Subagent & spawned agents": 85,
     "Desktop & IDE integration": 62,
     "TUI & display": 37,
+    "Cowork & remote": 35,
     "Platform & compatibility": 35,
     "CLI & terminal": 33,
     "Configuration behavior": 33,
-    "Cowork & remote": 33,
     "Security & trust boundaries": 33,
     "Context & memory": 32,
-    "Sandbox & permissions": 31,
+    "Sandbox & permissions": 32,
     "MCP & integrations": 30,
     "Performance & cost": 27,
     "VS Code extension": 26,
@@ -192,8 +192,8 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 154,
-    "HIGH": 995,
+    "CRITICAL": 155,
+    "HIGH": 998,
     "LOW": 109,
     "MEDIUM": 500
   },
@@ -22404,16 +22404,18 @@
     },
     {
       "id": "bypass-mode-can-steer-edit-and-write-through-shell-commands",
-      "title": "Bypass mode can steer Edit and Write work through shell commands.",
+      "title": "Permission modes can steer Edit and Write work through shell commands.",
       "category": "Permission system",
       "severity": "HIGH",
       "status": "open",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/89121"
+        "https://github.com/anthropics/claude-code/issues/89121",
+        "https://github.com/anthropics/claude-code/issues/89251",
+        "https://github.com/anthropics/claude-code/issues/89307"
       ],
       "date_added": "2026-08-24",
-      "description": "A reported Claude Code 2.1.241 Windows session found that when `--dangerously-skip-permissions` was active, ordinary Read, Edit, and Write work appeared to be routed through Bash, PowerShell, or CMD commands instead of the dedicated tools. The reporter saw slower edits, hard-to-audit shell snippets, and shell-generated file changes containing sleep timers, and later recovered corrupted files from Git history. The issue also cites a binary string indicating that bypass or auto mode can inject guidance to prefer shell commands over the dedicated file tools when shell can accomplish the task.",
-      "workaround": "Do not treat bypass mode as only removing prompts; it can also change the tool-selection surface that performs file operations. For important edits, prefer normal permission mode or an explicit tool policy that keeps file writes on Edit, MultiEdit, or Write where diffs are visible. Keep the workspace under version control, review `git diff` before accepting results, and be cautious about adding CLAUDE.md overrides that try to fight the system prompt because they may push the model toward more brittle shell rewrites."
+      "description": "Reported Claude Code 2.1.241 sessions found that bypass or auto permission modes can inject guidance telling the model to prefer Bash, PowerShell, heredocs, sed, or scripts for file edits instead of the dedicated Read, Edit, and Write tools. One Windows report saw slower edits, hard-to-audit shell snippets, sleep timers, and corrupted files later recovered from Git history. A later hooks report showed the same directive can route writes around `PreToolUse` hooks registered for `Write|Edit|NotebookEdit`, and another Windows report tied shell-scripted Markdown edits to unintended CRLF expansion despite an LF-only project convention.",
+      "workaround": "Do not treat bypass or auto mode as only changing prompts; it can also change the tool-selection surface that performs file operations. For important edits, prefer a verified normal mode or an explicit tool policy that keeps file writes on Edit, MultiEdit, or Write where diffs and file-path hooks are visible. If hooks guard writes, add a separate `Bash` guard or canary for shell write forms, review `git diff --check` before accepting results, and avoid relying on CLAUDE.md overrides to fight a system prompt that prefers shell rewrites."
     },
     {
       "id": "pretooluse-additionalcontext-can-be-single-turn-only",
@@ -22765,30 +22767,83 @@
       "date_added": "2026-08-24",
       "description": "A reported Claude Code CLI 2.1.241 Windows setup synced only one of three claude.ai account custom MCP connectors that pointed at the same provider host with different query-string scopes. Claude Desktop saw all three connectors and could use their tools, while `claude mcp list` showed only one and `claude mcp login` for the missing names said no such server existed. The reporter confirmed the missing URLs worked when added directly as local HTTP MCP servers, suggesting the CLI account-connector sync may silently dedupe or filter by host rather than full connector identity.",
       "workaround": "Do not assume account-level custom MCP connectors with the same host but different path or query scope all reach Claude Code CLI. After adding or changing connectors, run `claude mcp list` in the target environment and verify every expected server name appears. For scoped databases or tenants, register critical connectors locally with unique names and full URLs, then run a harmless read-only tool call against each one before relying on the connector list for production or customer data."
+    },
+    {
+      "id": "write-edit-tools-can-bypass-filesystem-sandbox",
+      "title": "Write and Edit tools can bypass filesystem sandbox restrictions.",
+      "category": "Sandbox & permissions",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89165"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "Follow-up testing on a reported Claude Code 2.1.241 sandbox issue found that Bash correctly blocked writes outside the filesystem sandbox, while the Write tool could create the same forbidden path under `~/.claude/`. The reporter also found that a sandboxed session could edit the global settings file that controls the sandbox itself, including adding commands to `excludedCommands`. This suggests built-in file tools and Bash can run on different enforcement paths, so a sandbox that blocks shell writes may still permit Write/Edit side effects.",
+      "workaround": "Do not rely on Bash sandbox probes alone to prove the whole session is confined. Test Write, Edit, and MultiEdit against harmless denied paths under the exact client and permission mode before trusting filesystem isolation. Protect sandbox settings with OS-level permissions or an external supervisor where possible, keep sandbox configuration outside writable project scope, and treat any successful built-in-tool write outside the allowlist as a session-stopping failure."
+    },
+    {
+      "id": "cross-session-inbound-invalid-values-can-fail-open",
+      "title": "`crossSessionInbound` invalid values can fail open without warning.",
+      "category": "Cowork & remote",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89297"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Desktop 1.34493.1 / bundled Claude Code 2.1.237 setup found that `crossSessionInbound` accepts only `accept`, `hold`, and `refuse`, but an out-of-enum value such as `reject` is silently mapped to the unset case. In the repro, `refuse` blocked a cross-session message, while `reject` delivered it and let the recipient answer with no startup warning, settings error, or log line. Users hand-editing this key can therefore believe a session opted out while it actually accepts inbound delivery.",
+      "workaround": "Use only the documented `crossSessionInbound` values and verify the live behavior with a harmless two-session message canary after each settings edit. Treat unknown settings values as unsafe until a startup log or command confirms they were accepted. For high-sensitivity sessions, prefer an explicit deny hook or external session-isolation boundary in addition to the settings key, and preserve both the settings file and delivery transcript when reporting silent fallback."
+    },
+    {
+      "id": "remote-control-settings-can-be-ignored-by-resume-or-desktop-gates",
+      "title": "Remote Control settings can be ignored by resume state or Desktop plan gates.",
+      "category": "Cowork & remote",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89292",
+        "https://github.com/anthropics/claude-code/issues/89298"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "Two reported Remote Control regressions show settings text and live connectivity diverging. In Claude Code CLI 2.1.241, `claude --continue` can restore a conversation's recorded Remote Control binding even after the global \"Enable Remote Control for all sessions\" setting is false, so the opt-out applies to fresh sessions but not resumed conversations that ended connected. Separately, Claude Desktop 1.34493.1 on an individual Pro/Max plan repeatedly returned `enable=false source=settings_unavailable` before reading the user's enabled preference, leaving the setting toggle on while new Desktop sessions never auto-connected.",
+      "workaround": "Verify Remote Control state per launch path rather than trusting the global toggle. For privacy-sensitive work, disconnect `/rc` before exiting conversations that may be resumed and check the footer or peer session list after `--continue`. For Desktop Pro/Max sessions that should auto-connect but do not, inspect `main.log` for `rcAutoEnable` verdicts and fall back to terminal `claude --resume` plus manual `/remote-control` until the Desktop gate is fixed."
+    },
+    {
+      "id": "connected-mcp-servers-can-expose-zero-toolsearch-tools",
+      "title": "Connected MCP servers can expose zero tools through ToolSearch.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89306"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code 2.1.241 Windows setup had local project MCP servers that `claude mcp get` reported as connected, including one stdio server and one HTTP server, while `ToolSearch` could not find any of their tools across restarts, remove/re-add cycles, terminal relaunches, and a full OS reboot. Other deferred tool namespaces still loaded in the same sessions, and `claude mcp list` was inconsistent on first versus immediate repeated invocation, suggesting connected status can race or diverge from model-visible tool registration.",
+      "workaround": "Do not treat `claude mcp get` connected status as sufficient proof that the model can call the server. After MCP setup or restart, run a harmless `ToolSearch` query for a known tool and, where safe, a read-only tool call before depending on the connector. If `mcp list` and ToolSearch disagree, preserve both outputs, restart only after recording the server scope and transport, and keep a built-in-tool fallback for critical workflows."
     }
   ],
   "status_summary": {
-    "open": 1744,
+    "open": 1748,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 154,
-    "high": 995,
+    "critical": 155,
+    "high": 998,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-24",
   "stats": {
-    "total": 1758,
-    "critical": 154,
-    "high": 995,
+    "total": 1762,
+    "critical": 155,
+    "high": 998,
     "medium": 500,
     "low": 109,
-    "open": 1744,
+    "open": 1748,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-24",
-  "total": 1758
+  "total": 1762
 }
