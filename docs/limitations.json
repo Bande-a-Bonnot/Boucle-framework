@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1751,
+  "count": 1753,
   "categories": {
     "Hook behavior & events": 228,
-    "Permission system": 161,
+    "Permission system": 162,
     "Hook bypass & evasion": 104,
-    "MCP & plugin issues": 100,
+    "MCP & plugin issues": 101,
     "Subagent & spawned agents": 84,
     "Desktop & IDE integration": 62,
     "TUI & display": 37,
@@ -193,9 +193,9 @@
   },
   "severity_counts": {
     "CRITICAL": 154,
-    "HIGH": 989,
+    "HIGH": 990,
     "LOW": 109,
-    "MEDIUM": 499
+    "MEDIUM": 500
   },
   "entries": [
     {
@@ -22674,30 +22674,56 @@
       "date_added": "2026-08-24",
       "description": "A reported Claude Code 2.1.232 setup found that when `~/.claude/skills/<name>/SKILL.md` and `<repo>/.claude/skills/<name>/SKILL.md` both existed, invoking the skill from inside the repository loaded the user-scoped skill instead of the project-scoped one. The report says this contradicts the documented Skill tool rule that directory-scoped skills should be selected by the most specific directory containing the files being worked on. The mismatch is silent unless the user inspects the launched skill's base directory or the global skill explicitly checks for a project override.",
       "workaround": "Avoid relying on same-name global and project skills as an override mechanism until the target Claude Code version proves most-specific resolution in a fresh session. Give project-specific skills unique names, or add a startup canary that prints the skill base directory and refuses to continue if it is not under the intended repository. For critical repo-local policy or review skills, have the global fallback check for `.claude/skills/<name>/SKILL.md` under the current repo and instruct the assistant to read and follow that file manually when the wrong scope loads."
+    },
+    {
+      "id": "permission-rejection-feedback-can-be-dropped",
+      "title": "Permission rejection feedback can be dropped before the model sees it.",
+      "category": "Permission system",
+      "severity": "MEDIUM",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89231"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code 2.1.241 macOS session found that text entered through the permission prompt's rejection feedback path did not appear to influence the next assistant turn. The prompt option is meant to let a user deny a tool call and tell Claude what to do differently, but the model behaved as though it received only a bare denial: retrying the same tool call or continuing without reflecting the typed feedback. This makes the denial UI weaker as an interactive correction channel, especially when the user is trying to redirect a risky or unsuitable tool choice.",
+      "workaround": "Do not rely on permission-prompt rejection feedback as the only way to steer the next turn until the installed Claude Code version proves the feedback reaches the model. After denying a tool, send a separate explicit chat message with the correction, or stop the run and restart with the constraint in project instructions if the action is safety-sensitive. Preserve the prompt mode, rejected tool call, exact feedback text, and the following assistant turn when reporting feedback loss."
+    },
+    {
+      "id": "marketplace-autoupdate-can-leave-installed-plugins-pinned",
+      "title": "Marketplace `autoUpdate` can leave installed plugins pinned to stale commits.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89243"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code plugin marketplace setup found that `autoUpdate: true` in `known_marketplaces.json` did not pull new commits on startup. The marketplace clone under `~/.claude/plugins/marketplaces/` stayed at its original commit, `lastUpdated` did not advance, and installed plugin records in `installed_plugins.json` kept pointing at the stale `gitCommitSha` and install path. Managed deployments can therefore believe plugin updates are automatic while skills, hooks, or MCP definitions remain pinned to the version first installed.",
+      "workaround": "Do not treat marketplace `autoUpdate: true` as proof that deployed plugins have refreshed. For managed plugin fleets, add an explicit update or cache-bust step that verifies the marketplace clone HEAD and each installed plugin's `gitCommitSha` before starting Claude Code. Avoid mutating `installed_plugins.json` by hand unless there is no supported alternative, and preserve `known_marketplaces.json`, `installed_plugins.json`, marketplace clone state, and the Claude Code version when reporting update drift."
     }
   ],
   "status_summary": {
-    "open": 1737,
+    "open": 1739,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 154,
-    "high": 989,
+    "high": 990,
     "low": 109,
-    "medium": 499
+    "medium": 500
   },
   "lastUpdated": "2026-08-24",
   "stats": {
-    "total": 1751,
+    "total": 1753,
     "critical": 154,
-    "high": 989,
-    "medium": 499,
+    "high": 990,
+    "medium": 500,
     "low": 109,
-    "open": 1737,
+    "open": 1739,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-24",
-  "total": 1751
+  "total": 1753
 }

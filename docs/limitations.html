@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1751</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-24.</span></p>
+        <p class="subtitle"><span id="total-count">1753</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-24.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -19748,6 +19748,30 @@
                         <!-- workaround:same-named-project-skills-can-lose-to-user-scoped-skills -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Avoid relying on same-name global and project skills as an override mechanism until the target Claude Code version proves most-specific resolution in a fresh session. Give project-specific skills unique names, or add a startup canary that prints the skill base directory and refuses to continue if it is not under the intended repository. For critical repo-local policy or review skills, have the global fallback check for `.claude/skills/&lt;name&gt;/SKILL.md` under the current repo and instruct the assistant to read and follow that file manually when the wrong scope loads.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89207" target="_blank">#89207</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="89231" id="permission-rejection-feedback-can-be-dropped" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1752</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Permission rejection feedback can be dropped before the model sees it.</h3>
+            <p>A reported Claude Code 2.1.241 macOS session found that text entered through the permission prompt&#x27;s rejection feedback path did not appear to influence the next assistant turn. The prompt option is meant to let a user deny a tool call and tell Claude what to do differently, but the model behaved as though it received only a bare denial: retrying the same tool call or continuing without reflecting the typed feedback. This makes the denial UI weaker as an interactive correction channel, especially when the user is trying to redirect a risky or unsuitable tool choice.</p>
+                        <!-- workaround:permission-rejection-feedback-can-be-dropped -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on permission-prompt rejection feedback as the only way to steer the next turn until the installed Claude Code version proves the feedback reaches the model. After denying a tool, send a separate explicit chat message with the correction, or stop the run and restart with the constraint in project instructions if the action is safety-sensitive. Preserve the prompt mode, rejected tool call, exact feedback text, and the following assistant turn when reporting feedback loss.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89231" target="_blank">#89231</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="89243" id="marketplace-autoupdate-can-leave-installed-plugins-pinned" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1753</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Marketplace `autoUpdate` can leave installed plugins pinned to stale commits.</h3>
+            <p>A reported Claude Code plugin marketplace setup found that `autoUpdate: true` in `known_marketplaces.json` did not pull new commits on startup. The marketplace clone under `~/.claude/plugins/marketplaces/` stayed at its original commit, `lastUpdated` did not advance, and installed plugin records in `installed_plugins.json` kept pointing at the stale `gitCommitSha` and install path. Managed deployments can therefore believe plugin updates are automatic while skills, hooks, or MCP definitions remain pinned to the version first installed.</p>
+                        <!-- workaround:marketplace-autoupdate-can-leave-installed-plugins-pinned -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat marketplace `autoUpdate: true` as proof that deployed plugins have refreshed. For managed plugin fleets, add an explicit update or cache-bust step that verifies the marketplace clone HEAD and each installed plugin&#x27;s `gitCommitSha` before starting Claude Code. Avoid mutating `installed_plugins.json` by hand unless there is no supported alternative, and preserve `known_marketplaces.json`, `installed_plugins.json`, marketplace clone state, and the Claude Code version when reporting update drift.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89243" target="_blank">#89243</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
