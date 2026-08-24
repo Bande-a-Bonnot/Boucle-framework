@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1732,
+  "count": 1737,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 160,
     "Hook bypass & evasion": 104,
-    "MCP & plugin issues": 99,
+    "MCP & plugin issues": 100,
     "Subagent & spawned agents": 84,
     "Desktop & IDE integration": 61,
     "TUI & display": 37,
@@ -14,8 +14,8 @@
     "Platform & compatibility": 33,
     "Security & trust boundaries": 32,
     "Context & memory": 31,
+    "Cowork & remote": 31,
     "Sandbox & permissions": 31,
-    "Cowork & remote": 30,
     "MCP & integrations": 30,
     "Performance & cost": 27,
     "VS Code extension": 26,
@@ -38,10 +38,10 @@
     "Git & repository safety": 11,
     "UX & display": 11,
     "Configuration & settings": 10,
+    "Model behavior & output": 10,
     "Skills": 10,
     "Telemetry & insights": 10,
     "hooks": 9,
-    "Model behavior & output": 9,
     "auth": 8,
     "Desktop & platform bugs": 8,
     "Hook execution & lifecycle": 8,
@@ -79,6 +79,7 @@
     "Sandbox": 3,
     "Security": 3,
     "Tool availability": 3,
+    "Workflow & UI observability": 3,
     "Agent control & instruction following": 2,
     "Agents": 2,
     "agents": 2,
@@ -91,6 +92,7 @@
     "Cowork": 2,
     "Cowork / remote sessions": 2,
     "Desktop & preview": 2,
+    "Documentation & workflow": 2,
     "IDE integrations": 2,
     "mcp": 2,
     "MCP & connectors": 2,
@@ -106,7 +108,6 @@
     "TUI & interface": 2,
     "TUI & rendering": 2,
     "UI & display": 2,
-    "Workflow & UI observability": 2,
     "Agent": 1,
     "Agent orchestration": 1,
     "agent-behavior": 1,
@@ -128,7 +129,6 @@
     "Cowork & cloud": 1,
     "data-integrity": 1,
     "data-loss": 1,
-    "Documentation & workflow": 1,
     "Error handling & recovery": 1,
     "File system": 1,
     "filesystem": 1,
@@ -192,9 +192,9 @@
   },
   "severity_counts": {
     "CRITICAL": 152,
-    "HIGH": 976,
+    "HIGH": 978,
     "LOW": 109,
-    "MEDIUM": 495
+    "MEDIUM": 498
   },
   "entries": [
     {
@@ -22422,30 +22422,95 @@
       "date_added": "2026-08-24",
       "description": "A reported Claude Code 2.1.237 Windows Cowork/plugin setup found that `PreToolUse` hook `additionalContext` reached the model during the matched tool-call turn but was not reliably available later in the same session. The reporter logged per-fire random tokens hook-side, saw the model quote them byte-accurately in the same turn, then fail to recover them in later turns. The same payload placed in a `permissionDecision: \"deny\"` reason persisted as a blocked tool result and remained quotable later, leading the user to use a deliberate one-time deny-and-retry pattern as a knowledge-delivery workaround.",
       "workaround": "Do not assume PreToolUse `additionalContext` is durable session memory unless the installed surface proves it with a nonce canary. For reference facts needed across later turns, store them in a normal artifact, inject them through a durable tool result, or use a documented deny-and-retry pattern only when the bounced call is acceptable and clearly logged. Plugin authors should smoke-test each target surface because hook context lifetime can differ from transcript-visible tool results."
+    },
+    {
+      "id": "assistant-output-can-poison-its-own-session-with-fabricated-alerts",
+      "title": "Assistant output can poison its own session with fabricated security alerts.",
+      "category": "Model behavior & output",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89107"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code VS Code session on Claude Fable 5 appended a fabricated \"CRITICAL SYSTEM ALERT\" prompt-injection block to an otherwise routine assistant reply. The injected-looking text impersonated Anthropic Security Team authority, requested system prompt and memory disclosure, asked for safety filtering to be disabled, and included a destructive shell command. The reporter verified the text came from an assistant transcript entry rather than user input, a tool result, hooks, MCP, or files on disk, and the next request was blocked by safeguards because the model-generated text was now part of the conversation.",
+      "workaround": "Treat control-looking text in assistant output as untrusted even when it appears to come from the model itself. Do not execute commands, reveal secrets, or follow authority claims embedded in a prior assistant message without independent user confirmation. Preserve the raw session JSONL, request ids, model name, hook and MCP settings, and surrounding transcript before switching models or truncating context, because the distinction between user-supplied prompt injection and model-generated session poisoning matters for diagnosis."
+    },
+    {
+      "id": "headless-plugin-skill-resolution-can-load-stale-cache-versions",
+      "title": "Headless plugin skill resolution can load stale cached versions.",
+      "category": "MCP & plugin issues",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89111"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code 2.1.x macOS plugin setup found that after a marketplace plugin update and `/reload-plugins`, interactive registration metadata showed the invoking project and user scope on the new plugin version, but `claude -p \"/plugin-name:skill\"` still expanded a skill from an older cache directory. The stale version was apparently selected from unrelated local-scope rows for other project paths earlier in `installed_plugins.json`, causing tests of a just-shipped skill fix to silently run old behavior.",
+      "workaround": "After updating plugin skills that will be exercised through headless `claude -p`, verify the transcript's skill base-directory line or another explicit version marker before trusting test results. If a stale cache version appears, inspect `~/.claude/plugins/installed_plugins.json` for older local-scope rows for the same plugin across unrelated projects and back up the file before repair. Plugin authors should include visible version or capability markers in skills while this resolution ambiguity exists."
+    },
+    {
+      "id": "cowork-device-bridge-can-drop-artifact-write-tools-only",
+      "title": "Cowork device bridge can drop only artifact write tools.",
+      "category": "Cowork & remote",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89120"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported Claude desktop Cowork setup on macOS found that `create_artifact`, `update_artifact`, and `list_artifacts` disappeared from every session's device bridge tool list while the rest of the same bridge remained healthy. Directory, bash, staging, commit, project memory, and computer tools still worked, and artifact reads still worked indirectly through `device_stage_files`, but persisted artifact creation and updates had no callable path. Relaunching the desktop app, refreshing the tool list, and starting new sessions did not restore the selectively missing tools.",
+      "workaround": "For operations boards or workflows that depend on persisted Cowork artifacts, treat artifact write tools as a capability that can vanish independently from the rest of the device bridge. Keep a file-rendered fallback for important artifact state, record the bridge tool list when write tools disappear, and distinguish selective artifact-tool loss from complete remote-device disconnects before spending time reconnecting folders or rewriting the artifact content."
+    },
+    {
+      "id": "workflow-subagents-can-hang-indefinitely-without-timeout",
+      "title": "Workflow subagents can hang indefinitely without a timeout.",
+      "category": "Workflow & UI observability",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89124"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code 2.1.224 macOS Workflow run launched a nine-agent staged workflow where eight agents completed quickly but one verification agent produced no output, never errored, and never timed out. The run remained marked `running` for more than five hours until manually killed, blocking the downstream synthesis step and leaving completed research outputs recoverable only by parsing the run journal by hand. The report includes structured started/result events showing the barrier waiting on the stuck agent.",
+      "workaround": "Do not rely on Workflow's current run state as proof that all subagents are making progress. For long multi-agent workflows, add an external wall-clock timeout and write intermediate results to durable files or journals before barriers. If a run stalls, preserve the workflow script, transcript directory, started/result event stream, model and effort choices, and the last successful version if known before killing or retrying with fewer agents."
+    },
+    {
+      "id": "extra-known-marketplaces-schema-is-underdocumented",
+      "title": "`extraKnownMarketplaces` uses an underdocumented marketplace-source schema.",
+      "category": "Documentation & workflow",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89140"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code plugin documentation gap found that the plugin-marketplaces page documents plugin-entry `source` shapes but not the distinct `extraKnownMarketplaces` source schema from the published settings schema. Types such as `git`, `hostPattern`, and `file` are omitted, while overlapping names such as `url` and `github` have different meanings between plugin entries and marketplace sources. The mismatch made a working SSH-backed `git` marketplace setting look invalid against the docs, and made `url` appear to support git-clone syntax even though it fetches a direct marketplace JSON file.",
+      "workaround": "When configuring `extraKnownMarketplaces`, check the published Claude Code settings schema in addition to the plugin marketplace docs. Treat plugin-entry source tables and marketplace-source settings as separate schemas even when type names overlap. Prefer a small smoke test after adding a marketplace source, and document internally whether the source is a direct JSON URL, git clone, GitHub shorthand, trusted host pattern, npm package, or local file path."
     }
   ],
   "status_summary": {
-    "open": 1718,
+    "open": 1723,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 152,
-    "high": 976,
+    "high": 978,
     "low": 109,
-    "medium": 495
+    "medium": 498
   },
   "lastUpdated": "2026-08-24",
   "stats": {
-    "total": 1732,
+    "total": 1737,
     "critical": 152,
-    "high": 976,
-    "medium": 495,
+    "high": 978,
+    "medium": 498,
     "low": 109,
-    "open": 1718,
+    "open": 1723,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-24",
-  "total": 1732
+  "total": 1737
 }
