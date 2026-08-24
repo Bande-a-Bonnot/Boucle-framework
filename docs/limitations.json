@@ -1,20 +1,20 @@
 {
   "version": "0.13.0",
-  "count": 1737,
+  "count": 1741,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 160,
     "Hook bypass & evasion": 104,
     "MCP & plugin issues": 100,
     "Subagent & spawned agents": 84,
-    "Desktop & IDE integration": 61,
+    "Desktop & IDE integration": 62,
     "TUI & display": 37,
+    "Platform & compatibility": 34,
     "CLI & terminal": 33,
     "Configuration behavior": 33,
-    "Platform & compatibility": 33,
+    "Cowork & remote": 32,
     "Security & trust boundaries": 32,
     "Context & memory": 31,
-    "Cowork & remote": 31,
     "Sandbox & permissions": 31,
     "MCP & integrations": 30,
     "Performance & cost": 27,
@@ -32,9 +32,9 @@
     "Worktree": 14,
     "File system & paths": 13,
     "MCP integration": 13,
+    "Scheduled tasks": 13,
     "Worktrees & isolation": 13,
     "Plugin & channel system": 12,
-    "Scheduled tasks": 12,
     "Git & repository safety": 11,
     "UX & display": 11,
     "Configuration & settings": 10,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 152,
-    "HIGH": 978,
+    "HIGH": 982,
     "LOW": 109,
     "MEDIUM": 498
   },
@@ -22487,30 +22487,82 @@
       "date_added": "2026-08-24",
       "description": "A reported Claude Code plugin documentation gap found that the plugin-marketplaces page documents plugin-entry `source` shapes but not the distinct `extraKnownMarketplaces` source schema from the published settings schema. Types such as `git`, `hostPattern`, and `file` are omitted, while overlapping names such as `url` and `github` have different meanings between plugin entries and marketplace sources. The mismatch made a working SSH-backed `git` marketplace setting look invalid against the docs, and made `url` appear to support git-clone syntax even though it fetches a direct marketplace JSON file.",
       "workaround": "When configuring `extraKnownMarketplaces`, check the published Claude Code settings schema in addition to the plugin marketplace docs. Treat plugin-entry source tables and marketplace-source settings as separate schemas even when type names overlap. Prefer a small smoke test after adding a marketplace source, and document internally whether the source is a direct JSON URL, git clone, GitHub shorthand, trusted host pattern, npm package, or local file path."
+    },
+    {
+      "id": "windows-cowork-installer-can-continue-after-service-removal-fails",
+      "title": "Windows Cowork installer can continue after conflicting service removal fails.",
+      "category": "Platform & compatibility",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89108"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported Windows 10 Claude Desktop install failure found that the elevated bootstrapper detected a leftover `CoworkVMService`, attempted to remove it, logged `Access is denied`, then continued to `AddPackage` anyway. The MSIX registration failed with `0x80073CF6` or `0x80073CF9`, while the user saw a misleading administrator-access dialog even though the log showed full elevation. The report also observed repeated failed install cycles causing sign-in state loss when data-preserving package removal was rejected with developer mode off.",
+      "workaround": "If Claude Desktop or Cowork installation fails on Windows with repeated sign-in prompts or opaque MSIX registration HRESULTs, inspect the installer log for `CoworkVMService` removal failures before retrying. In an elevated shell, query, stop, and delete the service, then reboot before reinstalling; if deletion is denied, repair the service DACL or remove it from Safe Mode. Preserve the setup log and service state so the failure is not mistaken for an authentication problem."
+    },
+    {
+      "id": "cowork-remote-devices-can-remain-failed-after-folder-reconnect",
+      "title": "Cowork remote-devices bridge can remain failed after reconnecting folders.",
+      "category": "Cowork & remote",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89129"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported Windows Desktop Cowork session found the cloud-session `remote-devices` MCP server stuck in `failed` or `not_connected` state even after the user took the documented folder reconnect workaround. Already-connected project folders and a newly re-added folder did not restore file access, and no user-facing desktop error appeared; the bridge failure was visible only through internal tool diagnostics.",
+      "workaround": "When a Cowork session cannot read or list local files, distinguish folder attachment state from the underlying `remote-devices` MCP connection state. Re-adding folders may not repair a failed bridge. Capture the server status, connected folder list, desktop version, and session diagnostics before restarting the desktop app or opening a fresh session, because the absence of a visible desktop error does not mean the bridge is healthy."
+    },
+    {
+      "id": "scheduled-routines-can-idle-after-initialized-session",
+      "title": "Scheduled routines can idle indefinitely after session initialization.",
+      "category": "Scheduled tasks",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89135"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code cloud routine with a user-message session context and Gmail plus Google Calendar MCP connectors consistently opened a run, showed `Initialized session`, and then produced no assistant turn, tool call, or response. Manual `Run Now` and API-triggered runs both stalled, and the session events API showed only provisioning events while sessions stayed idle for more than 45 minutes.",
+      "workaround": "Treat a routine stuck at `Initialized session` as a dispatcher or initial-prompt processing failure, not as proof the requested automation completed. For scheduled or remote-triggered work, add an external deadline and read back the run event stream before trusting the output. Preserve trigger id, stuck session ids, environment id, connector list, session-context payload shape, and related prior issue links before recreating the routine."
+    },
+    {
+      "id": "claude-in-chrome-can-steal-focus-on-background-tool-calls",
+      "title": "Claude in Chrome can steal focus on background browser tool calls.",
+      "category": "Desktop & IDE integration",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89148"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported Claude in Chrome and Cowork setup on Windows found that every browser tool interaction raised Chrome to the foreground and captured keyboard focus, even with computer-use disabled. The report contrasts the extension MCP tools, which expose no `active` or foreground parameter for tab creation and navigation, with the in-app browser tool that already supports background tab creation. Multiple concurrent Cowork sessions could fight for focus, and keystrokes intended for another application could land in Chrome.",
+      "workaround": "Do not assume browser work can safely run in the background when using the Claude in Chrome extension. Avoid typing into terminals, SSH sessions, or other command-sensitive windows while Cowork is driving Chrome, and prefer browser integrations that expose an explicit background or foreground parameter when unattended work matters. Record the connected browser list and relevant tool schemas when diagnosing focus theft so it is not misattributed to computer-use mode."
     }
   ],
   "status_summary": {
-    "open": 1723,
+    "open": 1727,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 152,
-    "high": 978,
+    "high": 982,
     "low": 109,
     "medium": 498
   },
   "lastUpdated": "2026-08-24",
   "stats": {
-    "total": 1737,
+    "total": 1741,
     "critical": 152,
-    "high": 978,
+    "high": 982,
     "medium": 498,
     "low": 109,
-    "open": 1723,
+    "open": 1727,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-24",
-  "total": 1737
+  "total": 1741
 }
