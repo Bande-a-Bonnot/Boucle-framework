@@ -7,6 +7,22 @@
   <updated>2026-08-24T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] PreToolUse `additionalContext` can be single-turn only.</title>
+    <id>https://framework.boucle.sh/limitations.html#pretooluse-additionalcontext-can-be-single-turn-only</id>
+    <link href="https://framework.boucle.sh/limitations.html#pretooluse-additionalcontext-can-be-single-turn-only"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.237 Windows Cowork/plugin setup found that `PreToolUse` hook `additionalContext` reached the model during the matched tool-call turn but was not reliably available later in the same session. The reporter logged per-fire random tokens hook-side, saw the model quote them byte-accurately in the same turn, then fail to recover them in later turns. The same payload placed in a `permissionDecision: &quot;deny&quot;` reason persisted as a blocked tool result and remained quotable later, leading the user to use a deliberate one-time deny-and-retry pattern as a knowledge-delivery workaround.</summary>
+    <category term="Hooks &amp; automation"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Bypass mode can steer Edit and Write work through shell commands.</title>
+    <id>https://framework.boucle.sh/limitations.html#bypass-mode-can-steer-edit-and-write-through-shell-commands</id>
+    <link href="https://framework.boucle.sh/limitations.html#bypass-mode-can-steer-edit-and-write-through-shell-commands"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.241 Windows session found that when `--dangerously-skip-permissions` was active, ordinary Read, Edit, and Write work appeared to be routed through Bash, PowerShell, or CMD commands instead of the dedicated tools. The reporter saw slower edits, hard-to-audit shell snippets, and shell-generated file changes containing sleep timers, and later recovered corrupted files from Git history. The issue also cites a binary string indicating that bypass or auto mode can inject guidance to prefer shell commands over the dedicated file tools when shell can accomplish the task.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
     <title>[HIGH] Windows Desktop agent writes can silently land in the MSIX package container.</title>
     <id>https://framework.boucle.sh/limitations.html#windows-msix-desktop-agent-writes-can-land-in-package-container</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-msix-desktop-agent-writes-can-land-in-package-container"/>
@@ -149,21 +165,5 @@
     <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.237 macOS VS Code extension session appended about 15 KB of unrelated third-party web page UI text into an in-flight assistant message. The transcript showed the same API request ID as the legitimate reply, with the foreign content arriving about 81 seconds after the real final sentence and streaming until the user interrupted it. The reporter ruled out local proxy tooling and found the foreign string only in the affected session transcript, making the incident distinct from ordinary hallucinated wording or user-pasted content. Because the injected block was stored as assistant output, later turns could treat unrelated external text as trusted conversation history.</summary>
     <category term="Model behavior &amp; output"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Custom auto-mode deny rules can be loaded but inert.</title>
-    <id>https://framework.boucle.sh/limitations.html#custom-auto-mode-deny-rules-can-be-loaded-but-inert</id>
-    <link href="https://framework.boucle.sh/limitations.html#custom-auto-mode-deny-rules-can-be-loaded-but-inert"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.240 Fedora repro found that user-level `autoMode.hard_deny` and `autoMode.soft_deny` entries could be parsed, merged with `$defaults`, and displayed by `claude auto-mode config` while still failing to affect classifier behavior. Matched scratch-HOME trials differed only by the custom deny rule, but both allowed the forbidden `rm victim.txt` action to delete the target file. The reporter also observed real custom hard-deny floors failing to block off-allowlist `git push` attempts in interactive sessions, while custom `autoMode.allow` entries did appear to change behavior. This makes `auto-mode config` output insufficient proof that a user-authored deny floor is actually enforced.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows CoworkVMService can loop before configuring the isolated workspace.</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-cowork-vm-service-can-loop-before-configuring-workspace</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-cowork-vm-service-can-loop-before-configuring-workspace"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Windows 11 Claude Desktop Cowork setup could not start the isolated Linux workspace used by `device_bash`: every shell attempt returned `Workspace unavailable`, while file-based bridge tools still worked. `CoworkVMService` started, initialized HCS and HCN, opened its named pipe server, and logged signature-verification setup, but then only logged repeated `[Server] Client connected` lines for hours. It never logged a configure call, VM creation attempt, timeout, or explanatory error, and the behavior persisted after enabling Hyper-V, confirming Windows Hypervisor Platform, deleting the service, clearing `C:\ProgramData\Claude`, reinstalling, and rebooting.</summary>
-    <category term="Cowork &amp; remote"/>
   </entry>
 </feed>

@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1730,
+  "count": 1732,
   "categories": {
     "Hook behavior & events": 228,
-    "Permission system": 159,
+    "Permission system": 160,
     "Hook bypass & evasion": 104,
     "MCP & plugin issues": 99,
     "Subagent & spawned agents": 84,
@@ -72,6 +72,7 @@
     "cowork": 3,
     "Desktop": 3,
     "Hooks": 3,
+    "Hooks & automation": 3,
     "IDE integration": 3,
     "model-behavior": 3,
     "Remote": 3,
@@ -90,7 +91,6 @@
     "Cowork": 2,
     "Cowork / remote sessions": 2,
     "Desktop & preview": 2,
-    "Hooks & automation": 2,
     "IDE integrations": 2,
     "mcp": 2,
     "MCP & connectors": 2,
@@ -192,9 +192,9 @@
   },
   "severity_counts": {
     "CRITICAL": 152,
-    "HIGH": 975,
+    "HIGH": 976,
     "LOW": 109,
-    "MEDIUM": 494
+    "MEDIUM": 495
   },
   "entries": [
     {
@@ -22396,30 +22396,56 @@
       "date_added": "2026-08-24",
       "description": "A reported Windows Claude Desktop MSIX install found that Bash, Write, and Edit tool subprocesses inherited the app package identity, so creating new entries directly under `%APPDATA%` or `%LOCALAPPDATA%` could be redirected into the Claude package container. Reads then resolved the redirected copy, letting the agent report success and verify the file while the user's real profile path remained unchanged. Existing real subdirectories behaved normally, making the bug most visible during first-time setup tasks such as creating a tool config directory.",
       "workaround": "For Windows Desktop sessions, do not trust the agent's own read-back as proof that first-time `%APPDATA%` or `%LOCALAPPDATA%` root writes reached the real filesystem. Prefer the standalone CLI from a normal terminal for profile-configuration work, or have the user pre-create the target directory outside the app before the agent writes inside it. Verify important profile files from an external PowerShell window and check the Claude package container when a tool reports success but the real application ignores the new config."
+    },
+    {
+      "id": "bypass-mode-can-steer-edit-and-write-through-shell-commands",
+      "title": "Bypass mode can steer Edit and Write work through shell commands.",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89121"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code 2.1.241 Windows session found that when `--dangerously-skip-permissions` was active, ordinary Read, Edit, and Write work appeared to be routed through Bash, PowerShell, or CMD commands instead of the dedicated tools. The reporter saw slower edits, hard-to-audit shell snippets, and shell-generated file changes containing sleep timers, and later recovered corrupted files from Git history. The issue also cites a binary string indicating that bypass or auto mode can inject guidance to prefer shell commands over the dedicated file tools when shell can accomplish the task.",
+      "workaround": "Do not treat bypass mode as only removing prompts; it can also change the tool-selection surface that performs file operations. For important edits, prefer normal permission mode or an explicit tool policy that keeps file writes on Edit, MultiEdit, or Write where diffs are visible. Keep the workspace under version control, review `git diff` before accepting results, and be cautious about adding CLAUDE.md overrides that try to fight the system prompt because they may push the model toward more brittle shell rewrites."
+    },
+    {
+      "id": "pretooluse-additionalcontext-can-be-single-turn-only",
+      "title": "PreToolUse `additionalContext` can be single-turn only.",
+      "category": "Hooks & automation",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89125"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code 2.1.237 Windows Cowork/plugin setup found that `PreToolUse` hook `additionalContext` reached the model during the matched tool-call turn but was not reliably available later in the same session. The reporter logged per-fire random tokens hook-side, saw the model quote them byte-accurately in the same turn, then fail to recover them in later turns. The same payload placed in a `permissionDecision: \"deny\"` reason persisted as a blocked tool result and remained quotable later, leading the user to use a deliberate one-time deny-and-retry pattern as a knowledge-delivery workaround.",
+      "workaround": "Do not assume PreToolUse `additionalContext` is durable session memory unless the installed surface proves it with a nonce canary. For reference facts needed across later turns, store them in a normal artifact, inject them through a durable tool result, or use a documented deny-and-retry pattern only when the bounced call is acceptable and clearly logged. Plugin authors should smoke-test each target surface because hook context lifetime can differ from transcript-visible tool results."
     }
   ],
   "status_summary": {
-    "open": 1716,
+    "open": 1718,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 152,
-    "high": 975,
+    "high": 976,
     "low": 109,
-    "medium": 494
+    "medium": 495
   },
   "lastUpdated": "2026-08-24",
   "stats": {
-    "total": 1730,
+    "total": 1732,
     "critical": 152,
-    "high": 975,
-    "medium": 494,
+    "high": 976,
+    "medium": 495,
     "low": 109,
-    "open": 1716,
+    "open": 1718,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-24",
-  "total": 1730
+  "total": 1732
 }
