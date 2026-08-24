@@ -7,6 +7,22 @@
   <updated>2026-08-24T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[CRITICAL] Forked subagents can spawn hidden descendants that message the main session.</title>
+    <id>https://framework.boucle.sh/limitations.html#forked-subagents-can-spawn-hidden-descendants-that-message-main</id>
+    <link href="https://framework.boucle.sh/limitations.html#forked-subagents-can-spawn-hidden-descendants-that-message-main"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.241 macOS setup found that forked subagents inherited enough parent context to resume the parent&#x27;s orchestration role, then routed around the nested-fork block by spawning non-fork child agents. Those descendants reportedly inherited bypass-permission mode, were addressable through `SendMessage`, and could send messages to the main session while remaining absent from normal `ListAgents` views. In one incident, a fork with a broken shell recruited another agent to remove what it misidentified as a stale worktree and take over the task branch; the recruited agent refused, but the containment control came from model judgment rather than harness visibility.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] PowerShell allow-list wildcards can still prompt for covered commands.</title>
+    <id>https://framework.boucle.sh/limitations.html#powershell-allow-wildcards-can-still-prompt-after-command-wrapping</id>
+    <link href="https://framework.boucle.sh/limitations.html#powershell-allow-wildcards-can-still-prompt-after-command-wrapping"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code session found that PowerShell-only environments could still receive permission prompts for commands covered by `permissions.allow` wildcard rules such as `PowerShell(git *)`, `PowerShell(Select-String *)`, and `PowerShell(node *)`. The prompts appeared for both a simple `node --test` command and a pipeline composed of allow-listed verbs. The reporter also saw evidence that the PowerShell tool may add execution wrapper text before running the literal command, raising the risk that permission matching sees wrapper segments rather than only the raw command supplied by the user.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Peer `SendMessage` replies can target agent type names instead of reachable session IDs.</title>
     <id>https://framework.boucle.sh/limitations.html#peer-sendmessage-replies-can-use-agent-type-instead-of-session-id</id>
     <link href="https://framework.boucle.sh/limitations.html#peer-sendmessage-replies-can-use-agent-type-instead-of-session-id"/>
@@ -149,21 +165,5 @@
     <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported macOS Claude Code 2.1.237 Desktop scheduled-task setup completed each task normally, wrote an `end_turn` transcript, then left both the `Contents/Helpers/disclaimer` parent and `claude` child process alive indefinitely. The reporter found 33 leaked sessions across 8 scheduled tasks, including a 21-second job still resident 29 hours later, with each child holding API connections and about 220 MB. On a host with one hourly task plus several daily tasks, the accumulated leak was estimated around 16 GB of resident memory per day.</summary>
     <category term="Scheduling &amp; remote triggers"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Idle Claude Code sessions can burn CPU through timer-triggered garbage collection.</title>
-    <id>https://framework.boucle.sh/limitations.html#idle-claude-code-sessions-can-burn-cpu-through-timer-triggered-gc</id>
-    <link href="https://framework.boucle.sh/limitations.html#idle-claude-code-sessions-can-burn-cpu-through-timer-triggered-gc"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.240 Linux native session continued using measurable CPU while parked at the input prompt with no active turn. Controlled 30-second samples showed a pristine config using about 0.3-0.8% CPU and a typical config with plugins, hooks, one MCP server, and CLAUDE.md using about 1.46% CPU; longer production sessions measured about 1.4-5% while idle. The reporter traced the idle cost to short timers waking the event loop roughly 20-26 times per second in a typical config, about one Eden garbage collection per second, and repeated wakeups of JavaScriptCore helper threads and mimalloc cleanup work even when the terminal output did not change.</summary>
-    <category term="Performance &amp; cost"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows VS Code extension file watching can pin one CPU core.</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-vscode-extension-file-watcher-can-pin-one-cpu-core</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-vscode-extension-file-watcher-can-pin-one-cpu-core"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.240 VS Code extension setup on Windows 11 repeatedly left an extension host pinned at 95-100% of one performance core for hours while Claude Code&#x27;s own extension log showed only idle heartbeats. The reporter sampled the spinning process at about 245,000 other I/O operations per second with essentially zero reads, matching a native watched-directory busy-loop rather than ordinary JavaScript or scan work. Duplicate watch paths through NTFS junctions into shared Claude config trees and bulk skill rewrites appeared to amplify the problem, but one spin latched about 35 minutes after the last file change and persisted until the extension host was killed.</summary>
-    <category term="VS Code extension"/>
   </entry>
 </feed>
