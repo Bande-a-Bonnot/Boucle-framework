@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1762,
+  "count": 1768,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 162,
+    "MCP & plugin issues": 106,
     "Hook bypass & evasion": 104,
-    "MCP & plugin issues": 103,
     "Subagent & spawned agents": 85,
     "Desktop & IDE integration": 62,
     "TUI & display": 37,
@@ -21,15 +21,15 @@
     "VS Code extension": 26,
     "Agents & subagents": 23,
     "Tool behavior": 23,
-    "Auth & accounts": 21,
+    "Auth & accounts": 22,
     "Core & session management": 21,
     "Data integrity": 21,
     "Bash & shell execution": 19,
     "Remote & cloud": 19,
     "Model behavior": 18,
-    "Scheduling & remote triggers": 17,
+    "Scheduling & remote triggers": 18,
+    "Scheduled tasks": 15,
     "Permissions & safety": 14,
-    "Scheduled tasks": 14,
     "Worktree": 14,
     "Worktrees & isolation": 14,
     "File system & paths": 13,
@@ -192,8 +192,8 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 155,
-    "HIGH": 998,
+    "CRITICAL": 156,
+    "HIGH": 1003,
     "LOW": 109,
     "MEDIUM": 500
   },
@@ -22279,10 +22279,11 @@
       "severity": "HIGH",
       "status": "open",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/88950"
+        "https://github.com/anthropics/claude-code/issues/88950",
+        "https://github.com/anthropics/claude-code/issues/89254"
       ],
       "date_added": "2026-08-24",
-      "description": "A reported Claude Code 2.1.240 macOS session found that the worktree-isolation state used for shell and git operations could be shared across parallel subagents rather than remaining per-agent. During a fan-out session, bare `git` commands, relative-path Bash writes, and script runners sometimes executed in another agent's worktree or in the shared checkout, while some absolute-path writes failed closed. Reported incidents included commits on the wrong branch, heredoc writes into another agent's tree, quality gates running in the wrong worktree, and a reset landing in a subagent worktree.",
+      "description": "Reported Claude Code 2.1.240-2.1.241 macOS sessions found that the worktree-isolation state used for shell and git operations could be shared across parallel subagents rather than remaining per-agent. During fan-out sessions, bare `git` commands, relative-path Bash writes, and script runners sometimes executed in another agent's worktree or in the shared checkout, while some absolute-path writes failed closed. A later reproduction found a parent session's `EnterWorktree` call could redirect a still-running background subagent's Bash guard toward the parent's new worktree instead of the subagent's assigned tree. Reported incidents included commits on the wrong branch, heredoc writes into another agent's tree, quality gates running in the wrong worktree, and a reset landing in a subagent worktree.",
       "workaround": "Do not assume worktree isolation is reliable for parallel subagents until each command verifies its actual repo root. Avoid bare `git` and relative-path Bash writes in high-risk multi-agent sessions, keep uncommitted work checkpointed outside Claude Code before fan-out, and review `git status`, branch, and worktree path from each agent immediately before committing, stashing, resetting, or trusting test results. If `git -C <expected>` or compound self-guards are refused by the installed version, treat that refusal as a reason to reduce concurrency rather than bypass the guard."
     },
     {
@@ -22820,30 +22821,108 @@
       "date_added": "2026-08-24",
       "description": "A reported Claude Code 2.1.241 Windows setup had local project MCP servers that `claude mcp get` reported as connected, including one stdio server and one HTTP server, while `ToolSearch` could not find any of their tools across restarts, remove/re-add cycles, terminal relaunches, and a full OS reboot. Other deferred tool namespaces still loaded in the same sessions, and `claude mcp list` was inconsistent on first versus immediate repeated invocation, suggesting connected status can race or diverge from model-visible tool registration.",
       "workaround": "Do not treat `claude mcp get` connected status as sufficient proof that the model can call the server. After MCP setup or restart, run a harmless `ToolSearch` query for a known tool and, where safe, a read-only tool call before depending on the connector. If `mcp list` and ToolSearch disagree, preserve both outputs, restart only after recording the server scope and transport, and keep a built-in-tool fallback for critical workflows."
+    },
+    {
+      "id": "claude-ai-connectors-can-execute-write-tools-without-visible-approval",
+      "title": "Claude.ai connectors can expose write tools to Claude Code without visible approval.",
+      "category": "MCP & plugin issues",
+      "severity": "CRITICAL",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89304"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code terminal session found that a Gmail connector labelled as web-scoped in claude.ai Connectors appeared inside Claude Code with write-capable MCP tools such as send, reply, forward, trash, and spam operations. The reporter says `send_message` succeeded and delivered real email with an attachment from the user's account, while local permissions contained no MCP allow rules and the connector UI marked tools as needing approval. Follow-up comments tied this to earlier closed reports that claude.ai connector tool restrictions and approval-required settings were ignored by CLI or VS Code surfaces.",
+      "workaround": "Treat claude.ai connectors as account-level external-effect tools, not as harmless web-only integrations, until the exact Claude Code surface proves per-tool approval. Disconnect or deny first-party connectors that can send, delete, or mutate third-party data when running autonomous or permissive sessions. For email, calendar, task, and ticketing connectors, verify the active tool namespace, run only read-only identity canaries first, and keep send/reply/forward/delete behind an external approval gate or draft-only workflow."
+    },
+    {
+      "id": "mcp-tool-arguments-can-drop-empty-string-values",
+      "title": "MCP tool-call JSON can drop empty string argument values.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89313"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code 2.1.241 Windows repro found that when the model called an MCP tool with an optional string parameter intended to be the empty string, Claude Code sometimes constructed invalid JSON with the key followed by a colon and no value. The same MCP server accepted a direct HTTP request containing a genuine empty string for the field, and six consecutive Claude Code attempts across two parameters produced the same malformed shape before the call reached the server.",
+      "workaround": "Do not rely on empty strings as the only MCP signal for clearing fields until the installed client proves it serializes them correctly. Prefer explicit nullable fields, boolean clear flags, or server-side sentinel values for critical update tools. If a tool-call validator reports invalid JSON around an empty value, preserve the raw payload, schema, client version, and a direct server-side control call before changing production data semantics."
+    },
+    {
+      "id": "mcp-reauth-can-clear-shared-tokens-before-signin-succeeds",
+      "title": "MCP re-auth can clear shared tokens before sign-in succeeds.",
+      "category": "Auth & accounts",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89321"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code 2.1.238-2.1.241 macOS MCP OAuth flow still cleared stored tokens before the replacement sign-in completed, despite a prior changelog fix for the same class. Because OAuth credentials are shared across local sessions, re-authenticating one stuck session can break other sessions that were still using a valid token, creating a loop where each recovery attempt invalidates another session. The reporter observed this with Linear's OAuth MCP server and logs showing token clearing about 19 seconds before new tokens were saved.",
+      "workaround": "Before using `/mcp` re-auth in one session, assume it may affect all local sessions for the same MCP server. Pause or checkpoint concurrent MCP-dependent work, preserve the existing credential file when safe, and re-auth one server at a time while verifying other sessions afterward. For important multi-session work, prefer separate Claude profiles or isolated credential stores where available, and capture token-clear and save timestamps when reporting cascaded auth failures."
+    },
+    {
+      "id": "background-sessions-can-start-with-empty-plugin-skill-registry",
+      "title": "Background sessions can start with an empty plugin skill registry.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89319"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code 2.1.241 macOS background session started with zero plugin skills even though three enabled plugins and their skill directories were present on disk and other background sessions on the same machine loaded them correctly. The affected session stayed permanently blind to those skills for more than ten hours, `Skill()` returned `Unknown skill`, and no warning surfaced to the agent or user. The reporter found one such failure among 44 sessions that invoked skills and suspected a pre-warmed background spare process with an empty plugin registry.",
+      "workaround": "Do not assume enabled plugins are loaded in every background session. At session start, run a cheap skill availability canary for workflows that depend on plugin skills, and restart the background session if an enabled skill returns `Unknown skill`. Plugin authors should expose a visible version or capability marker and log skill discovery counts where possible; operators should preserve daemon logs, enabled-plugin settings, and the failing session id before clearing spares."
+    },
+    {
+      "id": "scheduled-task-tool-approvals-can-fail-to-persist-between-runs",
+      "title": "Scheduled-task tool approvals can fail to persist between runs.",
+      "category": "Scheduled tasks",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89311"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "A reported Windows Claude Code scheduled-task setup found recurring tasks that used write-capable MCP and Bash tools could stall for hours on permission prompts even after the user tried both documented approval paths: the task's ignore-permissions toggle and an always-allow approval on the tool prompt. The reporter confirmed each scheduled fire used a different session id under the same task id, suggesting approvals were saved to the interactive session rather than durably to the recurring task, contrary to the creation message promising future runs would auto-apply granted approvals.",
+      "workaround": "Do not treat one supervised scheduled-task run as proof that later unattended runs inherit its tool approvals. After granting permissions, let at least one real scheduled fire execute without an interactive terminal open and verify completion from durable output. For production automations that write to databases or webhooks, keep idempotent retries, external alerting, and a manual runbook; avoid relying on remote push notifications as the only failure signal when permission prompts can stall silently."
+    },
+    {
+      "id": "session-wake-and-background-notifications-can-go-silent-across-compaction",
+      "title": "Session wakeups, crons, and background notifications can go silent across compaction.",
+      "category": "Scheduling & remote triggers",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89248"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code macOS loop session saw three independent in-session wake mechanisms fail during a roughly 103-minute window around context compaction or resume: a pending `ScheduleWakeup`, a session-scoped recurring cron that still appeared armed in `CronList`, and completion notifications for two background Bash watchers whose work had finished. The results were discovered only by a later manual sweep, leaving no catch-up fire or delivery guarantee visible inside the session.",
+      "workaround": "Do not rely on in-session timers, session crons, and background-command completion notices as independent liveness layers unless a compaction test proves they survive together. For autonomous loops, keep an OS-level watchdog or external scheduler that checks durable output timestamps rather than waiting for Claude Code to wake itself. Record `CronList`, pending wake state, background task ids, compaction timing, and transcript gaps when diagnosing missed fires."
     }
   ],
   "status_summary": {
-    "open": 1748,
+    "open": 1754,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 155,
-    "high": 998,
+    "critical": 156,
+    "high": 1003,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-24",
   "stats": {
-    "total": 1762,
-    "critical": 155,
-    "high": 998,
+    "total": 1768,
+    "critical": 156,
+    "high": 1003,
     "medium": 500,
     "low": 109,
-    "open": 1748,
+    "open": 1754,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-24",
-  "total": 1762
+  "total": 1768
 }

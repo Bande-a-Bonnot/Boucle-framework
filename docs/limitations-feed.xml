@@ -7,6 +7,54 @@
   <updated>2026-08-24T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Session wakeups, crons, and background notifications can go silent across compaction.</title>
+    <id>https://framework.boucle.sh/limitations.html#session-wake-and-background-notifications-can-go-silent-across-compaction</id>
+    <link href="https://framework.boucle.sh/limitations.html#session-wake-and-background-notifications-can-go-silent-across-compaction"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code macOS loop session saw three independent in-session wake mechanisms fail during a roughly 103-minute window around context compaction or resume: a pending `ScheduleWakeup`, a session-scoped recurring cron that still appeared armed in `CronList`, and completion notifications for two background Bash watchers whose work had finished. The results were discovered only by a later manual sweep, leaving no catch-up fire or delivery guarantee visible inside the session.</summary>
+    <category term="Scheduling &amp; remote triggers"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Scheduled-task tool approvals can fail to persist between runs.</title>
+    <id>https://framework.boucle.sh/limitations.html#scheduled-task-tool-approvals-can-fail-to-persist-between-runs</id>
+    <link href="https://framework.boucle.sh/limitations.html#scheduled-task-tool-approvals-can-fail-to-persist-between-runs"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code scheduled-task setup found recurring tasks that used write-capable MCP and Bash tools could stall for hours on permission prompts even after the user tried both documented approval paths: the task&#x27;s ignore-permissions toggle and an always-allow approval on the tool prompt. The reporter confirmed each scheduled fire used a different session id under the same task id, suggesting approvals were saved to the interactive session rather than durably to the recurring task, contrary to the creation message promising future runs would auto-apply granted approvals.</summary>
+    <category term="Scheduled tasks"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Background sessions can start with an empty plugin skill registry.</title>
+    <id>https://framework.boucle.sh/limitations.html#background-sessions-can-start-with-empty-plugin-skill-registry</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-sessions-can-start-with-empty-plugin-skill-registry"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.241 macOS background session started with zero plugin skills even though three enabled plugins and their skill directories were present on disk and other background sessions on the same machine loaded them correctly. The affected session stayed permanently blind to those skills for more than ten hours, `Skill()` returned `Unknown skill`, and no warning surfaced to the agent or user. The reporter found one such failure among 44 sessions that invoked skills and suspected a pre-warmed background spare process with an empty plugin registry.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[HIGH] MCP re-auth can clear shared tokens before sign-in succeeds.</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-reauth-can-clear-shared-tokens-before-signin-succeeds</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-reauth-can-clear-shared-tokens-before-signin-succeeds"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.238-2.1.241 macOS MCP OAuth flow still cleared stored tokens before the replacement sign-in completed, despite a prior changelog fix for the same class. Because OAuth credentials are shared across local sessions, re-authenticating one stuck session can break other sessions that were still using a valid token, creating a loop where each recovery attempt invalidates another session. The reporter observed this with Linear&#x27;s OAuth MCP server and logs showing token clearing about 19 seconds before new tokens were saved.</summary>
+    <category term="Auth &amp; accounts"/>
+  </entry>
+  <entry>
+    <title>[HIGH] MCP tool-call JSON can drop empty string argument values.</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-tool-arguments-can-drop-empty-string-values</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-tool-arguments-can-drop-empty-string-values"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.241 Windows repro found that when the model called an MCP tool with an optional string parameter intended to be the empty string, Claude Code sometimes constructed invalid JSON with the key followed by a colon and no value. The same MCP server accepted a direct HTTP request containing a genuine empty string for the field, and six consecutive Claude Code attempts across two parameters produced the same malformed shape before the call reached the server.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Claude.ai connectors can expose write tools to Claude Code without visible approval.</title>
+    <id>https://framework.boucle.sh/limitations.html#claude-ai-connectors-can-execute-write-tools-without-visible-approval</id>
+    <link href="https://framework.boucle.sh/limitations.html#claude-ai-connectors-can-execute-write-tools-without-visible-approval"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code terminal session found that a Gmail connector labelled as web-scoped in claude.ai Connectors appeared inside Claude Code with write-capable MCP tools such as send, reply, forward, trash, and spam operations. The reporter says `send_message` succeeded and delivered real email with an attachment from the user&#x27;s account, while local permissions contained no MCP allow rules and the connector UI marked tools as needing approval. Follow-up comments tied this to earlier closed reports that claude.ai connector tool restrictions and approval-required settings were ignored by CLI or VS Code surfaces.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[HIGH] Connected MCP servers can expose zero tools through ToolSearch.</title>
     <id>https://framework.boucle.sh/limitations.html#connected-mcp-servers-can-expose-zero-toolsearch-tools</id>
     <link href="https://framework.boucle.sh/limitations.html#connected-mcp-servers-can-expose-zero-toolsearch-tools"/>
@@ -117,53 +165,5 @@
     <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.241 macOS session launched as bare `claude` with no permission-mode flags, no `autoMode` or `permissionMode` keys in user or project settings, and a cached `tengu_auto_mode_default_on: false` flag, yet the footer immediately showed auto mode on before any user interaction. The reporter also observed a separate first-turn session behaving as auto mode without prior permission prompts. A silent default flip matters because auto mode skips per-action confirmations users may rely on for file edits and shell execution.</summary>
     <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Scheduled-task session processes can leak and keep spinning CPU.</title>
-    <id>https://framework.boucle.sh/limitations.html#scheduled-task-session-processes-can-leak-and-spin-cpu</id>
-    <link href="https://framework.boucle.sh/limitations.html#scheduled-task-session-processes-can-leak-and-spin-cpu"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Desktop 1.34493.1 / Claude Code 2.1.237 macOS setup found that sessions spawned for scheduled-task runs stayed resident after the app considered them finished. After three days, 24 orphaned Claude Code session processes consumed about 2.7 GB RSS and roughly 234% CPU in aggregate, with each old process still advancing its CPU clock despite no active transcript writes or running session state. The reporter tied process start times to scheduled task fires and found manual termination non-destructive because sessions resumed from transcript state.</summary>
-    <category term="Scheduled tasks"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] OAuth HTTP MCP URL dedup can expose one tenant under another server name.</title>
-    <id>https://framework.boucle.sh/limitations.html#oauth-http-mcp-url-dedup-can-cross-tenant-identity</id>
-    <link href="https://framework.boucle.sh/limitations.html#oauth-http-mcp-url-dedup-can-cross-tenant-identity"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.241 setup declared two OAuth-authenticated HTTP MCP servers with different names but the same Atlassian remote MCP URL, intending each entry to authenticate against a different tenant/account. Claude Code silently deduplicated by URL: only one server&#x27;s tools appeared, and a tool call under the surviving server name returned resources from the other tenant that had completed OAuth. Because the configured server name no longer matched the authenticated identity, users could reasonably believe they were querying or acting on one Jira/Confluence site while the tool was actually connected to another.</summary>
-    <category term="MCP integrations"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Background worktree guard can deadlock on nested repositories.</title>
-    <id>https://framework.boucle.sh/limitations.html#background-worktree-guard-can-deadlock-on-nested-repos</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-worktree-guard-can-deadlock-on-nested-repos"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.237 macOS background session launched from a non-git parent directory could not edit a file in a nested git repository: the write guard demanded `EnterWorktree` first, while `EnterWorktree` refused because the session cwd was not itself a git repo. The suggested `worktree.bgIsolation: none` opt-out was also unreachable because settings resolved from the launch cwd rather than the nested repo owning the target file. The same report observed other sessions editing through hand-made worktrees or fresh clones without triggering the guard, so the restriction appeared tied to recognized path shape rather than the actual shared-checkout risk.</summary>
-    <category term="Worktrees &amp; isolation"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] VS Code Agent SDK sessions can ignore commit attribution settings.</title>
-    <id>https://framework.boucle.sh/limitations.html#vscode-agent-sdk-can-ignore-attribution-settings</id>
-    <link href="https://framework.boucle.sh/limitations.html#vscode-agent-sdk-can-ignore-attribution-settings"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported VS Code native extension and Agent SDK session found that project `.claude/settings.json` attribution settings were not injected into commit or PR workflow instructions. Even with `attribution.commit` and `attribution.pr` set to empty strings, the model still appended the default generated-with block and `Co-Authored-By` trailer, apparently from trained prior behavior rather than a visible system prompt instruction. Existing attribution issues cover CLI prompt conflicts; this report points to a separate surface where the setting may be absent from the prompt entirely.</summary>
-    <category term="Git &amp; repository safety"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows Desktop MSIX installs can be bricked by WebGPU adapter requests.</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-msix-webgpu-can-brick-desktop-install</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-msix-webgpu-can-brick-desktop-install"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Windows Claude Desktop 1.34493.1.0 MSIX install found that web content calling `navigator.gpu.requestAdapter()` could crash the GPU process, mark the package as `Modified, NeedsRemediation`, and leave the app in an unrecoverable repair loop. The report attributes the chain to Chromium loading `vk_swiftshader.dll` after sandbox lockdown while the shipped MSIX lacked an `AppxMetadata/CodeIntegrity.cat` catalog, causing Code Integrity failures to escalate from a normal policy denial into package remediation. The crash could be triggered by an MCP widget browser preview that only probed WebGPU support.</summary>
-    <category term="Platform &amp; compatibility"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Sandbox network allowlists can miss HTTPS CONNECT tunnels.</title>
-    <id>https://framework.boucle.sh/limitations.html#sandbox-allowedhosts-can-miss-https-connect-tunnels</id>
-    <link href="https://framework.boucle.sh/limitations.html#sandbox-allowedhosts-can-miss-https-connect-tunnels"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.241 macOS sandbox setup found that Bash-tool network calls could reach HTTPS hosts outside the configured `allowedHosts` or `allowedDomains` list. The reporter confirmed `HTTPS_PROXY` and `ALL_PROXY` pointed at the local sandbox proxy and captured curl issuing successful `CONNECT` requests through that proxy to non-allowlisted hosts, suggesting the proxy intercepted traffic but did not reject disallowed tunnel targets. The same broad reach reportedly appeared through an MCP browser tool, so the gap may not be Bash-specific.</summary>
-    <category term="Security &amp; trust boundaries"/>
   </entry>
 </feed>
