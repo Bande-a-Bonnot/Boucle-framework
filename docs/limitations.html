@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1730</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-24.</span></p>
+        <p class="subtitle"><span id="total-count">1732</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-24.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -19496,6 +19496,30 @@
                         <!-- workaround:windows-msix-desktop-agent-writes-can-land-in-package-container -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For Windows Desktop sessions, do not trust the agent&#x27;s own read-back as proof that first-time `%APPDATA%` or `%LOCALAPPDATA%` root writes reached the real filesystem. Prefer the standalone CLI from a normal terminal for profile-configuration work, or have the user pre-create the target directory outside the app before the agent writes inside it. Verify important profile files from an external PowerShell window and check the Claude package container when a tool reports success but the real application ignores the new config.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89113" target="_blank">#89113</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="89121" id="bypass-mode-can-steer-edit-and-write-through-shell-commands" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1731</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Bypass mode can steer Edit and Write work through shell commands.</h3>
+            <p>A reported Claude Code 2.1.241 Windows session found that when `--dangerously-skip-permissions` was active, ordinary Read, Edit, and Write work appeared to be routed through Bash, PowerShell, or CMD commands instead of the dedicated tools. The reporter saw slower edits, hard-to-audit shell snippets, and shell-generated file changes containing sleep timers, and later recovered corrupted files from Git history. The issue also cites a binary string indicating that bypass or auto mode can inject guidance to prefer shell commands over the dedicated file tools when shell can accomplish the task.</p>
+                        <!-- workaround:bypass-mode-can-steer-edit-and-write-through-shell-commands -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat bypass mode as only removing prompts; it can also change the tool-selection surface that performs file operations. For important edits, prefer normal permission mode or an explicit tool policy that keeps file writes on Edit, MultiEdit, or Write where diffs are visible. Keep the workspace under version control, review `git diff` before accepting results, and be cautious about adding CLAUDE.md overrides that try to fight the system prompt because they may push the model toward more brittle shell rewrites.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89121" target="_blank">#89121</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hooks &amp; automation" data-issues="89125" id="pretooluse-additionalcontext-can-be-single-turn-only" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1732</span>
+                <span class="kl-cat">Hooks &amp; automation</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>PreToolUse `additionalContext` can be single-turn only.</h3>
+            <p>A reported Claude Code 2.1.237 Windows Cowork/plugin setup found that `PreToolUse` hook `additionalContext` reached the model during the matched tool-call turn but was not reliably available later in the same session. The reporter logged per-fire random tokens hook-side, saw the model quote them byte-accurately in the same turn, then fail to recover them in later turns. The same payload placed in a `permissionDecision: &quot;deny&quot;` reason persisted as a blocked tool result and remained quotable later, leading the user to use a deliberate one-time deny-and-retry pattern as a knowledge-delivery workaround.</p>
+                        <!-- workaround:pretooluse-additionalcontext-can-be-single-turn-only -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume PreToolUse `additionalContext` is durable session memory unless the installed surface proves it with a nonce canary. For reference facts needed across later turns, store them in a normal artifact, inject them through a durable tool result, or use a documented deny-and-retry pattern only when the bounced call is acceptable and clearly logged. Plugin authors should smoke-test each target surface because hook context lifetime can differ from transcript-visible tool results.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89125" target="_blank">#89125</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
