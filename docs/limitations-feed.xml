@@ -7,6 +7,46 @@
   <updated>2026-08-24T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] `extraKnownMarketplaces` uses an underdocumented marketplace-source schema.</title>
+    <id>https://framework.boucle.sh/limitations.html#extra-known-marketplaces-schema-is-underdocumented</id>
+    <link href="https://framework.boucle.sh/limitations.html#extra-known-marketplaces-schema-is-underdocumented"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code plugin documentation gap found that the plugin-marketplaces page documents plugin-entry `source` shapes but not the distinct `extraKnownMarketplaces` source schema from the published settings schema. Types such as `git`, `hostPattern`, and `file` are omitted, while overlapping names such as `url` and `github` have different meanings between plugin entries and marketplace sources. The mismatch made a working SSH-backed `git` marketplace setting look invalid against the docs, and made `url` appear to support git-clone syntax even though it fetches a direct marketplace JSON file.</summary>
+    <category term="Documentation &amp; workflow"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Workflow subagents can hang indefinitely without a timeout.</title>
+    <id>https://framework.boucle.sh/limitations.html#workflow-subagents-can-hang-indefinitely-without-timeout</id>
+    <link href="https://framework.boucle.sh/limitations.html#workflow-subagents-can-hang-indefinitely-without-timeout"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.224 macOS Workflow run launched a nine-agent staged workflow where eight agents completed quickly but one verification agent produced no output, never errored, and never timed out. The run remained marked `running` for more than five hours until manually killed, blocking the downstream synthesis step and leaving completed research outputs recoverable only by parsing the run journal by hand. The report includes structured started/result events showing the barrier waiting on the stuck agent.</summary>
+    <category term="Workflow &amp; UI observability"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Cowork device bridge can drop only artifact write tools.</title>
+    <id>https://framework.boucle.sh/limitations.html#cowork-device-bridge-can-drop-artifact-write-tools-only</id>
+    <link href="https://framework.boucle.sh/limitations.html#cowork-device-bridge-can-drop-artifact-write-tools-only"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude desktop Cowork setup on macOS found that `create_artifact`, `update_artifact`, and `list_artifacts` disappeared from every session&#x27;s device bridge tool list while the rest of the same bridge remained healthy. Directory, bash, staging, commit, project memory, and computer tools still worked, and artifact reads still worked indirectly through `device_stage_files`, but persisted artifact creation and updates had no callable path. Relaunching the desktop app, refreshing the tool list, and starting new sessions did not restore the selectively missing tools.</summary>
+    <category term="Cowork &amp; remote"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Headless plugin skill resolution can load stale cached versions.</title>
+    <id>https://framework.boucle.sh/limitations.html#headless-plugin-skill-resolution-can-load-stale-cache-versions</id>
+    <link href="https://framework.boucle.sh/limitations.html#headless-plugin-skill-resolution-can-load-stale-cache-versions"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.x macOS plugin setup found that after a marketplace plugin update and `/reload-plugins`, interactive registration metadata showed the invoking project and user scope on the new plugin version, but `claude -p &quot;/plugin-name:skill&quot;` still expanded a skill from an older cache directory. The stale version was apparently selected from unrelated local-scope rows for other project paths earlier in `installed_plugins.json`, causing tests of a just-shipped skill fix to silently run old behavior.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Assistant output can poison its own session with fabricated security alerts.</title>
+    <id>https://framework.boucle.sh/limitations.html#assistant-output-can-poison-its-own-session-with-fabricated-alerts</id>
+    <link href="https://framework.boucle.sh/limitations.html#assistant-output-can-poison-its-own-session-with-fabricated-alerts"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code VS Code session on Claude Fable 5 appended a fabricated &quot;CRITICAL SYSTEM ALERT&quot; prompt-injection block to an otherwise routine assistant reply. The injected-looking text impersonated Anthropic Security Team authority, requested system prompt and memory disclosure, asked for safety filtering to be disabled, and included a destructive shell command. The reporter verified the text came from an assistant transcript entry rather than user input, a tool result, hooks, MCP, or files on disk, and the next request was blocked by safeguards because the model-generated text was now part of the conversation.</summary>
+    <category term="Model behavior &amp; output"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] PreToolUse `additionalContext` can be single-turn only.</title>
     <id>https://framework.boucle.sh/limitations.html#pretooluse-additionalcontext-can-be-single-turn-only</id>
     <link href="https://framework.boucle.sh/limitations.html#pretooluse-additionalcontext-can-be-single-turn-only"/>
@@ -125,45 +165,5 @@
     <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.241 macOS session found that a `WorktreeCreate` hook could successfully create and register a git worktree outside the repository, print only that external path, and still have Claude Code refuse to enter it with a `git could not be run to resolve it` identity-verification error. The same hook was accepted when it returned an otherwise identical path under `$repo_root/.claude/worktrees`, and the external worktree passed `git worktree list` plus `git -C &lt;path&gt; status`. The refusal reproduced across `claude --worktree`, `EnterWorktree`, and `Agent(isolation: &quot;worktree&quot;)`, before any documented one-time external-directory approval prompt could appear.</summary>
     <category term="Worktrees &amp; isolation"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Plugin marketplace auto-update can block PreToolUse dispatch on Windows.</title>
-    <id>https://framework.boucle.sh/limitations.html#plugin-marketplace-autoupdate-can-block-pretooluse-on-windows</id>
-    <link href="https://framework.boucle.sh/limitations.html#plugin-marketplace-autoupdate-can-block-pretooluse-on-windows"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code VS Code extension 2.1.240-2.1.241 Windows repro found plugin marketplace auto-update work running synchronously inside the PreToolUse hook path for unrelated tool calls such as Edit. With multiple concurrent Claude Code sessions in one VS Code window, one session could hold a handle on the shared plugin cache while another tried to clone, remove, or replace the same marketplace directory. Windows then returned `EBUSY`, the updater retried, and the affected tool call and chat session appeared to hang for minutes with no visible plugin-update status. The report included logs showing slow PreToolUse hooks, plugin autoupdate `EBUSY` failures, repeated cache clones, and a webview input-lag sample of about 392 seconds before the user closed the stalled tab.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Workflow subagents can inherit manual mode despite `acceptEdits` documentation.</title>
-    <id>https://framework.boucle.sh/limitations.html#workflow-subagents-can-inherit-manual-mode-despite-acceptedits-docs</id>
-    <link href="https://framework.boucle.sh/limitations.html#workflow-subagents-can-inherit-manual-mode-despite-acceptedits-docs"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.241 WSL2 repro found that Workflow subagents did not always run with auto-approved file edits despite documentation saying they always run in `acceptEdits` and inherit only the tool allowlist. A simple workflow that asked an agent to edit one file raised a normal edit permission prompt when the parent session was in manual mode, but completed unattended after switching the parent session to accept-edits mode. The observed matrix suggests the subagent inherits the parent permission mode rather than forcing `acceptEdits`.</summary>
-    <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] MCP `requiresUserInteraction` tools can offer dead `don&#x27;t ask again` rules.</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-requires-user-interaction-can-offer-dead-do-not-ask-again-rules</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-requires-user-interaction-can-offer-dead-do-not-ask-again-rules"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.241 local MCP repro found that a tool annotated with `_meta[&quot;anthropic/requiresUserInteraction&quot;]: true` still showed a `Yes, and don&#x27;t ask again` option. Selecting it wrote an allow rule such as `mcp__&lt;server&gt;__write` into `.claude/settings.local.json`, but the same annotated tool continued prompting on every call, which is consistent with the annotation and inconsistent with the prompt option. The reporter also identified a permission-result path where empty suggestions do not suppress synthesis of a whole-tool allow rule.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Auto mode can approve unsandboxed Bash retries without seeing the sandbox override.</title>
-    <id>https://framework.boucle.sh/limitations.html#auto-mode-classifier-can-miss-dangerously-disable-sandbox</id>
-    <link href="https://framework.boucle.sh/limitations.html#auto-mode-classifier-can-miss-dangerously-disable-sandbox"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.241 macOS repro found that an auto-mode Bash retry with `dangerouslyDisableSandbox: true` could write outside the sandbox without showing the user a permission prompt. The reporter traced the shipped binary path where Bash permission checking recognizes a sandbox-override ask, but auto mode falls through to the classifier and the classifier input contains only the shell command, not the sandbox-disable flag. In the observed transcript the unsandboxed write was summarized as file reading, and the assistant then told the user the override had gone through the permission gate even though the user never had a chance to answer.</summary>
-    <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Assistant output can append foreign page content to a live response.</title>
-    <id>https://framework.boucle.sh/limitations.html#assistant-output-can-append-foreign-page-content-to-a-live-response</id>
-    <link href="https://framework.boucle.sh/limitations.html#assistant-output-can-append-foreign-page-content-to-a-live-response"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.237 macOS VS Code extension session appended about 15 KB of unrelated third-party web page UI text into an in-flight assistant message. The transcript showed the same API request ID as the legitimate reply, with the foreign content arriving about 81 seconds after the real final sentence and streaming until the user interrupted it. The reporter ruled out local proxy tooling and found the foreign string only in the affected session transcript, making the incident distinct from ordinary hallucinated wording or user-pasted content. Because the injected block was stored as assistant output, later turns could treat unrelated external text as trusted conversation history.</summary>
-    <category term="Model behavior &amp; output"/>
   </entry>
 </feed>
