@@ -4,13 +4,61 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-08-23T00:00:00Z</updated>
+  <updated>2026-08-24T00:00:00Z</updated>
   <author><name>Boucle</name></author>
+  <entry>
+    <title>[MEDIUM] Peer `SendMessage` replies can target agent type names instead of reachable session IDs.</title>
+    <id>https://framework.boucle.sh/limitations.html#peer-sendmessage-replies-can-use-agent-type-instead-of-session-id</id>
+    <link href="https://framework.boucle.sh/limitations.html#peer-sendmessage-replies-can-use-agent-type-instead-of-session-id"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code VS Code extension 2.1.236 session found that peer-message wrappers for forked subagents could set the visible `from` field to an agent type such as `general-purpose` while the actual reachable task id was only present separately as `senderTaskId`. Recipients then followed the injected instruction to reply to `from`, called `SendMessage(to: &quot;general-purpose&quot;)`, and failed because agent type names are not addressable session ids. Repeated nudges caused unreachable-address loops and extra token burn in multi-agent review workflows.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Background command logs can contain unexplained Claude Code plugin hint tags.</title>
+    <id>https://framework.boucle.sh/limitations.html#background-log-output-can-contain-unexplained-plugin-hints</id>
+    <link href="https://framework.boucle.sh/limitations.html#background-log-output-can-contain-unexplained-plugin-hints"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code VS Code integration session found raw Playwright log files from backgrounded Bash commands containing repeated `&lt;claude-code-hint&gt;` tags that referenced a nonexistent `stripe@claude-plugins-official` plugin. The reporter verified the lines were present on disk rather than only in rendered tool output, found no matching installed or cached plugin, and observed paired system-reminder text telling the assistant that a file had been modified and not to tell the user because they were already aware.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[HIGH] The VS Code extension can load all session histories into one extension host.</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-extension-can-load-all-session-histories-and-oom</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-extension-can-load-all-session-histories-and-oom"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code for VS Code 2.1.240-2.1.241 Linux session found repeated extension-host out-of-memory crashes while Claude Code was active. Crash dumps showed V8 heap exhaustion, and a live memory dump reportedly contained full message histories from 19 distinct past Claude Code sessions, with the active session not even the largest resident transcript. The reported pattern suggests the session sidebar or history loader can retain complete transcripts for every listed session in the VS Code window rather than only metadata or the active chat.</summary>
+    <category term="VS Code extension"/>
+  </entry>
+  <entry>
+    <title>[HIGH] The CLI main thread can hang in a full-CPU loop and ignore normal signals.</title>
+    <id>https://framework.boucle.sh/limitations.html#cli-main-thread-can-spin-at-full-cpu-and-ignore-signals</id>
+    <link href="https://framework.boucle.sh/limitations.html#cli-main-thread-can-spin-at-full-cpu-and-ignore-signals"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported macOS investigation collected 19 sample captures across Claude Code 2.1.231, 2.1.238, and 2.1.239 where sessions hung permanently with one core at 100 percent, no crash report, no syscalls, and a stable memory footprint. Instrumented freezes ended after hook-output processing, then the process ignored SIGTERM, SIGINT, and SIGHUP because the JavaScript event loop never resumed. The reporter also found the event-loop-stall heuristic could misclassify CPU-bound stalls as sleep or wake delay, reducing the chance of automatic detection.</summary>
+    <category term="CLI &amp; terminal"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Bridge reconnects can reinject full tool, skill, and agent listings into context.</title>
+    <id>https://framework.boucle.sh/limitations.html#bridge-reconnect-can-reinject-tool-skill-and-agent-listings</id>
+    <link href="https://framework.boucle.sh/limitations.html#bridge-reconnect-can-reinject-tool-skill-and-agent-listings"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.241 macOS session found that trivial turns could accumulate about 102k context tokens because bridge reconnects resent full attachment listings into the Messages category. The reporter saw repeated `deferred_tools_delta`, `agent_listing_delta`, `mcp_instructions_delta`, and `skill_listing` attachments in the raw JSONL only seconds apart with the same bridge session id, apparently after switching terminal tabs, even when Remote Control was not explicitly enabled.</summary>
+    <category term="Context &amp; memory"/>
+  </entry>
+  <entry>
+    <title>[HIGH] The worktree isolation pin can drift between parallel subagents.</title>
+    <id>https://framework.boucle.sh/limitations.html#worktree-isolation-pin-can-drift-between-parallel-agents</id>
+    <link href="https://framework.boucle.sh/limitations.html#worktree-isolation-pin-can-drift-between-parallel-agents"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.240 macOS session found that the worktree-isolation state used for shell and git operations could be shared across parallel subagents rather than remaining per-agent. During a fan-out session, bare `git` commands, relative-path Bash writes, and script runners sometimes executed in another agent&#x27;s worktree or in the shared checkout, while some absolute-path writes failed closed. Reported incidents included commits on the wrong branch, heredoc writes into another agent&#x27;s tree, quality gates running in the wrong worktree, and a reset landing in a subagent worktree.</summary>
+    <category term="Worktrees &amp; isolation"/>
+  </entry>
   <entry>
     <title>[MEDIUM] The effort picker can display a higher level than Claude Code actually applies.</title>
     <id>https://framework.boucle.sh/limitations.html#effort-picker-can-display-a-higher-level-than-is-applied</id>
     <link href="https://framework.boucle.sh/limitations.html#effort-picker-can-display-a-higher-level-than-is-applied"/>
-    <updated>2026-08-23T00:00:00Z</updated>
+    <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Claude Code VS Code extension 2.1.241 macOS session showed `Extra high` selected in the Shift+Tab effort picker while completed assistant turns in the session transcript were recorded with `effort: high` for roughly an hour. Re-opening the picker and selecting `Extra high` again, despite the UI already showing it selected, caused subsequent turns to record `effort: xhigh`. The mismatch was invisible in the normal UI and required inspecting the JSONL transcript to notice that the applied effort was lower than the displayed selection.</summary>
     <category term="Model routing &amp; identity"/>
   </entry>
@@ -18,7 +66,7 @@
     <title>[HIGH] Workflow permission approval can reject clean scripts before execution.</title>
     <id>https://framework.boucle.sh/limitations.html#workflow-permission-approval-can-reject-clean-scripts</id>
     <link href="https://framework.boucle.sh/limitations.html#workflow-permission-approval-can-reject-clean-scripts"/>
-    <updated>2026-08-23T00:00:00Z</updated>
+    <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.241 Windows session found that invoking the `Workflow` tool by either workflow name or explicit `.claude/workflows/*.js` path failed before the workflow started. The permission handler returned an `updatedInput` whose `script` field failed schema validation for alleged hidden control characters, while the reporter&#x27;s script scan found no control characters beyond normal newline, carriage-return, and tab, and the repo had no custom permission hook or permission-prompt tool for `Workflow`. The failure made named and path-based workflows unusable in that repo even though the model&#x27;s original tool input was valid.</summary>
     <category term="Tool behavior"/>
   </entry>
@@ -26,7 +74,7 @@
     <title>[HIGH] `WorktreeCreate` can reject valid worktrees outside the repository.</title>
     <id>https://framework.boucle.sh/limitations.html#worktreecreate-can-reject-valid-external-worktrees</id>
     <link href="https://framework.boucle.sh/limitations.html#worktreecreate-can-reject-valid-external-worktrees"/>
-    <updated>2026-08-23T00:00:00Z</updated>
+    <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.241 macOS session found that a `WorktreeCreate` hook could successfully create and register a git worktree outside the repository, print only that external path, and still have Claude Code refuse to enter it with a `git could not be run to resolve it` identity-verification error. The same hook was accepted when it returned an otherwise identical path under `$repo_root/.claude/worktrees`, and the external worktree passed `git worktree list` plus `git -C &lt;path&gt; status`. The refusal reproduced across `claude --worktree`, `EnterWorktree`, and `Agent(isolation: &quot;worktree&quot;)`, before any documented one-time external-directory approval prompt could appear.</summary>
     <category term="Worktrees &amp; isolation"/>
   </entry>
@@ -34,7 +82,7 @@
     <title>[HIGH] Plugin marketplace auto-update can block PreToolUse dispatch on Windows.</title>
     <id>https://framework.boucle.sh/limitations.html#plugin-marketplace-autoupdate-can-block-pretooluse-on-windows</id>
     <link href="https://framework.boucle.sh/limitations.html#plugin-marketplace-autoupdate-can-block-pretooluse-on-windows"/>
-    <updated>2026-08-23T00:00:00Z</updated>
+    <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Claude Code VS Code extension 2.1.240-2.1.241 Windows repro found plugin marketplace auto-update work running synchronously inside the PreToolUse hook path for unrelated tool calls such as Edit. With multiple concurrent Claude Code sessions in one VS Code window, one session could hold a handle on the shared plugin cache while another tried to clone, remove, or replace the same marketplace directory. Windows then returned `EBUSY`, the updater retried, and the affected tool call and chat session appeared to hang for minutes with no visible plugin-update status. The report included logs showing slow PreToolUse hooks, plugin autoupdate `EBUSY` failures, repeated cache clones, and a webview input-lag sample of about 392 seconds before the user closed the stalled tab.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -42,7 +90,7 @@
     <title>[MEDIUM] Workflow subagents can inherit manual mode despite `acceptEdits` documentation.</title>
     <id>https://framework.boucle.sh/limitations.html#workflow-subagents-can-inherit-manual-mode-despite-acceptedits-docs</id>
     <link href="https://framework.boucle.sh/limitations.html#workflow-subagents-can-inherit-manual-mode-despite-acceptedits-docs"/>
-    <updated>2026-08-23T00:00:00Z</updated>
+    <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.241 WSL2 repro found that Workflow subagents did not always run with auto-approved file edits despite documentation saying they always run in `acceptEdits` and inherit only the tool allowlist. A simple workflow that asked an agent to edit one file raised a normal edit permission prompt when the parent session was in manual mode, but completed unattended after switching the parent session to accept-edits mode. The observed matrix suggests the subagent inherits the parent permission mode rather than forcing `acceptEdits`.</summary>
     <category term="Subagent &amp; spawned agents"/>
   </entry>
@@ -50,7 +98,7 @@
     <title>[HIGH] MCP `requiresUserInteraction` tools can offer dead `don&#x27;t ask again` rules.</title>
     <id>https://framework.boucle.sh/limitations.html#mcp-requires-user-interaction-can-offer-dead-do-not-ask-again-rules</id>
     <link href="https://framework.boucle.sh/limitations.html#mcp-requires-user-interaction-can-offer-dead-do-not-ask-again-rules"/>
-    <updated>2026-08-23T00:00:00Z</updated>
+    <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.241 local MCP repro found that a tool annotated with `_meta[&quot;anthropic/requiresUserInteraction&quot;]: true` still showed a `Yes, and don&#x27;t ask again` option. Selecting it wrote an allow rule such as `mcp__&lt;server&gt;__write` into `.claude/settings.local.json`, but the same annotated tool continued prompting on every call, which is consistent with the annotation and inconsistent with the prompt option. The reporter also identified a permission-result path where empty suggestions do not suppress synthesis of a whole-tool allow rule.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -58,7 +106,7 @@
     <title>[HIGH] Auto mode can approve unsandboxed Bash retries without seeing the sandbox override.</title>
     <id>https://framework.boucle.sh/limitations.html#auto-mode-classifier-can-miss-dangerously-disable-sandbox</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-mode-classifier-can-miss-dangerously-disable-sandbox"/>
-    <updated>2026-08-23T00:00:00Z</updated>
+    <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.241 macOS repro found that an auto-mode Bash retry with `dangerouslyDisableSandbox: true` could write outside the sandbox without showing the user a permission prompt. The reporter traced the shipped binary path where Bash permission checking recognizes a sandbox-override ask, but auto mode falls through to the classifier and the classifier input contains only the shell command, not the sandbox-disable flag. In the observed transcript the unsandboxed write was summarized as file reading, and the assistant then told the user the override had gone through the permission gate even though the user never had a chance to answer.</summary>
     <category term="Sandbox &amp; permissions"/>
   </entry>
@@ -66,7 +114,7 @@
     <title>[HIGH] Assistant output can append foreign page content to a live response.</title>
     <id>https://framework.boucle.sh/limitations.html#assistant-output-can-append-foreign-page-content-to-a-live-response</id>
     <link href="https://framework.boucle.sh/limitations.html#assistant-output-can-append-foreign-page-content-to-a-live-response"/>
-    <updated>2026-08-23T00:00:00Z</updated>
+    <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.237 macOS VS Code extension session appended about 15 KB of unrelated third-party web page UI text into an in-flight assistant message. The transcript showed the same API request ID as the legitimate reply, with the foreign content arriving about 81 seconds after the real final sentence and streaming until the user interrupted it. The reporter ruled out local proxy tooling and found the foreign string only in the affected session transcript, making the incident distinct from ordinary hallucinated wording or user-pasted content. Because the injected block was stored as assistant output, later turns could treat unrelated external text as trusted conversation history.</summary>
     <category term="Model behavior &amp; output"/>
   </entry>
@@ -74,7 +122,7 @@
     <title>[HIGH] Custom auto-mode deny rules can be loaded but inert.</title>
     <id>https://framework.boucle.sh/limitations.html#custom-auto-mode-deny-rules-can-be-loaded-but-inert</id>
     <link href="https://framework.boucle.sh/limitations.html#custom-auto-mode-deny-rules-can-be-loaded-but-inert"/>
-    <updated>2026-08-23T00:00:00Z</updated>
+    <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.240 Fedora repro found that user-level `autoMode.hard_deny` and `autoMode.soft_deny` entries could be parsed, merged with `$defaults`, and displayed by `claude auto-mode config` while still failing to affect classifier behavior. Matched scratch-HOME trials differed only by the custom deny rule, but both allowed the forbidden `rm victim.txt` action to delete the target file. The reporter also observed real custom hard-deny floors failing to block off-allowlist `git push` attempts in interactive sessions, while custom `autoMode.allow` entries did appear to change behavior. This makes `auto-mode config` output insufficient proof that a user-authored deny floor is actually enforced.</summary>
     <category term="Permission system"/>
   </entry>
@@ -82,7 +130,7 @@
     <title>[HIGH] Windows CoworkVMService can loop before configuring the isolated workspace.</title>
     <id>https://framework.boucle.sh/limitations.html#windows-cowork-vm-service-can-loop-before-configuring-workspace</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-cowork-vm-service-can-loop-before-configuring-workspace"/>
-    <updated>2026-08-23T00:00:00Z</updated>
+    <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Windows 11 Claude Desktop Cowork setup could not start the isolated Linux workspace used by `device_bash`: every shell attempt returned `Workspace unavailable`, while file-based bridge tools still worked. `CoworkVMService` started, initialized HCS and HCN, opened its named pipe server, and logged signature-verification setup, but then only logged repeated `[Server] Client connected` lines for hours. It never logged a configure call, VM creation attempt, timeout, or explanatory error, and the behavior persisted after enabling Hyper-V, confirming Windows Hypervisor Platform, deleting the service, clearing `C:\ProgramData\Claude`, reinstalling, and rebooting.</summary>
     <category term="Cowork &amp; remote"/>
   </entry>
@@ -90,7 +138,7 @@
     <title>[HIGH] Always Allow for shell redirects can write rules that never satisfy the blocked gate.</title>
     <id>https://framework.boucle.sh/limitations.html#always-allow-for-shell-redirects-can-write-noop-rules</id>
     <link href="https://framework.boucle.sh/limitations.html#always-allow-for-shell-redirects-can-write-noop-rules"/>
-    <updated>2026-08-23T00:00:00Z</updated>
+    <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.241 repro found that when a Bash command is blocked because shell output redirection writes outside the session working directory, the permission prompt can still offer an `Always Allow` option that persists Bash and Read rules. Those rules do not cover the filesystem write gate that actually blocked the redirect, so the byte-identical command prompts again one tool call later and keeps proposing the same ineffective persistent grant. Repeated approvals accumulate allow entries while never terminating the prompt loop.</summary>
     <category term="Permission system"/>
   </entry>
@@ -98,7 +146,7 @@
     <title>[CRITICAL] Scheduled-task runs can leak completed session process pairs.</title>
     <id>https://framework.boucle.sh/limitations.html#scheduled-task-runs-can-leak-completed-session-process-pairs</id>
     <link href="https://framework.boucle.sh/limitations.html#scheduled-task-runs-can-leak-completed-session-process-pairs"/>
-    <updated>2026-08-23T00:00:00Z</updated>
+    <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported macOS Claude Code 2.1.237 Desktop scheduled-task setup completed each task normally, wrote an `end_turn` transcript, then left both the `Contents/Helpers/disclaimer` parent and `claude` child process alive indefinitely. The reporter found 33 leaked sessions across 8 scheduled tasks, including a 21-second job still resident 29 hours later, with each child holding API connections and about 220 MB. On a host with one hourly task plus several daily tasks, the accumulated leak was estimated around 16 GB of resident memory per day.</summary>
     <category term="Scheduling &amp; remote triggers"/>
   </entry>
@@ -106,7 +154,7 @@
     <title>[MEDIUM] Idle Claude Code sessions can burn CPU through timer-triggered garbage collection.</title>
     <id>https://framework.boucle.sh/limitations.html#idle-claude-code-sessions-can-burn-cpu-through-timer-triggered-gc</id>
     <link href="https://framework.boucle.sh/limitations.html#idle-claude-code-sessions-can-burn-cpu-through-timer-triggered-gc"/>
-    <updated>2026-08-23T00:00:00Z</updated>
+    <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.240 Linux native session continued using measurable CPU while parked at the input prompt with no active turn. Controlled 30-second samples showed a pristine config using about 0.3-0.8% CPU and a typical config with plugins, hooks, one MCP server, and CLAUDE.md using about 1.46% CPU; longer production sessions measured about 1.4-5% while idle. The reporter traced the idle cost to short timers waking the event loop roughly 20-26 times per second in a typical config, about one Eden garbage collection per second, and repeated wakeups of JavaScriptCore helper threads and mimalloc cleanup work even when the terminal output did not change.</summary>
     <category term="Performance &amp; cost"/>
   </entry>
@@ -114,56 +162,8 @@
     <title>[HIGH] Windows VS Code extension file watching can pin one CPU core.</title>
     <id>https://framework.boucle.sh/limitations.html#windows-vscode-extension-file-watcher-can-pin-one-cpu-core</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-vscode-extension-file-watcher-can-pin-one-cpu-core"/>
-    <updated>2026-08-23T00:00:00Z</updated>
+    <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.240 VS Code extension setup on Windows 11 repeatedly left an extension host pinned at 95-100% of one performance core for hours while Claude Code&#x27;s own extension log showed only idle heartbeats. The reporter sampled the spinning process at about 245,000 other I/O operations per second with essentially zero reads, matching a native watched-directory busy-loop rather than ordinary JavaScript or scan work. Duplicate watch paths through NTFS junctions into shared Claude config trees and bulk skill rewrites appeared to amplify the problem, but one spin latched about 35 minutes after the last file change and persisted until the extension host was killed.</summary>
     <category term="VS Code extension"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Desktop Cowork can advertise MCP elicitation without rendering UI.</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-cowork-can-advertise-mcp-elicitation-without-rendering-ui</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-cowork-can-advertise-mcp-elicitation-without-rendering-ui"/>
-    <updated>2026-08-23T00:00:00Z</updated>
-    <summary>A reported Claude Desktop Cowork session on macOS used an embedded claude-code runtime that declared the MCP `elicitation` capability for the session handling `tools/call`, while a sibling `Anthropic/ClaudeAI` session to the same server did not. When the MCP server sent `elicitation/create`, the embedded client accepted the request but rendered no form in the Desktop UI, returned no display error, and only resolved the elicitation as cancelled after the originating tool call hit the client&#x27;s 60-second timeout. Servers therefore cannot distinguish a user reading a displayed approval form from a hidden form that will never appear, even though the capability bit steers them onto the elicitation path.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Subagents can inherit stale CLAUDE.md and memory snapshots.</title>
-    <id>https://framework.boucle.sh/limitations.html#subagents-can-inherit-stale-claude-md-and-memory-snapshots</id>
-    <link href="https://framework.boucle.sh/limitations.html#subagents-can-inherit-stale-claude-md-and-memory-snapshots"/>
-    <updated>2026-08-23T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.237 Linux session found that Agent-tool subagents received the CLAUDE.md and memory content captured when the parent session started, not the files as they existed when the subagent was spawned. In the report, a parent session started at 12:31 and dispatched a subagent at 21:10, so the subagent saw context that was 8h39m old. A memory file deleted from disk after parent startup still appeared in the child context, while memory files written later were absent. Because the stale instructions were not marked stale, the subagent could confidently act on a superseded rule that no longer existed on disk.</summary>
-    <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Nested repository hooks are not loaded from parent-root sessions.</title>
-    <id>https://framework.boucle.sh/limitations.html#nested-repository-hooks-are-not-loaded-from-parent-sessions</id>
-    <link href="https://framework.boucle.sh/limitations.html#nested-repository-hooks-are-not-loaded-from-parent-sessions"/>
-    <updated>2026-08-23T00:00:00Z</updated>
-    <summary>A reported Claude Code multi-repo workflow keeps dependent checkouts inside a parent workspace and starts the session at the parent root. When tool calls operate inside a nested repository, that nested repo&#x27;s `.claude/settings.json` hooks are not discovered or loaded, and directories added with `--add-dir` are documented as file-access grants rather than settings or hook roots. This means a child checkout can carry project-specific PreToolUse, lint, test, protected-path, or custody hooks that never fire while the parent session edits it. Parent hooks can still fire in the child cwd, so users may see hook activity while the child repo&#x27;s own guardrails remain absent. The reporter explicitly notes that arbitrary nested hook auto-loading would be unsafe without a separate trust decision, making the practical gap a missing trust-gated way to opt into nested hook roots.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Bash deny patterns can be bypassed by git flag prefixes.</title>
-    <id>https://framework.boucle.sh/limitations.html#bash-deny-patterns-can-be-bypassed-by-git-flag-prefixes</id>
-    <link href="https://framework.boucle.sh/limitations.html#bash-deny-patterns-can-be-bypassed-by-git-flag-prefixes"/>
-    <updated>2026-08-23T00:00:00Z</updated>
-    <summary>A reported Claude Code Windows Git Bash session with `permissions.defaultMode: &quot;acceptEdits&quot;` found that destructive Git deny rules such as `Bash(git checkout -- *)`, `Bash(git restore *)`, `Bash(git reset --hard *)`, and `Bash(git branch -D *)` matched the bare command form but were bypassed when a flag appeared before the subcommand, for example `git -C &lt;repo&gt; checkout -- &lt;file&gt;`. The prefixed command matched neither the user&#x27;s allow nor deny pattern and still executed without a confirmation prompt, silently discarding an uncommitted file change in the repro. This makes raw command-prefix matching unsafe for destructive Bash policies because common git flags such as `-C`, `-c`, `--git-dir`, or `--work-tree` can move the dangerous verb away from the literal start of the command.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Remote Control spawned sessions can ignore the requested permission mode.</title>
-    <id>https://framework.boucle.sh/limitations.html#remote-control-spawned-sessions-can-ignore-permission-mode</id>
-    <link href="https://framework.boucle.sh/limitations.html#remote-control-spawned-sessions-can-ignore-permission-mode"/>
-    <updated>2026-08-23T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.240 macOS Remote Control setup accepted `claude remote-control --permission-mode bypassPermissions` and propagated that flag onto spawned `sdk-cli` process arguments, but every spawned web or mobile-driven session still recorded and behaved as `auto`. Setting `permissions.defaultMode: &quot;bypassPermissions&quot;` in user settings did not fix the Remote Control path, even though a direct local print session honored it. The same report found that messages from a more-permissive local session to the auto-mode Remote Control session were held for recipient approval, but no prompt appeared in the web/mobile app, host terminal, or subprocess UI, so the hold expired without a reachable approval surface.</summary>
-    <category term="Remote &amp; cloud"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Plan approval can authorize model-authored commands.</title>
-    <id>https://framework.boucle.sh/limitations.html#plan-approval-can-authorize-model-authored-commands</id>
-    <link href="https://framework.boucle.sh/limitations.html#plan-approval-can-authorize-model-authored-commands"/>
-    <updated>2026-08-23T00:00:00Z</updated>
-    <summary>A reported Claude Code plan-mode session treated approval of a model-authored plan as authority to run shell commands that appeared in the plan&#x27;s verification section, even though the human had approved file edits but had not separately approved a build. The reporter&#x27;s transcript extraction found two assistant-issued Bash calls containing the build command and zero human-typed turns containing that command before execution. The risky boundary is provenance: a command written by the model into an approved plan can be read back as part of the approved artifact, making plan approval look like per-command execution consent.</summary>
-    <category term="Plan mode"/>
   </entry>
 </feed>
