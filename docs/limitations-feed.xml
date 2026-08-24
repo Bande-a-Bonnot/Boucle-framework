@@ -7,6 +7,38 @@
   <updated>2026-08-24T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Connected MCP servers can expose zero tools through ToolSearch.</title>
+    <id>https://framework.boucle.sh/limitations.html#connected-mcp-servers-can-expose-zero-toolsearch-tools</id>
+    <link href="https://framework.boucle.sh/limitations.html#connected-mcp-servers-can-expose-zero-toolsearch-tools"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.241 Windows setup had local project MCP servers that `claude mcp get` reported as connected, including one stdio server and one HTTP server, while `ToolSearch` could not find any of their tools across restarts, remove/re-add cycles, terminal relaunches, and a full OS reboot. Other deferred tool namespaces still loaded in the same sessions, and `claude mcp list` was inconsistent on first versus immediate repeated invocation, suggesting connected status can race or diverge from model-visible tool registration.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Remote Control settings can be ignored by resume state or Desktop plan gates.</title>
+    <id>https://framework.boucle.sh/limitations.html#remote-control-settings-can-be-ignored-by-resume-or-desktop-gates</id>
+    <link href="https://framework.boucle.sh/limitations.html#remote-control-settings-can-be-ignored-by-resume-or-desktop-gates"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>Two reported Remote Control regressions show settings text and live connectivity diverging. In Claude Code CLI 2.1.241, `claude --continue` can restore a conversation&#x27;s recorded Remote Control binding even after the global &quot;Enable Remote Control for all sessions&quot; setting is false, so the opt-out applies to fresh sessions but not resumed conversations that ended connected. Separately, Claude Desktop 1.34493.1 on an individual Pro/Max plan repeatedly returned `enable=false source=settings_unavailable` before reading the user&#x27;s enabled preference, leaving the setting toggle on while new Desktop sessions never auto-connected.</summary>
+    <category term="Cowork &amp; remote"/>
+  </entry>
+  <entry>
+    <title>[HIGH] `crossSessionInbound` invalid values can fail open without warning.</title>
+    <id>https://framework.boucle.sh/limitations.html#cross-session-inbound-invalid-values-can-fail-open</id>
+    <link href="https://framework.boucle.sh/limitations.html#cross-session-inbound-invalid-values-can-fail-open"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Desktop 1.34493.1 / bundled Claude Code 2.1.237 setup found that `crossSessionInbound` accepts only `accept`, `hold`, and `refuse`, but an out-of-enum value such as `reject` is silently mapped to the unset case. In the repro, `refuse` blocked a cross-session message, while `reject` delivered it and let the recipient answer with no startup warning, settings error, or log line. Users hand-editing this key can therefore believe a session opted out while it actually accepts inbound delivery.</summary>
+    <category term="Cowork &amp; remote"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Write and Edit tools can bypass filesystem sandbox restrictions.</title>
+    <id>https://framework.boucle.sh/limitations.html#write-edit-tools-can-bypass-filesystem-sandbox</id>
+    <link href="https://framework.boucle.sh/limitations.html#write-edit-tools-can-bypass-filesystem-sandbox"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>Follow-up testing on a reported Claude Code 2.1.241 sandbox issue found that Bash correctly blocked writes outside the filesystem sandbox, while the Write tool could create the same forbidden path under `~/.claude/`. The reporter also found that a sandboxed session could edit the global settings file that controls the sandbox itself, including adding commands to `excludedCommands`. This suggests built-in file tools and Bash can run on different enforcement paths, so a sandbox that blocks shell writes may still permit Write/Edit side effects.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
     <title>[HIGH] Account custom MCP connectors can silently dedupe by host in the CLI.</title>
     <id>https://framework.boucle.sh/limitations.html#account-custom-mcp-connectors-can-dedupe-by-host</id>
     <link href="https://framework.boucle.sh/limitations.html#account-custom-mcp-connectors-can-dedupe-by-host"/>
@@ -133,37 +165,5 @@
     <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.241 macOS sandbox setup found that Bash-tool network calls could reach HTTPS hosts outside the configured `allowedHosts` or `allowedDomains` list. The reporter confirmed `HTTPS_PROXY` and `ALL_PROXY` pointed at the local sandbox proxy and captured curl issuing successful `CONNECT` requests through that proxy to non-allowlisted hosts, suggesting the proxy intercepted traffic but did not reject disallowed tunnel targets. The same broad reach reportedly appeared through an MCP browser tool, so the gap may not be Bash-specific.</summary>
     <category term="Security &amp; trust boundaries"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Claude in Chrome can steal focus on background browser tool calls.</title>
-    <id>https://framework.boucle.sh/limitations.html#claude-in-chrome-can-steal-focus-on-background-tool-calls</id>
-    <link href="https://framework.boucle.sh/limitations.html#claude-in-chrome-can-steal-focus-on-background-tool-calls"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude in Chrome and Cowork setup on Windows found that every browser tool interaction raised Chrome to the foreground and captured keyboard focus, even with computer-use disabled. The report contrasts the extension MCP tools, which expose no `active` or foreground parameter for tab creation and navigation, with the in-app browser tool that already supports background tab creation. Multiple concurrent Cowork sessions could fight for focus, and keystrokes intended for another application could land in Chrome.</summary>
-    <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Scheduled routines can idle indefinitely after session initialization.</title>
-    <id>https://framework.boucle.sh/limitations.html#scheduled-routines-can-idle-after-initialized-session</id>
-    <link href="https://framework.boucle.sh/limitations.html#scheduled-routines-can-idle-after-initialized-session"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code cloud routine with a user-message session context and Gmail plus Google Calendar MCP connectors consistently opened a run, showed `Initialized session`, and then produced no assistant turn, tool call, or response. Manual `Run Now` and API-triggered runs both stalled, and the session events API showed only provisioning events while sessions stayed idle for more than 45 minutes.</summary>
-    <category term="Scheduled tasks"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Cowork remote-devices bridge can remain failed after reconnecting folders.</title>
-    <id>https://framework.boucle.sh/limitations.html#cowork-remote-devices-can-remain-failed-after-folder-reconnect</id>
-    <link href="https://framework.boucle.sh/limitations.html#cowork-remote-devices-can-remain-failed-after-folder-reconnect"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Windows Desktop Cowork session found the cloud-session `remote-devices` MCP server stuck in `failed` or `not_connected` state even after the user took the documented folder reconnect workaround. Already-connected project folders and a newly re-added folder did not restore file access, and no user-facing desktop error appeared; the bridge failure was visible only through internal tool diagnostics.</summary>
-    <category term="Cowork &amp; remote"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows Cowork installer can continue after conflicting service removal fails.</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-cowork-installer-can-continue-after-service-removal-fails</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-cowork-installer-can-continue-after-service-removal-fails"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Windows 10 Claude Desktop install failure found that the elevated bootstrapper detected a leftover `CoworkVMService`, attempted to remove it, logged `Access is denied`, then continued to `AddPackage` anyway. The MSIX registration failed with `0x80073CF6` or `0x80073CF9`, while the user saw a misleading administrator-access dialog even though the log showed full elevation. The report also observed repeated failed install cycles causing sign-in state loss when data-preserving package removal was rejected with developer mode off.</summary>
-    <category term="Platform &amp; compatibility"/>
   </entry>
 </feed>

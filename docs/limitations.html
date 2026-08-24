@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1758</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-24.</span></p>
+        <p class="subtitle"><span id="total-count">1762</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-24.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -19497,17 +19497,17 @@
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For Windows Desktop sessions, do not trust the agent&#x27;s own read-back as proof that first-time `%APPDATA%` or `%LOCALAPPDATA%` root writes reached the real filesystem. Prefer the standalone CLI from a normal terminal for profile-configuration work, or have the user pre-create the target directory outside the app before the agent writes inside it. Verify important profile files from an external PowerShell window and check the Claude package container when a tool reports success but the real application ignores the new config.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89113" target="_blank">#89113</a></div>
         </div>
-        <div class="kl-entry" data-category="Permission system" data-issues="89121" id="bypass-mode-can-steer-edit-and-write-through-shell-commands" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="Permission system" data-issues="89121 89251 89307" id="bypass-mode-can-steer-edit-and-write-through-shell-commands" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1731</span>
                 <span class="kl-cat">Permission system</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
-            <h3>Bypass mode can steer Edit and Write work through shell commands.</h3>
-            <p>A reported Claude Code 2.1.241 Windows session found that when `--dangerously-skip-permissions` was active, ordinary Read, Edit, and Write work appeared to be routed through Bash, PowerShell, or CMD commands instead of the dedicated tools. The reporter saw slower edits, hard-to-audit shell snippets, and shell-generated file changes containing sleep timers, and later recovered corrupted files from Git history. The issue also cites a binary string indicating that bypass or auto mode can inject guidance to prefer shell commands over the dedicated file tools when shell can accomplish the task.</p>
+            <h3>Permission modes can steer Edit and Write work through shell commands.</h3>
+            <p>Reported Claude Code 2.1.241 sessions found that bypass or auto permission modes can inject guidance telling the model to prefer Bash, PowerShell, heredocs, sed, or scripts for file edits instead of the dedicated Read, Edit, and Write tools. One Windows report saw slower edits, hard-to-audit shell snippets, sleep timers, and corrupted files later recovered from Git history. A later hooks report showed the same directive can route writes around `PreToolUse` hooks registered for `Write|Edit|NotebookEdit`, and another Windows report tied shell-scripted Markdown edits to unintended CRLF expansion despite an LF-only project convention.</p>
                         <!-- workaround:bypass-mode-can-steer-edit-and-write-through-shell-commands -->
-            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat bypass mode as only removing prompts; it can also change the tool-selection surface that performs file operations. For important edits, prefer normal permission mode or an explicit tool policy that keeps file writes on Edit, MultiEdit, or Write where diffs are visible. Keep the workspace under version control, review `git diff` before accepting results, and be cautious about adding CLAUDE.md overrides that try to fight the system prompt because they may push the model toward more brittle shell rewrites.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89121" target="_blank">#89121</a></div>
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat bypass or auto mode as only changing prompts; it can also change the tool-selection surface that performs file operations. For important edits, prefer a verified normal mode or an explicit tool policy that keeps file writes on Edit, MultiEdit, or Write where diffs and file-path hooks are visible. If hooks guard writes, add a separate `Bash` guard or canary for shell write forms, review `git diff --check` before accepting results, and avoid relying on CLAUDE.md overrides to fight a system prompt that prefers shell rewrites.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89121" target="_blank">#89121</a>, <a href="https://github.com/anthropics/claude-code/issues/89251" target="_blank">#89251</a>, <a href="https://github.com/anthropics/claude-code/issues/89307" target="_blank">#89307</a></div>
         </div>
         <div class="kl-entry" data-category="Hooks &amp; automation" data-issues="89125" id="pretooluse-additionalcontext-can-be-single-turn-only" data-severity="medium" data-status="open">
             <div class="kl-header">
@@ -19832,6 +19832,54 @@
                         <!-- workaround:account-custom-mcp-connectors-can-dedupe-by-host -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume account-level custom MCP connectors with the same host but different path or query scope all reach Claude Code CLI. After adding or changing connectors, run `claude mcp list` in the target environment and verify every expected server name appears. For scoped databases or tenants, register critical connectors locally with unique names and full URLs, then run a harmless read-only tool call against each one before relying on the connector list for production or customer data.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89288" target="_blank">#89288</a></div>
+        </div>
+        <div class="kl-entry" data-category="Sandbox &amp; permissions" data-issues="89165" id="write-edit-tools-can-bypass-filesystem-sandbox" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1759</span>
+                <span class="kl-cat">Sandbox &amp; permissions</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Write and Edit tools can bypass filesystem sandbox restrictions.</h3>
+            <p>Follow-up testing on a reported Claude Code 2.1.241 sandbox issue found that Bash correctly blocked writes outside the filesystem sandbox, while the Write tool could create the same forbidden path under `~/.claude/`. The reporter also found that a sandboxed session could edit the global settings file that controls the sandbox itself, including adding commands to `excludedCommands`. This suggests built-in file tools and Bash can run on different enforcement paths, so a sandbox that blocks shell writes may still permit Write/Edit side effects.</p>
+                        <!-- workaround:write-edit-tools-can-bypass-filesystem-sandbox -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on Bash sandbox probes alone to prove the whole session is confined. Test Write, Edit, and MultiEdit against harmless denied paths under the exact client and permission mode before trusting filesystem isolation. Protect sandbox settings with OS-level permissions or an external supervisor where possible, keep sandbox configuration outside writable project scope, and treat any successful built-in-tool write outside the allowlist as a session-stopping failure.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89165" target="_blank">#89165</a></div>
+        </div>
+        <div class="kl-entry" data-category="Cowork &amp; remote" data-issues="89297" id="cross-session-inbound-invalid-values-can-fail-open" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1760</span>
+                <span class="kl-cat">Cowork &amp; remote</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>`crossSessionInbound` invalid values can fail open without warning.</h3>
+            <p>A reported Claude Desktop 1.34493.1 / bundled Claude Code 2.1.237 setup found that `crossSessionInbound` accepts only `accept`, `hold`, and `refuse`, but an out-of-enum value such as `reject` is silently mapped to the unset case. In the repro, `refuse` blocked a cross-session message, while `reject` delivered it and let the recipient answer with no startup warning, settings error, or log line. Users hand-editing this key can therefore believe a session opted out while it actually accepts inbound delivery.</p>
+                        <!-- workaround:cross-session-inbound-invalid-values-can-fail-open -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Use only the documented `crossSessionInbound` values and verify the live behavior with a harmless two-session message canary after each settings edit. Treat unknown settings values as unsafe until a startup log or command confirms they were accepted. For high-sensitivity sessions, prefer an explicit deny hook or external session-isolation boundary in addition to the settings key, and preserve both the settings file and delivery transcript when reporting silent fallback.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89297" target="_blank">#89297</a></div>
+        </div>
+        <div class="kl-entry" data-category="Cowork &amp; remote" data-issues="89292 89298" id="remote-control-settings-can-be-ignored-by-resume-or-desktop-gates" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1761</span>
+                <span class="kl-cat">Cowork &amp; remote</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Remote Control settings can be ignored by resume state or Desktop plan gates.</h3>
+            <p>Two reported Remote Control regressions show settings text and live connectivity diverging. In Claude Code CLI 2.1.241, `claude --continue` can restore a conversation&#x27;s recorded Remote Control binding even after the global &quot;Enable Remote Control for all sessions&quot; setting is false, so the opt-out applies to fresh sessions but not resumed conversations that ended connected. Separately, Claude Desktop 1.34493.1 on an individual Pro/Max plan repeatedly returned `enable=false source=settings_unavailable` before reading the user&#x27;s enabled preference, leaving the setting toggle on while new Desktop sessions never auto-connected.</p>
+                        <!-- workaround:remote-control-settings-can-be-ignored-by-resume-or-desktop-gates -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Verify Remote Control state per launch path rather than trusting the global toggle. For privacy-sensitive work, disconnect `/rc` before exiting conversations that may be resumed and check the footer or peer session list after `--continue`. For Desktop Pro/Max sessions that should auto-connect but do not, inspect `main.log` for `rcAutoEnable` verdicts and fall back to terminal `claude --resume` plus manual `/remote-control` until the Desktop gate is fixed.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89292" target="_blank">#89292</a>, <a href="https://github.com/anthropics/claude-code/issues/89298" target="_blank">#89298</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="89306" id="connected-mcp-servers-can-expose-zero-toolsearch-tools" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1762</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Connected MCP servers can expose zero tools through ToolSearch.</h3>
+            <p>A reported Claude Code 2.1.241 Windows setup had local project MCP servers that `claude mcp get` reported as connected, including one stdio server and one HTTP server, while `ToolSearch` could not find any of their tools across restarts, remove/re-add cycles, terminal relaunches, and a full OS reboot. Other deferred tool namespaces still loaded in the same sessions, and `claude mcp list` was inconsistent on first versus immediate repeated invocation, suggesting connected status can race or diverge from model-visible tool registration.</p>
+                        <!-- workaround:connected-mcp-servers-can-expose-zero-toolsearch-tools -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat `claude mcp get` connected status as sufficient proof that the model can call the server. After MCP setup or restart, run a harmless `ToolSearch` query for a known tool and, where safe, a read-only tool call before depending on the connector. If `mcp list` and ToolSearch disagree, preserve both outputs, restart only after recording the server scope and transport, and keep a built-in-tool fallback for critical workflows.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89306" target="_blank">#89306</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
