@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1737</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-24.</span></p>
+        <p class="subtitle"><span id="total-count">1741</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-24.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -19580,6 +19580,54 @@
                         <!-- workaround:extra-known-marketplaces-schema-is-underdocumented -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When configuring `extraKnownMarketplaces`, check the published Claude Code settings schema in addition to the plugin marketplace docs. Treat plugin-entry source tables and marketplace-source settings as separate schemas even when type names overlap. Prefer a small smoke test after adding a marketplace source, and document internally whether the source is a direct JSON URL, git clone, GitHub shorthand, trusted host pattern, npm package, or local file path.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89140" target="_blank">#89140</a></div>
+        </div>
+        <div class="kl-entry" data-category="Platform &amp; compatibility" data-issues="89108" id="windows-cowork-installer-can-continue-after-service-removal-fails" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1738</span>
+                <span class="kl-cat">Platform &amp; compatibility</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Windows Cowork installer can continue after conflicting service removal fails.</h3>
+            <p>A reported Windows 10 Claude Desktop install failure found that the elevated bootstrapper detected a leftover `CoworkVMService`, attempted to remove it, logged `Access is denied`, then continued to `AddPackage` anyway. The MSIX registration failed with `0x80073CF6` or `0x80073CF9`, while the user saw a misleading administrator-access dialog even though the log showed full elevation. The report also observed repeated failed install cycles causing sign-in state loss when data-preserving package removal was rejected with developer mode off.</p>
+                        <!-- workaround:windows-cowork-installer-can-continue-after-service-removal-fails -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If Claude Desktop or Cowork installation fails on Windows with repeated sign-in prompts or opaque MSIX registration HRESULTs, inspect the installer log for `CoworkVMService` removal failures before retrying. In an elevated shell, query, stop, and delete the service, then reboot before reinstalling; if deletion is denied, repair the service DACL or remove it from Safe Mode. Preserve the setup log and service state so the failure is not mistaken for an authentication problem.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89108" target="_blank">#89108</a></div>
+        </div>
+        <div class="kl-entry" data-category="Cowork &amp; remote" data-issues="89129" id="cowork-remote-devices-can-remain-failed-after-folder-reconnect" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1739</span>
+                <span class="kl-cat">Cowork &amp; remote</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Cowork remote-devices bridge can remain failed after reconnecting folders.</h3>
+            <p>A reported Windows Desktop Cowork session found the cloud-session `remote-devices` MCP server stuck in `failed` or `not_connected` state even after the user took the documented folder reconnect workaround. Already-connected project folders and a newly re-added folder did not restore file access, and no user-facing desktop error appeared; the bridge failure was visible only through internal tool diagnostics.</p>
+                        <!-- workaround:cowork-remote-devices-can-remain-failed-after-folder-reconnect -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When a Cowork session cannot read or list local files, distinguish folder attachment state from the underlying `remote-devices` MCP connection state. Re-adding folders may not repair a failed bridge. Capture the server status, connected folder list, desktop version, and session diagnostics before restarting the desktop app or opening a fresh session, because the absence of a visible desktop error does not mean the bridge is healthy.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89129" target="_blank">#89129</a></div>
+        </div>
+        <div class="kl-entry" data-category="Scheduled tasks" data-issues="89135" id="scheduled-routines-can-idle-after-initialized-session" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1740</span>
+                <span class="kl-cat">Scheduled tasks</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Scheduled routines can idle indefinitely after session initialization.</h3>
+            <p>A reported Claude Code cloud routine with a user-message session context and Gmail plus Google Calendar MCP connectors consistently opened a run, showed `Initialized session`, and then produced no assistant turn, tool call, or response. Manual `Run Now` and API-triggered runs both stalled, and the session events API showed only provisioning events while sessions stayed idle for more than 45 minutes.</p>
+                        <!-- workaround:scheduled-routines-can-idle-after-initialized-session -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat a routine stuck at `Initialized session` as a dispatcher or initial-prompt processing failure, not as proof the requested automation completed. For scheduled or remote-triggered work, add an external deadline and read back the run event stream before trusting the output. Preserve trigger id, stuck session ids, environment id, connector list, session-context payload shape, and related prior issue links before recreating the routine.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89135" target="_blank">#89135</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="89148" id="claude-in-chrome-can-steal-focus-on-background-tool-calls" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1741</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Claude in Chrome can steal focus on background browser tool calls.</h3>
+            <p>A reported Claude in Chrome and Cowork setup on Windows found that every browser tool interaction raised Chrome to the foreground and captured keyboard focus, even with computer-use disabled. The report contrasts the extension MCP tools, which expose no `active` or foreground parameter for tab creation and navigation, with the in-app browser tool that already supports background tab creation. Multiple concurrent Cowork sessions could fight for focus, and keystrokes intended for another application could land in Chrome.</p>
+                        <!-- workaround:claude-in-chrome-can-steal-focus-on-background-tool-calls -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume browser work can safely run in the background when using the Claude in Chrome extension. Avoid typing into terminals, SSH sessions, or other command-sensitive windows while Cowork is driving Chrome, and prefer browser integrations that expose an explicit background or foreground parameter when unattended work matters. Record the connected browser list and relevant tool schemas when diagnosing focus theft so it is not misattributed to computer-use mode.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89148" target="_blank">#89148</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
