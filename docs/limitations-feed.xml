@@ -7,6 +7,22 @@
   <updated>2026-08-24T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Same-named project skills can lose to user-scoped skills.</title>
+    <id>https://framework.boucle.sh/limitations.html#same-named-project-skills-can-lose-to-user-scoped-skills</id>
+    <link href="https://framework.boucle.sh/limitations.html#same-named-project-skills-can-lose-to-user-scoped-skills"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.232 setup found that when `~/.claude/skills/&lt;name&gt;/SKILL.md` and `&lt;repo&gt;/.claude/skills/&lt;name&gt;/SKILL.md` both existed, invoking the skill from inside the repository loaded the user-scoped skill instead of the project-scoped one. The report says this contradicts the documented Skill tool rule that directory-scoped skills should be selected by the most specific directory containing the files being worked on. The mismatch is silent unless the user inspects the launched skill&#x27;s base directory or the global skill explicitly checks for a project override.</summary>
+    <category term="Skills"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Skill `arguments` frontmatter can be lost on Skill-tool invocation.</title>
+    <id>https://framework.boucle.sh/limitations.html#skill-arguments-frontmatter-can-be-lost-on-skill-tool-invocation</id>
+    <link href="https://framework.boucle.sh/limitations.html#skill-arguments-frontmatter-can-be-lost-on-skill-tool-invocation"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.241 macOS plugin skill declared `arguments: base repo` and `context: fork`, but when invoked through the Skill tool with two clean arguments, the skill reported receiving no arguments at all. A same-session control skill without an `arguments` key received raw arguments normally, and typed slash-command invocation of the affected skill had substituted correctly in an earlier session. The reporter inferred that declaring `arguments` may move Skill-tool invocation onto a named-substitution path that consumes the raw ARGUMENTS passthrough without applying `$name` substitution.</summary>
+    <category term="Skills"/>
+  </entry>
+  <entry>
     <title>[HIGH] Auto mode can start enabled despite a default-off flag.</title>
     <id>https://framework.boucle.sh/limitations.html#auto-mode-can-start-enabled-despite-default-off-flag</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-mode-can-start-enabled-despite-default-off-flag"/>
@@ -149,21 +165,5 @@
     <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.237 Windows Cowork/plugin setup found that `PreToolUse` hook `additionalContext` reached the model during the matched tool-call turn but was not reliably available later in the same session. The reporter logged per-fire random tokens hook-side, saw the model quote them byte-accurately in the same turn, then fail to recover them in later turns. The same payload placed in a `permissionDecision: &quot;deny&quot;` reason persisted as a blocked tool result and remained quotable later, leading the user to use a deliberate one-time deny-and-retry pattern as a knowledge-delivery workaround.</summary>
     <category term="Hooks &amp; automation"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Bypass mode can steer Edit and Write work through shell commands.</title>
-    <id>https://framework.boucle.sh/limitations.html#bypass-mode-can-steer-edit-and-write-through-shell-commands</id>
-    <link href="https://framework.boucle.sh/limitations.html#bypass-mode-can-steer-edit-and-write-through-shell-commands"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.241 Windows session found that when `--dangerously-skip-permissions` was active, ordinary Read, Edit, and Write work appeared to be routed through Bash, PowerShell, or CMD commands instead of the dedicated tools. The reporter saw slower edits, hard-to-audit shell snippets, and shell-generated file changes containing sleep timers, and later recovered corrupted files from Git history. The issue also cites a binary string indicating that bypass or auto mode can inject guidance to prefer shell commands over the dedicated file tools when shell can accomplish the task.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows Desktop agent writes can silently land in the MSIX package container.</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-msix-desktop-agent-writes-can-land-in-package-container</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-msix-desktop-agent-writes-can-land-in-package-container"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Windows Claude Desktop MSIX install found that Bash, Write, and Edit tool subprocesses inherited the app package identity, so creating new entries directly under `%APPDATA%` or `%LOCALAPPDATA%` could be redirected into the Claude package container. Reads then resolved the redirected copy, letting the agent report success and verify the file while the user&#x27;s real profile path remained unchanged. Existing real subdirectories behaved normally, making the bug most visible during first-time setup tasks such as creating a tool config directory.</summary>
-    <category term="Desktop &amp; IDE integration"/>
   </entry>
 </feed>
