@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1744,
+  "count": 1745,
   "categories": {
     "Hook behavior & events": 228,
-    "Permission system": 160,
+    "Permission system": 161,
     "Hook bypass & evasion": 104,
     "MCP & plugin issues": 100,
     "Subagent & spawned agents": 84,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 153,
-    "HIGH": 983,
+    "HIGH": 984,
     "LOW": 109,
     "MEDIUM": 499
   },
@@ -21269,12 +21269,13 @@
       "category": "Cowork & remote",
       "severity": "HIGH",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/88094"
+        "https://github.com/anthropics/claude-code/issues/88094",
+        "https://github.com/anthropics/claude-code/issues/89146"
       ],
       "status": "open",
       "date_added": "2026-08-20",
-      "description": "Reported Claude Code 2.1.235 and 2.1.236 sessions showed `/rc` active in newly started terminal sessions even though users had not passed remote-control flags, had not run `/remote-control`, and had no local `remoteControlAtStartup` setting. A follow-up reproduced the pattern on Linux and noted that older already-running sessions stayed disconnected while a later process started with remote control active, consistent with a fresh startup default or remote flag change rather than an explicit local opt-in. Because remote-control connections expose live sessions outside the local terminal, this is a privacy and session-control boundary, not only a footer-display issue.",
-      "workaround": "Treat remote control state as something to verify at every Claude Code startup, especially after client updates or new process launches. Check the footer and `/config` before handling secrets or sensitive project data, explicitly disable remote control when you do not need it, and preserve settings plus cached feature-flag evidence if `/rc` appears without a local setting or launch flag. For unattended or regulated workflows, start from a wrapper that fails closed when remote control is active unexpectedly."
+      "description": "Reported Claude Code 2.1.235 and 2.1.236 sessions showed `/rc` active in newly started terminal sessions even though users had not passed remote-control flags, had not run `/remote-control`, and had no local `remoteControlAtStartup` setting. A follow-up reproduced the pattern on Linux and noted that older already-running sessions stayed disconnected while a later process started with remote control active. A later Claude Code 2.1.240-2.1.241 report tied VS Code, JetBrains, and terminal CLI auto-enablement to the cached `tengu_ide_rc_auto_enable` feature flag, and found that `remoteControl=default` did not stop new sessions from connecting. Because remote-control connections expose live sessions outside the local terminal and can store transcripts remotely, this is a privacy and session-control boundary, not only a footer-display issue.",
+      "workaround": "Treat remote control state as something to verify at every Claude Code startup, especially after client updates or new process launches. Check the footer and `/config` before handling secrets or sensitive project data, explicitly disable remote control when you do not need it, and preserve settings plus cached feature-flag evidence if `/rc` appears without a local setting or launch flag. If `remoteControl=default` does not disable startup behavior, try the stronger `disableRemoteControl` setting and verify with `/remote-control` or a peer session rather than trusting settings text alone. For unattended or regulated workflows, start from a wrapper that fails closed when remote control is active unexpectedly."
     },
     {
       "id": "desktop-can-hide-auto-mode-despite-defaultmode-settings",
@@ -22578,30 +22579,43 @@
       "date_added": "2026-08-24",
       "description": "A reported VS Code native extension and Agent SDK session found that project `.claude/settings.json` attribution settings were not injected into commit or PR workflow instructions. Even with `attribution.commit` and `attribution.pr` set to empty strings, the model still appended the default generated-with block and `Co-Authored-By` trailer, apparently from trained prior behavior rather than a visible system prompt instruction. Existing attribution issues cover CLI prompt conflicts; this report points to a separate surface where the setting may be absent from the prompt entirely.",
       "workaround": "Do not assume attribution settings apply uniformly across CLI, VS Code extension, and Agent SDK surfaces. For repositories with strict commit-message policy, inspect generated commits before pushing and add an explicit checked-in instruction such as `Never add Generated-with or Co-Authored-By AI attribution trailers to commits or merge requests` until the target surface proves it injects the resolved settings. Preserve the settings file, prompt-surface evidence, extension version, and model when reporting attribution drift."
+    },
+    {
+      "id": "auto-mode-can-start-enabled-despite-default-off-flag",
+      "title": "Auto mode can start enabled despite a default-off flag.",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89176"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code 2.1.241 macOS session launched as bare `claude` with no permission-mode flags, no `autoMode` or `permissionMode` keys in user or project settings, and a cached `tengu_auto_mode_default_on: false` flag, yet the footer immediately showed auto mode on before any user interaction. The reporter also observed a separate first-turn session behaving as auto mode without prior permission prompts. A silent default flip matters because auto mode skips per-action confirmations users may rely on for file edits and shell execution.",
+      "workaround": "Do not assume a fresh Claude Code session starts in manual or prompt-confirmed mode just because settings omit auto-mode keys or cached flags say the default is off. On every update or new machine, inspect the footer before risky work and run a harmless command that should prompt under the intended mode. If auto mode appears unexpectedly, switch modes manually or set an explicit permission mode before continuing, then preserve the version, settings files, process flags, and cached feature-flag state for the upstream report."
     }
   ],
   "status_summary": {
-    "open": 1730,
+    "open": 1731,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 153,
-    "high": 983,
+    "high": 984,
     "low": 109,
     "medium": 499
   },
   "lastUpdated": "2026-08-24",
   "stats": {
-    "total": 1744,
+    "total": 1745,
     "critical": 153,
-    "high": 983,
+    "high": 984,
     "medium": 499,
     "low": 109,
-    "open": 1730,
+    "open": 1731,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-24",
-  "total": 1744
+  "total": 1745
 }
