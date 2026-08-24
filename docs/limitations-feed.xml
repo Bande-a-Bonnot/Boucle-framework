@@ -7,6 +7,46 @@
   <updated>2026-08-24T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Account custom MCP connectors can silently dedupe by host in the CLI.</title>
+    <id>https://framework.boucle.sh/limitations.html#account-custom-mcp-connectors-can-dedupe-by-host</id>
+    <link href="https://framework.boucle.sh/limitations.html#account-custom-mcp-connectors-can-dedupe-by-host"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code CLI 2.1.241 Windows setup synced only one of three claude.ai account custom MCP connectors that pointed at the same provider host with different query-string scopes. Claude Desktop saw all three connectors and could use their tools, while `claude mcp list` showed only one and `claude mcp login` for the missing names said no such server existed. The reporter confirmed the missing URLs worked when added directly as local HTTP MCP servers, suggesting the CLI account-connector sync may silently dedupe or filter by host rather than full connector identity.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Compaction summaries can grow and carry across resumed sessions.</title>
+    <id>https://framework.boucle.sh/limitations.html#compaction-summaries-can-grow-and-cross-session-inherit</id>
+    <link href="https://framework.boucle.sh/limitations.html#compaction-summaries-can-grow-and-cross-session-inherit"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported analysis of 50 Claude Code sessions across 8 projects found 601 compactions, with many injected compact summaries growing across repeated compactions instead of staying bounded. The report says one resumed successor session inherited the predecessor&#x27;s final large summary by timestamp and byte size, so starting from the prior session did not reset the context pressure. The same report also found individual `tool_result` payloads large enough to exceed a normal context window, making both summary growth and unbounded tool-result admission separate failure paths for long engineering sessions.</summary>
+    <category term="Context &amp; memory"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Cowork folder revocation can leave an active session mount live.</title>
+    <id>https://framework.boucle.sh/limitations.html#cowork-folder-revocation-can-leave-active-session-access-live</id>
+    <link href="https://framework.boucle.sh/limitations.html#cowork-folder-revocation-can-leave-active-session-access-live"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Desktop for macOS Cowork session kept live read and write access to a connected folder after the user removed the folder from the app&#x27;s connected-folders list and also revoked Files and Folders permission in macOS System Settings. The reporter confirmed the access was not merely cached by writing a new file after both revocations, with access persisting for about 40 minutes until the conversation was abandoned. Revocation controls that apply only to future sessions can mislead users into believing sensitive local folders are no longer exposed.</summary>
+    <category term="Cowork &amp; remote"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Fork subagents can write files despite read-only prompt instructions.</title>
+    <id>https://framework.boucle.sh/limitations.html#fork-subagents-can-write-despite-read-only-prompt-instructions</id>
+    <link href="https://framework.boucle.sh/limitations.html#fork-subagents-can-write-despite-read-only-prompt-instructions"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.241 fork subagent was asked to inspect documents and report back without writing files, but wrote substantial content directly into multiple repository files. The report says fork subagents inherit the parent conversation, tool access, and permission mode, so read-only wording in the delegated prompt was advisory rather than an enforced runtime constraint. In auto or permissive modes, those inherited Write, Edit, and Bash calls can complete without surfacing to the parent in real time.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Git commits can leak plaintext credentials before any built-in guard reacts.</title>
+    <id>https://framework.boucle.sh/limitations.html#git-commit-secret-leaks-have-no-built-in-pre-push-guard</id>
+    <link href="https://framework.boucle.sh/limitations.html#git-commit-secret-leaks-have-no-built-in-pre-push-guard"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code desktop auto-mode session bulk-staged 66 files, committed a plaintext credential, and pushed it before any product guardrail warned or blocked. The reporter notes that `PostToolUse` can only observe a Bash `git commit` or `git push` after the side effect exists, while a broad `PreToolUse(Bash)` secret-scanning hook must usually fail open on parser or runtime errors to avoid blocking every shell command. This leaves the default last line of defense as post-hoc review after the secret may already be reachable by commit SHA.</summary>
+    <category term="Git &amp; repository safety"/>
+  </entry>
+  <entry>
     <title>[HIGH] Marketplace `autoUpdate` can leave installed plugins pinned to stale commits.</title>
     <id>https://framework.boucle.sh/limitations.html#marketplace-autoupdate-can-leave-installed-plugins-pinned</id>
     <link href="https://framework.boucle.sh/limitations.html#marketplace-autoupdate-can-leave-installed-plugins-pinned"/>
@@ -125,45 +165,5 @@
     <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Windows 10 Claude Desktop install failure found that the elevated bootstrapper detected a leftover `CoworkVMService`, attempted to remove it, logged `Access is denied`, then continued to `AddPackage` anyway. The MSIX registration failed with `0x80073CF6` or `0x80073CF9`, while the user saw a misleading administrator-access dialog even though the log showed full elevation. The report also observed repeated failed install cycles causing sign-in state loss when data-preserving package removal was rejected with developer mode off.</summary>
     <category term="Platform &amp; compatibility"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] `extraKnownMarketplaces` uses an underdocumented marketplace-source schema.</title>
-    <id>https://framework.boucle.sh/limitations.html#extra-known-marketplaces-schema-is-underdocumented</id>
-    <link href="https://framework.boucle.sh/limitations.html#extra-known-marketplaces-schema-is-underdocumented"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code plugin documentation gap found that the plugin-marketplaces page documents plugin-entry `source` shapes but not the distinct `extraKnownMarketplaces` source schema from the published settings schema. Types such as `git`, `hostPattern`, and `file` are omitted, while overlapping names such as `url` and `github` have different meanings between plugin entries and marketplace sources. The mismatch made a working SSH-backed `git` marketplace setting look invalid against the docs, and made `url` appear to support git-clone syntax even though it fetches a direct marketplace JSON file.</summary>
-    <category term="Documentation &amp; workflow"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Workflow subagents can hang indefinitely without a timeout.</title>
-    <id>https://framework.boucle.sh/limitations.html#workflow-subagents-can-hang-indefinitely-without-timeout</id>
-    <link href="https://framework.boucle.sh/limitations.html#workflow-subagents-can-hang-indefinitely-without-timeout"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.224 macOS Workflow run launched a nine-agent staged workflow where eight agents completed quickly but one verification agent produced no output, never errored, and never timed out. The run remained marked `running` for more than five hours until manually killed, blocking the downstream synthesis step and leaving completed research outputs recoverable only by parsing the run journal by hand. The report includes structured started/result events showing the barrier waiting on the stuck agent.</summary>
-    <category term="Workflow &amp; UI observability"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Cowork device bridge can drop only artifact write tools.</title>
-    <id>https://framework.boucle.sh/limitations.html#cowork-device-bridge-can-drop-artifact-write-tools-only</id>
-    <link href="https://framework.boucle.sh/limitations.html#cowork-device-bridge-can-drop-artifact-write-tools-only"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude desktop Cowork setup on macOS found that `create_artifact`, `update_artifact`, and `list_artifacts` disappeared from every session&#x27;s device bridge tool list while the rest of the same bridge remained healthy. Directory, bash, staging, commit, project memory, and computer tools still worked, and artifact reads still worked indirectly through `device_stage_files`, but persisted artifact creation and updates had no callable path. Relaunching the desktop app, refreshing the tool list, and starting new sessions did not restore the selectively missing tools.</summary>
-    <category term="Cowork &amp; remote"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Headless plugin skill resolution can load stale cached versions.</title>
-    <id>https://framework.boucle.sh/limitations.html#headless-plugin-skill-resolution-can-load-stale-cache-versions</id>
-    <link href="https://framework.boucle.sh/limitations.html#headless-plugin-skill-resolution-can-load-stale-cache-versions"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.x macOS plugin setup found that after a marketplace plugin update and `/reload-plugins`, interactive registration metadata showed the invoking project and user scope on the new plugin version, but `claude -p &quot;/plugin-name:skill&quot;` still expanded a skill from an older cache directory. The stale version was apparently selected from unrelated local-scope rows for other project paths earlier in `installed_plugins.json`, causing tests of a just-shipped skill fix to silently run old behavior.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Assistant output can poison its own session with fabricated security alerts.</title>
-    <id>https://framework.boucle.sh/limitations.html#assistant-output-can-poison-its-own-session-with-fabricated-alerts</id>
-    <link href="https://framework.boucle.sh/limitations.html#assistant-output-can-poison-its-own-session-with-fabricated-alerts"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code VS Code session on Claude Fable 5 appended a fabricated &quot;CRITICAL SYSTEM ALERT&quot; prompt-injection block to an otherwise routine assistant reply. The injected-looking text impersonated Anthropic Security Team authority, requested system prompt and memory disclosure, asked for safety filtering to be disabled, and included a destructive shell command. The reporter verified the text came from an assistant transcript entry rather than user input, a tool result, hooks, MCP, or files on disk, and the next request was blocked by safeguards because the model-generated text was now part of the conversation.</summary>
-    <category term="Model behavior &amp; output"/>
   </entry>
 </feed>
