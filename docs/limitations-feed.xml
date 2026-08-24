@@ -7,6 +7,30 @@
   <updated>2026-08-24T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] VS Code Agent SDK sessions can ignore commit attribution settings.</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-agent-sdk-can-ignore-attribution-settings</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-agent-sdk-can-ignore-attribution-settings"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported VS Code native extension and Agent SDK session found that project `.claude/settings.json` attribution settings were not injected into commit or PR workflow instructions. Even with `attribution.commit` and `attribution.pr` set to empty strings, the model still appended the default generated-with block and `Co-Authored-By` trailer, apparently from trained prior behavior rather than a visible system prompt instruction. Existing attribution issues cover CLI prompt conflicts; this report points to a separate surface where the setting may be absent from the prompt entirely.</summary>
+    <category term="Git &amp; repository safety"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Windows Desktop MSIX installs can be bricked by WebGPU adapter requests.</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-msix-webgpu-can-brick-desktop-install</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-msix-webgpu-can-brick-desktop-install"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Windows Claude Desktop 1.34493.1.0 MSIX install found that web content calling `navigator.gpu.requestAdapter()` could crash the GPU process, mark the package as `Modified, NeedsRemediation`, and leave the app in an unrecoverable repair loop. The report attributes the chain to Chromium loading `vk_swiftshader.dll` after sandbox lockdown while the shipped MSIX lacked an `AppxMetadata/CodeIntegrity.cat` catalog, causing Code Integrity failures to escalate from a normal policy denial into package remediation. The crash could be triggered by an MCP widget browser preview that only probed WebGPU support.</summary>
+    <category term="Platform &amp; compatibility"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Sandbox network allowlists can miss HTTPS CONNECT tunnels.</title>
+    <id>https://framework.boucle.sh/limitations.html#sandbox-allowedhosts-can-miss-https-connect-tunnels</id>
+    <link href="https://framework.boucle.sh/limitations.html#sandbox-allowedhosts-can-miss-https-connect-tunnels"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.241 macOS sandbox setup found that Bash-tool network calls could reach HTTPS hosts outside the configured `allowedHosts` or `allowedDomains` list. The reporter confirmed `HTTPS_PROXY` and `ALL_PROXY` pointed at the local sandbox proxy and captured curl issuing successful `CONNECT` requests through that proxy to non-allowlisted hosts, suggesting the proxy intercepted traffic but did not reject disallowed tunnel targets. The same broad reach reportedly appeared through an MCP browser tool, so the gap may not be Bash-specific.</summary>
+    <category term="Security &amp; trust boundaries"/>
+  </entry>
+  <entry>
     <title>[HIGH] Claude in Chrome can steal focus on background browser tool calls.</title>
     <id>https://framework.boucle.sh/limitations.html#claude-in-chrome-can-steal-focus-on-background-tool-calls</id>
     <link href="https://framework.boucle.sh/limitations.html#claude-in-chrome-can-steal-focus-on-background-tool-calls"/>
@@ -141,29 +165,5 @@
     <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Claude Code VS Code integration session found raw Playwright log files from backgrounded Bash commands containing repeated `&lt;claude-code-hint&gt;` tags that referenced a nonexistent `stripe@claude-plugins-official` plugin. The reporter verified the lines were present on disk rather than only in rendered tool output, found no matching installed or cached plugin, and observed paired system-reminder text telling the assistant that a file had been modified and not to tell the user because they were already aware.</summary>
     <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] The VS Code extension can load all session histories into one extension host.</title>
-    <id>https://framework.boucle.sh/limitations.html#vscode-extension-can-load-all-session-histories-and-oom</id>
-    <link href="https://framework.boucle.sh/limitations.html#vscode-extension-can-load-all-session-histories-and-oom"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code for VS Code 2.1.240-2.1.241 Linux session found repeated extension-host out-of-memory crashes while Claude Code was active. Crash dumps showed V8 heap exhaustion, and a live memory dump reportedly contained full message histories from 19 distinct past Claude Code sessions, with the active session not even the largest resident transcript. The reported pattern suggests the session sidebar or history loader can retain complete transcripts for every listed session in the VS Code window rather than only metadata or the active chat.</summary>
-    <category term="VS Code extension"/>
-  </entry>
-  <entry>
-    <title>[HIGH] The CLI main thread can hang in a full-CPU loop and ignore normal signals.</title>
-    <id>https://framework.boucle.sh/limitations.html#cli-main-thread-can-spin-at-full-cpu-and-ignore-signals</id>
-    <link href="https://framework.boucle.sh/limitations.html#cli-main-thread-can-spin-at-full-cpu-and-ignore-signals"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported macOS investigation collected 19 sample captures across Claude Code 2.1.231, 2.1.238, and 2.1.239 where sessions hung permanently with one core at 100 percent, no crash report, no syscalls, and a stable memory footprint. Instrumented freezes ended after hook-output processing, then the process ignored SIGTERM, SIGINT, and SIGHUP because the JavaScript event loop never resumed. The reporter also found the event-loop-stall heuristic could misclassify CPU-bound stalls as sleep or wake delay, reducing the chance of automatic detection.</summary>
-    <category term="CLI &amp; terminal"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Bridge reconnects can reinject full tool, skill, and agent listings into context.</title>
-    <id>https://framework.boucle.sh/limitations.html#bridge-reconnect-can-reinject-tool-skill-and-agent-listings</id>
-    <link href="https://framework.boucle.sh/limitations.html#bridge-reconnect-can-reinject-tool-skill-and-agent-listings"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.241 macOS session found that trivial turns could accumulate about 102k context tokens because bridge reconnects resent full attachment listings into the Messages category. The reporter saw repeated `deferred_tools_delta`, `agent_listing_delta`, `mcp_instructions_delta`, and `skill_listing` attachments in the raw JSONL only seconds apart with the same bridge session id, apparently after switching terminal tabs, even when Remote Control was not explicitly enabled.</summary>
-    <category term="Context &amp; memory"/>
   </entry>
 </feed>

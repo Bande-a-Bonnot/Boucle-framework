@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1741,
+  "count": 1744,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 160,
@@ -9,11 +9,11 @@
     "Subagent & spawned agents": 84,
     "Desktop & IDE integration": 62,
     "TUI & display": 37,
-    "Platform & compatibility": 34,
+    "Platform & compatibility": 35,
     "CLI & terminal": 33,
     "Configuration behavior": 33,
+    "Security & trust boundaries": 33,
     "Cowork & remote": 32,
-    "Security & trust boundaries": 32,
     "Context & memory": 31,
     "Sandbox & permissions": 31,
     "MCP & integrations": 30,
@@ -34,8 +34,8 @@
     "MCP integration": 13,
     "Scheduled tasks": 13,
     "Worktrees & isolation": 13,
+    "Git & repository safety": 12,
     "Plugin & channel system": 12,
-    "Git & repository safety": 11,
     "UX & display": 11,
     "Configuration & settings": 10,
     "Model behavior & output": 10,
@@ -191,10 +191,10 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 152,
-    "HIGH": 982,
+    "CRITICAL": 153,
+    "HIGH": 983,
     "LOW": 109,
-    "MEDIUM": 498
+    "MEDIUM": 499
   },
   "entries": [
     {
@@ -22539,30 +22539,69 @@
       "date_added": "2026-08-24",
       "description": "A reported Claude in Chrome and Cowork setup on Windows found that every browser tool interaction raised Chrome to the foreground and captured keyboard focus, even with computer-use disabled. The report contrasts the extension MCP tools, which expose no `active` or foreground parameter for tab creation and navigation, with the in-app browser tool that already supports background tab creation. Multiple concurrent Cowork sessions could fight for focus, and keystrokes intended for another application could land in Chrome.",
       "workaround": "Do not assume browser work can safely run in the background when using the Claude in Chrome extension. Avoid typing into terminals, SSH sessions, or other command-sensitive windows while Cowork is driving Chrome, and prefer browser integrations that expose an explicit background or foreground parameter when unattended work matters. Record the connected browser list and relevant tool schemas when diagnosing focus theft so it is not misattributed to computer-use mode."
+    },
+    {
+      "id": "sandbox-allowedhosts-can-miss-https-connect-tunnels",
+      "title": "Sandbox network allowlists can miss HTTPS CONNECT tunnels.",
+      "category": "Security & trust boundaries",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89165"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code 2.1.241 macOS sandbox setup found that Bash-tool network calls could reach HTTPS hosts outside the configured `allowedHosts` or `allowedDomains` list. The reporter confirmed `HTTPS_PROXY` and `ALL_PROXY` pointed at the local sandbox proxy and captured curl issuing successful `CONNECT` requests through that proxy to non-allowlisted hosts, suggesting the proxy intercepted traffic but did not reject disallowed tunnel targets. The same broad reach reportedly appeared through an MCP browser tool, so the gap may not be Bash-specific.",
+      "workaround": "Do not rely on Claude Code's documented network allowlist as a hard egress boundary until the installed version proves enforcement for HTTPS CONNECT and non-Bash tools. For sensitive sessions, add an external firewall, packet filter, or corporate proxy policy outside Claude Code, and run a negative canary such as `curl -sI --max-time 5 https://www.example.com` against a host that is not on the intended allowlist. Preserve proxy environment variables, verbose curl traces, sandbox settings, tool surface, and Claude Code version when reporting enforcement gaps."
+    },
+    {
+      "id": "windows-msix-webgpu-can-brick-desktop-install",
+      "title": "Windows Desktop MSIX installs can be bricked by WebGPU adapter requests.",
+      "category": "Platform & compatibility",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89112"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported Windows Claude Desktop 1.34493.1.0 MSIX install found that web content calling `navigator.gpu.requestAdapter()` could crash the GPU process, mark the package as `Modified, NeedsRemediation`, and leave the app in an unrecoverable repair loop. The report attributes the chain to Chromium loading `vk_swiftshader.dll` after sandbox lockdown while the shipped MSIX lacked an `AppxMetadata/CodeIntegrity.cat` catalog, causing Code Integrity failures to escalate from a normal policy denial into package remediation. The crash could be triggered by an MCP widget browser preview that only probed WebGPU support.",
+      "workaround": "On Windows Desktop MSIX builds, treat browser previews, MCP widgets, and arbitrary web content as capable of triggering package-level app failure until the package integrity path is fixed. Avoid loading untrusted or GPU-probing pages in the desktop app, and preserve Windows CodeIntegrity, AppModel-Runtime, Crashpad, and setup logs before repairing or reinstalling. If reproducible, test whether disabling WebGPU with the documented base-feature flag prevents the crash, but do not rely on Windows Settings repair as proof that the package contents were restored."
+    },
+    {
+      "id": "vscode-agent-sdk-can-ignore-attribution-settings",
+      "title": "VS Code Agent SDK sessions can ignore commit attribution settings.",
+      "category": "Git & repository safety",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89164"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported VS Code native extension and Agent SDK session found that project `.claude/settings.json` attribution settings were not injected into commit or PR workflow instructions. Even with `attribution.commit` and `attribution.pr` set to empty strings, the model still appended the default generated-with block and `Co-Authored-By` trailer, apparently from trained prior behavior rather than a visible system prompt instruction. Existing attribution issues cover CLI prompt conflicts; this report points to a separate surface where the setting may be absent from the prompt entirely.",
+      "workaround": "Do not assume attribution settings apply uniformly across CLI, VS Code extension, and Agent SDK surfaces. For repositories with strict commit-message policy, inspect generated commits before pushing and add an explicit checked-in instruction such as `Never add Generated-with or Co-Authored-By AI attribution trailers to commits or merge requests` until the target surface proves it injects the resolved settings. Preserve the settings file, prompt-surface evidence, extension version, and model when reporting attribution drift."
     }
   ],
   "status_summary": {
-    "open": 1727,
+    "open": 1730,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 152,
-    "high": 982,
+    "critical": 153,
+    "high": 983,
     "low": 109,
-    "medium": 498
+    "medium": 499
   },
   "lastUpdated": "2026-08-24",
   "stats": {
-    "total": 1741,
-    "critical": 152,
-    "high": 982,
-    "medium": 498,
+    "total": 1744,
+    "critical": 153,
+    "high": 983,
+    "medium": 499,
     "low": 109,
-    "open": 1727,
+    "open": 1730,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-24",
-  "total": 1741
+  "total": 1744
 }

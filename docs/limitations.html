@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1741</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-24.</span></p>
+        <p class="subtitle"><span id="total-count">1744</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-24.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -19628,6 +19628,42 @@
                         <!-- workaround:claude-in-chrome-can-steal-focus-on-background-tool-calls -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume browser work can safely run in the background when using the Claude in Chrome extension. Avoid typing into terminals, SSH sessions, or other command-sensitive windows while Cowork is driving Chrome, and prefer browser integrations that expose an explicit background or foreground parameter when unattended work matters. Record the connected browser list and relevant tool schemas when diagnosing focus theft so it is not misattributed to computer-use mode.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89148" target="_blank">#89148</a></div>
+        </div>
+        <div class="kl-entry" data-category="Security &amp; trust boundaries" data-issues="89165" id="sandbox-allowedhosts-can-miss-https-connect-tunnels" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1742</span>
+                <span class="kl-cat">Security &amp; trust boundaries</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Sandbox network allowlists can miss HTTPS CONNECT tunnels.</h3>
+            <p>A reported Claude Code 2.1.241 macOS sandbox setup found that Bash-tool network calls could reach HTTPS hosts outside the configured `allowedHosts` or `allowedDomains` list. The reporter confirmed `HTTPS_PROXY` and `ALL_PROXY` pointed at the local sandbox proxy and captured curl issuing successful `CONNECT` requests through that proxy to non-allowlisted hosts, suggesting the proxy intercepted traffic but did not reject disallowed tunnel targets. The same broad reach reportedly appeared through an MCP browser tool, so the gap may not be Bash-specific.</p>
+                        <!-- workaround:sandbox-allowedhosts-can-miss-https-connect-tunnels -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on Claude Code&#x27;s documented network allowlist as a hard egress boundary until the installed version proves enforcement for HTTPS CONNECT and non-Bash tools. For sensitive sessions, add an external firewall, packet filter, or corporate proxy policy outside Claude Code, and run a negative canary such as `curl -sI --max-time 5 https://www.example.com` against a host that is not on the intended allowlist. Preserve proxy environment variables, verbose curl traces, sandbox settings, tool surface, and Claude Code version when reporting enforcement gaps.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89165" target="_blank">#89165</a></div>
+        </div>
+        <div class="kl-entry" data-category="Platform &amp; compatibility" data-issues="89112" id="windows-msix-webgpu-can-brick-desktop-install" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1743</span>
+                <span class="kl-cat">Platform &amp; compatibility</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Windows Desktop MSIX installs can be bricked by WebGPU adapter requests.</h3>
+            <p>A reported Windows Claude Desktop 1.34493.1.0 MSIX install found that web content calling `navigator.gpu.requestAdapter()` could crash the GPU process, mark the package as `Modified, NeedsRemediation`, and leave the app in an unrecoverable repair loop. The report attributes the chain to Chromium loading `vk_swiftshader.dll` after sandbox lockdown while the shipped MSIX lacked an `AppxMetadata/CodeIntegrity.cat` catalog, causing Code Integrity failures to escalate from a normal policy denial into package remediation. The crash could be triggered by an MCP widget browser preview that only probed WebGPU support.</p>
+                        <!-- workaround:windows-msix-webgpu-can-brick-desktop-install -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On Windows Desktop MSIX builds, treat browser previews, MCP widgets, and arbitrary web content as capable of triggering package-level app failure until the package integrity path is fixed. Avoid loading untrusted or GPU-probing pages in the desktop app, and preserve Windows CodeIntegrity, AppModel-Runtime, Crashpad, and setup logs before repairing or reinstalling. If reproducible, test whether disabling WebGPU with the documented base-feature flag prevents the crash, but do not rely on Windows Settings repair as proof that the package contents were restored.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89112" target="_blank">#89112</a></div>
+        </div>
+        <div class="kl-entry" data-category="Git &amp; repository safety" data-issues="89164" id="vscode-agent-sdk-can-ignore-attribution-settings" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1744</span>
+                <span class="kl-cat">Git &amp; repository safety</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>VS Code Agent SDK sessions can ignore commit attribution settings.</h3>
+            <p>A reported VS Code native extension and Agent SDK session found that project `.claude/settings.json` attribution settings were not injected into commit or PR workflow instructions. Even with `attribution.commit` and `attribution.pr` set to empty strings, the model still appended the default generated-with block and `Co-Authored-By` trailer, apparently from trained prior behavior rather than a visible system prompt instruction. Existing attribution issues cover CLI prompt conflicts; this report points to a separate surface where the setting may be absent from the prompt entirely.</p>
+                        <!-- workaround:vscode-agent-sdk-can-ignore-attribution-settings -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume attribution settings apply uniformly across CLI, VS Code extension, and Agent SDK surfaces. For repositories with strict commit-message policy, inspect generated commits before pushing and add an explicit checked-in instruction such as `Never add Generated-with or Co-Authored-By AI attribution trailers to commits or merge requests` until the target surface proves it injects the resolved settings. Preserve the settings file, prompt-surface evidence, extension version, and model when reporting attribution drift.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89164" target="_blank">#89164</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
