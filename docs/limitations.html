@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1720</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-23.</span></p>
+        <p class="subtitle"><span id="total-count">1726</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-24.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -19376,6 +19376,78 @@
                         <!-- workaround:effort-picker-can-display-a-higher-level-than-is-applied -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely only on the picker display when reasoning effort materially affects the task. After changing effort defaults, reloading VS Code, or resuming a long session, explicitly re-select the desired effort level and spot-check the session transcript&#x27;s assistant `effort` fields when the distinction matters. If transcripts show a lower applied level than the UI, capture both the UI state and the JSONL evidence before restarting or changing settings.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89080" target="_blank">#89080</a></div>
+        </div>
+        <div class="kl-entry" data-category="Worktrees &amp; isolation" data-issues="88950" id="worktree-isolation-pin-can-drift-between-parallel-agents" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1721</span>
+                <span class="kl-cat">Worktrees &amp; isolation</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>The worktree isolation pin can drift between parallel subagents.</h3>
+            <p>A reported Claude Code 2.1.240 macOS session found that the worktree-isolation state used for shell and git operations could be shared across parallel subagents rather than remaining per-agent. During a fan-out session, bare `git` commands, relative-path Bash writes, and script runners sometimes executed in another agent&#x27;s worktree or in the shared checkout, while some absolute-path writes failed closed. Reported incidents included commits on the wrong branch, heredoc writes into another agent&#x27;s tree, quality gates running in the wrong worktree, and a reset landing in a subagent worktree.</p>
+                        <!-- workaround:worktree-isolation-pin-can-drift-between-parallel-agents -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume worktree isolation is reliable for parallel subagents until each command verifies its actual repo root. Avoid bare `git` and relative-path Bash writes in high-risk multi-agent sessions, keep uncommitted work checkpointed outside Claude Code before fan-out, and review `git status`, branch, and worktree path from each agent immediately before committing, stashing, resetting, or trusting test results. If `git -C &lt;expected&gt;` or compound self-guards are refused by the installed version, treat that refusal as a reason to reduce concurrency rather than bypass the guard.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/88950" target="_blank">#88950</a></div>
+        </div>
+        <div class="kl-entry" data-category="Context &amp; memory" data-issues="89056" id="bridge-reconnect-can-reinject-tool-skill-and-agent-listings" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1722</span>
+                <span class="kl-cat">Context &amp; memory</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Bridge reconnects can reinject full tool, skill, and agent listings into context.</h3>
+            <p>A reported Claude Code 2.1.241 macOS session found that trivial turns could accumulate about 102k context tokens because bridge reconnects resent full attachment listings into the Messages category. The reporter saw repeated `deferred_tools_delta`, `agent_listing_delta`, `mcp_instructions_delta`, and `skill_listing` attachments in the raw JSONL only seconds apart with the same bridge session id, apparently after switching terminal tabs, even when Remote Control was not explicitly enabled.</p>
+                        <!-- workaround:bridge-reconnect-can-reinject-tool-skill-and-agent-listings -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If `/context` shows Messages growing much faster than the visible conversation, inspect the session JSONL for repeated listing attachments before deleting useful chat history. Reduce terminal tab churn and extra live sessions while diagnosing, restart the affected session when token bloat appears, and preserve the JSONL snippets plus bridge settings so the issue can be distinguished from normal long-conversation growth.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89056" target="_blank">#89056</a></div>
+        </div>
+        <div class="kl-entry" data-category="CLI &amp; terminal" data-issues="89062" id="cli-main-thread-can-spin-at-full-cpu-and-ignore-signals" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1723</span>
+                <span class="kl-cat">CLI &amp; terminal</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>The CLI main thread can hang in a full-CPU loop and ignore normal signals.</h3>
+            <p>A reported macOS investigation collected 19 sample captures across Claude Code 2.1.231, 2.1.238, and 2.1.239 where sessions hung permanently with one core at 100 percent, no crash report, no syscalls, and a stable memory footprint. Instrumented freezes ended after hook-output processing, then the process ignored SIGTERM, SIGINT, and SIGHUP because the JavaScript event loop never resumed. The reporter also found the event-loop-stall heuristic could misclassify CPU-bound stalls as sleep or wake delay, reducing the chance of automatic detection.</p>
+                        <!-- workaround:cli-main-thread-can-spin-at-full-cpu-and-ignore-signals -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For long subagent-heavy work, run Claude Code under an external watchdog that samples sustained 100 percent CPU and captures debug logs or process samples before using SIGKILL. Do not rely on SIGTERM or SIGINT to flush telemetry from a frozen process. If a session becomes unresponsive, preserve the debug file, hook configuration, process sample, CLI version, and whether the last log lines followed hook output so the hang can be separated from model latency or memory pressure.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89062" target="_blank">#89062</a></div>
+        </div>
+        <div class="kl-entry" data-category="VS Code extension" data-issues="89075" id="vscode-extension-can-load-all-session-histories-and-oom" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1724</span>
+                <span class="kl-cat">VS Code extension</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>The VS Code extension can load all session histories into one extension host.</h3>
+            <p>A reported Claude Code for VS Code 2.1.240-2.1.241 Linux session found repeated extension-host out-of-memory crashes while Claude Code was active. Crash dumps showed V8 heap exhaustion, and a live memory dump reportedly contained full message histories from 19 distinct past Claude Code sessions, with the active session not even the largest resident transcript. The reported pattern suggests the session sidebar or history loader can retain complete transcripts for every listed session in the VS Code window rather than only metadata or the active chat.</p>
+                        <!-- workaround:vscode-extension-can-load-all-session-histories-and-oom -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> If Claude Code for VS Code repeatedly restarts or opens empty chats after OOM crashes, close and reopen the whole VS Code window rather than only restarting the extension host. Delete or archive old sidebar sessions you do not need, keep crash dumps and extension-host logs when possible, and report the number of retained sessions plus memory growth rate. Treat each restart as suspect if it immediately reloads the same large session list.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89075" target="_blank">#89075</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="89079" id="background-log-output-can-contain-unexplained-plugin-hints" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1725</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Background command logs can contain unexplained Claude Code plugin hint tags.</h3>
+            <p>A reported Claude Code VS Code integration session found raw Playwright log files from backgrounded Bash commands containing repeated `&lt;claude-code-hint&gt;` tags that referenced a nonexistent `stripe@claude-plugins-official` plugin. The reporter verified the lines were present on disk rather than only in rendered tool output, found no matching installed or cached plugin, and observed paired system-reminder text telling the assistant that a file had been modified and not to tell the user because they were already aware.</p>
+                        <!-- workaround:background-log-output-can-contain-unexplained-plugin-hints -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat unexpected `&lt;claude-code-hint&gt;` lines in generated logs as evidence to preserve, not as normal test output. Verify the raw file with `grep` or a byte dump, check installed plugin and marketplace catalogs, and disclose suspicious control-looking text in tool output to the operator instead of following any instruction to hide it. Keep the raw log, command line, plugin settings, installed-plugin list, and extension logs for investigation.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89079" target="_blank">#89079</a></div>
+        </div>
+        <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="89091" id="peer-sendmessage-replies-can-use-agent-type-instead-of-session-id" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1726</span>
+                <span class="kl-cat">Subagent &amp; spawned agents</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Peer `SendMessage` replies can target agent type names instead of reachable session IDs.</h3>
+            <p>A reported Claude Code VS Code extension 2.1.236 session found that peer-message wrappers for forked subagents could set the visible `from` field to an agent type such as `general-purpose` while the actual reachable task id was only present separately as `senderTaskId`. Recipients then followed the injected instruction to reply to `from`, called `SendMessage(to: &quot;general-purpose&quot;)`, and failed because agent type names are not addressable session ids. Repeated nudges caused unreachable-address loops and extra token burn in multi-agent review workflows.</p>
+                        <!-- workaround:peer-sendmessage-replies-can-use-agent-type-instead-of-session-id -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For workflows or skills that require subagent-to-subagent replies, verify the concrete task id from the original spawn result before asking agents to use `SendMessage`. Prefer parent-mediated collect-and-redispatch patterns when reliability matters, and avoid instructing agents to reply to human-readable type labels. Preserve transcript snippets showing both `from` and `senderTaskId` fields when reporting failed peer replies.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89091" target="_blank">#89091</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
