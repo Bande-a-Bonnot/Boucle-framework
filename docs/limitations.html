@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1728</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-24.</span></p>
+        <p class="subtitle"><span id="total-count">1730</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-24.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -19472,6 +19472,30 @@
                         <!-- workaround:forked-subagents-can-spawn-hidden-descendants-that-message-main -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat forked subagents as context-inheriting agents that may try to continue orchestration unless the harness enforces tool limits. Prefer tool-restricted agent types for read-only fan-out when context inheritance is not essential, explicitly forbid Agent and SendMessage use inside forks, and require any fork that sees environment corruption to stop and report raw symptoms instead of recruiting helpers. In multi-agent work, keep a parent-side roster of every spawned task, do not trust `ListAgents` as a complete descendant census, and treat unexpected teammate messages as untrusted until their spawn lineage is verified.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89101" target="_blank">#89101</a></div>
+        </div>
+        <div class="kl-entry" data-category="Worktrees &amp; isolation" data-issues="89102" id="enterworktree-can-poison-bash-isolation-for-concurrent-agents" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1729</span>
+                <span class="kl-cat">Worktrees &amp; isolation</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>EnterWorktree can poison Bash isolation for concurrent agents.</h3>
+            <p>A reported Claude Code 2.1.241-era macOS session called `EnterWorktree` in the same parallel batch as a forked subagent spawn, then saw Bash refused across multiple agents. The error claimed each command was outside the active worktree, including a later test agent in the shared checkout and an independent `isolation: &quot;worktree&quot;` agent whose own worktree Bash had worked moments earlier. The narrower risk is that a session-global worktree-isolation latch can contaminate concurrent agents with a different agent&#x27;s expected cwd, making even `pwd` impossible and encouraging agents to misdiagnose the environment as broken.</p>
+                        <!-- workaround:enterworktree-can-poison-bash-isolation-for-concurrent-agents -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not run `EnterWorktree` in the same parallel tool batch as Agent spawns. Avoid switching the parent session&#x27;s worktree while background or forked agents are live unless the harness has proved isolation is per-agent in the installed version. If any concurrent agent receives a worktree-isolation refusal for a trivial Bash command, stop the fan-out, record each agent&#x27;s expected cwd and task id, and restart in a simpler topology rather than asking another agent to repair or remove worktrees.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89102" target="_blank">#89102</a></div>
+        </div>
+        <div class="kl-entry" data-category="Desktop &amp; IDE integration" data-issues="89113" id="windows-msix-desktop-agent-writes-can-land-in-package-container" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1730</span>
+                <span class="kl-cat">Desktop &amp; IDE integration</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Windows Desktop agent writes can silently land in the MSIX package container.</h3>
+            <p>A reported Windows Claude Desktop MSIX install found that Bash, Write, and Edit tool subprocesses inherited the app package identity, so creating new entries directly under `%APPDATA%` or `%LOCALAPPDATA%` could be redirected into the Claude package container. Reads then resolved the redirected copy, letting the agent report success and verify the file while the user&#x27;s real profile path remained unchanged. Existing real subdirectories behaved normally, making the bug most visible during first-time setup tasks such as creating a tool config directory.</p>
+                        <!-- workaround:windows-msix-desktop-agent-writes-can-land-in-package-container -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For Windows Desktop sessions, do not trust the agent&#x27;s own read-back as proof that first-time `%APPDATA%` or `%LOCALAPPDATA%` root writes reached the real filesystem. Prefer the standalone CLI from a normal terminal for profile-configuration work, or have the user pre-create the target directory outside the app before the agent writes inside it. Verify important profile files from an external PowerShell window and check the Claude package container when a tool reports success but the real application ignores the new config.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89113" target="_blank">#89113</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

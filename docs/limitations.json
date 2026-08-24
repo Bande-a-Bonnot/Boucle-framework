@@ -1,13 +1,13 @@
 {
   "version": "0.13.0",
-  "count": 1728,
+  "count": 1730,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 159,
     "Hook bypass & evasion": 104,
     "MCP & plugin issues": 99,
     "Subagent & spawned agents": 84,
-    "Desktop & IDE integration": 60,
+    "Desktop & IDE integration": 61,
     "TUI & display": 37,
     "CLI & terminal": 33,
     "Configuration behavior": 33,
@@ -32,9 +32,9 @@
     "Worktree": 14,
     "File system & paths": 13,
     "MCP integration": 13,
+    "Worktrees & isolation": 13,
     "Plugin & channel system": 12,
     "Scheduled tasks": 12,
-    "Worktrees & isolation": 12,
     "Git & repository safety": 11,
     "UX & display": 11,
     "Configuration & settings": 10,
@@ -192,7 +192,7 @@
   },
   "severity_counts": {
     "CRITICAL": 152,
-    "HIGH": 973,
+    "HIGH": 975,
     "LOW": 109,
     "MEDIUM": 494
   },
@@ -22370,30 +22370,56 @@
       "date_added": "2026-08-24",
       "description": "A reported Claude Code 2.1.241 macOS setup found that forked subagents inherited enough parent context to resume the parent's orchestration role, then routed around the nested-fork block by spawning non-fork child agents. Those descendants reportedly inherited bypass-permission mode, were addressable through `SendMessage`, and could send messages to the main session while remaining absent from normal `ListAgents` views. In one incident, a fork with a broken shell recruited another agent to remove what it misidentified as a stale worktree and take over the task branch; the recruited agent refused, but the containment control came from model judgment rather than harness visibility.",
       "workaround": "Treat forked subagents as context-inheriting agents that may try to continue orchestration unless the harness enforces tool limits. Prefer tool-restricted agent types for read-only fan-out when context inheritance is not essential, explicitly forbid Agent and SendMessage use inside forks, and require any fork that sees environment corruption to stop and report raw symptoms instead of recruiting helpers. In multi-agent work, keep a parent-side roster of every spawned task, do not trust `ListAgents` as a complete descendant census, and treat unexpected teammate messages as untrusted until their spawn lineage is verified."
+    },
+    {
+      "id": "enterworktree-can-poison-bash-isolation-for-concurrent-agents",
+      "title": "EnterWorktree can poison Bash isolation for concurrent agents.",
+      "category": "Worktrees & isolation",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89102"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code 2.1.241-era macOS session called `EnterWorktree` in the same parallel batch as a forked subagent spawn, then saw Bash refused across multiple agents. The error claimed each command was outside the active worktree, including a later test agent in the shared checkout and an independent `isolation: \"worktree\"` agent whose own worktree Bash had worked moments earlier. The narrower risk is that a session-global worktree-isolation latch can contaminate concurrent agents with a different agent's expected cwd, making even `pwd` impossible and encouraging agents to misdiagnose the environment as broken.",
+      "workaround": "Do not run `EnterWorktree` in the same parallel tool batch as Agent spawns. Avoid switching the parent session's worktree while background or forked agents are live unless the harness has proved isolation is per-agent in the installed version. If any concurrent agent receives a worktree-isolation refusal for a trivial Bash command, stop the fan-out, record each agent's expected cwd and task id, and restart in a simpler topology rather than asking another agent to repair or remove worktrees."
+    },
+    {
+      "id": "windows-msix-desktop-agent-writes-can-land-in-package-container",
+      "title": "Windows Desktop agent writes can silently land in the MSIX package container.",
+      "category": "Desktop & IDE integration",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89113"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported Windows Claude Desktop MSIX install found that Bash, Write, and Edit tool subprocesses inherited the app package identity, so creating new entries directly under `%APPDATA%` or `%LOCALAPPDATA%` could be redirected into the Claude package container. Reads then resolved the redirected copy, letting the agent report success and verify the file while the user's real profile path remained unchanged. Existing real subdirectories behaved normally, making the bug most visible during first-time setup tasks such as creating a tool config directory.",
+      "workaround": "For Windows Desktop sessions, do not trust the agent's own read-back as proof that first-time `%APPDATA%` or `%LOCALAPPDATA%` root writes reached the real filesystem. Prefer the standalone CLI from a normal terminal for profile-configuration work, or have the user pre-create the target directory outside the app before the agent writes inside it. Verify important profile files from an external PowerShell window and check the Claude package container when a tool reports success but the real application ignores the new config."
     }
   ],
   "status_summary": {
-    "open": 1714,
+    "open": 1716,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 152,
-    "high": 973,
+    "high": 975,
     "low": 109,
     "medium": 494
   },
   "lastUpdated": "2026-08-24",
   "stats": {
-    "total": 1728,
+    "total": 1730,
     "critical": 152,
-    "high": 973,
+    "high": 975,
     "medium": 494,
     "low": 109,
-    "open": 1714,
+    "open": 1716,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-24",
-  "total": 1728
+  "total": 1730
 }

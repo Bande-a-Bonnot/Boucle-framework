@@ -7,6 +7,22 @@
   <updated>2026-08-24T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Windows Desktop agent writes can silently land in the MSIX package container.</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-msix-desktop-agent-writes-can-land-in-package-container</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-msix-desktop-agent-writes-can-land-in-package-container"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Windows Claude Desktop MSIX install found that Bash, Write, and Edit tool subprocesses inherited the app package identity, so creating new entries directly under `%APPDATA%` or `%LOCALAPPDATA%` could be redirected into the Claude package container. Reads then resolved the redirected copy, letting the agent report success and verify the file while the user&#x27;s real profile path remained unchanged. Existing real subdirectories behaved normally, making the bug most visible during first-time setup tasks such as creating a tool config directory.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
+  <entry>
+    <title>[HIGH] EnterWorktree can poison Bash isolation for concurrent agents.</title>
+    <id>https://framework.boucle.sh/limitations.html#enterworktree-can-poison-bash-isolation-for-concurrent-agents</id>
+    <link href="https://framework.boucle.sh/limitations.html#enterworktree-can-poison-bash-isolation-for-concurrent-agents"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.241-era macOS session called `EnterWorktree` in the same parallel batch as a forked subagent spawn, then saw Bash refused across multiple agents. The error claimed each command was outside the active worktree, including a later test agent in the shared checkout and an independent `isolation: &quot;worktree&quot;` agent whose own worktree Bash had worked moments earlier. The narrower risk is that a session-global worktree-isolation latch can contaminate concurrent agents with a different agent&#x27;s expected cwd, making even `pwd` impossible and encouraging agents to misdiagnose the environment as broken.</summary>
+    <category term="Worktrees &amp; isolation"/>
+  </entry>
+  <entry>
     <title>[CRITICAL] Forked subagents can spawn hidden descendants that message the main session.</title>
     <id>https://framework.boucle.sh/limitations.html#forked-subagents-can-spawn-hidden-descendants-that-message-main</id>
     <link href="https://framework.boucle.sh/limitations.html#forked-subagents-can-spawn-hidden-descendants-that-message-main"/>
@@ -149,21 +165,5 @@
     <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Windows 11 Claude Desktop Cowork setup could not start the isolated Linux workspace used by `device_bash`: every shell attempt returned `Workspace unavailable`, while file-based bridge tools still worked. `CoworkVMService` started, initialized HCS and HCN, opened its named pipe server, and logged signature-verification setup, but then only logged repeated `[Server] Client connected` lines for hours. It never logged a configure call, VM creation attempt, timeout, or explanatory error, and the behavior persisted after enabling Hyper-V, confirming Windows Hypervisor Platform, deleting the service, clearing `C:\ProgramData\Claude`, reinstalling, and rebooting.</summary>
     <category term="Cowork &amp; remote"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Always Allow for shell redirects can write rules that never satisfy the blocked gate.</title>
-    <id>https://framework.boucle.sh/limitations.html#always-allow-for-shell-redirects-can-write-noop-rules</id>
-    <link href="https://framework.boucle.sh/limitations.html#always-allow-for-shell-redirects-can-write-noop-rules"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.241 repro found that when a Bash command is blocked because shell output redirection writes outside the session working directory, the permission prompt can still offer an `Always Allow` option that persists Bash and Read rules. Those rules do not cover the filesystem write gate that actually blocked the redirect, so the byte-identical command prompts again one tool call later and keeps proposing the same ineffective persistent grant. Repeated approvals accumulate allow entries while never terminating the prompt loop.</summary>
-    <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Scheduled-task runs can leak completed session process pairs.</title>
-    <id>https://framework.boucle.sh/limitations.html#scheduled-task-runs-can-leak-completed-session-process-pairs</id>
-    <link href="https://framework.boucle.sh/limitations.html#scheduled-task-runs-can-leak-completed-session-process-pairs"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported macOS Claude Code 2.1.237 Desktop scheduled-task setup completed each task normally, wrote an `end_turn` transcript, then left both the `Contents/Helpers/disclaimer` parent and `claude` child process alive indefinitely. The reporter found 33 leaked sessions across 8 scheduled tasks, including a 21-second job still resident 29 hours later, with each child holding API connections and about 220 MB. On a host with one hourly task plus several daily tasks, the accumulated leak was estimated around 16 GB of resident memory per day.</summary>
-    <category term="Scheduling &amp; remote triggers"/>
   </entry>
 </feed>
