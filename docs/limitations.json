@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1749,
+  "count": 1751,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 161,
@@ -34,9 +34,9 @@
     "Worktrees & isolation": 14,
     "File system & paths": 13,
     "MCP integration": 13,
+    "Skills": 13,
     "Git & repository safety": 12,
     "Plugin & channel system": 12,
-    "Skills": 11,
     "UX & display": 11,
     "Configuration & settings": 10,
     "Model behavior & output": 10,
@@ -193,7 +193,7 @@
   },
   "severity_counts": {
     "CRITICAL": 154,
-    "HIGH": 987,
+    "HIGH": 989,
     "LOW": 109,
     "MEDIUM": 499
   },
@@ -22648,30 +22648,56 @@
       "date_added": "2026-08-24",
       "description": "A reported Claude Code 2.1.241 macOS session launched as bare `claude` with no permission-mode flags, no `autoMode` or `permissionMode` keys in user or project settings, and a cached `tengu_auto_mode_default_on: false` flag, yet the footer immediately showed auto mode on before any user interaction. The reporter also observed a separate first-turn session behaving as auto mode without prior permission prompts. A silent default flip matters because auto mode skips per-action confirmations users may rely on for file edits and shell execution.",
       "workaround": "Do not assume a fresh Claude Code session starts in manual or prompt-confirmed mode just because settings omit auto-mode keys or cached flags say the default is off. On every update or new machine, inspect the footer before risky work and run a harmless command that should prompt under the intended mode. If auto mode appears unexpectedly, switch modes manually or set an explicit permission mode before continuing, then preserve the version, settings files, process flags, and cached feature-flag state for the upstream report."
+    },
+    {
+      "id": "skill-arguments-frontmatter-can-be-lost-on-skill-tool-invocation",
+      "title": "Skill `arguments` frontmatter can be lost on Skill-tool invocation.",
+      "category": "Skills",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89225"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code 2.1.241 macOS plugin skill declared `arguments: base repo` and `context: fork`, but when invoked through the Skill tool with two clean arguments, the skill reported receiving no arguments at all. A same-session control skill without an `arguments` key received raw arguments normally, and typed slash-command invocation of the affected skill had substituted correctly in an earlier session. The reporter inferred that declaring `arguments` may move Skill-tool invocation onto a named-substitution path that consumes the raw ARGUMENTS passthrough without applying `$name` substitution.",
+      "workaround": "Do not assume `arguments:` frontmatter works on every skill invocation path until the installed Claude Code version proves it. For skills that choose a repository, base branch, output path, or other safety-sensitive target from arguments, echo the resolved arguments and cwd at startup and fail closed if any required value is empty. Prefer typed slash-command invocation or a wrapper agent with explicit validated inputs for release, review, PR, and cross-repo workflows, and preserve both the skill base-directory line and argument echo when reporting mismatches."
+    },
+    {
+      "id": "same-named-project-skills-can-lose-to-user-scoped-skills",
+      "title": "Same-named project skills can lose to user-scoped skills.",
+      "category": "Skills",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89207"
+      ],
+      "status": "open",
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code 2.1.232 setup found that when `~/.claude/skills/<name>/SKILL.md` and `<repo>/.claude/skills/<name>/SKILL.md` both existed, invoking the skill from inside the repository loaded the user-scoped skill instead of the project-scoped one. The report says this contradicts the documented Skill tool rule that directory-scoped skills should be selected by the most specific directory containing the files being worked on. The mismatch is silent unless the user inspects the launched skill's base directory or the global skill explicitly checks for a project override.",
+      "workaround": "Avoid relying on same-name global and project skills as an override mechanism until the target Claude Code version proves most-specific resolution in a fresh session. Give project-specific skills unique names, or add a startup canary that prints the skill base directory and refuses to continue if it is not under the intended repository. For critical repo-local policy or review skills, have the global fallback check for `.claude/skills/<name>/SKILL.md` under the current repo and instruct the assistant to read and follow that file manually when the wrong scope loads."
     }
   ],
   "status_summary": {
-    "open": 1735,
+    "open": 1737,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 154,
-    "high": 987,
+    "high": 989,
     "low": 109,
     "medium": 499
   },
   "lastUpdated": "2026-08-24",
   "stats": {
-    "total": 1749,
+    "total": 1751,
     "critical": 154,
-    "high": 987,
+    "high": 989,
     "medium": 499,
     "low": 109,
-    "open": 1735,
+    "open": 1737,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-24",
-  "total": 1749
+  "total": 1751
 }
