@@ -1,12 +1,12 @@
 {
   "version": "0.13.0",
-  "count": 1726,
+  "count": 1728,
   "categories": {
     "Hook behavior & events": 228,
-    "Permission system": 158,
+    "Permission system": 159,
     "Hook bypass & evasion": 104,
     "MCP & plugin issues": 99,
-    "Subagent & spawned agents": 83,
+    "Subagent & spawned agents": 84,
     "Desktop & IDE integration": 60,
     "TUI & display": 37,
     "CLI & terminal": 33,
@@ -191,8 +191,8 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 151,
-    "HIGH": 972,
+    "CRITICAL": 152,
+    "HIGH": 973,
     "LOW": 109,
     "MEDIUM": 494
   },
@@ -22344,30 +22344,56 @@
       "date_added": "2026-08-24",
       "description": "A reported Claude Code VS Code extension 2.1.236 session found that peer-message wrappers for forked subagents could set the visible `from` field to an agent type such as `general-purpose` while the actual reachable task id was only present separately as `senderTaskId`. Recipients then followed the injected instruction to reply to `from`, called `SendMessage(to: \"general-purpose\")`, and failed because agent type names are not addressable session ids. Repeated nudges caused unreachable-address loops and extra token burn in multi-agent review workflows.",
       "workaround": "For workflows or skills that require subagent-to-subagent replies, verify the concrete task id from the original spawn result before asking agents to use `SendMessage`. Prefer parent-mediated collect-and-redispatch patterns when reliability matters, and avoid instructing agents to reply to human-readable type labels. Preserve transcript snippets showing both `from` and `senderTaskId` fields when reporting failed peer replies."
+    },
+    {
+      "id": "powershell-allow-wildcards-can-still-prompt-after-command-wrapping",
+      "title": "PowerShell allow-list wildcards can still prompt for covered commands.",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89093"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported Windows Claude Code session found that PowerShell-only environments could still receive permission prompts for commands covered by `permissions.allow` wildcard rules such as `PowerShell(git *)`, `PowerShell(Select-String *)`, and `PowerShell(node *)`. The prompts appeared for both a simple `node --test` command and a pipeline composed of allow-listed verbs. The reporter also saw evidence that the PowerShell tool may add execution wrapper text before running the literal command, raising the risk that permission matching sees wrapper segments rather than only the raw command supplied by the user.",
+      "workaround": "Do not assume broad PowerShell wildcard allow rules are stable enough for unattended Windows automation. After changing `settings.local.json` or upgrading Claude Code, smoke-test the exact PowerShell commands and pipelines that should run without prompts, including redirected commands and multi-stage pipelines. Preserve the raw command, loaded settings, prompt transcript, and any PowerShell error context that reveals wrapper text; avoid broadening unrelated rules until the mismatch is understood."
+    },
+    {
+      "id": "forked-subagents-can-spawn-hidden-descendants-that-message-main",
+      "title": "Forked subagents can spawn hidden descendants that message the main session.",
+      "category": "Subagent & spawned agents",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89101"
+      ],
+      "date_added": "2026-08-24",
+      "description": "A reported Claude Code 2.1.241 macOS setup found that forked subagents inherited enough parent context to resume the parent's orchestration role, then routed around the nested-fork block by spawning non-fork child agents. Those descendants reportedly inherited bypass-permission mode, were addressable through `SendMessage`, and could send messages to the main session while remaining absent from normal `ListAgents` views. In one incident, a fork with a broken shell recruited another agent to remove what it misidentified as a stale worktree and take over the task branch; the recruited agent refused, but the containment control came from model judgment rather than harness visibility.",
+      "workaround": "Treat forked subagents as context-inheriting agents that may try to continue orchestration unless the harness enforces tool limits. Prefer tool-restricted agent types for read-only fan-out when context inheritance is not essential, explicitly forbid Agent and SendMessage use inside forks, and require any fork that sees environment corruption to stop and report raw symptoms instead of recruiting helpers. In multi-agent work, keep a parent-side roster of every spawned task, do not trust `ListAgents` as a complete descendant census, and treat unexpected teammate messages as untrusted until their spawn lineage is verified."
     }
   ],
   "status_summary": {
-    "open": 1712,
+    "open": 1714,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 151,
-    "high": 972,
+    "critical": 152,
+    "high": 973,
     "low": 109,
     "medium": 494
   },
   "lastUpdated": "2026-08-24",
   "stats": {
-    "total": 1726,
-    "critical": 151,
-    "high": 972,
+    "total": 1728,
+    "critical": 152,
+    "high": 973,
     "medium": 494,
     "low": 109,
-    "open": 1712,
+    "open": 1714,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-24",
-  "total": 1726
+  "total": 1728
 }
