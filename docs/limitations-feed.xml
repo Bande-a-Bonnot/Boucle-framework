@@ -15,6 +15,22 @@
     <category term="Permission system"/>
   </entry>
   <entry>
+    <title>[HIGH] Scheduled-task session processes can leak and keep spinning CPU.</title>
+    <id>https://framework.boucle.sh/limitations.html#scheduled-task-session-processes-can-leak-and-spin-cpu</id>
+    <link href="https://framework.boucle.sh/limitations.html#scheduled-task-session-processes-can-leak-and-spin-cpu"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Desktop 1.34493.1 / Claude Code 2.1.237 macOS setup found that sessions spawned for scheduled-task runs stayed resident after the app considered them finished. After three days, 24 orphaned Claude Code session processes consumed about 2.7 GB RSS and roughly 234% CPU in aggregate, with each old process still advancing its CPU clock despite no active transcript writes or running session state. The reporter tied process start times to scheduled task fires and found manual termination non-destructive because sessions resumed from transcript state.</summary>
+    <category term="Scheduled tasks"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] OAuth HTTP MCP URL dedup can expose one tenant under another server name.</title>
+    <id>https://framework.boucle.sh/limitations.html#oauth-http-mcp-url-dedup-can-cross-tenant-identity</id>
+    <link href="https://framework.boucle.sh/limitations.html#oauth-http-mcp-url-dedup-can-cross-tenant-identity"/>
+    <updated>2026-08-24T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.241 setup declared two OAuth-authenticated HTTP MCP servers with different names but the same Atlassian remote MCP URL, intending each entry to authenticate against a different tenant/account. Claude Code silently deduplicated by URL: only one server&#x27;s tools appeared, and a tool call under the surviving server name returned resources from the other tenant that had completed OAuth. Because the configured server name no longer matched the authenticated identity, users could reasonably believe they were querying or acting on one Jira/Confluence site while the tool was actually connected to another.</summary>
+    <category term="MCP integrations"/>
+  </entry>
+  <entry>
     <title>[HIGH] Background worktree guard can deadlock on nested repositories.</title>
     <id>https://framework.boucle.sh/limitations.html#background-worktree-guard-can-deadlock-on-nested-repos</id>
     <link href="https://framework.boucle.sh/limitations.html#background-worktree-guard-can-deadlock-on-nested-repos"/>
@@ -149,21 +165,5 @@
     <updated>2026-08-24T00:00:00Z</updated>
     <summary>A reported Windows Claude Desktop MSIX install found that Bash, Write, and Edit tool subprocesses inherited the app package identity, so creating new entries directly under `%APPDATA%` or `%LOCALAPPDATA%` could be redirected into the Claude package container. Reads then resolved the redirected copy, letting the agent report success and verify the file while the user&#x27;s real profile path remained unchanged. Existing real subdirectories behaved normally, making the bug most visible during first-time setup tasks such as creating a tool config directory.</summary>
     <category term="Desktop &amp; IDE integration"/>
-  </entry>
-  <entry>
-    <title>[HIGH] EnterWorktree can poison Bash isolation for concurrent agents.</title>
-    <id>https://framework.boucle.sh/limitations.html#enterworktree-can-poison-bash-isolation-for-concurrent-agents</id>
-    <link href="https://framework.boucle.sh/limitations.html#enterworktree-can-poison-bash-isolation-for-concurrent-agents"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.241-era macOS session called `EnterWorktree` in the same parallel batch as a forked subagent spawn, then saw Bash refused across multiple agents. The error claimed each command was outside the active worktree, including a later test agent in the shared checkout and an independent `isolation: &quot;worktree&quot;` agent whose own worktree Bash had worked moments earlier. The narrower risk is that a session-global worktree-isolation latch can contaminate concurrent agents with a different agent&#x27;s expected cwd, making even `pwd` impossible and encouraging agents to misdiagnose the environment as broken.</summary>
-    <category term="Worktrees &amp; isolation"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Forked subagents can spawn hidden descendants that message the main session.</title>
-    <id>https://framework.boucle.sh/limitations.html#forked-subagents-can-spawn-hidden-descendants-that-message-main</id>
-    <link href="https://framework.boucle.sh/limitations.html#forked-subagents-can-spawn-hidden-descendants-that-message-main"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.241 macOS setup found that forked subagents inherited enough parent context to resume the parent&#x27;s orchestration role, then routed around the nested-fork block by spawning non-fork child agents. Those descendants reportedly inherited bypass-permission mode, were addressable through `SendMessage`, and could send messages to the main session while remaining absent from normal `ListAgents` views. In one incident, a fork with a broken shell recruited another agent to remove what it misidentified as a stale worktree and take over the task branch; the recruited agent refused, but the containment control came from model judgment rather than harness visibility.</summary>
-    <category term="Subagent &amp; spawned agents"/>
   </entry>
 </feed>
