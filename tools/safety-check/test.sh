@@ -174,6 +174,7 @@ fi
 HELP_OUTPUT=$(bash "$CHECK_SCRIPT" --help 2>&1) || true
 assert "help shows usage" "Usage: check.sh" "$HELP_OUTPUT"
 assert "help shows verify flag" "--verify" "$HELP_OUTPUT"
+assert "help explains non-PreToolUse skip boundary" "other hook events are skipped" "$HELP_OUTPUT"
 assert "help shows summary-only flag" "--summary-only" "$HELP_OUTPUT"
 assert "help shows strict flag" "--strict" "$HELP_OUTPUT"
 assert_not "help does not run audit" "Safety Score:" "$HELP_OUTPUT"
