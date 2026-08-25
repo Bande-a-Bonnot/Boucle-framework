@@ -6,7 +6,9 @@
 # Strict CI gate: curl -fsSL ... | bash -s -- --verify --strict
 #
 # Audits your Claude Code setup and scores it for safety.
-# --verify sends test payloads to PreToolUse hooks and checks they actually block.
+# --verify sends representative payloads to PreToolUse hooks and checks they
+# actually block. Other hook events are inventoried but skipped for payload
+# checks because they do not receive PreToolUse tool-call input.
 # No hook installation required for the audit. Requires bash and python3.
 
 set -euo pipefail
@@ -18,7 +20,7 @@ Claude Code Safety Check
 Usage: check.sh [--verify] [--summary-only] [--strict] [--help]
 
 Options:
-  --verify        Send representative payloads to installed PreToolUse hooks and detect FAIL-OPEN results.
+  --verify        Send representative payloads to installed PreToolUse hooks and detect FAIL-OPEN results; other hook events are skipped.
   --summary-only  Print only the bounded copy/paste support summary.
   --strict        With --verify, exit 1 when hook verification fails or is inconclusive.
   --help          Show this help text.
