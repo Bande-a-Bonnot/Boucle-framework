@@ -45,9 +45,11 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 ```
 
 A passing workstation check means the installed `PreToolUse` hooks blocked their
-representative payloads in the current shell environment. Re-run it from the
-same shell or terminal profile you use to start Claude Code, because environment
-flags such as `IS_DEMO` and `CLAUDE_CODE_SIMPLE` can change hook behavior.
+representative payloads in the current shell environment. Other hook events are
+inventoried and reported, but skipped for payload verification because they do
+not receive `PreToolUse` tool payloads. Re-run it from the same shell or
+terminal profile you use to start Claude Code, because environment flags such as
+`IS_DEMO` and `CLAUDE_CODE_SIMPLE` can change hook behavior.
 The fallback above moves to the git root when there is one and otherwise stays
 in the directory you use for Claude Code. Run it from the project root that
 contains `.claude/settings.json`; a subdirectory run can miss project hooks
@@ -200,16 +202,17 @@ safety-check audit and its `--strict` exit behavior.
 
 | Result | Meaning |
 |--------|---------|
-| Exit `0` with `Verify: 0 FAIL-OPEN` | The checked hooks passed representative payload checks. |
+| Exit `0` with `Verify: 0 FAIL-OPEN` | The checked `PreToolUse` hooks passed representative payload checks. |
 | Exit `1` with `no hooks found` | The checked environment has no hook layer to verify. |
 | Exit `1` with `no payload checks ran` | Hooks were present, but safety-check could not send representative payloads. |
 | Exit `1` with `FAIL-OPEN` | At least one hook did not block a dangerous representative payload. |
 | Exit `1` with skipped `PreToolUse` checks | A `PreToolUse` hook command was too dynamic to verify automatically. |
 
 Lifecycle hooks such as `SessionStart`, `Stop`, and `PostToolUse` are reported
-but are not hard-blocking `PreToolUse` checks. If your safety boundary depends on
-blocking file writes or shell commands, keep at least one verifiable
-`PreToolUse` hook in the checked settings.
+but skipped for payload verification; they are not hard-blocking `PreToolUse`
+checks. If your safety boundary depends on blocking file writes or shell
+commands, keep at least one verifiable `PreToolUse` hook in the checked
+settings.
 
 ## Common fixes
 
