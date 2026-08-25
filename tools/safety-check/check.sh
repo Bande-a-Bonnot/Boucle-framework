@@ -2555,7 +2555,7 @@ if [ "$VERIFY_RAN" = "1" ]; then
     elif [ "$VERIFY_NO_HOOKS" != "1" ] && [ "$VERIFY_PRETOOLUSE_SKIP" -gt 0 ]; then
         printf "Boundary: resolve skipped PreToolUse hook checks before trusting strict verification.\n"
     elif [ "$VERIFY_NO_HOOKS" != "1" ]; then
-        printf "Boundary: hooks passed representative checks; document residual platform warnings.\n"
+        printf "Boundary: PreToolUse hooks passed representative checks; document residual platform warnings.\n"
     fi
 fi
 printf "github.com/Bande-a-Bonnot/Boucle-framework\n"

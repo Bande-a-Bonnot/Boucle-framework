@@ -73,7 +73,7 @@ Grade C | 73% | 3/8 hooks
 [-] branch-guard  [-] session-log  [-] enforce  [-] worktree-guard
 Issue: Sandbox mode enabled; do not rely on repeated approval prompts for sensitive commands.
 Verify: 0 FAIL-OPEN | 8 payload checks | 0 skipped
-Boundary: hooks passed representative checks; document residual platform warnings.
+Boundary: PreToolUse hooks passed representative checks; document residual platform warnings.
 github.com/Bande-a-Bonnot/Boucle-framework
 --- End Safety Summary ---
 ```
