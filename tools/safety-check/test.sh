@@ -1237,7 +1237,7 @@ assert "verify custom command counted skipped" "1 skipped" "$VCUSTOM_OUTPUT"
 assert "verify custom command says no payload checks ran" "No payload checks ran" "$VCUSTOM_OUTPUT"
 assert "verify custom command summary has zero payload checks" "Verify: 0 FAIL-OPEN | 0 payload checks | 1 skipped" "$VCUSTOM_OUTPUT"
 assert "verify custom command boundary says unresolved skipped hooks" "Boundary: no hook payload checks ran; resolve skipped PreToolUse hooks" "$VCUSTOM_OUTPUT"
-assert_not "verify custom command not representative pass" "Boundary: hooks passed representative checks" "$VCUSTOM_OUTPUT"
+assert_not "verify custom command not representative pass" "Boundary: PreToolUse hooks passed representative checks" "$VCUSTOM_OUTPUT"
 set +e
 VCUSTOM_STRICT_OUTPUT=$(bash "$CHECK_SCRIPT" --verify --strict 2>&1)
 VCUSTOM_STRICT_EXIT=$?
@@ -1284,7 +1284,7 @@ VMIXEDSKIP
 VMIXED_SKIP_OUTPUT=$(bash "$CHECK_SCRIPT" --verify 2>&1) || true
 assert "mixed skipped pretooluse still reports passing payloads" "All 2 payload checks passed" "$VMIXED_SKIP_OUTPUT"
 assert "mixed skipped pretooluse names strict boundary" "Boundary: resolve skipped PreToolUse hook checks before trusting strict verification" "$VMIXED_SKIP_OUTPUT"
-assert_not "mixed skipped pretooluse not representative pass" "Boundary: hooks passed representative checks" "$VMIXED_SKIP_OUTPUT"
+assert_not "mixed skipped pretooluse not representative pass" "Boundary: PreToolUse hooks passed representative checks" "$VMIXED_SKIP_OUTPUT"
 set +e
 VMIXED_SKIP_STRICT_OUTPUT=$(bash "$CHECK_SCRIPT" --verify --strict 2>&1)
 VMIXED_SKIP_STRICT_EXIT=$?
@@ -1325,7 +1325,7 @@ assert "verify lifecycle counted skipped" "1 skipped" "$VLIFECYCLE_OUTPUT"
 assert "verify lifecycle says no payload checks ran" "No payload checks ran" "$VLIFECYCLE_OUTPUT"
 assert "verify lifecycle summary has zero payload checks" "Verify: 0 FAIL-OPEN | 0 payload checks | 1 skipped" "$VLIFECYCLE_OUTPUT"
 assert "verify lifecycle boundary says no pretooluse checks ran" "Boundary: no PreToolUse payload checks ran" "$VLIFECYCLE_OUTPUT"
-assert_not "verify lifecycle not representative pass" "Boundary: hooks passed representative checks" "$VLIFECYCLE_OUTPUT"
+assert_not "verify lifecycle not representative pass" "Boundary: PreToolUse hooks passed representative checks" "$VLIFECYCLE_OUTPUT"
 set +e
 VLIFECYCLE_STRICT_OUTPUT=$(bash "$CHECK_SCRIPT" --verify --strict 2>&1)
 VLIFECYCLE_STRICT_EXIT=$?
@@ -3896,7 +3896,7 @@ assert "verify boundary section present" "Verification boundary" "$BOUNDARY_OUTP
 assert "verify boundary reports zero fail-open" "Zero FAIL-OPEN hooks" "$BOUNDARY_OUTPUT"
 assert "verify boundary explains residual risk" "residual platform risk" "$BOUNDARY_OUTPUT"
 assert "summary includes verify fail-open count" "Verify: 0 FAIL-OPEN" "$BOUNDARY_OUTPUT"
-assert "summary includes verify boundary copy" "Boundary: hooks passed representative checks" "$BOUNDARY_OUTPUT"
+assert "summary includes verify boundary copy" "Boundary: PreToolUse hooks passed representative checks" "$BOUNDARY_OUTPUT"
 rm -rf "$TMPDIR_VERIFY_BOUNDARY"
 
 # Test: public copy/paste summary redacts exact HOME paths

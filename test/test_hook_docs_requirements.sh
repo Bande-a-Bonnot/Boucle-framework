@@ -276,7 +276,7 @@ docs = {
         "Passed hooks with residual warnings",
         "Do not reinstall repeatedly just to improve",
         "Verify: 0 FAIL-OPEN | 8 payload checks | 0 skipped",
-        "Boundary: hooks passed representative checks; document residual platform warnings.",
+        "Boundary: PreToolUse hooks passed representative checks; document residual platform warnings.",
         "not that Claude Code is sandboxed or certified safe",
     ],
     repo / "tools" / "safety-check" / "QUICKSTART.md": [

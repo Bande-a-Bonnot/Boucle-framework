@@ -162,7 +162,7 @@ A useful baseline looks like this:
 
 ```text
 Verify: 0 FAIL-OPEN | 8 payload checks | 0 skipped
-Boundary: hooks passed representative checks; document residual platform warnings.
+Boundary: PreToolUse hooks passed representative checks; document residual platform warnings.
 ```
 
 At that point, keep the verified boundary clear:

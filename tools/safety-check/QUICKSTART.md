@@ -260,7 +260,7 @@ baseline looks like this:
 
 ```text
 Verify: 0 FAIL-OPEN | 8 payload checks | 0 skipped
-Boundary: hooks passed representative checks; document residual platform warnings.
+Boundary: PreToolUse hooks passed representative checks; document residual platform warnings.
 ```
 
 If the summary says `Verify: not run`, `no hooks found`, or `no hook payload
