@@ -72,6 +72,9 @@ docs = {
         "Setting up the boundary intentionally edits project files first",
         "Use a disposable branch or worktree when the main checkout must stay untouched",
         "npm view @anthropic-ai/claude-code version dist-tags",
+        'If `latest` and `stable` differ, choose the channel deliberately',
+        'autoUpdatesChannel: "latest"` can relink back to stable',
+        "autoupdateschannel-latest-downgrades-to-stable",
         "<a id=\"test-hook\"></a>",
     ],
     repo / "tools" / "README.md": [

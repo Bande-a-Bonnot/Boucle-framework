@@ -767,6 +767,11 @@ and the npm package tags before pinning a version:
 npm view @anthropic-ai/claude-code version dist-tags
 ```
 
+If `latest` and `stable` differ, choose the channel deliberately and verify the
+running binary after restart. Claude Code has had channel-resolution bugs where
+`autoUpdatesChannel: "latest"` can relink back to stable; see the
+[known limitation](https://framework.boucle.sh/limitations.html#autoupdateschannel-latest-downgrades-to-stable).
+
 Then run `safety-check` with `--verify` to confirm hooks fire correctly in your
 environment. The versions below are historical hook-related breakpoints, not a
 current-release tracker:
