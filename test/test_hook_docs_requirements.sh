@@ -306,6 +306,7 @@ docs = {
         "Command/scope: real project-root --verify --summary-only",
         "Command/scope: isolated first test",
         "--- End Safety Summary ---",
+        "Staged diff and destination reviewed separately: yes / no / not applicable",
         "install user-level hooks under",
         "register them in `~/.claude/settings.json`",
         "do not create repo-local `.claude/settings.json` policy",
