@@ -754,5 +754,21 @@ for path, snippets in banned.items():
 if violations:
     raise SystemExit("Hook requirements docs contain stale wording:\n" + "\n".join(violations))
 
+entrypoint_style_files = [
+    repo / "README.md",
+    repo / "docs" / "index.html",
+]
+style_violations = []
+for path in entrypoint_style_files:
+    for line_no, line in enumerate(path.read_text().splitlines(), 1):
+        if "—" in line:
+            style_violations.append(f"{path.relative_to(repo)}:{line_no}: replace em dash")
+
+if style_violations:
+    raise SystemExit(
+        "Hook entrypoint docs contain public-facing em dashes:\n"
+        + "\n".join(style_violations)
+    )
+
 print("Hook docs requirements OK")
 PY
