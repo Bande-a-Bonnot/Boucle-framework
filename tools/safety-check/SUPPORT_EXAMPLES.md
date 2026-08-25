@@ -29,6 +29,7 @@ Where hooks are installed: user settings
 Command/scope: real project-root --verify --summary-only
 What changed recently: Claude Code update, then install.sh upgrade
 Pre-update baseline: summary/version captured
+Next intended action: local fix
 
 --- Safety Summary (copy/paste) ---
 Grade: C
@@ -64,6 +65,7 @@ Where hooks are installed: user settings
 Command/scope: real project-root --verify --summary-only
 What changed recently: fresh recommended install
 Pre-update baseline: not an update issue
+Next intended action: audit only
 
 --- Safety Summary (copy/paste) ---
 Grade C | 73% | 3/8 hooks
@@ -96,6 +98,7 @@ Where hooks are installed: not inspected
 Command/scope: isolated first test
 What changed recently: first look at safety-check
 Pre-update baseline: not an update issue
+Next intended action: audit only
 Scope: isolated first test with temporary HOME and temporary project
 
 --- Safety Summary (copy/paste) ---
@@ -126,6 +129,8 @@ Command/scope: real project-root --verify
 What changed recently: moved the repository to a new checkout path
 Pre-update baseline: not an update issue
 Hook source: framework git-safe hook, not custom
+Next intended action: local fix before commit or push
+Staged diff and destination reviewed separately: not applicable
 
 --- Safety Summary (copy/paste) ---
 Grade D | 62% | 4/8 hooks
@@ -154,6 +159,7 @@ Where hooks are installed: user settings
 Command/scope: native install.ps1 verify
 What changed recently: fresh recommended install
 Pre-update baseline: not an update issue
+Next intended action: audit only
 
 PowerShell verifier:
 2 passed, 1 warnings, 1 skipped.
@@ -172,6 +178,7 @@ Where hooks are installed: none detected
 Command/scope: native install.ps1 verify
 What changed recently: checking before first install
 Pre-update baseline: not an update issue
+Next intended action: audit only
 
 PowerShell verifier:
 No hooks installed. Run: install.ps1 recommended
@@ -199,6 +206,10 @@ Claude tried to read /Users/alice/work/acme-private/customer-data/.env
 Those snippets can reveal usernames, repository names, private hook locations,
 tokens, or sensitive file names. Rerun `--summary-only` and post the bounded
 summary instead.
+
+When the next action is a commit, push, or public report, add whether the staged
+diff and destination were reviewed separately. The safety summary proves only the
+checked hook boundary, not that the pending publication is safe.
 
 ## If the summary is not enough
 
