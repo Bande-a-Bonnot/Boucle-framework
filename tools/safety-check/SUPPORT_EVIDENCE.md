@@ -123,6 +123,7 @@ Where hooks are installed: user settings / project settings / both / not sure
 Command/scope: real project-root --verify / isolated first test / native install.ps1 verify
 What changed recently: fresh install / Claude Code update / settings edit / moved hook files
 Pre-update baseline: summary/version captured / not captured / not an update issue
+Next intended action: audit only / local fix / commit / push / public report
 ```
 
 If `claude --version` hangs, write `Claude Code version: version probe hangs`.
@@ -139,6 +140,13 @@ hook-boundary check. If you ran the temporary first test, write
 `Command/scope: isolated first test` and treat the result as startup evidence
 only. The next useful support report is a real project-root `--verify
 --summary-only` run from the directory where Claude Code will work.
+
+If the next intended action is `commit`, `push`, or `public report`, inspect the
+staged diff, destination branch, and remote target separately before approving
+that action. A clean safety summary is evidence about the local hook boundary. It
+is not evidence that the current staged content is safe to publish, that secrets
+were not committed before hooks were installed, or that a remote push has been
+approved.
 
 ## 4. Read the summary before posting
 
@@ -222,6 +230,8 @@ Where hooks are installed:
 Command/scope:
 What changed recently:
 Pre-update baseline:
+Next intended action:
+Staged diff and destination reviewed separately: yes / no / not applicable
 
 --- Safety Summary (copy/paste) ---
 ...

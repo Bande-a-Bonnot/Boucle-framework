@@ -452,6 +452,7 @@ PY
 <span class="prompt-char">$</span> grep '"git push' ~/.claude/session-logs/*.jsonl</code>
                     </div>
                     <p class="brief">When Claude says "I pushed", "I ran tests", or "I only read files", check the log for the actual tool call and, for Bash, its recorded exit code. A claimed action without a matching log entry should be treated as unverified.</p>
+                    <p class="brief">For commit or push work, also inspect the staged diff and the exact remote target before approval. Hook verification can show that local guardrails responded to representative payloads; it does not prove the current staged content is safe to publish.</p>
                     <p class="brief">On native Windows, install and verify the PowerShell hook with PowerShell 7. The native hook writes the same JSONL format, but the report helper is a Bash script in the repository, so use Git Bash or WSL for the summary report if needed.</p>
                     <div class="code-block">
                         <code><span class="prompt-char">PS&gt;</span> $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2&gt;$null }
@@ -480,9 +481,11 @@ Shell:
 Claude Code version:
 Where hooks are installed:
 What changed recently:
-Pre-update baseline: summary/version captured / not captured / not an update issue</code>
+Pre-update baseline: summary/version captured / not captured / not an update issue
+Next intended action: audit only / local fix / commit / push / public report</code>
                     </div>
                     <p class="brief">For failures after a Claude Code update, say whether you captured the pre-update version and bounded summary from the update checklist. Do not paste both full command outputs; the key distinction is whether the new strict result is a regression from a known baseline or the first verified result for an already-untrusted setup.</p>
+                    <p class="brief">If the next action is commit, push, or public report, say whether the staged diff and destination have been reviewed separately. The safety summary is support evidence for the hook boundary, not approval to publish repository contents, logs, settings, or secrets.</p>
                     <p class="brief">If native PowerShell verification is the only available path, copy the final count line and any <code>WARN</code> or <code>SKIP</code> lines instead of the startup hook table:</p>
                     <div class="code-block">
                         <code><span class="prompt-char">PS&gt;</span> $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2&gt;$null }
@@ -543,6 +546,8 @@ jobs:
 - Hooks installed in: user settings / project settings / both / not sure
 - Command used:
 - Fresh Claude Code session started after verification: yes / no
+- Next intended action: audit only / local fix / commit / push / public report
+- Staged diff and destination reviewed separately: yes / no / not applicable
 - Result:
 
 --- Safety Summary (copy/paste) ---
