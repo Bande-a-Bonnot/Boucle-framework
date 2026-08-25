@@ -440,6 +440,7 @@ summary block, including the command/scope and update baseline:
 ```text
 Command/scope: real project-root --verify --summary-only
 Pre-update baseline: summary/version captured / not captured / not an update issue
+Fresh Claude Code session from verified root: started / not yet / not changed
 ```
 
 For failures after a Claude Code update, this tells a maintainer whether the
@@ -447,6 +448,10 @@ new strict result is a regression from a known baseline or the first verified
 result for an already-untrusted setup. For first-test reports, use
 `Command/scope: isolated first test` so the result is not mistaken for a real
 hook-boundary verification.
+
+Use `started` only after starting Claude Code again from the same project root
+after an install, upgrade, restore, or hook repair. If you only ran shell-side
+verification, write `not yet`.
 
 Copy the block that starts with:
 

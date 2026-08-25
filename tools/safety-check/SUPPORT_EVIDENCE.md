@@ -123,6 +123,7 @@ Where hooks are installed: user settings / project settings / both / not sure
 Command/scope: real project-root --verify / isolated first test / native install.ps1 verify
 What changed recently: fresh install / Claude Code update / settings edit / moved hook files
 Pre-update baseline: summary/version captured / not captured / not an update issue
+Fresh Claude Code session from verified root: started / not yet / not changed
 Next intended action: audit only / local fix / commit / push / public report
 ```
 
@@ -134,6 +135,12 @@ the pre-update version and bounded summary from the update checklist. Do not
 paste both full command outputs. A maintainer usually needs to know whether the
 new strict verification result is a regression from a known baseline or the
 first verified result for an already-untrusted setup.
+
+If you installed, upgraded, restored, or repaired hooks, restart Claude Code
+from the same project root before writing `started` in the fresh-session field.
+A clean shell-side `--verify` result proves the hook scripts and settings file
+responded to representative payloads; it does not prove an already-running
+Claude Code session has reloaded those files.
 
 The command/scope line keeps a first-test report from being mistaken for a real
 hook-boundary check. If you ran the temporary first test, write
@@ -230,6 +237,7 @@ Where hooks are installed:
 Command/scope:
 What changed recently:
 Pre-update baseline:
+Fresh Claude Code session from verified root:
 Next intended action:
 Staged diff and destination reviewed separately: yes / no / not applicable
 
