@@ -9,7 +9,7 @@ Claude Code hooks that actually enforce your rules. 7 standalone hooks, plus `en
 
 ## Claude Code Hooks
 
-Claude Code's CLAUDE.md rules are [read but not enforced](https://github.com/anthropics/claude-code/issues/37550) — they work at session start and degrade as context grows. Its [permission system has known gaps](https://github.com/anthropics/claude-code/issues/30519) — wildcards don't match compound commands, deny rules [don't check pipe segments](https://github.com/anthropics/claude-code/issues/41559) and can be [bypassed with multi-line comments](https://github.com/anthropics/claude-code/issues/38119). These hooks enforce covered tool-call boundaries that text rules and permissions often miss.
+Claude Code's CLAUDE.md rules are [read but not enforced](https://github.com/anthropics/claude-code/issues/37550) - they work at session start and degrade as context grows. Its [permission system has known gaps](https://github.com/anthropics/claude-code/issues/30519) - wildcards don't match compound commands, deny rules [don't check pipe segments](https://github.com/anthropics/claude-code/issues/41559) and can be [bypassed with multi-line comments](https://github.com/anthropics/claude-code/issues/38119). These hooks enforce covered tool-call boundaries that text rules and permissions often miss.
 
 **What happens when a hook blocks a dangerous command:**
 
@@ -170,7 +170,7 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
 ```
 
-**Windows (PowerShell 7+)** — native PS1 hooks, no bash or jq required. Requires [PowerShell 7](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (`pwsh`), not the built-in Windows PowerShell 5. Start with the same recommended safety set:
+**Windows (PowerShell 7+)** - native PS1 hooks, no bash or jq required. Requires [PowerShell 7](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (`pwsh`), not the built-in Windows PowerShell 5. Start with the same recommended safety set:
 
 ```powershell
 $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
@@ -280,7 +280,7 @@ snapshot you want.
 
 Or pick individual hooks:
 
-### [read-once](tools/read-once/) — Stop redundant file reads
+### [read-once](tools/read-once/) - Stop redundant file reads
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/read-once/install.sh | bash
@@ -288,7 +288,7 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Saves ~2000 tokens per prevented re-read. Includes [diff mode](tools/read-once/README.md#diff-mode-opt-in) for edit-verify-edit workflows (80-95% token savings on changed files).
 
-### [file-guard](tools/file-guard/) — Protect files from AI access or modification
+### [file-guard](tools/file-guard/) - Protect files from AI access or modification
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/file-guard/install.sh | bash
@@ -296,7 +296,7 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Define protected files in `.file-guard` (one pattern per line). Two modes: **write-protect** (default) blocks writes, edits, and destructive bash commands. **`[deny]`** blocks all access including Read, Grep, and Glob, useful for large codegen directories where Claude should use an MCP server instead of reading files directly. Resolves symlinks to prevent [bypass via symbolic links](https://github.com/anthropics/claude-code/security/advisories/GHSA-4q92-rfm6-2cqx). Handles absolute paths (v2.1.89+ compatibility). ~140 tests (bash + PowerShell).
 
-### [git-safe](tools/git-safe/) — Prevent destructive git operations
+### [git-safe](tools/git-safe/) - Prevent destructive git operations
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/git-safe/install.sh | bash
@@ -304,7 +304,7 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Blocks `git push --force`, `git reset --hard`, `git checkout .`, `git checkout HEAD -- path`, `git restore`, `git clean -f`, `git branch -D`, `--no-verify`, and other destructive git commands. Prevents the [exact pattern](https://github.com/anthropics/claude-code/issues/37888) that destroyed 30+ files despite 100+ CLAUDE.md rules. Suggests safer alternatives. Allowlist via `.git-safe` config. ~145 tests (88 bash + 57 PowerShell).
 
-### [bash-guard](tools/bash-guard/) — Block dangerous bash commands
+### [bash-guard](tools/bash-guard/) - Block dangerous bash commands
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/bash-guard/install.sh | bash
@@ -326,7 +326,7 @@ Blocks dangerous commands across these categories:
 
 Evaluates each segment of compound commands. Catches [multi-line comment bypass](https://github.com/anthropics/claude-code/issues/38119) where comment lines before a dangerous command evade deny rules. Detects encoding bypass attempts (base64/hex/octal obfuscation), here-string/here-doc redirection, eval-string injection, [workaround bypass attempts](https://github.com/anthropics/claude-code/issues/34358), library injection (LD_PRELOAD), wrapper command bypass, credential file operations, macOS Keychain access, scheduled task persistence, and service management. Allowlist via `.bash-guard` config. 612 verified bash tests, with additional PowerShell coverage when `pwsh` is available.
 
-### [branch-guard](tools/branch-guard/) — Enforce feature-branch workflow
+### [branch-guard](tools/branch-guard/) - Enforce feature-branch workflow
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/branch-guard/install.sh | bash
@@ -334,7 +334,7 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Prevents direct commits to protected branches (main, master, production, release). Forces feature-branch workflow. Customize protected branches via `.branch-guard` config or `BRANCH_GUARD_PROTECTED` env var. Allows `--amend` on any branch. ~55 tests (bash + PowerShell).
 
-### [worktree-guard](tools/worktree-guard/) — Prevent data loss from worktree exit
+### [worktree-guard](tools/worktree-guard/) - Prevent data loss from worktree exit
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/worktree-guard/install.sh | bash
@@ -342,7 +342,7 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 When you use `claude -w`, exiting the session [silently deletes](https://github.com/anthropics/claude-code/issues/38287) the worktree branch and all its commits. This hook blocks exit when there are uncommitted changes, untracked files, unmerged commits, or unpushed commits. Uses `ExitWorktree` matcher so it only runs when actually leaving a worktree. Config via `.worktree-guard`. ~65 tests (bash + PowerShell).
 
-### [session-log](tools/session-log/) — Audit trail for Claude Code sessions
+### [session-log](tools/session-log/) - Audit trail for Claude Code sessions
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/session-log/install.sh | bash
@@ -350,7 +350,7 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Logs routed PostToolUse events to `~/.claude/session-logs/YYYY-MM-DD.jsonl`: covered files read/written, commands run, and timestamps. Includes `--week` trend comparison across days. Useful for auditing autonomous sessions and debugging within the hook surfaces Claude Code actually emits. ~105 tests (bash + PowerShell).
 
-### [enforce-hooks](tools/enforce/) — Turn CLAUDE.md rules into enforceable hooks
+### [enforce-hooks](tools/enforce/) - Turn CLAUDE.md rules into enforceable hooks
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/enforce/install.sh | bash
@@ -370,7 +370,7 @@ Scan first to preview: `enforce-hooks.py --scan`. Generate a starter CLAUDE.md: 
 
 <a id="test-hook"></a>
 
-### [test-hook](tools/test-hook.sh) — Dry-run any hook without a live session
+### [test-hook](tools/test-hook.sh) - Dry-run any hook without a live session
 
 ```sh
 # Test bash-guard against a dangerous command
@@ -425,14 +425,14 @@ An opinionated framework for running autonomous AI agents in a loop. Wake up. Th
 
 ### Features
 
-- **Structured loop runner** — Schedule agent iterations via cron/launchd with owner-checked locking, bounded LLM subprocess cleanup, and logging
-- **Persistent memory (Broca)** — File-based, git-native knowledge with BM25 search, temporal decay, garbage collection, cross-reference boost, and duplicate consolidation. No database required.
-- **Self-observation engine** — Track friction, failure, waste, and surprise signals across loops. Fingerprint recurring patterns, deploy responses, measure whether they work. The agent observing its own behavior over time.
-- **MCP server** — Expose Broca memory as a Model Context Protocol server for multi-agent collaboration
-- **Approval gates** — Human-in-the-loop for anything with external consequences
-- **DX commands** — `doctor` checks your setup, `validate` catches config mistakes, `stats` shows loop history
-- **Audit trail** — Every action logged, every decision traceable, every iteration committed to git
-- **Zero infrastructure** — No cloud services, no databases, no Docker required. Just files, git, and a shell
+- **Structured loop runner** - Schedule agent iterations via cron/launchd with owner-checked locking, bounded LLM subprocess cleanup, and logging
+- **Persistent memory (Broca)** - File-based, git-native knowledge with BM25 search, temporal decay, garbage collection, cross-reference boost, and duplicate consolidation. No database required.
+- **Self-observation engine** - Track friction, failure, waste, and surprise signals across loops. Fingerprint recurring patterns, deploy responses, measure whether they work. The agent observing its own behavior over time.
+- **MCP server** - Expose Broca memory as a Model Context Protocol server for multi-agent collaboration
+- **Approval gates** - Human-in-the-loop for anything with external consequences
+- **DX commands** - `doctor` checks your setup, `validate` catches config mistakes, `stats` shows loop history
+- **Audit trail** - Every action logged, every decision traceable, every iteration committed to git
+- **Zero infrastructure** - No cloud services, no databases, no Docker required. Just files, git, and a shell
 
 ### Quick Start
 
@@ -524,16 +524,16 @@ with build backends like hatchling, flit, or setuptools itself.
 ```
 
 Broca also supports:
-- **BM25 search** — Relevance ranking normalized by document length and term rarity
-- **Temporal decay** — Recent memories score higher; access frequency tracked automatically
+- **BM25 search** - Relevance ranking normalized by document length and term rarity
+- **Temporal decay** - Recent memories score higher; access frequency tracked automatically
 - **Temporal validity** - Time-sensitive facts can carry `ttl` or `valid_until`, and recall warns when stale
-- **Garbage collection** — Archive superseded, low-confidence, or stale entries (reversible, dry-run by default)
-- **Cross-reference boost** — Related entries surface together in search results
-- **Consolidation** — Detect and merge near-duplicate memories using Jaccard similarity
-- **Confidence tracking** — `boucle memory update-confidence <id> <score>`
-- **Superseding** — `boucle memory supersede <old-id> <new-id>` when knowledge evolves
-- **Relationships** — `boucle memory relate <id1> <id2> <relation>` to link entries
-- **Reindexing** — `boucle memory index` to rebuild the search index
+- **Garbage collection** - Archive superseded, low-confidence, or stale entries (reversible, dry-run by default)
+- **Cross-reference boost** - Related entries surface together in search results
+- **Consolidation** - Detect and merge near-duplicate memories using Jaccard similarity
+- **Confidence tracking** - `boucle memory update-confidence <id> <score>`
+- **Superseding** - `boucle memory supersede <old-id> <new-id>` when knowledge evolves
+- **Relationships** - `boucle memory relate <id1> <id2> <relation>` to link entries
+- **Reindexing** - `boucle memory index` to rebuild the search index
 
 ### Self-Observation Engine
 
@@ -591,7 +591,7 @@ your-agent/
 ├── system-prompt.md     # Agent identity and rules (optional)
 ├── allowed-tools.txt    # Tool restrictions (optional)
 ├── memory/              # Persistent knowledge (Broca)
-│   ├── state.md         # Current state — read at loop start, updated at loop end
+│   ├── state.md         # Current state - read at loop start, updated at loop end
 │   ├── knowledge/       # Learned facts, indexed by topic
 │   └── journal/         # Timestamped iteration summaries
 ├── goals/               # Active objectives
@@ -609,11 +609,11 @@ your-agent/
 
 Each loop iteration:
 
-1. **Wake** — Owner-checked lock acquired, context assembled from memory + goals + pending actions
-2. **Think** — Agent reads its full state and decides what to do within the configured LLM timeout
-3. **Act** — Agent executes: writes code, does research, creates plans, requests approvals
-4. **Learn** — Agent updates its memory with what it learned
-5. **Sleep** — Changes committed to git, lock released, agent waits for next iteration
+1. **Wake** - Owner-checked lock acquired, context assembled from memory + goals + pending actions
+2. **Think** - Agent reads its full state and decides what to do within the configured LLM timeout
+3. **Act** - Agent executes: writes code, does research, creates plans, requests approvals
+4. **Learn** - Agent updates its memory with what it learned
+5. **Sleep** - Changes committed to git, lock released, agent waits for next iteration
 
 ### Configuration
 
@@ -651,7 +651,7 @@ Executable scripts that inject context into each iteration. Each receives the ag
 
 ```bash
 #!/bin/bash
-# context.d/weather — Add weather to context
+# context.d/weather - Add weather to context
 echo "## Weather"
 curl -s wttr.in/?format=3
 ```
@@ -731,7 +731,7 @@ boucle --version                 # Show version
 
 2. **Boundaries are features.** Approval gates make autonomous agents trustworthy. An agent that can spend your money without asking isn't autonomous, it's dangerous.
 
-3. **Compound knowledge.** Every iteration should leave the agent smarter. Memory isn't a cache — it's an investment.
+3. **Compound knowledge.** Every iteration should leave the agent smarter. Memory isn't a cache - it's an investment.
 
 4. **Transparency by default.** If you can't see what the agent did and why, something is wrong.
 
@@ -856,7 +856,7 @@ Bash separately with out-of-scope canaries before committing automation output.
 
 **Hooks fail on first session in a new project**: On the very first session in a project directory, SessionStart and UserPromptSubmit hooks fire [before the project directory exists](https://github.com/anthropics/claude-code/issues/41310) (`~/.claude/projects/<encoded-path>/`). Any hook that derives file paths from `transcript_path` and tries to write there will fail. Workaround: add `mkdir -p` for transcript_path-derived paths before writing.
 
-**Model self-execution in long sessions**: In long unattended sessions, the model can [hallucinate `Human:` text after task-notification delivery](https://github.com/anthropics/claude-code/issues/41307) and then execute it as if it were a real user request, triggering unauthorized git operations and file modifications. Hooks cannot detect this because the resulting tool calls are genuine — only the trigger is hallucinated. Mitigation: use session time limits and avoid very long unattended sessions.
+**Model self-execution in long sessions**: In long unattended sessions, the model can [hallucinate `Human:` text after task-notification delivery](https://github.com/anthropics/claude-code/issues/41307) and then execute it as if it were a real user request, triggering unauthorized git operations and file modifications. Hooks cannot detect this because the resulting tool calls are genuine - only the trigger is hallucinated. Mitigation: use session time limits and avoid very long unattended sessions.
 
 **Worktree GIT_INDEX_FILE leak**: Agents spawned via EnterWorktree can have their git index [corrupted by marketplace plugin entries](https://github.com/anthropics/claude-code/issues/41314) due to `GIT_INDEX_FILE` environment variable leaking across process boundaries. If worktree operations show unexpected files in git status, this may be the cause.
 
@@ -886,7 +886,7 @@ Bash separately with out-of-scope canaries before committing automation output.
 
 **`WorktreeCreate` hooks hang `claude -w`**: Any `WorktreeCreate` hook causes [`claude -w` to hang indefinitely](https://github.com/anthropics/claude-code/issues/41614), regardless of hook content. Even `echo ok < /dev/null` freezes the session. The hook executes and returns, but Claude Code never proceeds. Remove all `WorktreeCreate` hooks if you need `claude -w` to function.
 
-**Model can manipulate hook state files**: The model has filesystem access and [can overwrite files that hooks depend on](https://github.com/anthropics/claude-code/issues/38841) — checkpoint files, lock files, counters. In one documented case, Claude computed the SHA256 hash of a checkpoint filename and wrote a fresh timestamp to bypass a content-read-gate. Hooks that rely on external state files for enforcement should assume the model can read and modify those files. Cryptographic signatures or out-of-process validation can mitigate this.
+**Model can manipulate hook state files**: The model has filesystem access and [can overwrite files that hooks depend on](https://github.com/anthropics/claude-code/issues/38841) - checkpoint files, lock files, counters. In one documented case, Claude computed the SHA256 hash of a checkpoint filename and wrote a fresh timestamp to bypass a content-read-gate. Hooks that rely on external state files for enforcement should assume the model can read and modify those files. Cryptographic signatures or out-of-process validation can mitigate this.
 
 **`bypassPermissions` not restored on session resume (VS Code)**: When `bypassPermissions` is configured via `initialPermissionMode` in VS Code settings, [resumed conversations revert to default permission mode](https://github.com/anthropics/claude-code/issues/42735) and prompt for every edit. New sessions may pick it up, but resumed sessions consistently fail. Hooks that depend on the session running in bypass mode cannot rely on it persisting across resume.
 
