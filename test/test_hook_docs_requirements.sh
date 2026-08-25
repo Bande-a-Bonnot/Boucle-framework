@@ -721,6 +721,7 @@ banned = {
         "Boucle-framework has 96 stars",
         "not yet in the official docs",
         "real payloads",
+        "All seven hooks have native",
     ],
     repo / "docs" / "recipes.html": [
         "Blocks Read, Edit, Write, and Bash access to matching paths",
@@ -731,6 +732,7 @@ banned = {
     repo / "tools" / "enforce" / "README.md": [
         "The current docs still describe",
         "The docs still say",
+        "All 7 Boucle hooks now ship native PowerShell equivalents",
     ],
     repo / "docs" / "index.html": [
         "218 Rust tests",

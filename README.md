@@ -898,7 +898,7 @@ Bash separately with out-of-scope canaries before committing automation output.
 
 **Plan mode bypass after first cycle**: After completing one plan-approve-implement cycle, entering plan mode again [does not reliably enforce read-only restrictions](https://github.com/anthropics/claude-code/issues/43147). Claude carries over the "approved" mental state and begins editing files before the user approves the new plan. Hooks that rely on plan mode as a safety boundary cannot trust it across multiple cycles in the same session.
 
-**Windows**: All seven hooks have native **PowerShell 7+** equivalents (`hook.ps1`) that require no external dependencies. Requires [PowerShell 7](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (`pwsh`), not the built-in Windows PowerShell 5. Install them from the project root and verify them with:
+**Windows**: All seven standalone hooks have native **PowerShell 7+** equivalents (`hook.ps1`) that require no external dependencies. Requires [PowerShell 7](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) (`pwsh`), not the built-in Windows PowerShell 5. Install them from the project root and verify them with:
 
 ```powershell
 $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
