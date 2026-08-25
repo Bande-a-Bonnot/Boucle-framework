@@ -76,7 +76,10 @@ disappear.
 
 ## Verify it
 
-The default audit checks whether hooks are configured. Verification mode checks whether installed `PreToolUse` hooks actually block representative Claude-style JSON payloads:
+The default audit checks whether hooks are configured. Verification mode checks
+whether installed `PreToolUse` hooks actually block representative Claude-style
+JSON payloads. Other hook events are inventoried and reported, but skipped for
+payload verification because they do not receive `PreToolUse` tool payloads:
 
 ```sh
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -104,7 +107,12 @@ cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
 ```
 
-Strict mode still prints the full audit, then exits `1` if verification finds a `FAIL-OPEN` hook, no hooks, no payload checks, a skipped `PreToolUse` hook check, or broken hook files. It exits `0` only when every configured `PreToolUse` hook was checked or explicitly passed representative payload checks, and hook files are healthy.
+Strict mode still prints the full audit, then exits `1` if verification finds a
+`FAIL-OPEN` hook, no hooks, no payload checks, a skipped `PreToolUse` hook
+check, or broken hook files. It exits `0` only when every configured
+`PreToolUse` hook was checked or explicitly passed representative payload
+checks, and hook files are healthy. Skipped non-`PreToolUse` hook events remain
+inventory unless no `PreToolUse` payload checks ran.
 
 See [scripted checks](CI.md) for GitHub Actions, workstation scripts, exit
 codes, and the limits of what repository CI can prove.
@@ -257,7 +265,8 @@ Each failed check shows a one-liner fix command.
 ## Verify mode
 
 The basic check only confirms hooks are registered. Use `--verify` to send
-representative test payloads and confirm hooks actually block the covered cases:
+representative test payloads to installed `PreToolUse` hooks and confirm they
+actually block the covered cases:
 
 ```sh
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -265,10 +274,10 @@ cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify
 ```
 
-This invokes each installed hook with representative dangerous payloads (like
-`rm -rf /`) encoded as hook input and checks the response. It does not execute
-the shell or git commands named inside those payloads. Hooks that fail to block
-are flagged as **FAIL-OPEN**.
+This invokes installed `PreToolUse` hooks with representative dangerous
+payloads (like `rm -rf /`) encoded as hook input and checks the response. It
+does not execute the shell or git commands named inside those payloads. Hooks
+that fail to block are flagged as **FAIL-OPEN**.
 
 ```
 Hook Verification (sending representative test payloads)
