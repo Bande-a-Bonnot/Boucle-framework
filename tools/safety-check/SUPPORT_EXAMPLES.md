@@ -29,6 +29,7 @@ Where hooks are installed: user settings
 Command/scope: real project-root --verify --summary-only
 What changed recently: Claude Code update, then install.sh upgrade
 Pre-update baseline: summary/version captured
+Fresh Claude Code session from verified root: started
 Next intended action: local fix
 
 --- Safety Summary (copy/paste) ---
@@ -44,8 +45,9 @@ github.com/Bande-a-Bonnot/Boucle-framework
 
 That is enough for triage because it includes the OS, shell, recent change,
 whether there is a pre-update baseline, summary issues, verification counts,
-boundary line, and support URL. The summary should redact the home directory as
-`~` and the current checkout as `<project>`.
+whether a fresh session has loaded the verified root, boundary line, and support
+URL. The summary should redact the home directory as `~` and the current
+checkout as `<project>`.
 In this example, `summary/version captured` means both the old Claude Code
 version and the bounded safety summary were recorded before the update. If only
 one was captured, say `not captured`.
@@ -65,6 +67,7 @@ Where hooks are installed: user settings
 Command/scope: real project-root --verify --summary-only
 What changed recently: fresh recommended install
 Pre-update baseline: not an update issue
+Fresh Claude Code session from verified root: not yet
 Next intended action: audit only
 
 --- Safety Summary (copy/paste) ---
@@ -98,6 +101,7 @@ Where hooks are installed: not inspected
 Command/scope: isolated first test
 What changed recently: first look at safety-check
 Pre-update baseline: not an update issue
+Fresh Claude Code session from verified root: not changed
 Next intended action: audit only
 Scope: isolated first test with temporary HOME and temporary project
 
@@ -129,6 +133,7 @@ Command/scope: real project-root --verify
 What changed recently: moved the repository to a new checkout path
 Pre-update baseline: not an update issue
 Hook source: framework git-safe hook, not custom
+Fresh Claude Code session from verified root: not yet
 Next intended action: local fix before commit or push
 Staged diff and destination reviewed separately: not applicable
 
@@ -159,6 +164,7 @@ Where hooks are installed: user settings
 Command/scope: native install.ps1 verify
 What changed recently: fresh recommended install
 Pre-update baseline: not an update issue
+Fresh Claude Code session from verified root: started
 Next intended action: audit only
 
 PowerShell verifier:
@@ -178,6 +184,7 @@ Where hooks are installed: none detected
 Command/scope: native install.ps1 verify
 What changed recently: checking before first install
 Pre-update baseline: not an update issue
+Fresh Claude Code session from verified root: not changed
 Next intended action: audit only
 
 PowerShell verifier:
