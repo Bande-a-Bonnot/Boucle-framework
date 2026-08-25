@@ -109,7 +109,7 @@ instead of sharing your real workspace, then run the bounded summary there:
   printf '{"hooks":{}}\n' > "$tmpdir/.claude/settings.json"
   cd "$tmpdir"
 
-  curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | HOME="$tmp_home" bash -s -- --verify --summary-only
+  curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | PYTHONDONTWRITEBYTECODE=1 HOME="$tmp_home" bash -s -- --verify --summary-only
   if [ "${KEEP_BOUCLE_REPRO:-0}" = "1" ]; then
     printf 'Temporary HOME: %s\nTemporary project: %s\n' "$tmp_home" "$tmpdir"
   fi
@@ -124,7 +124,8 @@ snippet removes the known throwaway settings file and then removes the
 temporary directories only if they are empty; set `KEEP_BOUCLE_REPRO=1` in the
 same shell before running it if you need to inspect them afterward. If anything
 unexpected remains, the paths are printed so you can inspect and remove them
-manually.
+manually. `PYTHONDONTWRITEBYTECODE=1` prevents Python cache files from making the
+temporary `HOME` look unexpectedly dirty.
 
 ## 5. Recheck triggers
 
