@@ -126,9 +126,15 @@ jobs:
         run: |
           test -f .claude/settings.json
           tmp_home="$(mktemp -d)"
-          trap 'rm -rf "$tmp_home"' EXIT
+          cleanup() {
+            rmdir "$tmp_home" 2>/dev/null || {
+              printf 'Temporary HOME was not empty; inspect and remove manually:\n'
+              printf '  %s\n' "$tmp_home"
+            }
+          }
+          trap cleanup EXIT
           curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh -o /tmp/safety-check.sh
-          SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 HOME="$tmp_home" bash /tmp/safety-check.sh --verify --strict
+          SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 PYTHONDONTWRITEBYTECODE=1 HOME="$tmp_home" bash /tmp/safety-check.sh --verify --strict
 ```
 
 `SAFETY_CHECK_SKIP_CLAUDE_VERSION=1` skips the optional `claude --version` probe
@@ -139,6 +145,9 @@ if the repository policy file is missing, and the temporary `HOME` prevents
 global Claude Code settings on self-hosted runners from masking that mistake.
 Drop the temporary `HOME` only when the job is intentionally testing hooks
 installed into the CI user's home directory during the same run.
+The cleanup uses `rmdir` instead of recursively deleting the temporary `HOME`.
+If a hook, shell startup file, or unexpected tool writes there, the path is left
+behind for CI log inspection instead of being silently removed.
 
 ## Native PowerShell hooks in CI
 
@@ -170,9 +179,15 @@ jobs:
         run: |
           test -f .claude/settings.json
           tmp_home="$(mktemp -d)"
-          trap 'rm -rf "$tmp_home"' EXIT
+          cleanup() {
+            rmdir "$tmp_home" 2>/dev/null || {
+              printf 'Temporary HOME was not empty; inspect and remove manually:\n'
+              printf '  %s\n' "$tmp_home"
+            }
+          }
+          trap cleanup EXIT
           curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh -o /tmp/safety-check.sh
-          SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 HOME="$tmp_home" bash /tmp/safety-check.sh --verify --strict
+          SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 PYTHONDONTWRITEBYTECODE=1 HOME="$tmp_home" bash /tmp/safety-check.sh --verify --strict
 ```
 
 For native Windows user-level installs, `install.ps1 verify` tests Boucle's
