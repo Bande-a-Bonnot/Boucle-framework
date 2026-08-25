@@ -210,7 +210,9 @@ recommended` when only the native user-level hooks were present.
 The basic audit can confirm that hooks are registered. Verification mode sends
 representative Claude-style JSON payloads to installed `PreToolUse` hooks and
 checks whether they block. It invokes the hook scripts; it does not execute the
-dangerous shell or git commands named inside those payloads:
+dangerous shell or git commands named inside those payloads. Other hook events
+are inventoried and reported, but skipped for payload verification because they
+do not receive `PreToolUse` tool payloads:
 
 ```sh
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"

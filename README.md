@@ -53,7 +53,7 @@ content and runs it locally on your current project and Claude Code settings.
 The checker does not upload your `settings.json`, hook files, shell history,
 repository contents, session logs, or safety summary output.
 
-Scores your Claude Code safety configuration from A to F and shows one-liner fixes for each gap. Add `--verify` to send representative hook payloads to each hook and confirm they actually block covered cases. Verification invokes the hook scripts with Claude-style JSON input; it does not execute the dangerous shell or git commands named in those payloads:
+Scores your Claude Code safety configuration from A to F and shows one-liner fixes for each gap. Add `--verify` to send representative hook payloads to installed `PreToolUse` hooks and confirm they actually block covered cases. Other hook events are inventoried and reported, but skipped for payload verification because they do not receive `PreToolUse` tool payloads. Verification invokes the hook scripts with Claude-style JSON input; it does not execute the dangerous shell or git commands named in those payloads:
 
 ```sh
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
