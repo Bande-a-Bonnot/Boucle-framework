@@ -45,6 +45,8 @@ Claude Code hook boundary checked:
 - Hooks installed in: user settings / project settings / both / not sure
 - Command used:
 - Command/scope: real project-root --verify / isolated reproduction / native install.ps1 verify
+- What changed recently: fresh install / Claude Code update / settings edit / hook edit / moved hook files
+- Pre-update baseline: summary/version captured / not captured / not an update issue
 - Fresh Claude Code session started after verification: yes / no
 - Result:
 
@@ -56,6 +58,7 @@ Residual platform warnings:
 - ...
 
 Next intended action: audit only / local fix / commit / push / public report
+Staged diff and destination reviewed separately: yes / no / not applicable
 Next recheck trigger:
 - Claude Code update / settings edit / hook edit / launch directory change / before risky automation
 ```
@@ -77,6 +80,13 @@ Treat this as a boundary statement, not a certificate.
 - A Grade C with `Verify: 0 FAIL-OPEN` often means hooks passed but Claude Code
   platform warnings remain. Record those warnings instead of reinstalling
   repeatedly.
+
+For update handoffs, write `summary/version captured` only when the old Claude
+Code version and bounded safety summary were recorded before the update. If the
+next intended action is `commit`, `push`, or `public report`, inspect the staged
+diff, destination branch, and remote target separately before approval. Hook
+verification proves only the checked hook boundary, not that the pending
+publication is safe.
 
 Use the [triage guide](TRIAGE.md) when the summary has multiple findings and
 you need a repair order.
