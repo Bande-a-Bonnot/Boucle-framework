@@ -518,11 +518,18 @@ jobs:
         run: |
           test -f .claude/settings.json
           tmp_home="$(mktemp -d)"
-          trap 'rm -rf "$tmp_home"' EXIT
+          cleanup() {
+            rmdir "$tmp_home" 2&gt;/dev/null || {
+              printf 'Temporary HOME was not empty; inspect and remove manually:\n'
+              printf '  %s\n' "$tmp_home"
+            }
+          }
+          trap cleanup EXIT
           curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh -o /tmp/safety-check.sh
-          SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 HOME="$tmp_home" bash /tmp/safety-check.sh --verify --strict</code>
+          SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 PYTHONDONTWRITEBYTECODE=1 HOME="$tmp_home" bash /tmp/safety-check.sh --verify --strict</code>
                     </div>
                     <p class="brief">The <code>test -f .claude/settings.json</code> line fails early when the repository policy file is absent. The temporary <code>HOME</code> prevents a self-hosted runner's global Claude Code settings from making the job pass when the checked-out repository has no working hook layer.</p>
+                    <p class="brief">The cleanup uses <code>rmdir</code> instead of recursive deletion. If a hook, shell startup file, or unexpected tool writes into the temporary home, the path is left in the CI log for inspection.</p>
                     <p class="brief">Do not treat <code>install.sh recommended</code> in CI as proof that repo-local policy is protected. That installs user-level hooks under the runner's temporary <code>HOME</code>. It is useful as an installer smoke test, but it does not prove the checked-out <code>.claude/settings.json</code> or repository hook files protect developers.</p>
                     <p class="brief">For native PowerShell hook scripts, use a runner where both <code>bash</code> and <code>pwsh</code> are available so <code>safety-check --verify --strict</code> can execute the checked-in <code>.ps1</code> commands. Do not use <code>install.ps1 verify</code> as proof for repo-local hooks; it verifies Boucle hooks installed under the CI user's home directory.</p>
                     <p class="brief" style="color: var(--muted-color);">Full workflow examples and expected failure modes: <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/CI.md">scripted safety-check checks</a>.</p>
