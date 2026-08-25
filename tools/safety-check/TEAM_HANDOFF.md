@@ -44,6 +44,7 @@ Claude Code hook boundary checked:
 - Claude Code version:
 - Hooks installed in: user settings / project settings / both / not sure
 - Command used:
+- Command/scope: real project-root --verify / isolated reproduction / native install.ps1 verify
 - Fresh Claude Code session started after verification: yes / no
 - Result:
 
@@ -54,6 +55,7 @@ Claude Code hook boundary checked:
 Residual platform warnings:
 - ...
 
+Next intended action: audit only / local fix / commit / push / public report
 Next recheck trigger:
 - Claude Code update / settings edit / hook edit / launch directory change / before risky automation
 ```
@@ -94,7 +96,11 @@ instead of sharing your real workspace, then run the bounded summary there:
   tmp_home="$(mktemp -d)"
   cleanup() {
     if [ "${KEEP_BOUCLE_REPRO:-0}" != "1" ]; then
-      rm -rf "$tmpdir" "$tmp_home"
+      rm -f "$tmpdir/.claude/settings.json"
+      rmdir "$tmpdir/.claude/hooks" "$tmpdir/.claude" "$tmpdir" "$tmp_home" 2>/dev/null || {
+        printf 'Temporary directories were not empty; inspect and remove manually:\n'
+        printf '  %s\n  %s\n' "$tmp_home" "$tmpdir"
+      }
     fi
   }
   trap cleanup EXIT
@@ -114,9 +120,11 @@ Replace the sample settings with the smallest redacted file that reproduces the
 problem. Keep only throwaway hook scripts and placeholder paths. The temporary
 `HOME` prevents your real user-level Claude Code hooks from making the
 reproduction look safer or noisier than the redacted project settings. The
-snippet removes the temporary directories when it finishes; set
-`KEEP_BOUCLE_REPRO=1` in the same shell before running it if you need to inspect
-them afterward.
+snippet removes the known throwaway settings file and then removes the
+temporary directories only if they are empty; set `KEEP_BOUCLE_REPRO=1` in the
+same shell before running it if you need to inspect them afterward. If anything
+unexpected remains, the paths are printed so you can inspect and remove them
+manually.
 
 ## 5. Recheck triggers
 
