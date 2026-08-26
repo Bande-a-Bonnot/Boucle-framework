@@ -95,6 +95,8 @@ docs = {
         "Git Bash or WSL for safety-check",
         "tools/install.ps1) } recommended",
         "To choose hooks interactively instead",
+        "After installing on macOS/Linux, verify that the hooks actually block payloads",
+        "For native Windows, use the PowerShell verifier and doctor from the same root",
         "stderr` and exit code 2",
         'JSON `permissionDecision: "deny"`',
         "not a universal hard-block contract",

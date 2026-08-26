@@ -71,8 +71,8 @@ subcommand runs safety-check, which is bash-based and needs Git Bash, WSL, or
 similar. The safety-check summary has 8 hook slots because it also counts
 `enforce-hooks`, which installs separately from the standalone hook suite.
 
-After installing, verify that the hooks actually block payloads and then run the
-doctor if anything looks wrong:
+After installing on macOS/Linux, verify that the hooks actually block payloads
+and then run the doctor if anything looks wrong:
 
 ```bash
 root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -89,6 +89,8 @@ this as an ancestor project settings warning.
 After a clean verification, start a fresh Claude Code session from that same
 root before trusting newly installed or upgraded hooks; an existing session may
 have loaded the previous settings or hook files.
+
+For native Windows, use the PowerShell verifier and doctor from the same root:
 
 ```powershell
 $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
