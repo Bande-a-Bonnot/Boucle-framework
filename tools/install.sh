@@ -89,9 +89,10 @@ RECOMMENDED_HOOKS="bash-guard git-safe file-guard"
 
 # Handle help subcommand
 if [ $# -gt 0 ] && { [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; }; then
-  echo -e "${BOLD}Usage:${RESET} install.sh <command> [args]"
+  echo -e "${BOLD}Usage:${RESET} install.sh [command] [args]"
   echo ""
   echo -e "${BOLD}Commands:${RESET}"
+  echo "  (no command)          Pick hooks interactively; when piped, install recommended"
   echo "  recommended           Install the 3 essential hooks (bash-guard, git-safe, file-guard)"
   echo "  all                   Install all 7 hooks"
   echo "  <hook> [hook...]      Install specific hooks by name"
