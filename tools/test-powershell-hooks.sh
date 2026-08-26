@@ -165,6 +165,13 @@ else
     fail "PowerShell installer: help examples omit backup listing or restore"
 fi
 
+if grep -q 'Usage: install\.ps1 \[command\] \[args\]' "$SCRIPT_DIR/install.ps1" &&
+   grep -q '(no command).*Pick hooks interactively' "$SCRIPT_DIR/install.ps1"; then
+    pass "PowerShell installer: help explains optional command behavior"
+else
+    fail "PowerShell installer: help does not explain optional command behavior"
+fi
+
 echo ""
 
 # branch-guard.ps1

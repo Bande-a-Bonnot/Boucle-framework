@@ -301,9 +301,10 @@ function Invoke-HookVerification {
 
 # Handle help subcommand
 if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq '--help' -or $Hooks[0] -eq '-h')) {
-    Write-Host "Usage: install.ps1 <command> [args]" -ForegroundColor White
+    Write-Host "Usage: install.ps1 [command] [args]" -ForegroundColor White
     Write-Host ""
     Write-Host "Commands:" -ForegroundColor White
+    Write-Host "  (no command)          Pick hooks interactively"
     Write-Host "  recommended           Install the 3 essential hooks (bash-guard, git-safe, file-guard)"
     Write-Host "  all                   Install all 7 hooks"
     Write-Host "  <hook> [hook...]      Install specific hooks by name"

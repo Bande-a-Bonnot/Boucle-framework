@@ -828,6 +828,13 @@ else
   fail "help missing commands section"
 fi
 
+if grep -q "Usage:.*install.sh \\[command\\] \\[args\\]" <<< "$output" &&
+   grep -q "(no command).*Pick hooks interactively; when piped, install recommended" <<< "$output"; then
+  pass "help explains optional command behavior"
+else
+  fail "help does not explain optional command behavior"
+fi
+
 if grep -q "recommended" <<< "$output"; then
   pass "help mentions recommended"
 else
