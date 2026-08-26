@@ -60,6 +60,7 @@ checks = [
             "Git Bash, WSL, or another `bash` on PATH",
             "$root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }\nif ($root) { Set-Location $root }\niex \"& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended",
             "tools/install.ps1) } recommended\"\niex \"& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify",
+            "tools/install.ps1) } upgrade\"\niex \"& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor\"\niex \"& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify",
             "For native `install.ps1 verify`, there is no safety summary block",
             "On native Windows with `install.ps1 verify`, copy only the final verifier count",
             "The PowerShell verifier does not print the\n`--- Safety Summary (copy/paste) ---` block",
