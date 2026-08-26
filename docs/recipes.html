@@ -532,6 +532,22 @@ jobs:
           SAFETY_CHECK_SKIP_CLAUDE_VERSION=1 PYTHONDONTWRITEBYTECODE=1 HOME="$tmp_home" bash /tmp/safety-check.sh --verify --strict</code>
                     </div>
                     <p class="brief">The <code>test -f .claude/settings.json</code> line fails early when the repository policy file is absent. The temporary <code>HOME</code> prevents a self-hosted runner's global Claude Code settings from making the job pass when the checked-out repository has no working hook layer.</p>
+                    <p class="brief">For a runnable sample, commit a minimal hook such as <code>hooks/block-dangerous-bash.sh</code> that reads the hook JSON from stdin and exits <code>2</code> for destructive commands:</p>
+                    <div class="code-block">
+                        <code>#!/usr/bin/env bash
+set -euo pipefail
+
+payload="$(cat)"
+tool="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("tool_name", ""))' &lt;&lt;&lt;"$payload")"
+command="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("tool_input", {}).get("command", ""))' &lt;&lt;&lt;"$payload")"
+
+if [ "$tool" = "Bash" ] &amp;&amp; printf '%s\n' "$command" | grep -Eq '(^|[;&amp;|[:space:]])rm[[:space:]]+-rf([[:space:]]|$)'; then
+  echo "Blocked destructive rm -rf command" &gt;&amp;2
+  exit 2
+fi
+
+exit 0</code>
+                    </div>
                     <p class="brief">The cleanup uses <code>rmdir</code> instead of recursive deletion. If a hook, shell startup file, or unexpected tool writes into the temporary home, the path is left in the CI log for inspection.</p>
                     <p class="brief">Do not treat <code>install.sh recommended</code> in CI as proof that repo-local policy is protected. That installs user-level hooks under the runner's temporary <code>HOME</code>. It is useful as an installer smoke test, but it does not prove the checked-out <code>.claude/settings.json</code> or repository hook files protect developers.</p>
                     <p class="brief">For native PowerShell hook scripts, use a runner where both <code>bash</code> and <code>pwsh</code> are available so <code>safety-check --verify --strict</code> can execute the checked-in <code>.ps1</code> commands. Do not use <code>install.ps1 verify</code> as proof for repo-local hooks; it verifies Boucle hooks installed under the CI user's home directory.</p>

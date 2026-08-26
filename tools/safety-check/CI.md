@@ -110,6 +110,24 @@ the named interpreter, and avoid depending on the executable bit. Commit both
 the hook script and `.claude/settings.json`; otherwise CI may only prove that the
 temporary runner has no hook layer.
 
+Minimal hook script:
+
+```sh
+#!/usr/bin/env bash
+set -euo pipefail
+
+payload="$(cat)"
+tool="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("tool_name", ""))' <<<"$payload")"
+command="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("tool_input", {}).get("command", ""))' <<<"$payload")"
+
+if [ "$tool" = "Bash" ] && printf '%s\n' "$command" | grep -Eq '(^|[;&|[:space:]])rm[[:space:]]+-rf([[:space:]]|$)'; then
+  echo "Blocked destructive rm -rf command" >&2
+  exit 2
+fi
+
+exit 0
+```
+
 ```yaml
 name: claude-code-safety
 
