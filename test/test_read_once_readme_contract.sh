@@ -18,6 +18,9 @@ required = [
     'In deny mode, the same reason is returned with `permissionDecision: "deny"`',
     'Cross-session cache hits are always allowed for the first read in the current session',
     "Claude Code's Edit precondition",
+    'tools/install.ps1) } read-once"',
+    'tools/install.ps1) } verify"',
+    'pwsh read-once.ps1 install',
 ]
 
 missing = [snippet for snippet in required if snippet not in flat]
@@ -30,6 +33,7 @@ if missing:
 banned = [
     "Claude then proceeds without the redundant read",
     "No loss of information",
+    "irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1 | iex",
 ]
 
 violations = [snippet for snippet in banned if snippet in text]

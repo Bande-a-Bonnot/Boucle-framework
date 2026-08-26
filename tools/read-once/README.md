@@ -29,7 +29,8 @@ cd Boucle-framework/tools/read-once
 ### Windows (PowerShell 7+)
 
 ```powershell
-irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1 | iex
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } read-once"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
 
 Or clone and install manually:
