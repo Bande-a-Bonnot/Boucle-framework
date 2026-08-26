@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1770,
+  "count": 1771,
   "categories": {
-    "Hook behavior & events": 228,
+    "Hook behavior & events": 229,
     "Permission system": 162,
     "MCP & plugin issues": 107,
     "Hook bypass & evasion": 105,
@@ -193,11 +193,32 @@
   },
   "severity_counts": {
     "CRITICAL": 156,
-    "HIGH": 1005,
+    "HIGH": 1006,
     "LOW": 109,
     "MEDIUM": 500
   },
   "entries": [
+    {
+      "id": "read-hooks-skip-binary-file-validation-failures",
+      "title": "Read hooks can miss binary-file reads rejected before hook dispatch.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/82442"
+      ],
+      "date_added": "2026-08-26",
+      "description": "A reported Claude Code `Read` workflow found that a `PreToolUse` hook registered with matcher `Read` was not invoked when the target was a binary file such as a `.docx` or `.pdf`. Claude Code returned its built-in binary-file rejection before the hook script wrote its entry marker, while the same hook fired normally for text files in the same session. An Anthropic collaborator reproduced the ordering on Claude Code 2.1.233/Linux, confirming that binary validation can precede `PreToolUse` dispatch for `Read`.",
+      "workaround": "Do not rely on a `PreToolUse(Read)` hook to transparently intercept binary documents and redirect Claude Code to converted Markdown. Use an explicit conversion command, skill, or wrapper workflow before asking Claude Code to read Office/PDF files, and add canaries that probe both text and binary `Read` targets after Claude Code updates. For confidential binary files, keep them outside Claude Code's reachable filesystem or protect them with OS-level permissions, because a `Read` hook may never see the rejected binary path.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "hooks",
+        "read",
+        "binary-files",
+        "validation-order",
+        "documents"
+      ]
+    },
     {
       "id": "read-hooks-miss-bash-mediated-file-reads",
       "title": "Read hooks can miss Bash-mediated file reads in Bash-first modes.",
@@ -22944,27 +22965,27 @@
     }
   ],
   "status_summary": {
-    "open": 1756,
+    "open": 1757,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 156,
-    "high": 1005,
+    "high": 1006,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-26",
   "stats": {
-    "total": 1770,
+    "total": 1771,
     "critical": 156,
-    "high": 1005,
+    "high": 1006,
     "medium": 500,
     "low": 109,
-    "open": 1756,
+    "open": 1757,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-26",
-  "total": 1770
+  "total": 1771
 }
