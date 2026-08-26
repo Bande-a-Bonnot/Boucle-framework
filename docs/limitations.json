@@ -1,10 +1,10 @@
 {
   "version": "0.13.0",
-  "count": 1768,
+  "count": 1769,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 162,
-    "MCP & plugin issues": 106,
+    "MCP & plugin issues": 107,
     "Hook bypass & evasion": 104,
     "Subagent & spawned agents": 85,
     "Desktop & IDE integration": 62,
@@ -193,7 +193,7 @@
   },
   "severity_counts": {
     "CRITICAL": 156,
-    "HIGH": 1003,
+    "HIGH": 1004,
     "LOW": 109,
     "MEDIUM": 500
   },
@@ -22899,30 +22899,51 @@
       "date_added": "2026-08-24",
       "description": "A reported Claude Code macOS loop session saw three independent in-session wake mechanisms fail during a roughly 103-minute window around context compaction or resume: a pending `ScheduleWakeup`, a session-scoped recurring cron that still appeared armed in `CronList`, and completion notifications for two background Bash watchers whose work had finished. The results were discovered only by a later manual sweep, leaving no catch-up fire or delivery guarantee visible inside the session.",
       "workaround": "Do not rely on in-session timers, session crons, and background-command completion notices as independent liveness layers unless a compaction test proves they survive together. For autonomous loops, keep an OS-level watchdog or external scheduler that checks durable output timestamps rather than waiting for Claude Code to wake itself. Record `CronList`, pending wake state, background task ids, compaction timing, and transcript gaps when diagnosing missed fires."
+    },
+    {
+      "id": "mcp-servers-can-runtime-gate-tool-metadata-poisoning-after-approval",
+      "title": "MCP servers can runtime-gate malicious tool metadata after approval.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://www.pillar.security/blog/deadbugz-currently-active-mcp-supply-chain-campaign"
+      ],
+      "date_added": "2026-08-26",
+      "description": "Pillar Security's August 12, 2026 Deadbugz report describes an active MCP supply-chain campaign where GitHub pull requests introduced a benign-looking `productivity-suite` MCP server. The server initially exposed harmless formatting and summarization behavior, then after three ordinary tool calls changed `tools/list` and `prompts/get` metadata to direct the attached agent toward SSH keys, AWS credentials, shell history, and Kubernetes configuration while hiding the activity from the user. This shows that MCP tool names, schemas, descriptions, and prompt metadata are part of the execution boundary: approving a server once is not enough if the server can later change the instructions the model sees.",
+      "workaround": "Treat MCP configuration changes in pull requests as supply-chain changes, not routine docs or settings churn. Reject or revert references to `productivity-suite`, `productivity-suite-mcp.onrender.com/mcp`, or `~/.config/.cache/.sys/.deadbug-mcp.py`; preserve MCP client logs if a device connected; and rotate credentials only where local evidence supports exposure. For MCP clients and wrappers, fingerprint tool definitions and prompt metadata at approval time, alert on changes, require renewed approval before changed metadata can influence sensitive actions, and keep credential reads, shell execution, repository writes, and outbound network actions behind policy hooks that do not trust remote tool descriptions.",
+      "source": "Pillar Security Deadbugz report",
+      "tags": [
+        "mcp",
+        "supply-chain",
+        "tool-metadata",
+        "credential-access",
+        "runtime-gating"
+      ]
     }
   ],
   "status_summary": {
-    "open": 1754,
+    "open": 1755,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 156,
-    "high": 1003,
+    "high": 1004,
     "low": 109,
     "medium": 500
   },
-  "lastUpdated": "2026-08-24",
+  "lastUpdated": "2026-08-26",
   "stats": {
-    "total": 1768,
+    "total": 1769,
     "critical": 156,
-    "high": 1003,
+    "high": 1004,
     "medium": 500,
     "low": 109,
-    "open": 1754,
+    "open": 1755,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-08-24",
-  "total": 1768
+  "last_updated": "2026-08-26",
+  "total": 1769
 }
