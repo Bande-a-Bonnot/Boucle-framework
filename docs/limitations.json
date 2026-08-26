@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1769,
+  "count": 1770,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 162,
     "MCP & plugin issues": 107,
-    "Hook bypass & evasion": 104,
+    "Hook bypass & evasion": 105,
     "Subagent & spawned agents": 85,
     "Desktop & IDE integration": 62,
     "TUI & display": 37,
@@ -193,11 +193,32 @@
   },
   "severity_counts": {
     "CRITICAL": 156,
-    "HIGH": 1004,
+    "HIGH": 1005,
     "LOW": 109,
     "MEDIUM": 500
   },
   "entries": [
+    {
+      "id": "read-hooks-miss-bash-mediated-file-reads",
+      "title": "Read hooks can miss Bash-mediated file reads in Bash-first modes.",
+      "category": "Hook bypass & evasion",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89716"
+      ],
+      "date_added": "2026-08-26",
+      "description": "A reported Claude Code 2.1.193 macOS session found that `PreToolUse` hooks registered for `Read`, `Edit`, `Write`, or `NotebookEdit` were not consulted when auto or bypass-permissions mode steered file access through Bash commands such as `sed -n`, `git diff`, or a `python3` one-liner. The same hook denied a direct `Read` of the protected path class, so the narrowed failure is not the hook script itself; it is that hook matchers see the Claude Code tool name rather than the resolved file operation, while the permission layer already has separate Bash file-command recognition for some static path rules.",
+      "workaround": "Do not assume a `PreToolUse` hook on `Read`, `Edit`, `Write`, or `NotebookEdit` covers file access performed through Bash, PowerShell, scripts, or shell redirection. For sensitive read boundaries, add explicit deny rules and OS-level isolation for static paths, add a separate Bash hook for common read forms you are willing to parse, and run canaries that attempt both a direct `Read` and shell-mediated reads such as `cat`, `sed -n`, `git diff`, and interpreter snippets after each Claude Code update. Treat interpreter reads and other hard-to-parse subprocesses as requiring sandbox or filesystem controls, not just command-string hooks.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "hooks",
+        "read",
+        "bash",
+        "permissions",
+        "confidentiality"
+      ]
+    },
     {
       "id": "permissions-deny-misses-command-substitution-reads",
       "title": "`permissions.deny` can miss file reads inside command substitution.",
@@ -22923,27 +22944,27 @@
     }
   ],
   "status_summary": {
-    "open": 1755,
+    "open": 1756,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 156,
-    "high": 1004,
+    "high": 1005,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-26",
   "stats": {
-    "total": 1769,
+    "total": 1770,
     "critical": 156,
-    "high": 1004,
+    "high": 1005,
     "medium": 500,
     "low": 109,
-    "open": 1755,
+    "open": 1756,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-26",
-  "total": 1769
+  "total": 1770
 }
