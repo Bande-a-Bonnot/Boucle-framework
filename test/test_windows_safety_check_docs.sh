@@ -110,6 +110,14 @@ checks = [
             "if ($root) { Set-Location $root }",
         ],
     ),
+    (
+        repo / "docs" / "recipes.html",
+        [
+            "install the recommended native hooks, doctor, verify, then start a fresh Claude Code session",
+            "tools/install.ps1) } recommended\"\n<span class=\"prompt-char\">PS&gt;</span> iex \"&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor\"\n<span class=\"prompt-char\">PS&gt;</span> iex \"&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify",
+            "<code>install.ps1 recommended</code> + <code>doctor</code> + <code>verify</code>",
+        ],
+    ),
 ]
 
 failures = []
