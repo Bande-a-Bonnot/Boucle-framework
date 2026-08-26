@@ -8,6 +8,8 @@ Run the checklist when any of these changes:
 
 - Claude Code CLI, desktop app, IDE extension, or plugin version.
 - `~/.claude/settings.json` or project `.claude/settings.json`.
+- MCP server configuration, server package, server URL, plugin channel, or
+  trusted tool and prompt metadata.
 - Shell profile, terminal app, WSL distribution, or PowerShell version used to
   launch Claude Code.
 - Hook files, hook permissions, or the directory where Claude Code is started.
@@ -43,6 +45,11 @@ inventory, or `Verify: not run` as a stop signal. Run the longer repair path
 below before trusting the updated session. Treat a passing result as fresh
 boundary evidence only after starting a new Claude Code session from the same
 root.
+
+If the change involved an MCP server, also treat changed tool names, schemas,
+descriptions, prompt text, or server URLs as a renewed approval event. A passing
+hook verifier proves local hooks still execute; it does not prove a remote MCP
+server kept the same instructions or tool surface.
 
 If this is a git checkout, move to the repo root first; otherwise stay in the
 directory you use for Claude Code:
@@ -105,6 +112,23 @@ $stamp = Get-Date -Format yyyyMMdd_HHmmss
 if (Test-Path .claude/settings.json) { Copy-Item .claude/settings.json ".claude/settings.json.$stamp.bak" }
 ```
 
+If MCP servers are part of the trusted boundary, capture the visible server
+state before changing the client, server, plugin, or project config:
+
+```sh
+claude mcp list 2>/dev/null || printf 'claude mcp list failed\n'
+```
+
+On native Windows:
+
+```powershell
+claude mcp list 2>$null
+```
+
+Do not paste `claude mcp get` output into public logs for HTTP servers that may
+store secrets in headers. Use `claude mcp list` for routine status and preserve
+private server logs separately when you need deeper evidence.
+
 ## After updating
 
 Run these from the same project root you use to start Claude Code. If this is a
@@ -142,6 +166,12 @@ files are not enough if an existing session already loaded the old boundary.
 Compare the new version and verification result with the pre-update notes
 before deciding whether a failure is a new regression or an old unverified
 setup.
+
+For MCP-dependent work, check the server list in the fresh session and run one
+harmless read-only tool call from each critical server before allowing
+credential reads, shell execution, repository writes, or outbound network
+actions through that server. Treat changed tool descriptions, prompt metadata,
+or unexpected tools as a stop signal until a human reviews the diff.
 
 Trust the hook layer only if all of these are true:
 
