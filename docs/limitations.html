@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1773</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-26.</span></p>
+        <p class="subtitle"><span id="total-count">1774</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-26.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -20014,6 +20014,18 @@
                         <!-- workaround:sandbox-excludedcommands-can-still-run-sandboxed -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume `sandbox.excludedCommands` proves a command will run outside the sandbox until a same-session probe confirms it. For commands that must use normal network, SSH, or filesystem access, run a harmless bare-command canary such as `git init` in a known writable scratch path or `gh api rate_limit` and inspect whether sandbox proxy variables or Seatbelt denials still apply. Keep explicit sandbox bypasses manual and auditable, and treat any automatic bypass list as untrusted until verified after Claude Code updates and settings-source changes.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89931" target="_blank">#89931</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="89448" id="updatedinput-rewrites-can-bypass-deny-rules" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1774</span>
+                <span class="kl-cat">Hook bypass &amp; evasion</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>PreToolUse updatedInput rewrites can bypass deny rules for the original command.</h3>
+            <p>A reported Claude Code 2.1.241 Windows setup found that when a PreToolUse Bash hook returns `updatedInput`, Claude Code applies the rewrite before matching `permissions.allow` and `permissions.deny` rules. A command-rewriting hook turned commands such as `docker ps` and `git branch -D ...` into wrapper-prefixed forms like `rtk docker ps`; deny rules for the original command families, such as `Bash(docker*)`, then did not fire. The auto-mode classifier sometimes blocked the same command for unrelated heuristic reasons, which made the deny list look healthy until a later run executed the rewritten command.</p>
+                        <!-- workaround:updatedinput-rewrites-can-bypass-deny-rules -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When using command-rewriting PreToolUse hooks, mirror every safety-critical deny rule for both the original and rewritten command forms, and test that the refusal message is the explicit deny-rule message rather than an auto-mode classifier prompt. Prefer having the hook fail closed or decline to rewrite commands that match destructive families such as `git push --force`, `git branch -D`, `docker`, `kubectl`, and `curl`. Re-run these probes after changing wrappers, hook prefixes, shells, or Claude Code versions.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89448" target="_blank">#89448</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
