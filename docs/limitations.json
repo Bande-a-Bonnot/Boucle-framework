@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1772,
+  "count": 1773,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 162,
@@ -13,9 +13,9 @@
     "Platform & compatibility": 35,
     "CLI & terminal": 33,
     "Configuration behavior": 33,
+    "Sandbox & permissions": 33,
     "Security & trust boundaries": 33,
     "Context & memory": 32,
-    "Sandbox & permissions": 32,
     "MCP & integrations": 30,
     "Performance & cost": 27,
     "VS Code extension": 26,
@@ -193,7 +193,7 @@
   },
   "severity_counts": {
     "CRITICAL": 157,
-    "HIGH": 1006,
+    "HIGH": 1007,
     "LOW": 109,
     "MEDIUM": 500
   },
@@ -22981,30 +22981,50 @@
         "credential-access",
         "runtime-gating"
       ]
+    },
+    {
+      "id": "sandbox-excludedcommands-can-still-run-sandboxed",
+      "title": "sandbox.excludedCommands can still run bare commands inside the sandbox.",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89931"
+      ],
+      "date_added": "2026-08-26",
+      "description": "A reported Claude Code 2.1.232 macOS setup found that `sandbox.excludedCommands` was read from user settings but not honored even for bare command prefixes such as `git` and `gh`. With sandboxing enabled, `git init` against a writable `/Users/Shared` path failed with a Seatbelt permission denial, while the same command succeeded when the sandbox was explicitly bypassed. Network-oriented excluded commands also still received sandbox proxy environment, producing GitHub CLI TLS and SSH proxy failures that disappeared outside the sandbox. This is stronger than compound-shell parsing gaps: the minimal repro used a top-level `git ...` command that should match an excluded `\"git\"` prefix.",
+      "workaround": "Do not assume `sandbox.excludedCommands` proves a command will run outside the sandbox until a same-session probe confirms it. For commands that must use normal network, SSH, or filesystem access, run a harmless bare-command canary such as `git init` in a known writable scratch path or `gh api rate_limit` and inspect whether sandbox proxy variables or Seatbelt denials still apply. Keep explicit sandbox bypasses manual and auditable, and treat any automatic bypass list as untrusted until verified after Claude Code updates and settings-source changes.",
+      "tags": [
+        "sandbox",
+        "excludedCommands",
+        "macos",
+        "network",
+        "permissions"
+      ]
     }
   ],
   "status_summary": {
-    "open": 1758,
+    "open": 1759,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 157,
-    "high": 1006,
+    "high": 1007,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-26",
   "stats": {
-    "total": 1772,
+    "total": 1773,
     "critical": 157,
-    "high": 1006,
+    "high": 1007,
     "medium": 500,
     "low": 109,
-    "open": 1758,
+    "open": 1759,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-26",
-  "total": 1772
+  "total": 1773
 }
