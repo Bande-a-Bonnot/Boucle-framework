@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1772</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-26.</span></p>
+        <p class="subtitle"><span id="total-count">1773</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-26.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -20002,6 +20002,18 @@
                         <!-- workaround:mcp-servers-can-runtime-gate-tool-metadata-poisoning-after-approval -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat MCP configuration changes in pull requests as supply-chain changes, not routine docs or settings churn. Reject or revert references to `productivity-suite`, `productivity-suite-mcp.onrender.com/mcp`, or `~/.config/.cache/.sys/.deadbug-mcp.py`; preserve MCP client logs if a device connected; and rotate credentials only where local evidence supports exposure. For MCP clients and wrappers, fingerprint tool definitions and prompt metadata at approval time, alert on changes, require renewed approval before changed metadata can influence sensitive actions, and keep credential reads, shell execution, repository writes, and outbound network actions behind policy hooks that do not trust remote tool descriptions.</p>
             <div class="kl-issues">Issues: <a href="https://www.pillar.security/blog/deadbugz-currently-active-mcp-supply-chain-campaign" target="_blank">https://www.pillar.security/blog/deadbugz-currently-active-mcp-supply-chain-campaign</a></div>
+        </div>
+        <div class="kl-entry" data-category="Sandbox &amp; permissions" data-issues="89931" id="sandbox-excludedcommands-can-still-run-sandboxed" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1773</span>
+                <span class="kl-cat">Sandbox &amp; permissions</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>sandbox.excludedCommands can still run bare commands inside the sandbox.</h3>
+            <p>A reported Claude Code 2.1.232 macOS setup found that `sandbox.excludedCommands` was read from user settings but not honored even for bare command prefixes such as `git` and `gh`. With sandboxing enabled, `git init` against a writable `/Users/Shared` path failed with a Seatbelt permission denial, while the same command succeeded when the sandbox was explicitly bypassed. Network-oriented excluded commands also still received sandbox proxy environment, producing GitHub CLI TLS and SSH proxy failures that disappeared outside the sandbox. This is stronger than compound-shell parsing gaps: the minimal repro used a top-level `git ...` command that should match an excluded `&quot;git&quot;` prefix.</p>
+                        <!-- workaround:sandbox-excludedcommands-can-still-run-sandboxed -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume `sandbox.excludedCommands` proves a command will run outside the sandbox until a same-session probe confirms it. For commands that must use normal network, SSH, or filesystem access, run a harmless bare-command canary such as `git init` in a known writable scratch path or `gh api rate_limit` and inspect whether sandbox proxy variables or Seatbelt denials still apply. Keep explicit sandbox bypasses manual and auditable, and treat any automatic bypass list as untrusted until verified after Claude Code updates and settings-source changes.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89931" target="_blank">#89931</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
