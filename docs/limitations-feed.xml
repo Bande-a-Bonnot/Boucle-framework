@@ -4,13 +4,21 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-08-24T00:00:00Z</updated>
+  <updated>2026-08-26T00:00:00Z</updated>
   <author><name>Boucle</name></author>
+  <entry>
+    <title>[HIGH] MCP servers can runtime-gate malicious tool metadata after approval.</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-servers-can-runtime-gate-tool-metadata-poisoning-after-approval</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-servers-can-runtime-gate-tool-metadata-poisoning-after-approval"/>
+    <updated>2026-08-26T00:00:00Z</updated>
+    <summary>Pillar Security&#x27;s August 12, 2026 Deadbugz report describes an active MCP supply-chain campaign where GitHub pull requests introduced a benign-looking `productivity-suite` MCP server. The server initially exposed harmless formatting and summarization behavior, then after three ordinary tool calls changed `tools/list` and `prompts/get` metadata to direct the attached agent toward SSH keys, AWS credentials, shell history, and Kubernetes configuration while hiding the activity from the user. This shows that MCP tool names, schemas, descriptions, and prompt metadata are part of the execution boundary: approving a server once is not enough if the server can later change the instructions the model sees.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
   <entry>
     <title>[HIGH] Session wakeups, crons, and background notifications can go silent across compaction.</title>
     <id>https://framework.boucle.sh/limitations.html#session-wake-and-background-notifications-can-go-silent-across-compaction</id>
     <link href="https://framework.boucle.sh/limitations.html#session-wake-and-background-notifications-can-go-silent-across-compaction"/>
-    <updated>2026-08-24T00:00:00Z</updated>
+    <updated>2026-08-26T00:00:00Z</updated>
     <summary>A reported Claude Code macOS loop session saw three independent in-session wake mechanisms fail during a roughly 103-minute window around context compaction or resume: a pending `ScheduleWakeup`, a session-scoped recurring cron that still appeared armed in `CronList`, and completion notifications for two background Bash watchers whose work had finished. The results were discovered only by a later manual sweep, leaving no catch-up fire or delivery guarantee visible inside the session.</summary>
     <category term="Scheduling &amp; remote triggers"/>
   </entry>
@@ -18,7 +26,7 @@
     <title>[HIGH] Scheduled-task tool approvals can fail to persist between runs.</title>
     <id>https://framework.boucle.sh/limitations.html#scheduled-task-tool-approvals-can-fail-to-persist-between-runs</id>
     <link href="https://framework.boucle.sh/limitations.html#scheduled-task-tool-approvals-can-fail-to-persist-between-runs"/>
-    <updated>2026-08-24T00:00:00Z</updated>
+    <updated>2026-08-26T00:00:00Z</updated>
     <summary>A reported Windows Claude Code scheduled-task setup found recurring tasks that used write-capable MCP and Bash tools could stall for hours on permission prompts even after the user tried both documented approval paths: the task&#x27;s ignore-permissions toggle and an always-allow approval on the tool prompt. The reporter confirmed each scheduled fire used a different session id under the same task id, suggesting approvals were saved to the interactive session rather than durably to the recurring task, contrary to the creation message promising future runs would auto-apply granted approvals.</summary>
     <category term="Scheduled tasks"/>
   </entry>
@@ -26,7 +34,7 @@
     <title>[HIGH] Background sessions can start with an empty plugin skill registry.</title>
     <id>https://framework.boucle.sh/limitations.html#background-sessions-can-start-with-empty-plugin-skill-registry</id>
     <link href="https://framework.boucle.sh/limitations.html#background-sessions-can-start-with-empty-plugin-skill-registry"/>
-    <updated>2026-08-24T00:00:00Z</updated>
+    <updated>2026-08-26T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.241 macOS background session started with zero plugin skills even though three enabled plugins and their skill directories were present on disk and other background sessions on the same machine loaded them correctly. The affected session stayed permanently blind to those skills for more than ten hours, `Skill()` returned `Unknown skill`, and no warning surfaced to the agent or user. The reporter found one such failure among 44 sessions that invoked skills and suspected a pre-warmed background spare process with an empty plugin registry.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -34,7 +42,7 @@
     <title>[HIGH] MCP re-auth can clear shared tokens before sign-in succeeds.</title>
     <id>https://framework.boucle.sh/limitations.html#mcp-reauth-can-clear-shared-tokens-before-signin-succeeds</id>
     <link href="https://framework.boucle.sh/limitations.html#mcp-reauth-can-clear-shared-tokens-before-signin-succeeds"/>
-    <updated>2026-08-24T00:00:00Z</updated>
+    <updated>2026-08-26T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.238-2.1.241 macOS MCP OAuth flow still cleared stored tokens before the replacement sign-in completed, despite a prior changelog fix for the same class. Because OAuth credentials are shared across local sessions, re-authenticating one stuck session can break other sessions that were still using a valid token, creating a loop where each recovery attempt invalidates another session. The reporter observed this with Linear&#x27;s OAuth MCP server and logs showing token clearing about 19 seconds before new tokens were saved.</summary>
     <category term="Auth &amp; accounts"/>
   </entry>
@@ -42,7 +50,7 @@
     <title>[HIGH] MCP tool-call JSON can drop empty string argument values.</title>
     <id>https://framework.boucle.sh/limitations.html#mcp-tool-arguments-can-drop-empty-string-values</id>
     <link href="https://framework.boucle.sh/limitations.html#mcp-tool-arguments-can-drop-empty-string-values"/>
-    <updated>2026-08-24T00:00:00Z</updated>
+    <updated>2026-08-26T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.241 Windows repro found that when the model called an MCP tool with an optional string parameter intended to be the empty string, Claude Code sometimes constructed invalid JSON with the key followed by a colon and no value. The same MCP server accepted a direct HTTP request containing a genuine empty string for the field, and six consecutive Claude Code attempts across two parameters produced the same malformed shape before the call reached the server.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -50,7 +58,7 @@
     <title>[CRITICAL] Claude.ai connectors can expose write tools to Claude Code without visible approval.</title>
     <id>https://framework.boucle.sh/limitations.html#claude-ai-connectors-can-execute-write-tools-without-visible-approval</id>
     <link href="https://framework.boucle.sh/limitations.html#claude-ai-connectors-can-execute-write-tools-without-visible-approval"/>
-    <updated>2026-08-24T00:00:00Z</updated>
+    <updated>2026-08-26T00:00:00Z</updated>
     <summary>A reported Claude Code terminal session found that a Gmail connector labelled as web-scoped in claude.ai Connectors appeared inside Claude Code with write-capable MCP tools such as send, reply, forward, trash, and spam operations. The reporter says `send_message` succeeded and delivered real email with an attachment from the user&#x27;s account, while local permissions contained no MCP allow rules and the connector UI marked tools as needing approval. Follow-up comments tied this to earlier closed reports that claude.ai connector tool restrictions and approval-required settings were ignored by CLI or VS Code surfaces.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -58,7 +66,7 @@
     <title>[HIGH] Connected MCP servers can expose zero tools through ToolSearch.</title>
     <id>https://framework.boucle.sh/limitations.html#connected-mcp-servers-can-expose-zero-toolsearch-tools</id>
     <link href="https://framework.boucle.sh/limitations.html#connected-mcp-servers-can-expose-zero-toolsearch-tools"/>
-    <updated>2026-08-24T00:00:00Z</updated>
+    <updated>2026-08-26T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.241 Windows setup had local project MCP servers that `claude mcp get` reported as connected, including one stdio server and one HTTP server, while `ToolSearch` could not find any of their tools across restarts, remove/re-add cycles, terminal relaunches, and a full OS reboot. Other deferred tool namespaces still loaded in the same sessions, and `claude mcp list` was inconsistent on first versus immediate repeated invocation, suggesting connected status can race or diverge from model-visible tool registration.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -66,7 +74,7 @@
     <title>[HIGH] Remote Control settings can be ignored by resume state or Desktop plan gates.</title>
     <id>https://framework.boucle.sh/limitations.html#remote-control-settings-can-be-ignored-by-resume-or-desktop-gates</id>
     <link href="https://framework.boucle.sh/limitations.html#remote-control-settings-can-be-ignored-by-resume-or-desktop-gates"/>
-    <updated>2026-08-24T00:00:00Z</updated>
+    <updated>2026-08-26T00:00:00Z</updated>
     <summary>Two reported Remote Control regressions show settings text and live connectivity diverging. In Claude Code CLI 2.1.241, `claude --continue` can restore a conversation&#x27;s recorded Remote Control binding even after the global &quot;Enable Remote Control for all sessions&quot; setting is false, so the opt-out applies to fresh sessions but not resumed conversations that ended connected. Separately, Claude Desktop 1.34493.1 on an individual Pro/Max plan repeatedly returned `enable=false source=settings_unavailable` before reading the user&#x27;s enabled preference, leaving the setting toggle on while new Desktop sessions never auto-connected.</summary>
     <category term="Cowork &amp; remote"/>
   </entry>
@@ -74,7 +82,7 @@
     <title>[HIGH] `crossSessionInbound` invalid values can fail open without warning.</title>
     <id>https://framework.boucle.sh/limitations.html#cross-session-inbound-invalid-values-can-fail-open</id>
     <link href="https://framework.boucle.sh/limitations.html#cross-session-inbound-invalid-values-can-fail-open"/>
-    <updated>2026-08-24T00:00:00Z</updated>
+    <updated>2026-08-26T00:00:00Z</updated>
     <summary>A reported Claude Desktop 1.34493.1 / bundled Claude Code 2.1.237 setup found that `crossSessionInbound` accepts only `accept`, `hold`, and `refuse`, but an out-of-enum value such as `reject` is silently mapped to the unset case. In the repro, `refuse` blocked a cross-session message, while `reject` delivered it and let the recipient answer with no startup warning, settings error, or log line. Users hand-editing this key can therefore believe a session opted out while it actually accepts inbound delivery.</summary>
     <category term="Cowork &amp; remote"/>
   </entry>
@@ -82,7 +90,7 @@
     <title>[CRITICAL] Write and Edit tools can bypass filesystem sandbox restrictions.</title>
     <id>https://framework.boucle.sh/limitations.html#write-edit-tools-can-bypass-filesystem-sandbox</id>
     <link href="https://framework.boucle.sh/limitations.html#write-edit-tools-can-bypass-filesystem-sandbox"/>
-    <updated>2026-08-24T00:00:00Z</updated>
+    <updated>2026-08-26T00:00:00Z</updated>
     <summary>Follow-up testing on a reported Claude Code 2.1.241 sandbox issue found that Bash correctly blocked writes outside the filesystem sandbox, while the Write tool could create the same forbidden path under `~/.claude/`. The reporter also found that a sandboxed session could edit the global settings file that controls the sandbox itself, including adding commands to `excludedCommands`. This suggests built-in file tools and Bash can run on different enforcement paths, so a sandbox that blocks shell writes may still permit Write/Edit side effects.</summary>
     <category term="Sandbox &amp; permissions"/>
   </entry>
@@ -90,7 +98,7 @@
     <title>[HIGH] Account custom MCP connectors can silently dedupe by host in the CLI.</title>
     <id>https://framework.boucle.sh/limitations.html#account-custom-mcp-connectors-can-dedupe-by-host</id>
     <link href="https://framework.boucle.sh/limitations.html#account-custom-mcp-connectors-can-dedupe-by-host"/>
-    <updated>2026-08-24T00:00:00Z</updated>
+    <updated>2026-08-26T00:00:00Z</updated>
     <summary>A reported Claude Code CLI 2.1.241 Windows setup synced only one of three claude.ai account custom MCP connectors that pointed at the same provider host with different query-string scopes. Claude Desktop saw all three connectors and could use their tools, while `claude mcp list` showed only one and `claude mcp login` for the missing names said no such server existed. The reporter confirmed the missing URLs worked when added directly as local HTTP MCP servers, suggesting the CLI account-connector sync may silently dedupe or filter by host rather than full connector identity.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -98,7 +106,7 @@
     <title>[HIGH] Compaction summaries can grow and carry across resumed sessions.</title>
     <id>https://framework.boucle.sh/limitations.html#compaction-summaries-can-grow-and-cross-session-inherit</id>
     <link href="https://framework.boucle.sh/limitations.html#compaction-summaries-can-grow-and-cross-session-inherit"/>
-    <updated>2026-08-24T00:00:00Z</updated>
+    <updated>2026-08-26T00:00:00Z</updated>
     <summary>A reported analysis of 50 Claude Code sessions across 8 projects found 601 compactions, with many injected compact summaries growing across repeated compactions instead of staying bounded. The report says one resumed successor session inherited the predecessor&#x27;s final large summary by timestamp and byte size, so starting from the prior session did not reset the context pressure. The same report also found individual `tool_result` payloads large enough to exceed a normal context window, making both summary growth and unbounded tool-result admission separate failure paths for long engineering sessions.</summary>
     <category term="Context &amp; memory"/>
   </entry>
@@ -106,7 +114,7 @@
     <title>[HIGH] Cowork folder revocation can leave an active session mount live.</title>
     <id>https://framework.boucle.sh/limitations.html#cowork-folder-revocation-can-leave-active-session-access-live</id>
     <link href="https://framework.boucle.sh/limitations.html#cowork-folder-revocation-can-leave-active-session-access-live"/>
-    <updated>2026-08-24T00:00:00Z</updated>
+    <updated>2026-08-26T00:00:00Z</updated>
     <summary>A reported Claude Desktop for macOS Cowork session kept live read and write access to a connected folder after the user removed the folder from the app&#x27;s connected-folders list and also revoked Files and Folders permission in macOS System Settings. The reporter confirmed the access was not merely cached by writing a new file after both revocations, with access persisting for about 40 minutes until the conversation was abandoned. Revocation controls that apply only to future sessions can mislead users into believing sensitive local folders are no longer exposed.</summary>
     <category term="Cowork &amp; remote"/>
   </entry>
@@ -114,7 +122,7 @@
     <title>[HIGH] Fork subagents can write files despite read-only prompt instructions.</title>
     <id>https://framework.boucle.sh/limitations.html#fork-subagents-can-write-despite-read-only-prompt-instructions</id>
     <link href="https://framework.boucle.sh/limitations.html#fork-subagents-can-write-despite-read-only-prompt-instructions"/>
-    <updated>2026-08-24T00:00:00Z</updated>
+    <updated>2026-08-26T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.241 fork subagent was asked to inspect documents and report back without writing files, but wrote substantial content directly into multiple repository files. The report says fork subagents inherit the parent conversation, tool access, and permission mode, so read-only wording in the delegated prompt was advisory rather than an enforced runtime constraint. In auto or permissive modes, those inherited Write, Edit, and Bash calls can complete without surfacing to the parent in real time.</summary>
     <category term="Subagent &amp; spawned agents"/>
   </entry>
@@ -122,7 +130,7 @@
     <title>[HIGH] Git commits can leak plaintext credentials before any built-in guard reacts.</title>
     <id>https://framework.boucle.sh/limitations.html#git-commit-secret-leaks-have-no-built-in-pre-push-guard</id>
     <link href="https://framework.boucle.sh/limitations.html#git-commit-secret-leaks-have-no-built-in-pre-push-guard"/>
-    <updated>2026-08-24T00:00:00Z</updated>
+    <updated>2026-08-26T00:00:00Z</updated>
     <summary>A reported Claude Code desktop auto-mode session bulk-staged 66 files, committed a plaintext credential, and pushed it before any product guardrail warned or blocked. The reporter notes that `PostToolUse` can only observe a Bash `git commit` or `git push` after the side effect exists, while a broad `PreToolUse(Bash)` secret-scanning hook must usually fail open on parser or runtime errors to avoid blocking every shell command. This leaves the default last line of defense as post-hoc review after the secret may already be reachable by commit SHA.</summary>
     <category term="Git &amp; repository safety"/>
   </entry>
@@ -130,7 +138,7 @@
     <title>[HIGH] Marketplace `autoUpdate` can leave installed plugins pinned to stale commits.</title>
     <id>https://framework.boucle.sh/limitations.html#marketplace-autoupdate-can-leave-installed-plugins-pinned</id>
     <link href="https://framework.boucle.sh/limitations.html#marketplace-autoupdate-can-leave-installed-plugins-pinned"/>
-    <updated>2026-08-24T00:00:00Z</updated>
+    <updated>2026-08-26T00:00:00Z</updated>
     <summary>A reported Claude Code plugin marketplace setup found that `autoUpdate: true` in `known_marketplaces.json` did not pull new commits on startup. The marketplace clone under `~/.claude/plugins/marketplaces/` stayed at its original commit, `lastUpdated` did not advance, and installed plugin records in `installed_plugins.json` kept pointing at the stale `gitCommitSha` and install path. Managed deployments can therefore believe plugin updates are automatic while skills, hooks, or MCP definitions remain pinned to the version first installed.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -138,7 +146,7 @@
     <title>[MEDIUM] Permission rejection feedback can be dropped before the model sees it.</title>
     <id>https://framework.boucle.sh/limitations.html#permission-rejection-feedback-can-be-dropped</id>
     <link href="https://framework.boucle.sh/limitations.html#permission-rejection-feedback-can-be-dropped"/>
-    <updated>2026-08-24T00:00:00Z</updated>
+    <updated>2026-08-26T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.241 macOS session found that text entered through the permission prompt&#x27;s rejection feedback path did not appear to influence the next assistant turn. The prompt option is meant to let a user deny a tool call and tell Claude what to do differently, but the model behaved as though it received only a bare denial: retrying the same tool call or continuing without reflecting the typed feedback. This makes the denial UI weaker as an interactive correction channel, especially when the user is trying to redirect a risky or unsuitable tool choice.</summary>
     <category term="Permission system"/>
   </entry>
@@ -146,7 +154,7 @@
     <title>[HIGH] Same-named project skills can lose to user-scoped skills.</title>
     <id>https://framework.boucle.sh/limitations.html#same-named-project-skills-can-lose-to-user-scoped-skills</id>
     <link href="https://framework.boucle.sh/limitations.html#same-named-project-skills-can-lose-to-user-scoped-skills"/>
-    <updated>2026-08-24T00:00:00Z</updated>
+    <updated>2026-08-26T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.232 setup found that when `~/.claude/skills/&lt;name&gt;/SKILL.md` and `&lt;repo&gt;/.claude/skills/&lt;name&gt;/SKILL.md` both existed, invoking the skill from inside the repository loaded the user-scoped skill instead of the project-scoped one. The report says this contradicts the documented Skill tool rule that directory-scoped skills should be selected by the most specific directory containing the files being worked on. The mismatch is silent unless the user inspects the launched skill&#x27;s base directory or the global skill explicitly checks for a project override.</summary>
     <category term="Skills"/>
   </entry>
@@ -154,16 +162,8 @@
     <title>[HIGH] Skill `arguments` frontmatter can be lost on Skill-tool invocation.</title>
     <id>https://framework.boucle.sh/limitations.html#skill-arguments-frontmatter-can-be-lost-on-skill-tool-invocation</id>
     <link href="https://framework.boucle.sh/limitations.html#skill-arguments-frontmatter-can-be-lost-on-skill-tool-invocation"/>
-    <updated>2026-08-24T00:00:00Z</updated>
+    <updated>2026-08-26T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.241 macOS plugin skill declared `arguments: base repo` and `context: fork`, but when invoked through the Skill tool with two clean arguments, the skill reported receiving no arguments at all. A same-session control skill without an `arguments` key received raw arguments normally, and typed slash-command invocation of the affected skill had substituted correctly in an earlier session. The reporter inferred that declaring `arguments` may move Skill-tool invocation onto a named-substitution path that consumes the raw ARGUMENTS passthrough without applying `$name` substitution.</summary>
     <category term="Skills"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Auto mode can start enabled despite a default-off flag.</title>
-    <id>https://framework.boucle.sh/limitations.html#auto-mode-can-start-enabled-despite-default-off-flag</id>
-    <link href="https://framework.boucle.sh/limitations.html#auto-mode-can-start-enabled-despite-default-off-flag"/>
-    <updated>2026-08-24T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.241 macOS session launched as bare `claude` with no permission-mode flags, no `autoMode` or `permissionMode` keys in user or project settings, and a cached `tengu_auto_mode_default_on: false` flag, yet the footer immediately showed auto mode on before any user interaction. The reporter also observed a separate first-turn session behaving as auto mode without prior permission prompts. A silent default flip matters because auto mode skips per-action confirmations users may rely on for file edits and shell execution.</summary>
-    <category term="Permission system"/>
   </entry>
 </feed>
