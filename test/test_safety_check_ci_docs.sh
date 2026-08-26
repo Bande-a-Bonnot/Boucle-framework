@@ -16,6 +16,10 @@ flat_text = " ".join(text.split())
 snippets = [
     "Native PowerShell hooks in CI",
     "pwsh -File ./hooks/git-safe.ps1",
+    "pwsh -NoProfile -File ./hooks/block-dangerous-bash.ps1",
+    "Minimal PowerShell hook script",
+    "[Console]::In.ReadToEnd()",
+    "ConvertFrom-Json",
     "The Ubuntu workflow above does not install",
     "install.ps1 verify",
     "Git Bash, WSL, or a runner with bash",
@@ -39,4 +43,21 @@ if missing:
     )
 
 print("Safety-check CI docs OK")
+
+recipes = repo / "docs" / "recipes.html"
+recipes_text = recipes.read_text()
+recipe_snippets = [
+    "pwsh -NoProfile -File ./hooks/block-dangerous-bash.ps1",
+    "[Console]::In.ReadToEnd()",
+    "ConvertFrom-Json",
+    "Blocked destructive rm -rf command",
+]
+recipe_missing = [snippet for snippet in recipe_snippets if snippet not in recipes_text]
+if recipe_missing:
+    raise SystemExit(
+        "Safety-check recipes page drifted:\n"
+        + "\n".join(f"{recipes.relative_to(repo)}: missing {snippet!r}" for snippet in recipe_missing)
+    )
+
+print("Safety-check recipes mirror OK")
 PY
