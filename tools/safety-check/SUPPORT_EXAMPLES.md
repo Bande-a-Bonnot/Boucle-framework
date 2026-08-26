@@ -30,6 +30,7 @@ Command/scope: real project-root --verify --summary-only
 What changed recently: Claude Code update, then install.sh upgrade
 Pre-update baseline: summary/version captured
 Fresh Claude Code session from verified root: started
+MCP servers involved: none
 Next intended action: local fix
 
 --- Safety Summary (copy/paste) ---
@@ -68,6 +69,7 @@ Command/scope: real project-root --verify --summary-only
 What changed recently: fresh recommended install
 Pre-update baseline: not an update issue
 Fresh Claude Code session from verified root: not yet
+MCP servers involved: none
 Next intended action: audit only
 
 --- Safety Summary (copy/paste) ---
@@ -102,6 +104,7 @@ Command/scope: isolated first test
 What changed recently: first look at safety-check
 Pre-update baseline: not an update issue
 Fresh Claude Code session from verified root: not changed
+MCP servers involved: none
 Next intended action: audit only
 Scope: isolated first test with temporary HOME and temporary project
 
@@ -134,6 +137,7 @@ What changed recently: moved the repository to a new checkout path
 Pre-update baseline: not an update issue
 Hook source: framework git-safe hook, not custom
 Fresh Claude Code session from verified root: not yet
+MCP servers involved: none
 Next intended action: local fix before commit or push
 Staged diff and destination reviewed separately: not applicable
 
@@ -165,6 +169,7 @@ Command/scope: native install.ps1 verify
 What changed recently: fresh recommended install
 Pre-update baseline: not an update issue
 Fresh Claude Code session from verified root: started
+MCP servers involved: none
 Next intended action: audit only
 
 PowerShell verifier:
@@ -185,6 +190,7 @@ Command/scope: native install.ps1 verify
 What changed recently: checking before first install
 Pre-update baseline: not an update issue
 Fresh Claude Code session from verified root: not changed
+MCP servers involved: none
 Next intended action: audit only
 
 PowerShell verifier:
@@ -204,6 +210,12 @@ Do not post full command lines or raw hook output like these:
 
 ```json
 {"hooks":{"PreToolUse":[{"matcher":"Write","hooks":[{"command":"/Users/alice/work/acme-private/tools/check-secret.sh --token sk-live-..."}]}]}}
+```
+
+```text
+claude mcp get prod-http-server
+Authorization: Bearer mcp_live_...
+url: https://internal-mcp.acme.example/mcp
 ```
 
 ```text

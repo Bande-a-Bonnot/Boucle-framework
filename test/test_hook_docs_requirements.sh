@@ -256,7 +256,15 @@ docs = {
         "first verified result for an already-untrusted setup",
         "A clean shell-side `--verify` result proves the hook scripts and settings file",
         "does not prove an already-running",
+        "MCP servers involved: none / names from claude mcp list / not sure",
+        "Do not paste `claude mcp get` output",
+        "remote MCP server kept the same tool surface or instructions",
         "--- End Safety Summary ---",
+    ],
+    repo / "docs" / "recipes.html": [
+        "MCP servers involved: none / names from claude mcp list / not sure",
+        "Do not paste <code>claude mcp get</code> output",
+        "remote MCP server kept the same tool surface or instructions",
     ],
     repo / "tools" / "safety-check" / "SUPPORT_EXAMPLES.md": [
         "downloads `tools/safety-check/check.sh` from GitHub raw content",
