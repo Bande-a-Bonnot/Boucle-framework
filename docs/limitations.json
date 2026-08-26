@@ -3470,15 +3470,17 @@
     },
     {
       "id": "permission-pattern-matcher-fails-on-subshells-and-parentheses",
-      "title": "Permission and hook pattern matcher fails on <code>$()</code> subshells and parentheses in arguments.",
+      "title": "Permission and hook Bash pattern matcher mishandles <code>$VAR</code>, <code>$()</code>, and parentheses.",
       "category": "Hook bypass & evasion",
       "severity": "MEDIUM",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/42457",
         "https://github.com/anthropics/claude-code/issues/38017",
-        "https://github.com/anthropics/claude-code/issues/39263"
+        "https://github.com/anthropics/claude-code/issues/39263",
+        "https://github.com/anthropics/claude-code/issues/89853"
       ],
-      "description": "The if-condition pattern matcher in hooks and the permission allow/deny wildcard matcher both fail when Bash commands contain $() subshells or parentheses in arguments. Commands like echo $(date) or gcloud logging read 'filter=(severity=ERROR)' incorrectly trigger blocking hooks or fail to match allow rules. The parser appears to default to \"match\" (fire the hook / prompt for permission) on parse ",
+      "description": "The if-condition pattern matcher in hooks and the permission allow/deny wildcard matcher can mis-handle Bash commands containing shell variables, $() subshells, or parentheses in arguments. Commands like echo $(date), echo \"$PATH\", or gcloud logging read 'filter=(severity=ERROR)' may incorrectly trigger unrelated blocking hooks, show the wrong denial reason, or fail to match allow rules. In one Windows report, commands with $VAR or $(...) were denied with a git-push force-blocking hook message even though the command did not contain git push.",
+      "workaround": "Do not rely on Claude Code's Bash pattern matcher as the only scope check for safety-critical hooks. Keep the broad PreToolUse matcher if needed, but have the hook command parse tool_input.command itself and emit deny output only for the exact dangerous operation. Add canaries for harmless commands such as echo \"$PATH\", echo \"$PWD\", echo $(date +%Y), and representative parenthesized arguments after every Claude Code update.",
       "status": "open"
     },
     {
