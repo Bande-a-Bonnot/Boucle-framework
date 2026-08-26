@@ -124,6 +124,7 @@ Command/scope: real project-root --verify / isolated first test / native install
 What changed recently: fresh install / Claude Code update / settings edit / moved hook files
 Pre-update baseline: summary/version captured / not captured / not an update issue
 Fresh Claude Code session from verified root: started / not yet / not changed
+MCP servers involved: none / names from claude mcp list / not sure
 Next intended action: audit only / local fix / commit / push / public report
 ```
 
@@ -141,6 +142,16 @@ from the same project root before writing `started` in the fresh-session field.
 A clean shell-side `--verify` result proves the hook scripts and settings file
 responded to representative payloads; it does not prove an already-running
 Claude Code session has reloaded those files.
+
+For MCP-related failures, add only the visible server names and connection
+state from `claude mcp list`, plus whether a fresh session can run one harmless
+read-only call against each critical server. Do not paste `claude mcp get`
+output for HTTP servers into public reports, because headers, URLs, or command
+arguments can include bearer tokens, private hosts, or local paths. Treat MCP
+server URL, package, tool name, schema, description, prompt metadata, and plugin
+channel changes as renewed approval events. A clean hook summary proves local
+hooks responded to representative payloads; it does not prove a remote MCP
+server kept the same tool surface or instructions.
 
 The command/scope line keeps a first-test report from being mistaken for a real
 hook-boundary check. If you ran the temporary first test, write
@@ -183,6 +194,7 @@ Do not post:
 - Hook source from private repositories.
 - Raw hook stderr from a live Claude Code session.
 - Session logs, shell history, prompts, transcripts, or screenshots with paths.
+- Raw `claude mcp get` output, MCP OAuth files, or HTTP headers.
 - Tokens, API keys, `.env` contents, OAuth files, SSH keys, or private URLs.
 - Proprietary `CLAUDE.md` rules unless you have reviewed and redacted them.
 
@@ -238,6 +250,7 @@ Command/scope:
 What changed recently:
 Pre-update baseline:
 Fresh Claude Code session from verified root:
+MCP servers involved:
 Next intended action:
 Staged diff and destination reviewed separately: yes / no / not applicable
 
