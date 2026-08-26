@@ -79,7 +79,7 @@ paths = {
     repo / "README.md": [
         "check --verify --summary-only",
         "check --verify --strict",
-        "Run `install.sh check --verify --strict` first",
+        "Run `install.sh doctor` first",
         "Test all installed hooks with representative payloads",
         "Run strict safety audit with hook payload verification",
     ],

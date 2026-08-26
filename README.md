@@ -97,8 +97,8 @@ shell history, repository contents, or summary output.
 If you are trying hooks on a borrowed machine, client repository, CI runner, or
 other temporary environment, use the
 [temporary hook trial recipe](https://framework.boucle.sh/recipes.html#temporary-trial)
-to back up settings, install the smallest useful set, verify, uninstall, and
-confirm cleanup before leaving the environment.
+to back up settings, install the smallest useful set, run doctor, verify,
+uninstall, and confirm cleanup before leaving the environment.
 If you need to ask for help, use the [safe support evidence guide](tools/safety-check/SUPPORT_EVIDENCE.md)
 to share the summary block without exposing private settings or secrets. To
 print only that bounded public block, run:
@@ -141,6 +141,7 @@ repository contents, or safety summary output.
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- recommended
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- doctor
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
 ```
 
@@ -156,8 +157,8 @@ session may have loaded the previous settings or hook files.
 
 **If the install succeeds but hooks do not block anything:**
 
-- Run `install.sh check --verify --strict` first on macOS/Linux (`install.ps1 verify` on native Windows). A clean install is not proof the hooks are firing.
-- Run `install.sh doctor` next (`install.ps1 doctor` on Windows). It catches missing files, bad permissions, JSONC in `settings.json`, and other silent fail-open states.
+- Run `install.sh doctor` first (`install.ps1 doctor` on Windows). It catches missing files, bad permissions, JSONC in `settings.json`, and other silent fail-open states.
+- Run `install.sh check --verify --strict` next on macOS/Linux (`install.ps1 verify` on native Windows). A clean install is not proof the hooks are firing.
 - On Windows, use PowerShell 7 (`pwsh`), not Windows PowerShell 5.
 - If you write custom deny hooks, prefer `stderr` + `exit 2` for hard blocks. JSON `permissionDecision: "deny"` is still inconsistent across Claude Code surfaces.
 
@@ -167,6 +168,7 @@ session may have loaded the previous settings or hook files.
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- all
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- doctor
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- verify
 ```
 
@@ -176,6 +178,7 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
 if ($root) { Set-Location $root }
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } recommended"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
 
@@ -185,6 +188,7 @@ Or install all standalone hooks at once:
 $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
 if ($root) { Set-Location $root }
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } all"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
 
@@ -904,6 +908,7 @@ Bash separately with out-of-scope canaries before committing automation output.
 $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
 if ($root) { Set-Location $root }
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } all"
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
 
