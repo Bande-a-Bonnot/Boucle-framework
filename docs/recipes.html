@@ -551,6 +551,20 @@ exit 0</code>
                     <p class="brief">The cleanup uses <code>rmdir</code> instead of recursive deletion. If a hook, shell startup file, or unexpected tool writes into the temporary home, the path is left in the CI log for inspection.</p>
                     <p class="brief">Do not treat <code>install.sh recommended</code> in CI as proof that repo-local policy is protected. That installs user-level hooks under the runner's temporary <code>HOME</code>. It is useful as an installer smoke test, but it does not prove the checked-out <code>.claude/settings.json</code> or repository hook files protect developers.</p>
                     <p class="brief">For native PowerShell hook scripts, use a runner where both <code>bash</code> and <code>pwsh</code> are available so <code>safety-check --verify --strict</code> can execute the checked-in <code>.ps1</code> commands. Do not use <code>install.ps1 verify</code> as proof for repo-local hooks; it verifies Boucle hooks installed under the CI user's home directory.</p>
+                    <p class="brief">Use an explicit command such as <code>pwsh -NoProfile -File ./hooks/block-dangerous-bash.ps1</code> in checked-in settings, and commit the PowerShell hook script beside it:</p>
+                    <div class="code-block">
+                        <code>$payload = [Console]::In.ReadToEnd()
+$event = $payload | ConvertFrom-Json
+$tool = [string]$event.tool_name
+$command = [string]$event.tool_input.command
+
+if ($tool -eq "Bash" -and $command -match '(^|[;&amp;|\s])rm\s+-rf(\s|$)') {
+    [Console]::Error.WriteLine("Blocked destructive rm -rf command")
+    exit 2
+}
+
+exit 0</code>
+                    </div>
                     <p class="brief" style="color: var(--muted-color);">Full workflow examples and expected failure modes: <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/CI.md">scripted safety-check checks</a>.</p>
                 </div>
 

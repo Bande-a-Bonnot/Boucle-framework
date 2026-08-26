@@ -187,6 +187,43 @@ Ubuntu example: require checked-in `.claude/settings.json` and isolate `HOME`
 unless the job is intentionally testing user-level hooks installed during that
 same run.
 
+For a native repo-local PowerShell hook, commit the script and point settings at
+it explicitly:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pwsh -NoProfile -File ./hooks/block-dangerous-bash.ps1"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Minimal PowerShell hook script:
+
+```powershell
+$payload = [Console]::In.ReadToEnd()
+$event = $payload | ConvertFrom-Json
+$tool = [string]$event.tool_name
+$command = [string]$event.tool_input.command
+
+if ($tool -eq "Bash" -and $command -match '(^|[;&|\s])rm\s+-rf(\s|$)') {
+    [Console]::Error.WriteLine("Blocked destructive rm -rf command")
+    exit 2
+}
+
+exit 0
+```
+
 ```yaml
 jobs:
   windows-hook-verify:
