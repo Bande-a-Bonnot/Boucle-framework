@@ -3070,15 +3070,17 @@
             <p>The Task tool was renamed to Agent in v2.1.63, but this was an undocumented breaking change. Existing hooks matching on tool_name === &quot;Task&quot; silently stopped working. The hook payload now reports the tool as Agent with no migration path or deprecation warning.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/29677" target="_blank">#29677</a></div>
         </div>
-        <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="42457 38017 39263" id="permission-pattern-matcher-fails-on-subshells-and-parentheses" data-severity="medium" data-status="open">
+        <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="42457 38017 39263 89853" id="permission-pattern-matcher-fails-on-subshells-and-parentheses" data-severity="medium" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#270</span>
                 <span class="kl-cat">Hook bypass &amp; evasion</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
             </div>
-            <h3>Permission and hook pattern matcher fails on &lt;code&gt;$()&lt;/code&gt; subshells and parentheses in arguments.</h3>
-            <p>The if-condition pattern matcher in hooks and the permission allow/deny wildcard matcher both fail when Bash commands contain $() subshells or parentheses in arguments. Commands like echo $(date) or gcloud logging read &#x27;filter=(severity=ERROR)&#x27; incorrectly trigger blocking hooks or fail to match allow rules. The parser appears to default to &quot;match&quot; (fire the hook / prompt for permission) on parse </p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42457" target="_blank">#42457</a>, <a href="https://github.com/anthropics/claude-code/issues/38017" target="_blank">#38017</a>, <a href="https://github.com/anthropics/claude-code/issues/39263" target="_blank">#39263</a></div>
+            <h3>Permission and hook Bash pattern matcher mishandles &lt;code&gt;$VAR&lt;/code&gt;, &lt;code&gt;$()&lt;/code&gt;, and parentheses.</h3>
+            <p>The if-condition pattern matcher in hooks and the permission allow/deny wildcard matcher can mis-handle Bash commands containing shell variables, $() subshells, or parentheses in arguments. Commands like echo $(date), echo &quot;$PATH&quot;, or gcloud logging read &#x27;filter=(severity=ERROR)&#x27; may incorrectly trigger unrelated blocking hooks, show the wrong denial reason, or fail to match allow rules. In one Windows report, commands with $VAR or $(...) were denied with a git-push force-blocking hook message even though the command did not contain git push.</p>
+                        <!-- workaround:permission-pattern-matcher-fails-on-subshells-and-parentheses -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on Claude Code&#x27;s Bash pattern matcher as the only scope check for safety-critical hooks. Keep the broad PreToolUse matcher if needed, but have the hook command parse tool_input.command itself and emit deny output only for the exact dangerous operation. Add canaries for harmless commands such as echo &quot;$PATH&quot;, echo &quot;$PWD&quot;, echo $(date +%Y), and representative parenthesized arguments after every Claude Code update.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/42457" target="_blank">#42457</a>, <a href="https://github.com/anthropics/claude-code/issues/38017" target="_blank">#38017</a>, <a href="https://github.com/anthropics/claude-code/issues/39263" target="_blank">#39263</a>, <a href="https://github.com/anthropics/claude-code/issues/89853" target="_blank">#89853</a></div>
         </div>
         <div class="kl-entry" data-category="Subagent &amp; spawned agents" data-issues="42481" id="fabricated-user-input-turns-in-agent-team-sessions" data-severity="high" data-status="open">
             <div class="kl-header">
