@@ -122,7 +122,7 @@ jobs:
   safety-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Verify Claude Code hooks
         working-directory: ${{ github.workspace }}
         run: |
@@ -174,7 +174,7 @@ jobs:
   windows-hook-verify:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Verify native PowerShell hooks
         shell: bash
         working-directory: ${{ github.workspace }}
