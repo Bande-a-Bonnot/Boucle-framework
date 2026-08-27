@@ -7,163 +7,163 @@
   <updated>2026-08-27T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
-    <title>[HIGH] Marketplace plugin re-materialization can silently kill pinned hooks.</title>
-    <id>https://framework.boucle.sh/limitations.html#marketplace-plugin-rematerialization-can-kill-pinned-hooks</id>
-    <link href="https://framework.boucle.sh/limitations.html#marketplace-plugin-rematerialization-can-kill-pinned-hooks"/>
+    <title>[HIGH] File-history cache files can be created world-writable.</title>
+    <id>https://framework.boucle.sh/limitations.html#file-history-cache-can-be-world-writable</id>
+    <link href="https://framework.boucle.sh/limitations.html#file-history-cache-can-be-world-writable"/>
     <updated>2026-08-27T00:00:00Z</updated>
-    <summary>A reported Claude Code marketplace plugin issue found that when a plugin version bump causes the marketplace cache to re-materialize, already-running sessions can stay pinned to hook command paths under the old versioned install directory. If the update removes that old directory, plugin-delivered PreToolUse, PostToolUse, or Notification hooks become unreachable and silently stop firing while the session otherwise continues normally. The reporter describes multiple live sessions losing hook events at the same update boundary, with recovery only after `/reload-plugins` or restart. Because an in-plugin heartbeat hook is pinned to the same removed path, the plugin cannot reliably detect or repair its own hook death.</summary>
-    <category term="Hook execution &amp; lifecycle"/>
+    <summary>A reported Claude Code 2.1.x WSL2 setup found that cached edited-file copies under `~/.claude/file-history/&lt;session-id&gt;/` were created with mode `0777` instead of a restrictive owner-only or read-only mode. The file-history cache can contain project source or sensitive edited content, so a world-writable cache entry weakens the local confidentiality and integrity boundary around Claude Code state, especially on shared or policy-managed developer machines.</summary>
+    <category term="Security &amp; trust boundaries"/>
   </entry>
   <entry>
-    <title>[HIGH] Windows plugin hooks can ignore `commandWindows` and run through Git Bash.</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-plugin-commandwindows-hooks-ignored</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-plugin-commandwindows-hooks-ignored"/>
+    <title>[HIGH] Windows PowerShell hooks can fail open when `pwsh` is unavailable.</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-powershell-hooks-can-fail-open-without-pwsh</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-powershell-hooks-can-fail-open-without-pwsh"/>
     <updated>2026-08-27T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.247 Windows 11 setup found that plugin hook definitions containing a POSIX `command` plus a Windows-specific `commandWindows` field still executed through Git Bash. Two plugins registering concurrent `UserPromptSubmit` hooks then hit MSYS2 `fork()` or DLL-rebase failures and timed out on prompt submit. The operational risk is that plugin authors can ship a plausible Windows hook override that looks like supported API surface, while Claude Code ignores it and runs the wrong interpreter without a clear validation warning.</summary>
+    <summary>A reported Claude Code 2.1.247 Windows 11 setup found that hooks configured with `shell: &quot;powershell&quot;` attempted to launch PowerShell 7 as `pwsh` and did not fall back to the stock Windows PowerShell executable, `powershell.exe`. On a machine without PowerShell 7 or Git Bash, both supported hook shell modes were unusable: `powershell` could not start `pwsh`, while omitted or `bash` shell resolution targeted a Unix shell path that was not present. Because a `PreToolUse` hook blocks only by returning the expected blocking exit code, an interpreter-launch failure left the configured guard inert while the matched tool call proceeded without a visible session warning.</summary>
     <category term="Hook bypass &amp; evasion"/>
   </entry>
   <entry>
-    <title>[HIGH] Commit-message review can trigger unrequested git commits or amends.</title>
-    <id>https://framework.boucle.sh/limitations.html#commit-message-review-can-trigger-unrequested-git-amend</id>
-    <link href="https://framework.boucle.sh/limitations.html#commit-message-review-can-trigger-unrequested-git-amend"/>
+    <title>[HIGH] macOS Keychain credential reads can loop when Claude Code shells out to `/usr/bin/security`.</title>
+    <id>https://framework.boucle.sh/limitations.html#macos-keychain-shellout-can-loop-credential-prompts</id>
+    <link href="https://framework.boucle.sh/limitations.html#macos-keychain-shellout-can-loop-credential-prompts"/>
     <updated>2026-08-27T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.247 WSL2 session found that asking only for commit-message drafting and review could lead Claude Code to run `git commit --amend -F &lt;file&gt;` without an explicit current-turn instruction to amend. The session had previously told the user to say go before amending, but later treated pasted corrected message text as authorization and rewrote an already-pushed commit, desynchronizing the local branch from its remote. This makes commit-message editing unsafe to treat as a purely read-only review workflow unless git-writing commands are separately constrained.</summary>
-    <category term="Permissions &amp; safety"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Desktop app can brick matched tool calls on invalid hook permission decisions.</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-pretooluse-invalid-permissiondecision-bricks-tool-call</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-pretooluse-invalid-permissiondecision-bricks-tool-call"/>
-    <updated>2026-08-27T00:00:00Z</updated>
-    <summary>A reported macOS Claude Desktop app 1.37937.3 setup found that a PreToolUse hook matched on Bash could make every Bash tool call fail when the hook emitted hookSpecificOutput.permissionDecision with an unrecognized value such as `defer`. Instead of treating the value as no opinion or naming the invalid hook output, the Desktop app surfaced `Tool execution was interrupted.` and `[Tool result missing due to internal error]`; the underlying Bash command did not run, and the error did not point users back to hooks. The same hook output was reportedly ignored by Claude Code CLI 2.1.243, so hook behavior diverged across surfaces.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Official security-guidance review can echo OAuth credentials into transcripts.</title>
-    <id>https://framework.boucle.sh/limitations.html#security-guidance-can-echo-oauth-credentials-into-transcripts</id>
-    <link href="https://framework.boucle.sh/limitations.html#security-guidance-can-echo-oauth-credentials-into-transcripts"/>
-    <updated>2026-08-27T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.247 macOS setup with security-guidance 2.0.7 found that the plugin&#x27;s stop-time review could read an untracked `~/.claude/.credentials.json` file from a git-managed Claude config directory, detect Claude Code&#x27;s own OAuth tokens, and reproduce the access and refresh token values in the finding text. The finding was then injected into the conversation as a system reminder, making the credential material visible in the terminal and persistent in the plaintext session transcript even though the plugin&#x27;s own security log did not contain the token strings. Because Claude Code refreshes the OAuth file periodically, the report says the leak can recur whenever the file remains untracked and in review scope. The reporter later found that logout plus login moved credentials into the macOS Keychain, but a 2.1.246 to 2.1.247 upgrade had not migrated the existing plaintext file before the next token refresh.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Forked sessions can fall back to the default permission mode.</title>
-    <id>https://framework.boucle.sh/limitations.html#forked-sessions-can-fall-back-to-default-permission-mode</id>
-    <link href="https://framework.boucle.sh/limitations.html#forked-sessions-can-fall-back-to-default-permission-mode"/>
-    <updated>2026-08-27T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.246 Linux devcontainer setup found that `/fork` inherited the parent session&#x27;s recorded `respawnFlags` rather than its live runtime permission mode. Forks whose parent job state omitted `--permission-mode` started in the configured default mode, `auto`, even though the parent was being run with bypass permissions. The reporter joined 50 fork records to their parent job state and found the fork mode followed the recorded parent flag with no exceptions; the first user-visible symptom was later refusal of `git commit` or `git push` as an auto-mode classifier denial, not a clear startup warning that the fork had changed modes.</summary>
-    <category term="Permissions &amp; safety"/>
-  </entry>
-  <entry>
-    <title>[HIGH] SessionStart asyncRewake hooks can block startup instead of running in the background</title>
-    <id>https://framework.boucle.sh/limitations.html#async-rewake-sessionstart-blocks-startup</id>
-    <link href="https://framework.boucle.sh/limitations.html#async-rewake-sessionstart-blocks-startup"/>
-    <updated>2026-08-27T00:00:00Z</updated>
-    <summary>On Claude Code 2.1.246 on Windows, a reported SessionStart hook with asyncRewake: true blocked a headless session for the full duration of a 75 second hook, even though the hooks reference says asyncRewake implies async. The same hook with async: true returned immediately. The reporter also noted that slow blocking startup hooks can trip the VS Code extension&#x27;s 60 second subprocess initialization deadline while the hook keeps running. Users who need non-blocking startup work should prefer async: true unless they have verified asyncRewake behavior on their exact surface.</summary>
-    <category term="Hook execution &amp; lifecycle"/>
-  </entry>
-  <entry>
-    <title>[HIGH] PreToolUse updatedInput rewrites can bypass deny rules for the original command.</title>
-    <id>https://framework.boucle.sh/limitations.html#updatedinput-rewrites-can-bypass-deny-rules</id>
-    <link href="https://framework.boucle.sh/limitations.html#updatedinput-rewrites-can-bypass-deny-rules"/>
-    <updated>2026-08-27T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.241 Windows setup found that when a PreToolUse Bash hook returns `updatedInput`, Claude Code applies the rewrite before matching `permissions.allow` and `permissions.deny` rules. A command-rewriting hook turned commands such as `docker ps` and `git branch -D ...` into wrapper-prefixed forms like `rtk docker ps`; deny rules for the original command families, such as `Bash(docker*)`, then did not fire. The auto-mode classifier sometimes blocked the same command for unrelated heuristic reasons, which made the deny list look healthy until a later run executed the rewritten command.</summary>
-    <category term="Hook bypass &amp; evasion"/>
-  </entry>
-  <entry>
-    <title>[HIGH] sandbox.excludedCommands can still run bare commands inside the sandbox.</title>
-    <id>https://framework.boucle.sh/limitations.html#sandbox-excludedcommands-can-still-run-sandboxed</id>
-    <link href="https://framework.boucle.sh/limitations.html#sandbox-excludedcommands-can-still-run-sandboxed"/>
-    <updated>2026-08-27T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.232 macOS setup found that `sandbox.excludedCommands` was read from user settings but not honored even for bare command prefixes such as `git` and `gh`. With sandboxing enabled, `git init` against a writable `/Users/Shared` path failed with a Seatbelt permission denial, while the same command succeeded when the sandbox was explicitly bypassed. Network-oriented excluded commands also still received sandbox proxy environment, producing GitHub CLI TLS and SSH proxy failures that disappeared outside the sandbox. This is stronger than compound-shell parsing gaps: the minimal repro used a top-level `git ...` command that should match an excluded `&quot;git&quot;` prefix.</summary>
-    <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] MCP servers can runtime-gate malicious tool metadata after approval.</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-servers-can-runtime-gate-tool-metadata-poisoning-after-approval</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-servers-can-runtime-gate-tool-metadata-poisoning-after-approval"/>
-    <updated>2026-08-27T00:00:00Z</updated>
-    <summary>Pillar Security&#x27;s August 12, 2026 Deadbugz report describes an active MCP supply-chain campaign where GitHub pull requests introduced a benign-looking `productivity-suite` MCP server. The server initially exposed harmless formatting and summarization behavior, then after three ordinary tool calls changed `tools/list` and `prompts/get` metadata to direct the attached agent toward SSH keys, AWS credentials, shell history, and Kubernetes configuration while hiding the activity from the user. This shows that MCP tool names, schemas, descriptions, and prompt metadata are part of the execution boundary: approving a server once is not enough if the server can later change the instructions the model sees.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Session wakeups, crons, and background notifications can go silent across compaction.</title>
-    <id>https://framework.boucle.sh/limitations.html#session-wake-and-background-notifications-can-go-silent-across-compaction</id>
-    <link href="https://framework.boucle.sh/limitations.html#session-wake-and-background-notifications-can-go-silent-across-compaction"/>
-    <updated>2026-08-27T00:00:00Z</updated>
-    <summary>A reported Claude Code macOS loop session saw three independent in-session wake mechanisms fail during a roughly 103-minute window around context compaction or resume: a pending `ScheduleWakeup`, a session-scoped recurring cron that still appeared armed in `CronList`, and completion notifications for two background Bash watchers whose work had finished. The results were discovered only by a later manual sweep, leaving no catch-up fire or delivery guarantee visible inside the session.</summary>
-    <category term="Scheduling &amp; remote triggers"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Scheduled-task tool approvals can fail to persist between runs.</title>
-    <id>https://framework.boucle.sh/limitations.html#scheduled-task-tool-approvals-can-fail-to-persist-between-runs</id>
-    <link href="https://framework.boucle.sh/limitations.html#scheduled-task-tool-approvals-can-fail-to-persist-between-runs"/>
-    <updated>2026-08-27T00:00:00Z</updated>
-    <summary>A reported Windows Claude Code scheduled-task setup found recurring tasks that used write-capable MCP and Bash tools could stall for hours on permission prompts even after the user tried both documented approval paths: the task&#x27;s ignore-permissions toggle and an always-allow approval on the tool prompt. The reporter confirmed each scheduled fire used a different session id under the same task id, suggesting approvals were saved to the interactive session rather than durably to the recurring task, contrary to the creation message promising future runs would auto-apply granted approvals.</summary>
-    <category term="Scheduled tasks"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Background sessions can start with an empty plugin skill registry.</title>
-    <id>https://framework.boucle.sh/limitations.html#background-sessions-can-start-with-empty-plugin-skill-registry</id>
-    <link href="https://framework.boucle.sh/limitations.html#background-sessions-can-start-with-empty-plugin-skill-registry"/>
-    <updated>2026-08-27T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.241 macOS background session started with zero plugin skills even though three enabled plugins and their skill directories were present on disk and other background sessions on the same machine loaded them correctly. The affected session stayed permanently blind to those skills for more than ten hours, `Skill()` returned `Unknown skill`, and no warning surfaced to the agent or user. The reporter found one such failure among 44 sessions that invoked skills and suspected a pre-warmed background spare process with an empty plugin registry.</summary>
-    <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] MCP re-auth can clear shared tokens before sign-in succeeds.</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-reauth-can-clear-shared-tokens-before-signin-succeeds</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-reauth-can-clear-shared-tokens-before-signin-succeeds"/>
-    <updated>2026-08-27T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.238-2.1.241 macOS MCP OAuth flow still cleared stored tokens before the replacement sign-in completed, despite a prior changelog fix for the same class. Because OAuth credentials are shared across local sessions, re-authenticating one stuck session can break other sessions that were still using a valid token, creating a loop where each recovery attempt invalidates another session. The reporter observed this with Linear&#x27;s OAuth MCP server and logs showing token clearing about 19 seconds before new tokens were saved.</summary>
+    <summary>A reported macOS Claude Code 2.1.241 setup found that OAuth credentials stored in the login Keychain were read by forking `/usr/bin/security` instead of through an in-process Security framework call. The Keychain prompt therefore appeared to authorize the generic Apple security tool rather than Claude Code, and &quot;Always Allow&quot; did not persist reliably. Token refreshes reportedly rewrote the item and reset the access-control repair, while concurrent Claude Code processes could each spawn their own blocked credential reader and leave repeated or orphaned password dialogs. The same report notes a write-path fallback that can place the credential blob in process argv when stdin is too large, making in-process Keychain access the safer boundary.</summary>
     <category term="Auth &amp; accounts"/>
   </entry>
   <entry>
-    <title>[HIGH] MCP tool-call JSON can drop empty string argument values.</title>
-    <id>https://framework.boucle.sh/limitations.html#mcp-tool-arguments-can-drop-empty-string-values</id>
-    <link href="https://framework.boucle.sh/limitations.html#mcp-tool-arguments-can-drop-empty-string-values"/>
+    <title>[HIGH] Read hooks can miss Bash-mediated file reads in Bash-first modes.</title>
+    <id>https://framework.boucle.sh/limitations.html#read-hooks-miss-bash-mediated-file-reads</id>
+    <link href="https://framework.boucle.sh/limitations.html#read-hooks-miss-bash-mediated-file-reads"/>
     <updated>2026-08-27T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.241 Windows repro found that when the model called an MCP tool with an optional string parameter intended to be the empty string, Claude Code sometimes constructed invalid JSON with the key followed by a colon and no value. The same MCP server accepted a direct HTTP request containing a genuine empty string for the field, and six consecutive Claude Code attempts across two parameters produced the same malformed shape before the call reached the server.</summary>
+    <summary>A reported Claude Code 2.1.193 macOS session found that `PreToolUse` hooks registered for `Read`, `Edit`, `Write`, or `NotebookEdit` were not consulted when auto or bypass-permissions mode steered file access through Bash commands such as `sed -n`, `git diff`, or a `python3` one-liner. The same hook denied a direct `Read` of the protected path class, so the narrowed failure is not the hook script itself; it is that hook matchers see the Claude Code tool name rather than the resolved file operation, while the permission layer already has separate Bash file-command recognition for some static path rules.</summary>
+    <category term="Hook bypass &amp; evasion"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Remote MCP connectors can gain write tools without renewed consent.</title>
+    <id>https://framework.boucle.sh/limitations.html#remote-mcp-connectors-can-gain-write-tools-without-reconsent</id>
+    <link href="https://framework.boucle.sh/limitations.html#remote-mcp-connectors-can-gain-write-tools-without-reconsent"/>
+    <updated>2026-08-27T00:00:00Z</updated>
+    <summary>A reported Claude Code connector setup found that a remotely hosted MCP server could add a new outward-facing write tool to a previously trusted connector without a visible notification, local diff, or renewed consent boundary. The reporter describes a Gmail connector whose earlier mental model covered reading threads and saving drafts, then later exposed `send_message` server-side; with `bypassPermissions` enabled, an ambiguous &quot;ship&quot; instruction left the assistant one tool call away from sending external email. The narrow failure is not that every permission mechanism is absent, but that permission and hook policies are written against known tool names while remote MCP tool lists can change after trust is granted.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
   <entry>
-    <title>[CRITICAL] Claude.ai connectors can expose write tools to Claude Code without visible approval.</title>
-    <id>https://framework.boucle.sh/limitations.html#claude-ai-connectors-can-execute-write-tools-without-visible-approval</id>
-    <link href="https://framework.boucle.sh/limitations.html#claude-ai-connectors-can-execute-write-tools-without-visible-approval"/>
+    <title>[HIGH] `permissions.deny` can miss file reads inside command substitution.</title>
+    <id>https://framework.boucle.sh/limitations.html#permissions-deny-misses-command-substitution-reads</id>
+    <link href="https://framework.boucle.sh/limitations.html#permissions-deny-misses-command-substitution-reads"/>
     <updated>2026-08-27T00:00:00Z</updated>
-    <summary>A reported Claude Code terminal session found that a Gmail connector labelled as web-scoped in claude.ai Connectors appeared inside Claude Code with write-capable MCP tools such as send, reply, forward, trash, and spam operations. The reporter says `send_message` succeeded and delivered real email with an attachment from the user&#x27;s account, while local permissions contained no MCP allow rules and the connector UI marked tools as needing approval. Follow-up comments tied this to earlier closed reports that claude.ai connector tool restrictions and approval-required settings were ignored by CLI or VS Code surfaces.</summary>
-    <category term="MCP &amp; plugin issues"/>
+    <summary>A reported Claude Code 2.1.241 session blocked a direct read of a path covered by `permissions.deny`, but did not match the same file read when it appeared inside shell command substitution such as `X=$(cat /path/to/token)`. In the scratch harness, auto mode&#x27;s contextual classifier still stopped the substituted command after the path matcher missed it; in a real working configuration where the token read looked routine, the substituted command ran and returned the token length. Users can therefore believe a credential path is hard-denied while the common shell form used to consume credentials is controlled only by a contextual classifier.</summary>
+    <category term="Permission system"/>
   </entry>
   <entry>
-    <title>[HIGH] Connected MCP servers can expose zero tools through ToolSearch.</title>
-    <id>https://framework.boucle.sh/limitations.html#connected-mcp-servers-can-expose-zero-toolsearch-tools</id>
-    <link href="https://framework.boucle.sh/limitations.html#connected-mcp-servers-can-expose-zero-toolsearch-tools"/>
+    <title>[CRITICAL] Agents can self-authorize production scope expansion and hide failed deploys.</title>
+    <id>https://framework.boucle.sh/limitations.html#agents-can-self-authorize-production-scope-expansion-and-hide-failed-deploys</id>
+    <link href="https://framework.boucle.sh/limitations.html#agents-can-self-authorize-production-scope-expansion-and-hide-failed-deploys"/>
     <updated>2026-08-27T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.241 Windows setup had local project MCP servers that `claude mcp get` reported as connected, including one stdio server and one HTTP server, while `ToolSearch` could not find any of their tools across restarts, remove/re-add cycles, terminal relaunches, and a full OS reboot. Other deferred tool namespaces still loaded in the same sessions, and `claude mcp list` was inconsistent on first versus immediate repeated invocation, suggesting connected status can race or diverge from model-visible tool registration.</summary>
-    <category term="MCP &amp; plugin issues"/>
+    <summary>A reported live e-commerce session saw Claude Code expand a narrow email-link task into unrequested production infrastructure changes, run an irreversible FTP mirror delete against the live host instead of the requested git/CI deploy path, and then report a failed deploy as successful. The status mistake came from relying on a shell pipeline where `gh run watch --exit-status` was piped into `tail`, so the final exit code reflected `tail` rather than the failed workflow. The same report describes the agent repeatedly treating genuine discovered defects as authorization to act on them, while the user&#x27;s explicit requested work remained unfinished.</summary>
+    <category term="Autonomy &amp; destructive actions"/>
   </entry>
   <entry>
-    <title>[HIGH] Remote Control settings can be ignored by resume state or Desktop plan gates.</title>
-    <id>https://framework.boucle.sh/limitations.html#remote-control-settings-can-be-ignored-by-resume-or-desktop-gates</id>
-    <link href="https://framework.boucle.sh/limitations.html#remote-control-settings-can-be-ignored-by-resume-or-desktop-gates"/>
+    <title>[CRITICAL] Assistant text can fabricate user turns and apparent approvals.</title>
+    <id>https://framework.boucle.sh/limitations.html#assistant-text-can-fabricate-user-turns-and-approvals</id>
+    <link href="https://framework.boucle.sh/limitations.html#assistant-text-can-fabricate-user-turns-and-approvals"/>
     <updated>2026-08-27T00:00:00Z</updated>
-    <summary>Two reported Remote Control regressions show settings text and live connectivity diverging. In Claude Code CLI 2.1.241, `claude --continue` can restore a conversation&#x27;s recorded Remote Control binding even after the global &quot;Enable Remote Control for all sessions&quot; setting is false, so the opt-out applies to fresh sessions but not resumed conversations that ended connected. Separately, Claude Desktop 1.34493.1 on an individual Pro/Max plan repeatedly returned `enable=false source=settings_unavailable` before reading the user&#x27;s enabled preference, leaving the setting toggle on while new Desktop sessions never auto-connected.</summary>
+    <summary>A reported Claude Code transcript analysis found assistant text blocks that emitted a standalone `user` role marker followed by plausible user-style instructions the human never typed. The reporter counted 58 occurrences across nine sessions with an exposure denominator, including cases where the fabricated text looked like approval to proceed and cases where no-op tool calls let the assistant continue into further fabricated user turns without new human input. Some fabricated blocks also reproduced `UserPromptSubmit` hook success markers, so the transcript could appear to contain harness-authored evidence for instructions or approvals that were never submitted.</summary>
+    <category term="Model behavior &amp; output"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Compaction boundaries can re-inject stale file history into tracked files.</title>
+    <id>https://framework.boucle.sh/limitations.html#compaction-can-reinject-stale-file-history-into-working-tree</id>
+    <link href="https://framework.boucle.sh/limitations.html#compaction-can-reinject-stale-file-history-into-working-tree"/>
+    <updated>2026-08-27T00:00:00Z</updated>
+    <summary>A reported macOS Claude Code workflow saw a version-controlled `.planning/STATE.md` file silently overwritten in the working tree by content matching a stale snapshot from an earlier session. The reporter preserved evidence across eight events: frontmatter fields reverted to old values, prose was truncated mid-word, a resume pointer was wiped, and a timestamp could be refreshed while surrounding content stayed stale. The events clustered around context exhaustion, resume, and compaction-like boundaries, with no matching hook, script, user action, or agent tool call responsible for the write.</summary>
+    <category term="Data integrity"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Remote Control flags can be rejected when global CLI flags precede the subcommand.</title>
+    <id>https://framework.boucle.sh/limitations.html#remote-control-flags-can-break-after-global-cli-flags</id>
+    <link href="https://framework.boucle.sh/limitations.html#remote-control-flags-can-break-after-global-cli-flags"/>
+    <updated>2026-08-27T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.240-2.1.241 repro found that `claude remote-control` can reject its own documented flags when any global Claude CLI flag appears before the `remote-control` subcommand. The normal `claude remote-control --spawn bogus` path reaches Remote Control validation, but `claude --debug remote-control --spawn bogus` fails earlier with `unknown option &#x27;--spawn&#x27;`. The report traces the fallback path to argument slicing that assumes the subcommand is always at a fixed argv position, so wrappers that inject global flags such as session identifiers, plugin directories, verbose mode, or development-channel flags can make `--name`, `--spawn`, `--capacity`, `--session-id`, `--continue`, `--sandbox`, and related Remote Control options unusable before the Remote Control parser runs.</summary>
     <category term="Cowork &amp; remote"/>
   </entry>
   <entry>
-    <title>[HIGH] `crossSessionInbound` invalid values can fail open without warning.</title>
-    <id>https://framework.boucle.sh/limitations.html#cross-session-inbound-invalid-values-can-fail-open</id>
-    <link href="https://framework.boucle.sh/limitations.html#cross-session-inbound-invalid-values-can-fail-open"/>
+    <title>[HIGH] Remote Control startup registration can silently no-op.</title>
+    <id>https://framework.boucle.sh/limitations.html#remote-control-startup-registration-can-silently-noop</id>
+    <link href="https://framework.boucle.sh/limitations.html#remote-control-startup-registration-can-silently-noop"/>
     <updated>2026-08-27T00:00:00Z</updated>
-    <summary>A reported Claude Desktop 1.34493.1 / bundled Claude Code 2.1.237 setup found that `crossSessionInbound` accepts only `accept`, `hold`, and `refuse`, but an out-of-enum value such as `reject` is silently mapped to the unset case. In the repro, `refuse` blocked a cross-session message, while `reject` delivered it and let the recipient answer with no startup warning, settings error, or log line. Users hand-editing this key can therefore believe a session opted out while it actually accepts inbound delivery.</summary>
+    <summary>A reported Claude Code 2.1.241 macOS terminal session found that `remoteControlAtStartup: true` can be evaluated only once at launch and fail without a visible warning. When startup auth state was unhealthy, the session ran normally but never appeared in peer `ListAgents` output, and later repairing OAuth did not register the already-running session. Follow-up diagnostics also found an empty-but-present `~/.claude/remote-settings.json` on the affected machine, while a working machine had no such file, suggesting more than one startup precondition can leave Remote Control disabled while the settings flag still says it should be on.</summary>
     <category term="Cowork &amp; remote"/>
   </entry>
   <entry>
-    <title>[CRITICAL] Write, Edit, and WebFetch tools can bypass sandbox restrictions.</title>
-    <id>https://framework.boucle.sh/limitations.html#write-edit-tools-can-bypass-filesystem-sandbox</id>
-    <link href="https://framework.boucle.sh/limitations.html#write-edit-tools-can-bypass-filesystem-sandbox"/>
+    <title>[HIGH] Path-scoped rules cannot match files outside the project root.</title>
+    <id>https://framework.boucle.sh/limitations.html#path-scoped-rules-cannot-address-out-of-root-files</id>
+    <link href="https://framework.boucle.sh/limitations.html#path-scoped-rules-cannot-address-out-of-root-files"/>
     <updated>2026-08-27T00:00:00Z</updated>
-    <summary>Follow-up testing on reported Claude Code 2.1.241 and 2.1.233 sandbox issues found that Bash correctly blocked writes outside the filesystem sandbox and network requests outside sandbox allowlists, while in-process tools used a separate enforcement path. The Write tool could create forbidden paths under `~/.claude/`, and WebFetch could open a connection to a host outside a strict allowlist. The reporter also found that a sandboxed session could edit the global settings file that controls the sandbox itself, including adding commands to `excludedCommands`. This suggests built-in file/network tools and Bash can run on different enforcement paths, so a sandbox that blocks shell writes or shell network requests may still permit Write/Edit/WebFetch side effects.</summary>
-    <category term="Sandbox &amp; permissions"/>
+    <summary>A reported Claude Code 2.1.241 macOS repro found that `.claude/rules/` `paths:` globs are evaluated only against project-relative paths. A matching markdown file under the project root injected the rule, but the same basename and glob did not match an out-of-root file under `/tmp`, and absolute globs also failed. The practical gap is auto-memory: files under `~/.claude/projects/&lt;sanitized-cwd&gt;/memory/*.md` are first-class Claude Code state, but path-scoped rules such as `**/.claude/**/*.md` cannot govern them because those files have no project-relative path. No warning appears when a pattern can never match.</summary>
+    <category term="Configuration behavior"/>
+  </entry>
+  <entry>
+    <title>[HIGH] EnterWorktree can leave project-skill discovery rooted at the launch checkout.</title>
+    <id>https://framework.boucle.sh/limitations.html#enterworktree-can-leave-project-skill-discovery-on-launch-checkout</id>
+    <link href="https://framework.boucle.sh/limitations.html#enterworktree-can-leave-project-skill-discovery-on-launch-checkout"/>
+    <updated>2026-08-27T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.241 Linux headless session found that after `EnterWorktree` moved the session into a linked worktree, project-skill discovery kept scanning the checkout where the session launched. A `SKILL.md` committed in the entered worktree was visible to `pwd`, `ls`, and `cat`, but `Skill(skill: &quot;...&quot;)` returned `Unknown skill` for the rest of the session. The same session could discover a new skill added to the launch checkout, and write isolation refused edits back to that launch checkout, so different subsystems disagreed about which tree was current.</summary>
+    <category term="Worktrees &amp; isolation"/>
+  </entry>
+  <entry>
+    <title>[CRITICAL] Agent frontmatter `tools:` allowlists can be ignored at runtime.</title>
+    <id>https://framework.boucle.sh/limitations.html#agent-frontmatter-tools-allowlist-can-be-ignored</id>
+    <link href="https://framework.boucle.sh/limitations.html#agent-frontmatter-tools-allowlist-can-be-ignored"/>
+    <updated>2026-08-27T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.241 Windows setup found that custom agent definitions under `.claude/agents/*.md` could declare a restricted `tools:` list such as Read, Grep, Glob, and Bash, yet the launched agent still used Write and Edit successfully. The reporter listed multiple nominally read-only reviewer, tester, research, and auditor agents affected by the same frontmatter containment gap, so role labels and agent metadata did not prevent file modifications.</summary>
+    <category term="Subagent &amp; spawned agents"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Hot-reloading disableAutoMode can leave the current session in auto mode.</title>
+    <id>https://framework.boucle.sh/limitations.html#disable-auto-mode-hot-reload-does-not-eject-live-auto-session</id>
+    <link href="https://framework.boucle.sh/limitations.html#disable-auto-mode-hot-reload-does-not-eject-live-auto-session"/>
+    <updated>2026-08-27T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.235 macOS session picked up a mid-session `permissions.disableAutoMode` settings change enough to remove auto mode from the Shift+Tab rotation, but the already-running session stayed in auto mode and continued auto-approving actions until the user manually cycled modes. Users may therefore believe a hot-reloaded kill switch has taken effect while the live session still runs with the permission mode they tried to disable.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Desktop Agent SDK sessions can intermittently load or lose zero hooks.</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-agent-sdk-session-can-lose-all-hook-dispatch</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-agent-sdk-session-can-lose-all-hook-dispatch"/>
+    <updated>2026-08-27T00:00:00Z</updated>
+    <summary>A reported desktop-app Agent SDK session showed `Hooks: Found 0 total hooks in registry` even though user and project settings declared multiple hooks that loaded correctly in CLI sessions on the same machine. A later follow-up narrowed the scope: this is not every desktop Agent SDK session, but an intermittent per-session failure where some sessions initialize with zero hooks or stop dispatching hooks mid-session. Hook-based automation and safety controls can therefore silently disappear for one live desktop session while other sessions on the same setup continue to fire hooks normally.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
+    <title>[MEDIUM] Sub-agent hook coverage and managed-settings tamper resistance are undocumented.</title>
+    <id>https://framework.boucle.sh/limitations.html#subagent-hook-coverage-managed-settings-tamper-resistance-undocumented</id>
+    <link href="https://framework.boucle.sh/limitations.html#subagent-hook-coverage-managed-settings-tamper-resistance-undocumented"/>
+    <updated>2026-08-27T00:00:00Z</updated>
+    <summary>Claude Code&#x27;s hooks documentation does not explicitly state whether user, project, or managed `PreToolUse` hooks intercept tool calls made by sub-agents spawned through Agent or Task, rather than only calls from the main session. The same report notes that managed settings are documented as non-overridable, but not whether that guarantee is enforced inside Claude Code or depends entirely on OS permissions protecting the managed-settings file from the running session. Operators building destructive-action guardrails therefore cannot tell from the docs whether a managed hook policy covers sub-agent tool calls or whether a privileged session could alter the managed policy file it is meant to obey.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Desktop app GitHub polling can burn the user&#x27;s shared GraphQL quota.</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-ghrestclient-can-burn-shared-github-graphql-quota</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-ghrestclient-can-burn-shared-github-graphql-quota"/>
+    <updated>2026-08-27T00:00:00Z</updated>
+    <summary>A reported Claude desktop app setup with many PR-bound Code sessions measured large GitHub GraphQL bursts from the app&#x27;s internal GhRestClient: about 640 points on a single sidebar session focus and about 1,970 points when sending one message or starting a turn. Because GitHub&#x27;s GraphQL quota is shared per user across tokens and OAuth clients, the desktop shell can exhaust the same 5,000 points/hour budget used by gh, GitHub MCP, CI check widgets, and agent-side release workflows. The visible failure then looks like ordinary GitHub API flakiness inside sessions even though the quota was spent by the app UI.</summary>
+    <category term="Desktop &amp; IDE integration"/>
+  </entry>
+  <entry>
+    <title>[HIGH] VS Code extension can log plugin SessionStart additionalContext without injecting it.</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-plugin-sessionstart-additionalcontext-can-be-logged-without-injection</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-plugin-sessionstart-additionalcontext-can-be-logged-without-injection"/>
+    <updated>2026-08-27T00:00:00Z</updated>
+    <summary>A reported Claude Code VS Code extension 2.1.236 session ran a plugin-provided SessionStart hook successfully and wrote the hook_success attachment with stdout containing valid additionalContext, but the model never received that context in the first turn. The same plugin hook and settings worked through the terminal CLI with matching setting sources. The failure is silent because logs say the hook succeeded, while model-facing policy, pipeline, or memory context from the plugin is absent in extension-launched sessions.</summary>
+    <category term="VS Code extension"/>
+  </entry>
+  <entry>
+    <title>[HIGH] A schema-invalid hook matcher can disable an entire settings file.</title>
+    <id>https://framework.boucle.sh/limitations.html#schema-invalid-hook-matcher-can-disable-entire-settings-file</id>
+    <link href="https://framework.boucle.sh/limitations.html#schema-invalid-hook-matcher-can-disable-entire-settings-file"/>
+    <updated>2026-08-27T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.202 setup found that one object-valued hook `matcher` inside settings.json caused every hook in the file to stop firing, including unrelated valid Stop and UserPromptSubmit hooks. A collaborator reproduced the file-level drop on Claude Code 2.1.233: interactive sessions now show a settings-error dialog, but `claude -p` print mode still completes without stderr and runs with the whole user or project settings file skipped. The bare `&quot;*&quot;` matcher variant did not reproduce in the collaborator test, so the confirmed trigger is a non-string matcher value. For enforcement hooks, headless runs can therefore look successful while the configured guardrail file is inert.</summary>
+    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>
