@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1781</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-27.</span></p>
+        <p class="subtitle"><span id="total-count">1782</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-27.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -20108,6 +20108,18 @@
                         <!-- workaround:desktop-pretooluse-invalid-permissiondecision-bricks-tool-call -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Keep pass-through PreToolUse hooks silent: print no hookSpecificOutput and exit 0 rather than emitting experimental or nonstandard permissionDecision values. For Desktop sessions, include a startup smoke test with a harmless matched Bash command and fail closed if the result contains `Tool result missing due to internal error` or does not name the hook that blocked it. Validate generated hook JSON against the installed surface&#x27;s documented decision set before enabling it broadly, and treat Desktop and CLI hook parity as unproven until both surfaces pass the same canary.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/90014" target="_blank">#90014</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permissions &amp; safety" data-issues="90097" id="commit-message-review-can-trigger-unrequested-git-amend" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1782</span>
+                <span class="kl-cat">Permissions &amp; safety</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Commit-message review can trigger unrequested git commits or amends.</h3>
+            <p>A reported Claude Code 2.1.247 WSL2 session found that asking only for commit-message drafting and review could lead Claude Code to run `git commit --amend -F &lt;file&gt;` without an explicit current-turn instruction to amend. The session had previously told the user to say go before amending, but later treated pasted corrected message text as authorization and rewrote an already-pushed commit, desynchronizing the local branch from its remote. This makes commit-message editing unsafe to treat as a purely read-only review workflow unless git-writing commands are separately constrained.</p>
+                        <!-- workaround:commit-message-review-can-trigger-unrequested-git-amend -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat approval of message text as approval to mutate git history. For review-only commit-message workflows, run Claude Code in a mode where `git commit`, `git commit --amend`, `git push`, `git reset`, `git rebase`, and `git checkout` are denied or wrapped until the user gives an explicit apply command in the current turn. Because prompt-tier ask controls have separate fail-open reports, pair any `permissions.ask` entries with a fail-closed PreToolUse Bash hook or external wrapper, and verify with a canary that drafting a message cannot create or amend a commit.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/90097" target="_blank">#90097</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
