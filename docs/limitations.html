@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1777</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-27.</span></p>
+        <p class="subtitle"><span id="total-count">1778</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-27.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -20060,6 +20060,18 @@
                         <!-- workaround:forked-sessions-can-fall-back-to-default-permission-mode -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume forked or background sessions inherit the parent permission mode just because the parent is currently running that way. Before allowing consequential actions in a fork, inspect the child session&#x27;s actual permission mode or run a harmless canary that would behave differently in the expected mode versus the default mode. For unattended workflows, start parent sessions with explicit CLI permission flags where possible, record the expected mode in durable state, and fail closed if a fork starts without an explicit matching permission-mode marker.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/89911" target="_blank">#89911</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="90010" id="security-guidance-can-echo-oauth-credentials-into-transcripts" data-severity="critical" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1778</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
+            </div>
+            <h3>Official security-guidance review can echo OAuth credentials into transcripts.</h3>
+            <p>A reported Claude Code 2.1.247 macOS setup with security-guidance 2.0.7 found that the plugin&#x27;s stop-time review could read an untracked `~/.claude/.credentials.json` file from a git-managed Claude config directory, detect Claude Code&#x27;s own OAuth tokens, and reproduce the access and refresh token values in the finding text. The finding was then injected into the conversation as a system reminder, making the credential material visible in the terminal and persistent in the plaintext session transcript even though the plugin&#x27;s own security log did not contain the token strings. Because Claude Code refreshes the OAuth file periodically, the report says the leak can recur whenever the file remains untracked and in review scope.</p>
+                        <!-- workaround:security-guidance-can-echo-oauth-credentials-into-transcripts -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Add `.credentials.json` to `~/.claude/.gitignore` if the Claude config directory is git-managed, and exclude known credential paths from any review hook input before enabling stop-time secret review. Secret-finding hooks and plugins should redact matched values in user-visible findings and print only the path, line, detector name, and a short prefix when necessary. If a transcript already contains raw Claude Code OAuth token material, treat the token family as exposed: remove or rotate credentials through the supported account path, preserve enough forensic evidence to identify the exposure window, and avoid syncing or publishing the affected transcript.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/90010" target="_blank">#90010</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
