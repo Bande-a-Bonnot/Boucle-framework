@@ -1,11 +1,11 @@
 {
   "version": "0.13.0",
-  "count": 1773,
+  "count": 1774,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 162,
     "MCP & plugin issues": 108,
-    "Hook bypass & evasion": 105,
+    "Hook bypass & evasion": 106,
     "Subagent & spawned agents": 85,
     "Desktop & IDE integration": 62,
     "TUI & display": 37,
@@ -193,7 +193,7 @@
   },
   "severity_counts": {
     "CRITICAL": 157,
-    "HIGH": 1007,
+    "HIGH": 1008,
     "LOW": 109,
     "MEDIUM": 500
   },
@@ -23001,30 +23001,50 @@
         "network",
         "permissions"
       ]
+    },
+    {
+      "id": "updatedinput-rewrites-can-bypass-deny-rules",
+      "title": "PreToolUse updatedInput rewrites can bypass deny rules for the original command.",
+      "category": "Hook bypass & evasion",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89448"
+      ],
+      "date_added": "2026-08-26",
+      "description": "A reported Claude Code 2.1.241 Windows setup found that when a PreToolUse Bash hook returns `updatedInput`, Claude Code applies the rewrite before matching `permissions.allow` and `permissions.deny` rules. A command-rewriting hook turned commands such as `docker ps` and `git branch -D ...` into wrapper-prefixed forms like `rtk docker ps`; deny rules for the original command families, such as `Bash(docker*)`, then did not fire. The auto-mode classifier sometimes blocked the same command for unrelated heuristic reasons, which made the deny list look healthy until a later run executed the rewritten command.",
+      "workaround": "When using command-rewriting PreToolUse hooks, mirror every safety-critical deny rule for both the original and rewritten command forms, and test that the refusal message is the explicit deny-rule message rather than an auto-mode classifier prompt. Prefer having the hook fail closed or decline to rewrite commands that match destructive families such as `git push --force`, `git branch -D`, `docker`, `kubectl`, and `curl`. Re-run these probes after changing wrappers, hook prefixes, shells, or Claude Code versions.",
+      "tags": [
+        "hooks",
+        "updatedInput",
+        "deny-rules",
+        "bash",
+        "auto-mode"
+      ]
     }
   ],
   "status_summary": {
-    "open": 1759,
+    "open": 1760,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 157,
-    "high": 1007,
+    "high": 1008,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-26",
   "stats": {
-    "total": 1773,
+    "total": 1774,
     "critical": 157,
-    "high": 1007,
+    "high": 1008,
     "medium": 500,
     "low": 109,
-    "open": 1759,
+    "open": 1760,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-26",
-  "total": 1773
+  "total": 1774
 }
