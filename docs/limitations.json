@@ -1194,13 +1194,15 @@
     },
     {
       "id": "enterworktree-exitworktree-hooks-may-not-fire-for-mid-sessio",
-      "title": "EnterWorktree/ExitWorktree hooks may not fire for mid-session operations.",
+      "title": "Worktree lifecycle hooks may be skipped for mid-session and Cowork isolation.",
       "category": "Hook bypass & evasion",
       "severity": "HIGH",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/36205"
+        "https://github.com/anthropics/claude-code/issues/36205",
+        "https://github.com/anthropics/claude-code/issues/90176"
       ],
-      "description": "When Claude uses the Agent tool with isolation: \"worktree\" or the in-session EnterWorktree tool, configured worktree hooks do not execute. Hooks that guard worktree creation or cleanup only fire for CLI-level worktree operations, not for mid-session agent-spawned worktrees. There is no workaround. If you use worktree-guard, be aware it protects ExitWorktree from the tool but not from internal sess",
+      "description": "Worktree lifecycle hooks have been reported as skipped on internal isolation paths. Earlier reports found that `Agent(isolation: \"worktree\")` and in-session `EnterWorktree` operations could bypass configured worktree creation or cleanup hooks. A newer Claude Cowork report narrowed a related failure: the connected folder was a valid git repository and `~/.claude/settings.json` contained a `WorktreeCreate` hook, but Cowork checked its internal session cwd before consulting hooks, concluded it was not in a git repository, and returned the hook-recommendation error without invoking the hook at all. Hooks that protect worktree setup, dependency copying, branch naming, or cleanup may therefore be absent exactly where the product message tells users to rely on them.",
+      "workaround": "Do not assume `WorktreeCreate` or `WorktreeRemove` hooks protect every Agent, EnterWorktree, or Cowork isolation path. Before relying on worktree isolation, register a harmless marker hook and verify it fires from the exact surface and session type you plan to use. In Cowork, also verify the session resolves the connected folder's repository rather than an internal outputs directory. If the hook does not fire, use pre-created per-session worktrees or separate connected folders, and run `pwd`, `git status`, and `git worktree list` before committing, staging broadly, or treating another session's artifacts as settled.",
       "status": "open"
     },
     {
