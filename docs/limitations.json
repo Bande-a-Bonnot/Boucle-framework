@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1774,
+  "count": 1775,
   "categories": {
     "Hook behavior & events": 228,
     "Permission system": 162,
@@ -22,8 +22,8 @@
     "Agents & subagents": 23,
     "Tool behavior": 23,
     "Auth & accounts": 22,
+    "Data integrity": 22,
     "Core & session management": 21,
-    "Data integrity": 21,
     "Bash & shell execution": 19,
     "Remote & cloud": 19,
     "Model behavior": 18,
@@ -193,7 +193,7 @@
   },
   "severity_counts": {
     "CRITICAL": 157,
-    "HIGH": 1008,
+    "HIGH": 1009,
     "LOW": 109,
     "MEDIUM": 500
   },
@@ -1883,6 +1883,19 @@
       ],
       "description": "In the Claude Code desktop app, file writes made via the Bash tool can silently revert even when commands are executed sequentially. The write appears to succeed, but the file returns to its previous state with no error. Not hookable \u2014 the revert happens in the desktop app's file synchronization layer, not in tool calls. Affects desktop app users writing files through shell commands. Workaround: v",
       "status": "open"
+    },
+    {
+      "id": "browser-pane-auto-preview-can-revert-edit-tool-writes",
+      "title": "Browser-pane auto-preview can silently revert Edit tool writes.",
+      "category": "Data integrity",
+      "severity": "HIGH",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89954"
+      ],
+      "description": "A reported Claude Code Windows session found that editing an out-of-project HTML file with the Edit tool triggered the automatic Browser-pane preview message, after which the file on disk reverted to an earlier snapshot even though Edit reported success. The reporter saw tiny HTML edits revert, accumulated session changes disappear, and Bash/Node writes to the same file persist when the Browser preview hook was avoided. The narrow risk is a silent durability failure at the boundary between Edit success reporting and the Browser-pane file preview/cache layer.",
+      "workaround": "For HTML or previewable files, especially outside the current project working tree, do not treat Edit success as durable until a separate filesystem read confirms the bytes persisted after any Browser-pane auto-preview opens. If this reproduces, close or avoid preview-triggering flows and use a separately verified write path for the affected file, then re-read from disk with an independent command such as grep, wc, or a small script before continuing. Keep affected work in version control or a backup and avoid editing installed application runtime folders from sessions that auto-open previews.",
+      "status": "open",
+      "date_added": "2026-08-27"
     },
     {
       "id": "agent-bash-shells-source-user-bashrc-bash-profile",
@@ -23024,27 +23037,27 @@
     }
   ],
   "status_summary": {
-    "open": 1760,
+    "open": 1761,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 157,
-    "high": 1008,
+    "high": 1009,
     "low": 109,
     "medium": 500
   },
-  "lastUpdated": "2026-08-26",
+  "lastUpdated": "2026-08-27",
   "stats": {
-    "total": 1774,
+    "total": 1775,
     "critical": 157,
-    "high": 1008,
+    "high": 1009,
     "medium": 500,
     "low": 109,
-    "open": 1760,
+    "open": 1761,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-08-26",
-  "total": 1774
+  "last_updated": "2026-08-27",
+  "total": 1775
 }
