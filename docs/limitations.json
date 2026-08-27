@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1784,
+  "count": 1785,
   "categories": {
     "Hook behavior & events": 229,
     "Permission system": 162,
@@ -11,10 +11,10 @@
     "TUI & display": 37,
     "Cowork & remote": 35,
     "Platform & compatibility": 35,
+    "Security & trust boundaries": 34,
     "CLI & terminal": 33,
     "Configuration behavior": 33,
     "Sandbox & permissions": 33,
-    "Security & trust boundaries": 33,
     "Context & memory": 32,
     "MCP & integrations": 30,
     "Performance & cost": 27,
@@ -193,11 +193,32 @@
   },
   "severity_counts": {
     "CRITICAL": 158,
-    "HIGH": 1017,
+    "HIGH": 1018,
     "LOW": 109,
     "MEDIUM": 500
   },
   "entries": [
+    {
+      "id": "file-history-cache-can-be-world-writable",
+      "title": "File-history cache files can be created world-writable.",
+      "category": "Security & trust boundaries",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90180"
+      ],
+      "date_added": "2026-08-27",
+      "description": "A reported Claude Code 2.1.x WSL2 setup found that cached edited-file copies under `~/.claude/file-history/<session-id>/` were created with mode `0777` instead of a restrictive owner-only or read-only mode. The file-history cache can contain project source or sensitive edited content, so a world-writable cache entry weakens the local confidentiality and integrity boundary around Claude Code state, especially on shared or policy-managed developer machines.",
+      "workaround": "Inspect file-history permissions after any Claude Code session that edits sensitive files: `find ~/.claude/file-history -type f -printf '%m %p\\n' | sort -u` on Linux/WSL. If entries are group- or world-writable, tighten them with `chmod -R go-rwx ~/.claude/file-history`, avoid editing secrets or proprietary files in affected sessions, and add a local startup or shell-profile check that fails closed when new cache files are broader than `600` or `644`. Treat `~/.claude/file-history` as sensitive local state until the installed version proves newly created cache files have restrictive modes.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "file-history",
+        "permissions",
+        "wsl",
+        "sensitive-data",
+        "world-writable"
+      ]
+    },
     {
       "id": "windows-powershell-hooks-can-fail-open-without-pwsh",
       "title": "Windows PowerShell hooks can fail open when `pwsh` is unavailable.",
@@ -23220,27 +23241,27 @@
     }
   ],
   "status_summary": {
-    "open": 1770,
+    "open": 1771,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 158,
-    "high": 1017,
+    "high": 1018,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-27",
   "stats": {
-    "total": 1784,
+    "total": 1785,
     "critical": 158,
-    "high": 1017,
+    "high": 1018,
     "medium": 500,
     "low": 109,
-    "open": 1770,
+    "open": 1771,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-27",
-  "total": 1784
+  "total": 1785
 }
