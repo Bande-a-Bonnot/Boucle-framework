@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1779,
+  "count": 1780,
   "categories": {
     "Hook behavior & events": 229,
     "Permission system": 162,
@@ -20,8 +20,8 @@
     "Performance & cost": 27,
     "VS Code extension": 26,
     "Agents & subagents": 23,
+    "Auth & accounts": 23,
     "Tool behavior": 23,
-    "Auth & accounts": 22,
     "Data integrity": 22,
     "Core & session management": 21,
     "Bash & shell execution": 19,
@@ -193,11 +193,32 @@
   },
   "severity_counts": {
     "CRITICAL": 158,
-    "HIGH": 1012,
+    "HIGH": 1013,
     "LOW": 109,
     "MEDIUM": 500
   },
   "entries": [
+    {
+      "id": "macos-keychain-shellout-can-loop-credential-prompts",
+      "title": "macOS Keychain credential reads can loop when Claude Code shells out to `/usr/bin/security`.",
+      "category": "Auth & accounts",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89985"
+      ],
+      "date_added": "2026-08-27",
+      "description": "A reported macOS Claude Code 2.1.241 setup found that OAuth credentials stored in the login Keychain were read by forking `/usr/bin/security` instead of through an in-process Security framework call. The Keychain prompt therefore appeared to authorize the generic Apple security tool rather than Claude Code, and \"Always Allow\" did not persist reliably. Token refreshes reportedly rewrote the item and reset the access-control repair, while concurrent Claude Code processes could each spawn their own blocked credential reader and leave repeated or orphaned password dialogs. The same report notes a write-path fallback that can place the credential blob in process argv when stdin is too large, making in-process Keychain access the safer boundary.",
+      "workaround": "If repeated Keychain prompts begin after Claude Code starts using Keychain-backed OAuth credentials, reduce concurrent Claude Code processes and preserve securityd logs before changing the credential state. A manual `security set-generic-password-partition-list` repair may temporarily quiet prompts, but the report says token refresh can reset it, so treat that as diagnostic rather than durable. Prefer a fresh logout/login only after preserving evidence if support needs it, and avoid running unattended automation while credential reads are prompting because queued dialogs can stall every session that needs auth.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "auth",
+        "oauth",
+        "keychain",
+        "macos",
+        "credentials"
+      ]
+    },
     {
       "id": "read-hooks-miss-bash-mediated-file-reads",
       "title": "Read hooks can miss Bash-mediated file reads in Bash-first modes.",
@@ -23111,27 +23132,27 @@
     }
   ],
   "status_summary": {
-    "open": 1765,
+    "open": 1766,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 158,
-    "high": 1012,
+    "high": 1013,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-27",
   "stats": {
-    "total": 1779,
+    "total": 1780,
     "critical": 158,
-    "high": 1012,
+    "high": 1013,
     "medium": 500,
     "low": 109,
-    "open": 1765,
+    "open": 1766,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-27",
-  "total": 1779
+  "total": 1780
 }
