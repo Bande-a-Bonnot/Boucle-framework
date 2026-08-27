@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1783</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-27.</span></p>
+        <p class="subtitle"><span id="total-count">1784</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-27.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -20132,6 +20132,18 @@
                         <!-- workaround:windows-plugin-commandwindows-hooks-ignored -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on `commandWindows` unless the installed Claude Code version documents and proves that field. For Windows plugin hooks, set the hook object&#x27;s `shell` explicitly and make `command` contain the Windows command that should run, such as a PowerShell script invocation. After installing or updating hook-providing plugins, run a same-session canary that proves the hook fired under the intended interpreter, and fail closed for security-sensitive workflows if the canary times out, launches Git Bash unexpectedly, or logs an interpreter error.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/90122" target="_blank">#90122</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook execution &amp; lifecycle" data-issues="90135" id="marketplace-plugin-rematerialization-can-kill-pinned-hooks" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1784</span>
+                <span class="kl-cat">Hook execution &amp; lifecycle</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Marketplace plugin re-materialization can silently kill pinned hooks.</h3>
+            <p>A reported Claude Code marketplace plugin issue found that when a plugin version bump causes the marketplace cache to re-materialize, already-running sessions can stay pinned to hook command paths under the old versioned install directory. If the update removes that old directory, plugin-delivered PreToolUse, PostToolUse, or Notification hooks become unreachable and silently stop firing while the session otherwise continues normally. The reporter describes multiple live sessions losing hook events at the same update boundary, with recovery only after `/reload-plugins` or restart. Because an in-plugin heartbeat hook is pinned to the same removed path, the plugin cannot reliably detect or repair its own hook death.</p>
+                        <!-- workaround:marketplace-plugin-rematerialization-can-kill-pinned-hooks -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not use marketplace-delivered hooks as the only enforcement layer for long-lived or high-trust sessions. Vendor critical guard hooks into user or project settings outside the plugin cache, or run a settings-level watchdog that snapshots plugin version directories at SessionStart and warns if a previously bound directory disappears. After marketplace updates, plugin version bumps, or cache re-materialization, restart affected sessions or run `/reload-plugins`, then use a same-session canary to prove the expected hooks still fire before relying on them for blocking, notifications, or review.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/90135" target="_blank">#90135</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

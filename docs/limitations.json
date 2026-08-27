@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1783,
+  "count": 1784,
   "categories": {
     "Hook behavior & events": 229,
     "Permission system": 162,
@@ -39,9 +39,9 @@
     "Skills": 13,
     "UX & display": 11,
     "Configuration & settings": 10,
+    "Hook execution & lifecycle": 10,
     "Model behavior & output": 10,
     "Telemetry & insights": 10,
-    "Hook execution & lifecycle": 9,
     "hooks": 9,
     "auth": 8,
     "Desktop & platform bugs": 8,
@@ -193,7 +193,7 @@
   },
   "severity_counts": {
     "CRITICAL": 158,
-    "HIGH": 1016,
+    "HIGH": 1017,
     "LOW": 109,
     "MEDIUM": 500
   },
@@ -23192,30 +23192,52 @@
         "git-bash",
         "interpreter"
       ]
+    },
+    {
+      "id": "marketplace-plugin-rematerialization-can-kill-pinned-hooks",
+      "title": "Marketplace plugin re-materialization can silently kill pinned hooks.",
+      "category": "Hook execution & lifecycle",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90135"
+      ],
+      "date_added": "2026-08-27",
+      "description": "A reported Claude Code marketplace plugin issue found that when a plugin version bump causes the marketplace cache to re-materialize, already-running sessions can stay pinned to hook command paths under the old versioned install directory. If the update removes that old directory, plugin-delivered PreToolUse, PostToolUse, or Notification hooks become unreachable and silently stop firing while the session otherwise continues normally. The reporter describes multiple live sessions losing hook events at the same update boundary, with recovery only after `/reload-plugins` or restart. Because an in-plugin heartbeat hook is pinned to the same removed path, the plugin cannot reliably detect or repair its own hook death.",
+      "workaround": "Do not use marketplace-delivered hooks as the only enforcement layer for long-lived or high-trust sessions. Vendor critical guard hooks into user or project settings outside the plugin cache, or run a settings-level watchdog that snapshots plugin version directories at SessionStart and warns if a previously bound directory disappears. After marketplace updates, plugin version bumps, or cache re-materialization, restart affected sessions or run `/reload-plugins`, then use a same-session canary to prove the expected hooks still fire before relying on them for blocking, notifications, or review.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "hooks",
+        "plugins",
+        "marketplace",
+        "reload-plugins",
+        "fail-open",
+        "long-running-sessions"
+      ]
     }
   ],
   "status_summary": {
-    "open": 1769,
+    "open": 1770,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 158,
-    "high": 1016,
+    "high": 1017,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-27",
   "stats": {
-    "total": 1783,
+    "total": 1784,
     "critical": 158,
-    "high": 1016,
+    "high": 1017,
     "medium": 500,
     "low": 109,
-    "open": 1769,
+    "open": 1770,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-27",
-  "total": 1783
+  "total": 1784
 }

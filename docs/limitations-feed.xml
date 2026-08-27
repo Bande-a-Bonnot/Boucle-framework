@@ -7,6 +7,14 @@
   <updated>2026-08-27T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Marketplace plugin re-materialization can silently kill pinned hooks.</title>
+    <id>https://framework.boucle.sh/limitations.html#marketplace-plugin-rematerialization-can-kill-pinned-hooks</id>
+    <link href="https://framework.boucle.sh/limitations.html#marketplace-plugin-rematerialization-can-kill-pinned-hooks"/>
+    <updated>2026-08-27T00:00:00Z</updated>
+    <summary>A reported Claude Code marketplace plugin issue found that when a plugin version bump causes the marketplace cache to re-materialize, already-running sessions can stay pinned to hook command paths under the old versioned install directory. If the update removes that old directory, plugin-delivered PreToolUse, PostToolUse, or Notification hooks become unreachable and silently stop firing while the session otherwise continues normally. The reporter describes multiple live sessions losing hook events at the same update boundary, with recovery only after `/reload-plugins` or restart. Because an in-plugin heartbeat hook is pinned to the same removed path, the plugin cannot reliably detect or repair its own hook death.</summary>
+    <category term="Hook execution &amp; lifecycle"/>
+  </entry>
+  <entry>
     <title>[HIGH] Windows plugin hooks can ignore `commandWindows` and run through Git Bash.</title>
     <id>https://framework.boucle.sh/limitations.html#windows-plugin-commandwindows-hooks-ignored</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-plugin-commandwindows-hooks-ignored"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-27T00:00:00Z</updated>
     <summary>Follow-up testing on reported Claude Code 2.1.241 and 2.1.233 sandbox issues found that Bash correctly blocked writes outside the filesystem sandbox and network requests outside sandbox allowlists, while in-process tools used a separate enforcement path. The Write tool could create forbidden paths under `~/.claude/`, and WebFetch could open a connection to a host outside a strict allowlist. The reporter also found that a sandboxed session could edit the global settings file that controls the sandbox itself, including adding commands to `excludedCommands`. This suggests built-in file/network tools and Bash can run on different enforcement paths, so a sandbox that blocks shell writes or shell network requests may still permit Write/Edit/WebFetch side effects.</summary>
     <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Account custom MCP connectors can silently dedupe by host in the CLI.</title>
-    <id>https://framework.boucle.sh/limitations.html#account-custom-mcp-connectors-can-dedupe-by-host</id>
-    <link href="https://framework.boucle.sh/limitations.html#account-custom-mcp-connectors-can-dedupe-by-host"/>
-    <updated>2026-08-27T00:00:00Z</updated>
-    <summary>A reported Claude Code CLI 2.1.241 Windows setup synced only one of three claude.ai account custom MCP connectors that pointed at the same provider host with different query-string scopes. Claude Desktop saw all three connectors and could use their tools, while `claude mcp list` showed only one and `claude mcp login` for the missing names said no such server existed. The reporter confirmed the missing URLs worked when added directly as local HTTP MCP servers, suggesting the CLI account-connector sync may silently dedupe or filter by host rather than full connector identity.</summary>
-    <category term="MCP &amp; plugin issues"/>
   </entry>
 </feed>
