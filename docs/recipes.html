@@ -41,6 +41,7 @@
                         <a href="#dangerous-commands">Dangerous commands</a> &middot;
                         <a href="#git-disasters">Git disasters</a> &middot;
                         <a href="#secret-pre-push">Secret pre-push</a> &middot;
+                        <a href="#write-coverage-canary">Write coverage canary</a> &middot;
                         <a href="#token-waste">Token waste</a> &middot;
                         <a href="#tool-switching">Tool switching bypass</a> &middot;
                         <a href="#custom-hook-test">Custom hook test</a> &middot;
@@ -414,6 +415,28 @@ PY
                     <p class="brief">Approve only an exact action after those checks: commit message, branch, remote, and whether push is allowed. Avoid broad <code>git add .</code> and unattended commit/push tasks in auto-mode sessions that can touch credential files, generated config, logs, transcripts, or environment dumps.</p>
                     <p class="brief">If a secret may already have been committed or pushed, do not paste the value into chat or public issues. Stop, revoke or rotate the credential through the provider, preserve the commit SHA and affected path for private incident handling, and assume the value is exposed even if the branch is later force-pushed away.</p>
                     <p class="brief" style="color: var(--muted-color);">Related known limitation: <a href="/limitations.html#git-commit-secret-leaks-have-no-built-in-pre-push-guard">git commits can leak plaintext credentials before any built-in guard reacts</a>.</p>
+                </div>
+
+                <div class="recipe" id="write-coverage-canary">
+                    <h2>"My hook blocks Write/Edit. Does it also block shell writes?"</h2>
+                    <p class="brief">Claude Code can route file changes through Bash, heredocs, <code>sed</code>, scripts, or PowerShell instead of the dedicated Write, Edit, MultiEdit, and NotebookEdit tools. A hook that only matches dedicated file tools will not see those shell operations. Use this canary before trusting protected-file policy in auto-mode, bypass mode, CI, or unattended sessions.</p>
+                    <p class="brief"><strong>Fix path: protect the file pattern, install both file and shell guards, verify the installed hooks, then dry-run one structured write payload and one Bash write payload</strong></p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> test -f .file-guard || touch .file-guard
+<span class="prompt-char">$</span> grep -qxF '.env' .file-guard || printf '%s\n' '.env' &gt;&gt; .file-guard
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- file-guard bash-guard
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- doctor
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/test-hook.sh -o /tmp/test-hook.sh
+<span class="prompt-char">$</span> chmod +x /tmp/test-hook.sh
+<span class="prompt-char">$</span> /tmp/test-hook.sh "bash ~/.claude/file-guard/hook.sh" --tool Write --file "$repo_root/.env" --content "TOKEN=example" --expect-deny
+<span class="prompt-char">$</span> /tmp/test-hook.sh "bash ~/.claude/file-guard/hook.sh" --tool Bash --command "printf 'TOKEN=example\n' &gt; .env" --expect-deny</code>
+                    </div>
+                    <p class="brief">The last two commands send synthetic Claude-style payloads to the hook. They do not create or modify <code>.env</code>. The structured <code>Write</code> case uses an absolute path because relative Write/Edit payloads can be ambiguous; the Bash case checks that a shell redirection targeting the same protected path is blocked too.</p>
+                    <p class="brief">A passing canary proves only those payload shapes against the hook command loaded from your current filesystem. Before relying on it, start a fresh Claude Code session from the same project root and keep an external fallback for secrets, generated credentials, or client data.</p>
+                    <p class="brief" style="color: var(--muted-color);">Related known limitation: <a href="/limitations.html#bypass-mode-can-steer-edit-and-write-through-shell-commands">permission modes can steer Edit and Write work through shell commands</a>.</p>
                 </div>
 
                 <div class="recipe" id="token-waste">
