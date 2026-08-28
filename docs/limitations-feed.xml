@@ -23,6 +23,14 @@
     <category term="Data integrity"/>
   </entry>
   <entry>
+    <title>[HIGH] Ralph Stop hook corruption handlers can be unreachable under `set -e`.</title>
+    <id>https://framework.boucle.sh/limitations.html#ralph-stop-hook-corruption-handlers-can-be-unreachable</id>
+    <link href="https://framework.boucle.sh/limitations.html#ralph-stop-hook-corruption-handlers-can-be-unreachable"/>
+    <updated>2026-08-28T00:00:00Z</updated>
+    <summary>A reported bug in the official `ralph-wiggum` plugin says its Stop hook runs with `set -euo pipefail`, then parses the loop state file and transcript JSON through command substitutions whose failures are expected corruption cases. When fields such as `iteration:` are missing, or when `jq` cannot parse the last transcript line, the shell can exit at the assignment before reaching the hook&#x27;s own diagnostic and cleanup branches. The result is a silent nonzero Stop-hook failure with `.claude/ralph-loop.local.md` left behind, so the same broken loop state can fail again on every subsequent Stop instead of telling the user to restart cleanly.</summary>
+    <category term="Hook execution &amp; lifecycle"/>
+  </entry>
+  <entry>
     <title>[HIGH] Compaction summaries can fabricate adversarial continuation instructions.</title>
     <id>https://framework.boucle.sh/limitations.html#compaction-summary-can-fabricate-adversarial-continuation</id>
     <link href="https://framework.boucle.sh/limitations.html#compaction-summary-can-fabricate-adversarial-continuation"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-28T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.241 Linux headless session found that after `EnterWorktree` moved the session into a linked worktree, project-skill discovery kept scanning the checkout where the session launched. A `SKILL.md` committed in the entered worktree was visible to `pwd`, `ls`, and `cat`, but `Skill(skill: &quot;...&quot;)` returned `Unknown skill` for the rest of the session. The same session could discover a new skill added to the launch checkout, and write isolation refused edits back to that launch checkout, so different subsystems disagreed about which tree was current.</summary>
     <category term="Worktrees &amp; isolation"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Agent frontmatter `tools:` allowlists can be ignored at runtime.</title>
-    <id>https://framework.boucle.sh/limitations.html#agent-frontmatter-tools-allowlist-can-be-ignored</id>
-    <link href="https://framework.boucle.sh/limitations.html#agent-frontmatter-tools-allowlist-can-be-ignored"/>
-    <updated>2026-08-28T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.241 Windows setup found that custom agent definitions under `.claude/agents/*.md` could declare a restricted `tools:` list such as Read, Grep, Glob, and Bash, yet the launched agent still used Write and Edit successfully. The reporter listed multiple nominally read-only reviewer, tester, research, and auditor agents affected by the same frontmatter containment gap, so role labels and agent metadata did not prevent file modifications.</summary>
-    <category term="Subagent &amp; spawned agents"/>
   </entry>
 </feed>
