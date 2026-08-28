@@ -173,6 +173,30 @@ credential reads, shell execution, repository writes, or outbound network
 actions through that server. Treat changed tool descriptions, prompt metadata,
 or unexpected tools as a stop signal until a human reviews the diff.
 
+On macOS, add one protected-folder canary if the fresh session was launched
+from Claude Desktop, an IDE, or another app wrapper, and the project is under
+Desktop, Documents, Downloads, iCloud Drive, Dropbox, Google Drive, OneDrive, or
+another CloudStorage path. In that same Claude Code session, ask it to run a
+Bash tool call that opens one byte from a known project file:
+
+```sh
+target="${BOUCLE_TCC_CANARY:-README.md}"
+python3 - "$target" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1])
+with p.open("rb") as f:
+    print(f.read(1))
+PY
+```
+
+Then ask Claude Code to read the same file with the Read tool. Treat `EPERM`,
+an empty Read result, or a mismatch where `stat` works but opening the file
+fails as a stop signal. Launch Claude Code directly from Terminal, or move the
+active checkout to a non-TCC-protected path, before consequential edits. A
+passing hook verifier does not prove macOS has granted the process file-open
+access to protected folders. See the known limitation for
+`desktop-disclaimer-can-break-macos-protected-folder-access`.
+
 Trust the hook layer only if all of these are true:
 
 - Verification reports zero `FAIL-OPEN` payload checks.
