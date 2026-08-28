@@ -669,6 +669,16 @@ Next recheck trigger:
 <span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"</code>
                     </div>
                     <p class="brief" style="color: var(--muted-color);">Keep the backup until the fresh session proves the hook boundary still works. If restore is needed, run <code>backup list</code> first and restore the named snapshot you intend to use. After a clean verification, start a fresh Claude Code session from that same project root. For restore steps and failure triage, use the <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/UPDATE_CHECKLIST.md">Claude Code update checklist</a>.</p>
+                    <p class="brief">On macOS, add a protected-folder canary if the fresh session was launched from Claude Desktop, an IDE, or another app wrapper and the project lives under Desktop, Documents, Downloads, iCloud Drive, Dropbox, Google Drive, OneDrive, or another CloudStorage path. In that same Claude Code session, ask it to open one byte from a known project file with Bash, then read the same file with the Read tool. Treat <code>EPERM</code>, an empty Read result, or a mismatch where <code>stat</code> works but opening the file fails as a stop signal. Launch Claude Code directly from Terminal, or move the checkout to a non-TCC-protected path, before consequential edits.</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> target="${BOUCLE_TCC_CANARY:-README.md}"
+<span class="prompt-char">$</span> python3 - "$target" &lt;&lt;'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1])
+with p.open("rb") as f:
+    print(f.read(1))
+PY</code>
+                    </div>
                     <div class="code-block">
                         <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- backup list
 <span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- restore settings.20260101_120000.json
