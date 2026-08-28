@@ -40,6 +40,7 @@
                         <a href="#files-deleted">Files deleted</a> &middot;
                         <a href="#dangerous-commands">Dangerous commands</a> &middot;
                         <a href="#git-disasters">Git disasters</a> &middot;
+                        <a href="#secret-pre-push">Secret pre-push</a> &middot;
                         <a href="#token-waste">Token waste</a> &middot;
                         <a href="#tool-switching">Tool switching bypass</a> &middot;
                         <a href="#custom-hook-test">Custom hook test</a> &middot;
@@ -391,6 +392,28 @@ PY
                     <div class="code-block">
                         <code><span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- git-safe branch-guard</code>
                     </div>
+                </div>
+
+                <div class="recipe" id="secret-pre-push">
+                    <h2>"Claude is about to commit or push code that may contain secrets"</h2>
+                    <p class="brief">A Claude Code session can bulk-stage files, commit plaintext credentials, and push before a product guardrail or <code>PostToolUse</code> logger can stop the side effect (<a href="https://github.com/anthropics/claude-code/issues/89273">#89273</a>). Hook verification proves representative hooks answered their payloads; it does not prove the current staged content or remote destination is safe.</p>
+                    <p class="brief"><strong>Fix path: inspect staged content, run an external secret scanner, verify the remote, then approve the exact commit or push</strong></p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> git status --short
+<span class="prompt-char">$</span> git diff --cached --name-only
+<span class="prompt-char">$</span> git diff --cached --check
+<span class="prompt-char">$</span> git diff --cached -- . ':(exclude)package-lock.json' ':(exclude)yarn.lock' | sed -n '1,240p'
+<span class="prompt-char">$</span> git remote -v
+<span class="prompt-char">$</span> git branch --show-current
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- git-safe bash-guard session-log
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict</code>
+                    </div>
+                    <p class="brief">Also run the secret scanner your project already trusts, such as a pre-commit hook, CI scanner, <code>gitleaks</code>, <code>trufflehog</code>, or the host's built-in secret scanning. Keep that scanner outside Claude Code's hook layer so a broken Claude hook is not the only line of defense.</p>
+                    <p class="brief">Approve only an exact action after those checks: commit message, branch, remote, and whether push is allowed. Avoid broad <code>git add .</code> and unattended commit/push tasks in auto-mode sessions that can touch credential files, generated config, logs, transcripts, or environment dumps.</p>
+                    <p class="brief">If a secret may already have been committed or pushed, do not paste the value into chat or public issues. Stop, revoke or rotate the credential through the provider, preserve the commit SHA and affected path for private incident handling, and assume the value is exposed even if the branch is later force-pushed away.</p>
+                    <p class="brief" style="color: var(--muted-color);">Related known limitation: <a href="/limitations.html#git-commit-secret-leaks-have-no-built-in-pre-push-guard">git commits can leak plaintext credentials before any built-in guard reacts</a>.</p>
                 </div>
 
                 <div class="recipe" id="token-waste">
