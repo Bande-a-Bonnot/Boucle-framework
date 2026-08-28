@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1790,
+  "count": 1791,
   "categories": {
     "Hook behavior & events": 229,
     "Permission system": 162,
@@ -19,9 +19,9 @@
     "MCP & integrations": 30,
     "Performance & cost": 27,
     "VS Code extension": 26,
+    "Data integrity": 24,
     "Agents & subagents": 23,
     "Auth & accounts": 23,
-    "Data integrity": 23,
     "Tool behavior": 23,
     "Core & session management": 21,
     "Bash & shell execution": 19,
@@ -192,12 +192,33 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 160,
+    "CRITICAL": 161,
     "HIGH": 1021,
     "LOW": 109,
     "MEDIUM": 500
   },
   "entries": [
+    {
+      "id": "retention-sweep-can-delete-user-worktrees-under-claude-worktrees",
+      "title": "Retention sweeps can delete user-created worktrees under `.claude/worktrees`.",
+      "category": "Data integrity",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/89199"
+      ],
+      "date_added": "2026-08-28",
+      "description": "A reported Claude Code 2.1.238 to 2.1.241 macOS setup found that the retention sweep could delete clean, pushed, user-created `git worktree add` worktrees stored under `<repo>/.claude/worktrees/` even though the docs say cleanup only removes Claude-created worktrees. The report distinguishes the name-filtered stale-agent cleanup path from a jobs cleanup path that reaps every dead background-job record with a `worktreePath` under `.claude/worktrees` when the worktree is clean, pushed, unlocked, and its root directory mtime is older than `cleanupPeriodDays`. Because normal commits and subdirectory edits do not refresh the worktree root mtime, an actively used worktree can look stale, and a dead job record can become enough authority to remove both the working tree and git worktree metadata without user-visible notice.",
+      "workaround": "Do not keep long-lived manual worktrees under `.claude/worktrees` unless you have verified the installed version's cleanup behavior. Prefer storing user-created worktrees outside Claude Code's cleanup namespace, or lock durable worktrees with `git worktree lock --reason \"permanent - do not auto-clean\" <path>`. Before relying on retention cleanup, inspect `~/.claude/jobs/*/state.json` for `worktreePath` records pointing at user-owned paths, back up important worktree state, and treat root directory mtime as an unsafe activity signal for deletion decisions.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "data-loss",
+        "worktrees",
+        "retention",
+        "background-jobs",
+        "macos"
+      ]
+    },
     {
       "id": "compaction-summary-can-fabricate-adversarial-continuation",
       "title": "Compaction summaries can fabricate adversarial continuation instructions.",
@@ -23353,27 +23374,27 @@
     }
   ],
   "status_summary": {
-    "open": 1776,
+    "open": 1777,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 160,
+    "critical": 161,
     "high": 1021,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-28",
   "stats": {
-    "total": 1790,
-    "critical": 160,
+    "total": 1791,
+    "critical": 161,
     "high": 1021,
     "medium": 500,
     "low": 109,
-    "open": 1776,
+    "open": 1777,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-28",
-  "total": 1790
+  "total": 1791
 }
