@@ -50,7 +50,8 @@
                         <a href="#ci-verification">CI verification</a> &middot;
                         <a href="#team-handoff">Team handoff</a> &middot;
                         <a href="#autonomous-session">Autonomous session preflight</a> &middot;
-                        <a href="#after-update">After Claude Code updates</a>
+                        <a href="#after-update">After Claude Code updates</a> &middot;
+                        <a href="#mcp-plugin-update">MCP/plugin update</a>
                     </p>
                 </nav>
 
@@ -733,6 +734,42 @@ PY</code>
                     </div>
                 </div>
 
+                <div class="recipe" id="mcp-plugin-update">
+                    <h2>"An MCP server or plugin changed. Is it still the same tool?"</h2>
+                    <p class="brief">Use this after adding, updating, reconnecting, or approving an MCP server, Claude connector, marketplace plugin, or plugin channel. MCP tool names, schemas, descriptions, server URLs, and prompt metadata are part of the trust boundary. A hook verifier proves local hooks still execute; it does not prove a remote server kept the same tool surface.</p>
+                    <p class="brief"><strong>Fix path: record the visible server list, rerun hook verification, start a fresh session, then test one harmless read-only tool per critical server</strong></p>
+                    <p class="brief">Before changing the server, connector, plugin, or channel, capture a bounded baseline. Do not paste <code>claude mcp get</code> output into public logs for HTTP servers that may store secrets in headers.</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> claude --version 2&gt;/dev/null || true
+<span class="prompt-char">$</span> claude mcp list 2&gt;/dev/null || printf 'claude mcp list failed\n'
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only</code>
+                    </div>
+                    <p class="brief">After the change, run the strict local hook recheck from the same project root and terminal profile. If hooks disappeared, payload checks did not run, or any boundary hook reports <code>FAIL-OPEN</code>, stop before using the changed MCP surface for credential reads, shell execution, repository writes, network actions, or external publication.</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> unset IS_DEMO CLAUDE_CODE_SIMPLE
+<span class="prompt-char">$</span> claude mcp list 2&gt;/dev/null || printf 'claude mcp list failed\n'
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- doctor
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict</code>
+                    </div>
+                    <p class="brief">On native Windows, use PowerShell 7 for the same baseline and verifier:</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">PS&gt;</span> $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2&gt;$null }
+<span class="prompt-char">PS&gt;</span> if ($root) { Set-Location $root }
+<span class="prompt-char">PS&gt;</span> claude --version 2&gt;$null
+<span class="prompt-char">PS&gt;</span> claude mcp list 2&gt;$null
+<span class="prompt-char">PS&gt;</span> Remove-Item Env:IS_DEMO -ErrorAction SilentlyContinue
+<span class="prompt-char">PS&gt;</span> Remove-Item Env:CLAUDE_CODE_SIMPLE -ErrorAction SilentlyContinue
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"</code>
+                    </div>
+                    <p class="brief">Start a fresh Claude Code session from the same root after the check. In that fresh session, compare the visible MCP server list with the baseline and run one harmless read-only call for each critical server before trusting write-capable tools. Treat a new tool, missing tool, changed description, changed schema, unexpected URL, failed read-only probe, or connector crossing from read/draft behavior into send/delete/publish behavior as a renewed approval event.</p>
+                    <p class="brief" style="color: var(--muted-color);">Related limitations: <a href="limitations.html#mcp-servers-can-runtime-gate-tool-metadata-poisoning-after-approval">runtime-gated MCP metadata poisoning</a>, <a href="limitations.html#remote-mcp-connectors-can-gain-write-tools-without-reconsent">remote MCP connectors gaining write tools</a>, and <a href="limitations.html#hook-deny-is-not-enforced-for-mcp-tool-calls">MCP hook ask/deny enforcement gaps</a>.</p>
+                </div>
+
                 <h2 style="margin-top: 3em;">Quick reference</h2>
                 <table style="width: 100%; border-collapse: collapse; margin-top: 1em;">
                     <thead>
@@ -785,6 +822,10 @@ PY</code>
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">Claude Code update changed hook behavior</td>
                             <td style="padding: 0.5em 0;"><code>safety-check --verify --strict</code> + <code>doctor</code></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">MCP server, connector, or plugin changed</td>
+                            <td style="padding: 0.5em 0;"><code>claude mcp list</code> + strict hook recheck + harmless read-only probe</td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">Verification failed or skipped checks</td>
