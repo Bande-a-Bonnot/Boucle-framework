@@ -14213,14 +14213,15 @@
     },
     {
       "id": "workflow-tool-schema-eager-loads-despite-explicit-trigger-only-contract",
-      "title": "Workflow tool schema eager-loads despite an explicit-trigger-only contract",
+      "title": "Workflow tool schema can stay eagerly loaded despite settings-level disallow",
       "category": "Performance & cost",
       "severity": "MEDIUM",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/79504"
+        "https://github.com/anthropics/claude-code/issues/79504",
+        "https://github.com/anthropics/claude-code/issues/90059"
       ],
-      "description": "A reported Claude Code 2.1.x session loads the built-in Workflow tool's large schema on every session even though Workflow is only supposed to be used after explicit user or skill intent. The report estimates the eager description at roughly 3.5K-4K tokens, making it a recurring context cost for users who never invoke Workflow in that session.",
-      "workaround": "Account for Workflow as part of baseline context overhead when measuring fresh-session costs. For short sessions where every token matters, avoid installing additional always-loaded tools that compound the fixed schema budget. If you maintain similar tools or MCP servers, prefer name-only deferral with on-demand ToolSearch loading for tools that cannot be selected proactively.",
+      "description": "A reported Claude Code 2.1.x session loads the built-in Workflow tool's large schema on every session even though Workflow is only supposed to be used after explicit user or skill intent. The first report estimated the eager description at roughly 3.5K-4K tokens. A later Claude Code 2.1.247 Linux repro measured a 7,900-token gap for Workflow on the first headless Opus request: `permissions.deny` and the `--disallowedTools Workflow` flag both reclaimed the schema tokens, but an identically named `disallowedTools` entry in settings JSON still denied calls while leaving the schema in context.",
+      "workaround": "Account for Workflow as part of baseline context overhead when measuring fresh-session costs. If you need to remove Workflow from prompt context, verify the actual token delta for your installed version and prefer `permissions.deny` or the CLI `--disallowedTools Workflow` flag over settings-level `disallowedTools` until that path proves schema trimming. For short sessions where every token matters, avoid installing additional always-loaded tools that compound the fixed schema budget. If you maintain similar tools or MCP servers, prefer name-only deferral with on-demand ToolSearch loading for tools that cannot be selected proactively.",
       "status": "open",
       "date_added": "2026-07-20"
     },
@@ -16789,8 +16790,8 @@
       "issues": [
         "https://github.com/anthropics/claude-code/issues/79973"
       ],
-      "description": "A reported Claude Code project entry reached the contradictory state `hasCompletedProjectOnboarding: true`, `projectOnboardingSeenCount: 0`, and `hasTrustDialogAccepted: false` in `~/.claude.json`. Because the trust dialog was never shown again, project-scope plugins under `./.claude/skills/*` silently failed to load and `.mcp.json` approvals were re-prompted on every launch despite being written to project settings.",
-      "workaround": "When project plugins or MCP approvals appear to ignore saved state, inspect the project's trust fields in `~/.claude.json`. Quit all Claude sessions before editing because clients can rewrite the file on exit, then reset the contradictory onboarding state or explicitly mark the trusted project only after confirming the path is expected.",
+      "description": "A reported Claude Code project entry reached the contradictory state `hasCompletedProjectOnboarding: true`, `projectOnboardingSeenCount: 0`, and `hasTrustDialogAccepted: false` in `~/.claude.json`. Because the trust dialog was never shown again, project-scope plugins under `./.claude/skills/*` silently failed to load and `.mcp.json` approvals were re-prompted on every launch despite being written to project settings. Related later reports show the trust fields can diverge in the other direction too: `hasTrustDialogAccepted: false` can coexist with hooks that execute normally, so the stored flag is not a reliable programmatic signal for effective project trust.",
+      "workaround": "When project plugins, MCP approvals, or hooks appear to ignore saved state, inspect the exact project entry in `~/.claude.json`, but do not treat any single stored trust flag as proof of effective behavior. Use a live canary for each trust-gated feature you depend on, such as a harmless hook marker, plugin load check, or MCP approval check. Quit all Claude sessions before manual edits because clients can rewrite the file on exit, then reset contradictory onboarding state or explicitly mark the trusted project only after confirming the path is expected.",
       "status": "open",
       "date_added": "2026-07-21"
     },
@@ -20243,14 +20244,17 @@
     },
     {
       "id": "workspace-trust-dialog-can-fail-to-appear",
-      "title": "The workspace trust dialog can fail to appear while trust-gated features stay disabled.",
+      "title": "Workspace trust state can diverge from effective trust-gated behavior.",
       "severity": "HIGH",
       "category": "Security & trust boundaries",
-      "description": "A reported Claude Code 2.1.233 macOS setup had project entries stuck with `hasTrustDialogAccepted: false` in `~/.claude.json`, but fresh launches in those folders never showed the trust prompt. Trust-gated features such as `statusLine` silently stayed disabled with no error or warning. Manually setting the affected path's trust flag to true made the status line render immediately in the already-running session, which narrows the symptom to the trust prompt path rather than a broken statusLine command. The reporter also confirmed trust is tracked per exact path, so trusted parent folders do not automatically cover nested worktrees or subdirectories.",
-      "issue": "86857",
+      "description": "A reported Claude Code 2.1.233 macOS setup had project entries stuck with `hasTrustDialogAccepted: false` in `~/.claude.json`, but fresh launches in those folders never showed the trust prompt. Trust-gated features such as `statusLine` silently stayed disabled with no error or warning. Manually setting the affected path's trust flag to true made the status line render immediately in the already-running session, which narrows the symptom to the trust prompt path rather than a broken statusLine command. A later Claude Code 2.1.241 Linux report found the inverse: `hasTrustDialogAccepted: false` could coexist with fully working hooks, leaving integrations without a stable field that answers whether hooks or other trust-gated features will run. The reporters also confirmed trust is tracked per exact path, so trusted parent folders do not automatically cover nested worktrees or subdirectories.",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/86857",
+        "https://github.com/anthropics/claude-code/issues/90220"
+      ],
       "status": "open",
       "date_added": "2026-08-15",
-      "workaround": "When a configured statusLine, hook, or project trust-gated setting appears to do nothing, inspect the exact project path entry in `~/.claude.json` instead of relying on parent-folder trust. If `hasTrustDialogAccepted` is false and no prompt appears after a fresh launch, trigger an explicit trust flow if available. Only edit the trust flag manually after verifying the path is the intended workspace, then restart or recheck the feature in that same folder."
+      "workaround": "When a configured statusLine, hook, or project trust-gated setting appears to do nothing, inspect the exact project path entry in `~/.claude.json` instead of relying on parent-folder trust. If `hasTrustDialogAccepted` is false and no prompt appears after a fresh launch, trigger an explicit trust flow if available, but also run a same-session canary for the specific gated feature because the flag may be stale in either direction. Only edit the trust flag manually after verifying the path is the intended workspace, then restart or recheck the feature in that same folder."
     },
     {
       "id": "desktop-session-card-save-failures-can-stay-invisible",
