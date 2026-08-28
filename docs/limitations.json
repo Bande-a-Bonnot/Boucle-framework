@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1795,
+  "count": 1796,
   "categories": {
     "Hook behavior & events": 230,
     "Permission system": 162,
@@ -11,8 +11,8 @@
     "TUI & display": 37,
     "Cowork & remote": 35,
     "Platform & compatibility": 35,
+    "Sandbox & permissions": 35,
     "Security & trust boundaries": 35,
-    "Sandbox & permissions": 34,
     "CLI & terminal": 33,
     "Configuration behavior": 33,
     "Context & memory": 33,
@@ -194,11 +194,32 @@
   },
   "severity_counts": {
     "CRITICAL": 161,
-    "HIGH": 1025,
+    "HIGH": 1026,
     "LOW": 109,
     "MEDIUM": 500
   },
   "entries": [
+    {
+      "id": "project-scoped-strictallowlist-can-be-silently-discarded",
+      "title": "Project-scoped `strictAllowlist` can be silently discarded.",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90355"
+      ],
+      "date_added": "2026-08-28",
+      "description": "A reported Claude Code 2.1.250 macOS repro found that `sandbox.network.strictAllowlist: true` is silently ignored when it is placed in a repository `.claude/settings.json` or `.claude/settings.local.json`, even while `sandbox.enabled` and `sandbox.network.allowedDomains` from the same project file are honored. The filesystem sandbox blocked a harmless home-directory write, proving the sandbox was active, but a sandboxed Bash `curl` to a non-allowlisted host still returned `200` and the debug log showed the request going through the classifier/prompt path instead of deterministic denial. Moving the identical settings block to CLI `--settings` scope produced the expected `403`, so the gap is scope resolution and missing operator notice rather than network enforcement alone.",
+      "workaround": "Do not treat a project-level `sandbox.network.strictAllowlist` entry as proof that non-allowlisted egress is denied. Put strict network allowlist policy in user, managed, or CLI `--settings` scope where the installed Claude Code version honors it, then run a negative network canary such as a sandboxed `curl` to an intentionally non-allowlisted host and require a visible denial before processing secrets or untrusted content. Keep `allowUnsandboxedCommands` disabled for sensitive work, and use an OS firewall, container policy, VPN, or external proxy as the primary egress boundary when deterministic network denial matters.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "sandbox",
+        "network",
+        "strictAllowlist",
+        "project-settings",
+        "egress"
+      ]
+    },
     {
       "id": "pasted-secrets-can-enter-transcripts-without-a-safe-input-channel",
       "title": "Pasted secrets can enter transcripts without a sanctioned safe input channel.",
@@ -23463,27 +23484,27 @@
     }
   ],
   "status_summary": {
-    "open": 1781,
+    "open": 1782,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 161,
-    "high": 1025,
+    "high": 1026,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-28",
   "stats": {
-    "total": 1795,
+    "total": 1796,
     "critical": 161,
-    "high": 1025,
+    "high": 1026,
     "medium": 500,
     "low": 109,
-    "open": 1781,
+    "open": 1782,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-28",
-  "total": 1795
+  "total": 1796
 }
