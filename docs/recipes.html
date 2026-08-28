@@ -51,6 +51,7 @@
                         <a href="#team-handoff">Team handoff</a> &middot;
                         <a href="#autonomous-session">Autonomous session preflight</a> &middot;
                         <a href="#after-update">After Claude Code updates</a> &middot;
+                        <a href="#resumed-session">Resumed session recheck</a> &middot;
                         <a href="#mcp-plugin-update">MCP/plugin update</a>
                     </p>
                 </nav>
@@ -734,6 +735,35 @@ PY</code>
                     </div>
                 </div>
 
+                <div class="recipe" id="resumed-session">
+                    <h2>"I resumed a session after hooks or settings changed"</h2>
+                    <p class="brief">Use this when a Claude Code conversation was resumed, left open during a hook install, or kept running while <code>settings.json</code>, <code>settings.local.json</code>, MCP servers, plugins, or permission modes changed. Disk files can be correct while the active session still uses old hook paths, old permission state, or a different mode.</p>
+                    <p class="brief"><strong>Fix path: verify from disk, start a fresh session from the verified root, then run one harmless canary in that fresh session</strong></p>
+                    <p class="brief">First prove the files on disk are healthy from the exact project root Claude Code should use:</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> claude --version 2&gt;/dev/null || true
+<span class="prompt-char">$</span> unset IS_DEMO CLAUDE_CODE_SIMPLE
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.sh | bash -s -- doctor
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict</code>
+                    </div>
+                    <p class="brief">If strict verification reports missing hooks, skipped boundary checks, no payload checks, or <code>FAIL-OPEN</code>, repair that before continuing. If disk verification is clean, do not treat a resumed or long-running session as automatically refreshed. Start a new Claude Code process from the same root and keep the old session read-only until the fresh one proves the current boundary.</p>
+                    <p class="brief">In the fresh session, run a harmless canary that must pass through the same boundary you care about. For example, ask Claude Code to report the current working directory, then ask it to attempt a known-safe dry run or a blocked test command that your installed guard is expected to deny. The point is not to run destructive work; it is to prove the fresh session loaded the hook and permission state you just verified on disk.</p>
+                    <p class="brief">On native Windows, use PowerShell 7 and the native verifier before opening the fresh session:</p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">PS&gt;</span> $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2&gt;$null }
+<span class="prompt-char">PS&gt;</span> if ($root) { Set-Location $root }
+<span class="prompt-char">PS&gt;</span> claude --version 2&gt;$null
+<span class="prompt-char">PS&gt;</span> Remove-Item Env:IS_DEMO -ErrorAction SilentlyContinue
+<span class="prompt-char">PS&gt;</span> Remove-Item Env:CLAUDE_CODE_SIMPLE -ErrorAction SilentlyContinue
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
+<span class="prompt-char">PS&gt;</span> iex "&amp; { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"</code>
+                    </div>
+                    <p class="brief">Treat these as recheck triggers: resumed conversation, compacted session, changed launch directory, edited <code>.claude/settings.local.json</code>, hook install or restore, plugin or MCP update, IDE extension update, or any unexpected permission prompt after a clean install.</p>
+                    <p class="brief" style="color: var(--muted-color);">Related limitations: <a href="limitations.html#bypass-permissions-not-restored-on-session-resume">bypassPermissions not restored on session resume</a> and <a href="https://github.com/anthropics/claude-code/issues/41259">settings.local.json permission-state desync</a>.</p>
+                </div>
+
                 <div class="recipe" id="mcp-plugin-update">
                     <h2>"An MCP server or plugin changed. Is it still the same tool?"</h2>
                     <p class="brief">Use this after adding, updating, reconnecting, or approving an MCP server, Claude connector, marketplace plugin, or plugin channel. MCP tool names, schemas, descriptions, server URLs, and prompt metadata are part of the trust boundary. A hook verifier proves local hooks still execute; it does not prove a remote server kept the same tool surface.</p>
@@ -822,6 +852,10 @@ PY</code>
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">Claude Code update changed hook behavior</td>
                             <td style="padding: 0.5em 0;"><code>safety-check --verify --strict</code> + <code>doctor</code></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Resumed session after settings changed</td>
+                            <td style="padding: 0.5em 0;"><code>doctor</code> + strict verification + fresh-session canary</td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">MCP server, connector, or plugin changed</td>
