@@ -21417,16 +21417,17 @@
     },
     {
       "id": "enterworktree-hook-subprocesses-can-stay-bound-to-original-checkout",
-      "title": "EnterWorktree hook subprocesses can stay bound to the original checkout.",
+      "title": "EnterWorktree hook subprocesses can stay bound to stale execution context.",
       "category": "Worktrees & isolation",
       "severity": "HIGH",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/87890"
+        "https://github.com/anthropics/claude-code/issues/87890",
+        "https://github.com/anthropics/claude-code/issues/90104"
       ],
       "status": "open",
       "date_added": "2026-08-19",
-      "description": "A reported Windows 11 CLI/agent SDK session found that after `EnterWorktree` switches file tools into a new git worktree, `PreToolUse` hook subprocesses can keep resolving `${CLAUDE_PROJECT_DIR:-$PWD}` against the original checkout. `Bash`, `Read`, `Write`, and `Edit` operated in the entered worktree, but a hook command using `${CLAUDE_PROJECT_DIR:-$PWD}/.claude/hooks/...` launched the original checkout's copy of the script for the rest of the session. Editing or instrumenting the worktree's own hook copy then had no effect, so path guards could permanently block valid worktree edits or leave Bash and PowerShell workarounds outside the intended hook coverage.",
-      "workaround": "Do not assume mid-session `EnterWorktree` rebinds project-relative hook commands or `CLAUDE_PROJECT_DIR` for security-sensitive work. Prefer starting a fresh Claude Code session from the intended worktree, or install critical hook scripts at user or managed scope with explicit path resolution that does not depend on the current checkout's project directory. After entering a worktree, run a harmless canary that must trigger the hook, record which script path executed, and verify the hook reasons over the tool input file path rather than a stale project-root environment."
+      "description": "A reported Windows 11 CLI/agent SDK session found that after `EnterWorktree` switches file tools into a new git worktree, `PreToolUse` hook subprocesses can keep resolving `${CLAUDE_PROJECT_DIR:-$PWD}` against the original checkout. `Bash`, `Read`, `Write`, and `Edit` operated in the entered worktree, but a hook command using `${CLAUDE_PROJECT_DIR:-$PWD}/.claude/hooks/...` launched the original checkout's copy of the script for the rest of the session. A later macOS report found a related stale-context failure after mid-session `EnterWorktree`: automatic `Stop` hook execution started failing with `Operation not permitted`, even though the same script still ran moments earlier through the interactive Bash tool inside the entered worktree. Hook guards can therefore stay bound to an old project root or sandbox scope while the visible tools operate in the new worktree.",
+      "workaround": "Do not assume mid-session `EnterWorktree` rebinds project-relative hook commands, `CLAUDE_PROJECT_DIR`, or hook sandbox scope for security-sensitive work. Prefer starting a fresh Claude Code session from the intended worktree, or install critical hook scripts at user or managed scope with explicit path resolution that does not depend on the current checkout's project directory. After entering a worktree, run a harmless canary that must trigger the hook, record which script path executed, and verify the hook reasons over the tool input file path and still has permission to run from the new worktree. If hook canaries fail or report `EPERM`, restart from the worktree instead of continuing with partial hook coverage."
     },
     {
       "id": "write-tool-can-ignore-bash-working-directory-boundary",
