@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1792,
+  "count": 1793,
   "categories": {
     "Hook behavior & events": 229,
     "Permission system": 162,
@@ -37,9 +37,9 @@
     "MCP integration": 13,
     "Plugin & channel system": 13,
     "Skills": 13,
+    "Hook execution & lifecycle": 11,
     "UX & display": 11,
     "Configuration & settings": 10,
-    "Hook execution & lifecycle": 10,
     "Model behavior & output": 10,
     "Telemetry & insights": 10,
     "hooks": 9,
@@ -194,7 +194,7 @@
   },
   "severity_counts": {
     "CRITICAL": 161,
-    "HIGH": 1022,
+    "HIGH": 1023,
     "LOW": 109,
     "MEDIUM": 500
   },
@@ -239,6 +239,28 @@
         "retention",
         "background-jobs",
         "macos"
+      ]
+    },
+    {
+      "id": "ralph-stop-hook-corruption-handlers-can-be-unreachable",
+      "title": "Ralph Stop hook corruption handlers can be unreachable under `set -e`.",
+      "category": "Hook execution & lifecycle",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90318"
+      ],
+      "date_added": "2026-08-28",
+      "description": "A reported bug in the official `ralph-wiggum` plugin says its Stop hook runs with `set -euo pipefail`, then parses the loop state file and transcript JSON through command substitutions whose failures are expected corruption cases. When fields such as `iteration:` are missing, or when `jq` cannot parse the last transcript line, the shell can exit at the assignment before reaching the hook's own diagnostic and cleanup branches. The result is a silent nonzero Stop-hook failure with `.claude/ralph-loop.local.md` left behind, so the same broken loop state can fail again on every subsequent Stop instead of telling the user to restart cleanly.",
+      "workaround": "If a Ralph loop starts failing silently or keeps blocking after a corrupt or hand-edited state file, inspect and remove `.claude/ralph-loop.local.md` before starting a fresh loop. For local forks or wrapper scripts, make expected parse failures non-fatal before validation by guarding frontmatter extraction pipelines and by writing `jq` parsing as an explicit `if ! output=$(...); then` branch. Run a corrupt-state canary that proves the hook prints the intended message, removes the state file, and exits 0 before trusting it for unattended loop control.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "hooks",
+        "plugins",
+        "ralph-wiggum",
+        "stop-hook",
+        "set-e",
+        "state-file"
       ]
     },
     {
@@ -23396,27 +23418,27 @@
     }
   ],
   "status_summary": {
-    "open": 1778,
+    "open": 1779,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 161,
-    "high": 1022,
+    "high": 1023,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-28",
   "stats": {
-    "total": 1792,
+    "total": 1793,
     "critical": 161,
-    "high": 1022,
+    "high": 1023,
     "medium": 500,
     "low": 109,
-    "open": 1778,
+    "open": 1779,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-28",
-  "total": 1792
+  "total": 1793
 }
