@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1788,
+  "count": 1789,
   "categories": {
     "Hook behavior & events": 229,
     "Permission system": 162,
@@ -11,11 +11,11 @@
     "TUI & display": 37,
     "Cowork & remote": 35,
     "Platform & compatibility": 35,
+    "Sandbox & permissions": 34,
     "Security & trust boundaries": 34,
     "CLI & terminal": 33,
     "Configuration behavior": 33,
     "Context & memory": 33,
-    "Sandbox & permissions": 33,
     "MCP & integrations": 30,
     "Performance & cost": 27,
     "VS Code extension": 26,
@@ -193,7 +193,7 @@
   },
   "severity_counts": {
     "CRITICAL": 160,
-    "HIGH": 1019,
+    "HIGH": 1020,
     "LOW": 109,
     "MEDIUM": 500
   },
@@ -280,6 +280,27 @@
         "wsl",
         "sensitive-data",
         "world-writable"
+      ]
+    },
+    {
+      "id": "sandbox-tcc-attribution-can-fail-mid-session",
+      "title": "Sandbox TCC attribution can fail mid-session and revoke protected-folder access.",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90227"
+      ],
+      "date_added": "2026-08-28",
+      "description": "A reported Claude Code 2.1.248 macOS setup with the Bash sandbox enabled found that sessions running inside a TCC-protected Documents folder could suddenly lose access to the project directory several times in one long-lived process. The failure affected Bash commands, spawned tools, and the Read tool, produced `Operation not permitted` and `Current directory does not exist` symptoms, and recovered only after toggling the terminal application's Documents-folder permission in System Settings. Unified logs showed `kTCCErrorDomain Code=5` and `Failed to create Attribution Chain` for the live Claude process audit token, so the denial appears to come from a stale attribution error being treated like a policy decision rather than from changed filesystem permissions or a changed TCC grant.",
+      "workaround": "Avoid treating a successful startup inside Documents, Downloads, Desktop, or network volumes as proof that the whole long-running session will retain access on affected macOS versions. Keep critical work in non-TCC-protected paths when practical, or add a cheap same-session read/write canary for every protected project root before consequential tool calls. If access starts failing with `EPERM`, preserve `tccd` and `sandboxd` log evidence before restarting or toggling permissions, and verify from both Bash and the Read tool after recovery. For unattended workflows, fail closed on the first protected-folder canary failure instead of continuing with partial filesystem visibility.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "sandbox",
+        "tcc",
+        "macos",
+        "protected-folders",
+        "attribution"
       ]
     },
     {
@@ -23305,27 +23326,27 @@
     }
   ],
   "status_summary": {
-    "open": 1774,
+    "open": 1775,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 160,
-    "high": 1019,
+    "high": 1020,
     "low": 109,
     "medium": 500
   },
-  "lastUpdated": "2026-08-27",
+  "lastUpdated": "2026-08-28",
   "stats": {
-    "total": 1788,
+    "total": 1789,
     "critical": 160,
-    "high": 1019,
+    "high": 1020,
     "medium": 500,
     "low": 109,
-    "open": 1774,
+    "open": 1775,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-08-27",
-  "total": 1788
+  "last_updated": "2026-08-28",
+  "total": 1789
 }
