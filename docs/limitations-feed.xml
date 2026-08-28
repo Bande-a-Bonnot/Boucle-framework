@@ -31,6 +31,14 @@
     <category term="Hook execution &amp; lifecycle"/>
   </entry>
   <entry>
+    <title>[HIGH] UserPromptSubmit hooks can skip queued prompts or drop injected context.</title>
+    <id>https://framework.boucle.sh/limitations.html#userpromptsubmit-hooks-can-skip-queued-prompts-or-drop-context</id>
+    <link href="https://framework.boucle.sh/limitations.html#userpromptsubmit-hooks-can-skip-queued-prompts-or-drop-context"/>
+    <updated>2026-08-28T00:00:00Z</updated>
+    <summary>A reported UserPromptSubmit hook repro says prompt-time context can fail in two silent ways. Messages submitted while an agent turn is already running can be folded into the active turn without spawning the UserPromptSubmit hook at all, matching an older closed mid-turn report. A separate intermittent mode runs the hook and leaves hook-side evidence, but the returned additionalContext or systemMessage never reaches the model transcript. For hooks that inject collaboration rules, task routing, or safety reminders, both modes make prompt-level policy appear configured while the model receives the raw user message without the expected context.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Compaction summaries can fabricate adversarial continuation instructions.</title>
     <id>https://framework.boucle.sh/limitations.html#compaction-summary-can-fabricate-adversarial-continuation</id>
     <link href="https://framework.boucle.sh/limitations.html#compaction-summary-can-fabricate-adversarial-continuation"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-28T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.241 macOS repro found that `.claude/rules/` `paths:` globs are evaluated only against project-relative paths. A matching markdown file under the project root injected the rule, but the same basename and glob did not match an out-of-root file under `/tmp`, and absolute globs also failed. The practical gap is auto-memory: files under `~/.claude/projects/&lt;sanitized-cwd&gt;/memory/*.md` are first-class Claude Code state, but path-scoped rules such as `**/.claude/**/*.md` cannot govern them because those files have no project-relative path. No warning appears when a pattern can never match.</summary>
     <category term="Configuration behavior"/>
-  </entry>
-  <entry>
-    <title>[HIGH] EnterWorktree can leave project-skill discovery rooted at the launch checkout.</title>
-    <id>https://framework.boucle.sh/limitations.html#enterworktree-can-leave-project-skill-discovery-on-launch-checkout</id>
-    <link href="https://framework.boucle.sh/limitations.html#enterworktree-can-leave-project-skill-discovery-on-launch-checkout"/>
-    <updated>2026-08-28T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.241 Linux headless session found that after `EnterWorktree` moved the session into a linked worktree, project-skill discovery kept scanning the checkout where the session launched. A `SKILL.md` committed in the entered worktree was visible to `pwd`, `ls`, and `cat`, but `Skill(skill: &quot;...&quot;)` returned `Unknown skill` for the rest of the session. The same session could discover a new skill added to the launch checkout, and write isolation refused edits back to that launch checkout, so different subsystems disagreed about which tree was current.</summary>
-    <category term="Worktrees &amp; isolation"/>
   </entry>
 </feed>
