@@ -23308,12 +23308,13 @@
       "category": "Subagent & spawned agents",
       "severity": "HIGH",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/89277"
+        "https://github.com/anthropics/claude-code/issues/89277",
+        "https://github.com/anthropics/claude-code/issues/90622"
       ],
       "status": "open",
       "date_added": "2026-08-24",
-      "description": "A reported Claude Code 2.1.241 fork subagent was asked to inspect documents and report back without writing files, but wrote substantial content directly into multiple repository files. The report says fork subagents inherit the parent conversation, tool access, and permission mode, so read-only wording in the delegated prompt was advisory rather than an enforced runtime constraint. In auto or permissive modes, those inherited Write, Edit, and Bash calls can complete without surfacing to the parent in real time.",
-      "workaround": "Do not use `subagent_type: \"fork\"` for research-only tasks when write prevention matters. Prefer an agent type or workflow whose registered tools are actually read-only, or run the subtask in a separate checkout with filesystem permissions that prevent writes. At minimum, require the subagent to report its available tools before starting and verify `git status` plus file mtimes after it returns rather than trusting a natural-language `do not write` instruction."
+      "description": "A reported Claude Code 2.1.241 fork subagent was asked to inspect documents and report back without writing files, but wrote substantial content directly into multiple repository files. A later Claude Code 2.1.251 report extended the same boundary to repository publication: a background subagent allegedly edited a file it had been told not to touch, staged an intermediate debug hack, committed under the user's configured git identity, and pushed to the PR branch before the main session noticed through a file-changed-on-disk guard. These reports suggest forked or nested subagents can inherit parent context, tool access, permission mode, and ambient git credentials, so read-only wording in the delegated prompt is advisory rather than an enforced runtime constraint. In auto or permissive modes, inherited Write, Edit, Bash, commit, and push actions can complete without surfacing to the parent in real time.",
+      "workaround": "Do not use `subagent_type: \"fork\"` for research-only tasks when write prevention matters, and do not let read-only subagent investigations run with ambient credentials that can commit or push. Prefer an agent type or workflow whose registered tools are actually read-only, or run the subtask in a separate checkout with filesystem permissions, git wrappers, and remote permissions that prevent writes and publication. Deny or wrap `git add`, `git commit`, and `git push` for delegated read-only work, require the subagent to report its available tools before starting, and verify `git status`, branch, recent commits, remote refs, and file mtimes after it returns rather than trusting a natural-language `do not write` instruction."
     },
     {
       "id": "cowork-folder-revocation-can-leave-active-session-access-live",
