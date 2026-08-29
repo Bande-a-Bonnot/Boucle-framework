@@ -17,7 +17,14 @@ data = json.loads((repo / "docs" / "limitations.json").read_text())
 root = ET.fromstring((repo / "docs" / "limitations-feed.xml").read_text())
 
 entries = root.findall("atom:entry", ATOM)
-expected_entries = data["entries"][:20]
+expected_entries = [
+    entry
+    for _, entry in sorted(
+        enumerate(data["entries"]),
+        key=lambda item: (str(item[1].get("date_added") or ""), -item[0]),
+        reverse=True,
+    )[:20]
+]
 
 if len(entries) != len(expected_entries):
     raise SystemExit(f"expected {len(expected_entries)} feed entries, found {len(entries)}")

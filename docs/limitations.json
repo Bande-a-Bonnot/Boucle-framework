@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1797,
+  "count": 1798,
   "categories": {
     "Hook behavior & events": 230,
     "Permission system": 162,
@@ -28,7 +28,7 @@
     "Remote & cloud": 19,
     "Model behavior": 18,
     "Scheduling & remote triggers": 18,
-    "Permissions & safety": 16,
+    "Permissions & safety": 17,
     "Scheduled tasks": 15,
     "Worktree": 14,
     "Worktrees & isolation": 14,
@@ -194,7 +194,7 @@
   },
   "severity_counts": {
     "CRITICAL": 161,
-    "HIGH": 1027,
+    "HIGH": 1028,
     "LOW": 109,
     "MEDIUM": 500
   },
@@ -23502,30 +23502,51 @@
         "schema",
         "security-inventory"
       ]
+    },
+    {
+      "id": "worktree-isolation-simple-bash-can-write-outside-tree",
+      "title": "Worktree isolation can allow simple Bash writes outside the worktree.",
+      "category": "Permissions & safety",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90432"
+      ],
+      "date_added": "2026-08-29",
+      "description": "A reported Claude Code 2.1.250 Linux `--worktree` session found that worktree isolation refused complex Bash commands as too hard to verify, but allowed a simple absolute-path write such as `touch /tmp/wt-demo/outside-probe.txt` to create a file in the main checkout outside the isolated worktree. The session cwd was the generated `.claude/worktrees/demo` path, and the command exited 0 while modifying the shared parent checkout. This makes command complexity a poor proxy for target safety: complex harmless commands can be blocked while simple cross-worktree writes pass silently.",
+      "workaround": "Do not rely on Claude Code worktree isolation alone to prevent absolute-path Bash writes into the parent checkout. Before parallel or unattended work, run a harmless negative canary from the exact `--worktree` mode you plan to use and require writes outside the worktree root to fail. Keep high-risk sessions in disposable clones, containers, or OS-level sandboxes when cross-checkout contamination matters, and prefer repo-relative commands plus explicit `pwd`, `git rev-parse --show-toplevel`, and `git worktree list` verification before staging, committing, or trusting isolation-sensitive output.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "worktree",
+        "bash",
+        "sandbox",
+        "absolute-path",
+        "isolation"
+      ]
     }
   ],
   "status_summary": {
-    "open": 1783,
+    "open": 1784,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 161,
-    "high": 1027,
+    "high": 1028,
     "low": 109,
     "medium": 500
   },
-  "lastUpdated": "2026-08-28",
+  "lastUpdated": "2026-08-29",
   "stats": {
-    "total": 1797,
+    "total": 1798,
     "critical": 161,
-    "high": 1027,
+    "high": 1028,
     "medium": 500,
     "low": 109,
-    "open": 1783,
+    "open": 1784,
     "fixed": 13,
     "mitigated": 1
   },
-  "last_updated": "2026-08-28",
-  "total": 1797
+  "last_updated": "2026-08-29",
+  "total": 1798
 }
