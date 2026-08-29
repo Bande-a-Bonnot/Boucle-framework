@@ -7,6 +7,14 @@
   <updated>2026-08-29T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Concurrent AskUserQuestion dialogs can lose unsubmitted input.</title>
+    <id>https://framework.boucle.sh/limitations.html#concurrent-askuserquestion-dialogs-can-lose-unsubmitted-input</id>
+    <link href="https://framework.boucle.sh/limitations.html#concurrent-askuserquestion-dialogs-can-lose-unsubmitted-input"/>
+    <updated>2026-08-29T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.251 macOS terminal session found that multiple AskUserQuestion calls in one assistant turn can render as overlapping dialogs instead of a queue. If the user starts answering the first dialog, selects Other, and types free-form text before a later dialog covers it, the first dialog returns from scratch after the top dialog is submitted. Already submitted answers settle normally, but in-progress selections and multiline Other text are cleared with no warning or recovery affordance. The report ties the reachable timing to concurrent tool dispatch plus serialized auto-mode classifier decisions, while noting the state reset appears to live in the dialog layer.</summary>
+    <category term="TUI &amp; display"/>
+  </entry>
+  <entry>
     <title>[HIGH] Desktop org switching can kill running local sessions.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-org-switch-can-kill-running-local-sessions</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-org-switch-can-kill-running-local-sessions"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-29T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.247 Windows 11 setup found that hooks configured with `shell: &quot;powershell&quot;` attempted to launch PowerShell 7 as `pwsh` and did not fall back to the stock Windows PowerShell executable, `powershell.exe`. On a machine without PowerShell 7 or Git Bash, both supported hook shell modes were unusable: `powershell` could not start `pwsh`, while omitted or `bash` shell resolution targeted a Unix shell path that was not present. Because a `PreToolUse` hook blocks only by returning the expected blocking exit code, an interpreter-launch failure left the configured guard inert while the matched tool call proceeded without a visible session warning.</summary>
     <category term="Hook bypass &amp; evasion"/>
-  </entry>
-  <entry>
-    <title>[HIGH] macOS Keychain credential reads can loop when Claude Code shells out to `/usr/bin/security`.</title>
-    <id>https://framework.boucle.sh/limitations.html#macos-keychain-shellout-can-loop-credential-prompts</id>
-    <link href="https://framework.boucle.sh/limitations.html#macos-keychain-shellout-can-loop-credential-prompts"/>
-    <updated>2026-08-29T00:00:00Z</updated>
-    <summary>A reported macOS Claude Code 2.1.241 setup found that OAuth credentials stored in the login Keychain were read by forking `/usr/bin/security` instead of through an in-process Security framework call. The Keychain prompt therefore appeared to authorize the generic Apple security tool rather than Claude Code, and &quot;Always Allow&quot; did not persist reliably. Token refreshes reportedly rewrote the item and reset the access-control repair, while concurrent Claude Code processes could each spawn their own blocked credential reader and leave repeated or orphaned password dialogs. The same report notes a write-path fallback that can place the credential blob in process argv when stdin is too large, making in-process Keychain access the safer boundary.</summary>
-    <category term="Auth &amp; accounts"/>
   </entry>
 </feed>

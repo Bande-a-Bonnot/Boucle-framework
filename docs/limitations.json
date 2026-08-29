@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1802,
+  "count": 1803,
   "categories": {
     "Hook behavior & events": 232,
     "Permission system": 162,
@@ -8,8 +8,8 @@
     "Hook bypass & evasion": 108,
     "Subagent & spawned agents": 85,
     "Desktop & IDE integration": 63,
+    "TUI & display": 38,
     "Cowork & remote": 37,
-    "TUI & display": 37,
     "Platform & compatibility": 35,
     "Sandbox & permissions": 35,
     "Security & trust boundaries": 35,
@@ -194,11 +194,33 @@
   },
   "severity_counts": {
     "CRITICAL": 161,
-    "HIGH": 1032,
+    "HIGH": 1033,
     "LOW": 109,
     "MEDIUM": 500
   },
   "entries": [
+    {
+      "id": "concurrent-askuserquestion-dialogs-can-lose-unsubmitted-input",
+      "title": "Concurrent AskUserQuestion dialogs can lose unsubmitted input.",
+      "category": "TUI & display",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90529"
+      ],
+      "date_added": "2026-08-29",
+      "description": "A reported Claude Code 2.1.251 macOS terminal session found that multiple AskUserQuestion calls in one assistant turn can render as overlapping dialogs instead of a queue. If the user starts answering the first dialog, selects Other, and types free-form text before a later dialog covers it, the first dialog returns from scratch after the top dialog is submitted. Already submitted answers settle normally, but in-progress selections and multiline Other text are cleared with no warning or recovery affordance. The report ties the reachable timing to concurrent tool dispatch plus serialized auto-mode classifier decisions, while noting the state reset appears to live in the dialog layer.",
+      "workaround": "Do not use concurrent AskUserQuestion calls for decisions where free-form user input matters. Ask one question group at a time, wait for submission, and only then ask the next group. For approval gates, keep the decision context and any long Other answer in a durable message, file, or external note before submitting. If a dialog is covered and later reappears, assume any prior unsubmitted text is stale or lost and re-enter it from the durable copy rather than trusting the restored dialog state.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "askuserquestion",
+        "tui",
+        "concurrency",
+        "data-loss",
+        "macos",
+        "auto-mode"
+      ]
+    },
     {
       "id": "desktop-org-switch-can-kill-running-local-sessions",
       "title": "Desktop org switching can kill running local sessions.",
@@ -23611,27 +23633,27 @@
     }
   ],
   "status_summary": {
-    "open": 1788,
+    "open": 1789,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 161,
-    "high": 1032,
+    "high": 1033,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-29",
   "stats": {
-    "total": 1802,
+    "total": 1803,
     "critical": 161,
-    "high": 1032,
+    "high": 1033,
     "medium": 500,
     "low": 109,
-    "open": 1788,
+    "open": 1789,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-29",
-  "total": 1802
+  "total": 1803
 }
