@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1798,
+  "count": 1799,
   "categories": {
-    "Hook behavior & events": 230,
+    "Hook behavior & events": 231,
     "Permission system": 162,
     "MCP & plugin issues": 110,
     "Hook bypass & evasion": 108,
@@ -194,7 +194,7 @@
   },
   "severity_counts": {
     "CRITICAL": 161,
-    "HIGH": 1028,
+    "HIGH": 1029,
     "LOW": 109,
     "MEDIUM": 500
   },
@@ -23523,30 +23523,51 @@
         "absolute-path",
         "isolation"
       ]
+    },
+    {
+      "id": "windows-exec-form-hook-args-can-be-dropped",
+      "title": "Windows exec-form hooks can drop args and evaluate stdin JSON.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90495"
+      ],
+      "date_added": "2026-08-29",
+      "description": "A reported Claude Code 2.1.117 Windows 11 setup found that hook entries using the documented exec form, with `command: \"node\"` and `args: [\"C:/path/to/hook.mjs\"]`, were still launched through Git Bash as `bash.exe -c node` and the args array was dropped. Node then started without a script argument, treated the piped hook JSON payload on stdin as JavaScript source, and crashed before the diagnostic hook could log anything. The reporter reproduced this across 48 converted hook entries, affecting newly started and already-running sessions.",
+      "workaround": "On Windows, do not convert hook commands to exec form until a same-session canary proves the target process receives the expected argv and stdin. Keep a quoted shell-form command such as `node C:/path/to/hook.mjs` when that is the locally verified path, and run `safety-check --verify`, `install.ps1 verify`, or a small hook that logs argv plus payload receipt after changing hook syntax or updating Claude Code. Treat silent missing hook logs, `eval_stdin` crashes, or unexpected Git Bash child processes as fail-closed signals for security-sensitive hooks.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "hooks",
+        "windows",
+        "exec-form",
+        "args",
+        "stdin"
+      ]
     }
   ],
   "status_summary": {
-    "open": 1784,
+    "open": 1785,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 161,
-    "high": 1028,
+    "high": 1029,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-29",
   "stats": {
-    "total": 1798,
+    "total": 1799,
     "critical": 161,
-    "high": 1028,
+    "high": 1029,
     "medium": 500,
     "low": 109,
-    "open": 1784,
+    "open": 1785,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-29",
-  "total": 1798
+  "total": 1799
 }

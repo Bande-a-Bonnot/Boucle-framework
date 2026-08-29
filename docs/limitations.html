@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1798</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-29.</span></p>
+        <p class="subtitle"><span id="total-count">1799</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-29.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -20314,6 +20314,18 @@
                         <!-- workaround:worktree-isolation-simple-bash-can-write-outside-tree -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on Claude Code worktree isolation alone to prevent absolute-path Bash writes into the parent checkout. Before parallel or unattended work, run a harmless negative canary from the exact `--worktree` mode you plan to use and require writes outside the worktree root to fail. Keep high-risk sessions in disposable clones, containers, or OS-level sandboxes when cross-checkout contamination matters, and prefer repo-relative commands plus explicit `pwd`, `git rev-parse --show-toplevel`, and `git worktree list` verification before staging, committing, or trusting isolation-sensitive output.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/90432" target="_blank">#90432</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="90495" id="windows-exec-form-hook-args-can-be-dropped" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1799</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Windows exec-form hooks can drop args and evaluate stdin JSON.</h3>
+            <p>A reported Claude Code 2.1.117 Windows 11 setup found that hook entries using the documented exec form, with `command: &quot;node&quot;` and `args: [&quot;C:/path/to/hook.mjs&quot;]`, were still launched through Git Bash as `bash.exe -c node` and the args array was dropped. Node then started without a script argument, treated the piped hook JSON payload on stdin as JavaScript source, and crashed before the diagnostic hook could log anything. The reporter reproduced this across 48 converted hook entries, affecting newly started and already-running sessions.</p>
+                        <!-- workaround:windows-exec-form-hook-args-can-be-dropped -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On Windows, do not convert hook commands to exec form until a same-session canary proves the target process receives the expected argv and stdin. Keep a quoted shell-form command such as `node C:/path/to/hook.mjs` when that is the locally verified path, and run `safety-check --verify`, `install.ps1 verify`, or a small hook that logs argv plus payload receipt after changing hook syntax or updating Claude Code. Treat silent missing hook logs, `eval_stdin` crashes, or unexpected Git Bash child processes as fail-closed signals for security-sensitive hooks.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/90495" target="_blank">#90495</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
