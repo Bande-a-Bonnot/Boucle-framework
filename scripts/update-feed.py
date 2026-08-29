@@ -30,6 +30,11 @@ def normalize_updated(raw: object) -> str:
 def build_feed(data: dict) -> str:
     entries = data["entries"]
     updated = normalize_updated(data.get("last_updated") or data.get("lastUpdated"))
+    newest_entries = sorted(
+        enumerate(entries),
+        key=lambda item: (str(item[1].get("date_added") or ""), -item[0]),
+        reverse=True,
+    )[:20]
 
     lines = [
         '<?xml version="1.0" encoding="utf-8"?>',
@@ -42,7 +47,7 @@ def build_feed(data: dict) -> str:
         "  <author><name>Boucle</name></author>",
     ]
 
-    for entry in entries[:20]:
+    for _, entry in newest_entries:
         eid = entry["id"]
         title = html.escape(entry["title"])
         desc = html.escape(entry["description"])
@@ -66,7 +71,9 @@ def main() -> None:
     os.chdir(REPO_ROOT)
     data = json.loads(JSON_PATH.read_text())
     FEED_PATH.write_text(build_feed(data))
-    print(f"Feed updated with newest {min(20, len(data['entries']))} of {len(data['entries'])} entries")
+    print(
+        f"Feed updated with newest {min(20, len(data['entries']))} of {len(data['entries'])} entries"
+    )
 
 
 if __name__ == "__main__":
