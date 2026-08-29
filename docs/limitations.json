@@ -1,12 +1,12 @@
 {
   "version": "0.13.0",
-  "count": 1804,
+  "count": 1805,
   "categories": {
     "Hook behavior & events": 232,
     "Permission system": 162,
     "MCP & plugin issues": 110,
     "Hook bypass & evasion": 108,
-    "Subagent & spawned agents": 85,
+    "Subagent & spawned agents": 86,
     "Desktop & IDE integration": 63,
     "TUI & display": 38,
     "Cowork & remote": 37,
@@ -194,11 +194,33 @@
   },
   "severity_counts": {
     "CRITICAL": 161,
-    "HIGH": 1034,
+    "HIGH": 1035,
     "LOW": 109,
     "MEDIUM": 500
   },
   "entries": [
+    {
+      "id": "subagent-flagged-output-truncation-resend-loop",
+      "title": "Flagged subagent reports can truncate and resend in a costly loop.",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90544"
+      ],
+      "date_added": "2026-08-29",
+      "description": "A reported Claude Code 2.1.251 WSL2 session found that a long subagent final report delivered through `idle_notification` was cut at roughly 2,500 characters when the harness flagged it as an instruction-shaped `settings-json` pattern. The truncation notice told the parent to ask for the rest through `SendMessage`, but each re-ask resumed the subagent against its full transcript, repeated the expensive work, and produced another similarly truncated notification. The reporter contrasted this with an unflagged Sonnet subagent report that was delivered normally, pointing to the flagged notification path rather than a general agent-output limit.",
+      "workaround": "For long or policy-sensitive subagent reports, instruct the subagent to write the full report to a file and return only the path plus a short summary. Treat `[result truncated]` on a flagged idle notification as incomplete evidence, and avoid repeated `SendMessage` requests for the rest unless you first impose a tight word cap or change the delivery channel. Preserve the harness prefix, truncation marker, model names, and transcript/file evidence when reporting the issue, because the difference between flagged and unflagged paths matters.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "agents",
+        "subagents",
+        "sendmessage",
+        "truncation",
+        "cost",
+        "wsl"
+      ]
+    },
     {
       "id": "scheduled-task-registry-can-stop-all-routines-on-one-fireat-type",
       "title": "Scheduled task registry can stop all routines on one `fireAt` type.",
@@ -23655,27 +23677,27 @@
     }
   ],
   "status_summary": {
-    "open": 1790,
+    "open": 1791,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 161,
-    "high": 1034,
+    "high": 1035,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-29",
   "stats": {
-    "total": 1804,
+    "total": 1805,
     "critical": 161,
-    "high": 1034,
+    "high": 1035,
     "medium": 500,
     "low": 109,
-    "open": 1790,
+    "open": 1791,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-29",
-  "total": 1804
+  "total": 1805
 }
