@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1799,
+  "count": 1800,
   "categories": {
-    "Hook behavior & events": 231,
+    "Hook behavior & events": 232,
     "Permission system": 162,
     "MCP & plugin issues": 110,
     "Hook bypass & evasion": 108,
@@ -194,11 +194,32 @@
   },
   "severity_counts": {
     "CRITICAL": 161,
-    "HIGH": 1029,
+    "HIGH": 1030,
     "LOW": 109,
     "MEDIUM": 500
   },
   "entries": [
+    {
+      "id": "filechanged-watchpaths-can-miss-external-deletions-on-windows",
+      "title": "`FileChanged` watch paths can miss external deletions on Windows.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90436"
+      ],
+      "date_added": "2026-08-29",
+      "description": "A reported Claude Code Windows 11 setup found that a documented `FileChanged` hook did not run when a watched `SKILL.md` file under `~/.claude/scheduled-tasks/*/` was deleted by an external Bash `rm`, even though a `SessionStart` companion hook returned absolute `watchPaths` that included the deleted file. The reporter verified the `settings.json` structure, the dynamic watch list, and the hook script itself by feeding a synthetic `{file_path, event: \"unlink\"}` payload directly to the command. The missing step was host invocation: the real unlink produced no hook log entry and no `systemMessage`, leaving a deletion-monitor safety hook fail-open for files outside the session working directory.",
+      "workaround": "Do not rely on `FileChanged` plus `SessionStart` `watchPaths` as the only deletion boundary on Windows until your exact Claude Code version proves it handles external `unlink` events. Add a same-session canary that creates a disposable watched file outside the session `cwd`, confirms it appears in the emitted `watchPaths`, deletes it through the same shell path your automation could use, and requires a hook log or `systemMessage` for the deletion. For scheduled-task or policy files, keep versioned backups or a separate filesystem watcher outside Claude Code, and treat missing hook logs after a known deletion as fail-open rather than benign silence.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "hooks",
+        "filechanged",
+        "watchpaths",
+        "windows",
+        "deletion"
+      ]
+    },
     {
       "id": "project-scoped-strictallowlist-can-be-silently-discarded",
       "title": "Project-scoped `strictAllowlist` can be silently discarded.",
@@ -23547,27 +23568,27 @@
     }
   ],
   "status_summary": {
-    "open": 1785,
+    "open": 1786,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 161,
-    "high": 1029,
+    "high": 1030,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-29",
   "stats": {
-    "total": 1799,
+    "total": 1800,
     "critical": 161,
-    "high": 1029,
+    "high": 1030,
     "medium": 500,
     "low": 109,
-    "open": 1785,
+    "open": 1786,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-29",
-  "total": 1799
+  "total": 1800
 }
