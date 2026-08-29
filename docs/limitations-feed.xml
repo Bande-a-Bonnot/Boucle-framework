@@ -15,6 +15,14 @@
     <category term="Permissions &amp; safety"/>
   </entry>
   <entry>
+    <title>[HIGH] Windows exec-form hooks can drop args and evaluate stdin JSON.</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-exec-form-hook-args-can-be-dropped</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-exec-form-hook-args-can-be-dropped"/>
+    <updated>2026-08-29T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.117 Windows 11 setup found that hook entries using the documented exec form, with `command: &quot;node&quot;` and `args: [&quot;C:/path/to/hook.mjs&quot;]`, were still launched through Git Bash as `bash.exe -c node` and the args array was dropped. Node then started without a script argument, treated the piped hook JSON payload on stdin as JavaScript source, and crashed before the diagnostic hook could log anything. The reporter reproduced this across 48 converted hook entries, affecting newly started and already-running sessions.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Project-scoped `strictAllowlist` can be silently discarded.</title>
     <id>https://framework.boucle.sh/limitations.html#project-scoped-strictallowlist-can-be-silently-discarded</id>
     <link href="https://framework.boucle.sh/limitations.html#project-scoped-strictallowlist-can-be-silently-discarded"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-29T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.246 Linux devcontainer setup found that `/fork` inherited the parent session&#x27;s recorded `respawnFlags` rather than its live runtime permission mode. Forks whose parent job state omitted `--permission-mode` started in the configured default mode, `auto`, even though the parent was being run with bypass permissions. The reporter joined 50 fork records to their parent job state and found the fork mode followed the recorded parent flag with no exceptions; the first user-visible symptom was later refusal of `git commit` or `git push` as an auto-mode classifier denial, not a clear startup warning that the fork had changed modes.</summary>
     <category term="Permissions &amp; safety"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Official security-guidance review can echo OAuth credentials into transcripts.</title>
-    <id>https://framework.boucle.sh/limitations.html#security-guidance-can-echo-oauth-credentials-into-transcripts</id>
-    <link href="https://framework.boucle.sh/limitations.html#security-guidance-can-echo-oauth-credentials-into-transcripts"/>
-    <updated>2026-08-29T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.247 macOS setup with security-guidance 2.0.7 found that the plugin&#x27;s stop-time review could read an untracked `~/.claude/.credentials.json` file from a git-managed Claude config directory, detect Claude Code&#x27;s own OAuth tokens, and reproduce the access and refresh token values in the finding text. The finding was then injected into the conversation as a system reminder, making the credential material visible in the terminal and persistent in the plaintext session transcript even though the plugin&#x27;s own security log did not contain the token strings. Because Claude Code refreshes the OAuth file periodically, the report says the leak can recur whenever the file remains untracked and in review scope. The reporter later found that logout plus login moved credentials into the macOS Keychain, but a 2.1.246 to 2.1.247 upgrade had not migrated the existing plaintext file before the next token refresh.</summary>
-    <category term="MCP &amp; plugin issues"/>
   </entry>
 </feed>
