@@ -252,17 +252,17 @@
         <div class="count" id="count"></div>
 
         <!-- BEGIN GENERATED LIMITATIONS -->
-        <div class="kl-entry" data-category="Shell &amp; process execution" data-issues="90611" id="bash-tool-wrapper-can-suppress-errexit" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="Shell &amp; process execution" data-issues="90611 90659" id="bash-tool-wrapper-can-suppress-errexit" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#1</span>
                 <span class="kl-cat">Shell &amp; process execution</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
             <h3>Bash tool wrapper can suppress `set -e` fail-fast behavior.</h3>
-            <p>A reported Claude Code 2.1.251 Bash tool session found that `set -e` did not stop execution after a failing command because the user script ran through `eval` as a non-final member of the tool wrapper&#x27;s `&amp;&amp;` list. The repro printed `survived` after `false`, and the reported real incident was more damaging: copy commands failed, cleanup still ran, sources were removed, and the tool call exited 0 because the final cleanup command succeeded.</p>
+            <p>Reported Claude Code 2.1.251 Bash tool sessions found that shell wrapper behavior can turn a failed operation into a reported success. In one case, `set -e` did not stop execution after a failing command because the user script ran through `eval` as a non-final member of the tool wrapper&#x27;s `&amp;&amp;` list, so cleanup ran and the final command produced exit 0. In another case, a backgrounded deploy reported exit code 0 in both the completion notification and the captured log trailer even though the preceding `docker push` failed and no new Cloud Run revision was created.</p>
                         <!-- workaround:bash-tool-wrapper-can-suppress-errexit -->
-            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on `set -e` inside a single Claude Code Bash tool command as proof that later destructive cleanup will be skipped after an earlier failure. Prefer explicit `&amp;&amp;` chaining for dependent steps, or run the body under a fresh shell such as `bash -ec &#x27;...&#x27;` and verify the exit status with a positive failure control before combining copy, move, delete, publish, or cleanup operations. Split destructive cleanup into a separate tool call after checking that the expected outputs exist.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/90611" target="_blank">#90611</a></div>
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on `set -e` or a Claude Code Bash/background-task exit-0 notification as proof that earlier publish, copy, move, delete, or cleanup steps succeeded. Prefer explicit `&amp;&amp;` chaining for dependent steps, or run the body under a fresh shell such as `bash -ec &#x27;...&#x27;` and verify the exit status with a positive failure control before combining destructive or publishing operations. For background commands, read the captured log body as well as the appended exit trailer, then verify the expected external side effect directly, such as the new artifact, deployment revision, copied output, or remote ref.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/90611" target="_blank">#90611</a>, <a href="https://github.com/anthropics/claude-code/issues/90659" target="_blank">#90659</a></div>
         </div>
         <div class="kl-entry" data-category="MCP &amp; integrations" data-issues="90415" id="browser-confirmations-ignore-allow-and-bypass-mode" data-severity="high" data-status="open">
             <div class="kl-header">
