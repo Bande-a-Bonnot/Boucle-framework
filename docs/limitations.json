@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1809,
+  "count": 1810,
   "categories": {
     "Hook behavior & events": 232,
     "Permission system": 164,
@@ -179,6 +179,7 @@
     "Sessions & conversation management": 1,
     "settings": 1,
     "setup": 1,
+    "Shell & process execution": 1,
     "skills": 1,
     "Skills & plugins": 1,
     "Skills & slash commands": 1,
@@ -194,11 +195,33 @@
   },
   "severity_counts": {
     "CRITICAL": 161,
-    "HIGH": 1039,
+    "HIGH": 1040,
     "LOW": 109,
     "MEDIUM": 500
   },
   "entries": [
+    {
+      "id": "bash-tool-wrapper-can-suppress-errexit",
+      "title": "Bash tool wrapper can suppress `set -e` fail-fast behavior.",
+      "category": "Shell & process execution",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90611"
+      ],
+      "date_added": "2026-08-29",
+      "description": "A reported Claude Code 2.1.251 Bash tool session found that `set -e` did not stop execution after a failing command because the user script ran through `eval` as a non-final member of the tool wrapper's `&&` list. The repro printed `survived` after `false`, and the reported real incident was more damaging: copy commands failed, cleanup still ran, sources were removed, and the tool call exited 0 because the final cleanup command succeeded.",
+      "workaround": "Do not rely on `set -e` inside a single Claude Code Bash tool command as proof that later destructive cleanup will be skipped after an earlier failure. Prefer explicit `&&` chaining for dependent steps, or run the body under a fresh shell such as `bash -ec '...'` and verify the exit status with a positive failure control before combining copy, move, delete, publish, or cleanup operations. Split destructive cleanup into a separate tool call after checking that the expected outputs exist.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "bash",
+        "errexit",
+        "set-e",
+        "shell-wrapper",
+        "data-loss",
+        "exit-status"
+      ]
+    },
     {
       "id": "browser-confirmations-ignore-allow-and-bypass-mode",
       "title": "Browser action confirmations can ignore allow rules and bypass mode.",
@@ -23767,27 +23790,27 @@
     }
   ],
   "status_summary": {
-    "open": 1795,
+    "open": 1796,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 161,
-    "high": 1039,
+    "high": 1040,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-29",
   "stats": {
-    "total": 1809,
+    "total": 1810,
     "critical": 161,
-    "high": 1039,
+    "high": 1040,
     "medium": 500,
     "low": 109,
-    "open": 1795,
+    "open": 1796,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-29",
-  "total": 1809
+  "total": 1810
 }
