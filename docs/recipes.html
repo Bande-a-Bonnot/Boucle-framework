@@ -41,6 +41,7 @@
                         <a href="#dangerous-commands">Dangerous commands</a> &middot;
                         <a href="#git-disasters">Git disasters</a> &middot;
                         <a href="#secret-pre-push">Secret pre-push</a> &middot;
+                        <a href="#nested-claude-billing">Nested Claude billing</a> &middot;
                         <a href="#write-coverage-canary">Write coverage canary</a> &middot;
                         <a href="#token-waste">Token waste</a> &middot;
                         <a href="#tool-switching">Tool switching bypass</a> &middot;
@@ -417,6 +418,23 @@ PY
                     <p class="brief">Approve only an exact action after those checks: commit message, branch, remote, and whether push is allowed. Avoid broad <code>git add .</code> and unattended commit/push tasks in auto-mode sessions that can touch credential files, generated config, logs, transcripts, or environment dumps.</p>
                     <p class="brief">If a secret may already have been committed or pushed, do not paste the value into chat or public issues. Stop, revoke or rotate the credential through the provider, preserve the commit SHA and affected path for private incident handling, and assume the value is exposed even if the branch is later force-pushed away.</p>
                     <p class="brief" style="color: var(--muted-color);">Related known limitation: <a href="/limitations.html#git-commit-secret-leaks-have-no-built-in-pre-push-guard">git commits can leak plaintext credentials before any built-in guard reacts</a>.</p>
+                </div>
+
+                <div class="recipe" id="nested-claude-billing">
+                    <h2>"Nested Claude calls used API credits instead of my subscription"</h2>
+                    <p class="brief">Use this before letting Claude Code launch nested <code>claude -p</code> subprocesses from Bash, cron, launchd, CI, or an autonomous loop. A shell alias that unsets <code>ANTHROPIC_API_KEY</code> for manual commands does not protect noninteractive Bash subprocesses. If the parent Claude Code environment exports the key, assistant-launched subprocesses can inherit it and use API-key billing instead of subscription/OAuth auth.</p>
+                    <p class="brief"><strong>Fix path: start Claude Code with billing-sensitive API keys unset, verify the warning is gone, then block or wrap nested <code>claude -p</code> calls before autonomous work</strong></p>
+                    <div class="code-block">
+                        <code><span class="prompt-char">$</span> repo_root="$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)"
+<span class="prompt-char">$</span> cd "$repo_root"
+<span class="prompt-char">$</span> env | grep '^ANTHROPIC_API_KEY=' &amp;&amp; printf 'API key is exported in this shell\n'
+<span class="prompt-char">$</span> unset ANTHROPIC_API_KEY
+<span class="prompt-char">$</span> curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only</code>
+                    </div>
+                    <p class="brief">If the summary still reports <code>ANTHROPIC_API_KEY is set</code>, fix the shell, terminal profile, launchd environment, CI secret injection, or wrapper that starts Claude Code. Then start a fresh Claude Code process from that clean environment. Do not trust an already-running session to forget inherited environment variables.</p>
+                    <p class="brief">If you intentionally use API-key auth for some workflows, keep it in a separate shell profile or a real wrapper executable that unsets billing-sensitive credentials before subscription/OAuth sessions can spawn nested Claude calls. An interactive alias is not enough because aliases do not expand in noninteractive Bash tool shells.</p>
+                    <p class="brief">For unattended sessions, add an explicit policy around nested Claude invocations: either block <code>claude -p</code> with a <code>PreToolUse</code> Bash rule, or require a wrapper command whose source you can inspect and whose behavior is verified before the session starts. Record the intended auth path in your handoff when the next action is autonomous work, a commit, or a push.</p>
+                    <p class="brief" style="color: var(--muted-color);">Related known limitation: <a href="/limitations.html#api-key-env-can-override-subscription-in-bash-subprocesses">exported ANTHROPIC_API_KEY can override subscription auth in Bash-spawned Claude subprocesses</a>.</p>
                 </div>
 
                 <div class="recipe" id="write-coverage-canary">
@@ -860,6 +878,10 @@ PY</code>
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">MCP server, connector, or plugin changed</td>
                             <td style="padding: 0.5em 0;"><code>claude mcp list</code> + strict hook recheck + harmless read-only probe</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 0.5em 1em 0.5em 0;">Nested Claude call used API-key billing</td>
+                            <td style="padding: 0.5em 0;">unset <code>ANTHROPIC_API_KEY</code> + fresh process + wrapper or Bash deny rule</td>
                         </tr>
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <td style="padding: 0.5em 1em 0.5em 0;">Verification failed or skipped checks</td>

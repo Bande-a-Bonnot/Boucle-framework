@@ -324,6 +324,7 @@ Beyond the scored checks, safety-check detects platform bugs and configuration p
 | Colon in filenames | Permission matching breaks on `:` in paths ([#38409](https://github.com/anthropics/claude-code/issues/38409)) |
 | Windows | Hooks fire only ~18% of the time ([#37988](https://github.com/anthropics/claude-code/issues/37988)) |
 | CLI version | Known regressions in specific versions ([#37597](https://github.com/anthropics/claude-code/issues/37597), [#37878](https://github.com/anthropics/claude-code/issues/37878)) |
+| ANTHROPIC_API_KEY | Bash-spawned `claude -p` subprocesses can use API-key billing instead of subscription/OAuth auth ([#81748](https://github.com/anthropics/claude-code/issues/81748)) |
 | Hook "ask" permission | `permissionDecision: "ask"` permanently breaks bypass mode ([#37420](https://github.com/anthropics/claude-code/issues/37420)) |
 | Hook exit code 2 | `exit 2` treated as crash, deny silently ignored for Edit/Write ([#37210](https://github.com/anthropics/claude-code/issues/37210)) |
 | Spaces in workdir | Hooks fail when working directory contains spaces ([#39478](https://github.com/anthropics/claude-code/issues/39478)) |
