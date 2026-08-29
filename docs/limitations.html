@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1806</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-29.</span></p>
+        <p class="subtitle"><span id="total-count">1807</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-29.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -20410,6 +20410,18 @@
                         <!-- workaround:windows-exec-form-hook-args-can-be-dropped -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On Windows, do not convert hook commands to exec form until a same-session canary proves the target process receives the expected argv and stdin. Keep a quoted shell-form command such as `node C:/path/to/hook.mjs` when that is the locally verified path, and run `safety-check --verify`, `install.ps1 verify`, or a small hook that logs argv plus payload receipt after changing hook syntax or updating Claude Code. Treat silent missing hook logs, `eval_stdin` crashes, or unexpected Git Bash child processes as fail-closed signals for security-sensitive hooks.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/90495" target="_blank">#90495</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugin issues" data-issues="90584" id="pending-mcp-tools-can-scrub-history-and-break-cache" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1807</span>
+                <span class="kl-cat">MCP &amp; plugin issues</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Pending MCP servers can scrub tool references and break prompt cache.</h3>
+            <p>A reported Claude Code 2.1.185 to 2.1.251 Agent SDK setup found that when a fresh CLI process resumes a conversation before configured MCP servers have finished connecting, the next request can omit those servers from the active tool list and rewrite earlier `tool_reference` results as unavailable. The following turn may have the tools back, but the temporary scrub has already changed early conversation history, collapsing prompt-cache reuse and leaving the agent with no MCP capability for that turn.</p>
+                        <!-- workaround:pending-mcp-tools-can-scrub-history-and-break-cache -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For long-running or SDK-hosted sessions that depend on MCP tools, treat a fresh resume or process restart as a capability-revalidation boundary. Before critical work, wait for MCP servers to reach a stable connected state, run a harmless known-tool lookup or read-only call, and avoid interpreting a one-turn missing-tool state as permanent removal. If prompt-cache cost matters, preserve evidence from consecutive requests around process re-init, including tool counts, MCP server states, scrubbed `tool_reference` text, and cache read/write metrics.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/90584" target="_blank">#90584</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
