@@ -4096,17 +4096,17 @@
             <p>MCP connectors (Notion, Supabase, etc.) configured on Remote Triggers are not injected into the CCR session runtime. Connectors show as connected in trigger config and claude.ai settings, but ToolSearch finds nothing. Agent falls back to degraded mode.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43374" target="_blank">#43374</a></div>
         </div>
-        <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="43407" id="pretooluse-exit2-deny-ignored" data-severity="critical" data-status="open">
+        <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="43407 90564" id="pretooluse-exit2-deny-ignored" data-severity="critical" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#367</span>
                 <span class="kl-cat">Hook bypass &amp; evasion</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#dc2626;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">critical</span>
             </div>
             <h3>PreToolUse hooks returning exit 2 + deny JSON do not block tool execution.</h3>
-            <p>A PreToolUse hook that returns exit code 2 with permissionDecision: &quot;deny&quot; is supposed to block the tool call but doesn&#x27;t. The platform ignores the deny decision and proceeds with execution. The hook script runs (side effects occur), but the enforcement action is silently dropped. This undermines the core enforcement mechanism for hooks. Confirmed with repro.</p>
+            <p>A PreToolUse hook that returns exit code 2 with permissionDecision: &quot;deny&quot; is supposed to block the tool call but doesn&#x27;t. The platform ignores the deny decision and proceeds with execution. The hook script runs and can compute the correct deny verdict, but the enforcement action is silently dropped. A later Agent SDK report found the same safety-critical shape: the identical payload was denied when piped into the hook script by hand, while the real SDK-hosted Write/Edit/Bash tool call succeeded with no visible block, error, or operator signal. This undermines the core enforcement mechanism for hooks, especially in headless SDK sessions where there may be no interactive approval fallback.</p>
                         <!-- workaround:pretooluse-exit2-deny-ignored -->
-            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely solely on exit code 2 with deny JSON for blocking tool execution. Use bash-guard or file-guard as a secondary enforcement layer. Test that your hooks actually block operations before depending on them in production.</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43407" target="_blank">#43407</a></div>
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely solely on exit code 2 with deny JSON for blocking tool execution, and do not treat direct hook-script tests as proof of runtime enforcement. Verify through the same host surface you use in production: interactive CLI, desktop, or Agent SDK. For consequential paths, add independent controls such as bash-guard/file-guard, git pre-commit/pre-push checks, filesystem permissions, sandbox/container policy, or worktree-specific assertions that fail closed outside the hook path.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/43407" target="_blank">#43407</a>, <a href="https://github.com/anthropics/claude-code/issues/90564" target="_blank">#90564</a></div>
         </div>
         <div class="kl-entry" data-category="Permission system" data-issues="43417" id="websearch-ask-permission-no-prompt" data-severity="high" data-status="open">
             <div class="kl-header">
