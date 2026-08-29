@@ -7,6 +7,14 @@
   <updated>2026-08-29T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] `FileChanged` watch paths can miss external deletions on Windows.</title>
+    <id>https://framework.boucle.sh/limitations.html#filechanged-watchpaths-can-miss-external-deletions-on-windows</id>
+    <link href="https://framework.boucle.sh/limitations.html#filechanged-watchpaths-can-miss-external-deletions-on-windows"/>
+    <updated>2026-08-29T00:00:00Z</updated>
+    <summary>A reported Claude Code Windows 11 setup found that a documented `FileChanged` hook did not run when a watched `SKILL.md` file under `~/.claude/scheduled-tasks/*/` was deleted by an external Bash `rm`, even though a `SessionStart` companion hook returned absolute `watchPaths` that included the deleted file. The reporter verified the `settings.json` structure, the dynamic watch list, and the hook script itself by feeding a synthetic `{file_path, event: &quot;unlink&quot;}` payload directly to the command. The missing step was host invocation: the real unlink produced no hook log entry and no `systemMessage`, leaving a deletion-monitor safety hook fail-open for files outside the session working directory.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Worktree isolation can allow simple Bash writes outside the worktree.</title>
     <id>https://framework.boucle.sh/limitations.html#worktree-isolation-simple-bash-can-write-outside-tree</id>
     <link href="https://framework.boucle.sh/limitations.html#worktree-isolation-simple-bash-can-write-outside-tree"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-29T00:00:00Z</updated>
     <summary>On Claude Code 2.1.246 on Windows, a reported SessionStart hook with asyncRewake: true blocked a headless session for the full duration of a 75 second hook, even though the hooks reference says asyncRewake implies async. The same hook with async: true returned immediately. The reporter also noted that slow blocking startup hooks can trip the VS Code extension&#x27;s 60 second subprocess initialization deadline while the hook keeps running. Users who need non-blocking startup work should prefer async: true unless they have verified asyncRewake behavior on their exact surface.</summary>
     <category term="Hook execution &amp; lifecycle"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Forked sessions can fall back to the default permission mode.</title>
-    <id>https://framework.boucle.sh/limitations.html#forked-sessions-can-fall-back-to-default-permission-mode</id>
-    <link href="https://framework.boucle.sh/limitations.html#forked-sessions-can-fall-back-to-default-permission-mode"/>
-    <updated>2026-08-29T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.246 Linux devcontainer setup found that `/fork` inherited the parent session&#x27;s recorded `respawnFlags` rather than its live runtime permission mode. Forks whose parent job state omitted `--permission-mode` started in the configured default mode, `auto`, even though the parent was being run with bypass permissions. The reporter joined 50 fork records to their parent job state and found the fork mode followed the recorded parent flag with no exceptions; the first user-visible symptom was later refusal of `git commit` or `git push` as an auto-mode classifier denial, not a clear startup warning that the fork had changed modes.</summary>
-    <category term="Permissions &amp; safety"/>
   </entry>
 </feed>
