@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1820,
+  "count": 1822,
   "categories": {
-    "Hook behavior & events": 234,
+    "Hook behavior & events": 236,
     "Permission system": 164,
     "MCP & plugin issues": 111,
     "Hook bypass & evasion": 108,
@@ -195,7 +195,7 @@
   },
   "severity_counts": {
     "CRITICAL": 161,
-    "HIGH": 1050,
+    "HIGH": 1052,
     "LOW": 109,
     "MEDIUM": 500
   },
@@ -222,6 +222,54 @@
         "additionalcontext",
         "liveness",
         "policy"
+      ]
+    },
+    {
+      "id": "pretooluse-updatedinput-replacement-can-drop-bash-timeout-fields",
+      "title": "PreToolUse `updatedInput` replacement can drop Bash timeout fields.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90725"
+      ],
+      "date_added": "2026-08-30",
+      "description": "A reported Claude Code 2.1.248 through 2.1.251 Windows Git Bash setup found that a PreToolUse hook returning `hookSpecificOutput.updatedInput` with only a rewritten Bash `command` replaces the entire original tool input instead of merging over it. Sibling fields such as `timeout`, `run_in_background`, and `description` are silently discarded. In the reported repro, the assistant requested a 600000 ms timeout for a long command, the transcript still showed that requested timeout, but the hook's command-only replacement caused the command to die at the 120s default with no message linking the timeout loss to the hook rewrite.",
+      "workaround": "Treat `updatedInput` as whole-input replacement unless the installed Claude Code version proves merge semantics. Command-rewriting hooks should copy the full original `tool_input` and override only the intended field, then assert that `timeout`, `run_in_background`, `description`, and any future Bash fields survived. Add a canary long-running command with an explicit timeout after changing wrappers or hook code, and fail closed or decline the rewrite if the hook cannot preserve unknown sibling fields.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "hooks",
+        "pretooluse",
+        "updatedinput",
+        "bash",
+        "timeout",
+        "windows",
+        "git-bash",
+        "tool-input"
+      ]
+    },
+    {
+      "id": "bash-auto-background-eligibility-can-change-after-hook-rewrite",
+      "title": "Bash auto-background eligibility can change after hook rewrite.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90726"
+      ],
+      "date_added": "2026-08-30",
+      "description": "A reported Claude Code 2.1.251 Windows Git Bash setup found that the Bash tool's automatic move-to-background behavior at the default 120s timeout is evaluated against the post-rewrite command shape. A simple long-running pipeline could be moved to the background and finish, while the same workload with a trailing `; exit \"${PIPESTATUS[0]}\"` instrumentation statement was killed at 120s. A PreToolUse hook that appends that instrumentation can therefore turn a model-issued command that would have survived as a background task into one that is terminated at the timeout boundary, without the model or user seeing why eligibility changed.",
+      "workaround": "Do not assume Bash auto-background behavior is stable after command-rewriting hooks. If wrappers append `;`, `&&`, traps, pipeline status handling, or other shell structure, run a same-session timeout canary for the wrapped shape and require either explicit longer `timeout`, explicit `run_in_background`, or an in-command deadline that matches the wrapper's behavior. For long builds or tests, prefer wrapper forms that preserve the original command's lifecycle expectations, and log both the original and rewritten command shape when diagnosing exact 120s kills.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "hooks",
+        "pretooluse",
+        "updatedinput",
+        "bash",
+        "timeout",
+        "background",
+        "windows",
+        "git-bash"
       ]
     },
     {
@@ -24031,27 +24079,27 @@
     }
   ],
   "status_summary": {
-    "open": 1806,
+    "open": 1808,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 161,
-    "high": 1050,
+    "high": 1052,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-30",
   "stats": {
-    "total": 1820,
+    "total": 1822,
     "critical": 161,
-    "high": 1050,
+    "high": 1052,
     "medium": 500,
     "low": 109,
-    "open": 1806,
+    "open": 1808,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-30",
-  "total": 1820
+  "total": 1822
 }
