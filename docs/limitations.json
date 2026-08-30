@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1825,
+  "count": 1826,
   "categories": {
     "Hook behavior & events": 236,
     "Permission system": 164,
@@ -29,7 +29,7 @@
     "Model behavior": 18,
     "Scheduling & remote triggers": 18,
     "Permissions & safety": 17,
-    "Scheduled tasks": 16,
+    "Scheduled tasks": 17,
     "Worktree": 14,
     "Worktrees & isolation": 14,
     "File system & paths": 13,
@@ -196,7 +196,7 @@
   },
   "severity_counts": {
     "CRITICAL": 161,
-    "HIGH": 1054,
+    "HIGH": 1055,
     "LOW": 109,
     "MEDIUM": 501
   },
@@ -24150,30 +24150,53 @@
         "vscode",
         "profiles"
       ]
+    },
+    {
+      "id": "headless-permission-denials-can-report-process-success",
+      "title": "Headless permission denials can report process success.",
+      "category": "Scheduled tasks",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90578"
+      ],
+      "date_added": "2026-08-30",
+      "description": "A reported Claude Code 2.1.251 macOS unattended run found that `claude -p` can end with exit code 0, `is_error:false`, and `subtype:\"success\"` even when required tool permissions were denied and the requested work could not run. Bash denials may appear in `permission_denials`, but an independent follow-up reproduced a denied `Read` attempt that was absent from that array while the transcript still contained the refusal. Cron, launchd, CI, and wrapper scripts that only check process exit status, `is_error`, or `permission_denials` can therefore mark blocked work as successful and keep spending model time on inert scheduled runs.",
+      "workaround": "For unattended Claude Code jobs, treat permission refusal as a first-class failed outcome even when the process exits 0. Use `--output-format json` or stream JSON, parse `permission_denials`, scan tool results for refused `Read` or pre-loop denials until every denial path is structured, and require a task-specific completion sentinel or expected side effect before marking the run healthy. For safety-critical automation, add `--fail-on-permission-denied` behavior in the wrapper, alert on repeated permission-refusal prose, and preserve the raw JSON envelope plus transcript path for diagnosis.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "headless",
+        "scheduled-tasks",
+        "permissions",
+        "exit-code",
+        "permission-denials",
+        "automation",
+        "ci"
+      ]
     }
   ],
   "status_summary": {
-    "open": 1811,
+    "open": 1812,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 161,
-    "high": 1054,
+    "high": 1055,
     "low": 109,
     "medium": 501
   },
   "lastUpdated": "2026-08-30",
   "stats": {
-    "total": 1825,
+    "total": 1826,
     "critical": 161,
-    "high": 1054,
+    "high": 1055,
     "medium": 501,
     "low": 109,
-    "open": 1811,
+    "open": 1812,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-30",
-  "total": 1825
+  "total": 1826
 }

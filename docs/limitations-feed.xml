@@ -127,6 +127,14 @@
     <category term="Configuration behavior"/>
   </entry>
   <entry>
+    <title>[HIGH] Headless permission denials can report process success.</title>
+    <id>https://framework.boucle.sh/limitations.html#headless-permission-denials-can-report-process-success</id>
+    <link href="https://framework.boucle.sh/limitations.html#headless-permission-denials-can-report-process-success"/>
+    <updated>2026-08-30T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.251 macOS unattended run found that `claude -p` can end with exit code 0, `is_error:false`, and `subtype:&quot;success&quot;` even when required tool permissions were denied and the requested work could not run. Bash denials may appear in `permission_denials`, but an independent follow-up reproduced a denied `Read` attempt that was absent from that array while the transcript still contained the refusal. Cron, launchd, CI, and wrapper scripts that only check process exit status, `is_error`, or `permission_denials` can therefore mark blocked work as successful and keep spending model time on inert scheduled runs.</summary>
+    <category term="Scheduled tasks"/>
+  </entry>
+  <entry>
     <title>[HIGH] Bash tool wrapper can suppress `set -e` fail-fast behavior.</title>
     <id>https://framework.boucle.sh/limitations.html#bash-tool-wrapper-can-suppress-errexit</id>
     <link href="https://framework.boucle.sh/limitations.html#bash-tool-wrapper-can-suppress-errexit"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-30T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.251 WSL2 session found that a long subagent final report delivered through `idle_notification` was cut at roughly 2,500 characters when the harness flagged it as an instruction-shaped `settings-json` pattern. The truncation notice told the parent to ask for the rest through `SendMessage`, but each re-ask resumed the subagent against its full transcript, repeated the expensive work, and produced another similarly truncated notification. The reporter contrasted this with an unflagged Sonnet subagent report that was delivered normally, pointing to the flagged notification path rather than a general agent-output limit.</summary>
     <category term="Subagent &amp; spawned agents"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Scheduled task registry can stop all routines on one `fireAt` type.</title>
-    <id>https://framework.boucle.sh/limitations.html#scheduled-task-registry-can-stop-all-routines-on-one-fireat-type</id>
-    <link href="https://framework.boucle.sh/limitations.html#scheduled-task-registry-can-stop-all-routines-on-one-fireat-type"/>
-    <updated>2026-08-30T00:00:00Z</updated>
-    <summary>A reported Claude Desktop Windows MSIX setup found that all scheduled tasks stopped dispatching for about 55 hours after one entry in `scheduled-tasks.json` had `fireAt` stored as an ISO 8601 string. The app&#x27;s own `update_scheduled_task` MCP tool reportedly wrote that string shape, while the disk loader expected epoch milliseconds and rejected the entire registry on startup and wake. Processes, package status, dispatcher heartbeat, and recorded skips still looked healthy, so every routine could go dark without an in-product liveness signal.</summary>
-    <category term="Scheduled tasks"/>
   </entry>
 </feed>
