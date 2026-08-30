@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1819,
+  "count": 1820,
   "categories": {
-    "Hook behavior & events": 233,
+    "Hook behavior & events": 234,
     "Permission system": 164,
     "MCP & plugin issues": 111,
     "Hook bypass & evasion": 108,
@@ -195,11 +195,35 @@
   },
   "severity_counts": {
     "CRITICAL": 161,
-    "HIGH": 1049,
+    "HIGH": 1050,
     "LOW": 109,
     "MEDIUM": 500
   },
   "entries": [
+    {
+      "id": "userpromptsubmit-hooks-can-stop-for-entire-session-after-title-race",
+      "title": "UserPromptSubmit hooks can stop for an entire session after a title-generation race.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90784"
+      ],
+      "date_added": "2026-08-30",
+      "description": "A reported Claude Code 2.1.247 macOS VS Code setup found four sessions where every `UserPromptSubmit` hook stopped firing for the whole session while `SessionStart`, `PreToolUse`, `PostToolUse`, and `Stop` hooks continued. The same hook settings worked in dozens of concurrent sessions, and extension host logs showed the hook scripts had run and produced valid JSON before the failure. Every affected session also showed two `generate_session_title` API requests within about 100ms immediately before the real turn, while unaffected sessions did not show that doubled title-generation pattern. The reported risk is that prompt-time policy can become silently inert for a session without a transcript warning or visible hook error.",
+      "workaround": "Treat `UserPromptSubmit` hooks as advisory until the current client proves same-session liveness after the first turn. For policy-bearing prompt hooks, add a short visible canary or nonce check that must appear in the session transcript, and verify it again after session start, title generation, resume, and VS Code reload events. If a prompt hook disappears while other hooks still fire, restart the session and inspect extension host logs for duplicate `generate_session_title` requests before trusting prior prompt-time context. Keep irreversible action gates in blocking `PreToolUse` hooks, OS permissions, or external approval records rather than only in `UserPromptSubmit` additional context.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "hooks",
+        "userpromptsubmit",
+        "vscode",
+        "macos",
+        "title-generation",
+        "additionalcontext",
+        "liveness",
+        "policy"
+      ]
+    },
     {
       "id": "credential-helper-get-can-print-live-tokens-into-transcripts",
       "title": "Credential helper diagnostics can print live tokens into transcripts.",
@@ -24007,27 +24031,27 @@
     }
   ],
   "status_summary": {
-    "open": 1805,
+    "open": 1806,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 161,
-    "high": 1049,
+    "high": 1050,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-30",
   "stats": {
-    "total": 1819,
+    "total": 1820,
     "critical": 161,
-    "high": 1049,
+    "high": 1050,
     "medium": 500,
     "low": 109,
-    "open": 1805,
+    "open": 1806,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-30",
-  "total": 1819
+  "total": 1820
 }
