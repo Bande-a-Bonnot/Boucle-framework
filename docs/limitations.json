@@ -210,8 +210,8 @@
         "https://github.com/anthropics/claude-code/issues/90717"
       ],
       "date_added": "2026-08-30",
-      "description": "A reported Claude Code 2.1.236 Linux sandbox setup found that sandboxed Bash calls mount an empty tmpfs over `/run/user`, leaving `DBUS_SESSION_BUS_ADDRESS` pointing at a socket path that no longer exists inside the sandbox. Tools that store credentials in libsecret or GNOME Keyring, including `gh`, can then misreport valid keyring-backed tokens as invalid because they cannot reach the D-Bus session bus. The reporter says `sandbox.network.allowUnixSockets`, `sandbox.excludedCommands`, and `dangerouslyDisableSandbox` did not restore access in that build, and the only working `gh` workaround was moving the token into plaintext insecure storage, which made the credential easier for other reads to reach.",
-      "workaround": "Do not interpret a sandboxed `gh auth status` or other libsecret-backed credential failure on Linux as proof that the token itself is revoked until the same command is checked outside Claude Code. Before moving credentials into plaintext storage, inspect whether `/run/user/$UID/bus` is visible from a sandboxed Bash call and whether `/run/user` has been replaced by tmpfs. Prefer OS, container, or host-side automation that can reach the normal keyring for credential-bearing commands, keep plaintext fallback files out of Claude Code-readable scope where possible, and treat any forced `--insecure-storage` migration as a temporary downgrade that needs separate review and cleanup.",
+      "description": "A reported Claude Code 2.1.236 Linux sandbox setup found that sandboxed Bash calls mount an empty tmpfs over `/run/user`, leaving `DBUS_SESSION_BUS_ADDRESS` pointing at a socket path that no longer exists inside the sandbox. Tools that store credentials in libsecret or GNOME Keyring, including `gh`, can then misreport valid keyring-backed tokens as invalid because they cannot reach the D-Bus session bus. The original report found that `sandbox.network.allowUnixSockets`, `sandbox.excludedCommands`, and `dangerouslyDisableSandbox` did not restore access in that build; a later reporter correction verified that `sandbox.filesystem.allowRead` can re-expose `/run/user` read-only and restore keyring-backed `gh auth status` without moving the token into plaintext insecure storage. The same correction says `allowRead` for `/run/docker.sock` restored Docker access without enabling `allowAllUnixSockets`.",
+      "workaround": "Do not interpret a sandboxed `gh auth status` or other libsecret-backed credential failure on Linux as proof that the token itself is revoked until the same command is checked outside Claude Code. Before moving credentials into plaintext storage, inspect whether `/run/user/$UID/bus` is visible from a sandboxed Bash call and whether `/run/user` has been replaced by tmpfs. In affected sandbox configs, prefer a narrow `sandbox.filesystem.allowRead` entry for `/run/user` so the session bus and keyring socket remain reachable; add `/run/docker.sock` only if Docker access is intentionally allowed. Recheck `gh auth status` from inside the sandbox and confirm plaintext host files no longer contain an OAuth token. Treat any forced `--insecure-storage` migration as a temporary downgrade that needs separate review and cleanup.",
       "source": "GitHub issue scan",
       "tags": [
         "sandbox",
@@ -220,7 +220,9 @@
         "dbus",
         "credentials",
         "github-cli",
-        "plaintext"
+        "plaintext",
+        "allowread",
+        "docker"
       ]
     },
     {
