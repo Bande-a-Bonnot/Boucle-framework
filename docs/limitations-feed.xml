@@ -7,6 +7,14 @@
   <updated>2026-08-30T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] UserPromptSubmit hooks can stop for an entire session after a title-generation race.</title>
+    <id>https://framework.boucle.sh/limitations.html#userpromptsubmit-hooks-can-stop-for-entire-session-after-title-race</id>
+    <link href="https://framework.boucle.sh/limitations.html#userpromptsubmit-hooks-can-stop-for-entire-session-after-title-race"/>
+    <updated>2026-08-30T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.247 macOS VS Code setup found four sessions where every `UserPromptSubmit` hook stopped firing for the whole session while `SessionStart`, `PreToolUse`, `PostToolUse`, and `Stop` hooks continued. The same hook settings worked in dozens of concurrent sessions, and extension host logs showed the hook scripts had run and produced valid JSON before the failure. Every affected session also showed two `generate_session_title` API requests within about 100ms immediately before the real turn, while unaffected sessions did not show that doubled title-generation pattern. The reported risk is that prompt-time policy can become silently inert for a session without a transcript warning or visible hook error.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Credential helper diagnostics can print live tokens into transcripts.</title>
     <id>https://framework.boucle.sh/limitations.html#credential-helper-get-can-print-live-tokens-into-transcripts</id>
     <link href="https://framework.boucle.sh/limitations.html#credential-helper-get-can-print-live-tokens-into-transcripts"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-30T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.250 Linux `--worktree` session found that worktree isolation refused complex Bash commands as too hard to verify, but allowed a simple absolute-path write such as `touch /tmp/wt-demo/outside-probe.txt` to create a file in the main checkout outside the isolated worktree. The session cwd was the generated `.claude/worktrees/demo` path, and the command exited 0 while modifying the shared parent checkout. This makes command complexity a poor proxy for target safety: complex harmless commands can be blocked while simple cross-worktree writes pass silently.</summary>
     <category term="Permissions &amp; safety"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows exec-form hooks can drop args and evaluate stdin JSON.</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-exec-form-hook-args-can-be-dropped</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-exec-form-hook-args-can-be-dropped"/>
-    <updated>2026-08-30T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.117 Windows 11 setup found that hook entries using the documented exec form, with `command: &quot;node&quot;` and `args: [&quot;C:/path/to/hook.mjs&quot;]`, were still launched through Git Bash as `bash.exe -c node` and the args array was dropped. Node then started without a script argument, treated the piped hook JSON payload on stdin as JavaScript source, and crashed before the diagnostic hook could log anything. The reporter reproduced this across 48 converted hook entries, affecting newly started and already-running sessions.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>
