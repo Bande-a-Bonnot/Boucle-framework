@@ -16397,14 +16397,16 @@
     },
     {
       "id": "scheduled-tasks-can-ignore-ui-configured-permission-mode-and-model",
-      "title": "Scheduled tasks can ignore UI-configured permission mode and model",
+      "title": "Scheduled tasks can ignore configured permission mode and prompt unattended",
       "category": "Scheduled tasks",
       "severity": "HIGH",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/79782"
+        "https://github.com/anthropics/claude-code/issues/79782",
+        "https://github.com/anthropics/claude-code/issues/89632",
+        "https://github.com/anthropics/claude-code/issues/89998"
       ],
-      "description": "A reported Windows Claude Code scheduled-task setup saved per-task UI options for bypass/skip permissions and Sonnet, but actual scheduled executions ran with manual permission prompts and Opus instead. The reporter saw the behavior consistently across multiple recurring tasks, while the same fixed commands were allowlisted and worked as expected when run manually.",
-      "workaround": "Do not assume the scheduled-task UI settings are the settings used at execution time. For each recurring task, run a supervised scheduled fire and record the effective model and permission mode from the actual run. Keep prompts and commands idempotent, and avoid relying on unattended scheduled tasks until execution-time settings are confirmed by readback.",
+      "description": "Reported scheduled-task setups on Windows and macOS found that fired local scheduled tasks can run under `--permission-mode default` or otherwise prompt for routine tool approvals even when the task is framed as unattended and the interactive/project configuration expects bypass permissions. One macOS measurement saw scheduled-task processes started with `--permission-mode default` while interactive sessions in the same project used `bypassPermissions`; another Windows report observed a scheduled task starting in manual-approval mode before bypass guidance appeared later. With `--permission-prompt-tool stdio` and no operator attached, the task can wedge silently instead of failing.",
+      "workaround": "Do not assume scheduled-task UI, project, or local settings are the settings used at execution time. For each recurring task, run a supervised scheduled fire and record the effective model and permission mode from the actual process argv or transcript before relying on it unattended. Add a first-step canary that logs `--permission-mode` from the live process list and exits nonzero if it sees `default` for an unattended task. Prefer user-level permission-mode settings only after readback proves the fired process inherited them, keep task operations idempotent, and use external watchdogs or task-specific completion files so a stalled approval prompt cannot look like a still-running job.",
       "status": "open",
       "date_added": "2026-07-21"
     },
