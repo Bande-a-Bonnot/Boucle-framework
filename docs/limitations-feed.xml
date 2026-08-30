@@ -7,6 +7,14 @@
   <updated>2026-08-30T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Linux sandbox can hide the session bus that keyring-backed tools need.</title>
+    <id>https://framework.boucle.sh/limitations.html#linux-sandbox-masks-keyring-session-bus</id>
+    <link href="https://framework.boucle.sh/limitations.html#linux-sandbox-masks-keyring-session-bus"/>
+    <updated>2026-08-30T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.236 Linux sandbox setup found that sandboxed Bash calls mount an empty tmpfs over `/run/user`, leaving `DBUS_SESSION_BUS_ADDRESS` pointing at a socket path that no longer exists inside the sandbox. Tools that store credentials in libsecret or GNOME Keyring, including `gh`, can then misreport valid keyring-backed tokens as invalid because they cannot reach the D-Bus session bus. The reporter says `sandbox.network.allowUnixSockets`, `sandbox.excludedCommands`, and `dangerouslyDisableSandbox` did not restore access in that build, and the only working `gh` workaround was moving the token into plaintext insecure storage, which made the credential easier for other reads to reach.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
     <title>[HIGH] Bridge sessions can inject foreign instructions into assistant output.</title>
     <id>https://framework.boucle.sh/limitations.html#bridge-session-can-inject-foreign-instructions-into-assistant-output</id>
     <link href="https://framework.boucle.sh/limitations.html#bridge-session-can-inject-foreign-instructions-into-assistant-output"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-30T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.248 to 2.1.251 macOS setup found that bypass-permissions mode injected guidance to prefer Bash for file reads and edits, including `cat`, `sed -n`, `sed`, heredocs, or short scripts, instead of the dedicated Read, Edit, or Write tools. As a result, small file changes were applied through opaque shell commands and the normal Edit/Write diff cards disappeared. Settings such as `diffTool` and PostToolUse hooks did not recover the missing review surface because the dedicated edit tools were no longer being called.</summary>
     <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Project-scoped `strictAllowlist` can be silently discarded.</title>
-    <id>https://framework.boucle.sh/limitations.html#project-scoped-strictallowlist-can-be-silently-discarded</id>
-    <link href="https://framework.boucle.sh/limitations.html#project-scoped-strictallowlist-can-be-silently-discarded"/>
-    <updated>2026-08-30T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.250 macOS repro found that `sandbox.network.strictAllowlist: true` is silently ignored when it is placed in a repository `.claude/settings.json` or `.claude/settings.local.json`, even while `sandbox.enabled` and `sandbox.network.allowedDomains` from the same project file are honored. The filesystem sandbox blocked a harmless home-directory write, proving the sandbox was active, but a sandboxed Bash `curl` to a non-allowlisted host still returned `200` and the debug log showed the request going through the classifier/prompt path instead of deterministic denial. Moving the identical settings block to CLI `--settings` scope produced the expected `403`, so the gap is scope resolution and missing operator notice rather than network enforcement alone.</summary>
-    <category term="Sandbox &amp; permissions"/>
   </entry>
 </feed>
