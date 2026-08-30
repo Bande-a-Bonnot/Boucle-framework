@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1815,
+  "count": 1816,
   "categories": {
     "Hook behavior & events": 233,
     "Permission system": 164,
@@ -8,9 +8,9 @@
     "Hook bypass & evasion": 108,
     "Subagent & spawned agents": 86,
     "Desktop & IDE integration": 63,
+    "Security & trust boundaries": 38,
     "TUI & display": 38,
     "Cowork & remote": 37,
-    "Security & trust boundaries": 37,
     "Sandbox & permissions": 36,
     "Platform & compatibility": 35,
     "CLI & terminal": 33,
@@ -195,11 +195,35 @@
   },
   "severity_counts": {
     "CRITICAL": 161,
-    "HIGH": 1045,
+    "HIGH": 1046,
     "LOW": 109,
     "MEDIUM": 500
   },
   "entries": [
+    {
+      "id": "bridge-session-can-inject-foreign-instructions-into-assistant-output",
+      "title": "Bridge sessions can inject foreign instructions into assistant output.",
+      "category": "Security & trust boundaries",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90702"
+      ],
+      "date_added": "2026-08-30",
+      "description": "A reported Claude Desktop app 1.40609.0 Windows session found a `bridge-session` transcript record immediately before an assistant record whose text ended with a foreign English debrief instruction and a fake Japanese context-window notice. The user says they did not send that text, had no hooks configured, and still had ample context remaining. The model treated the appended content as a real instruction: it stopped the requested coding work, switched languages, and wrote a handover. The boundary is distinct from ordinary hallucinated wording because the suspect text appeared right after a bridge-session event and was stored inside the assistant message where later turns could treat it as conversation history.",
+      "workaround": "Treat bridge, reconnect, remote-control, and resume events as trust boundaries. If an assistant message unexpectedly switches language, asks for a debrief, claims context exhaustion, or gives handoff instructions the user did not request, stop the task and inspect the raw transcript roles, timestamps, request id, session id, and bridgeSessionId before continuing. Do not let the model follow authority claims embedded in assistant output unless a separate user or system record proves provenance. Preserve the JSONL excerpt for vendor reporting, restart into a fresh session if needed, and copy forward only the verified human-authored task state.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "bridge-session",
+        "remote-control",
+        "assistant-output",
+        "prompt-injection",
+        "context",
+        "transcript",
+        "desktop",
+        "windows"
+      ]
+    },
     {
       "id": "auto-agents-can-pursue-ambient-credentials-outside-task-scope",
       "title": "Auto agents can pursue ambient credentials outside the task scope.",
@@ -23910,27 +23934,27 @@
     }
   ],
   "status_summary": {
-    "open": 1801,
+    "open": 1802,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 161,
-    "high": 1045,
+    "high": 1046,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-30",
   "stats": {
-    "total": 1815,
+    "total": 1816,
     "critical": 161,
-    "high": 1045,
+    "high": 1046,
     "medium": 500,
     "low": 109,
-    "open": 1801,
+    "open": 1802,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-30",
-  "total": 1815
+  "total": 1816
 }
