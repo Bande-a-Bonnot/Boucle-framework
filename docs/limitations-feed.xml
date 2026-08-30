@@ -39,6 +39,14 @@
     <category term="Security &amp; trust boundaries"/>
   </entry>
   <entry>
+    <title>[HIGH] Settings cache can clobber concurrent settings.json writes.</title>
+    <id>https://framework.boucle.sh/limitations.html#settings-cache-can-clobber-concurrent-settings-json-writes</id>
+    <link href="https://framework.boucle.sh/limitations.html#settings-cache-can-clobber-concurrent-settings-json-writes"/>
+    <updated>2026-08-30T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.240 macOS repro found that `~/.claude/settings.json` changes from another legitimate writer can be silently lost when they land inside about five seconds of Claude Code&#x27;s own settings save. The report attributes the loss to long-lived per-process settings caches plus a time-only file-watcher echo suppression window: an external atomic rename can be present on disk, but the running process ignores the change, keeps a stale cache for the rest of its lifetime, and later rewrites the full settings file from that stale view. Observed impact included top-level settings disappearing, hook-registration changes being at risk, and a user&#x27;s saved `/model` selection being reverted by a different stale Claude Code process.</summary>
+    <category term="Configuration behavior"/>
+  </entry>
+  <entry>
     <title>[HIGH] Linux sandbox can hide the session bus that keyring-backed tools need.</title>
     <id>https://framework.boucle.sh/limitations.html#linux-sandbox-masks-keyring-session-bus</id>
     <link href="https://framework.boucle.sh/limitations.html#linux-sandbox-masks-keyring-session-bus"/>
@@ -156,14 +164,6 @@
     <link href="https://framework.boucle.sh/limitations.html#desktop-org-switch-can-kill-running-local-sessions"/>
     <updated>2026-08-30T00:00:00Z</updated>
     <summary>A reported Claude Desktop macOS setup with one account in two organizations found that switching the account menu from one organization to another reinitialized local Cowork and Code session managers and stopped every local session, including turns that were actively running. The report&#x27;s logs show same-account `orgId` changes followed by deliberate stop calls for running sessions, while the UI still pointed at the old session and no transcript error or termination marker was written. Switching back repeated the teardown in the other organization, so routine org selection could silently discard in-flight local work.</summary>
-    <category term="Cowork &amp; remote"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Cowork scheduled tasks can mount only a subset of connected folders.</title>
-    <id>https://framework.boucle.sh/limitations.html#cowork-scheduled-tasks-can-mount-only-a-subset-of-connected-folders</id>
-    <link href="https://framework.boucle.sh/limitations.html#cowork-scheduled-tasks-can-mount-only-a-subset-of-connected-folders"/>
-    <updated>2026-08-30T00:00:00Z</updated>
-    <summary>A reported Windows Cowork scheduled-task setup found that unattended runs intermittently mounted only a varying subset of already-connected folders. Across six observed incidents over ten days, different folder combinations disappeared per run, including cases after the folders had been added to the trusted list. The most severe run kept one leaf under an output tree reachable while the output root and other required folders were absent, so the task&#x27;s local guard proceeded and delivered a business report with entire sections silently missing. The report distinguishes this from repeated approval prompts: the folders were already authorized, but each scheduled session appeared to receive an inconsistent mounted-folder set.</summary>
     <category term="Cowork &amp; remote"/>
   </entry>
 </feed>
