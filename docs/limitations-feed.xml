@@ -7,6 +7,14 @@
   <updated>2026-08-30T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] SDK image payloads can silently drop client responses over the stdio cap.</title>
+    <id>https://framework.boucle.sh/limitations.html#sdk-image-payloads-can-silently-drop-client-responses-over-stdio-cap</id>
+    <link href="https://framework.boucle.sh/limitations.html#sdk-image-payloads-can-silently-drop-client-responses-over-stdio-cap"/>
+    <updated>2026-08-30T00:00:00Z</updated>
+    <summary>A reported Windows Agent SDK session with `entrypoint=sdk-py` 2.1.250 found that images over roughly the 1,048,576-byte JSON-RPC message cap can make the client stop receiving output without a user-visible error. The reporter first saw large screenshot attachments freeze the session, then corrected the scope after checking the actual crashing sessions: CLI reads of the same image worked, while SDK sessions could also fail after `Read` loaded a multi-megabyte image from disk. In that path the server-side transcript could contain a generated answer, but the oversized message back to the SDK client was silently dropped, leaving client logs without the turn and making transcript-only diagnosis look successful.</summary>
+    <category term="Agent SDK &amp; transport"/>
+  </entry>
+  <entry>
     <title>[HIGH] UserPromptSubmit hooks can stop for an entire session after a title-generation race.</title>
     <id>https://framework.boucle.sh/limitations.html#userpromptsubmit-hooks-can-stop-for-entire-session-after-title-race</id>
     <link href="https://framework.boucle.sh/limitations.html#userpromptsubmit-hooks-can-stop-for-entire-session-after-title-race"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-30T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.251 macOS terminal session found that multiple AskUserQuestion calls in one assistant turn can render as overlapping dialogs instead of a queue. If the user starts answering the first dialog, selects Other, and types free-form text before a later dialog covers it, the first dialog returns from scratch after the top dialog is submitted. Already submitted answers settle normally, but in-progress selections and multiline Other text are cleared with no warning or recovery affordance. The report ties the reachable timing to concurrent tool dispatch plus serialized auto-mode classifier decisions, while noting the state reset appears to live in the dialog layer.</summary>
     <category term="TUI &amp; display"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Desktop org switching can kill running local sessions.</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-org-switch-can-kill-running-local-sessions</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-org-switch-can-kill-running-local-sessions"/>
-    <updated>2026-08-30T00:00:00Z</updated>
-    <summary>A reported Claude Desktop macOS setup with one account in two organizations found that switching the account menu from one organization to another reinitialized local Cowork and Code session managers and stopped every local session, including turns that were actively running. The report&#x27;s logs show same-account `orgId` changes followed by deliberate stop calls for running sessions, while the UI still pointed at the old session and no transcript error or termination marker was written. Switching back repeated the teardown in the other organization, so routine org selection could silently discard in-flight local work.</summary>
-    <category term="Cowork &amp; remote"/>
   </entry>
 </feed>
