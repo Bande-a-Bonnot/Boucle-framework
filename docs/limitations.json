@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1812,
+  "count": 1813,
   "categories": {
     "Hook behavior & events": 232,
     "Permission system": 164,
@@ -11,8 +11,8 @@
     "TUI & display": 38,
     "Cowork & remote": 37,
     "Security & trust boundaries": 37,
+    "Sandbox & permissions": 36,
     "Platform & compatibility": 35,
-    "Sandbox & permissions": 35,
     "CLI & terminal": 33,
     "Configuration behavior": 33,
     "Context & memory": 33,
@@ -195,7 +195,7 @@
   },
   "severity_counts": {
     "CRITICAL": 161,
-    "HIGH": 1042,
+    "HIGH": 1043,
     "LOW": 109,
     "MEDIUM": 500
   },
@@ -23795,6 +23795,28 @@
       ]
     },
     {
+      "id": "linux-bwrap-worktree-deny-list-can-hit-e2big",
+      "title": "Linux bwrap sandbox can hit E2BIG from registered git worktrees.",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90569"
+      ],
+      "date_added": "2026-08-30",
+      "description": "A reported Claude Code 2.1.220 to 2.1.251 Linux automation setup found that a repository with about 261 registered git worktrees made every sandboxed Bash invocation fail before the command ran. The default bubblewrap profile expanded worktree admin protections into hundreds of deny paths, with no user-configured deny rules, and then passed that profile through one `bash -c` argument that crossed Linux's single-argument limit. This makes programmatic worktree isolation a hard availability ceiling: trivial commands, monitor work, and background sessions can all stop spawning once enough worktrees are registered.",
+      "workaround": "For automation that creates many git worktrees, prune stale worktrees and restart Claude Code before relying on sandboxed Bash, and monitor `git worktree list` count as part of session hygiene. Treat E2BIG on a trivial command such as `date` or `sleep 5` as a sandbox-profile budget failure, not as a shell or model problem. Where policy allows it, split large worktree farms across repositories or disposable clones so one shared `.git/worktrees` registry cannot disable every session on the repo. Ask maintainers for an args-file or direct-bwrap transport, or an O(1) worktree protection rule, rather than reducing the security deny semantics.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "linux",
+        "bubblewrap",
+        "worktree",
+        "sandbox",
+        "e2big",
+        "automation"
+      ]
+    },
+    {
       "id": "bypass-permissions-bash-edits-can-hide-diffs",
       "title": "Bypass-permissions Bash edits can hide file diffs.",
       "category": "Permission system",
@@ -23838,27 +23860,27 @@
     }
   ],
   "status_summary": {
-    "open": 1798,
+    "open": 1799,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 161,
-    "high": 1042,
+    "high": 1043,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-30",
   "stats": {
-    "total": 1812,
+    "total": 1813,
     "critical": 161,
-    "high": 1042,
+    "high": 1043,
     "medium": 500,
     "low": 109,
-    "open": 1798,
+    "open": 1799,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-30",
-  "total": 1812
+  "total": 1813
 }
