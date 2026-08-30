@@ -15,6 +15,14 @@
     <category term="Security &amp; trust boundaries"/>
   </entry>
   <entry>
+    <title>[HIGH] Worktree trust dialogs can name the source path instead of the runtime path.</title>
+    <id>https://framework.boucle.sh/limitations.html#worktree-trust-dialog-can-name-the-source-not-runtime-path</id>
+    <link href="https://framework.boucle.sh/limitations.html#worktree-trust-dialog-can-name-the-source-not-runtime-path"/>
+    <updated>2026-08-30T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code Desktop suggested-task flow found that clicking `Start with worktree` could show a `Trust this workspace?` dialog for the `spawn_task` source cwd while the created session actually ran in a generated worktree under the spawning repository&#x27;s `.claude/worktrees/` directory. The tracked `.claude/settings.json` hook file was byte-identical in both checkouts, so the consent covered the same executable content but not the path where the hook and session ran. The flow also appeared to write durable trust entries for both source directories and generated worktrees, including paths that were later deleted.</summary>
+    <category term="Security &amp; trust boundaries"/>
+  </entry>
+  <entry>
     <title>[HIGH] Bash tool wrapper can suppress `set -e` fail-fast behavior.</title>
     <id>https://framework.boucle.sh/limitations.html#bash-tool-wrapper-can-suppress-errexit</id>
     <link href="https://framework.boucle.sh/limitations.html#bash-tool-wrapper-can-suppress-errexit"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-30T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.238 to 2.1.241 macOS setup found that the retention sweep could delete clean, pushed, user-created `git worktree add` worktrees stored under `&lt;repo&gt;/.claude/worktrees/` even though the docs say cleanup only removes Claude-created worktrees. The report distinguishes the name-filtered stale-agent cleanup path from a jobs cleanup path that reaps every dead background-job record with a `worktreePath` under `.claude/worktrees` when the worktree is clean, pushed, unlocked, and its root directory mtime is older than `cleanupPeriodDays`. Because normal commits and subdirectory edits do not refresh the worktree root mtime, an actively used worktree can look stale, and a dead job record can become enough authority to remove both the working tree and git worktree metadata without user-visible notice.</summary>
     <category term="Data integrity"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Ralph Stop hook corruption handlers can be unreachable under `set -e`.</title>
-    <id>https://framework.boucle.sh/limitations.html#ralph-stop-hook-corruption-handlers-can-be-unreachable</id>
-    <link href="https://framework.boucle.sh/limitations.html#ralph-stop-hook-corruption-handlers-can-be-unreachable"/>
-    <updated>2026-08-30T00:00:00Z</updated>
-    <summary>A reported bug in the official `ralph-wiggum` plugin says its Stop hook runs with `set -euo pipefail`, then parses the loop state file and transcript JSON through command substitutions whose failures are expected corruption cases. When fields such as `iteration:` are missing, or when `jq` cannot parse the last transcript line, the shell can exit at the assignment before reaching the hook&#x27;s own diagnostic and cleanup branches. The result is a silent nonzero Stop-hook failure with `.claude/ralph-loop.local.md` left behind, so the same broken loop state can fail again on every subsequent Stop instead of telling the user to restart cleanly.</summary>
-    <category term="Hook execution &amp; lifecycle"/>
   </entry>
 </feed>
