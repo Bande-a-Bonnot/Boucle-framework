@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1823,
+  "count": 1824,
   "categories": {
     "Hook behavior & events": 236,
     "Permission system": 164,
@@ -111,6 +111,7 @@
     "UI & display": 2,
     "Agent": 1,
     "Agent orchestration": 1,
+    "Agent SDK & transport": 1,
     "agent-behavior": 1,
     "Auth & credential management": 1,
     "Auth and credentials": 1,
@@ -195,11 +196,36 @@
   },
   "severity_counts": {
     "CRITICAL": 161,
-    "HIGH": 1053,
+    "HIGH": 1054,
     "LOW": 109,
     "MEDIUM": 500
   },
   "entries": [
+    {
+      "id": "sdk-image-payloads-can-silently-drop-client-responses-over-stdio-cap",
+      "title": "SDK image payloads can silently drop client responses over the stdio cap.",
+      "category": "Agent SDK & transport",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90802"
+      ],
+      "date_added": "2026-08-30",
+      "description": "A reported Windows Agent SDK session with `entrypoint=sdk-py` 2.1.250 found that images over roughly the 1,048,576-byte JSON-RPC message cap can make the client stop receiving output without a user-visible error. The reporter first saw large screenshot attachments freeze the session, then corrected the scope after checking the actual crashing sessions: CLI reads of the same image worked, while SDK sessions could also fail after `Read` loaded a multi-megabyte image from disk. In that path the server-side transcript could contain a generated answer, but the oversized message back to the SDK client was silently dropped, leaving client logs without the turn and making transcript-only diagnosis look successful.",
+      "workaround": "For SDK-backed sessions, shrink images before they enter the model context: downscale wide screenshots and reduce JPEG quality until the encoded payload is safely below the 1 MB stdio message limit, with a practical target around 600 KB or less. Treat both attachment uploads and file-read image paths as transport risks. Client wrappers should preflight encoded byte size, fail loudly with the size and limit, and require a delivered-response sentinel or non-empty client-side turn record before marking image-heavy tasks complete. Preserve client logs and server transcripts together when reporting this class, because either side alone can hide the dropped response.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "sdk",
+        "python-sdk",
+        "images",
+        "windows",
+        "stdio",
+        "json-rpc",
+        "transcripts",
+        "silent-failure",
+        "attachments"
+      ]
+    },
     {
       "id": "userpromptsubmit-hooks-can-stop-for-entire-session-after-title-race",
       "title": "UserPromptSubmit hooks can stop for an entire session after a title-generation race.",
@@ -24104,27 +24130,27 @@
     }
   ],
   "status_summary": {
-    "open": 1809,
+    "open": 1810,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 161,
-    "high": 1053,
+    "high": 1054,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-30",
   "stats": {
-    "total": 1823,
+    "total": 1824,
     "critical": 161,
-    "high": 1053,
+    "high": 1054,
     "medium": 500,
     "low": 109,
-    "open": 1809,
+    "open": 1810,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-30",
-  "total": 1823
+  "total": 1824
 }
