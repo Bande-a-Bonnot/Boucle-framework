@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1825</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-30.</span></p>
+        <p class="subtitle"><span id="total-count">1826</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-30.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -20640,6 +20640,18 @@
                         <!-- workaround:hook-and-plugin-stacks-cannot-be-scoped-to-the-active-model -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat model changes and surface changes as configuration-boundary events. If a smaller-model thrift stack or stronger-model full-depth stack matters, launch separate terminal sessions with explicit `--settings` files and verify the active hook/plugin set at session start. In the VS Code extension, do not assume switching model changes enforcement, output filtering, compression, or plugin availability; keep the static profile conservative enough for every model it may run, or start a terminal session for profile-sensitive work until profile selection or model-conditional settings exist.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/90817" target="_blank">#90817</a>, <a href="https://github.com/anthropics/claude-code/issues/90818" target="_blank">#90818</a></div>
+        </div>
+        <div class="kl-entry" data-category="Scheduled tasks" data-issues="90578" id="headless-permission-denials-can-report-process-success" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1826</span>
+                <span class="kl-cat">Scheduled tasks</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Headless permission denials can report process success.</h3>
+            <p>A reported Claude Code 2.1.251 macOS unattended run found that `claude -p` can end with exit code 0, `is_error:false`, and `subtype:&quot;success&quot;` even when required tool permissions were denied and the requested work could not run. Bash denials may appear in `permission_denials`, but an independent follow-up reproduced a denied `Read` attempt that was absent from that array while the transcript still contained the refusal. Cron, launchd, CI, and wrapper scripts that only check process exit status, `is_error`, or `permission_denials` can therefore mark blocked work as successful and keep spending model time on inert scheduled runs.</p>
+                        <!-- workaround:headless-permission-denials-can-report-process-success -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For unattended Claude Code jobs, treat permission refusal as a first-class failed outcome even when the process exits 0. Use `--output-format json` or stream JSON, parse `permission_denials`, scan tool results for refused `Read` or pre-loop denials until every denial path is structured, and require a task-specific completion sentinel or expected side effect before marking the run healthy. For safety-critical automation, add `--fail-on-permission-denied` behavior in the wrapper, alert on repeated permission-refusal prose, and preserve the raw JSON envelope plus transcript path for diagnosis.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/90578" target="_blank">#90578</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
