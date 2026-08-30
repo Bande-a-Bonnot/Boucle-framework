@@ -15,6 +15,22 @@
     <category term="Hook behavior &amp; events"/>
   </entry>
   <entry>
+    <title>[HIGH] PreToolUse `updatedInput` replacement can drop Bash timeout fields.</title>
+    <id>https://framework.boucle.sh/limitations.html#pretooluse-updatedinput-replacement-can-drop-bash-timeout-fields</id>
+    <link href="https://framework.boucle.sh/limitations.html#pretooluse-updatedinput-replacement-can-drop-bash-timeout-fields"/>
+    <updated>2026-08-30T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.248 through 2.1.251 Windows Git Bash setup found that a PreToolUse hook returning `hookSpecificOutput.updatedInput` with only a rewritten Bash `command` replaces the entire original tool input instead of merging over it. Sibling fields such as `timeout`, `run_in_background`, and `description` are silently discarded. In the reported repro, the assistant requested a 600000 ms timeout for a long command, the transcript still showed that requested timeout, but the hook&#x27;s command-only replacement caused the command to die at the 120s default with no message linking the timeout loss to the hook rewrite.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
+    <title>[HIGH] Bash auto-background eligibility can change after hook rewrite.</title>
+    <id>https://framework.boucle.sh/limitations.html#bash-auto-background-eligibility-can-change-after-hook-rewrite</id>
+    <link href="https://framework.boucle.sh/limitations.html#bash-auto-background-eligibility-can-change-after-hook-rewrite"/>
+    <updated>2026-08-30T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.251 Windows Git Bash setup found that the Bash tool&#x27;s automatic move-to-background behavior at the default 120s timeout is evaluated against the post-rewrite command shape. A simple long-running pipeline could be moved to the background and finish, while the same workload with a trailing `; exit &quot;${PIPESTATUS[0]}&quot;` instrumentation statement was killed at 120s. A PreToolUse hook that appends that instrumentation can therefore turn a model-issued command that would have survived as a background task into one that is terminated at the timeout boundary, without the model or user seeing why eligibility changed.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Credential helper diagnostics can print live tokens into transcripts.</title>
     <id>https://framework.boucle.sh/limitations.html#credential-helper-get-can-print-live-tokens-into-transcripts</id>
     <link href="https://framework.boucle.sh/limitations.html#credential-helper-get-can-print-live-tokens-into-transcripts"/>
@@ -149,21 +165,5 @@
     <updated>2026-08-30T00:00:00Z</updated>
     <summary>A reported Windows Cowork scheduled-task setup found that unattended runs intermittently mounted only a varying subset of already-connected folders. Across six observed incidents over ten days, different folder combinations disappeared per run, including cases after the folders had been added to the trusted list. The most severe run kept one leaf under an output tree reachable while the output root and other required folders were absent, so the task&#x27;s local guard proceeded and delivered a business report with entire sections silently missing. The report distinguishes this from repeated approval prompts: the folders were already authorized, but each scheduled session appeared to receive an inconsistent mounted-folder set.</summary>
     <category term="Cowork &amp; remote"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `FileChanged` watch paths can miss external deletions on Windows.</title>
-    <id>https://framework.boucle.sh/limitations.html#filechanged-watchpaths-can-miss-external-deletions-on-windows</id>
-    <link href="https://framework.boucle.sh/limitations.html#filechanged-watchpaths-can-miss-external-deletions-on-windows"/>
-    <updated>2026-08-30T00:00:00Z</updated>
-    <summary>A reported Claude Code Windows 11 setup found that a documented `FileChanged` hook did not run when a watched `SKILL.md` file under `~/.claude/scheduled-tasks/*/` was deleted by an external Bash `rm`, even though a `SessionStart` companion hook returned absolute `watchPaths` that included the deleted file. The reporter verified the `settings.json` structure, the dynamic watch list, and the hook script itself by feeding a synthetic `{file_path, event: &quot;unlink&quot;}` payload directly to the command. The missing step was host invocation: the real unlink produced no hook log entry and no `systemMessage`, leaving a deletion-monitor safety hook fail-open for files outside the session working directory.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Worktree isolation can allow simple Bash writes outside the worktree.</title>
-    <id>https://framework.boucle.sh/limitations.html#worktree-isolation-simple-bash-can-write-outside-tree</id>
-    <link href="https://framework.boucle.sh/limitations.html#worktree-isolation-simple-bash-can-write-outside-tree"/>
-    <updated>2026-08-30T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.250 Linux `--worktree` session found that worktree isolation refused complex Bash commands as too hard to verify, but allowed a simple absolute-path write such as `touch /tmp/wt-demo/outside-probe.txt` to create a file in the main checkout outside the isolated worktree. The session cwd was the generated `.claude/worktrees/demo` path, and the command exited 0 while modifying the shared parent checkout. This makes command complexity a poor proxy for target safety: complex harmless commands can be blocked while simple cross-worktree writes pass silently.</summary>
-    <category term="Permissions &amp; safety"/>
   </entry>
 </feed>
