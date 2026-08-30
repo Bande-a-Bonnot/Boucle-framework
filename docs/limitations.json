@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1822,
+  "count": 1823,
   "categories": {
     "Hook behavior & events": 236,
     "Permission system": 164,
@@ -13,8 +13,8 @@
     "Cowork & remote": 37,
     "Sandbox & permissions": 37,
     "Platform & compatibility": 35,
+    "Configuration behavior": 34,
     "CLI & terminal": 33,
-    "Configuration behavior": 33,
     "Context & memory": 33,
     "MCP & integrations": 31,
     "Performance & cost": 27,
@@ -195,7 +195,7 @@
   },
   "severity_counts": {
     "CRITICAL": 161,
-    "HIGH": 1052,
+    "HIGH": 1053,
     "LOW": 109,
     "MEDIUM": 500
   },
@@ -294,6 +294,31 @@
         "docker",
         "credential-helper",
         "redaction"
+      ]
+    },
+    {
+      "id": "settings-cache-can-clobber-concurrent-settings-json-writes",
+      "title": "Settings cache can clobber concurrent settings.json writes.",
+      "category": "Configuration behavior",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90789"
+      ],
+      "date_added": "2026-08-30",
+      "description": "A reported Claude Code 2.1.240 macOS repro found that `~/.claude/settings.json` changes from another legitimate writer can be silently lost when they land inside about five seconds of Claude Code's own settings save. The report attributes the loss to long-lived per-process settings caches plus a time-only file-watcher echo suppression window: an external atomic rename can be present on disk, but the running process ignores the change, keeps a stale cache for the rest of its lifetime, and later rewrites the full settings file from that stale view. Observed impact included top-level settings disappearing, hook-registration changes being at risk, and a user's saved `/model` selection being reverted by a different stale Claude Code process.",
+      "workaround": "Treat `settings.json` as unsafe for concurrent writers until the installed Claude Code version proves content-based reload or read-modify-write semantics. Before registering hooks or changing shared settings from an external tool, stop long-lived CLI, desktop, and embedded Claude Code processes when practical, back up or version the file, and avoid writing inside a few seconds of an observed Claude Code settings save. After any external atomic rewrite, force a fresh Claude Code process or wait well beyond the echo-suppression window, then trigger a harmless settings save and diff the file to prove the new keys survived. Hook installers should preserve unknown keys, log before/after hashes, and fail closed if a post-save readback loses expected hook or permission entries.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "settings",
+        "settings-json",
+        "data-loss",
+        "hooks",
+        "cache",
+        "file-watch",
+        "atomic-rename",
+        "model-selection",
+        "configuration"
       ]
     },
     {
@@ -24079,27 +24104,27 @@
     }
   ],
   "status_summary": {
-    "open": 1808,
+    "open": 1809,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 161,
-    "high": 1052,
+    "high": 1053,
     "low": 109,
     "medium": 500
   },
   "lastUpdated": "2026-08-30",
   "stats": {
-    "total": 1822,
+    "total": 1823,
     "critical": 161,
-    "high": 1052,
+    "high": 1053,
     "medium": 500,
     "low": 109,
-    "open": 1808,
+    "open": 1809,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-30",
-  "total": 1822
+  "total": 1823
 }
