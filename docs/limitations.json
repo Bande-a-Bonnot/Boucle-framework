@@ -2008,13 +2008,15 @@
     },
     {
       "id": "hook-input-lacks-agent-context-for-tool-calls",
-      "title": "Hook input lacks agent context for tool calls.",
+      "title": "Hook input lacks reliable agent context for tool calls.",
       "category": "Hook bypass & evasion",
       "severity": "HIGH",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/40140"
+        "https://github.com/anthropics/claude-code/issues/40140",
+        "https://github.com/anthropics/claude-code/issues/90662"
       ],
-      "description": "The agent_id and agent_type fields are only available in SubagentStart/SubagentStop hook events. They are absent from PreToolUse and PostToolUse input. A hook cannot tell whether a tool call originates from the main conversation or a subagent. This means per-agent policies (e.g., \"only subagents may Edit files\") are impossible to enforce. No workaround at the hook level; this requires a platform c",
+      "description": "Hook payloads do not provide a reliable per-agent identity for tool calls. Older reports found that agent_id and agent_type were only available in SubagentStart/SubagentStop events and absent from PreToolUse/PostToolUse, so hooks could not tell whether a tool call came from the main conversation or a subagent. A newer Claude Code 2.1.251 report found the opposite-looking but equally unsafe shape: some PreToolUse/PostToolUse calls from real running subagents were attributed to a different agent_id that had no SubagentStart, no agent_type, and no later SubagentStop. This makes agent_id-keyed hook consumers vulnerable to both missing attribution and orphaned false identities.",
+      "workaround": "Do not enforce per-agent policy or close audit spans from PreToolUse/PostToolUse agent_id alone until the installed Claude Code version proves lifecycle consistency. If you consume hook events, reconcile every tool-call agent_id against a SubagentStart/SubagentStop roster, treat unknown or unclosed ids as tainted telemetry, and add age-outs for orphaned entries. For load-bearing subagent policy, prefer tool-restricted agent definitions, parent-side task rosters, filesystem or git controls, and post-run verification rather than relying on hook payload identity.",
       "status": "open"
     },
     {

@@ -1624,15 +1624,17 @@
             <p>Plugin hooks (e.g., stop-hook.sh) lose their execute bit when cached by the marketplace plugin system. Same root cause as #39954 (marketplace strips +x) and #39964 (sync strips +x), but the trigger is the caching layer rather than explicit update or sync. Stop hooks are particularly affected because they are only invoked at session end, so the permission loss goes unnoticed until a critical moment</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/39954" target="_blank">#39954</a>, <a href="https://github.com/anthropics/claude-code/issues/39964" target="_blank">#39964</a>, <a href="https://github.com/anthropics/claude-code/issues/40086" target="_blank">#40086</a></div>
         </div>
-        <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="40140" id="hook-input-lacks-agent-context-for-tool-calls" data-severity="high" data-status="open">
+        <div class="kl-entry" data-category="Hook bypass &amp; evasion" data-issues="40140 90662" id="hook-input-lacks-agent-context-for-tool-calls" data-severity="high" data-status="open">
             <div class="kl-header">
                 <span class="kl-num">#122</span>
                 <span class="kl-cat">Hook bypass &amp; evasion</span>
                 <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
             </div>
-            <h3>Hook input lacks agent context for tool calls.</h3>
-            <p>The agent_id and agent_type fields are only available in SubagentStart/SubagentStop hook events. They are absent from PreToolUse and PostToolUse input. A hook cannot tell whether a tool call originates from the main conversation or a subagent. This means per-agent policies (e.g., &quot;only subagents may Edit files&quot;) are impossible to enforce. No workaround at the hook level; this requires a platform c</p>
-            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/40140" target="_blank">#40140</a></div>
+            <h3>Hook input lacks reliable agent context for tool calls.</h3>
+            <p>Hook payloads do not provide a reliable per-agent identity for tool calls. Older reports found that agent_id and agent_type were only available in SubagentStart/SubagentStop events and absent from PreToolUse/PostToolUse, so hooks could not tell whether a tool call came from the main conversation or a subagent. A newer Claude Code 2.1.251 report found the opposite-looking but equally unsafe shape: some PreToolUse/PostToolUse calls from real running subagents were attributed to a different agent_id that had no SubagentStart, no agent_type, and no later SubagentStop. This makes agent_id-keyed hook consumers vulnerable to both missing attribution and orphaned false identities.</p>
+                        <!-- workaround:hook-input-lacks-agent-context-for-tool-calls -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not enforce per-agent policy or close audit spans from PreToolUse/PostToolUse agent_id alone until the installed Claude Code version proves lifecycle consistency. If you consume hook events, reconcile every tool-call agent_id against a SubagentStart/SubagentStop roster, treat unknown or unclosed ids as tainted telemetry, and add age-outs for orphaned entries. For load-bearing subagent policy, prefer tool-restricted agent definitions, parent-side task rosters, filesystem or git controls, and post-run verification rather than relying on hook payload identity.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/40140" target="_blank">#40140</a>, <a href="https://github.com/anthropics/claude-code/issues/90662" target="_blank">#90662</a></div>
         </div>
         <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="40137" id="exitworktree-false-positive-after-squash-merge" data-severity="low" data-status="open">
             <div class="kl-header">
