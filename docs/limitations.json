@@ -1,10 +1,10 @@
 {
   "version": "0.13.0",
-  "count": 1841,
+  "count": 1842,
   "categories": {
     "Hook behavior & events": 237,
     "Permission system": 165,
-    "MCP & plugin issues": 113,
+    "MCP & plugin issues": 114,
     "Hook bypass & evasion": 109,
     "Subagent & spawned agents": 86,
     "Desktop & IDE integration": 63,
@@ -196,7 +196,7 @@
   },
   "severity_counts": {
     "CRITICAL": 162,
-    "HIGH": 1065,
+    "HIGH": 1066,
     "LOW": 111,
     "MEDIUM": 503
   },
@@ -24548,30 +24548,56 @@
         "macos",
         "silent-failure"
       ]
+    },
+    {
+      "id": "vscode-config-probe-can-start-every-mcp-server",
+      "title": "VS Code config probes can start every configured MCP server.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/91098"
+      ],
+      "date_added": "2026-08-31",
+      "description": "A reported Claude Code VS Code extension 2.1.251 setup found that the extension's config-cache fallback probe could spawn a throwaway Claude process that still loaded every MCP server from `~/.claude.json`. The report traces this to a 500 ms startup race: if the real session does not claim the config resolver before the timer fires, `spawnConfigProbe()` runs with an empty extension-side MCP map but without `strictMcpConfig`, so user-configured servers still start. Servers with launch side effects can therefore open browser tabs, acquire locks, bind ports, fetch remote packages, or register sessions twice, with the probe instance torn down seconds later after doing no useful tool work.",
+      "workaround": "Treat VS Code session startup as an MCP side-effect boundary when configured servers do work on launch. Prefer MCP servers that are side-effect-free until their first real tool call, avoid startup browser tabs or network writes where possible, and watch extension plus server logs for a config-cache probe followed by duplicate `Starting connection` lines. If duplicate launches matter, start from a warm/smaller workspace, temporarily disable high-side-effect MCP servers before opening the extension, or run the server behind a wrapper that rejects probe-like short-lived instances. After each Claude Code update, verify that only one server process starts per session before relying on locks, ports, or startup registration side effects.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "vscode-extension",
+        "mcp",
+        "config-probe",
+        "spawnConfigProbe",
+        "strictMcpConfig",
+        "startup-race",
+        "side-effects",
+        "serena",
+        "locks",
+        "ports"
+      ]
     }
   ],
   "status_summary": {
-    "open": 1827,
+    "open": 1828,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 162,
-    "high": 1065,
+    "high": 1066,
     "low": 111,
     "medium": 503
   },
   "lastUpdated": "2026-08-31",
   "stats": {
-    "total": 1841,
+    "total": 1842,
     "critical": 162,
-    "high": 1065,
+    "high": 1066,
     "medium": 503,
     "low": 111,
-    "open": 1827,
+    "open": 1828,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-31",
-  "total": 1841
+  "total": 1842
 }
