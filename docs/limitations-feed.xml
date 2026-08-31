@@ -127,6 +127,14 @@
     <category term="Browser automation"/>
   </entry>
   <entry>
+    <title>[HIGH] VS Code config probes can start every configured MCP server.</title>
+    <id>https://framework.boucle.sh/limitations.html#vscode-config-probe-can-start-every-mcp-server</id>
+    <link href="https://framework.boucle.sh/limitations.html#vscode-config-probe-can-start-every-mcp-server"/>
+    <updated>2026-08-31T00:00:00Z</updated>
+    <summary>A reported Claude Code VS Code extension 2.1.251 setup found that the extension&#x27;s config-cache fallback probe could spawn a throwaway Claude process that still loaded every MCP server from `~/.claude.json`. The report traces this to a 500 ms startup race: if the real session does not claim the config resolver before the timer fires, `spawnConfigProbe()` runs with an empty extension-side MCP map but without `strictMcpConfig`, so user-configured servers still start. Servers with launch side effects can therefore open browser tabs, acquire locks, bind ports, fetch remote packages, or register sessions twice, with the probe instance torn down seconds later after doing no useful tool work.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[HIGH] SDK image payloads can silently drop client responses over the stdio cap.</title>
     <id>https://framework.boucle.sh/limitations.html#sdk-image-payloads-can-silently-drop-client-responses-over-stdio-cap</id>
     <link href="https://framework.boucle.sh/limitations.html#sdk-image-payloads-can-silently-drop-client-responses-over-stdio-cap"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.251 Windows Git Bash setup found that the Bash tool&#x27;s automatic move-to-background behavior at the default 120s timeout is evaluated against the post-rewrite command shape. A simple long-running pipeline could be moved to the background and finish, while the same workload with a trailing `; exit &quot;${PIPESTATUS[0]}&quot;` instrumentation statement was killed at 120s. A PreToolUse hook that appends that instrumentation can therefore turn a model-issued command that would have survived as a background task into one that is terminated at the timeout boundary, without the model or user seeing why eligibility changed.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Credential helper diagnostics can print live tokens into transcripts.</title>
-    <id>https://framework.boucle.sh/limitations.html#credential-helper-get-can-print-live-tokens-into-transcripts</id>
-    <link href="https://framework.boucle.sh/limitations.html#credential-helper-get-can-print-live-tokens-into-transcripts"/>
-    <updated>2026-08-31T00:00:00Z</updated>
-    <summary>A reported Claude Code WSL2 session diagnosing a Docker image-pull credential error built a Bash command that invoked a platform credential helper&#x27;s `get` subcommand and rendered its stdout. The helper returned a live container-registry access token, which became visible in terminal output and persistent session transcript state. The same diagnostic also ran a non-secret-returning helper command that was sufficient for the stated troubleshooting goal, so the failure was command selection and output handling rather than lack of an available safe check.</summary>
-    <category term="Security &amp; trust boundaries"/>
   </entry>
 </feed>
