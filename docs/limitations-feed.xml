@@ -15,6 +15,14 @@
     <category term="Hook bypass &amp; evasion"/>
   </entry>
   <entry>
+    <title>[HIGH] Windows Git Bash shell snapshots can serialize git-completion functions into invalid Bash.</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-git-bash-shell-snapshot-can-serialize-git-completion-functions-invalidly</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-git-bash-shell-snapshot-can-serialize-git-completion-functions-invalidly"/>
+    <updated>2026-08-31T00:00:00Z</updated>
+    <summary>A Windows/Git Bash report shows Claude Code writing deterministic but syntactically invalid files under `~/.claude/shell-snapshots/`. Every Bash tool call sources the snapshot before the requested command, so a parse error in replayed `eval $&#x27;__git_* () ...&#x27;` git-completion function definitions can make even builtins such as `pwd` or `type echo` fail with exit 127 and empty stdout/stderr. The reporter verified that `bash -n` fails on the generated snapshot, sourcing the snapshot reproduces the tool failure, regenerated snapshots are byte-identical, and disabling Git for Windows completion before snapshot generation restores Bash tool calls.</summary>
+    <category term="Bash &amp; shell execution"/>
+  </entry>
+  <entry>
     <title>[HIGH] Known marketplaces can restore removed plugin marketplaces.</title>
     <id>https://framework.boucle.sh/limitations.html#known-marketplaces-can-restore-removed-plugin-marketplaces</id>
     <link href="https://framework.boucle.sh/limitations.html#known-marketplaces-can-restore-removed-plugin-marketplaces"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Claude Code 2026-08-30 configuration gap found that users cannot express different hook, plugin, or skill stacks for different active models in the same project. `enabledPlugins` is static per settings scope, hook `if` filters cannot match the active model, and `modelSettings.&lt;model&gt;` supports only effort-level style overrides. The terminal CLI can approximate the split with separate `--settings` profiles, but the VS Code extension has no per-session settings-file selector, so extension-first users remain on the static settings chain.</summary>
     <category term="Configuration behavior"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Headless permission denials can report process success.</title>
-    <id>https://framework.boucle.sh/limitations.html#headless-permission-denials-can-report-process-success</id>
-    <link href="https://framework.boucle.sh/limitations.html#headless-permission-denials-can-report-process-success"/>
-    <updated>2026-08-31T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.251 macOS unattended run found that `claude -p` can end with exit code 0, `is_error:false`, and `subtype:&quot;success&quot;` even when required tool permissions were denied and the requested work could not run. Bash denials may appear in `permission_denials`, but an independent follow-up reproduced a denied `Read` attempt that was absent from that array while the transcript still contained the refusal. Cron, launchd, CI, and wrapper scripts that only check process exit status, `is_error`, or `permission_denials` can therefore mark blocked work as successful and keep spending model time on inert scheduled runs.</summary>
-    <category term="Scheduled tasks"/>
   </entry>
 </feed>
