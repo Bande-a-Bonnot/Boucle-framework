@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1837,
+  "count": 1838,
   "categories": {
     "Hook behavior & events": 237,
     "Permission system": 165,
@@ -21,8 +21,8 @@
     "Data integrity": 26,
     "VS Code extension": 26,
     "Auth & accounts": 24,
+    "Tool behavior": 24,
     "Agents & subagents": 23,
-    "Tool behavior": 23,
     "Core & session management": 21,
     "Bash & shell execution": 20,
     "Remote & cloud": 19,
@@ -196,11 +196,36 @@
   },
   "severity_counts": {
     "CRITICAL": 162,
-    "HIGH": 1062,
+    "HIGH": 1063,
     "LOW": 111,
     "MEDIUM": 502
   },
   "entries": [
+    {
+      "id": "windows-powershell-51-can-misparse-bomless-generated-ps1-files",
+      "title": "Windows PowerShell 5.1 can misparse BOM-less generated `.ps1` files.",
+      "category": "Tool behavior",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90962"
+      ],
+      "date_added": "2026-08-31",
+      "description": "A reported Windows 11 Claude Code workflow found that the `Write` tool creates `.ps1` files as UTF-8 without a byte-order mark. Windows PowerShell 5.1 reads BOM-less scripts through the machine ANSI code page, so some non-ASCII bytes can decode as quote characters and terminate strings early. The report measured parse failures for `U+2014` inside double-quoted strings and Cyrillic text inside single-quoted strings, while other non-ASCII placements only produced mojibake. The dangerous operational case is scheduled automation: the parser can fail before the script starts, leaving no transcript or script log while Task Scheduler reports only `0x80070001`.",
+      "workaround": "For Windows automation that may run under `powershell.exe` 5.1, keep generated `.ps1` files ASCII-only or add a UTF-8 BOM before scheduling or handing them to Windows PowerShell. Prefer PowerShell 7 (`pwsh`) when possible, because it defaults to UTF-8. Before trusting a generated script, inspect the first bytes for `EF BB BF` or run a PowerShell parser smoke test under the same runtime the scheduler will use. Do not add BOMs blindly to Markdown, JSON, agent, or skill files: other Claude Code paths can treat a BOM as significant, so make the encoding policy extension-specific.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "windows",
+        "powershell",
+        "powershell-5-1",
+        "write-tool",
+        "generated-files",
+        "encoding",
+        "utf-8-bom",
+        "scheduled-tasks",
+        "mojibake"
+      ]
+    },
     {
       "id": "worktree-lfs-provisioning-can-create-dev-null-hook-clutter",
       "title": "Worktree provisioning can create inert Git LFS hooks under `dev/null/`.",
@@ -24449,27 +24474,27 @@
     }
   ],
   "status_summary": {
-    "open": 1823,
+    "open": 1824,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 162,
-    "high": 1062,
+    "high": 1063,
     "low": 111,
     "medium": 502
   },
   "lastUpdated": "2026-08-31",
   "stats": {
-    "total": 1837,
+    "total": 1838,
     "critical": 162,
-    "high": 1062,
+    "high": 1063,
     "medium": 502,
     "low": 111,
-    "open": 1823,
+    "open": 1824,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-31",
-  "total": 1837
+  "total": 1838
 }
