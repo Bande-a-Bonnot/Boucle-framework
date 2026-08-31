@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1829</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-31.</span></p>
+        <p class="subtitle"><span id="total-count">1830</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-31.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -20688,6 +20688,18 @@
                         <!-- workaround:permission-wildcard-warnings-are-not-deny-aware-or-suppressible -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat a clean or noisy startup warning set as proof that a permission policy is enforced correctly. Inventory every allow rule with a pre-subcommand wildcard, add explicit deny probes for known option-injection vectors such as `git -c`, `git --exec-path`, `git -C &lt;dir&gt; -c`, and equivalent CLI global flags, and verify the actual prompt or deny outcome in the installed Claude Code version. For unavoidable variable slots, keep a reviewed exception list outside Claude Code, prefer wrapper commands or PreToolUse hooks that parse arguments structurally, and re-audit after updates because current warnings may be both over-inclusive and under-inclusive.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/90879" target="_blank">#90879</a></div>
+        </div>
+        <div class="kl-entry" data-category="Auth &amp; accounts" data-issues="90906" id="headless-mcp-login-requires-tty-even-when-browser-callback-can-complete" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1830</span>
+                <span class="kl-cat">Auth &amp; accounts</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>`claude mcp login` can require a TTY even when browser callback auth can complete.</h3>
+            <p>A reported Claude Code 2.1.233 macOS repro found that `claude mcp login &lt;server&gt;` aborts immediately when stdin is not a TTY, printing `stdin isn&#x27;t a terminal` before opening a browser or printing an authorization URL. The same command wrapped in a pty completed with stdin already at EOF because the browser session and localhost callback finished without pasted input. The failure therefore blocks launchd, systemd, cron, CI, and other headless re-auth paths even when the interactive prompt is not actually needed. The reporter also noted that each login attempt appears to revoke the stored credential before replacement auth succeeds, so an unattended retry can turn a working MCP token into a failed session.</p>
+                        <!-- workaround:headless-mcp-login-requires-tty-even-when-browser-callback-can-complete -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume OAuth-protected MCP servers can be re-authenticated from unattended contexts. Re-auth manually before critical scheduled runs, and verify with `claude mcp get &lt;server&gt;` plus a harmless tool call from the same launch environment. If automation must attempt `claude mcp login`, wrap it in a bounded pty such as `script` and enforce an external timeout so an expired IdP session cannot hang forever. Preserve the prior credential state when possible, and avoid retry loops that repeatedly clear shared MCP tokens before a replacement sign-in has completed.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/90906" target="_blank">#90906</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

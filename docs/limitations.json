@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1829,
+  "count": 1830,
   "categories": {
     "Hook behavior & events": 236,
     "Permission system": 165,
@@ -19,9 +19,9 @@
     "MCP & integrations": 31,
     "Performance & cost": 27,
     "VS Code extension": 26,
+    "Auth & accounts": 24,
     "Data integrity": 24,
     "Agents & subagents": 23,
-    "Auth & accounts": 23,
     "Tool behavior": 23,
     "Core & session management": 21,
     "Bash & shell execution": 19,
@@ -196,7 +196,7 @@
   },
   "severity_counts": {
     "CRITICAL": 161,
-    "HIGH": 1057,
+    "HIGH": 1058,
     "LOW": 109,
     "MEDIUM": 502
   },
@@ -24252,30 +24252,54 @@
         "settings",
         "alert-fatigue"
       ]
+    },
+    {
+      "id": "headless-mcp-login-requires-tty-even-when-browser-callback-can-complete",
+      "title": "`claude mcp login` can require a TTY even when browser callback auth can complete.",
+      "category": "Auth & accounts",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90906"
+      ],
+      "date_added": "2026-08-31",
+      "description": "A reported Claude Code 2.1.233 macOS repro found that `claude mcp login <server>` aborts immediately when stdin is not a TTY, printing `stdin isn't a terminal` before opening a browser or printing an authorization URL. The same command wrapped in a pty completed with stdin already at EOF because the browser session and localhost callback finished without pasted input. The failure therefore blocks launchd, systemd, cron, CI, and other headless re-auth paths even when the interactive prompt is not actually needed. The reporter also noted that each login attempt appears to revoke the stored credential before replacement auth succeeds, so an unattended retry can turn a working MCP token into a failed session.",
+      "workaround": "Do not assume OAuth-protected MCP servers can be re-authenticated from unattended contexts. Re-auth manually before critical scheduled runs, and verify with `claude mcp get <server>` plus a harmless tool call from the same launch environment. If automation must attempt `claude mcp login`, wrap it in a bounded pty such as `script` and enforce an external timeout so an expired IdP session cannot hang forever. Preserve the prior credential state when possible, and avoid retry loops that repeatedly clear shared MCP tokens before a replacement sign-in has completed.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "mcp",
+        "oauth",
+        "auth",
+        "headless",
+        "tty",
+        "scheduled-tasks",
+        "launchd",
+        "ci"
+      ]
     }
   ],
   "status_summary": {
-    "open": 1815,
+    "open": 1816,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 161,
-    "high": 1057,
+    "high": 1058,
     "low": 109,
     "medium": 502
   },
   "lastUpdated": "2026-08-31",
   "stats": {
-    "total": 1829,
+    "total": 1830,
     "critical": 161,
-    "high": 1057,
+    "high": 1058,
     "medium": 502,
     "low": 109,
-    "open": 1815,
+    "open": 1816,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-31",
-  "total": 1829
+  "total": 1830
 }
