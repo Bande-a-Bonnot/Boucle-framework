@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1830,
+  "count": 1831,
   "categories": {
     "Hook behavior & events": 236,
     "Permission system": 165,
@@ -24,7 +24,7 @@
     "Agents & subagents": 23,
     "Tool behavior": 23,
     "Core & session management": 21,
-    "Bash & shell execution": 19,
+    "Bash & shell execution": 20,
     "Remote & cloud": 19,
     "Model behavior": 18,
     "Scheduling & remote triggers": 18,
@@ -196,7 +196,7 @@
   },
   "severity_counts": {
     "CRITICAL": 161,
-    "HIGH": 1058,
+    "HIGH": 1059,
     "LOW": 109,
     "MEDIUM": 502
   },
@@ -225,6 +225,32 @@
         "bash",
         "commits",
         "security"
+      ]
+    },
+    {
+      "id": "windows-git-bash-shell-snapshot-can-serialize-git-completion-functions-invalidly",
+      "title": "Windows Git Bash shell snapshots can serialize git-completion functions into invalid Bash.",
+      "category": "Bash & shell execution",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90916"
+      ],
+      "date_added": "2026-08-31",
+      "description": "A Windows/Git Bash report shows Claude Code writing deterministic but syntactically invalid files under `~/.claude/shell-snapshots/`. Every Bash tool call sources the snapshot before the requested command, so a parse error in replayed `eval $'__git_* () ...'` git-completion function definitions can make even builtins such as `pwd` or `type echo` fail with exit 127 and empty stdout/stderr. The reporter verified that `bash -n` fails on the generated snapshot, sourcing the snapshot reproduces the tool failure, regenerated snapshots are byte-identical, and disabling Git for Windows completion before snapshot generation restores Bash tool calls.",
+      "workaround": "If every Bash tool call on Windows/Git Bash returns exit 127 with no output, inspect the newest `~/.claude/shell-snapshots/snapshot-bash-*.sh` with `bash -n` from an interactive Git Bash. If the syntax error is inside replayed git-completion functions, temporarily prevent `git-completion.bash` from loading in the shell Claude snapshots, ideally by guarding the load when `CLAUDECODE` is set rather than disabling interactive completion globally. Then delete stale files under `~/.claude/shell-snapshots/`, restart Claude Code, and verify both `bash -n` on the new snapshot and a harmless Bash tool call such as `echo ok`. Treat the workaround as diagnostic if your environment has a non-default Git install path or non-ASCII user profile path, because those factors may matter to the snapshot writer.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "windows",
+        "git-bash",
+        "bash",
+        "shell-snapshot",
+        "git-completion",
+        "exit-127",
+        "snapshots",
+        "path",
+        "unicode",
+        "tools"
       ]
     },
     {
@@ -24279,27 +24305,27 @@
     }
   ],
   "status_summary": {
-    "open": 1816,
+    "open": 1817,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 161,
-    "high": 1058,
+    "high": 1059,
     "low": 109,
     "medium": 502
   },
   "lastUpdated": "2026-08-31",
   "stats": {
-    "total": 1830,
+    "total": 1831,
     "critical": 161,
-    "high": 1058,
+    "high": 1059,
     "medium": 502,
     "low": 109,
-    "open": 1816,
+    "open": 1817,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-31",
-  "total": 1830
+  "total": 1831
 }
