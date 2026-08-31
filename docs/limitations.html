@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1834</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-31.</span></p>
+        <p class="subtitle"><span id="total-count">1835</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-31.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -20748,6 +20748,18 @@
                         <!-- workaround:headless-mcp-login-requires-tty-even-when-browser-callback-can-complete -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not assume OAuth-protected MCP servers can be re-authenticated from unattended contexts. Re-auth manually before critical scheduled runs, and verify with `claude mcp get &lt;server&gt;` plus a harmless tool call from the same launch environment. If automation must attempt `claude mcp login`, wrap it in a bounded pty such as `script` and enforce an external timeout so an expired IdP session cannot hang forever. Preserve the prior credential state when possible, and avoid retry loops that repeatedly clear shared MCP tokens before a replacement sign-in has completed.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/90906" target="_blank">#90906</a></div>
+        </div>
+        <div class="kl-entry" data-category="Hook behavior &amp; events" data-issues="90997" id="async-hook-terminal-sequences-can-be-parsed-but-not-emitted" data-severity="low" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1835</span>
+                <span class="kl-cat">Hook behavior &amp; events</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#6b7280;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">low</span>
+            </div>
+            <h3>Async hook terminal sequences can be parsed but not emitted.</h3>
+            <p>A reported Windows Claude Code 2.1.251 hook setup found that a config-declared `async: true` command hook could return valid JSON containing `terminalSequence`, have that field schema-validated and preserved in the async hook response attachment, yet never emit the sequence to the terminal. The same hook script changed the terminal title when run synchronously, while the async variant logged successful invocations and delivered other async response fields such as `systemMessage`, `hookSpecificOutput.additionalContext`, and `metrics`. This makes async notification, status, and title-update hooks look healthy while the only visible terminal side effect is silently dropped.</p>
+                        <!-- workaround:async-hook-terminal-sequences-can-be-parsed-but-not-emitted -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not rely on `terminalSequence` from config-declared async hooks until the installed Claude Code version proves it with a live terminal-side probe. For must-see notifications or title/status updates, keep the hook synchronous, emit from a separate non-hook helper under your own timeout, or pair async hooks with `systemMessage` or `additionalContext` that is visible in the target surface. After updates, test both sync and async variants because successful hook completion and parsed async response records do not prove that terminal escape output reached the user.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/90997" target="_blank">#90997</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
