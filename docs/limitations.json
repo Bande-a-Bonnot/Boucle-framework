@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1831,
+  "count": 1832,
   "categories": {
     "Hook behavior & events": 236,
     "Permission system": 165,
@@ -19,8 +19,8 @@
     "MCP & integrations": 31,
     "Performance & cost": 27,
     "VS Code extension": 26,
+    "Data integrity": 25,
     "Auth & accounts": 24,
-    "Data integrity": 24,
     "Agents & subagents": 23,
     "Tool behavior": 23,
     "Core & session management": 21,
@@ -195,12 +195,37 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 161,
+    "CRITICAL": 162,
     "HIGH": 1059,
     "LOW": 109,
     "MEDIUM": 502
   },
   "entries": [
+    {
+      "id": "stale-private-git-index-can-delete-concurrent-session-work",
+      "title": "A stale private git index can delete or revert another session's committed work.",
+      "category": "Data integrity",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90943"
+      ],
+      "date_added": "2026-08-31",
+      "description": "A reported Claude Code 2.1.251 Windows 11 workflow found that running multiple sessions in one working tree can turn a private `GIT_INDEX_FILE` workaround into silent data loss. Because `git commit` writes the tree from the index rather than by diffing against current `HEAD`, a session whose private index was seeded before another session's commit can create a later commit that deletes paths added by the other session and reverts shared files to older blobs. The report says the offending commit exits successfully, may be titled as if it touched only one unrelated file, and has been seen in real repositories with several incidents involving committed and pushed work.",
+      "workaround": "Prefer separate git worktrees or disposable clones for concurrent Claude Code sessions and scheduled automation instead of sharing one working tree with private index files. If same-tree concurrency is unavoidable, block commits when the staged diff contains a deletion for a path that still exists on disk, for example with a pre-commit hook that checks `git diff --cached --name-only --diff-filter=D` before allowing the commit. Require agents to inspect the staged diff, not only `git status`, immediately before commit or push, and treat any unexpected deletion or revert in a commit with an unrelated title as a stale-index collision until proved otherwise.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "git",
+        "index",
+        "git-index-file",
+        "concurrency",
+        "working-tree",
+        "worktrees",
+        "data-loss",
+        "commits",
+        "scheduled-automation"
+      ]
+    },
     {
       "id": "git-precommit-review-gates-remain-bypassable-from-the-shell",
       "title": "Git pre-commit review gates remain bypassable from the shell.",
@@ -24306,27 +24331,27 @@
     }
   ],
   "status_summary": {
-    "open": 1817,
+    "open": 1818,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 161,
+    "critical": 162,
     "high": 1059,
     "low": 109,
     "medium": 502
   },
   "lastUpdated": "2026-08-31",
   "stats": {
-    "total": 1831,
-    "critical": 161,
+    "total": 1832,
+    "critical": 162,
     "high": 1059,
     "medium": 502,
     "low": 109,
-    "open": 1817,
+    "open": 1818,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-31",
-  "total": 1831
+  "total": 1832
 }
