@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1835,
+  "count": 1836,
   "categories": {
     "Hook behavior & events": 237,
     "Permission system": 165,
@@ -18,8 +18,8 @@
     "Context & memory": 33,
     "MCP & integrations": 31,
     "Performance & cost": 27,
+    "Data integrity": 26,
     "VS Code extension": 26,
-    "Data integrity": 25,
     "Auth & accounts": 24,
     "Agents & subagents": 23,
     "Tool behavior": 23,
@@ -196,7 +196,7 @@
   },
   "severity_counts": {
     "CRITICAL": 162,
-    "HIGH": 1060,
+    "HIGH": 1061,
     "LOW": 111,
     "MEDIUM": 502
   },
@@ -24397,30 +24397,54 @@
         "windows",
         "terminal"
       ]
+    },
+    {
+      "id": "malformed-sse-parse-errors-can-discard-in-flight-turns",
+      "title": "Malformed SSE parse errors can discard in-flight turns.",
+      "category": "Data integrity",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/91003"
+      ],
+      "date_added": "2026-08-31",
+      "description": "A reported Windows Claude Desktop / Claude Code setup found recurring `API Error: JSON Parse error: Unexpected EOF` failures after a request had already received streamed content and written partial transcript state. The reporter counted 127 deduplicated occurrences across 53 days, with one event losing about 20 minutes of in-flight work, and narrowed the regression window to Claude Code 2.1.146 through 2.1.149. Follow-up evidence says the parse error string matches JavaScriptCore inside the Bun-built client, failures happen across both low and high context sizes, and observed interrupted content includes thinking, text, and tool-use phases.",
+      "workaround": "Treat mid-stream parse failures as possible work loss even when a request id and partial transcript exist. For long Claude Code turns, especially on Windows Desktop with several concurrent sessions, ask the agent to checkpoint important findings and file edits to durable files before lengthy reasoning or tool phases. If this error appears, inspect the raw transcript and app logs before retrying, because a later successful turn can hide the lost partial work. Preserve request ids, cycle durations, client version, concurrent-session count, transcript snippets around the failure, and any evidence of malformed or spliced streamed content for upstream diagnosis.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "data-loss",
+        "transcripts",
+        "streaming",
+        "sse",
+        "desktop",
+        "windows",
+        "regression",
+        "concurrency"
+      ]
     }
   ],
   "status_summary": {
-    "open": 1821,
+    "open": 1822,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 162,
-    "high": 1060,
+    "high": 1061,
     "low": 111,
     "medium": 502
   },
   "lastUpdated": "2026-08-31",
   "stats": {
-    "total": 1835,
+    "total": 1836,
     "critical": 162,
-    "high": 1060,
+    "high": 1061,
     "medium": 502,
     "low": 111,
-    "open": 1821,
+    "open": 1822,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-31",
-  "total": 1835
+  "total": 1836
 }
