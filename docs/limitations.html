@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1838</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-31.</span></p>
+        <p class="subtitle"><span id="total-count">1839</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-08-31.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -20796,6 +20796,18 @@
                         <!-- workaround:malformed-sse-parse-errors-can-discard-in-flight-turns -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Treat mid-stream parse failures as possible work loss even when a request id and partial transcript exist. For long Claude Code turns, especially on Windows Desktop with several concurrent sessions, ask the agent to checkpoint important findings and file edits to durable files before lengthy reasoning or tool phases. If this error appears, inspect the raw transcript and app logs before retrying, because a later successful turn can hide the lost partial work. Preserve request ids, cycle durations, client version, concurrent-session count, transcript snippets around the failure, and any evidence of malformed or spliced streamed content for upstream diagnosis.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/91003" target="_blank">#91003</a></div>
+        </div>
+        <div class="kl-entry" data-category="Scheduling &amp; remote triggers" data-issues="90972" id="cowork-scheduled-triggers-can-run-without-connected-mcp-tools" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1839</span>
+                <span class="kl-cat">Scheduling &amp; remote triggers</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Cowork scheduled triggers can run without connected MCP tools.</h3>
+            <p>A reported Claude Code Cowork session created a recurring trigger whose prompt needed already-connected Slack, Notion, and Google Calendar MCP connectors. The trigger fired on schedule and through manual tests, but the spawned background sessions produced no Slack message, no Notion edit, and no visible tool output. The only observable state was `last_run.status` moving from pending for more than 10 minutes to `ROUTINE_RUN_STATUS_ABANDONED`. The reporter found the failing trigger&#x27;s stored job config missing the MCP connection or allowed-tool wiring that a connector-backed run would need, so the automation existed and fired but had no usable tools for its assigned work.</p>
+                        <!-- workaround:cowork-scheduled-triggers-can-run-without-connected-mcp-tools -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not trust a newly created scheduled trigger just because `create_trigger` succeeds. Immediately inspect the stored trigger configuration for the MCP connections or allowed tools the job will need, fire it manually once, and verify the concrete external side effect, such as the expected Slack message or Notion update. Put failure reporting on a channel that does not depend on the same missing connector access, because an instruction like &quot;DM me if anything fails&quot; cannot execute if Slack was not attached to the spawned session. For important recurring jobs, keep an external watchdog or calendar reminder until at least one scheduled run has produced the expected output.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/90972" target="_blank">#90972</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
