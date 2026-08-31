@@ -1,10 +1,10 @@
 {
   "version": "0.13.0",
-  "count": 1839,
+  "count": 1840,
   "categories": {
     "Hook behavior & events": 237,
     "Permission system": 165,
-    "MCP & plugin issues": 112,
+    "MCP & plugin issues": 113,
     "Hook bypass & evasion": 109,
     "Subagent & spawned agents": 86,
     "Desktop & IDE integration": 63,
@@ -196,11 +196,36 @@
   },
   "severity_counts": {
     "CRITICAL": 162,
-    "HIGH": 1064,
+    "HIGH": 1065,
     "LOW": 111,
     "MEDIUM": 502
   },
   "entries": [
+    {
+      "id": "slack-mcp-token-rotation-can-masquerade-as-connect-timeout",
+      "title": "Slack MCP token rotation can masquerade as a connection timeout.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90970"
+      ],
+      "date_added": "2026-08-31",
+      "description": "A reported Claude Code Slack MCP setup found that concurrent sessions could all fail to connect except the session that most recently minted the OAuth token. The failing sessions surfaced `CONNECT_TIMEOUT` after 30000 ms, while logs showed an HTTP protocol-negotiation probe timing out, a pinned legacy fallback consuming the rest of the connection budget, and stale-token auth failures not adding `slack` to `mcp-needs-auth-cache.json`. The reporter later corrected the timing analysis: version 2.1.251 was not ruled out, and the remaining possible triggers were a feature-flag rollout, Slack endpoint behavior, or a client call-site change. The user-visible defect still stands because auth or initialization failure can look like a network timeout and can retry without an actionable re-auth prompt.",
+      "workaround": "If Slack MCP starts timing out across concurrent Claude Code sessions, compare per-session MCP logs for `AuthenticateToken`, `version negotiation probe timed out`, `pinned legacy`, and `CONNECT_TIMEOUT` before assuming the network is down. Re-auth in one controlled session, then restart or reconnect other live sessions so they do not keep using stale credential state. Check whether `~/.claude/mcp-needs-auth-cache.json` contains `slack`; if it does not after auth failures, treat the timeout as potentially auth-related. For automation, keep an external watchdog around Slack-dependent runs because the failing path may retry for 30 seconds per session without producing an obvious re-auth prompt.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "mcp",
+        "slack",
+        "oauth",
+        "auth-cache",
+        "connect-timeout",
+        "protocol-negotiation",
+        "concurrent-sessions",
+        "plugins",
+        "diagnostics"
+      ]
+    },
     {
       "id": "windows-powershell-51-can-misparse-bomless-generated-ps1-files",
       "title": "Windows PowerShell 5.1 can misparse BOM-less generated `.ps1` files.",
@@ -24500,27 +24525,27 @@
     }
   ],
   "status_summary": {
-    "open": 1825,
+    "open": 1826,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 162,
-    "high": 1064,
+    "high": 1065,
     "low": 111,
     "medium": 502
   },
   "lastUpdated": "2026-08-31",
   "stats": {
-    "total": 1839,
+    "total": 1840,
     "critical": 162,
-    "high": 1064,
+    "high": 1065,
     "medium": 502,
     "low": 111,
-    "open": 1825,
+    "open": 1826,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-31",
-  "total": 1839
+  "total": 1840
 }
