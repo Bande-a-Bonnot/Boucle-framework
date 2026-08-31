@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1833,
+  "count": 1834,
   "categories": {
     "Hook behavior & events": 236,
     "Permission system": 165,
@@ -30,8 +30,8 @@
     "Scheduling & remote triggers": 18,
     "Permissions & safety": 17,
     "Scheduled tasks": 17,
+    "Worktrees & isolation": 15,
     "Worktree": 14,
-    "Worktrees & isolation": 14,
     "File system & paths": 13,
     "Git & repository safety": 13,
     "MCP integration": 13,
@@ -197,10 +197,33 @@
   "severity_counts": {
     "CRITICAL": 162,
     "HIGH": 1060,
-    "LOW": 109,
+    "LOW": 110,
     "MEDIUM": 502
   },
   "entries": [
+    {
+      "id": "worktree-lfs-provisioning-can-create-dev-null-hook-clutter",
+      "title": "Worktree provisioning can create inert Git LFS hooks under `dev/null/`.",
+      "category": "Worktrees & isolation",
+      "severity": "LOW",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90456"
+      ],
+      "date_added": "2026-08-31",
+      "description": "A reported Claude Code 2.1.247 Windows 11 workflow found that linked worktrees for a Git LFS repository sometimes gained an untracked literal `dev/null/` directory containing Git LFS hook shims such as `post-checkout`, `post-commit`, `post-merge`, and `pre-push`. The affected worktrees had a correct worktree-scoped `core.hookspath`, so the stray files appeared inert rather than actively changing Git hook behavior, but they still polluted `git status` and could confuse agents or users that treat an untracked-free worktree as a readiness signal. The reporter's evidence points at Claude Code's worktree provisioning path resolving an LFS hook target too early or relative to the wrong directory.",
+      "workaround": "After Claude Code creates a linked worktree for a Git LFS repository on Windows, run `git status --untracked-files=all`, `git config --worktree --get core.hookspath`, and `git lfs env` before treating the worktree as clean. If a literal `dev/null/` directory appears in the worktree root and `core.hookspath` already points at the intended shared hooks directory, remove the stray untracked directory or add a local ignore rule after confirming it is not referenced by Git config. For automation, fail clean-worktree checks on unexpected `dev/null/` entries and recreate the worktree if hook-path readback is inconsistent.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "worktrees",
+        "git-lfs",
+        "hooks",
+        "windows",
+        "untracked-files",
+        "git-status",
+        "core-hookspath"
+      ]
+    },
     {
       "id": "typed-skill-slash-command-can-serve-stale-skill-md",
       "title": "Typed skill slash commands can serve stale `SKILL.md` content.",
@@ -24355,27 +24378,27 @@
     }
   ],
   "status_summary": {
-    "open": 1819,
+    "open": 1820,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 162,
     "high": 1060,
-    "low": 109,
+    "low": 110,
     "medium": 502
   },
   "lastUpdated": "2026-08-31",
   "stats": {
-    "total": 1833,
+    "total": 1834,
     "critical": 162,
     "high": 1060,
     "medium": 502,
-    "low": 109,
-    "open": 1819,
+    "low": 110,
+    "open": 1820,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-31",
-  "total": 1833
+  "total": 1834
 }
