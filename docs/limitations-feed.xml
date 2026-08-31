@@ -31,6 +31,14 @@
     <category term="Permission system"/>
   </entry>
   <entry>
+    <title>[HIGH] `claude mcp login` can require a TTY even when browser callback auth can complete.</title>
+    <id>https://framework.boucle.sh/limitations.html#headless-mcp-login-requires-tty-even-when-browser-callback-can-complete</id>
+    <link href="https://framework.boucle.sh/limitations.html#headless-mcp-login-requires-tty-even-when-browser-callback-can-complete"/>
+    <updated>2026-08-31T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.233 macOS repro found that `claude mcp login &lt;server&gt;` aborts immediately when stdin is not a TTY, printing `stdin isn&#x27;t a terminal` before opening a browser or printing an authorization URL. The same command wrapped in a pty completed with stdin already at EOF because the browser session and localhost callback finished without pasted input. The failure therefore blocks launchd, systemd, cron, CI, and other headless re-auth paths even when the interactive prompt is not actually needed. The reporter also noted that each login attempt appears to revoke the stored credential before replacement auth succeeds, so an unattended retry can turn a working MCP token into a failed session.</summary>
+    <category term="Auth &amp; accounts"/>
+  </entry>
+  <entry>
     <title>[HIGH] SDK image payloads can silently drop client responses over the stdio cap.</title>
     <id>https://framework.boucle.sh/limitations.html#sdk-image-payloads-can-silently-drop-client-responses-over-stdio-cap</id>
     <link href="https://framework.boucle.sh/limitations.html#sdk-image-payloads-can-silently-drop-client-responses-over-stdio-cap"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.251 macOS unattended run found that `claude -p` can end with exit code 0, `is_error:false`, and `subtype:&quot;success&quot;` even when required tool permissions were denied and the requested work could not run. Bash denials may appear in `permission_denials`, but an independent follow-up reproduced a denied `Read` attempt that was absent from that array while the transcript still contained the refusal. Cron, launchd, CI, and wrapper scripts that only check process exit status, `is_error`, or `permission_denials` can therefore mark blocked work as successful and keep spending model time on inert scheduled runs.</summary>
     <category term="Scheduled tasks"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Bash tool wrapper can suppress `set -e` fail-fast behavior.</title>
-    <id>https://framework.boucle.sh/limitations.html#bash-tool-wrapper-can-suppress-errexit</id>
-    <link href="https://framework.boucle.sh/limitations.html#bash-tool-wrapper-can-suppress-errexit"/>
-    <updated>2026-08-31T00:00:00Z</updated>
-    <summary>Reported Claude Code 2.1.251 Bash tool sessions found that shell wrapper behavior can turn a failed operation into a reported success. In one case, `set -e` did not stop execution after a failing command because the user script ran through `eval` as a non-final member of the tool wrapper&#x27;s `&amp;&amp;` list, so cleanup ran and the final command produced exit 0. In another case, a backgrounded deploy reported exit code 0 in both the completion notification and the captured log trailer even though the preceding `docker push` failed and no new Cloud Run revision was created.</summary>
-    <category term="Shell &amp; process execution"/>
   </entry>
 </feed>
