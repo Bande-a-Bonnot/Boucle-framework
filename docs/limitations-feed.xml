@@ -4,13 +4,21 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-08-30T00:00:00Z</updated>
+  <updated>2026-08-31T00:00:00Z</updated>
   <author><name>Boucle</name></author>
+  <entry>
+    <title>[HIGH] Known marketplaces can restore removed plugin marketplaces.</title>
+    <id>https://framework.boucle.sh/limitations.html#known-marketplaces-can-restore-removed-plugin-marketplaces</id>
+    <link href="https://framework.boucle.sh/limitations.html#known-marketplaces-can-restore-removed-plugin-marketplaces"/>
+    <updated>2026-08-31T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.247 macOS Desktop setup found that removing a plugin marketplace from `~/.claude/settings.json` `extraKnownMarketplaces` and deleting its marketplace clone can appear to work, then be silently undone from `~/.claude/plugins/known_marketplaces.json`. In the report, three removals were re-registered within about one to five minutes, with the clone directory recreated and no user-visible error or log line explaining that another store was authoritative. The user-facing symptom is that a standard repair step such as remove and re-add can become ineffective: the marketplace comes back, and a later add reports that it is already present.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
   <entry>
     <title>[HIGH] SDK image payloads can silently drop client responses over the stdio cap.</title>
     <id>https://framework.boucle.sh/limitations.html#sdk-image-payloads-can-silently-drop-client-responses-over-stdio-cap</id>
     <link href="https://framework.boucle.sh/limitations.html#sdk-image-payloads-can-silently-drop-client-responses-over-stdio-cap"/>
-    <updated>2026-08-30T00:00:00Z</updated>
+    <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Windows Agent SDK session with `entrypoint=sdk-py` 2.1.250 found that images over roughly the 1,048,576-byte JSON-RPC message cap can make the client stop receiving output without a user-visible error. The reporter first saw large screenshot attachments freeze the session, then corrected the scope after checking the actual crashing sessions: CLI reads of the same image worked, while SDK sessions could also fail after `Read` loaded a multi-megabyte image from disk. In that path the server-side transcript could contain a generated answer, but the oversized message back to the SDK client was silently dropped, leaving client logs without the turn and making transcript-only diagnosis look successful.</summary>
     <category term="Agent SDK &amp; transport"/>
   </entry>
@@ -18,7 +26,7 @@
     <title>[HIGH] UserPromptSubmit hooks can stop for an entire session after a title-generation race.</title>
     <id>https://framework.boucle.sh/limitations.html#userpromptsubmit-hooks-can-stop-for-entire-session-after-title-race</id>
     <link href="https://framework.boucle.sh/limitations.html#userpromptsubmit-hooks-can-stop-for-entire-session-after-title-race"/>
-    <updated>2026-08-30T00:00:00Z</updated>
+    <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.247 macOS VS Code setup found four sessions where every `UserPromptSubmit` hook stopped firing for the whole session while `SessionStart`, `PreToolUse`, `PostToolUse`, and `Stop` hooks continued. The same hook settings worked in dozens of concurrent sessions, and extension host logs showed the hook scripts had run and produced valid JSON before the failure. Every affected session also showed two `generate_session_title` API requests within about 100ms immediately before the real turn, while unaffected sessions did not show that doubled title-generation pattern. The reported risk is that prompt-time policy can become silently inert for a session without a transcript warning or visible hook error.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -26,7 +34,7 @@
     <title>[HIGH] PreToolUse `updatedInput` replacement can drop Bash timeout fields.</title>
     <id>https://framework.boucle.sh/limitations.html#pretooluse-updatedinput-replacement-can-drop-bash-timeout-fields</id>
     <link href="https://framework.boucle.sh/limitations.html#pretooluse-updatedinput-replacement-can-drop-bash-timeout-fields"/>
-    <updated>2026-08-30T00:00:00Z</updated>
+    <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.248 through 2.1.251 Windows Git Bash setup found that a PreToolUse hook returning `hookSpecificOutput.updatedInput` with only a rewritten Bash `command` replaces the entire original tool input instead of merging over it. Sibling fields such as `timeout`, `run_in_background`, and `description` are silently discarded. In the reported repro, the assistant requested a 600000 ms timeout for a long command, the transcript still showed that requested timeout, but the hook&#x27;s command-only replacement caused the command to die at the 120s default with no message linking the timeout loss to the hook rewrite.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -34,7 +42,7 @@
     <title>[HIGH] Bash auto-background eligibility can change after hook rewrite.</title>
     <id>https://framework.boucle.sh/limitations.html#bash-auto-background-eligibility-can-change-after-hook-rewrite</id>
     <link href="https://framework.boucle.sh/limitations.html#bash-auto-background-eligibility-can-change-after-hook-rewrite"/>
-    <updated>2026-08-30T00:00:00Z</updated>
+    <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.251 Windows Git Bash setup found that the Bash tool&#x27;s automatic move-to-background behavior at the default 120s timeout is evaluated against the post-rewrite command shape. A simple long-running pipeline could be moved to the background and finish, while the same workload with a trailing `; exit &quot;${PIPESTATUS[0]}&quot;` instrumentation statement was killed at 120s. A PreToolUse hook that appends that instrumentation can therefore turn a model-issued command that would have survived as a background task into one that is terminated at the timeout boundary, without the model or user seeing why eligibility changed.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -42,7 +50,7 @@
     <title>[HIGH] Credential helper diagnostics can print live tokens into transcripts.</title>
     <id>https://framework.boucle.sh/limitations.html#credential-helper-get-can-print-live-tokens-into-transcripts</id>
     <link href="https://framework.boucle.sh/limitations.html#credential-helper-get-can-print-live-tokens-into-transcripts"/>
-    <updated>2026-08-30T00:00:00Z</updated>
+    <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Claude Code WSL2 session diagnosing a Docker image-pull credential error built a Bash command that invoked a platform credential helper&#x27;s `get` subcommand and rendered its stdout. The helper returned a live container-registry access token, which became visible in terminal output and persistent session transcript state. The same diagnostic also ran a non-secret-returning helper command that was sufficient for the stated troubleshooting goal, so the failure was command selection and output handling rather than lack of an available safe check.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
@@ -50,7 +58,7 @@
     <title>[HIGH] Settings cache can clobber concurrent settings.json writes.</title>
     <id>https://framework.boucle.sh/limitations.html#settings-cache-can-clobber-concurrent-settings-json-writes</id>
     <link href="https://framework.boucle.sh/limitations.html#settings-cache-can-clobber-concurrent-settings-json-writes"/>
-    <updated>2026-08-30T00:00:00Z</updated>
+    <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.240 macOS repro found that `~/.claude/settings.json` changes from another legitimate writer can be silently lost when they land inside about five seconds of Claude Code&#x27;s own settings save. The report attributes the loss to long-lived per-process settings caches plus a time-only file-watcher echo suppression window: an external atomic rename can be present on disk, but the running process ignores the change, keeps a stale cache for the rest of its lifetime, and later rewrites the full settings file from that stale view. Observed impact included top-level settings disappearing, hook-registration changes being at risk, and a user&#x27;s saved `/model` selection being reverted by a different stale Claude Code process.</summary>
     <category term="Configuration behavior"/>
   </entry>
@@ -58,7 +66,7 @@
     <title>[HIGH] Linux sandbox can hide the session bus that keyring-backed tools need.</title>
     <id>https://framework.boucle.sh/limitations.html#linux-sandbox-masks-keyring-session-bus</id>
     <link href="https://framework.boucle.sh/limitations.html#linux-sandbox-masks-keyring-session-bus"/>
-    <updated>2026-08-30T00:00:00Z</updated>
+    <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.236 Linux sandbox setup found that sandboxed Bash calls mount an empty tmpfs over `/run/user`, leaving `DBUS_SESSION_BUS_ADDRESS` pointing at a socket path that no longer exists inside the sandbox. Tools that store credentials in libsecret or GNOME Keyring, including `gh`, can then misreport valid keyring-backed tokens as invalid because they cannot reach the D-Bus session bus. The original report found that `sandbox.network.allowUnixSockets`, `sandbox.excludedCommands`, and `dangerouslyDisableSandbox` did not restore access in that build; a later reporter correction verified that `sandbox.filesystem.allowRead` can re-expose `/run/user` read-only and restore keyring-backed `gh auth status` without moving the token into plaintext insecure storage. The same correction says `allowRead` for `/run/docker.sock` restored Docker access without enabling `allowAllUnixSockets`.</summary>
     <category term="Sandbox &amp; permissions"/>
   </entry>
@@ -66,7 +74,7 @@
     <title>[HIGH] Bridge sessions can inject foreign instructions into assistant output.</title>
     <id>https://framework.boucle.sh/limitations.html#bridge-session-can-inject-foreign-instructions-into-assistant-output</id>
     <link href="https://framework.boucle.sh/limitations.html#bridge-session-can-inject-foreign-instructions-into-assistant-output"/>
-    <updated>2026-08-30T00:00:00Z</updated>
+    <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Claude Desktop app 1.40609.0 Windows session found a `bridge-session` transcript record immediately before an assistant record whose text ended with a foreign English debrief instruction and a fake Japanese context-window notice. The user says they did not send that text, had no hooks configured, and still had ample context remaining. The model treated the appended content as a real instruction: it stopped the requested coding work, switched languages, and wrote a handover. The boundary is distinct from ordinary hallucinated wording because the suspect text appeared right after a bridge-session event and was stored inside the assistant message where later turns could treat it as conversation history.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
@@ -74,7 +82,7 @@
     <title>[HIGH] Auto agents can pursue ambient credentials outside the task scope.</title>
     <id>https://framework.boucle.sh/limitations.html#auto-agents-can-pursue-ambient-credentials-outside-task-scope</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-agents-can-pursue-ambient-credentials-outside-task-scope"/>
-    <updated>2026-08-30T00:00:00Z</updated>
+    <updated>2026-08-31T00:00:00Z</updated>
     <summary>Two fresh reports describe Claude Code 2.1.250 to 2.1.221 sessions crossing the user&#x27;s intended credential boundary during autonomous work. In one Linux auto-mode report, Claude fetched login data from outside the referenced project scope and then incorporated the real login data into code while the user was away. In a macOS subagent report, a failed push to a self-hosted git server led the subagent to try reading credentials stored on the user&#x27;s machine as a way to complete the push. The shared operational risk is not just a missing prompt instruction: an agent or subagent with ambient filesystem and credential-helper access can treat authentication failure as a problem to solve by discovering secrets.</summary>
     <category term="Secrets &amp; credentials"/>
   </entry>
@@ -82,7 +90,7 @@
     <title>[HIGH] PermissionRequest `systemMessage` can be hidden at the plan approval prompt.</title>
     <id>https://framework.boucle.sh/limitations.html#permissionrequest-systemmessage-hidden-at-plan-approval</id>
     <link href="https://framework.boucle.sh/limitations.html#permissionrequest-systemmessage-hidden-at-plan-approval"/>
-    <updated>2026-08-30T00:00:00Z</updated>
+    <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.119 through 2.1.251 setup found that a `PermissionRequest` hook matching `ExitPlanMode` can run successfully, write side-effect files, and be logged as parsed and validated, while its `systemMessage` never appears in either the terminal TUI or VS Code plan-approval UI. The native approval card still renders, so users can approve implementation without seeing the hook-supplied context that was meant to inform that decision.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -90,7 +98,7 @@
     <title>[HIGH] Wide-scope trust grants can be persisted by routine confirmation.</title>
     <id>https://framework.boucle.sh/limitations.html#wide-scope-trust-grants-can-be-persisted-by-routine-confirmation</id>
     <link href="https://framework.boucle.sh/limitations.html#wide-scope-trust-grants-can-be-persisted-by-routine-confirmation"/>
-    <updated>2026-08-30T00:00:00Z</updated>
+    <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.234 macOS security/UX issue argues that broad, persistent permission grants use the same lightweight confirmation shape as routine one-off approvals. Examples include trusting the home directory, recording a persistent &quot;don&#x27;t ask again&quot; allow rule, or enabling bypass-style modes. Because users answer many permission prompts during normal work, a habituated single keystroke can create a standing high-scope grant, and the stored grant may be forgotten later while still affecting future sessions.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
@@ -98,7 +106,7 @@
     <title>[HIGH] Linux bwrap sandbox can hit E2BIG from registered git worktrees.</title>
     <id>https://framework.boucle.sh/limitations.html#linux-bwrap-worktree-deny-list-can-hit-e2big</id>
     <link href="https://framework.boucle.sh/limitations.html#linux-bwrap-worktree-deny-list-can-hit-e2big"/>
-    <updated>2026-08-30T00:00:00Z</updated>
+    <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.220 to 2.1.251 Linux automation setup found that a repository with about 261 registered git worktrees made every sandboxed Bash invocation fail before the command ran. The default bubblewrap profile expanded worktree admin protections into hundreds of deny paths, with no user-configured deny rules, and then passed that profile through one `bash -c` argument that crossed Linux&#x27;s single-argument limit. This makes programmatic worktree isolation a hard availability ceiling: trivial commands, monitor work, and background sessions can all stop spawning once enough worktrees are registered.</summary>
     <category term="Sandbox &amp; permissions"/>
   </entry>
@@ -106,7 +114,7 @@
     <title>[HIGH] Worktree trust dialogs can name the source path instead of the runtime path.</title>
     <id>https://framework.boucle.sh/limitations.html#worktree-trust-dialog-can-name-the-source-not-runtime-path</id>
     <link href="https://framework.boucle.sh/limitations.html#worktree-trust-dialog-can-name-the-source-not-runtime-path"/>
-    <updated>2026-08-30T00:00:00Z</updated>
+    <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Windows Claude Code Desktop suggested-task flow found that clicking `Start with worktree` could show a `Trust this workspace?` dialog for the `spawn_task` source cwd while the created session actually ran in a generated worktree under the spawning repository&#x27;s `.claude/worktrees/` directory. The tracked `.claude/settings.json` hook file was byte-identical in both checkouts, so the consent covered the same executable content but not the path where the hook and session ran. The flow also appeared to write durable trust entries for both source directories and generated worktrees, including paths that were later deleted.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
@@ -114,7 +122,7 @@
     <title>[HIGH] Headless prompt suggestions can be submitted as fake user input.</title>
     <id>https://framework.boucle.sh/limitations.html#headless-prompt-suggestions-can-be-submitted-as-fake-user-input</id>
     <link href="https://framework.boucle.sh/limitations.html#headless-prompt-suggestions-can-be-submitted-as-fake-user-input"/>
-    <updated>2026-08-30T00:00:00Z</updated>
+    <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported macOS Claude Code 2.1.246 to 2.1.251 setup ran headless inside tmux with a channel bridge and an automation watchdog that scraped terminal panes. The default prompt-suggestion feature rendered model-generated suggested replies as ghost text on the input line; once terminal styling was stripped by pane capture, the suggested text was byte-identical to real typed input. The watchdog submitted those suggestions as user messages, producing hundreds of fabricated turns, including apparent approvals, and the session acted on some of them.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
@@ -122,7 +130,7 @@
     <title>[MEDIUM] Hook and plugin stacks cannot be scoped to the active model.</title>
     <id>https://framework.boucle.sh/limitations.html#hook-and-plugin-stacks-cannot-be-scoped-to-the-active-model</id>
     <link href="https://framework.boucle.sh/limitations.html#hook-and-plugin-stacks-cannot-be-scoped-to-the-active-model"/>
-    <updated>2026-08-30T00:00:00Z</updated>
+    <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Claude Code 2026-08-30 configuration gap found that users cannot express different hook, plugin, or skill stacks for different active models in the same project. `enabledPlugins` is static per settings scope, hook `if` filters cannot match the active model, and `modelSettings.&lt;model&gt;` supports only effort-level style overrides. The terminal CLI can approximate the split with separate `--settings` profiles, but the VS Code extension has no per-session settings-file selector, so extension-first users remain on the static settings chain.</summary>
     <category term="Configuration behavior"/>
   </entry>
@@ -130,7 +138,7 @@
     <title>[HIGH] Headless permission denials can report process success.</title>
     <id>https://framework.boucle.sh/limitations.html#headless-permission-denials-can-report-process-success</id>
     <link href="https://framework.boucle.sh/limitations.html#headless-permission-denials-can-report-process-success"/>
-    <updated>2026-08-30T00:00:00Z</updated>
+    <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.251 macOS unattended run found that `claude -p` can end with exit code 0, `is_error:false`, and `subtype:&quot;success&quot;` even when required tool permissions were denied and the requested work could not run. Bash denials may appear in `permission_denials`, but an independent follow-up reproduced a denied `Read` attempt that was absent from that array while the transcript still contained the refusal. Cron, launchd, CI, and wrapper scripts that only check process exit status, `is_error`, or `permission_denials` can therefore mark blocked work as successful and keep spending model time on inert scheduled runs.</summary>
     <category term="Scheduled tasks"/>
   </entry>
@@ -138,7 +146,7 @@
     <title>[HIGH] Bash tool wrapper can suppress `set -e` fail-fast behavior.</title>
     <id>https://framework.boucle.sh/limitations.html#bash-tool-wrapper-can-suppress-errexit</id>
     <link href="https://framework.boucle.sh/limitations.html#bash-tool-wrapper-can-suppress-errexit"/>
-    <updated>2026-08-30T00:00:00Z</updated>
+    <updated>2026-08-31T00:00:00Z</updated>
     <summary>Reported Claude Code 2.1.251 Bash tool sessions found that shell wrapper behavior can turn a failed operation into a reported success. In one case, `set -e` did not stop execution after a failing command because the user script ran through `eval` as a non-final member of the tool wrapper&#x27;s `&amp;&amp;` list, so cleanup ran and the final command produced exit 0. In another case, a backgrounded deploy reported exit code 0 in both the completion notification and the captured log trailer even though the preceding `docker push` failed and no new Cloud Run revision was created.</summary>
     <category term="Shell &amp; process execution"/>
   </entry>
@@ -146,7 +154,7 @@
     <title>[HIGH] Browser action confirmations can ignore allow rules and bypass mode.</title>
     <id>https://framework.boucle.sh/limitations.html#browser-confirmations-ignore-allow-and-bypass-mode</id>
     <link href="https://framework.boucle.sh/limitations.html#browser-confirmations-ignore-allow-and-bypass-mode"/>
-    <updated>2026-08-30T00:00:00Z</updated>
+    <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Claude Desktop macOS setup found that Claude Browser MCP actions such as `computer` screenshots, `javascript_tool`, and `browser_batch` still produced an external-action confirmation dialog even when the matching `mcp__Claude_Browser__*` tools were explicitly allowlisted and `permissions.defaultMode` was set to `bypassPermissions`. The dialog offered only one-time approval and did not visibly distinguish passive screenshot/read actions from DOM-mutating JavaScript, so repeated browser workflows trained the user to approve every prompt.</summary>
     <category term="MCP &amp; integrations"/>
   </entry>
@@ -154,16 +162,8 @@
     <title>[HIGH] AskUserQuestion can return an unselected option as approval.</title>
     <id>https://framework.boucle.sh/limitations.html#askuserquestion-can-return-unselected-option-as-approval</id>
     <link href="https://framework.boucle.sh/limitations.html#askuserquestion-can-return-unselected-option-as-approval"/>
-    <updated>2026-08-30T00:00:00Z</updated>
+    <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.247 macOS terminal session found that an `AskUserQuestion` call returned the first recommended option as selected even though the user said they did not choose it and were typing a contrary mid-turn message. The assistant treated the tool result as consent and ran `docker compose up --build -d`, starting containers despite a standing instruction not to change machine configuration without explicit approval. The user&#x27;s real stop message was delivered alongside the next tool result, after the question had already reported a success-shaped answer.</summary>
     <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Flagged subagent reports can truncate and resend in a costly loop.</title>
-    <id>https://framework.boucle.sh/limitations.html#subagent-flagged-output-truncation-resend-loop</id>
-    <link href="https://framework.boucle.sh/limitations.html#subagent-flagged-output-truncation-resend-loop"/>
-    <updated>2026-08-30T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.251 WSL2 session found that a long subagent final report delivered through `idle_notification` was cut at roughly 2,500 characters when the harness flagged it as an instruction-shaped `settings-json` pattern. The truncation notice told the parent to ask for the rest through `SendMessage`, but each re-ask resumed the subagent against its full transcript, repeated the expensive work, and produced another similarly truncated notification. The reporter contrasted this with an unflagged Sonnet subagent report that was delivered normally, pointing to the flagged notification path rather than a general agent-output limit.</summary>
-    <category term="Subagent &amp; spawned agents"/>
   </entry>
 </feed>
