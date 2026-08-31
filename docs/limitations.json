@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1836,
+  "count": 1837,
   "categories": {
     "Hook behavior & events": 237,
     "Permission system": 165,
@@ -8,7 +8,7 @@
     "Hook bypass & evasion": 109,
     "Subagent & spawned agents": 86,
     "Desktop & IDE integration": 63,
-    "Security & trust boundaries": 40,
+    "Security & trust boundaries": 41,
     "TUI & display": 38,
     "Cowork & remote": 37,
     "Sandbox & permissions": 37,
@@ -196,7 +196,7 @@
   },
   "severity_counts": {
     "CRITICAL": 162,
-    "HIGH": 1061,
+    "HIGH": 1062,
     "LOW": 111,
     "MEDIUM": 502
   },
@@ -24399,6 +24399,31 @@
       ]
     },
     {
+      "id": "claude-config-dir-can-be-scrubbed-from-hooks-and-bash-subprocesses",
+      "title": "CLAUDE_CONFIG_DIR can be scrubbed from hooks and Bash subprocesses.",
+      "category": "Security & trust boundaries",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/91020"
+      ],
+      "date_added": "2026-08-31",
+      "description": "A reported Windows Claude Code 2.1.251 setup found that enabling `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` removes `CLAUDE_CONFIG_DIR` from hook and Bash subprocess environments even while the parent session still reads and writes the relocated config directory. The same repro passed on 2.1.250, and 2.1.251 left hooks and Bash resolving the default `~/.claude` path while parent state landed under the alternate config root. Affected hooks that inspect Claude Code state can therefore read the wrong profile and still exit zero, which creates a fail-open condition for profile-specific policy, audit, or credential-separation workflows.",
+      "workaround": "After enabling scrub or upgrading to 2.1.251 or later, run a same-session canary that records hook and Bash environments and asserts `CLAUDE_CONFIG_DIR` is present when a relocated profile is required. If the variable is missing, either disable scrub for that profile, stay on the newest locally verified version that preserves it, or avoid relying on `CLAUDE_CONFIG_DIR` for profile separation. For safety or audit hooks, compare the config root seen by the parent process with the config root seen by each subprocess before allowing consequential actions.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "security",
+        "hooks",
+        "bash",
+        "environment",
+        "scrub",
+        "CLAUDE_CONFIG_DIR",
+        "profile-isolation",
+        "windows",
+        "regression"
+      ]
+    },
+    {
       "id": "malformed-sse-parse-errors-can-discard-in-flight-turns",
       "title": "Malformed SSE parse errors can discard in-flight turns.",
       "category": "Data integrity",
@@ -24424,27 +24449,27 @@
     }
   ],
   "status_summary": {
-    "open": 1822,
+    "open": 1823,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 162,
-    "high": 1061,
+    "high": 1062,
     "low": 111,
     "medium": 502
   },
   "lastUpdated": "2026-08-31",
   "stats": {
-    "total": 1836,
+    "total": 1837,
     "critical": 162,
-    "high": 1061,
+    "high": 1062,
     "medium": 502,
     "low": 111,
-    "open": 1822,
+    "open": 1823,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-31",
-  "total": 1836
+  "total": 1837
 }
