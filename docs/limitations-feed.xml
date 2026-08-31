@@ -7,6 +7,14 @@
   <updated>2026-08-31T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Slack MCP token rotation can masquerade as a connection timeout.</title>
+    <id>https://framework.boucle.sh/limitations.html#slack-mcp-token-rotation-can-masquerade-as-connect-timeout</id>
+    <link href="https://framework.boucle.sh/limitations.html#slack-mcp-token-rotation-can-masquerade-as-connect-timeout"/>
+    <updated>2026-08-31T00:00:00Z</updated>
+    <summary>A reported Claude Code Slack MCP setup found that concurrent sessions could all fail to connect except the session that most recently minted the OAuth token. The failing sessions surfaced `CONNECT_TIMEOUT` after 30000 ms, while logs showed an HTTP protocol-negotiation probe timing out, a pinned legacy fallback consuming the rest of the connection budget, and stale-token auth failures not adding `slack` to `mcp-needs-auth-cache.json`. The reporter later corrected the timing analysis: version 2.1.251 was not ruled out, and the remaining possible triggers were a feature-flag rollout, Slack endpoint behavior, or a client call-site change. The user-visible defect still stands because auth or initialization failure can look like a network timeout and can retry without an actionable re-auth prompt.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[HIGH] Windows PowerShell 5.1 can misparse BOM-less generated `.ps1` files.</title>
     <id>https://framework.boucle.sh/limitations.html#windows-powershell-51-can-misparse-bomless-generated-ps1-files</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-powershell-51-can-misparse-bomless-generated-ps1-files"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.240 macOS repro found that `~/.claude/settings.json` changes from another legitimate writer can be silently lost when they land inside about five seconds of Claude Code&#x27;s own settings save. The report attributes the loss to long-lived per-process settings caches plus a time-only file-watcher echo suppression window: an external atomic rename can be present on disk, but the running process ignores the change, keeps a stale cache for the rest of its lifetime, and later rewrites the full settings file from that stale view. Observed impact included top-level settings disappearing, hook-registration changes being at risk, and a user&#x27;s saved `/model` selection being reverted by a different stale Claude Code process.</summary>
     <category term="Configuration behavior"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Linux sandbox can hide the session bus that keyring-backed tools need.</title>
-    <id>https://framework.boucle.sh/limitations.html#linux-sandbox-masks-keyring-session-bus</id>
-    <link href="https://framework.boucle.sh/limitations.html#linux-sandbox-masks-keyring-session-bus"/>
-    <updated>2026-08-31T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.236 Linux sandbox setup found that sandboxed Bash calls mount an empty tmpfs over `/run/user`, leaving `DBUS_SESSION_BUS_ADDRESS` pointing at a socket path that no longer exists inside the sandbox. Tools that store credentials in libsecret or GNOME Keyring, including `gh`, can then misreport valid keyring-backed tokens as invalid because they cannot reach the D-Bus session bus. The original report found that `sandbox.network.allowUnixSockets`, `sandbox.excludedCommands`, and `dangerouslyDisableSandbox` did not restore access in that build; a later reporter correction verified that `sandbox.filesystem.allowRead` can re-expose `/run/user` read-only and restore keyring-backed `gh auth status` without moving the token into plaintext insecure storage. The same correction says `allowRead` for `/run/docker.sock` restored Docker access without enabling `allowAllUnixSockets`.</summary>
-    <category term="Sandbox &amp; permissions"/>
   </entry>
 </feed>
