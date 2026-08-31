@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1838,
+  "count": 1839,
   "categories": {
     "Hook behavior & events": 237,
     "Permission system": 165,
@@ -26,8 +26,8 @@
     "Core & session management": 21,
     "Bash & shell execution": 20,
     "Remote & cloud": 19,
+    "Scheduling & remote triggers": 19,
     "Model behavior": 18,
-    "Scheduling & remote triggers": 18,
     "Permissions & safety": 17,
     "Scheduled tasks": 17,
     "Worktrees & isolation": 15,
@@ -196,7 +196,7 @@
   },
   "severity_counts": {
     "CRITICAL": 162,
-    "HIGH": 1063,
+    "HIGH": 1064,
     "LOW": 111,
     "MEDIUM": 502
   },
@@ -24471,30 +24471,56 @@
         "regression",
         "concurrency"
       ]
+    },
+    {
+      "id": "cowork-scheduled-triggers-can-run-without-connected-mcp-tools",
+      "title": "Cowork scheduled triggers can run without connected MCP tools.",
+      "category": "Scheduling & remote triggers",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/90972"
+      ],
+      "date_added": "2026-08-31",
+      "description": "A reported Claude Code Cowork session created a recurring trigger whose prompt needed already-connected Slack, Notion, and Google Calendar MCP connectors. The trigger fired on schedule and through manual tests, but the spawned background sessions produced no Slack message, no Notion edit, and no visible tool output. The only observable state was `last_run.status` moving from pending for more than 10 minutes to `ROUTINE_RUN_STATUS_ABANDONED`. The reporter found the failing trigger's stored job config missing the MCP connection or allowed-tool wiring that a connector-backed run would need, so the automation existed and fired but had no usable tools for its assigned work.",
+      "workaround": "Do not trust a newly created scheduled trigger just because `create_trigger` succeeds. Immediately inspect the stored trigger configuration for the MCP connections or allowed tools the job will need, fire it manually once, and verify the concrete external side effect, such as the expected Slack message or Notion update. Put failure reporting on a channel that does not depend on the same missing connector access, because an instruction like \"DM me if anything fails\" cannot execute if Slack was not attached to the spawned session. For important recurring jobs, keep an external watchdog or calendar reminder until at least one scheduled run has produced the expected output.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "cowork",
+        "scheduled-tasks",
+        "remote-triggers",
+        "mcp",
+        "connectors",
+        "slack",
+        "notion",
+        "google-calendar",
+        "background-sessions",
+        "silent-failure"
+      ]
     }
   ],
   "status_summary": {
-    "open": 1824,
+    "open": 1825,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 162,
-    "high": 1063,
+    "high": 1064,
     "low": 111,
     "medium": 502
   },
   "lastUpdated": "2026-08-31",
   "stats": {
-    "total": 1838,
+    "total": 1839,
     "critical": 162,
-    "high": 1063,
+    "high": 1064,
     "medium": 502,
     "low": 111,
-    "open": 1824,
+    "open": 1825,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-08-31",
-  "total": 1838
+  "total": 1839
 }

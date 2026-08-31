@@ -103,6 +103,14 @@
     <category term="Data integrity"/>
   </entry>
   <entry>
+    <title>[HIGH] Cowork scheduled triggers can run without connected MCP tools.</title>
+    <id>https://framework.boucle.sh/limitations.html#cowork-scheduled-triggers-can-run-without-connected-mcp-tools</id>
+    <link href="https://framework.boucle.sh/limitations.html#cowork-scheduled-triggers-can-run-without-connected-mcp-tools"/>
+    <updated>2026-08-31T00:00:00Z</updated>
+    <summary>A reported Claude Code Cowork session created a recurring trigger whose prompt needed already-connected Slack, Notion, and Google Calendar MCP connectors. The trigger fired on schedule and through manual tests, but the spawned background sessions produced no Slack message, no Notion edit, and no visible tool output. The only observable state was `last_run.status` moving from pending for more than 10 minutes to `ROUTINE_RUN_STATUS_ABANDONED`. The reporter found the failing trigger&#x27;s stored job config missing the MCP connection or allowed-tool wiring that a connector-backed run would need, so the automation existed and fired but had no usable tools for its assigned work.</summary>
+    <category term="Scheduling &amp; remote triggers"/>
+  </entry>
+  <entry>
     <title>[HIGH] SDK image payloads can silently drop client responses over the stdio cap.</title>
     <id>https://framework.boucle.sh/limitations.html#sdk-image-payloads-can-silently-drop-client-responses-over-stdio-cap</id>
     <link href="https://framework.boucle.sh/limitations.html#sdk-image-payloads-can-silently-drop-client-responses-over-stdio-cap"/>
@@ -157,13 +165,5 @@
     <updated>2026-08-31T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.236 Linux sandbox setup found that sandboxed Bash calls mount an empty tmpfs over `/run/user`, leaving `DBUS_SESSION_BUS_ADDRESS` pointing at a socket path that no longer exists inside the sandbox. Tools that store credentials in libsecret or GNOME Keyring, including `gh`, can then misreport valid keyring-backed tokens as invalid because they cannot reach the D-Bus session bus. The original report found that `sandbox.network.allowUnixSockets`, `sandbox.excludedCommands`, and `dangerouslyDisableSandbox` did not restore access in that build; a later reporter correction verified that `sandbox.filesystem.allowRead` can re-expose `/run/user` read-only and restore keyring-backed `gh auth status` without moving the token into plaintext insecure storage. The same correction says `allowRead` for `/run/docker.sock` restored Docker access without enabling `allowAllUnixSockets`.</summary>
     <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Bridge sessions can inject foreign instructions into assistant output.</title>
-    <id>https://framework.boucle.sh/limitations.html#bridge-session-can-inject-foreign-instructions-into-assistant-output</id>
-    <link href="https://framework.boucle.sh/limitations.html#bridge-session-can-inject-foreign-instructions-into-assistant-output"/>
-    <updated>2026-08-31T00:00:00Z</updated>
-    <summary>A reported Claude Desktop app 1.40609.0 Windows session found a `bridge-session` transcript record immediately before an assistant record whose text ended with a foreign English debrief instruction and a fake Japanese context-window notice. The user says they did not send that text, had no hooks configured, and still had ample context remaining. The model treated the appended content as a real instruction: it stopped the requested coding work, switched languages, and wrote a handover. The boundary is distinct from ordinary hallucinated wording because the suspect text appeared right after a bridge-session event and was stored inside the assistant message where later turns could treat it as conversation history.</summary>
-    <category term="Security &amp; trust boundaries"/>
   </entry>
 </feed>
