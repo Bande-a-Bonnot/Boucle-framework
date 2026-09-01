@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1855,
+  "count": 1856,
   "categories": {
     "Hook behavior & events": 239,
     "Permission system": 165,
@@ -8,7 +8,7 @@
     "Hook bypass & evasion": 109,
     "Subagent & spawned agents": 86,
     "Desktop & IDE integration": 63,
-    "Security & trust boundaries": 43,
+    "Security & trust boundaries": 44,
     "TUI & display": 39,
     "Cowork & remote": 37,
     "Sandbox & permissions": 37,
@@ -196,11 +196,37 @@
   },
   "severity_counts": {
     "CRITICAL": 163,
-    "HIGH": 1078,
+    "HIGH": 1079,
     "LOW": 111,
     "MEDIUM": 503
   },
   "entries": [
+    {
+      "id": "predictable-tmp-socket-directories-can-be-squatted-by-local-users",
+      "title": "Predictable `/tmp` socket directories can be squatted by local users.",
+      "category": "Security & trust boundaries",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/91223"
+      ],
+      "date_added": "2026-09-01",
+      "description": "A reported Claude Code 2.1.252 macOS shared-host setup found that cross-session messaging still depends on predictable Unix socket directories under world-writable `/tmp` when `XDG_RUNTIME_DIR` and `CLAUDE_CODE_TMPDIR` are unset. Version 2.1.248 added a per-uid fallback after `/tmp/cc-socks` is refused, but both `/tmp/cc-socks` and `/tmp/cc-socks-<uid>` can be pre-created by another local account with mode 0700. The target account then fails the owner checks for both paths, the fallback has no further fallback, and peer messaging turns off before the user can rely on `ListAgents` or cross-session commands. The report scopes this as local denial of service rather than socket interception because the owner check and peer-token file still protect message receipt.",
+      "workaround": "On shared Macs, build hosts, or CI runners with multiple local accounts, do not rely on the default `/tmp/cc-socks` path or the predictable per-uid fallback for peer messaging. Set `XDG_RUNTIME_DIR` in the shell profile or user-level launch environment to a private directory owned by the account, such as `/tmp/claude-$UID`, then restart Claude Code and verify that peer messaging creates sockets under that private base. Project-level `.claude/settings.json` may not be a reliable place for temp-directory overrides in recent versions, so validate the live process environment and socket path after updates. If peer discovery suddenly reports no reachable agents on a shared host, inspect ownership of `/tmp/cc-socks*` before treating it as an application-level messaging failure.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "macos",
+        "security",
+        "local-denial-of-service",
+        "unix-sockets",
+        "peer-messaging",
+        "cc-socks",
+        "tmp",
+        "XDG_RUNTIME_DIR",
+        "shared-hosts",
+        "ci"
+      ]
+    },
     {
       "id": "desktop-ssh-startdirectory-can-be-accepted-but-ignored",
       "title": "Desktop SSH startDirectory can be accepted but ignored.",
@@ -24907,27 +24933,27 @@
     }
   ],
   "status_summary": {
-    "open": 1841,
+    "open": 1842,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 163,
-    "high": 1078,
+    "high": 1079,
     "low": 111,
     "medium": 503
   },
   "lastUpdated": "2026-09-01",
   "stats": {
-    "total": 1855,
+    "total": 1856,
     "critical": 163,
-    "high": 1078,
+    "high": 1079,
     "medium": 503,
     "low": 111,
-    "open": 1841,
+    "open": 1842,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-01",
-  "total": 1855
+  "total": 1856
 }

@@ -7,6 +7,14 @@
   <updated>2026-09-01T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Predictable `/tmp` socket directories can be squatted by local users.</title>
+    <id>https://framework.boucle.sh/limitations.html#predictable-tmp-socket-directories-can-be-squatted-by-local-users</id>
+    <link href="https://framework.boucle.sh/limitations.html#predictable-tmp-socket-directories-can-be-squatted-by-local-users"/>
+    <updated>2026-09-01T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.252 macOS shared-host setup found that cross-session messaging still depends on predictable Unix socket directories under world-writable `/tmp` when `XDG_RUNTIME_DIR` and `CLAUDE_CODE_TMPDIR` are unset. Version 2.1.248 added a per-uid fallback after `/tmp/cc-socks` is refused, but both `/tmp/cc-socks` and `/tmp/cc-socks-&lt;uid&gt;` can be pre-created by another local account with mode 0700. The target account then fails the owner checks for both paths, the fallback has no further fallback, and peer messaging turns off before the user can rely on `ListAgents` or cross-session commands. The report scopes this as local denial of service rather than socket interception because the owner check and peer-token file still protect message receipt.</summary>
+    <category term="Security &amp; trust boundaries"/>
+  </entry>
+  <entry>
     <title>[HIGH] Desktop SSH startDirectory can be accepted but ignored.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-ssh-startdirectory-can-be-accepted-but-ignored</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-ssh-startdirectory-can-be-accepted-but-ignored"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Claude Code safety workflow uses a git pre-commit hook to run an adversarial review agent against the staged diff before every commit, but the reporter notes that this remains advisory when the coding agent controls the shell. Existing bypasses include `git commit --no-verify`, stash-and-recommit tactics, and other quiet git flags or command shapes that can skip client-side hooks. PR-time review happens after a commit object exists, so defects can already be built on, amended, squashed, or pushed before an independent reviewer sees the exact staged tree.</summary>
     <category term="Hook bypass &amp; evasion"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Windows Git Bash shell snapshots can serialize git-completion functions into invalid Bash.</title>
-    <id>https://framework.boucle.sh/limitations.html#windows-git-bash-shell-snapshot-can-serialize-git-completion-functions-invalidly</id>
-    <link href="https://framework.boucle.sh/limitations.html#windows-git-bash-shell-snapshot-can-serialize-git-completion-functions-invalidly"/>
-    <updated>2026-09-01T00:00:00Z</updated>
-    <summary>A Windows/Git Bash report shows Claude Code writing deterministic but syntactically invalid files under `~/.claude/shell-snapshots/`. Every Bash tool call sources the snapshot before the requested command, so a parse error in replayed `eval $&#x27;__git_* () ...&#x27;` git-completion function definitions can make even builtins such as `pwd` or `type echo` fail with exit 127 and empty stdout/stderr. The reporter verified that `bash -n` fails on the generated snapshot, sourcing the snapshot reproduces the tool failure, regenerated snapshots are byte-identical, and disabling Git for Windows completion before snapshot generation restores Bash tool calls.</summary>
-    <category term="Bash &amp; shell execution"/>
   </entry>
 </feed>
