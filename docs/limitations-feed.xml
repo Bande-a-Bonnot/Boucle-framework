@@ -7,6 +7,14 @@
   <updated>2026-09-01T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Desktop SSH startDirectory can be accepted but ignored.</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-ssh-startdirectory-can-be-accepted-but-ignored</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-ssh-startdirectory-can-be-accepted-but-ignored"/>
+    <updated>2026-09-01T00:00:00Z</updated>
+    <summary>A reported Claude Desktop macOS Code-tab SSH setup found that an `sshConfigs` entry with `startDirectory` in `~/.claude/settings.json` connected to the remote host but opened the session in the remote user&#x27;s home directory instead of the configured project path. The setting is schema-validated, so an invalid type is rejected, but a valid string is accepted and then appears to be dropped during session start. Because Claude Code history is keyed by working directory, the same host can then show an empty Desktop history even though the earlier transcripts remain on disk under the project-path key.</summary>
+    <category term="Configuration behavior"/>
+  </entry>
+  <entry>
     <title>[HIGH] Desktop long-selection copy can silently drop middle transcript content.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-long-selection-copy-can-drop-middle-transcript-content</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-long-selection-copy-can-drop-middle-transcript-content"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.246 to 2.1.251 macOS setup prints startup warnings for permission allow rules that place a wildcard before a later literal token, such as `Bash(git -C * status *)`. The warning advises replacing the wildcard or moving it after the subcommand, but some CLIs require variable global arguments before the subcommand. The reporter also showed matching deny rules for the named git `-c` and `--exec-path` vectors, yet the warning still printed on every launch, and analogous patterns such as `Bash(aws * describe-*)` stayed silent while `Bash(aws * logs tail)` warned. In large hardened settings files this can produce repeated false-positive startup warnings with no acknowledgement or suppression path, training users to skim the same channel that needs to carry real policy warnings.</summary>
     <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] `claude mcp login` can require a TTY even when browser callback auth can complete.</title>
-    <id>https://framework.boucle.sh/limitations.html#headless-mcp-login-requires-tty-even-when-browser-callback-can-complete</id>
-    <link href="https://framework.boucle.sh/limitations.html#headless-mcp-login-requires-tty-even-when-browser-callback-can-complete"/>
-    <updated>2026-09-01T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.233 macOS repro found that `claude mcp login &lt;server&gt;` aborts immediately when stdin is not a TTY, printing `stdin isn&#x27;t a terminal` before opening a browser or printing an authorization URL. The same command wrapped in a pty completed with stdin already at EOF because the browser session and localhost callback finished without pasted input. The failure therefore blocks launchd, systemd, cron, CI, and other headless re-auth paths even when the interactive prompt is not actually needed. The reporter also noted that each login attempt appears to revoke the stored credential before replacement auth succeeds, so an unattended retry can turn a working MCP token into a failed session.</summary>
-    <category term="Auth &amp; accounts"/>
   </entry>
 </feed>
