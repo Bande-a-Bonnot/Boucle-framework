@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1848,
+  "count": 1849,
   "categories": {
     "Hook behavior & events": 237,
     "Permission system": 165,
@@ -17,8 +17,8 @@
     "CLI & terminal": 33,
     "Context & memory": 33,
     "MCP & integrations": 31,
+    "Data integrity": 27,
     "Performance & cost": 27,
-    "Data integrity": 26,
     "VS Code extension": 26,
     "Auth & accounts": 24,
     "Tool behavior": 24,
@@ -195,12 +195,36 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 162,
+    "CRITICAL": 163,
     "HIGH": 1072,
     "LOW": 111,
     "MEDIUM": 503
   },
   "entries": [
+    {
+      "id": "api-error-retry-flush-can-orphan-recovered-output-on-resume",
+      "title": "Recovered API-error retries can orphan assistant output on resume.",
+      "category": "Data integrity",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/91113"
+      ],
+      "date_added": "2026-09-01",
+      "description": "A reported Claude Code transcript failure found that a turn can recover from mid-turn API errors, stream and persist its assistant output, then lose that output on the next `--resume`, `--continue`, or process restart. The reported mechanism is a late flush of buffered `api_error` records: the first error is parented to the conversation leaf as it existed when the error happened, later error records chain from that stale point, and the subsequent `stop_hook_summary` or next user record follows the error chain. Resume reconstruction then walks the `parentUuid` ancestry through the error records and leaves the recovered assistant output as an unreachable sibling branch on disk.",
+      "workaround": "After any Claude Code turn that shows retry notices but later completes, treat the visible answer as not fully durable until a fresh resume proves it is still in context. For important work, checkpoint results to normal project files or external notes before exiting the session. To audit suspected loss, inspect the raw session JSONL for `api_error` records that become parents of later records while successful assistant records from the same turn sit outside the leaf ancestry. Preserve the transcript before retrying or compacting, because later turns can make the hidden branch harder to diagnose.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "data-loss",
+        "transcripts",
+        "resume",
+        "api-errors",
+        "retries",
+        "parentUuid",
+        "jsonl",
+        "session-reconstruction"
+      ]
+    },
     {
       "id": "agent-view-dispatch-can-drop-bypass-permission-flags",
       "title": "Agent-view dispatch can drop bypass permission flags when relaunching sessions.",
@@ -24728,27 +24752,27 @@
     }
   ],
   "status_summary": {
-    "open": 1834,
+    "open": 1835,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 162,
+    "critical": 163,
     "high": 1072,
     "low": 111,
     "medium": 503
   },
   "lastUpdated": "2026-09-01",
   "stats": {
-    "total": 1848,
-    "critical": 162,
+    "total": 1849,
+    "critical": 163,
     "high": 1072,
     "medium": 503,
     "low": 111,
-    "open": 1834,
+    "open": 1835,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-01",
-  "total": 1848
+  "total": 1849
 }
