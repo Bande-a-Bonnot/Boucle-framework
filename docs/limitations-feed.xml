@@ -7,6 +7,14 @@
   <updated>2026-09-01T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Windows safeSpawn can reject a legitimate per-user Git install from the home directory.</title>
+    <id>https://framework.boucle.sh/limitations.html#windows-safespawn-can-reject-per-user-git-from-home-directory</id>
+    <link href="https://framework.boucle.sh/limitations.html#windows-safespawn-can-reject-per-user-git-from-home-directory"/>
+    <updated>2026-09-01T00:00:00Z</updated>
+    <summary>A reported Windows Claude Code issue found that the command resolver can treat Git for Windows as unsafe when Claude Code starts with the user&#x27;s home directory as its current working directory and Git was installed for only that user under the profile, such as `%LOCALAPPDATA%\Programs\Git`. The path-hijacking guard appears to reject executables nested under the current directory; that is useful for project-local shims, but the user profile is also a broad parent of legitimate per-user tools. The result is that plugin marketplace or git-based plugin installs can fail with Git reported as missing or unsafe even though `git --version` works in a normal shell.</summary>
+    <category term="Security &amp; trust boundaries"/>
+  </entry>
+  <entry>
     <title>[HIGH] Claude Code web branch picker can grant direct push to the selected base branch.</title>
     <id>https://framework.boucle.sh/limitations.html#claude-code-web-branch-picker-can-grant-direct-push-to-base-branch</id>
     <link href="https://framework.boucle.sh/limitations.html#claude-code-web-branch-picker-can-grant-direct-push-to-base-branch"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Windows Agent SDK session with `entrypoint=sdk-py` 2.1.250 found that images over roughly the 1,048,576-byte JSON-RPC message cap can make the client stop receiving output without a user-visible error. The reporter first saw large screenshot attachments freeze the session, then corrected the scope after checking the actual crashing sessions: CLI reads of the same image worked, while SDK sessions could also fail after `Read` loaded a multi-megabyte image from disk. In that path the server-side transcript could contain a generated answer, but the oversized message back to the SDK client was silently dropped, leaving client logs without the turn and making transcript-only diagnosis look successful.</summary>
     <category term="Agent SDK &amp; transport"/>
-  </entry>
-  <entry>
-    <title>[HIGH] UserPromptSubmit hooks can stop for an entire session after a title-generation race.</title>
-    <id>https://framework.boucle.sh/limitations.html#userpromptsubmit-hooks-can-stop-for-entire-session-after-title-race</id>
-    <link href="https://framework.boucle.sh/limitations.html#userpromptsubmit-hooks-can-stop-for-entire-session-after-title-race"/>
-    <updated>2026-09-01T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.247 macOS VS Code setup found four sessions where every `UserPromptSubmit` hook stopped firing for the whole session while `SessionStart`, `PreToolUse`, `PostToolUse`, and `Stop` hooks continued. The same hook settings worked in dozens of concurrent sessions, and extension host logs showed the hook scripts had run and produced valid JSON before the failure. Every affected session also showed two `generate_session_title` API requests within about 100ms immediately before the real turn, while unaffected sessions did not show that doubled title-generation pattern. The reported risk is that prompt-time policy can become silently inert for a session without a transcript warning or visible hook error.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>
