@@ -7,6 +7,14 @@
   <updated>2026-09-01T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[CRITICAL] Recovered API-error retries can orphan assistant output on resume.</title>
+    <id>https://framework.boucle.sh/limitations.html#api-error-retry-flush-can-orphan-recovered-output-on-resume</id>
+    <link href="https://framework.boucle.sh/limitations.html#api-error-retry-flush-can-orphan-recovered-output-on-resume"/>
+    <updated>2026-09-01T00:00:00Z</updated>
+    <summary>A reported Claude Code transcript failure found that a turn can recover from mid-turn API errors, stream and persist its assistant output, then lose that output on the next `--resume`, `--continue`, or process restart. The reported mechanism is a late flush of buffered `api_error` records: the first error is parented to the conversation leaf as it existed when the error happened, later error records chain from that stale point, and the subsequent `stop_hook_summary` or next user record follows the error chain. Resume reconstruction then walks the `parentUuid` ancestry through the error records and leaves the recovered assistant output as an unreachable sibling branch on disk.</summary>
+    <category term="Data integrity"/>
+  </entry>
+  <entry>
     <title>[HIGH] Agent-view dispatch can drop bypass permission flags when relaunching sessions.</title>
     <id>https://framework.boucle.sh/limitations.html#agent-view-dispatch-can-drop-bypass-permission-flags</id>
     <link href="https://framework.boucle.sh/limitations.html#agent-view-dispatch-can-drop-bypass-permission-flags"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Windows Claude Desktop / Claude Code setup found recurring `API Error: JSON Parse error: Unexpected EOF` failures after a request had already received streamed content and written partial transcript state. The reporter counted 127 deduplicated occurrences across 53 days, with one event losing about 20 minutes of in-flight work, and narrowed the regression window to Claude Code 2.1.146 through 2.1.149. Follow-up evidence says the parse error string matches JavaScriptCore inside the Bun-built client, failures happen across both low and high context sizes, and observed interrupted content includes thinking, text, and tool-use phases.</summary>
     <category term="Data integrity"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Cowork scheduled triggers can run without connected MCP tools.</title>
-    <id>https://framework.boucle.sh/limitations.html#cowork-scheduled-triggers-can-run-without-connected-mcp-tools</id>
-    <link href="https://framework.boucle.sh/limitations.html#cowork-scheduled-triggers-can-run-without-connected-mcp-tools"/>
-    <updated>2026-09-01T00:00:00Z</updated>
-    <summary>A reported Claude Code Cowork session created a recurring trigger whose prompt needed already-connected Slack, Notion, and Google Calendar MCP connectors. The trigger fired on schedule and through manual tests, but the spawned background sessions produced no Slack message, no Notion edit, and no visible tool output. The only observable state was `last_run.status` moving from pending for more than 10 minutes to `ROUTINE_RUN_STATUS_ABANDONED`. The reporter found the failing trigger&#x27;s stored job config missing the MCP connection or allowed-tool wiring that a connector-backed run would need, so the automation existed and fired but had no usable tools for its assigned work.</summary>
-    <category term="Scheduling &amp; remote triggers"/>
   </entry>
 </feed>
