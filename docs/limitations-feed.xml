@@ -4,13 +4,21 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-08-31T00:00:00Z</updated>
+  <updated>2026-09-01T00:00:00Z</updated>
   <author><name>Boucle</name></author>
+  <entry>
+    <title>[HIGH] Remote Code sessions can execute on another host without clear disclosure.</title>
+    <id>https://framework.boucle.sh/limitations.html#remote-code-sessions-can-execute-on-another-host-without-disclosure</id>
+    <link href="https://framework.boucle.sh/limitations.html#remote-code-sessions-can-execute-on-another-host-without-disclosure"/>
+    <updated>2026-09-01T00:00:00Z</updated>
+    <summary>A reported Claude Desktop Code-tab regression found that a session created on one signed-in Windows machine could appear in the session list on another machine and resume there without a persistent host indicator, while every tool call still executed on the original host. The report says identical-looking working directories on both machines made the remote execution easy to miss: filesystem writes, downloads, installs, hardware queries, and elevation prompts happened on the other computer, not the device currently in front of the user. An adjacent report shows account-wide session title visibility across machines, so users may already see cross-device metadata before realizing that continuing a session can also steer a remote host.</summary>
+    <category term="Security &amp; trust boundaries"/>
+  </entry>
   <entry>
     <title>[HIGH] Slack MCP token rotation can masquerade as a connection timeout.</title>
     <id>https://framework.boucle.sh/limitations.html#slack-mcp-token-rotation-can-masquerade-as-connect-timeout</id>
     <link href="https://framework.boucle.sh/limitations.html#slack-mcp-token-rotation-can-masquerade-as-connect-timeout"/>
-    <updated>2026-08-31T00:00:00Z</updated>
+    <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Claude Code Slack MCP setup found that concurrent sessions could all fail to connect except the session that most recently minted the OAuth token. The failing sessions surfaced `CONNECT_TIMEOUT` after 30000 ms, while logs showed an HTTP protocol-negotiation probe timing out, a pinned legacy fallback consuming the rest of the connection budget, and stale-token auth failures not adding `slack` to `mcp-needs-auth-cache.json`. The reporter later corrected the timing analysis: version 2.1.251 was not ruled out, and the remaining possible triggers were a feature-flag rollout, Slack endpoint behavior, or a client call-site change. The user-visible defect still stands because auth or initialization failure can look like a network timeout and can retry without an actionable re-auth prompt.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -18,7 +26,7 @@
     <title>[HIGH] Windows PowerShell 5.1 can misparse BOM-less generated `.ps1` files.</title>
     <id>https://framework.boucle.sh/limitations.html#windows-powershell-51-can-misparse-bomless-generated-ps1-files</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-powershell-51-can-misparse-bomless-generated-ps1-files"/>
-    <updated>2026-08-31T00:00:00Z</updated>
+    <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Windows 11 Claude Code workflow found that the `Write` tool creates `.ps1` files as UTF-8 without a byte-order mark. Windows PowerShell 5.1 reads BOM-less scripts through the machine ANSI code page, so some non-ASCII bytes can decode as quote characters and terminate strings early. The report measured parse failures for `U+2014` inside double-quoted strings and Cyrillic text inside single-quoted strings, while other non-ASCII placements only produced mojibake. The dangerous operational case is scheduled automation: the parser can fail before the script starts, leaving no transcript or script log while Task Scheduler reports only `0x80070001`.</summary>
     <category term="Tool behavior"/>
   </entry>
@@ -26,7 +34,7 @@
     <title>[LOW] Worktree provisioning can create inert Git LFS hooks under `dev/null/`.</title>
     <id>https://framework.boucle.sh/limitations.html#worktree-lfs-provisioning-can-create-dev-null-hook-clutter</id>
     <link href="https://framework.boucle.sh/limitations.html#worktree-lfs-provisioning-can-create-dev-null-hook-clutter"/>
-    <updated>2026-08-31T00:00:00Z</updated>
+    <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.247 Windows 11 workflow found that linked worktrees for a Git LFS repository sometimes gained an untracked literal `dev/null/` directory containing Git LFS hook shims such as `post-checkout`, `post-commit`, `post-merge`, and `pre-push`. The affected worktrees had a correct worktree-scoped `core.hookspath`, so the stray files appeared inert rather than actively changing Git hook behavior, but they still polluted `git status` and could confuse agents or users that treat an untracked-free worktree as a readiness signal. The reporter&#x27;s evidence points at Claude Code&#x27;s worktree provisioning path resolving an LFS hook target too early or relative to the wrong directory.</summary>
     <category term="Worktrees &amp; isolation"/>
   </entry>
@@ -34,7 +42,7 @@
     <title>[HIGH] Typed skill slash commands can serve stale `SKILL.md` content.</title>
     <id>https://framework.boucle.sh/limitations.html#typed-skill-slash-command-can-serve-stale-skill-md</id>
     <link href="https://framework.boucle.sh/limitations.html#typed-skill-slash-command-can-serve-stale-skill-md"/>
-    <updated>2026-08-31T00:00:00Z</updated>
+    <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.247 macOS setup found that invoking a user skill through the typed `/&lt;skill&gt;` slash-command path could inject an old whole-file `SKILL.md` snapshot while invoking the same skill through the `Skill` tool in the same session loaded the current file from disk. The reporter reconstructed the stale body byte-for-byte as a short-lived intermediate edit state from 83 minutes earlier, and noted that long-lived Claude Code processes can keep serving cached skill text across `/clear` and later sessions without any warning marker.</summary>
     <category term="Skills &amp; commands"/>
   </entry>
@@ -42,7 +50,7 @@
     <title>[CRITICAL] A stale private git index can delete or revert another session&#x27;s committed work.</title>
     <id>https://framework.boucle.sh/limitations.html#stale-private-git-index-can-delete-concurrent-session-work</id>
     <link href="https://framework.boucle.sh/limitations.html#stale-private-git-index-can-delete-concurrent-session-work"/>
-    <updated>2026-08-31T00:00:00Z</updated>
+    <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.251 Windows 11 workflow found that running multiple sessions in one working tree can turn a private `GIT_INDEX_FILE` workaround into silent data loss. Because `git commit` writes the tree from the index rather than by diffing against current `HEAD`, a session whose private index was seeded before another session&#x27;s commit can create a later commit that deletes paths added by the other session and reverts shared files to older blobs. The report says the offending commit exits successfully, may be titled as if it touched only one unrelated file, and has been seen in real repositories with several incidents involving committed and pushed work.</summary>
     <category term="Data integrity"/>
   </entry>
@@ -50,7 +58,7 @@
     <title>[HIGH] Git pre-commit review gates remain bypassable from the shell.</title>
     <id>https://framework.boucle.sh/limitations.html#git-precommit-review-gates-remain-bypassable-from-the-shell</id>
     <link href="https://framework.boucle.sh/limitations.html#git-precommit-review-gates-remain-bypassable-from-the-shell"/>
-    <updated>2026-08-31T00:00:00Z</updated>
+    <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Claude Code safety workflow uses a git pre-commit hook to run an adversarial review agent against the staged diff before every commit, but the reporter notes that this remains advisory when the coding agent controls the shell. Existing bypasses include `git commit --no-verify`, stash-and-recommit tactics, and other quiet git flags or command shapes that can skip client-side hooks. PR-time review happens after a commit object exists, so defects can already be built on, amended, squashed, or pushed before an independent reviewer sees the exact staged tree.</summary>
     <category term="Hook bypass &amp; evasion"/>
   </entry>
@@ -58,7 +66,7 @@
     <title>[HIGH] Windows Git Bash shell snapshots can serialize git-completion functions into invalid Bash.</title>
     <id>https://framework.boucle.sh/limitations.html#windows-git-bash-shell-snapshot-can-serialize-git-completion-functions-invalidly</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-git-bash-shell-snapshot-can-serialize-git-completion-functions-invalidly"/>
-    <updated>2026-08-31T00:00:00Z</updated>
+    <updated>2026-09-01T00:00:00Z</updated>
     <summary>A Windows/Git Bash report shows Claude Code writing deterministic but syntactically invalid files under `~/.claude/shell-snapshots/`. Every Bash tool call sources the snapshot before the requested command, so a parse error in replayed `eval $&#x27;__git_* () ...&#x27;` git-completion function definitions can make even builtins such as `pwd` or `type echo` fail with exit 127 and empty stdout/stderr. The reporter verified that `bash -n` fails on the generated snapshot, sourcing the snapshot reproduces the tool failure, regenerated snapshots are byte-identical, and disabling Git for Windows completion before snapshot generation restores Bash tool calls.</summary>
     <category term="Bash &amp; shell execution"/>
   </entry>
@@ -66,7 +74,7 @@
     <title>[HIGH] Known marketplaces can restore removed plugin marketplaces.</title>
     <id>https://framework.boucle.sh/limitations.html#known-marketplaces-can-restore-removed-plugin-marketplaces</id>
     <link href="https://framework.boucle.sh/limitations.html#known-marketplaces-can-restore-removed-plugin-marketplaces"/>
-    <updated>2026-08-31T00:00:00Z</updated>
+    <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.247 macOS Desktop setup found that removing a plugin marketplace from `~/.claude/settings.json` `extraKnownMarketplaces` and deleting its marketplace clone can appear to work, then be silently undone from `~/.claude/plugins/known_marketplaces.json`. In the report, three removals were re-registered within about one to five minutes, with the clone directory recreated and no user-visible error or log line explaining that another store was authoritative. The user-facing symptom is that a standard repair step such as remove and re-add can become ineffective: the marketplace comes back, and a later add reports that it is already present.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -74,7 +82,7 @@
     <title>[MEDIUM] Permission wildcard warnings are not deny-aware or suppressible.</title>
     <id>https://framework.boucle.sh/limitations.html#permission-wildcard-warnings-are-not-deny-aware-or-suppressible</id>
     <link href="https://framework.boucle.sh/limitations.html#permission-wildcard-warnings-are-not-deny-aware-or-suppressible"/>
-    <updated>2026-08-31T00:00:00Z</updated>
+    <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.246 to 2.1.251 macOS setup prints startup warnings for permission allow rules that place a wildcard before a later literal token, such as `Bash(git -C * status *)`. The warning advises replacing the wildcard or moving it after the subcommand, but some CLIs require variable global arguments before the subcommand. The reporter also showed matching deny rules for the named git `-c` and `--exec-path` vectors, yet the warning still printed on every launch, and analogous patterns such as `Bash(aws * describe-*)` stayed silent while `Bash(aws * logs tail)` warned. In large hardened settings files this can produce repeated false-positive startup warnings with no acknowledgement or suppression path, training users to skim the same channel that needs to carry real policy warnings.</summary>
     <category term="Permission system"/>
   </entry>
@@ -82,7 +90,7 @@
     <title>[HIGH] `claude mcp login` can require a TTY even when browser callback auth can complete.</title>
     <id>https://framework.boucle.sh/limitations.html#headless-mcp-login-requires-tty-even-when-browser-callback-can-complete</id>
     <link href="https://framework.boucle.sh/limitations.html#headless-mcp-login-requires-tty-even-when-browser-callback-can-complete"/>
-    <updated>2026-08-31T00:00:00Z</updated>
+    <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.233 macOS repro found that `claude mcp login &lt;server&gt;` aborts immediately when stdin is not a TTY, printing `stdin isn&#x27;t a terminal` before opening a browser or printing an authorization URL. The same command wrapped in a pty completed with stdin already at EOF because the browser session and localhost callback finished without pasted input. The failure therefore blocks launchd, systemd, cron, CI, and other headless re-auth paths even when the interactive prompt is not actually needed. The reporter also noted that each login attempt appears to revoke the stored credential before replacement auth succeeds, so an unattended retry can turn a working MCP token into a failed session.</summary>
     <category term="Auth &amp; accounts"/>
   </entry>
@@ -90,7 +98,7 @@
     <title>[LOW] Async hook terminal sequences can be parsed but not emitted.</title>
     <id>https://framework.boucle.sh/limitations.html#async-hook-terminal-sequences-can-be-parsed-but-not-emitted</id>
     <link href="https://framework.boucle.sh/limitations.html#async-hook-terminal-sequences-can-be-parsed-but-not-emitted"/>
-    <updated>2026-08-31T00:00:00Z</updated>
+    <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Windows Claude Code 2.1.251 hook setup found that a config-declared `async: true` command hook could return valid JSON containing `terminalSequence`, have that field schema-validated and preserved in the async hook response attachment, yet never emit the sequence to the terminal. The same hook script changed the terminal title when run synchronously, while the async variant logged successful invocations and delivered other async response fields such as `systemMessage`, `hookSpecificOutput.additionalContext`, and `metrics`. This makes async notification, status, and title-update hooks look healthy while the only visible terminal side effect is silently dropped.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -98,7 +106,7 @@
     <title>[HIGH] CLAUDE_CONFIG_DIR can be scrubbed from hooks and Bash subprocesses.</title>
     <id>https://framework.boucle.sh/limitations.html#claude-config-dir-can-be-scrubbed-from-hooks-and-bash-subprocesses</id>
     <link href="https://framework.boucle.sh/limitations.html#claude-config-dir-can-be-scrubbed-from-hooks-and-bash-subprocesses"/>
-    <updated>2026-08-31T00:00:00Z</updated>
+    <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Windows Claude Code 2.1.251 setup found that enabling `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` removes `CLAUDE_CONFIG_DIR` from hook and Bash subprocess environments even while the parent session still reads and writes the relocated config directory. The same repro passed on 2.1.250, and 2.1.251 left hooks and Bash resolving the default `~/.claude` path while parent state landed under the alternate config root. Affected hooks that inspect Claude Code state can therefore read the wrong profile and still exit zero, which creates a fail-open condition for profile-specific policy, audit, or credential-separation workflows.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
@@ -106,7 +114,7 @@
     <title>[HIGH] Malformed SSE parse errors can discard in-flight turns.</title>
     <id>https://framework.boucle.sh/limitations.html#malformed-sse-parse-errors-can-discard-in-flight-turns</id>
     <link href="https://framework.boucle.sh/limitations.html#malformed-sse-parse-errors-can-discard-in-flight-turns"/>
-    <updated>2026-08-31T00:00:00Z</updated>
+    <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Windows Claude Desktop / Claude Code setup found recurring `API Error: JSON Parse error: Unexpected EOF` failures after a request had already received streamed content and written partial transcript state. The reporter counted 127 deduplicated occurrences across 53 days, with one event losing about 20 minutes of in-flight work, and narrowed the regression window to Claude Code 2.1.146 through 2.1.149. Follow-up evidence says the parse error string matches JavaScriptCore inside the Bun-built client, failures happen across both low and high context sizes, and observed interrupted content includes thinking, text, and tool-use phases.</summary>
     <category term="Data integrity"/>
   </entry>
@@ -114,7 +122,7 @@
     <title>[HIGH] Cowork scheduled triggers can run without connected MCP tools.</title>
     <id>https://framework.boucle.sh/limitations.html#cowork-scheduled-triggers-can-run-without-connected-mcp-tools</id>
     <link href="https://framework.boucle.sh/limitations.html#cowork-scheduled-triggers-can-run-without-connected-mcp-tools"/>
-    <updated>2026-08-31T00:00:00Z</updated>
+    <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Claude Code Cowork session created a recurring trigger whose prompt needed already-connected Slack, Notion, and Google Calendar MCP connectors. The trigger fired on schedule and through manual tests, but the spawned background sessions produced no Slack message, no Notion edit, and no visible tool output. The only observable state was `last_run.status` moving from pending for more than 10 minutes to `ROUTINE_RUN_STATUS_ABANDONED`. The reporter found the failing trigger&#x27;s stored job config missing the MCP connection or allowed-tool wiring that a connector-backed run would need, so the automation existed and fired but had no usable tools for its assigned work.</summary>
     <category term="Scheduling &amp; remote triggers"/>
   </entry>
@@ -122,7 +130,7 @@
     <title>[MEDIUM] Browser pane typed local URLs can silently fail before origin registration.</title>
     <id>https://framework.boucle.sh/limitations.html#browser-pane-typed-local-urls-can-silently-fail-before-origin-registration</id>
     <link href="https://framework.boucle.sh/limitations.html#browser-pane-typed-local-urls-can-silently-fail-before-origin-registration"/>
-    <updated>2026-08-31T00:00:00Z</updated>
+    <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Claude Code Desktop macOS browser-pane setup found that a URL typed directly into the pane&#x27;s address bar did not load until the same session had first registered the origin through a model-driven `preview_start` or `navigate` tool call. The failure was silent, with no visible prompt or error, so a reachable local dashboard could look dead until the user asked Claude to open the same URL. A follow-up also found that bare local hostnames were upgraded to `https://` with no HTTP fallback, making plain-HTTP LAN services fail even after the HTTP origin had been registered.</summary>
     <category term="Browser automation"/>
   </entry>
@@ -130,7 +138,7 @@
     <title>[HIGH] VS Code config probes can start every configured MCP server.</title>
     <id>https://framework.boucle.sh/limitations.html#vscode-config-probe-can-start-every-mcp-server</id>
     <link href="https://framework.boucle.sh/limitations.html#vscode-config-probe-can-start-every-mcp-server"/>
-    <updated>2026-08-31T00:00:00Z</updated>
+    <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Claude Code VS Code extension 2.1.251 setup found that the extension&#x27;s config-cache fallback probe could spawn a throwaway Claude process that still loaded every MCP server from `~/.claude.json`. The report traces this to a 500 ms startup race: if the real session does not claim the config resolver before the timer fires, `spawnConfigProbe()` runs with an empty extension-side MCP map but without `strictMcpConfig`, so user-configured servers still start. Servers with launch side effects can therefore open browser tabs, acquire locks, bind ports, fetch remote packages, or register sessions twice, with the probe instance torn down seconds later after doing no useful tool work.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -138,7 +146,7 @@
     <title>[HIGH] SDK image payloads can silently drop client responses over the stdio cap.</title>
     <id>https://framework.boucle.sh/limitations.html#sdk-image-payloads-can-silently-drop-client-responses-over-stdio-cap</id>
     <link href="https://framework.boucle.sh/limitations.html#sdk-image-payloads-can-silently-drop-client-responses-over-stdio-cap"/>
-    <updated>2026-08-31T00:00:00Z</updated>
+    <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Windows Agent SDK session with `entrypoint=sdk-py` 2.1.250 found that images over roughly the 1,048,576-byte JSON-RPC message cap can make the client stop receiving output without a user-visible error. The reporter first saw large screenshot attachments freeze the session, then corrected the scope after checking the actual crashing sessions: CLI reads of the same image worked, while SDK sessions could also fail after `Read` loaded a multi-megabyte image from disk. In that path the server-side transcript could contain a generated answer, but the oversized message back to the SDK client was silently dropped, leaving client logs without the turn and making transcript-only diagnosis look successful.</summary>
     <category term="Agent SDK &amp; transport"/>
   </entry>
@@ -146,7 +154,7 @@
     <title>[HIGH] UserPromptSubmit hooks can stop for an entire session after a title-generation race.</title>
     <id>https://framework.boucle.sh/limitations.html#userpromptsubmit-hooks-can-stop-for-entire-session-after-title-race</id>
     <link href="https://framework.boucle.sh/limitations.html#userpromptsubmit-hooks-can-stop-for-entire-session-after-title-race"/>
-    <updated>2026-08-31T00:00:00Z</updated>
+    <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.247 macOS VS Code setup found four sessions where every `UserPromptSubmit` hook stopped firing for the whole session while `SessionStart`, `PreToolUse`, `PostToolUse`, and `Stop` hooks continued. The same hook settings worked in dozens of concurrent sessions, and extension host logs showed the hook scripts had run and produced valid JSON before the failure. Every affected session also showed two `generate_session_title` API requests within about 100ms immediately before the real turn, while unaffected sessions did not show that doubled title-generation pattern. The reported risk is that prompt-time policy can become silently inert for a session without a transcript warning or visible hook error.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -154,16 +162,8 @@
     <title>[HIGH] PreToolUse `updatedInput` replacement can drop Bash timeout fields.</title>
     <id>https://framework.boucle.sh/limitations.html#pretooluse-updatedinput-replacement-can-drop-bash-timeout-fields</id>
     <link href="https://framework.boucle.sh/limitations.html#pretooluse-updatedinput-replacement-can-drop-bash-timeout-fields"/>
-    <updated>2026-08-31T00:00:00Z</updated>
+    <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.248 through 2.1.251 Windows Git Bash setup found that a PreToolUse hook returning `hookSpecificOutput.updatedInput` with only a rewritten Bash `command` replaces the entire original tool input instead of merging over it. Sibling fields such as `timeout`, `run_in_background`, and `description` are silently discarded. In the reported repro, the assistant requested a 600000 ms timeout for a long command, the transcript still showed that requested timeout, but the hook&#x27;s command-only replacement caused the command to die at the 120s default with no message linking the timeout loss to the hook rewrite.</summary>
-    <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Bash auto-background eligibility can change after hook rewrite.</title>
-    <id>https://framework.boucle.sh/limitations.html#bash-auto-background-eligibility-can-change-after-hook-rewrite</id>
-    <link href="https://framework.boucle.sh/limitations.html#bash-auto-background-eligibility-can-change-after-hook-rewrite"/>
-    <updated>2026-08-31T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.251 Windows Git Bash setup found that the Bash tool&#x27;s automatic move-to-background behavior at the default 120s timeout is evaluated against the post-rewrite command shape. A simple long-running pipeline could be moved to the background and finish, while the same workload with a trailing `; exit &quot;${PIPESTATUS[0]}&quot;` instrumentation statement was killed at 120s. A PreToolUse hook that appends that instrumentation can therefore turn a model-issued command that would have survived as a background task into one that is terminated at the timeout boundary, without the model or user seeing why eligibility changed.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>
