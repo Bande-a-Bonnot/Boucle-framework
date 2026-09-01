@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1847</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-09-01.</span></p>
+        <p class="subtitle"><span id="total-count">1848</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-09-01.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -20904,6 +20904,18 @@
                         <!-- workaround:bash-preamble-can-execute-newline-bearing-environment-values -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not launch Claude Code from a shell or `direnv` environment that exports multiline secrets, JSON blobs, PEM keys, or other structured values until the installed version proves shell-safe environment serialization. Keep large structured config in files, secret managers, or per-command wrappers instead of inherited environment variables, and start a fresh Claude Code process from a minimal environment after cleanup. If Bash tool calls suddenly show parse errors or unexpected `command not found` output before the requested command, inspect only variable names and shapes, not secret values, and remove newline-bearing variables before trusting Bash side effects.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/91123" target="_blank">#91123</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permissions &amp; safety" data-issues="91122" id="linux-bash-read-only-claude-mount-blocks-hook-state-writes" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1848</span>
+                <span class="kl-cat">Permissions &amp; safety</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Linux Bash read-only Claude mounts can block hook state writes.</h3>
+            <p>A reported Claude Code 2.1.236 Linux setup found that Bash tool calls run in a mount namespace where `~/.claude`, `~/.claude.json`, and trusted repository `.claude/` directories are bind-mounted read-only. Writes from Bash to those paths fail with `EROFS`, while the Write and Edit tools can still modify the same files. The reporter also found that `sandbox.enabled: false` and Bash `dangerouslyDisableSandbox: true` did not lift the read-only config mounts. This makes hook companion CLIs, config managers such as `chezmoi`, and auto-mode Bash edits fail on Claude config or hook-state paths even when the policy intent was not to make those paths immutable.</p>
+                        <!-- workaround:linux-bash-read-only-claude-mount-blocks-hook-state-writes -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> On Linux, do not assume Bash can update Claude Code config, hook state, or project `.claude/` files just because Write or Edit can. Keep hook runtime state in a dedicated writable path outside `~/.claude` and repo `.claude/`, or have the hook process itself persist state before returning. Run config-manager changes to `~/.claude` outside Claude Code Bash until your installed version documents a writable state path or honors the sandbox escape hatch for these mounts. If a Bash command fails with `EROFS` on Claude config paths, inspect `/proc/self/mountinfo` from the Bash tool before retrying, and switch to a fresh session after any manual config repair.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/91122" target="_blank">#91122</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

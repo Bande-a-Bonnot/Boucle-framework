@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1847,
+  "count": 1848,
   "categories": {
     "Hook behavior & events": 237,
     "Permission system": 165,
@@ -25,7 +25,7 @@
     "Agents & subagents": 23,
     "Core & session management": 21,
     "Bash & shell execution": 20,
-    "Permissions & safety": 19,
+    "Permissions & safety": 20,
     "Remote & cloud": 19,
     "Scheduling & remote triggers": 19,
     "Model behavior": 18,
@@ -196,7 +196,7 @@
   },
   "severity_counts": {
     "CRITICAL": 162,
-    "HIGH": 1071,
+    "HIGH": 1072,
     "LOW": 111,
     "MEDIUM": 503
   },
@@ -24699,30 +24699,56 @@
         "secrets",
         "preamble"
       ]
+    },
+    {
+      "id": "linux-bash-read-only-claude-mount-blocks-hook-state-writes",
+      "title": "Linux Bash read-only Claude mounts can block hook state writes.",
+      "category": "Permissions & safety",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/91122"
+      ],
+      "date_added": "2026-09-01",
+      "description": "A reported Claude Code 2.1.236 Linux setup found that Bash tool calls run in a mount namespace where `~/.claude`, `~/.claude.json`, and trusted repository `.claude/` directories are bind-mounted read-only. Writes from Bash to those paths fail with `EROFS`, while the Write and Edit tools can still modify the same files. The reporter also found that `sandbox.enabled: false` and Bash `dangerouslyDisableSandbox: true` did not lift the read-only config mounts. This makes hook companion CLIs, config managers such as `chezmoi`, and auto-mode Bash edits fail on Claude config or hook-state paths even when the policy intent was not to make those paths immutable.",
+      "workaround": "On Linux, do not assume Bash can update Claude Code config, hook state, or project `.claude/` files just because Write or Edit can. Keep hook runtime state in a dedicated writable path outside `~/.claude` and repo `.claude/`, or have the hook process itself persist state before returning. Run config-manager changes to `~/.claude` outside Claude Code Bash until your installed version documents a writable state path or honors the sandbox escape hatch for these mounts. If a Bash command fails with `EROFS` on Claude config paths, inspect `/proc/self/mountinfo` from the Bash tool before retrying, and switch to a fresh session after any manual config repair.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "linux",
+        "bash",
+        "sandbox",
+        "mount-namespace",
+        "read-only",
+        "erofs",
+        "hooks",
+        "hook-state",
+        "claude-config",
+        "chezmoi"
+      ]
     }
   ],
   "status_summary": {
-    "open": 1833,
+    "open": 1834,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 162,
-    "high": 1071,
+    "high": 1072,
     "low": 111,
     "medium": 503
   },
   "lastUpdated": "2026-09-01",
   "stats": {
-    "total": 1847,
+    "total": 1848,
     "critical": 162,
-    "high": 1071,
+    "high": 1072,
     "medium": 503,
     "low": 111,
-    "open": 1833,
+    "open": 1834,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-01",
-  "total": 1847
+  "total": 1848
 }
