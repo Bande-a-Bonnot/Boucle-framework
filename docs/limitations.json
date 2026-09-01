@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1854,
+  "count": 1855,
   "categories": {
-    "Hook behavior & events": 238,
+    "Hook behavior & events": 239,
     "Permission system": 165,
     "MCP & plugin issues": 114,
     "Hook bypass & evasion": 109,
@@ -196,7 +196,7 @@
   },
   "severity_counts": {
     "CRITICAL": 163,
-    "HIGH": 1077,
+    "HIGH": 1078,
     "LOW": 111,
     "MEDIUM": 503
   },
@@ -24878,30 +24878,56 @@
         "interactive",
         "attachment"
       ]
+    },
+    {
+      "id": "relative-bash-hook-command-path-can-deadlock-bash",
+      "title": "Relative Bash hook command paths can deadlock the Bash tool after cwd drift.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/91226"
+      ],
+      "date_added": "2026-09-01",
+      "description": "A reported Claude Code 2.1.252 macOS setup found that a `PreToolUse` Bash hook configured with a repo-relative command such as `python3 scripts/.../guard.py` can start normally at the repository root, then fail permanently after a Bash tool call changes the session cwd with `cd some/subdirectory && ...`. Later Bash calls resolve the hook script against the drifted cwd, hit `ENOENT` before the user's command runs, and reject even harmless recovery commands such as `pwd`, `echo test`, or `cd` back to the root. A non-worktree subagent reportedly inherited the broken state, while a worktree-isolated subagent got a fresh cwd. Load-bearing Bash hooks can therefore turn one relative path plus cwd drift into a session-wide Bash outage.",
+      "workaround": "Do not use bare repo-relative paths for safety-critical Bash hook commands until your installed Claude Code version proves hook path resolution is stable across `cd` commands and subagents. Prefer absolute hook command paths or commands rooted through a validated project variable such as `$CLAUDE_PROJECT_DIR`, and log the resolved script path from each hook during setup. After any workflow that changes Bash cwd, run a harmless hook canary and a plain `pwd`; if hook launch fails with `ENOENT`, stop the session and restart from a known-good project root rather than trying to self-repair through Bash. For policy hooks that must keep working mid-task, duplicate the guard in an external wrapper or OS-level boundary so a hook launch failure does not become the only enforcement signal.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "macos",
+        "hooks",
+        "bash",
+        "pretooluse",
+        "relative-path",
+        "cwd-drift",
+        "enoent",
+        "deadlock",
+        "subagents",
+        "hook-canary"
+      ]
     }
   ],
   "status_summary": {
-    "open": 1840,
+    "open": 1841,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 163,
-    "high": 1077,
+    "high": 1078,
     "low": 111,
     "medium": 503
   },
   "lastUpdated": "2026-09-01",
   "stats": {
-    "total": 1854,
+    "total": 1855,
     "critical": 163,
-    "high": 1077,
+    "high": 1078,
     "medium": 503,
     "low": 111,
-    "open": 1840,
+    "open": 1841,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-01",
-  "total": 1854
+  "total": 1855
 }
