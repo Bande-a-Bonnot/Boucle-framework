@@ -7,6 +7,14 @@
   <updated>2026-09-01T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Agent-view dispatch can drop bypass permission flags when relaunching sessions.</title>
+    <id>https://framework.boucle.sh/limitations.html#agent-view-dispatch-can-drop-bypass-permission-flags</id>
+    <link href="https://framework.boucle.sh/limitations.html#agent-view-dispatch-can-drop-bypass-permission-flags"/>
+    <updated>2026-09-01T00:00:00Z</updated>
+    <summary>A reported Claude Code issue found that sessions launched through the agent view, daemon dispatch, or background flags can run in Manual or auto mode even when the user accepted the bypass disclaimer and the spawn path requested `bypassPermissions`. The Windows repro showed daemon workers carrying bypass-related arguments while transcripts recorded `permissionMode: &quot;default&quot;`; a later macOS comment tied the same class to self-reexec paths that rebuild argv from a curated flag list and drop `--allow-dangerously-skip-permissions`. Interactive bypass sessions can also lose the mode after detach and reattach, so the visible session lifecycle can silently change the effective approval policy.</summary>
+    <category term="Permissions &amp; safety"/>
+  </entry>
+  <entry>
     <title>[HIGH] Windows safeSpawn can reject a legitimate per-user Git install from the home directory.</title>
     <id>https://framework.boucle.sh/limitations.html#windows-safespawn-can-reject-per-user-git-from-home-directory</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-safespawn-can-reject-per-user-git-from-home-directory"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Claude Code VS Code extension 2.1.251 setup found that the extension&#x27;s config-cache fallback probe could spawn a throwaway Claude process that still loaded every MCP server from `~/.claude.json`. The report traces this to a 500 ms startup race: if the real session does not claim the config resolver before the timer fires, `spawnConfigProbe()` runs with an empty extension-side MCP map but without `strictMcpConfig`, so user-configured servers still start. Servers with launch side effects can therefore open browser tabs, acquire locks, bind ports, fetch remote packages, or register sessions twice, with the probe instance torn down seconds later after doing no useful tool work.</summary>
     <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] SDK image payloads can silently drop client responses over the stdio cap.</title>
-    <id>https://framework.boucle.sh/limitations.html#sdk-image-payloads-can-silently-drop-client-responses-over-stdio-cap</id>
-    <link href="https://framework.boucle.sh/limitations.html#sdk-image-payloads-can-silently-drop-client-responses-over-stdio-cap"/>
-    <updated>2026-09-01T00:00:00Z</updated>
-    <summary>A reported Windows Agent SDK session with `entrypoint=sdk-py` 2.1.250 found that images over roughly the 1,048,576-byte JSON-RPC message cap can make the client stop receiving output without a user-visible error. The reporter first saw large screenshot attachments freeze the session, then corrected the scope after checking the actual crashing sessions: CLI reads of the same image worked, while SDK sessions could also fail after `Read` loaded a multi-megabyte image from disk. In that path the server-side transcript could contain a generated answer, but the oversized message back to the SDK client was silently dropped, leaving client logs without the turn and making transcript-only diagnosis look successful.</summary>
-    <category term="Agent SDK &amp; transport"/>
   </entry>
 </feed>
