@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1846,
+  "count": 1847,
   "categories": {
     "Hook behavior & events": 237,
     "Permission system": 165,
@@ -25,10 +25,10 @@
     "Agents & subagents": 23,
     "Core & session management": 21,
     "Bash & shell execution": 20,
+    "Permissions & safety": 19,
     "Remote & cloud": 19,
     "Scheduling & remote triggers": 19,
     "Model behavior": 18,
-    "Permissions & safety": 18,
     "Scheduled tasks": 17,
     "Worktrees & isolation": 15,
     "Git & repository safety": 14,
@@ -196,7 +196,7 @@
   },
   "severity_counts": {
     "CRITICAL": 162,
-    "HIGH": 1070,
+    "HIGH": 1071,
     "LOW": 111,
     "MEDIUM": 503
   },
@@ -24673,30 +24673,56 @@
         "locks",
         "ports"
       ]
+    },
+    {
+      "id": "bash-preamble-can-execute-newline-bearing-environment-values",
+      "title": "Bash preambles can execute newline-bearing environment values.",
+      "category": "Permissions & safety",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/91123"
+      ],
+      "date_added": "2026-09-01",
+      "description": "A reported Claude Code 2.1.251 macOS setup found that the Bash tool serialized cached environment state into the generated shell preamble as unquoted `NAME=value` lines before the user's command. Environment variable values containing newlines, braces, PEM blocks, JSON, or other shell-significant text could therefore be interpreted as additional shell syntax or commands. The reporter reproduced with `export FOO=$'a{\\nb\\n}'` and with a project `direnv` value containing JSON; every later Bash tool call then hit parse errors or ran fragments of the environment value before reaching the intended command.",
+      "workaround": "Do not launch Claude Code from a shell or `direnv` environment that exports multiline secrets, JSON blobs, PEM keys, or other structured values until the installed version proves shell-safe environment serialization. Keep large structured config in files, secret managers, or per-command wrappers instead of inherited environment variables, and start a fresh Claude Code process from a minimal environment after cleanup. If Bash tool calls suddenly show parse errors or unexpected `command not found` output before the requested command, inspect only variable names and shapes, not secret values, and remove newline-bearing variables before trusting Bash side effects.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "bash",
+        "environment",
+        "newline",
+        "command-injection",
+        "direnv",
+        "pem",
+        "json",
+        "macos",
+        "secrets",
+        "preamble"
+      ]
     }
   ],
   "status_summary": {
-    "open": 1832,
+    "open": 1833,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 162,
-    "high": 1070,
+    "high": 1071,
     "low": 111,
     "medium": 503
   },
   "lastUpdated": "2026-09-01",
   "stats": {
-    "total": 1846,
+    "total": 1847,
     "critical": 162,
-    "high": 1070,
+    "high": 1071,
     "medium": 503,
     "low": 111,
-    "open": 1832,
+    "open": 1833,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-01",
-  "total": 1846
+  "total": 1847
 }
