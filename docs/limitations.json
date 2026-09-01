@@ -196,8 +196,8 @@
   },
   "severity_counts": {
     "CRITICAL": 163,
-    "HIGH": 1081,
-    "LOW": 111,
+    "HIGH": 1082,
+    "LOW": 110,
     "MEDIUM": 504
   },
   "entries": [
@@ -4885,11 +4885,13 @@
       "id": "claudemd-rules-no-enforcement-mechanism",
       "title": "CLAUDE.md and <code>.claude/rules/</code> rules have no enforcement mechanism.",
       "category": "Context & memory",
-      "severity": "LOW",
+      "severity": "HIGH",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/34132"
+        "https://github.com/anthropics/claude-code/issues/34132",
+        "https://github.com/anthropics/claude-code/issues/91299"
       ],
-      "description": "Rules defined in CLAUDE.md, .claude/rules/, and memory files are read by the model but have no runtime enforcement. The model can read these rules and still violate them during execution. Bold text, capitalization, \"MANDATORY\" labels, and explicit consequence statements do not change this \u2014 they are all prompt content with no binding force. This is the core problem that hook-based enforcement exis",
+      "description": "Rules defined in CLAUDE.md, .claude/rules/, and memory files are read by the model but have no runtime enforcement. The model can read, acknowledge, and even freshly author a workflow rule, then still race past the matching decision point because the action presents as ordinary progress rather than a checkpoint. A reported Claude Code 2.1.247 Windows project accumulated nine memory files repeating the same sign-off rule across six days, then saw the agent continue into schema changes, commits, pushes, and an open pull request without the required issue-by-issue approval. Bold text, capitalization, \"MANDATORY\" labels, repeated memory notes, and explicit consequence statements remain prompt content, not a binding policy layer.",
+      "workaround": "Treat prose rules as guidance only. For irreversible, outward-facing, or user-sign-off boundaries, add a mechanical control outside the model: a PreToolUse Bash hook, file-tool hook, git wrapper, or server-side rule that hard-blocks `git push`, `gh pr create`, `gh pr merge`, deploys, package publishes, destructive commands, test weakening, and protected-path writes unless a separate approval record or explicit current-turn phrase is present. Use interactive `ask` only after the exact UI and mode prove it fails closed for the covered command. Keep the rule text short, but make the enforcement observable with canaries and readback: prove the guard blocks a harmless protected command, prove allowed commands still run, and inspect recent transcripts or hook logs before trusting a session after compaction, resume, or mode changes.",
       "status": "open"
     },
     {
@@ -25017,17 +25019,17 @@
   },
   "severities": {
     "critical": 163,
-    "high": 1081,
-    "low": 111,
+    "high": 1082,
+    "low": 110,
     "medium": 504
   },
   "lastUpdated": "2026-09-01",
   "stats": {
     "total": 1859,
     "critical": 163,
-    "high": 1081,
+    "high": 1082,
     "medium": 504,
-    "low": 111,
+    "low": 110,
     "open": 1845,
     "fixed": 13,
     "mitigated": 1
