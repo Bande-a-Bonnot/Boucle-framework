@@ -63,11 +63,11 @@
     <category term="Permissions &amp; safety"/>
   </entry>
   <entry>
-    <title>[HIGH] macOS OAuth refresh token can remain in plaintext beside Keychain credentials.</title>
+    <title>[HIGH] macOS OAuth refresh token can remain in an orphaned plaintext store beside Keychain data.</title>
     <id>https://framework.boucle.sh/limitations.html#macos-oauth-refresh-token-can-remain-in-plaintext-beside-keychain</id>
     <link href="https://framework.boucle.sh/limitations.html#macos-oauth-refresh-token-can-remain-in-plaintext-beside-keychain"/>
     <updated>2026-09-01T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.212 macOS setup found a live Claude.ai access token and 27-day refresh token in `~/.claude/.credentials.json` even though Keychain-backed credentials were also present. The same report counted 1,306 `Claude Code-credentials-*` Keychain services, observed the count increasing during one session, and found that the offered re-login URL requested only `user:inference` while the stored credential also carried scopes such as `user:sessions:claude_code`. Completing that narrower flow could therefore replace a more capable credential with one that still cannot satisfy features such as `claude --teleport`, while the CLI reported an API-key auth problem despite OAuth credentials being present.</summary>
+    <summary>A reported Claude Code 2.1.212 macOS setup found a live Claude.ai access token and 27-day refresh token in `~/.claude/.credentials.json`, while the Keychain store Claude Code actually read no longer contained a usable `claudeAiOauth` account credential. The plaintext file therefore created a false-healthy diagnostic signal: inspecting it showed a Max subscription credential with scopes such as `user:sessions:claude_code`, but the client correctly reported no usable OAuth credential because the authoritative Keychain item held only MCP OAuth data. The same report counted more than 1,300 `Claude Code-credentials-*` Keychain services, later corrected as MCP OAuth entry accumulation rather than duplicated account credentials, and found that the offered re-login URL requested only `user:inference`, so re-auth could still drop capabilities needed by features such as `claude --teleport`.</summary>
     <category term="Auth &amp; accounts"/>
   </entry>
   <entry>
