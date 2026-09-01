@@ -63,6 +63,14 @@
     <category term="Permissions &amp; safety"/>
   </entry>
   <entry>
+    <title>[HIGH] macOS OAuth refresh token can remain in plaintext beside Keychain credentials.</title>
+    <id>https://framework.boucle.sh/limitations.html#macos-oauth-refresh-token-can-remain-in-plaintext-beside-keychain</id>
+    <link href="https://framework.boucle.sh/limitations.html#macos-oauth-refresh-token-can-remain-in-plaintext-beside-keychain"/>
+    <updated>2026-09-01T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.212 macOS setup found a live Claude.ai access token and 27-day refresh token in `~/.claude/.credentials.json` even though Keychain-backed credentials were also present. The same report counted 1,306 `Claude Code-credentials-*` Keychain services, observed the count increasing during one session, and found that the offered re-login URL requested only `user:inference` while the stored credential also carried scopes such as `user:sessions:claude_code`. Completing that narrower flow could therefore replace a more capable credential with one that still cannot satisfy features such as `claude --teleport`, while the CLI reported an API-key auth problem despite OAuth credentials being present.</summary>
+    <category term="Auth &amp; accounts"/>
+  </entry>
+  <entry>
     <title>[HIGH] Slack MCP token rotation can masquerade as a connection timeout.</title>
     <id>https://framework.boucle.sh/limitations.html#slack-mcp-token-rotation-can-masquerade-as-connect-timeout</id>
     <link href="https://framework.boucle.sh/limitations.html#slack-mcp-token-rotation-can-masquerade-as-connect-timeout"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Windows Claude Code 2.1.251 setup found that enabling `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` removes `CLAUDE_CONFIG_DIR` from hook and Bash subprocess environments even while the parent session still reads and writes the relocated config directory. The same repro passed on 2.1.250, and 2.1.251 left hooks and Bash resolving the default `~/.claude` path while parent state landed under the alternate config root. Affected hooks that inspect Claude Code state can therefore read the wrong profile and still exit zero, which creates a fail-open condition for profile-specific policy, audit, or credential-separation workflows.</summary>
     <category term="Security &amp; trust boundaries"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Malformed SSE parse errors can discard in-flight turns.</title>
-    <id>https://framework.boucle.sh/limitations.html#malformed-sse-parse-errors-can-discard-in-flight-turns</id>
-    <link href="https://framework.boucle.sh/limitations.html#malformed-sse-parse-errors-can-discard-in-flight-turns"/>
-    <updated>2026-09-01T00:00:00Z</updated>
-    <summary>A reported Windows Claude Desktop / Claude Code setup found recurring `API Error: JSON Parse error: Unexpected EOF` failures after a request had already received streamed content and written partial transcript state. The reporter counted 127 deduplicated occurrences across 53 days, with one event losing about 20 minutes of in-flight work, and narrowed the regression window to Claude Code 2.1.146 through 2.1.149. Follow-up evidence says the parse error string matches JavaScriptCore inside the Bun-built client, failures happen across both low and high context sizes, and observed interrupted content includes thinking, text, and tool-use phases.</summary>
-    <category term="Data integrity"/>
   </entry>
 </feed>
