@@ -39,6 +39,14 @@
     <category term="Security &amp; trust boundaries"/>
   </entry>
   <entry>
+    <title>[HIGH] Bash preambles can execute newline-bearing environment values.</title>
+    <id>https://framework.boucle.sh/limitations.html#bash-preamble-can-execute-newline-bearing-environment-values</id>
+    <link href="https://framework.boucle.sh/limitations.html#bash-preamble-can-execute-newline-bearing-environment-values"/>
+    <updated>2026-09-01T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.251 macOS setup found that the Bash tool serialized cached environment state into the generated shell preamble as unquoted `NAME=value` lines before the user&#x27;s command. Environment variable values containing newlines, braces, PEM blocks, JSON, or other shell-significant text could therefore be interpreted as additional shell syntax or commands. The reporter reproduced with `export FOO=$&#x27;a{\nb\n}&#x27;` and with a project `direnv` value containing JSON; every later Bash tool call then hit parse errors or ran fragments of the environment value before reaching the intended command.</summary>
+    <category term="Permissions &amp; safety"/>
+  </entry>
+  <entry>
     <title>[HIGH] Slack MCP token rotation can masquerade as a connection timeout.</title>
     <id>https://framework.boucle.sh/limitations.html#slack-mcp-token-rotation-can-masquerade-as-connect-timeout</id>
     <link href="https://framework.boucle.sh/limitations.html#slack-mcp-token-rotation-can-masquerade-as-connect-timeout"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-01T00:00:00Z</updated>
     <summary>A reported Claude Code Desktop macOS browser-pane setup found that a URL typed directly into the pane&#x27;s address bar did not load until the same session had first registered the origin through a model-driven `preview_start` or `navigate` tool call. The failure was silent, with no visible prompt or error, so a reachable local dashboard could look dead until the user asked Claude to open the same URL. A follow-up also found that bare local hostnames were upgraded to `https://` with no HTTP fallback, making plain-HTTP LAN services fail even after the HTTP origin had been registered.</summary>
     <category term="Browser automation"/>
-  </entry>
-  <entry>
-    <title>[HIGH] VS Code config probes can start every configured MCP server.</title>
-    <id>https://framework.boucle.sh/limitations.html#vscode-config-probe-can-start-every-mcp-server</id>
-    <link href="https://framework.boucle.sh/limitations.html#vscode-config-probe-can-start-every-mcp-server"/>
-    <updated>2026-09-01T00:00:00Z</updated>
-    <summary>A reported Claude Code VS Code extension 2.1.251 setup found that the extension&#x27;s config-cache fallback probe could spawn a throwaway Claude process that still loaded every MCP server from `~/.claude.json`. The report traces this to a 500 ms startup race: if the real session does not claim the config resolver before the timer fires, `spawnConfigProbe()` runs with an empty extension-side MCP map but without `strictMcpConfig`, so user-configured servers still start. Servers with launch side effects can therefore open browser tabs, acquire locks, bind ports, fetch remote packages, or register sessions twice, with the probe instance torn down seconds later after doing no useful tool work.</summary>
-    <category term="MCP &amp; plugin issues"/>
   </entry>
 </feed>
