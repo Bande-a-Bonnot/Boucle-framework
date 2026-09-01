@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1845,
+  "count": 1846,
   "categories": {
     "Hook behavior & events": 237,
     "Permission system": 165,
@@ -28,7 +28,7 @@
     "Remote & cloud": 19,
     "Scheduling & remote triggers": 19,
     "Model behavior": 18,
-    "Permissions & safety": 17,
+    "Permissions & safety": 18,
     "Scheduled tasks": 17,
     "Worktrees & isolation": 15,
     "Git & repository safety": 14,
@@ -196,11 +196,37 @@
   },
   "severity_counts": {
     "CRITICAL": 162,
-    "HIGH": 1069,
+    "HIGH": 1070,
     "LOW": 111,
     "MEDIUM": 503
   },
   "entries": [
+    {
+      "id": "agent-view-dispatch-can-drop-bypass-permission-flags",
+      "title": "Agent-view dispatch can drop bypass permission flags when relaunching sessions.",
+      "category": "Permissions & safety",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/80412"
+      ],
+      "date_added": "2026-09-01",
+      "description": "A reported Claude Code issue found that sessions launched through the agent view, daemon dispatch, or background flags can run in Manual or auto mode even when the user accepted the bypass disclaimer and the spawn path requested `bypassPermissions`. The Windows repro showed daemon workers carrying bypass-related arguments while transcripts recorded `permissionMode: \"default\"`; a later macOS comment tied the same class to self-reexec paths that rebuild argv from a curated flag list and drop `--allow-dangerously-skip-permissions`. Interactive bypass sessions can also lose the mode after detach and reattach, so the visible session lifecycle can silently change the effective approval policy.",
+      "workaround": "Before relying on agent-view, daemon, `--bg`, or detached sessions for unattended work, verify the effective permission mode from the live transcript or a harmless tool call that would normally prompt. Do not infer bypass availability from parent aliases, user settings, or process arguments alone, because relaunch and dispatch paths can rebuild flags differently. If bypass mode is required, start the agent list from an explicit shell command path that preserves the needed flags where verified, keep risky background work supervised until the child session proves its mode, and avoid using broad bypass sessions for git, credential, filesystem, or network side effects without an external guard.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "permissions",
+        "bypassPermissions",
+        "agent-view",
+        "daemon",
+        "background-sessions",
+        "detach",
+        "relaunch",
+        "windows",
+        "macos",
+        "unattended-automation"
+      ]
+    },
     {
       "id": "windows-safespawn-can-reject-per-user-git-from-home-directory",
       "title": "Windows safeSpawn can reject a legitimate per-user Git install from the home directory.",
@@ -24650,27 +24676,27 @@
     }
   ],
   "status_summary": {
-    "open": 1831,
+    "open": 1832,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 162,
-    "high": 1069,
+    "high": 1070,
     "low": 111,
     "medium": 503
   },
   "lastUpdated": "2026-09-01",
   "stats": {
-    "total": 1845,
+    "total": 1846,
     "critical": 162,
-    "high": 1069,
+    "high": 1070,
     "medium": 503,
     "low": 111,
-    "open": 1831,
+    "open": 1832,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-01",
-  "total": 1845
+  "total": 1846
 }
