@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1857,
+  "count": 1858,
   "categories": {
     "Hook behavior & events": 239,
     "Permission system": 166,
@@ -17,7 +17,7 @@
     "CLI & terminal": 33,
     "Context & memory": 33,
     "MCP & integrations": 31,
-    "Data integrity": 28,
+    "Data integrity": 29,
     "Performance & cost": 27,
     "VS Code extension": 26,
     "Auth & accounts": 25,
@@ -196,11 +196,37 @@
   },
   "severity_counts": {
     "CRITICAL": 163,
-    "HIGH": 1079,
+    "HIGH": 1080,
     "LOW": 111,
     "MEDIUM": 504
   },
   "entries": [
+    {
+      "id": "session-transcript-writer-can-fail-silently",
+      "title": "Session transcript writer can fail silently.",
+      "category": "Data integrity",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/91284"
+      ],
+      "date_added": "2026-09-01",
+      "description": "A reported Windows Claude Code setup found that per-session JSONL transcript persistence can fail silently while the session still accepts prompts, streams responses, runs tools, updates `~/.claude/history.jsonl`, and moves the session file mtime. The reporter ties the class to earlier stale-closed reports where resumed sessions or teammate/tmux classification stopped appending user and assistant turns without a visible warning. A follow-up sandbox check against 2.1.257 did not reproduce the exact 2.1.195 to 2.1.257 upgrade or `TERM_PROGRAM=tmux` trigger on that machine, but the user-facing risk remains that filesystem metadata and history updates can look healthy while durable conversation turns are missing.",
+      "workaround": "Do not use session JSONL mtime, `history.jsonl`, or an alive Claude Code process as proof that important turns were persisted. For long-running, resumed, ConPTY, tmux, psmux, teammate, or wrapper-launched sessions, add a content canary before important work: send a unique nonce, confirm recent user and assistant records containing that nonce appear in the expected `~/.claude/projects/.../<session>.jsonl`, then verify again after resume or upgrade. For valuable work, checkpoint conclusions to normal project files before exiting. If canaries stop landing, preserve the raw transcript and environment evidence, restart in a plain terminal or known-good version, and avoid relying on the affected session for recoverable audit history.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "windows",
+        "data-loss",
+        "transcripts",
+        "jsonl",
+        "resume",
+        "tmux",
+        "psmux",
+        "teammate-mode",
+        "ConPTY",
+        "history"
+      ]
+    },
     {
       "id": "permissionrequest-suggestions-can-diverge-from-dialog-rows",
       "title": "PermissionRequest suggestions can diverge from permission dialog rows.",
@@ -24959,27 +24985,27 @@
     }
   ],
   "status_summary": {
-    "open": 1843,
+    "open": 1844,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 163,
-    "high": 1079,
+    "high": 1080,
     "low": 111,
     "medium": 504
   },
   "lastUpdated": "2026-09-01",
   "stats": {
-    "total": 1857,
+    "total": 1858,
     "critical": 163,
-    "high": 1079,
+    "high": 1080,
     "medium": 504,
     "low": 111,
-    "open": 1843,
+    "open": 1844,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-01",
-  "total": 1857
+  "total": 1858
 }
