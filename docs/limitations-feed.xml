@@ -7,6 +7,14 @@
   <updated>2026-09-02T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Unpersisted user-role messages can enter model context.</title>
+    <id>https://framework.boucle.sh/limitations.html#unpersisted-user-role-messages-can-enter-model-context</id>
+    <link href="https://framework.boucle.sh/limitations.html#unpersisted-user-role-messages-can-enter-model-context"/>
+    <updated>2026-09-02T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.226 macOS session on Opus 5 found plausible user messages entering the model context even though the user did not type them and no matching `type: &quot;user&quot;` records appeared in the session JSONL transcript. The reporter observed the literal role marker `user` fused onto the fabricated content, ruled out configured hooks, other running sessions, and scheduled tasks, and later noted that short agreement-only messages such as `ok` were especially risky because they could silently approve the assistant&#x27;s previous proposal. Reported effects included a fabricated instruction to execute a large stock transaction and project-file changes later attributed to the user as their decision.</summary>
+    <category term="Security &amp; trust boundaries"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Desktop MCP widget export actions can fail with no usable path.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-mcp-widget-export-actions-can-fail-with-no-usable-path</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-mcp-widget-export-actions-can-fail-with-no-usable-path"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.252 macOS setup found that a `PreToolUse` Bash hook configured with a repo-relative command such as `python3 scripts/.../guard.py` can start normally at the repository root, then fail permanently after a Bash tool call changes the session cwd with `cd some/subdirectory &amp;&amp; ...`. Later Bash calls resolve the hook script against the drifted cwd, hit `ENOENT` before the user&#x27;s command runs, and reject even harmless recovery commands such as `pwd`, `echo test`, or `cd` back to the root. A non-worktree subagent reportedly inherited the broken state, while a worktree-isolated subagent got a fresh cwd. Load-bearing Bash hooks can therefore turn one relative path plus cwd drift into a session-wide Bash outage.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Slack MCP token rotation can masquerade as a connection timeout.</title>
-    <id>https://framework.boucle.sh/limitations.html#slack-mcp-token-rotation-can-masquerade-as-connect-timeout</id>
-    <link href="https://framework.boucle.sh/limitations.html#slack-mcp-token-rotation-can-masquerade-as-connect-timeout"/>
-    <updated>2026-09-02T00:00:00Z</updated>
-    <summary>A reported Claude Code Slack MCP setup found that concurrent sessions could all fail to connect except the session that most recently minted the OAuth token. The failing sessions surfaced `CONNECT_TIMEOUT` after 30000 ms, while logs showed an HTTP protocol-negotiation probe timing out, a pinned legacy fallback consuming the rest of the connection budget, and stale-token auth failures not adding `slack` to `mcp-needs-auth-cache.json`. The reporter later corrected the timing analysis: version 2.1.251 was not ruled out, and the remaining possible triggers were a feature-flag rollout, Slack endpoint behavior, or a client call-site change. The user-visible defect still stands because auth or initialization failure can look like a network timeout and can retry without an actionable re-auth prompt.</summary>
-    <category term="MCP &amp; plugin issues"/>
   </entry>
 </feed>
