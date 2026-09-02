@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1866,
+  "count": 1867,
   "categories": {
     "Hook behavior & events": 240,
     "Permission system": 167,
@@ -93,6 +93,7 @@
     "Cowork / remote sessions": 2,
     "Desktop & preview": 2,
     "Documentation & workflow": 2,
+    "Error handling & recovery": 2,
     "IDE integrations": 2,
     "mcp": 2,
     "MCP & connectors": 2,
@@ -131,7 +132,6 @@
     "Cowork & cloud": 1,
     "data-integrity": 1,
     "data-loss": 1,
-    "Error handling & recovery": 1,
     "File system": 1,
     "filesystem": 1,
     "Hooks / extensions": 1,
@@ -196,11 +196,36 @@
   },
   "severity_counts": {
     "CRITICAL": 163,
-    "HIGH": 1088,
+    "HIGH": 1089,
     "LOW": 110,
     "MEDIUM": 505
   },
   "entries": [
+    {
+      "id": "unsupported-image-input-provider-error-can-brick-session",
+      "title": "Unsupported image input can brick sessions through repeated provider replay.",
+      "category": "Error handling & recovery",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/91112"
+      ],
+      "date_added": "2026-09-02",
+      "description": "A reported Claude Code v2.1.252 macOS session using an Ollama-compatible cloud model through `ANTHROPIC_BASE_URL` sent an image to a model whose served capability list did not include vision. The provider correctly returned a deterministic 400 for unsupported image input, but the rejected image remained in Claude Code's conversation history as a large tool result. Subsequent prompts then resent the same failing history and hit the same provider error again, leaving the session unable to make progress or produce a normal handoff until the offending history item was removed.",
+      "workaround": "Before pasting or fetching images through a non-Anthropic or compatibility provider, verify the served model's actual capabilities rather than relying only on a model-card claim. For Ollama paths, check `ollama show <model>` and treat models without a vision or image capability as text-only in Claude Code. If a deterministic unsupported-input 400 appears, stop prompting and rewind the live session to before the image with Esc Esc. If the session is already closed, back up the transcript JSONL first, remove the offending image/tool-result entry, and resume only after confirming the model route can accept the remaining history.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "macos",
+        "ollama",
+        "anthropic-base-url",
+        "image-input",
+        "model-capabilities",
+        "provider-errors",
+        "session-recovery",
+        "jsonl",
+        "transcript-history"
+      ]
+    },
     {
       "id": "artifact-tool-schema-eager-loads-in-claude-ai-sessions",
       "title": "Artifact tool schema eagerly loads in claude.ai-backed sessions.",
@@ -25195,27 +25220,27 @@
     }
   ],
   "status_summary": {
-    "open": 1852,
+    "open": 1853,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 163,
-    "high": 1088,
+    "high": 1089,
     "low": 110,
     "medium": 505
   },
   "lastUpdated": "2026-09-02",
   "stats": {
-    "total": 1866,
+    "total": 1867,
     "critical": 163,
-    "high": 1088,
+    "high": 1089,
     "medium": 505,
     "low": 110,
-    "open": 1852,
+    "open": 1853,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-02",
-  "total": 1866
+  "total": 1867
 }
