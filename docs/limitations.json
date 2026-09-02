@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1871,
+  "count": 1872,
   "categories": {
     "Hook behavior & events": 241,
     "Permission system": 169,
@@ -58,6 +58,7 @@
     "Cost & usage": 5,
     "Model behavior & compliance": 5,
     "Performance & resource usage": 5,
+    "Autonomy & destructive actions": 4,
     "MCP & plugins": 4,
     "Model behavior & instructions": 4,
     "Performance & resources": 4,
@@ -68,7 +69,6 @@
     "tui": 4,
     "Agent & multi-agent": 3,
     "API & infrastructure": 3,
-    "Autonomy & destructive actions": 3,
     "Context / compaction": 3,
     "cowork": 3,
     "Desktop": 3,
@@ -195,12 +195,38 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 164,
+    "CRITICAL": 165,
     "HIGH": 1091,
     "LOW": 110,
     "MEDIUM": 506
   },
   "entries": [
+    {
+      "id": "auto-mode-can-allow-destructive-projectv2-list-replace-then-block-restore",
+      "title": "Auto mode can allow destructive ProjectV2 list replacement, then block restore.",
+      "category": "Autonomy & destructive actions",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/91506"
+      ],
+      "date_added": "2026-09-02",
+      "description": "A reported Claude Code macOS auto-mode session allowed a `gh api graphql` call that updated a GitHub ProjectV2 iteration field by submitting only the newly requested sprint in `iterationConfiguration.iterations`. GitHub treats that list as replacement state, so the mutation removed 12 completed iterations and detached roughly 450 item-to-sprint assignments from historical project data. The same auto-mode classifier then denied the inverse restore call carrying the full iteration list, leaving manual shell execution as the only repair path. This creates a dangerous asymmetry: a shared-resource mutation with list-replacement semantics can pass as routine GitHub CLI use, while the matching recovery operation is treated as too risky after damage has already landed.",
+      "workaround": "Do not rely on auto mode to recognize destructive semantics inside opaque `gh api graphql` commands. Before letting Claude Code mutate GitHub Projects, org settings, repository settings, billing, deployments, or other shared configuration, require a human-reviewed dry run that shows the existing state, the proposed complete replacement state, and a rollback command. For ProjectV2 iteration fields, fetch the current full iteration list first, merge the new entry into that list, save a timestamped JSON backup, and run the mutation manually or behind a narrow PreToolUse `Bash(gh api graphql*)` hook that blocks `updateProjectV2Field` unless an explicit backup path and full replacement payload are present.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "auto-mode",
+        "permissions",
+        "github",
+        "projectv2",
+        "graphql",
+        "gh-cli",
+        "data-loss",
+        "destructive-actions",
+        "classifier",
+        "rollback"
+      ]
+    },
     {
       "id": "cowork-workspace-tool-allow-rules-can-be-cancelled-by-built-in-deny-aliases",
       "title": "Cowork workspace tool allow rules can be cancelled by built-in deny aliases.",
@@ -25331,27 +25357,27 @@
     }
   ],
   "status_summary": {
-    "open": 1857,
+    "open": 1858,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 164,
+    "critical": 165,
     "high": 1091,
     "low": 110,
     "medium": 506
   },
   "lastUpdated": "2026-09-02",
   "stats": {
-    "total": 1871,
-    "critical": 164,
+    "total": 1872,
+    "critical": 165,
     "high": 1091,
     "medium": 506,
     "low": 110,
-    "open": 1857,
+    "open": 1858,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-02",
-  "total": 1871
+  "total": 1872
 }
