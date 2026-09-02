@@ -524,16 +524,20 @@ mod tests {
     fn test_custom_config() {
         let dir = tempfile::tempdir().unwrap();
 
-        // Entry ~200 days old with confidence 0.6 — not flagged with default (365) but flagged with aggressive (180)
+        let created = (Utc::now() - chrono::Duration::days(200))
+            .format("%Y%m%d")
+            .to_string();
+
+        // Entry 200 days old with confidence 0.6 is not flagged with default (365) but is flagged with aggressive (180).
         create_entry(
             dir.path(),
             "old.md",
-            "type: fact\ntitle: \"Old\"\nconfidence: 0.6\ncreated: 20250901",
+            &format!("type: fact\ntitle: \"Old\"\nconfidence: 0.6\ncreated: {created}"),
             "content",
         );
 
         let default_gc = candidates(dir.path(), &GcConfig::default()).unwrap();
-        assert_eq!(default_gc.len(), 0); // ~200 days < 365
+        assert_eq!(default_gc.len(), 0); // 200 days < 365
 
         // With aggressive config: max_age=180 days
         let aggressive = GcConfig {

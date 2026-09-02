@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1859</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-09-01.</span></p>
+        <p class="subtitle"><span id="total-count">1860</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-09-02.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -21050,6 +21050,18 @@
                         <!-- workaround:relative-bash-hook-command-path-can-deadlock-bash -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not use bare repo-relative paths for safety-critical Bash hook commands until your installed Claude Code version proves hook path resolution is stable across `cd` commands and subagents. Prefer absolute hook command paths or commands rooted through a validated project variable such as `$CLAUDE_PROJECT_DIR`, and log the resolved script path from each hook during setup. After any workflow that changes Bash cwd, run a harmless hook canary and a plain `pwd`; if hook launch fails with `ENOENT`, stop the session and restart from a known-good project root rather than trying to self-repair through Bash. For policy hooks that must keep working mid-task, duplicate the guard in an external wrapper or OS-level boundary so a hook launch failure does not become the only enforcement signal.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/91226" target="_blank">#91226</a></div>
+        </div>
+        <div class="kl-entry" data-category="Skills &amp; commands" data-issues="91146" id="custom-slash-commands-cannot-dispatch-nested-goals" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1860</span>
+                <span class="kl-cat">Skills &amp; commands</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Custom slash commands cannot dispatch nested `/goal` or slash-command invocations.</h3>
+            <p>A reported Claude Code 2.1.252 setup found that custom slash command bodies are injected as prompt text rather than dispatched as command input. A custom command whose body contained `/goal ...` echoed that line back to the model and did not arm the goal, and a nested custom slash command stayed inert with no warning. The reporter also found that `/goal @payload.txt` silently armed the literal string `@payload.txt` instead of loading the file. Users who store long goal, stop, or approval conditions in reusable command files can therefore start a session believing a policy-like command is active while the client has only submitted ordinary prompt text.</p>
+                        <!-- workaround:custom-slash-commands-cannot-dispatch-nested-goals -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not put `/goal`, `/permissions`, `/clear`, or other slash-command invocations inside custom command bodies unless your installed version explicitly supports and proves command dispatch from that source. For long goals or stop conditions, type the built-in command prefix directly in the TUI, paste only the argument text, and confirm the client-owned indicator or command state changed before starting unattended work. If a goal or command argument lives in a file, load or paste the text yourself and verify the resulting active condition is not a literal `@file` placeholder. Keep hard approval, publish, and destructive-action boundaries in hooks, git wrappers, CI, or server-side policy rather than relying on reusable slash-command macros to arm them.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/91146" target="_blank">#91146</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

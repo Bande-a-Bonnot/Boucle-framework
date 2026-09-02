@@ -4,13 +4,21 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-09-01T00:00:00Z</updated>
+  <updated>2026-09-02T00:00:00Z</updated>
   <author><name>Boucle</name></author>
+  <entry>
+    <title>[HIGH] Custom slash commands cannot dispatch nested `/goal` or slash-command invocations.</title>
+    <id>https://framework.boucle.sh/limitations.html#custom-slash-commands-cannot-dispatch-nested-goals</id>
+    <link href="https://framework.boucle.sh/limitations.html#custom-slash-commands-cannot-dispatch-nested-goals"/>
+    <updated>2026-09-02T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.252 setup found that custom slash command bodies are injected as prompt text rather than dispatched as command input. A custom command whose body contained `/goal ...` echoed that line back to the model and did not arm the goal, and a nested custom slash command stayed inert with no warning. The reporter also found that `/goal @payload.txt` silently armed the literal string `@payload.txt` instead of loading the file. Users who store long goal, stop, or approval conditions in reusable command files can therefore start a session believing a policy-like command is active while the client has only submitted ordinary prompt text.</summary>
+    <category term="Skills &amp; commands"/>
+  </entry>
   <entry>
     <title>[HIGH] VS Code always-allow grants can land in tracked project settings.</title>
     <id>https://framework.boucle.sh/limitations.html#vscode-always-allow-can-write-personal-grants-to-tracked-settings</id>
     <link href="https://framework.boucle.sh/limitations.html#vscode-always-allow-can-write-personal-grants-to-tracked-settings"/>
-    <updated>2026-09-01T00:00:00Z</updated>
+    <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Windows VS Code native extension setup found that accepting a Claude Code permission prompt with an always-allow or don&#x27;t-ask-again response appended the new `Bash(...)`, `Read(...)`, `PowerShell(...)`, or `permissions.additionalDirectories` grant to the shared, git-tracked `.claude/settings.json` instead of the personal gitignored `.claude/settings.local.json`. The reporter observed that `settings.local.json` had not been modified recently while the tracked settings file kept accumulating session-specific temp paths and ad hoc command permissions, creating a leakage path from local consent into team-wide reviewed configuration.</summary>
     <category term="Permission system"/>
   </entry>
@@ -18,7 +26,7 @@
     <title>[HIGH] Session transcript writer can fail silently.</title>
     <id>https://framework.boucle.sh/limitations.html#session-transcript-writer-can-fail-silently</id>
     <link href="https://framework.boucle.sh/limitations.html#session-transcript-writer-can-fail-silently"/>
-    <updated>2026-09-01T00:00:00Z</updated>
+    <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Windows Claude Code setup found that per-session JSONL transcript persistence can fail silently while the session still accepts prompts, streams responses, runs tools, updates `~/.claude/history.jsonl`, and moves the session file mtime. The reporter ties the class to earlier stale-closed reports where resumed sessions or teammate/tmux classification stopped appending user and assistant turns without a visible warning. A follow-up sandbox check against 2.1.257 did not reproduce the exact 2.1.195 to 2.1.257 upgrade or `TERM_PROGRAM=tmux` trigger on that machine, but the user-facing risk remains that filesystem metadata and history updates can look healthy while durable conversation turns are missing.</summary>
     <category term="Data integrity"/>
   </entry>
@@ -26,7 +34,7 @@
     <title>[MEDIUM] PermissionRequest suggestions can diverge from permission dialog rows.</title>
     <id>https://framework.boucle.sh/limitations.html#permissionrequest-suggestions-can-diverge-from-dialog-rows</id>
     <link href="https://framework.boucle.sh/limitations.html#permissionrequest-suggestions-can-diverge-from-dialog-rows"/>
-    <updated>2026-09-01T00:00:00Z</updated>
+    <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.252 macOS repro found that `PermissionRequest` hook input can describe a different set of permission updates than the interactive dialog shows for the same Bash approval. In the reported case, the dialog offered an auto-mode row, while `permission_suggestions` instead included `setMode` to `acceptEdits`; the hook input also used a session destination for a directory grant whose dialog wording described project-level access. Hooks or approval services that try to mirror the UI, audit user choices, or return `updatedPermissions` therefore cannot assume the array is an exact machine-readable form of the visible dialog.</summary>
     <category term="Permission system"/>
   </entry>
@@ -34,7 +42,7 @@
     <title>[HIGH] Predictable `/tmp` socket directories can be squatted by local users.</title>
     <id>https://framework.boucle.sh/limitations.html#predictable-tmp-socket-directories-can-be-squatted-by-local-users</id>
     <link href="https://framework.boucle.sh/limitations.html#predictable-tmp-socket-directories-can-be-squatted-by-local-users"/>
-    <updated>2026-09-01T00:00:00Z</updated>
+    <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.252 macOS shared-host setup found that cross-session messaging still depends on predictable Unix socket directories under world-writable `/tmp` when `XDG_RUNTIME_DIR` and `CLAUDE_CODE_TMPDIR` are unset. Version 2.1.248 added a per-uid fallback after `/tmp/cc-socks` is refused, but both `/tmp/cc-socks` and `/tmp/cc-socks-&lt;uid&gt;` can be pre-created by another local account with mode 0700. The target account then fails the owner checks for both paths, the fallback has no further fallback, and peer messaging turns off before the user can rely on `ListAgents` or cross-session commands. The report scopes this as local denial of service rather than socket interception because the owner check and peer-token file still protect message receipt.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
@@ -42,7 +50,7 @@
     <title>[HIGH] Desktop SSH startDirectory can be accepted but ignored.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-ssh-startdirectory-can-be-accepted-but-ignored</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-ssh-startdirectory-can-be-accepted-but-ignored"/>
-    <updated>2026-09-01T00:00:00Z</updated>
+    <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Desktop macOS Code-tab SSH setup found that an `sshConfigs` entry with `startDirectory` in `~/.claude/settings.json` connected to the remote host but opened the session in the remote user&#x27;s home directory instead of the configured project path. The setting is schema-validated, so an invalid type is rejected, but a valid string is accepted and then appears to be dropped during session start. Because Claude Code history is keyed by working directory, the same host can then show an empty Desktop history even though the earlier transcripts remain on disk under the project-path key.</summary>
     <category term="Configuration behavior"/>
   </entry>
@@ -50,7 +58,7 @@
     <title>[HIGH] Desktop long-selection copy can silently drop middle transcript content.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-long-selection-copy-can-drop-middle-transcript-content</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-long-selection-copy-can-drop-middle-transcript-content"/>
-    <updated>2026-09-01T00:00:00Z</updated>
+    <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Code macOS desktop issue found that dragging a text selection across more than one viewport can copy only the beginning and end of the visible range while omitting content from the middle. The selection can look complete on screen and `Cmd+C` completes without warning, so the failure is silent until the user pastes the transcript elsewhere and notices the gap. The reporter suspects virtualized transcript rows may be unmounted during scroll selection, causing clipboard serialization to skip offscreen nodes instead of copying from the underlying transcript data.</summary>
     <category term="Data integrity"/>
   </entry>
@@ -58,7 +66,7 @@
     <title>[CRITICAL] Recovered API-error retries can orphan assistant output on resume.</title>
     <id>https://framework.boucle.sh/limitations.html#api-error-retry-flush-can-orphan-recovered-output-on-resume</id>
     <link href="https://framework.boucle.sh/limitations.html#api-error-retry-flush-can-orphan-recovered-output-on-resume"/>
-    <updated>2026-09-01T00:00:00Z</updated>
+    <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Code transcript failure found that a turn can recover from mid-turn API errors, stream and persist its assistant output, then lose that output on the next `--resume`, `--continue`, or process restart. The reported mechanism is a late flush of buffered `api_error` records: the first error is parented to the conversation leaf as it existed when the error happened, later error records chain from that stale point, and the subsequent `stop_hook_summary` or next user record follows the error chain. Resume reconstruction then walks the `parentUuid` ancestry through the error records and leaves the recovered assistant output as an unreachable sibling branch on disk.</summary>
     <category term="Data integrity"/>
   </entry>
@@ -66,7 +74,7 @@
     <title>[HIGH] Plugin SessionStart dispatch can drop all but the first registered hook.</title>
     <id>https://framework.boucle.sh/limitations.html#plugin-sessionstart-dispatch-can-drop-all-but-first-hook</id>
     <link href="https://framework.boucle.sh/limitations.html#plugin-sessionstart-dispatch-can-drop-all-but-first-hook"/>
-    <updated>2026-09-01T00:00:00Z</updated>
+    <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.252 Windows regression found that when multiple plugins each contribute a `SessionStart` hook, registration surfaces can still show the hooks while runtime dispatch executes only one. The reporter found that `/reload-plugins` and `/hooks` counted the hooks, direct `settings.json` SessionStart hooks all ran, and transcript analysis across 85 sessions on versions 2.1.216 through 2.1.252 never showed more than one plugin SessionStart hook per session. The last observed working version was 2.1.198, where up to four plugin SessionStart hooks ran in the same session.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -74,7 +82,7 @@
     <title>[HIGH] Agent-view dispatch can drop bypass permission flags when relaunching sessions.</title>
     <id>https://framework.boucle.sh/limitations.html#agent-view-dispatch-can-drop-bypass-permission-flags</id>
     <link href="https://framework.boucle.sh/limitations.html#agent-view-dispatch-can-drop-bypass-permission-flags"/>
-    <updated>2026-09-01T00:00:00Z</updated>
+    <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Code issue found that sessions launched through the agent view, daemon dispatch, or background flags can run in Manual or auto mode even when the user accepted the bypass disclaimer and the spawn path requested `bypassPermissions`. The Windows repro showed daemon workers carrying bypass-related arguments while transcripts recorded `permissionMode: &quot;default&quot;`; a later macOS comment tied the same class to self-reexec paths that rebuild argv from a curated flag list and drop `--allow-dangerously-skip-permissions`. Interactive bypass sessions can also lose the mode after detach and reattach, so the visible session lifecycle can silently change the effective approval policy.</summary>
     <category term="Permissions &amp; safety"/>
   </entry>
@@ -82,7 +90,7 @@
     <title>[HIGH] Windows safeSpawn can reject a legitimate per-user Git install from the home directory.</title>
     <id>https://framework.boucle.sh/limitations.html#windows-safespawn-can-reject-per-user-git-from-home-directory</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-safespawn-can-reject-per-user-git-from-home-directory"/>
-    <updated>2026-09-01T00:00:00Z</updated>
+    <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Windows Claude Code issue found that the command resolver can treat Git for Windows as unsafe when Claude Code starts with the user&#x27;s home directory as its current working directory and Git was installed for only that user under the profile, such as `%LOCALAPPDATA%\Programs\Git`. The path-hijacking guard appears to reject executables nested under the current directory; that is useful for project-local shims, but the user profile is also a broad parent of legitimate per-user tools. The result is that plugin marketplace or git-based plugin installs can fail with Git reported as missing or unsafe even though `git --version` works in a normal shell.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
@@ -90,7 +98,7 @@
     <title>[HIGH] Claude Code web branch picker can grant direct push to the selected base branch.</title>
     <id>https://framework.boucle.sh/limitations.html#claude-code-web-branch-picker-can-grant-direct-push-to-base-branch</id>
     <link href="https://framework.boucle.sh/limitations.html#claude-code-web-branch-picker-can-grant-direct-push-to-base-branch"/>
-    <updated>2026-09-01T00:00:00Z</updated>
+    <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Code web session found that choosing a repository branch can couple two separate decisions: the branch used as the starting point and the branch Claude is instructed to push to directly. The reporter says the web UI showed that Claude would push directly to `dev`, and the injected git instructions told the model to develop and push on that designated branch while not pushing to a different branch without explicit permission. Their repo `CLAUDE.md` asked for the safer workflow of branching off `dev` and opening a PR, but the harness instruction outranked it and a commit was pushed directly to the shared branch.</summary>
     <category term="Git &amp; repository safety"/>
   </entry>
@@ -98,7 +106,7 @@
     <title>[HIGH] Remote Code sessions can execute on another host without clear disclosure.</title>
     <id>https://framework.boucle.sh/limitations.html#remote-code-sessions-can-execute-on-another-host-without-disclosure</id>
     <link href="https://framework.boucle.sh/limitations.html#remote-code-sessions-can-execute-on-another-host-without-disclosure"/>
-    <updated>2026-09-01T00:00:00Z</updated>
+    <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Desktop Code-tab regression found that a session created on one signed-in Windows machine could appear in the session list on another machine and resume there without a persistent host indicator, while every tool call still executed on the original host. The report says identical-looking working directories on both machines made the remote execution easy to miss: filesystem writes, downloads, installs, hardware queries, and elevation prompts happened on the other computer, not the device currently in front of the user. An adjacent report shows account-wide session title visibility across machines, so users may already see cross-device metadata before realizing that continuing a session can also steer a remote host.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
@@ -106,7 +114,7 @@
     <title>[HIGH] Bash preambles can execute newline-bearing environment values.</title>
     <id>https://framework.boucle.sh/limitations.html#bash-preamble-can-execute-newline-bearing-environment-values</id>
     <link href="https://framework.boucle.sh/limitations.html#bash-preamble-can-execute-newline-bearing-environment-values"/>
-    <updated>2026-09-01T00:00:00Z</updated>
+    <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.251 macOS setup found that the Bash tool serialized cached environment state into the generated shell preamble as unquoted `NAME=value` lines before the user&#x27;s command. Environment variable values containing newlines, braces, PEM blocks, JSON, or other shell-significant text could therefore be interpreted as additional shell syntax or commands. The reporter reproduced with `export FOO=$&#x27;a{\nb\n}&#x27;` and with a project `direnv` value containing JSON; every later Bash tool call then hit parse errors or ran fragments of the environment value before reaching the intended command.</summary>
     <category term="Permissions &amp; safety"/>
   </entry>
@@ -114,7 +122,7 @@
     <title>[HIGH] Linux Bash read-only Claude mounts can block hook state writes.</title>
     <id>https://framework.boucle.sh/limitations.html#linux-bash-read-only-claude-mount-blocks-hook-state-writes</id>
     <link href="https://framework.boucle.sh/limitations.html#linux-bash-read-only-claude-mount-blocks-hook-state-writes"/>
-    <updated>2026-09-01T00:00:00Z</updated>
+    <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.236 Linux setup found that Bash tool calls run in a mount namespace where `~/.claude`, `~/.claude.json`, and trusted repository `.claude/` directories are bind-mounted read-only. Writes from Bash to those paths fail with `EROFS`, while the Write and Edit tools can still modify the same files. The reporter also found that `sandbox.enabled: false` and Bash `dangerouslyDisableSandbox: true` did not lift the read-only config mounts. This makes hook companion CLIs, config managers such as `chezmoi`, and auto-mode Bash edits fail on Claude config or hook-state paths even when the policy intent was not to make those paths immutable.</summary>
     <category term="Permissions &amp; safety"/>
   </entry>
@@ -122,7 +130,7 @@
     <title>[HIGH] macOS OAuth refresh token can remain in an orphaned plaintext store beside Keychain data.</title>
     <id>https://framework.boucle.sh/limitations.html#macos-oauth-refresh-token-can-remain-in-plaintext-beside-keychain</id>
     <link href="https://framework.boucle.sh/limitations.html#macos-oauth-refresh-token-can-remain-in-plaintext-beside-keychain"/>
-    <updated>2026-09-01T00:00:00Z</updated>
+    <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.212 macOS setup found a live Claude.ai access token and 27-day refresh token in `~/.claude/.credentials.json`, while the Keychain store Claude Code actually read no longer contained a usable `claudeAiOauth` account credential. The plaintext file therefore created a false-healthy diagnostic signal: inspecting it showed a Max subscription credential with scopes such as `user:sessions:claude_code`, but the client correctly reported no usable OAuth credential because the authoritative Keychain item held only MCP OAuth data. The same report counted more than 1,300 `Claude Code-credentials-*` Keychain services, later corrected as MCP OAuth entry accumulation rather than duplicated account credentials, and found that the offered re-login URL requested only `user:inference`, so re-auth could still drop capabilities needed by features such as `claude --teleport`.</summary>
     <category term="Auth &amp; accounts"/>
   </entry>
@@ -130,7 +138,7 @@
     <title>[HIGH] Interactive image path pastes can discard the path text.</title>
     <id>https://framework.boucle.sh/limitations.html#interactive-image-path-paste-can-discard-the-path-text</id>
     <link href="https://framework.boucle.sh/limitations.html#interactive-image-path-paste-can-discard-the-path-text"/>
-    <updated>2026-09-01T00:00:00Z</updated>
+    <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.252 Linux interactive session found that pasting clipboard text containing an existing absolute or `./`-relative image path such as `/home/me/assets/logo.png` can replace the literal path with an `[Image #N]` attachment chip. The message that reaches the model contains the image bytes and prompt text, but not the original path string, so tasks that require the pathname, such as setting an HTML `src` or config value, silently lose the user&#x27;s input. The reporter distinguished this from feature requests for an explicit paste-as-text option: the clipboard contained text, print mode preserved the text while attaching the image, and only the interactive paste path destroyed the pathname.</summary>
     <category term="TUI &amp; display"/>
   </entry>
@@ -138,7 +146,7 @@
     <title>[HIGH] Relative Bash hook command paths can deadlock the Bash tool after cwd drift.</title>
     <id>https://framework.boucle.sh/limitations.html#relative-bash-hook-command-path-can-deadlock-bash</id>
     <link href="https://framework.boucle.sh/limitations.html#relative-bash-hook-command-path-can-deadlock-bash"/>
-    <updated>2026-09-01T00:00:00Z</updated>
+    <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.252 macOS setup found that a `PreToolUse` Bash hook configured with a repo-relative command such as `python3 scripts/.../guard.py` can start normally at the repository root, then fail permanently after a Bash tool call changes the session cwd with `cd some/subdirectory &amp;&amp; ...`. Later Bash calls resolve the hook script against the drifted cwd, hit `ENOENT` before the user&#x27;s command runs, and reject even harmless recovery commands such as `pwd`, `echo test`, or `cd` back to the root. A non-worktree subagent reportedly inherited the broken state, while a worktree-isolated subagent got a fresh cwd. Load-bearing Bash hooks can therefore turn one relative path plus cwd drift into a session-wide Bash outage.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -146,7 +154,7 @@
     <title>[HIGH] Slack MCP token rotation can masquerade as a connection timeout.</title>
     <id>https://framework.boucle.sh/limitations.html#slack-mcp-token-rotation-can-masquerade-as-connect-timeout</id>
     <link href="https://framework.boucle.sh/limitations.html#slack-mcp-token-rotation-can-masquerade-as-connect-timeout"/>
-    <updated>2026-09-01T00:00:00Z</updated>
+    <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Code Slack MCP setup found that concurrent sessions could all fail to connect except the session that most recently minted the OAuth token. The failing sessions surfaced `CONNECT_TIMEOUT` after 30000 ms, while logs showed an HTTP protocol-negotiation probe timing out, a pinned legacy fallback consuming the rest of the connection budget, and stale-token auth failures not adding `slack` to `mcp-needs-auth-cache.json`. The reporter later corrected the timing analysis: version 2.1.251 was not ruled out, and the remaining possible triggers were a feature-flag rollout, Slack endpoint behavior, or a client call-site change. The user-visible defect still stands because auth or initialization failure can look like a network timeout and can retry without an actionable re-auth prompt.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -154,16 +162,8 @@
     <title>[HIGH] Windows PowerShell 5.1 can misparse BOM-less generated `.ps1` files.</title>
     <id>https://framework.boucle.sh/limitations.html#windows-powershell-51-can-misparse-bomless-generated-ps1-files</id>
     <link href="https://framework.boucle.sh/limitations.html#windows-powershell-51-can-misparse-bomless-generated-ps1-files"/>
-    <updated>2026-09-01T00:00:00Z</updated>
+    <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Windows 11 Claude Code workflow found that the `Write` tool creates `.ps1` files as UTF-8 without a byte-order mark. Windows PowerShell 5.1 reads BOM-less scripts through the machine ANSI code page, so some non-ASCII bytes can decode as quote characters and terminate strings early. The report measured parse failures for `U+2014` inside double-quoted strings and Cyrillic text inside single-quoted strings, while other non-ASCII placements only produced mojibake. The dangerous operational case is scheduled automation: the parser can fail before the script starts, leaving no transcript or script log while Task Scheduler reports only `0x80070001`.</summary>
     <category term="Tool behavior"/>
-  </entry>
-  <entry>
-    <title>[LOW] Worktree provisioning can create inert Git LFS hooks under `dev/null/`.</title>
-    <id>https://framework.boucle.sh/limitations.html#worktree-lfs-provisioning-can-create-dev-null-hook-clutter</id>
-    <link href="https://framework.boucle.sh/limitations.html#worktree-lfs-provisioning-can-create-dev-null-hook-clutter"/>
-    <updated>2026-09-01T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.247 Windows 11 workflow found that linked worktrees for a Git LFS repository sometimes gained an untracked literal `dev/null/` directory containing Git LFS hook shims such as `post-checkout`, `post-commit`, `post-merge`, and `pre-push`. The affected worktrees had a correct worktree-scoped `core.hookspath`, so the stray files appeared inert rather than actively changing Git hook behavior, but they still polluted `git status` and could confuse agents or users that treat an untracked-free worktree as a readiness signal. The reporter&#x27;s evidence points at Claude Code&#x27;s worktree provisioning path resolving an LFS hook target too early or relative to the wrong directory.</summary>
-    <category term="Worktrees &amp; isolation"/>
   </entry>
 </feed>
