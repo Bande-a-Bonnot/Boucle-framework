@@ -95,6 +95,14 @@
     <category term="Skills &amp; commands"/>
   </entry>
   <entry>
+    <title>[CRITICAL] Write-family `PreToolUse` hooks can be skipped while same-matcher `PostToolUse` hooks fire.</title>
+    <id>https://framework.boucle.sh/limitations.html#write-family-pretooluse-hooks-can-be-skipped-while-posttooluse-fires</id>
+    <link href="https://framework.boucle.sh/limitations.html#write-family-pretooluse-hooks-can-be-skipped-while-posttooluse-fires"/>
+    <updated>2026-09-02T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.245 macOS setup found that a synchronous `PreToolUse` hook registered for `Write|Edit|MultiEdit|NotebookEdit` did not enforce a deny decision on a real Write call. The reporter instrumented the hook script itself and captured the expected deny result before the write still completed, then used `--debug hooks` to show that `PostToolUse:Write` registered and fired while `PreToolUse` did not appear in the trace for the same matcher and settings file. Users who rely on Write-family `PreToolUse` hooks for wrong-worktree protection, file policy, or edit approval can therefore get a silent false allow even when same-file PostToolUse auditing appears healthy.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] VS Code always-allow grants can land in tracked project settings.</title>
     <id>https://framework.boucle.sh/limitations.html#vscode-always-allow-can-write-personal-grants-to-tracked-settings</id>
     <link href="https://framework.boucle.sh/limitations.html#vscode-always-allow-can-write-personal-grants-to-tracked-settings"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.252 Windows regression found that when multiple plugins each contribute a `SessionStart` hook, registration surfaces can still show the hooks while runtime dispatch executes only one. The reporter found that `/reload-plugins` and `/hooks` counted the hooks, direct `settings.json` SessionStart hooks all ran, and transcript analysis across 85 sessions on versions 2.1.216 through 2.1.252 never showed more than one plugin SessionStart hook per session. The last observed working version was 2.1.198, where up to four plugin SessionStart hooks ran in the same session.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Agent-view dispatch can drop bypass permission flags when relaunching sessions.</title>
-    <id>https://framework.boucle.sh/limitations.html#agent-view-dispatch-can-drop-bypass-permission-flags</id>
-    <link href="https://framework.boucle.sh/limitations.html#agent-view-dispatch-can-drop-bypass-permission-flags"/>
-    <updated>2026-09-02T00:00:00Z</updated>
-    <summary>A reported Claude Code issue found that sessions launched through the agent view, daemon dispatch, or background flags can run in Manual or auto mode even when the user accepted the bypass disclaimer and the spawn path requested `bypassPermissions`. The Windows repro showed daemon workers carrying bypass-related arguments while transcripts recorded `permissionMode: &quot;default&quot;`; a later macOS comment tied the same class to self-reexec paths that rebuild argv from a curated flag list and drop `--allow-dangerously-skip-permissions`. Interactive bypass sessions can also lose the mode after detach and reattach, so the visible session lifecycle can silently change the effective approval policy.</summary>
-    <category term="Permissions &amp; safety"/>
   </entry>
 </feed>
