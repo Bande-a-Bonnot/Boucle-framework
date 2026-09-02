@@ -22464,17 +22464,18 @@
     },
     {
       "id": "windows-desktop-cross-session-send-message-ghost-delivery",
-      "title": "Claude Desktop cross-session send_message can ghost-deliver without enqueueing.",
+      "title": "Cross-session messages can look delivered without durable model input.",
       "category": "Core & session management",
       "severity": "HIGH",
       "status": "open",
       "issues": [
         "https://github.com/anthropics/claude-code/issues/87509",
-        "https://github.com/anthropics/claude-code/issues/88231"
+        "https://github.com/anthropics/claude-code/issues/88231",
+        "https://github.com/anthropics/claude-code/issues/91372"
       ],
       "date_added": "2026-08-18",
-      "description": "Reported Claude Desktop cross-session `send_message` failures found that a positive delivery receipt can mean only that the app accepted or displayed the message, not that the target model received a durable user turn. One Windows 11 report saw local messages render in the target session UI while never appending to the real `.jsonl` transcript; the ghost messages disappeared after app restart. A newer macOS/Desktop regression report found `mcp__ccd_session_mgmt__send_message` returning `delivered: true` for cold target sessions: the app initiated a cold resume, but the recipient CLI never mapped the peer message into a turn, no transcript row was written, and the message was lost unless the target became live before restart.",
-      "workaround": "Do not treat sender-side success, `delivered: true`, or receiver-side UI rendering as proof that a cross-session message reached the model. For supervisor/worker workflows, require an independent acknowledgement written by the receiving session into a durable file, transcript, issue, or API record, and include the marker that was sent. Prefer message-as-file for payloads plus a live-process doorbell that fails loudly for dead targets; when delivery matters, poll the target `.jsonl` or another durable channel before continuing, and keep a file-based fallback until cross-session persistence is verified on the exact Claude Desktop and bundled CLI versions in use."
+      "description": "Reported Claude Desktop and Claude Code cross-session message failures found that a positive delivery receipt can mean only that the app accepted, displayed, or held the message, not that the target model received a durable user turn. One Windows 11 report saw local messages render in the target session UI while never appending to the real `.jsonl` transcript; the ghost messages disappeared after app restart. A newer macOS/Desktop regression report found `mcp__ccd_session_mgmt__send_message` returning `delivered: true` for cold target sessions: the app initiated a cold resume, but the recipient CLI never mapped the peer message into a turn, no transcript row was written, and the message was lost unless the target became live before restart. A later macOS CLI report found inbound messages to bypass-permission recipients were correctly held for approval when `crossSessionInbound` was unset, but the sender still received `success: true`, the recipient surface looked like an ordinary message card, no transcript row or context entry appeared, and expiry produced no durable artifact.",
+      "workaround": "Do not treat sender-side success, `success: true`, `delivered: true`, approval-dialog rendering, or receiver-side UI cards as proof that a cross-session message reached the model. For supervisor/worker workflows, require an independent acknowledgement written by the receiving session into a durable file, transcript, issue, or API record, and include the marker that was sent. Set `crossSessionInbound` explicitly for the intended policy, verify the live sender and recipient behavior with a harmless two-session canary after permission-mode changes, and treat any receipt caveat about waiting for approval as not delivered until the recipient transcript or another durable channel confirms it. Prefer message-as-file for payloads plus a live-process doorbell that fails loudly for dead targets; when delivery matters, poll the target `.jsonl` or another durable channel before continuing, and keep a file-based fallback until cross-session persistence is verified on the exact Claude Desktop, Claude Code, and bundled CLI versions in use."
     },
     {
       "id": "macos-desktop-nfd-path-slug-splits-transcripts",
