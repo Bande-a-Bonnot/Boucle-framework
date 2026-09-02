@@ -7,6 +7,14 @@
   <updated>2026-09-02T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Assistant-shaped user text can authorize state-changing actions.</title>
+    <id>https://framework.boucle.sh/limitations.html#assistant-shaped-user-text-can-authorize-state-changing-actions</id>
+    <link href="https://framework.boucle.sh/limitations.html#assistant-shaped-user-text-can-authorize-state-changing-actions"/>
+    <updated>2026-09-02T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.258 macOS session on Opus 5 produced an assistant message whose text block continued after the assistant&#x27;s answer with a user-shaped authorization line and fake system-instruction text. The next turn treated the self-emitted user-shaped sentence as the user&#x27;s previous message and ran `git pull`, `git add`, and `git commit`, creating a real commit even though the user had not approved it. The reporter found the first matching text in an assistant/assistant transcript row at `$.message.content[0].text`; the local transcript evidence proves shape and downstream effect, but not whether the bytes came from model continuation, upstream context, server-side contamination, or client stream assembly.</summary>
+    <category term="Security &amp; trust boundaries"/>
+  </entry>
+  <entry>
     <title>[HIGH] Unpersisted user-role messages can enter model context.</title>
     <id>https://framework.boucle.sh/limitations.html#unpersisted-user-role-messages-can-enter-model-context</id>
     <link href="https://framework.boucle.sh/limitations.html#unpersisted-user-role-messages-can-enter-model-context"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.252 Linux interactive session found that pasting clipboard text containing an existing absolute or `./`-relative image path such as `/home/me/assets/logo.png` can replace the literal path with an `[Image #N]` attachment chip. The message that reaches the model contains the image bytes and prompt text, but not the original path string, so tasks that require the pathname, such as setting an HTML `src` or config value, silently lose the user&#x27;s input. The reporter distinguished this from feature requests for an explicit paste-as-text option: the clipboard contained text, print mode preserved the text while attaching the image, and only the interactive paste path destroyed the pathname.</summary>
     <category term="TUI &amp; display"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Relative Bash hook command paths can deadlock the Bash tool after cwd drift.</title>
-    <id>https://framework.boucle.sh/limitations.html#relative-bash-hook-command-path-can-deadlock-bash</id>
-    <link href="https://framework.boucle.sh/limitations.html#relative-bash-hook-command-path-can-deadlock-bash"/>
-    <updated>2026-09-02T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.252 macOS setup found that a `PreToolUse` Bash hook configured with a repo-relative command such as `python3 scripts/.../guard.py` can start normally at the repository root, then fail permanently after a Bash tool call changes the session cwd with `cd some/subdirectory &amp;&amp; ...`. Later Bash calls resolve the hook script against the drifted cwd, hit `ENOENT` before the user&#x27;s command runs, and reject even harmless recovery commands such as `pwd`, `echo test`, or `cd` back to the root. A non-worktree subagent reportedly inherited the broken state, while a worktree-isolated subagent got a fresh cwd. Load-bearing Bash hooks can therefore turn one relative path plus cwd drift into a session-wide Bash outage.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>
