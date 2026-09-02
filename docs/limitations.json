@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1863,
+  "count": 1864,
   "categories": {
-    "Hook behavior & events": 239,
+    "Hook behavior & events": 240,
     "Permission system": 167,
     "MCP & plugin issues": 115,
     "Hook bypass & evasion": 109,
@@ -196,11 +196,37 @@
   },
   "severity_counts": {
     "CRITICAL": 163,
-    "HIGH": 1085,
+    "HIGH": 1086,
     "LOW": 110,
     "MEDIUM": 505
   },
   "entries": [
+    {
+      "id": "stopfailure-hooks-can-report-helper-and-subagent-failures-as-parent-turn-failures",
+      "title": "StopFailure hooks can report helper and subagent failures as parent turn failures.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/91419"
+      ],
+      "date_added": "2026-09-02",
+      "description": "A reported Claude Code 2.1.258 Windows session with `/low-priority` enabled found `StopFailure` hooks firing on the parent `session_id` for internal helper-query API errors and background subagent deaths rather than only for a real parent turn ending on an API error. In the report, exhausted 429 limits caused multiple helper forks and agent task-notifications to emit parent-shaped `StopFailure` events while the main session was parked or idle, with no transcript row proving a matching parent-turn failure. Hook consumers such as desktop notifiers, auto-continue loops, dashboards, and reliability monitors can therefore record or act on failed turns that never happened unless the payload exposes enough source attribution.",
+      "workaround": "Treat `StopFailure` as an ambiguous failure signal unless the event can be tied to a main-turn transcript row or another durable parent-turn witness. De-duplicate bursts by session, timestamp window, and error class before alerting or auto-continuing, and suppress automatic recovery loops when the only evidence is repeated `rate_limit` events from background-agent or helper timing. If your hook needs precise attribution, log the raw payload, transcript cursor, active background tasks, and current query mode, then require a harmless canary in your installed Claude Code version before using `StopFailure` as an SLA, cleanup, or autonomous-control boundary.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "windows",
+        "hooks",
+        "stopfailure",
+        "subagents",
+        "background-agents",
+        "low-priority",
+        "rate-limits",
+        "observability",
+        "automation",
+        "session-events"
+      ]
+    },
     {
       "id": "assistant-shaped-user-text-can-authorize-state-changing-actions",
       "title": "Assistant-shaped user text can authorize state-changing actions.",
@@ -25117,27 +25143,27 @@
     }
   ],
   "status_summary": {
-    "open": 1849,
+    "open": 1850,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 163,
-    "high": 1085,
+    "high": 1086,
     "low": 110,
     "medium": 505
   },
   "lastUpdated": "2026-09-02",
   "stats": {
-    "total": 1863,
+    "total": 1864,
     "critical": 163,
-    "high": 1085,
+    "high": 1086,
     "medium": 505,
     "low": 110,
-    "open": 1849,
+    "open": 1850,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-02",
-  "total": 1863
+  "total": 1864
 }

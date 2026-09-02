@@ -7,6 +7,14 @@
   <updated>2026-09-02T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] StopFailure hooks can report helper and subagent failures as parent turn failures.</title>
+    <id>https://framework.boucle.sh/limitations.html#stopfailure-hooks-can-report-helper-and-subagent-failures-as-parent-turn-failures</id>
+    <link href="https://framework.boucle.sh/limitations.html#stopfailure-hooks-can-report-helper-and-subagent-failures-as-parent-turn-failures"/>
+    <updated>2026-09-02T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.258 Windows session with `/low-priority` enabled found `StopFailure` hooks firing on the parent `session_id` for internal helper-query API errors and background subagent deaths rather than only for a real parent turn ending on an API error. In the report, exhausted 429 limits caused multiple helper forks and agent task-notifications to emit parent-shaped `StopFailure` events while the main session was parked or idle, with no transcript row proving a matching parent-turn failure. Hook consumers such as desktop notifiers, auto-continue loops, dashboards, and reliability monitors can therefore record or act on failed turns that never happened unless the payload exposes enough source attribution.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Assistant-shaped user text can authorize state-changing actions.</title>
     <id>https://framework.boucle.sh/limitations.html#assistant-shaped-user-text-can-authorize-state-changing-actions</id>
     <link href="https://framework.boucle.sh/limitations.html#assistant-shaped-user-text-can-authorize-state-changing-actions"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.212 macOS setup found a live Claude.ai access token and 27-day refresh token in `~/.claude/.credentials.json`, while the Keychain store Claude Code actually read no longer contained a usable `claudeAiOauth` account credential. The plaintext file therefore created a false-healthy diagnostic signal: inspecting it showed a Max subscription credential with scopes such as `user:sessions:claude_code`, but the client correctly reported no usable OAuth credential because the authoritative Keychain item held only MCP OAuth data. The same report counted more than 1,300 `Claude Code-credentials-*` Keychain services, later corrected as MCP OAuth entry accumulation rather than duplicated account credentials, and found that the offered re-login URL requested only `user:inference`, so re-auth could still drop capabilities needed by features such as `claude --teleport`.</summary>
     <category term="Auth &amp; accounts"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Interactive image path pastes can discard the path text.</title>
-    <id>https://framework.boucle.sh/limitations.html#interactive-image-path-paste-can-discard-the-path-text</id>
-    <link href="https://framework.boucle.sh/limitations.html#interactive-image-path-paste-can-discard-the-path-text"/>
-    <updated>2026-09-02T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.252 Linux interactive session found that pasting clipboard text containing an existing absolute or `./`-relative image path such as `/home/me/assets/logo.png` can replace the literal path with an `[Image #N]` attachment chip. The message that reaches the model contains the image bytes and prompt text, but not the original path string, so tasks that require the pathname, such as setting an HTML `src` or config value, silently lose the user&#x27;s input. The reporter distinguished this from feature requests for an explicit paste-as-text option: the clipboard contained text, print mode preserved the text while attaching the image, and only the interactive paste path destroyed the pathname.</summary>
-    <category term="TUI &amp; display"/>
   </entry>
 </feed>
