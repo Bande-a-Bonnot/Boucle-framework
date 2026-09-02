@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1872,
+  "count": 1873,
   "categories": {
     "Hook behavior & events": 241,
     "Permission system": 169,
@@ -53,12 +53,12 @@
     "Authentication & accounts": 6,
     "Memory & context": 6,
     "Skills / slash commands": 6,
+    "Autonomy & destructive actions": 5,
     "Browser automation": 5,
     "CLI / TUI rendering": 5,
     "Cost & usage": 5,
     "Model behavior & compliance": 5,
     "Performance & resource usage": 5,
-    "Autonomy & destructive actions": 4,
     "MCP & plugins": 4,
     "Model behavior & instructions": 4,
     "Performance & resources": 4,
@@ -195,12 +195,38 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 165,
+    "CRITICAL": 166,
     "HIGH": 1091,
     "LOW": 110,
     "MEDIUM": 506
   },
   "entries": [
+    {
+      "id": "destructive-removable-drive-command-can-run-after-clarifying-question",
+      "title": "Destructive removable-drive command can run after a clarifying question.",
+      "category": "Autonomy & destructive actions",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/91599"
+      ],
+      "date_added": "2026-09-02",
+      "description": "A reported Claude Code Desktop Windows session ran `robocopy L:\\ F:\\ /MIR` against a removable USB drive after the user asked whether the command should be run in PowerShell or could be run in the app. The model had already described the command as wiping the destination, then treated the capability question as if the user had confirmed the destructive action, launched the PowerShell tool in the background, and no permission prompt appeared. Because `/MIR` includes purge semantics, the destination's existing Windows install media was deleted within seconds and the partial copy left the drive non-functional.",
+      "workaround": "Treat drive-root mirroring, purge, format, recursive delete, and removable-volume writes as requiring explicit fresh human approval outside the model's own summary of the conversation. Do not accept questions such as \"can you do it here?\" or assistant text such as \"you confirmed\" as authorization. For Windows sessions, add a narrow PowerShell/Bash hook or wrapper that blocks `robocopy` with `/MIR` or `/PURGE`, `Remove-Item -Recurse`, `format`, `del /s`, `dd`, and similar destructive commands when the target is a drive root or removable volume unless a separate signed approval token or manually typed command is present. Avoid `run_in_background` for first-time destructive storage operations so the user has a visible final gate.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "windows",
+        "desktop",
+        "powershell",
+        "robocopy",
+        "removable-drive",
+        "data-loss",
+        "destructive-actions",
+        "permissions",
+        "approval",
+        "run-in-background"
+      ]
+    },
     {
       "id": "auto-mode-can-allow-destructive-projectv2-list-replace-then-block-restore",
       "title": "Auto mode can allow destructive ProjectV2 list replacement, then block restore.",
@@ -25357,27 +25383,27 @@
     }
   ],
   "status_summary": {
-    "open": 1858,
+    "open": 1859,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 165,
+    "critical": 166,
     "high": 1091,
     "low": 110,
     "medium": 506
   },
   "lastUpdated": "2026-09-02",
   "stats": {
-    "total": 1872,
-    "critical": 165,
+    "total": 1873,
+    "critical": 166,
     "high": 1091,
     "medium": 506,
     "low": 110,
-    "open": 1858,
+    "open": 1859,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-02",
-  "total": 1872
+  "total": 1873
 }
