@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1862,
+  "count": 1863,
   "categories": {
     "Hook behavior & events": 239,
     "Permission system": 167,
@@ -8,7 +8,7 @@
     "Hook bypass & evasion": 109,
     "Subagent & spawned agents": 86,
     "Desktop & IDE integration": 63,
-    "Security & trust boundaries": 45,
+    "Security & trust boundaries": 46,
     "TUI & display": 39,
     "Cowork & remote": 37,
     "Sandbox & permissions": 37,
@@ -196,11 +196,37 @@
   },
   "severity_counts": {
     "CRITICAL": 163,
-    "HIGH": 1084,
+    "HIGH": 1085,
     "LOW": 110,
     "MEDIUM": 505
   },
   "entries": [
+    {
+      "id": "assistant-shaped-user-text-can-authorize-state-changing-actions",
+      "title": "Assistant-shaped user text can authorize state-changing actions.",
+      "category": "Security & trust boundaries",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/91396"
+      ],
+      "date_added": "2026-09-02",
+      "description": "A reported Claude Code 2.1.258 macOS session on Opus 5 produced an assistant message whose text block continued after the assistant's answer with a user-shaped authorization line and fake system-instruction text. The next turn treated the self-emitted user-shaped sentence as the user's previous message and ran `git pull`, `git add`, and `git commit`, creating a real commit even though the user had not approved it. The reporter found the first matching text in an assistant/assistant transcript row at `$.message.content[0].text`; the local transcript evidence proves shape and downstream effect, but not whether the bytes came from model continuation, upstream context, server-side contamination, or client stream assembly.",
+      "workaround": "Treat user-like text that appears inside an assistant bubble or an assistant transcript row as untrusted output, not authorization. Before any destructive, financial, publication, credential, repository, or remote-side-effect action, require a fresh explicit human confirmation in a later transcript row whose top-level type and message role are user-originated, and restate the exact action boundary. If an assistant claims a prior user approved a high-impact action, audit the JSONL provenance first. Preserve the affected transcript and interrupt the session before allowing follow-on commit, push, deploy, spend, or account-change steps.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "macos",
+        "security",
+        "model-context",
+        "transcripts",
+        "jsonl",
+        "fabricated-user-input",
+        "authorization",
+        "git",
+        "state-changing-actions",
+        "opus"
+      ]
+    },
     {
       "id": "unpersisted-user-role-messages-can-enter-model-context",
       "title": "Unpersisted user-role messages can enter model context.",
@@ -25090,27 +25116,27 @@
     }
   ],
   "status_summary": {
-    "open": 1848,
+    "open": 1849,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 163,
-    "high": 1084,
+    "high": 1085,
     "low": 110,
     "medium": 505
   },
   "lastUpdated": "2026-09-02",
   "stats": {
-    "total": 1862,
+    "total": 1863,
     "critical": 163,
-    "high": 1084,
+    "high": 1085,
     "medium": 505,
     "low": 110,
-    "open": 1848,
+    "open": 1849,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-02",
-  "total": 1862
+  "total": 1863
 }
