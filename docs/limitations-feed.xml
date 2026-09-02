@@ -7,6 +7,14 @@
   <updated>2026-09-02T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Artifact tool schema eagerly loads in claude.ai-backed sessions.</title>
+    <id>https://framework.boucle.sh/limitations.html#artifact-tool-schema-eager-loads-in-claude-ai-sessions</id>
+    <link href="https://framework.boucle.sh/limitations.html#artifact-tool-schema-eager-loads-in-claude-ai-sessions"/>
+    <updated>2026-09-02T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.258 Linux and macOS comparison found that claude.ai-backed terminal sessions loaded roughly 14k more `System tools` context than an otherwise identical Bedrock session, with about 12k attributed to the built-in `Artifact` tool. The tool appeared in fresh sessions even when the user had not requested artifact publishing, `ENABLE_TOOL_SEARCH=true` did not defer it, and disabling MCP connectors did not remove it. The reporter measured a trivial first turn costing $1.56 with the eager tool surface versus $0.85 in the Bedrock control, and noted that the fixed schema cost recurs across new sessions, cache expiry, compaction, and model switches.</summary>
+    <category term="Performance &amp; cost"/>
+  </entry>
+  <entry>
     <title>[HIGH] Cowork/synced plugin packs can be invisible to plugin tooling.</title>
     <id>https://framework.boucle.sh/limitations.html#cowork-synced-plugin-packs-can-be-invisible-to-plugin-tooling</id>
     <link href="https://framework.boucle.sh/limitations.html#cowork-synced-plugin-packs-can-be-invisible-to-plugin-tooling"/>
@@ -156,14 +164,6 @@
     <link href="https://framework.boucle.sh/limitations.html#bash-preamble-can-execute-newline-bearing-environment-values"/>
     <updated>2026-09-02T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.251 macOS setup found that the Bash tool serialized cached environment state into the generated shell preamble as unquoted `NAME=value` lines before the user&#x27;s command. Environment variable values containing newlines, braces, PEM blocks, JSON, or other shell-significant text could therefore be interpreted as additional shell syntax or commands. The reporter reproduced with `export FOO=$&#x27;a{\nb\n}&#x27;` and with a project `direnv` value containing JSON; every later Bash tool call then hit parse errors or ran fragments of the environment value before reaching the intended command.</summary>
-    <category term="Permissions &amp; safety"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Linux Bash read-only Claude mounts can block hook state writes.</title>
-    <id>https://framework.boucle.sh/limitations.html#linux-bash-read-only-claude-mount-blocks-hook-state-writes</id>
-    <link href="https://framework.boucle.sh/limitations.html#linux-bash-read-only-claude-mount-blocks-hook-state-writes"/>
-    <updated>2026-09-02T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.236 Linux setup found that Bash tool calls run in a mount namespace where `~/.claude`, `~/.claude.json`, and trusted repository `.claude/` directories are bind-mounted read-only. Writes from Bash to those paths fail with `EROFS`, while the Write and Edit tools can still modify the same files. The reporter also found that `sandbox.enabled: false` and Bash `dangerouslyDisableSandbox: true` did not lift the read-only config mounts. This makes hook companion CLIs, config managers such as `chezmoi`, and auto-mode Bash edits fail on Claude config or hook-state paths even when the policy intent was not to make those paths immutable.</summary>
     <category term="Permissions &amp; safety"/>
   </entry>
 </feed>
