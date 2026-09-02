@@ -2701,9 +2701,11 @@
       "category": "Hook bypass & evasion",
       "severity": "HIGH",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/40014"
+        "https://github.com/anthropics/claude-code/issues/40014",
+        "https://github.com/anthropics/claude-code/issues/91296"
       ],
-      "description": "Setting \"permission-mode\": \"bypassPermissions\" in .claude/settings.local.json is silently ignored. The only working method to enable bypass mode is the CLI flag --dangerously-skip-permissions. Similarly, \"skipDangerousModePermissionPrompt\": true only suppresses the startup warning without actually enabling bypass, and \"dangerouslySkipPermissions\": true under \"permissions\" is also ignored. Automate",
+      "description": "Reported Claude Code CLI issues found that settings-file attempts to start in bypass-permissions mode can be silently ignored. The older report used `\"permission-mode\": \"bypassPermissions\"` in `.claude/settings.local.json`; a fresh 2.1.257 to 2.1.258 macOS repro used the documented `permissions.defaultMode: \"bypassPermissions\"` in project `.claude/settings.local.json` or `.claude/settings.json` while user settings set `defaultMode: \"auto\"`. `/status` showed the project settings source was loaded, but the session started in a different mode and `bypassPermissions` was absent from the Shift+Tab mode cycle. Direct CLI flags still worked, so the failure is settings-resolution or mode-cycle application rather than bypass mode being unavailable.",
+      "workaround": "Do not rely on `.claude/settings.json` or `.claude/settings.local.json` alone to prove an unattended session is in bypass-permissions mode. Start consequential automation with an explicit CLI flag such as `--permission-mode bypassPermissions` or `--dangerously-skip-permissions` where your installed version supports it, then verify the live mode from the Shift+Tab cycle, `/status`, a transcript `permissionMode` record, or a harmless command that would normally prompt. Keep destructive or publishing actions behind hooks, git wrappers, CI, or server-side policy until the session has proved its effective mode.",
       "status": "open"
     },
     {
