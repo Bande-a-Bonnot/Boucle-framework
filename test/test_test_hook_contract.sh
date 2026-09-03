@@ -108,6 +108,12 @@ case "$deny_output" in
         exit 1
         ;;
 esac
+case "$deny_output" in
+    *"—"* )
+        printf 'test-hook output should use an ASCII separator.\nOutput:\n%s\n' "$deny_output" >&2
+        exit 1
+        ;;
+esac
 
 batch_output=$(
     cd "$REPO_ROOT"
