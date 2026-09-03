@@ -112,34 +112,31 @@ build_input() {
     case "$tool" in
         Bash)
             if [ -n "$cmd" ]; then
-                printf '{"command":"%s"}' "$(echo "$cmd" | sed 's/"/\\"/g')"
+                CMD_VALUE="$cmd" python3 -c 'import json, os; print(json.dumps({"command": os.environ["CMD_VALUE"]}))'
             else
                 echo '{"command":"echo test"}'
             fi
             ;;
         Read)
-            printf '{"file_path":"%s"}' "${fpath:-/tmp/test.txt}"
+            FILE_PATH_VALUE="${fpath:-/tmp/test.txt}" python3 -c 'import json, os; print(json.dumps({"file_path": os.environ["FILE_PATH_VALUE"]}))'
             ;;
         Write)
-            printf '{"file_path":"%s","content":"%s"}' \
-                "${fpath:-/tmp/test.txt}" \
-                "$(echo "${content:-test content}" | sed 's/"/\\"/g')"
+            FILE_PATH_VALUE="${fpath:-/tmp/test.txt}" CONTENT_VALUE="${content:-test content}" python3 -c 'import json, os; print(json.dumps({"file_path": os.environ["FILE_PATH_VALUE"], "content": os.environ["CONTENT_VALUE"]}))'
             ;;
         Edit)
-            printf '{"file_path":"%s","old_string":"old","new_string":"new"}' \
-                "${fpath:-/tmp/test.txt}"
+            FILE_PATH_VALUE="${fpath:-/tmp/test.txt}" python3 -c 'import json, os; print(json.dumps({"file_path": os.environ["FILE_PATH_VALUE"], "old_string": "old", "new_string": "new"}))'
             ;;
         Glob)
-            printf '{"pattern":"%s"}' "${fpath:-**/*.txt}"
+            FILE_PATH_VALUE="${fpath:-**/*.txt}" python3 -c 'import json, os; print(json.dumps({"pattern": os.environ["FILE_PATH_VALUE"]}))'
             ;;
         Grep)
-            printf '{"pattern":"test","path":"%s"}' "${fpath:-.}"
+            FILE_PATH_VALUE="${fpath:-.}" python3 -c 'import json, os; print(json.dumps({"pattern": "test", "path": os.environ["FILE_PATH_VALUE"]}))'
             ;;
         *)
             if [ -n "$fpath" ]; then
-                printf '{"file_path":"%s"}' "$fpath"
+                FILE_PATH_VALUE="$fpath" python3 -c 'import json, os; print(json.dumps({"file_path": os.environ["FILE_PATH_VALUE"]}))'
             elif [ -n "$cmd" ]; then
-                printf '{"command":"%s"}' "$(echo "$cmd" | sed 's/"/\\"/g')"
+                CMD_VALUE="$cmd" python3 -c 'import json, os; print(json.dumps({"command": os.environ["CMD_VALUE"]}))'
             else
                 echo '{}'
             fi
