@@ -310,6 +310,13 @@ python3 tools/test-hook-verify.py
 
 See [test-hook-bash-guard-examples.jsonl](test-hook-bash-guard-examples.jsonl) for copy-pasteable bash-guard batch cases. The broader [test-hook-examples.jsonl](test-hook-examples.jsonl) fixture has 60 ready-made test cases covering bash-guard, git-safe, file-guard, and branch-guard for combined or hook-specific test harnesses.
 
+Boundary: `test-hook.sh` runs the hook command you pass directly. It verifies
+handler behavior for synthetic `PreToolUse` payloads, but it does not prove
+Claude Code loaded that hook from settings, matched the intended event, or
+refreshed an already-open session. After editing `settings.json` or installing
+hooks, use `safety-check --verify` or the installer verifier from the same
+project root, then start a fresh Claude Code session.
+
 ## Known Limitations
 
 Claude Code hooks have platform-level constraints that affect all hook implementations. Browse the [known limitations corpus](https://framework.boucle.sh/limitations.html) (searchable, severity-rated), or see the [enforce README](https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/enforce/README.md#known-limitations) for the summary.

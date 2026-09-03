@@ -403,6 +403,13 @@ python3 tools/test-hook-verify.py
 
 Feeds synthetic `PreToolUse` payloads to any hook script and reports whether it allows, denies, or crashes. Works with any hook (ours or third-party). Batch mode runs test suites from JSONL files. Addresses [claude-code#39971](https://github.com/anthropics/claude-code/issues/39971) (`--test-permission` does not exist).
 
+Boundary: this runs the hook command you pass directly. It verifies handler
+behavior for synthetic payloads, but it does not prove Claude Code loaded that
+hook from settings, matched the intended event, or refreshed an already-open
+session. After editing `settings.json` or installing hooks, use `safety-check
+--verify` or the installer verifier from the same project root, then start a
+fresh Claude Code session.
+
 ### Quick recipe: Read-only audit mode
 
 Claude [ignores explicit "do not edit" instructions](https://github.com/anthropics/claude-code/issues/41063) and edits files, runs ALTER TABLE, rebuilds Docker. CLAUDE.md rules alone cannot prevent this. Add to your CLAUDE.md and run `enforce-hooks.py --install-plugin`:
