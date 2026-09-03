@@ -37,6 +37,10 @@ Primary user path:
   `repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"; cd "$repo_root"; curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --strict`
 - Ask for public support with a bounded summary from the project root:
   `repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"; cd "$repo_root"; curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only`
+- Dry-run a hook without starting Claude Code:
+  `git clone https://github.com/Bande-a-Bonnot/Boucle-framework.git && cd Boucle-framework && bash tools/test-hook.sh "bash tools/bash-guard/hook.sh" --command "rm -rf /" --expect-deny`
+- Run the ready-made bash-guard dry-run batch:
+  `bash tools/test-hook.sh "bash tools/bash-guard/hook.sh" --batch tools/test-hook-bash-guard-examples.jsonl`
 
 Native Windows path:
 
@@ -73,6 +77,10 @@ Important boundaries:
   repeatedly to chase an A.
 - Hooks cover Claude Code tool-call boundaries. They are not a sandbox and do
   not replace backups, OS permissions, containers, or secret-management controls.
+- `test-hook.sh` feeds synthetic `PreToolUse` JSON payloads to local hook
+  scripts and reports allow, deny, crash, or timeout behavior. It is useful for
+  testing Boucle or third-party hooks before a live Claude Code session, but it
+  does not prove Claude Code loaded those hooks from settings.
 - After installing or changing hooks, start a fresh Claude Code session from the
   same project root before relying on the hook boundary.
 - For public support, share the bounded safety summary from

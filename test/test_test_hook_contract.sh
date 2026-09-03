@@ -29,6 +29,7 @@ case "$help_output" in
 esac
 
 tools_readme=$(cat "$REPO_ROOT/tools/README.md")
+llms_summary=$(cat "$REPO_ROOT/docs/llms.txt")
 file_guard_example='bash tools/test-hook.sh "bash tools/file-guard/hook.sh" --tool Write --file ".env" --content "SECRET=x" --expect-deny'
 case "$tools_readme" in
     *"bash tools/test-hook.sh \"bash tools/bash-guard/hook.sh\" --command \"rm -rf /\""* ) ;;
@@ -48,6 +49,20 @@ case "$tools_readme" in
     *"tools/test-hook-bash-guard-examples.jsonl"* ) ;;
     *)
         printf 'tools README should name the copy-pasteable bash-guard batch fixture.\n' >&2
+        exit 1
+        ;;
+esac
+case "$llms_summary" in
+    *"bash tools/test-hook.sh \"bash tools/bash-guard/hook.sh\" --command \"rm -rf /\" --expect-deny"* ) ;;
+    *)
+        printf 'llms.txt should expose the copy-pasteable bash-guard test-hook command.\n' >&2
+        exit 1
+        ;;
+esac
+case "$llms_summary" in
+    *"test-hook.sh"*PreToolUse*"does not prove Claude Code loaded those hooks from settings"* ) ;;
+    *)
+        printf 'llms.txt should document the test-hook dry-run boundary.\n' >&2
         exit 1
         ;;
 esac
