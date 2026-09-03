@@ -2,7 +2,7 @@
 """Test runner for test-hook.sh — validates against real Boucle hooks.
 
 Also serves as integration tests for the test-hook.sh tool itself.
-Run from anywhere: python3 tools/test-hook-runner.py
+Run from anywhere: python3 tools/test-hook-verify.py
 """
 import subprocess, json, sys, os, tempfile
 
