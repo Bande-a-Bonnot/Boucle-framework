@@ -59,6 +59,13 @@ case "$tools_readme" in
         exit 1
         ;;
 esac
+case "$tools_readme" in
+    *"python3 tools/test-hook-verify.py"* ) ;;
+    *)
+        printf 'tools README should expose the built-in test-hook verifier command.\n' >&2
+        exit 1
+        ;;
+esac
 case "$llms_summary" in
     *"bash tools/test-hook.sh \"bash tools/bash-guard/hook.sh\" --command \"rm -rf /\" --expect-deny"* ) ;;
     *)
@@ -70,6 +77,22 @@ case "$llms_summary" in
     *"test-hook.sh"*PreToolUse*"does not prove Claude Code loaded those hooks from settings"* ) ;;
     *)
         printf 'llms.txt should document the test-hook dry-run boundary.\n' >&2
+        exit 1
+        ;;
+esac
+case "$llms_summary" in
+    *"python3 tools/test-hook-verify.py"* ) ;;
+    *)
+        printf 'llms.txt should expose the built-in test-hook verifier command.\n' >&2
+        exit 1
+        ;;
+esac
+
+verify_header=$(sed -n '1,8p' "$REPO_ROOT/tools/test-hook-verify.py")
+case "$verify_header" in
+    *"python3 tools/test-hook-verify.py"* ) ;;
+    *)
+        printf 'test-hook verifier header should name its real command.\nHeader:\n%s\n' "$verify_header" >&2
         exit 1
         ;;
 esac

