@@ -121,4 +121,28 @@ case "$batch_output" in
         ;;
 esac
 
+newline_output=$(
+    cd "$REPO_ROOT"
+    bash tools/test-hook.sh "python3 -c 'import json,sys; json.load(sys.stdin)'" --command $'echo first\necho second' --expect-allow
+)
+case "$newline_output" in
+    *"[ALLOW] Bash"* ) ;;
+    *)
+        printf 'test-hook should JSON-escape multi-line Bash commands.\nOutput:\n%s\n' "$newline_output" >&2
+        exit 1
+        ;;
+esac
+
+quote_path_output=$(
+    cd "$REPO_ROOT"
+    bash tools/test-hook.sh "python3 -c 'import json,sys; json.load(sys.stdin)'" --tool Write --file 'path with "quote".txt' --content $'line1\nline2' --expect-allow
+)
+case "$quote_path_output" in
+    *"[ALLOW] Write path with \"quote\".txt"* ) ;;
+    *)
+        printf 'test-hook should JSON-escape quoted paths and multi-line content.\nOutput:\n%s\n' "$quote_path_output" >&2
+        exit 1
+        ;;
+esac
+
 echo "test-hook contract OK"
