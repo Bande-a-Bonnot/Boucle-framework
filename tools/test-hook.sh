@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-hook.sh — Test any Claude Code hook without a live session
+# test-hook.sh - Test any Claude Code hook without a live session
 #
 # Usage:
 #   test-hook.sh <hook-command> [options]
@@ -236,7 +236,7 @@ except:
     esac
 
     printf "${status_color}[%s]${NC} %s %s" "$status_icon" "$tool" "$label"
-    [ -n "$reason" ] && printf " — %s" "$reason"
+    [ -n "$reason" ] && printf " - %s" "$reason"
     printf "\n"
 
     # Check expectations
