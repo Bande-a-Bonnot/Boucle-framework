@@ -32,6 +32,13 @@ tools_readme=$(cat "$REPO_ROOT/tools/README.md")
 llms_summary=$(cat "$REPO_ROOT/docs/llms.txt")
 file_guard_example='bash tools/test-hook.sh "bash tools/file-guard/hook.sh" --tool Write --file ".env" --content "SECRET=x" --expect-deny'
 case "$tools_readme" in
+    *"| [test-hook](test-hook.sh) | Dry-runs a hook with synthetic \`PreToolUse\` payloads | CLI tool |"* ) ;;
+    *)
+        printf 'tools README should list test-hook in the available tools table.\n' >&2
+        exit 1
+        ;;
+esac
+case "$tools_readme" in
     *"bash tools/test-hook.sh \"bash tools/bash-guard/hook.sh\" --command \"rm -rf /\""* ) ;;
     *)
         printf 'tools README should use copy-pasteable repository hook paths for bash-guard.\n' >&2

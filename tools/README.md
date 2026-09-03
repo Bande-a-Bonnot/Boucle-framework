@@ -118,6 +118,7 @@ iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework
 | | | |
 | [safety-check](safety-check/) | Audits your Claude Code setup for common misconfigurations | CLI tool |
 | [diagnose](diagnose/) | Analyzes loop logs for drift, stagnation, feedback loops | CLI tool |
+| [test-hook](test-hook.sh) | Dry-runs a hook with synthetic `PreToolUse` payloads | CLI tool |
 | [enforce](enforce/) | Turns tagged CLAUDE.md rules into hook checks | Skill |
 
 ## Generate Hooks from CLAUDE.md
