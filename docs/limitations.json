@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1882,
+  "count": 1883,
   "categories": {
-    "Hook behavior & events": 241,
+    "Hook behavior & events": 242,
     "Permission system": 171,
     "MCP & plugin issues": 117,
     "Hook bypass & evasion": 109,
@@ -196,12 +196,37 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 170,
+    "CRITICAL": 171,
     "HIGH": 1096,
     "LOW": 110,
     "MEDIUM": 506
   },
   "entries": [
+    {
+      "id": "change-directory-stale-project-dir-can-erase-prompts",
+      "title": "`change_directory` stale project dirs can erase prompts.",
+      "category": "Hook behavior & events",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/92168"
+      ],
+      "date_added": "2026-09-04",
+      "description": "A reported Claude Desktop macOS session using Claude Code 2.1.204 found that `change_directory` adopted a new project's settings and hooks while leaving `$CLAUDE_PROJECT_DIR` pointed at the scratch workspace where the session launched. A `UserPromptSubmit` hook command that resolved through that stale variable then tried to run a missing script, and CPython returned exit status 2 for ENOENT. Claude Code interpreted that same exit code as an intentional prompt denial, so every later user prompt was blocked and effectively erased while the session could not be asked to diagnose itself.",
+      "workaround": "After using `change_directory` into a project with hooks, run a harmless hook canary before entering important prompts and compare the hook's resolved project directory with the visible project root. Prefer absolute hook script paths or wrapper commands that verify `$CLAUDE_PROJECT_DIR/.claude/hooks/<name>` exists before invoking an interpreter, and make injector-only `UserPromptSubmit` hooks fail open on startup errors rather than returning exit 2. For hooks that may legitimately deny, distinguish internal launch failure from policy denial in the wrapper, log ENOENT or argparse failures outside Claude Code, and restart the session from the target project root if the project variable is stale.",
+      "tags": [
+        "macos",
+        "desktop",
+        "hooks",
+        "userpromptsubmit",
+        "change-directory",
+        "claude-project-dir",
+        "enoent",
+        "exit-2",
+        "data-loss",
+        "prompt-loss"
+      ]
+    },
     {
       "id": "desktop-task-sandboxes-can-clone-plugins-until-disk-fills",
       "title": "Desktop task sandboxes can clone plugins until disk fills.",
@@ -25532,27 +25557,27 @@
     }
   ],
   "status_summary": {
-    "open": 1868,
+    "open": 1869,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 170,
+    "critical": 171,
     "high": 1096,
     "low": 110,
     "medium": 506
   },
   "lastUpdated": "2026-09-04",
   "stats": {
-    "total": 1882,
-    "critical": 170,
+    "total": 1883,
+    "critical": 171,
     "high": 1096,
     "medium": 506,
     "low": 110,
-    "open": 1868,
+    "open": 1869,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-04",
-  "total": 1882
+  "total": 1883
 }
