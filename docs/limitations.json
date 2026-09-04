@@ -1,10 +1,10 @@
 {
   "version": "0.13.0",
-  "count": 1875,
+  "count": 1876,
   "categories": {
     "Hook behavior & events": 241,
     "Permission system": 171,
-    "MCP & plugin issues": 116,
+    "MCP & plugin issues": 117,
     "Hook bypass & evasion": 109,
     "Subagent & spawned agents": 86,
     "Desktop & IDE integration": 63,
@@ -196,7 +196,7 @@
   },
   "severity_counts": {
     "CRITICAL": 166,
-    "HIGH": 1093,
+    "HIGH": 1094,
     "LOW": 110,
     "MEDIUM": 506
   },
@@ -242,6 +242,31 @@
       "date_added": "2026-09-04",
       "description": "Reported Claude Code 2.1.259 to 2.1.260 regressions show that when a `Read(...)` deny rule is configured, ordinary Bash search commands can trigger a manual approval prompt even when the searched files do not match the denied pattern. Repros include `cd DIR && grep ... relative/path`, `grep -r` or `rg` with include filters that exclude `.env`, and background subagents running in `bypassPermissions` or auto mode. A later 2.1.260 report narrowed one live trigger to leading-`./` root-file rules: `Read(./.env)` made `grep -rl pattern .` prompt, while `Read(.env)` still denied direct `.env` reads but let the root recursive search run. The prompt is described as bypass-immune and classifier-unroutable in public confirmations, so unattended agents can stall waiting for a human even though the command is read-only and the session was configured to avoid prompts.",
       "workaround": "Until Claude Code resolves the Bash read analyzer regression, avoid `cd DIR && grep` or recursive searches over directories that contain denied files in unattended workflows. Prefer absolute paths, explicit file lists, or Claude Code's file-search tools. For root-level secret deny rules, test whether unprefixed forms such as `Read(.env)` preserve the intended direct-file denial without making `grep -r .` prompt; do not assume `Read(./.env)` and `Read(.env)` are equivalent on affected versions. For autonomous sessions, add a conservative `PreToolUse` hook on `Bash` that denies this command shape with a rewrite instruction before Claude Code's permission card fires; public reports indicate hook deny runs early enough for the model to retry with absolute paths, while hook allow does not suppress the card. Keep `Read(...)` deny rules for secrets, but treat them as capable of creating false manual prompts after updates and rerun `safety-check --verify --summary-only` from the project root after changing permission policy."
+    },
+    {
+      "id": "plugin-hook-entrypoints-can-hide-wsl-binary-misrouting",
+      "title": "Plugin hook entrypoints can hide WSL binary misrouting.",
+      "category": "MCP & plugin issues",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/91796"
+      ],
+      "date_added": "2026-09-04",
+      "description": "A reported Claude Code 2.1.259 WSL2 setup found the Semgrep Guardian plugin denying `Edit`, `Write`, and some supply-chain-looking `Bash` calls as if the user were not logged in, while the local Guardian credential still had a future expiry. The report traces the failure to the plugin's registered hook command: `hooks/hooks.json` points at an extensionless `scripts/hook` wrapper, and on WSL that wrapper executes the Windows `hook.exe` instead of the Linux binary that can lock the Linux-side Guardian settings file. The older public workaround edited `scripts/hook.sh`, but that companion file is no longer registered, so applying the documented patch can appear to succeed while changing no runtime behavior.",
+      "workaround": "When a plugin hook fails closed on WSL with an auth or lock-looking error, inspect the actual command registered in the plugin's hook metadata before patching a nearby script. Compare `hooks/hooks.json` with the file named in any workaround, then verify the registered entrypoint dispatches to the Linux binary under WSL instead of a Windows executable. For recovery, preserve the original hook wrapper, patch only the registered file or disable the plugin temporarily through supported settings, and rerun a harmless `Edit`/`Bash` probe after the change. For support bundles, include the registered hook path, platform detection branch, plugin version, and the credential expiry state without sharing token values.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "mcp",
+        "plugins",
+        "hooks",
+        "wsl",
+        "semgrep",
+        "guardian",
+        "authentication",
+        "settings-lock",
+        "entrypoint"
+      ]
     },
     {
       "id": "destructive-removable-drive-command-can-run-after-clarifying-question",
@@ -25428,27 +25453,27 @@
     }
   ],
   "status_summary": {
-    "open": 1861,
+    "open": 1862,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 166,
-    "high": 1093,
+    "high": 1094,
     "low": 110,
     "medium": 506
   },
   "lastUpdated": "2026-09-04",
   "stats": {
-    "total": 1875,
+    "total": 1876,
     "critical": 166,
-    "high": 1093,
+    "high": 1094,
     "medium": 506,
     "low": 110,
-    "open": 1861,
+    "open": 1862,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-04",
-  "total": 1875
+  "total": 1876
 }

@@ -23,6 +23,14 @@
     <category term="Permission system"/>
   </entry>
   <entry>
+    <title>[HIGH] Plugin hook entrypoints can hide WSL binary misrouting.</title>
+    <id>https://framework.boucle.sh/limitations.html#plugin-hook-entrypoints-can-hide-wsl-binary-misrouting</id>
+    <link href="https://framework.boucle.sh/limitations.html#plugin-hook-entrypoints-can-hide-wsl-binary-misrouting"/>
+    <updated>2026-09-04T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.259 WSL2 setup found the Semgrep Guardian plugin denying `Edit`, `Write`, and some supply-chain-looking `Bash` calls as if the user were not logged in, while the local Guardian credential still had a future expiry. The report traces the failure to the plugin&#x27;s registered hook command: `hooks/hooks.json` points at an extensionless `scripts/hook` wrapper, and on WSL that wrapper executes the Windows `hook.exe` instead of the Linux binary that can lock the Linux-side Guardian settings file. The older public workaround edited `scripts/hook.sh`, but that companion file is no longer registered, so applying the documented patch can appear to succeed while changing no runtime behavior.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[CRITICAL] Destructive removable-drive command can run after a clarifying question.</title>
     <id>https://framework.boucle.sh/limitations.html#destructive-removable-drive-command-can-run-after-clarifying-question</id>
     <link href="https://framework.boucle.sh/limitations.html#destructive-removable-drive-command-can-run-after-clarifying-question"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.252 macOS repro found that `PermissionRequest` hook input can describe a different set of permission updates than the interactive dialog shows for the same Bash approval. In the reported case, the dialog offered an auto-mode row, while `permission_suggestions` instead included `setMode` to `acceptEdits`; the hook input also used a session destination for a directory grant whose dialog wording described project-level access. Hooks or approval services that try to mirror the UI, audit user choices, or return `updatedPermissions` therefore cannot assume the array is an exact machine-readable form of the visible dialog.</summary>
     <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Predictable `/tmp` socket directories can be squatted by local users.</title>
-    <id>https://framework.boucle.sh/limitations.html#predictable-tmp-socket-directories-can-be-squatted-by-local-users</id>
-    <link href="https://framework.boucle.sh/limitations.html#predictable-tmp-socket-directories-can-be-squatted-by-local-users"/>
-    <updated>2026-09-04T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.252 macOS shared-host setup found that cross-session messaging still depends on predictable Unix socket directories under world-writable `/tmp` when `XDG_RUNTIME_DIR` and `CLAUDE_CODE_TMPDIR` are unset. Version 2.1.248 added a per-uid fallback after `/tmp/cc-socks` is refused, but both `/tmp/cc-socks` and `/tmp/cc-socks-&lt;uid&gt;` can be pre-created by another local account with mode 0700. The target account then fails the owner checks for both paths, the fallback has no further fallback, and peer messaging turns off before the user can rely on `ListAgents` or cross-session commands. The report scopes this as local denial of service rather than socket interception because the owner check and peer-token file still protect message receipt.</summary>
-    <category term="Security &amp; trust boundaries"/>
   </entry>
 </feed>
