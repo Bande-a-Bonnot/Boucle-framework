@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1878,
+  "count": 1879,
   "categories": {
     "Hook behavior & events": 241,
     "Permission system": 171,
@@ -185,6 +185,7 @@
     "Skills & plugins": 1,
     "Skills & slash commands": 1,
     "Startup & environment": 1,
+    "Telemetry & privacy": 1,
     "Tools": 1,
     "Tools & permissions": 1,
     "Tools and execution": 1,
@@ -196,11 +197,24 @@
   },
   "severity_counts": {
     "CRITICAL": 168,
-    "HIGH": 1094,
+    "HIGH": 1095,
     "LOW": 110,
     "MEDIUM": 506
   },
   "entries": [
+    {
+      "id": "otel-tool-arguments-exported-despite-tool-content-flags",
+      "title": "OTLP telemetry can export tool arguments despite `OTEL_LOG_TOOL_*` flags.",
+      "category": "Telemetry & privacy",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/92056"
+      ],
+      "date_added": "2026-09-04",
+      "description": "A reported Claude Code 2.1.259 macOS setup, also observed on 2.1.252 and 2.1.258, found full Bash command text reaching an OTLP collector even when tool-content-looking flags were unset, set to `0`, or set to `false`. The reporter planted a canary in a Bash command and found it in `tool_decision` `tool_parameters`, `tool_result` `tool_parameters`, and `tool_result` `tool_input`, with `user.email` attached on the same events. The issue is not a model echo path: the canary appeared in tool telemetry attributes, so teams sending Claude Code telemetry directly to a vendor endpoint may export shell commands and user identifiers while believing `OTEL_LOG_TOOL_*` settings suppress tool content.",
+      "workaround": "Do not treat `OTEL_LOG_TOOL_CONTENT`, `OTEL_LOG_TOOL_DETAILS`, or similarly named flags as proven redaction controls for tool arguments until the installed Claude Code version is tested against a local collector. Before enabling OTLP export to a third-party endpoint, run a harmless canary command, inspect the raw collector payload, and confirm whether `tool_input`, `tool_parameters`, and user attributes are present. Route Claude Code telemetry through a local collector or processor that strips command text, tool arguments, paths, secrets, and user identifiers before export, and document that hooks guarding Bash execution do not automatically redact already-emitted telemetry fields."
+    },
     {
       "id": "agent-can-edit-claude-settings-under-broad-write-grants",
       "title": "Broad write grants can let the agent edit `.claude/settings.json`.",
@@ -25479,27 +25493,27 @@
     }
   ],
   "status_summary": {
-    "open": 1864,
+    "open": 1865,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 168,
-    "high": 1094,
+    "high": 1095,
     "low": 110,
     "medium": 506
   },
   "lastUpdated": "2026-09-04",
   "stats": {
-    "total": 1878,
+    "total": 1879,
     "critical": 168,
-    "high": 1094,
+    "high": 1095,
     "medium": 506,
     "low": 110,
-    "open": 1864,
+    "open": 1865,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-04",
-  "total": 1878
+  "total": 1879
 }
