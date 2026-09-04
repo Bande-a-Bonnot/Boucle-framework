@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1879,
+  "count": 1880,
   "categories": {
     "Hook behavior & events": 241,
     "Permission system": 171,
@@ -8,7 +8,7 @@
     "Hook bypass & evasion": 109,
     "Subagent & spawned agents": 86,
     "Desktop & IDE integration": 63,
-    "Security & trust boundaries": 47,
+    "Security & trust boundaries": 48,
     "TUI & display": 39,
     "Cowork & remote": 38,
     "Sandbox & permissions": 37,
@@ -196,7 +196,7 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 168,
+    "CRITICAL": 169,
     "HIGH": 1095,
     "LOW": 110,
     "MEDIUM": 506
@@ -214,6 +214,19 @@
       "date_added": "2026-09-04",
       "description": "A reported Claude Code 2.1.259 macOS setup, also observed on 2.1.252 and 2.1.258, found full Bash command text reaching an OTLP collector even when tool-content-looking flags were unset, set to `0`, or set to `false`. The reporter planted a canary in a Bash command and found it in `tool_decision` `tool_parameters`, `tool_result` `tool_parameters`, and `tool_result` `tool_input`, with `user.email` attached on the same events. The issue is not a model echo path: the canary appeared in tool telemetry attributes, so teams sending Claude Code telemetry directly to a vendor endpoint may export shell commands and user identifiers while believing `OTEL_LOG_TOOL_*` settings suppress tool content.",
       "workaround": "Do not treat `OTEL_LOG_TOOL_CONTENT`, `OTEL_LOG_TOOL_DETAILS`, or similarly named flags as proven redaction controls for tool arguments until the installed Claude Code version is tested against a local collector. Before enabling OTLP export to a third-party endpoint, run a harmless canary command, inspect the raw collector payload, and confirm whether `tool_input`, `tool_parameters`, and user attributes are present. Route Claude Code telemetry through a local collector or processor that strips command text, tool arguments, paths, secrets, and user identifiers before export, and document that hooks guarding Bash execution do not automatically redact already-emitted telemetry fields."
+    },
+    {
+      "id": "cross-session-messaging-can-bypass-folder-scope",
+      "title": "Cross-session messaging can bypass folder-scope prompts.",
+      "category": "Security & trust boundaries",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/92060"
+      ],
+      "date_added": "2026-09-04",
+      "description": "A reported Claude Code 2.1.260 macOS setup found that `ListAgents` and `SendMessage` could move file contents from one live session's working directory into another session without a permission prompt, even though a direct `Read` of the same file across the folder boundary did prompt and was declined. The reporter reproduced both directed and model-selected peer requests in default mode with no user or project settings. In the realistic case, ordinary working notes were relayed by the source session and written into the destination folder, so the effective barrier was the receiving model's content judgement rather than the folder scope the user expected.",
+      "workaround": "Do not run unrelated client, customer, or secret-bearing Claude Code sessions on the same account and host with cross-session messaging enabled until same-host delivery is tested against your expected scope boundary. For sensitive work, set `crossSessionInbound` to `refuse` or hold-equivalent policy where supported, deny or avoid `SendMessage` and `ListAgents` in sessions that should be isolated, and prefer separate OS users, machines, containers, or dedicated accounts for hard walls. Verify behavior with a harmless two-folder canary after Claude Code updates, and treat hooks as insufficient for this boundary because peer messages are not covered by normal file-read prompts and existing hook surfaces do not reliably intercept `SendMessage` content."
     },
     {
       "id": "agent-can-edit-claude-settings-under-broad-write-grants",
@@ -25493,27 +25506,27 @@
     }
   ],
   "status_summary": {
-    "open": 1865,
+    "open": 1866,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 168,
+    "critical": 169,
     "high": 1095,
     "low": 110,
     "medium": 506
   },
   "lastUpdated": "2026-09-04",
   "stats": {
-    "total": 1879,
-    "critical": 168,
+    "total": 1880,
+    "critical": 169,
     "high": 1095,
     "medium": 506,
     "low": 110,
-    "open": 1865,
+    "open": 1866,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-04",
-  "total": 1879
+  "total": 1880
 }
