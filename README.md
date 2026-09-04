@@ -5,7 +5,7 @@
 
 Claude Code hooks that actually enforce your rules. 7 standalone hooks, plus `enforce-hooks` for CLAUDE.md policy, audit tooling, 1,900+ tests, and a [searchable Claude Code gaps corpus](https://framework.boucle.sh/limitations.html) with severity ratings and workarounds.
 
-> **Quick links:** [First test](tools/safety-check/FIRST_TEST.md) · [Isolated first-test recipe](https://framework.boucle.sh/recipes.html#isolated-first-test) · [First safety audit](https://framework.boucle.sh/recipes.html#first-audit) · [Temporary hook trial](https://framework.boucle.sh/recipes.html#temporary-trial) · [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Windows native setup](https://framework.boucle.sh/recipes.html#windows-native) · [Known limitations](https://framework.boucle.sh/limitations.html) · [JSON export](https://framework.boucle.sh/limitations.json) · [Quickstart](tools/safety-check/QUICKSTART.md) · [Triage](tools/safety-check/TRIAGE.md) · [Failed verification](https://framework.boucle.sh/recipes.html#verification-failed) · [Manual settings edit](https://framework.boucle.sh/recipes.html#manual-settings-edit) · [Secret pre-push](https://framework.boucle.sh/recipes.html#secret-pre-push) · [Nested Claude billing](https://framework.boucle.sh/recipes.html#nested-claude-billing) · [Write coverage canary](https://framework.boucle.sh/recipes.html#write-coverage-canary) · [Custom hook test](https://framework.boucle.sh/recipes.html#custom-hook-test) · [Autonomous session preflight](https://framework.boucle.sh/recipes.html#autonomous-session) · [After Claude Code updates](https://framework.boucle.sh/recipes.html#after-update) · [Resumed session recheck](https://framework.boucle.sh/recipes.html#resumed-session) · [MCP/plugin update](https://framework.boucle.sh/recipes.html#mcp-plugin-update) · [CI checks](tools/safety-check/CI.md) · [Team handoff](tools/safety-check/TEAM_HANDOFF.md) · [Update checklist](tools/safety-check/UPDATE_CHECKLIST.md) · [Safe support evidence](tools/safety-check/SUPPORT_EVIDENCE.md) · [Support examples](tools/safety-check/SUPPORT_EXAMPLES.md) · [Read-only audit](https://framework.boucle.sh/recipes.html#read-only-audit) · [Audit trail](https://framework.boucle.sh/recipes.html#audit-trail) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
+> **Quick links:** [First test](tools/safety-check/FIRST_TEST.md) · [Isolated first-test recipe](https://framework.boucle.sh/recipes.html#isolated-first-test) · [First safety audit](https://framework.boucle.sh/recipes.html#first-audit) · [Temporary hook trial](https://framework.boucle.sh/recipes.html#temporary-trial) · [Check your setup](#check-your-setup) · [Install hooks](#install-hooks) · [Windows native setup](https://framework.boucle.sh/recipes.html#windows-native) · [Known limitations](https://framework.boucle.sh/limitations.html) · [JSON export](https://framework.boucle.sh/limitations.json) · [Quickstart](tools/safety-check/QUICKSTART.md) · [Triage](tools/safety-check/TRIAGE.md) · [Failed verification](https://framework.boucle.sh/recipes.html#verification-failed) · [Manual settings edit](https://framework.boucle.sh/recipes.html#manual-settings-edit) · [Secret pre-push](https://framework.boucle.sh/recipes.html#secret-pre-push) · [Nested Claude billing](https://framework.boucle.sh/recipes.html#nested-claude-billing) · [Write coverage canary](https://framework.boucle.sh/recipes.html#write-coverage-canary) · [Custom hook test](tools/test-hook.md) · [Autonomous session preflight](https://framework.boucle.sh/recipes.html#autonomous-session) · [After Claude Code updates](https://framework.boucle.sh/recipes.html#after-update) · [Resumed session recheck](https://framework.boucle.sh/recipes.html#resumed-session) · [MCP/plugin update](https://framework.boucle.sh/recipes.html#mcp-plugin-update) · [CI checks](tools/safety-check/CI.md) · [Team handoff](tools/safety-check/TEAM_HANDOFF.md) · [Update checklist](tools/safety-check/UPDATE_CHECKLIST.md) · [Safe support evidence](tools/safety-check/SUPPORT_EVIDENCE.md) · [Support examples](tools/safety-check/SUPPORT_EXAMPLES.md) · [Read-only audit](https://framework.boucle.sh/recipes.html#read-only-audit) · [Audit trail](https://framework.boucle.sh/recipes.html#audit-trail) · [Individual hooks](#individual-hooks) · [Platform support](#platform-support) · [Recommended Claude Code version](#recommended-claude-code-version) · [Troubleshooting](#troubleshooting) · [Boucle Framework](#boucle-framework) (optional, for autonomous agents)
 
 ## Claude Code Hooks
 
@@ -382,7 +382,7 @@ Scan first to preview: `enforce-hooks.py --scan`. Generate a starter CLAUDE.md: 
 
 <a id="test-hook"></a>
 
-### [test-hook](tools/test-hook.sh) - Dry-run any hook without a live session
+### [test-hook](tools/test-hook.md) - Dry-run any hook without a live session
 
 ```sh
 # Test bash-guard against a dangerous command
@@ -401,7 +401,7 @@ bash tools/test-hook.sh "bash tools/bash-guard/hook.sh" --batch tools/test-hook-
 python3 tools/test-hook-verify.py
 ```
 
-Feeds synthetic `PreToolUse` payloads to any hook script and reports whether it allows, denies, or crashes. Works with any hook (ours or third-party). Batch mode runs test suites from JSONL files. Addresses [claude-code#39971](https://github.com/anthropics/claude-code/issues/39971) (`--test-permission` does not exist).
+Feeds synthetic `PreToolUse` payloads to any hook script and reports whether it allows, denies, or crashes. Works with any hook (ours or third-party). Batch mode runs test suites from JSONL files. See the [test-hook guide](tools/test-hook.md) for expected output, CI expectations, raw input shape, and batch file format. Addresses [claude-code#39971](https://github.com/anthropics/claude-code/issues/39971) (`--test-permission` does not exist).
 
 Boundary: this runs the hook command you pass directly. It verifies handler
 behavior for synthetic payloads, but it does not prove Claude Code loaded that
@@ -603,7 +603,7 @@ Works with Claude Desktop, Claude Code, or any MCP-compatible client.
 
 ## All Tools
 
-Each tool has its own README with full documentation: [read-once](tools/read-once/), [file-guard](tools/file-guard/), [git-safe](tools/git-safe/), [bash-guard](tools/bash-guard/), [branch-guard](tools/branch-guard/), [session-log](tools/session-log/), [enforce-hooks](tools/enforce/), [safety-check](tools/safety-check/), [worktree-guard](tools/worktree-guard/), [diagnose](tools/diagnose/), [test-hook](tools/test-hook.sh).
+Each tool has full documentation: [read-once](tools/read-once/), [file-guard](tools/file-guard/), [git-safe](tools/git-safe/), [bash-guard](tools/bash-guard/), [branch-guard](tools/branch-guard/), [session-log](tools/session-log/), [enforce-hooks](tools/enforce/), [safety-check](tools/safety-check/), [worktree-guard](tools/worktree-guard/), [diagnose](tools/diagnose/), [test-hook](tools/test-hook.md).
 
 ### Architecture
 
