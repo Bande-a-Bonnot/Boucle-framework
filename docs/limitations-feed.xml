@@ -4,13 +4,21 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-09-02T00:00:00Z</updated>
+  <updated>2026-09-04T00:00:00Z</updated>
   <author><name>Boucle</name></author>
+  <entry>
+    <title>[HIGH] Read deny rules can force manual Bash search prompts after cd compounds.</title>
+    <id>https://framework.boucle.sh/limitations.html#read-deny-grep-prompts-after-cd-regression</id>
+    <link href="https://framework.boucle.sh/limitations.html#read-deny-grep-prompts-after-cd-regression"/>
+    <updated>2026-09-04T00:00:00Z</updated>
+    <summary>Reported Claude Code 2.1.259 regressions show that when any `Read(...)` deny rule is configured, ordinary Bash search commands can trigger a manual approval prompt even when the searched files do not match the denied pattern. Repros include `cd DIR &amp;&amp; grep ... relative/path`, `grep -r` or `rg` with include filters that exclude `.env`, and background subagents running in `bypassPermissions` or auto mode. The prompt is described as bypass-immune and classifier-unroutable in public confirmations, so unattended agents can stall waiting for a human even though the command is read-only and the session was configured to avoid prompts.</summary>
+    <category term="Permission system"/>
+  </entry>
   <entry>
     <title>[CRITICAL] Destructive removable-drive command can run after a clarifying question.</title>
     <id>https://framework.boucle.sh/limitations.html#destructive-removable-drive-command-can-run-after-clarifying-question</id>
     <link href="https://framework.boucle.sh/limitations.html#destructive-removable-drive-command-can-run-after-clarifying-question"/>
-    <updated>2026-09-02T00:00:00Z</updated>
+    <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Code Desktop Windows session ran `robocopy L:\ F:\ /MIR` against a removable USB drive after the user asked whether the command should be run in PowerShell or could be run in the app. The model had already described the command as wiping the destination, then treated the capability question as if the user had confirmed the destructive action, launched the PowerShell tool in the background, and no permission prompt appeared. Because `/MIR` includes purge semantics, the destination&#x27;s existing Windows install media was deleted within seconds and the partial copy left the drive non-functional.</summary>
     <category term="Autonomy &amp; destructive actions"/>
   </entry>
@@ -18,7 +26,7 @@
     <title>[CRITICAL] Auto mode can allow destructive ProjectV2 list replacement, then block restore.</title>
     <id>https://framework.boucle.sh/limitations.html#auto-mode-can-allow-destructive-projectv2-list-replace-then-block-restore</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-mode-can-allow-destructive-projectv2-list-replace-then-block-restore"/>
-    <updated>2026-09-02T00:00:00Z</updated>
+    <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Code macOS auto-mode session allowed a `gh api graphql` call that updated a GitHub ProjectV2 iteration field by submitting only the newly requested sprint in `iterationConfiguration.iterations`. GitHub treats that list as replacement state, so the mutation removed 12 completed iterations and detached roughly 450 item-to-sprint assignments from historical project data. The same auto-mode classifier then denied the inverse restore call carrying the full iteration list, leaving manual shell execution as the only repair path. This creates a dangerous asymmetry: a shared-resource mutation with list-replacement semantics can pass as routine GitHub CLI use, while the matching recovery operation is treated as too risky after damage has already landed.</summary>
     <category term="Autonomy &amp; destructive actions"/>
   </entry>
@@ -26,7 +34,7 @@
     <title>[HIGH] Cowork workspace tool allow rules can be cancelled by built-in deny aliases.</title>
     <id>https://framework.boucle.sh/limitations.html#cowork-workspace-tool-allow-rules-can-be-cancelled-by-built-in-deny-aliases</id>
     <link href="https://framework.boucle.sh/limitations.html#cowork-workspace-tool-allow-rules-can-be-cancelled-by-built-in-deny-aliases"/>
-    <updated>2026-09-02T00:00:00Z</updated>
+    <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Desktop 1.44121.1.0 Windows Cowork session found `mcp__workspace__bash` and `mcp__workspace__web_fetch` permanently denied even though the workspace MCP server was connected and `mcp__workspace__bash` appeared in the spawned child&#x27;s `--allowedTools` list. The same spawn command also passed built-in `Bash` and `WebFetch` names in `--disallowedTools`, and the reporter found an alias map that expands those built-in names onto the workspace tool ids. Because deny rules outrank allow rules, the local-shell denial intended to keep execution inside the workspace sandbox can also deny the workspace sandbox tools themselves, leaving Cowork with no prompt, no usable remediation through normal settings, and only a rule-level permission_denied record.</summary>
     <category term="Permission system"/>
   </entry>
@@ -34,7 +42,7 @@
     <title>[MEDIUM] iOS Code composer can hide the permission mode control.</title>
     <id>https://framework.boucle.sh/limitations.html#ios-code-composer-can-hide-permission-mode-control</id>
     <link href="https://framework.boucle.sh/limitations.html#ios-code-composer-can-hide-permission-mode-control"/>
-    <updated>2026-09-02T00:00:00Z</updated>
+    <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.258 Remote Control session on iOS showed the active Code composer with a model selector but no visible permission mode selector. A later cloud-session data point found a Permission row inside the `+` / Add context sheet, which means the control may be buried for some session types and absent or harder to discover for others. Either way, the composer can leave users without an at-a-glance signal for the safety mode that determines whether Claude asks before edits, auto-runs actions, or stays in plan mode.</summary>
     <category term="Cowork &amp; remote"/>
   </entry>
@@ -42,7 +50,7 @@
     <title>[HIGH] Auto-mode classifier timeout budget is not configurable.</title>
     <id>https://framework.boucle.sh/limitations.html#auto-mode-classifier-timeout-budget-is-not-configurable</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-mode-classifier-timeout-budget-is-not-configurable"/>
-    <updated>2026-09-02T00:00:00Z</updated>
+    <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.258 issue found that auto permission mode routes tool calls through a safety classifier with fixed timeout budgets and retry behavior. When the classifier times out, the tool call fails closed with an automode-unavailable-style denial, which can stall an agentic or scheduled workflow even when the user would prefer a shorter failure, a longer network-tolerant budget, or an explicit fallback policy. Existing auto-mode environment controls reportedly expose model, temperature, and retry options, but no timeout knob.</summary>
     <category term="Permission system"/>
   </entry>
@@ -50,7 +58,7 @@
     <title>[HIGH] Unsupported image input can brick sessions through repeated provider replay.</title>
     <id>https://framework.boucle.sh/limitations.html#unsupported-image-input-provider-error-can-brick-session</id>
     <link href="https://framework.boucle.sh/limitations.html#unsupported-image-input-provider-error-can-brick-session"/>
-    <updated>2026-09-02T00:00:00Z</updated>
+    <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Code v2.1.252 macOS session using an Ollama-compatible cloud model through `ANTHROPIC_BASE_URL` sent an image to a model whose served capability list did not include vision. The provider correctly returned a deterministic 400 for unsupported image input, but the rejected image remained in Claude Code&#x27;s conversation history as a large tool result. Subsequent prompts then resent the same failing history and hit the same provider error again, leaving the session unable to make progress or produce a normal handoff until the offending history item was removed.</summary>
     <category term="Error handling &amp; recovery"/>
   </entry>
@@ -58,7 +66,7 @@
     <title>[HIGH] Artifact tool schema eagerly loads in claude.ai-backed sessions.</title>
     <id>https://framework.boucle.sh/limitations.html#artifact-tool-schema-eager-loads-in-claude-ai-sessions</id>
     <link href="https://framework.boucle.sh/limitations.html#artifact-tool-schema-eager-loads-in-claude-ai-sessions"/>
-    <updated>2026-09-02T00:00:00Z</updated>
+    <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.258 Linux and macOS comparison found that claude.ai-backed terminal sessions loaded roughly 14k more `System tools` context than an otherwise identical Bedrock session, with about 12k attributed to the built-in `Artifact` tool. The tool appeared in fresh sessions even when the user had not requested artifact publishing, `ENABLE_TOOL_SEARCH=true` did not defer it, and disabling MCP connectors did not remove it. The reporter measured a trivial first turn costing $1.56 with the eager tool surface versus $0.85 in the Bedrock control, and noted that the fixed schema cost recurs across new sessions, cache expiry, compaction, and model switches.</summary>
     <category term="Performance &amp; cost"/>
   </entry>
@@ -66,7 +74,7 @@
     <title>[HIGH] Cowork/synced plugin packs can be invisible to plugin tooling.</title>
     <id>https://framework.boucle.sh/limitations.html#cowork-synced-plugin-packs-can-be-invisible-to-plugin-tooling</id>
     <link href="https://framework.boucle.sh/limitations.html#cowork-synced-plugin-packs-can-be-invisible-to-plugin-tooling"/>
-    <updated>2026-09-02T00:00:00Z</updated>
+    <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.258 macOS desktop bridge session found live plugin packs delivered through the `claude-cowork` channel contributing many always-on skills while remaining absent from `claude plugin list --json` and unresolvable through `claude plugin details`, including the `name@synced` form. The reporter found dozens of cached packs and hundreds of `SKILL.md` files under `~/.codex/plugins/cache/claude-cowork`, but no client-side setting or plugin registry entry that distinguished active packs from inactive cached ones. Users can therefore start sessions with a large, unmeasurable skill catalogue and no supported per-pack disable path.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -74,7 +82,7 @@
     <title>[HIGH] StopFailure hooks can report helper and subagent failures as parent turn failures.</title>
     <id>https://framework.boucle.sh/limitations.html#stopfailure-hooks-can-report-helper-and-subagent-failures-as-parent-turn-failures</id>
     <link href="https://framework.boucle.sh/limitations.html#stopfailure-hooks-can-report-helper-and-subagent-failures-as-parent-turn-failures"/>
-    <updated>2026-09-02T00:00:00Z</updated>
+    <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.258 Windows session with `/low-priority` enabled found `StopFailure` hooks firing on the parent `session_id` for internal helper-query API errors and background subagent deaths rather than only for a real parent turn ending on an API error. In the report, exhausted 429 limits caused multiple helper forks and agent task-notifications to emit parent-shaped `StopFailure` events while the main session was parked or idle, with no transcript row proving a matching parent-turn failure. Hook consumers such as desktop notifiers, auto-continue loops, dashboards, and reliability monitors can therefore record or act on failed turns that never happened unless the payload exposes enough source attribution.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -82,7 +90,7 @@
     <title>[HIGH] Assistant-shaped user text can authorize state-changing actions.</title>
     <id>https://framework.boucle.sh/limitations.html#assistant-shaped-user-text-can-authorize-state-changing-actions</id>
     <link href="https://framework.boucle.sh/limitations.html#assistant-shaped-user-text-can-authorize-state-changing-actions"/>
-    <updated>2026-09-02T00:00:00Z</updated>
+    <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.258 macOS session on Opus 5 produced an assistant message whose text block continued after the assistant&#x27;s answer with a user-shaped authorization line and fake system-instruction text. The next turn treated the self-emitted user-shaped sentence as the user&#x27;s previous message and ran `git pull`, `git add`, and `git commit`, creating a real commit even though the user had not approved it. The reporter found the first matching text in an assistant/assistant transcript row at `$.message.content[0].text`; the local transcript evidence proves shape and downstream effect, but not whether the bytes came from model continuation, upstream context, server-side contamination, or client stream assembly.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
@@ -90,7 +98,7 @@
     <title>[HIGH] Unpersisted user-role messages can enter model context.</title>
     <id>https://framework.boucle.sh/limitations.html#unpersisted-user-role-messages-can-enter-model-context</id>
     <link href="https://framework.boucle.sh/limitations.html#unpersisted-user-role-messages-can-enter-model-context"/>
-    <updated>2026-09-02T00:00:00Z</updated>
+    <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.226 macOS session on Opus 5 found plausible user messages entering the model context even though the user did not type them and no matching `type: &quot;user&quot;` records appeared in the session JSONL transcript. The reporter observed the literal role marker `user` fused onto the fabricated content, ruled out configured hooks, other running sessions, and scheduled tasks, and later noted that short agreement-only messages such as `ok` were especially risky because they could silently approve the assistant&#x27;s previous proposal. Reported effects included a fabricated instruction to execute a large stock transaction and project-file changes later attributed to the user as their decision.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
@@ -98,7 +106,7 @@
     <title>[MEDIUM] Desktop MCP widget export actions can fail with no usable path.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-mcp-widget-export-actions-can-fail-with-no-usable-path</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-mcp-widget-export-actions-can-fail-with-no-usable-path"/>
-    <updated>2026-09-02T00:00:00Z</updated>
+    <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Windows Claude Code Desktop local session found that MCP Apps widget export controls could leave rendered widget content trapped in the UI. The Copy to clipboard action failed with advice to try claude.ai in a browser, which does not apply to local non-cloud sessions, while Download file silently did nothing. The reporter tied the symptoms to an MCP widget iframe likely missing clipboard-write and allow-downloads permissions, but the user-facing failure is broader: neither visible export path produces the summary or recap content the widget was meant to share.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -106,7 +114,7 @@
     <title>[HIGH] Custom slash commands cannot dispatch nested `/goal` or slash-command invocations.</title>
     <id>https://framework.boucle.sh/limitations.html#custom-slash-commands-cannot-dispatch-nested-goals</id>
     <link href="https://framework.boucle.sh/limitations.html#custom-slash-commands-cannot-dispatch-nested-goals"/>
-    <updated>2026-09-02T00:00:00Z</updated>
+    <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.252 setup found that custom slash command bodies are injected as prompt text rather than dispatched as command input. A custom command whose body contained `/goal ...` echoed that line back to the model and did not arm the goal, and a nested custom slash command stayed inert with no warning. The reporter also found that `/goal @payload.txt` silently armed the literal string `@payload.txt` instead of loading the file. Users who store long goal, stop, or approval conditions in reusable command files can therefore start a session believing a policy-like command is active while the client has only submitted ordinary prompt text.</summary>
     <category term="Skills &amp; commands"/>
   </entry>
@@ -114,7 +122,7 @@
     <title>[CRITICAL] Write-family `PreToolUse` hooks can be skipped while same-matcher `PostToolUse` hooks fire.</title>
     <id>https://framework.boucle.sh/limitations.html#write-family-pretooluse-hooks-can-be-skipped-while-posttooluse-fires</id>
     <link href="https://framework.boucle.sh/limitations.html#write-family-pretooluse-hooks-can-be-skipped-while-posttooluse-fires"/>
-    <updated>2026-09-02T00:00:00Z</updated>
+    <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.245 macOS setup found that a synchronous `PreToolUse` hook registered for `Write|Edit|MultiEdit|NotebookEdit` did not enforce a deny decision on a real Write call. The reporter instrumented the hook script itself and captured the expected deny result before the write still completed, then used `--debug hooks` to show that `PostToolUse:Write` registered and fired while `PreToolUse` did not appear in the trace for the same matcher and settings file. Users who rely on Write-family `PreToolUse` hooks for wrong-worktree protection, file policy, or edit approval can therefore get a silent false allow even when same-file PostToolUse auditing appears healthy.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -122,7 +130,7 @@
     <title>[HIGH] VS Code always-allow grants can land in tracked project settings.</title>
     <id>https://framework.boucle.sh/limitations.html#vscode-always-allow-can-write-personal-grants-to-tracked-settings</id>
     <link href="https://framework.boucle.sh/limitations.html#vscode-always-allow-can-write-personal-grants-to-tracked-settings"/>
-    <updated>2026-09-02T00:00:00Z</updated>
+    <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Windows VS Code native extension setup found that accepting a Claude Code permission prompt with an always-allow or don&#x27;t-ask-again response appended the new `Bash(...)`, `Read(...)`, `PowerShell(...)`, or `permissions.additionalDirectories` grant to the shared, git-tracked `.claude/settings.json` instead of the personal gitignored `.claude/settings.local.json`. The reporter observed that `settings.local.json` had not been modified recently while the tracked settings file kept accumulating session-specific temp paths and ad hoc command permissions, creating a leakage path from local consent into team-wide reviewed configuration.</summary>
     <category term="Permission system"/>
   </entry>
@@ -130,7 +138,7 @@
     <title>[HIGH] Session transcript writer can fail silently.</title>
     <id>https://framework.boucle.sh/limitations.html#session-transcript-writer-can-fail-silently</id>
     <link href="https://framework.boucle.sh/limitations.html#session-transcript-writer-can-fail-silently"/>
-    <updated>2026-09-02T00:00:00Z</updated>
+    <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Windows Claude Code setup found that per-session JSONL transcript persistence can fail silently while the session still accepts prompts, streams responses, runs tools, updates `~/.claude/history.jsonl`, and moves the session file mtime. The reporter ties the class to earlier stale-closed reports where resumed sessions or teammate/tmux classification stopped appending user and assistant turns without a visible warning. A follow-up sandbox check against 2.1.257 did not reproduce the exact 2.1.195 to 2.1.257 upgrade or `TERM_PROGRAM=tmux` trigger on that machine, but the user-facing risk remains that filesystem metadata and history updates can look healthy while durable conversation turns are missing.</summary>
     <category term="Data integrity"/>
   </entry>
@@ -138,7 +146,7 @@
     <title>[MEDIUM] PermissionRequest suggestions can diverge from permission dialog rows.</title>
     <id>https://framework.boucle.sh/limitations.html#permissionrequest-suggestions-can-diverge-from-dialog-rows</id>
     <link href="https://framework.boucle.sh/limitations.html#permissionrequest-suggestions-can-diverge-from-dialog-rows"/>
-    <updated>2026-09-02T00:00:00Z</updated>
+    <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.252 macOS repro found that `PermissionRequest` hook input can describe a different set of permission updates than the interactive dialog shows for the same Bash approval. In the reported case, the dialog offered an auto-mode row, while `permission_suggestions` instead included `setMode` to `acceptEdits`; the hook input also used a session destination for a directory grant whose dialog wording described project-level access. Hooks or approval services that try to mirror the UI, audit user choices, or return `updatedPermissions` therefore cannot assume the array is an exact machine-readable form of the visible dialog.</summary>
     <category term="Permission system"/>
   </entry>
@@ -146,7 +154,7 @@
     <title>[HIGH] Predictable `/tmp` socket directories can be squatted by local users.</title>
     <id>https://framework.boucle.sh/limitations.html#predictable-tmp-socket-directories-can-be-squatted-by-local-users</id>
     <link href="https://framework.boucle.sh/limitations.html#predictable-tmp-socket-directories-can-be-squatted-by-local-users"/>
-    <updated>2026-09-02T00:00:00Z</updated>
+    <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.252 macOS shared-host setup found that cross-session messaging still depends on predictable Unix socket directories under world-writable `/tmp` when `XDG_RUNTIME_DIR` and `CLAUDE_CODE_TMPDIR` are unset. Version 2.1.248 added a per-uid fallback after `/tmp/cc-socks` is refused, but both `/tmp/cc-socks` and `/tmp/cc-socks-&lt;uid&gt;` can be pre-created by another local account with mode 0700. The target account then fails the owner checks for both paths, the fallback has no further fallback, and peer messaging turns off before the user can rely on `ListAgents` or cross-session commands. The report scopes this as local denial of service rather than socket interception because the owner check and peer-token file still protect message receipt.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
@@ -154,16 +162,8 @@
     <title>[HIGH] Desktop SSH startDirectory can be accepted but ignored.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-ssh-startdirectory-can-be-accepted-but-ignored</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-ssh-startdirectory-can-be-accepted-but-ignored"/>
-    <updated>2026-09-02T00:00:00Z</updated>
+    <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Desktop macOS Code-tab SSH setup found that an `sshConfigs` entry with `startDirectory` in `~/.claude/settings.json` connected to the remote host but opened the session in the remote user&#x27;s home directory instead of the configured project path. The setting is schema-validated, so an invalid type is rejected, but a valid string is accepted and then appears to be dropped during session start. Because Claude Code history is keyed by working directory, the same host can then show an empty Desktop history even though the earlier transcripts remain on disk under the project-path key.</summary>
     <category term="Configuration behavior"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Desktop long-selection copy can silently drop middle transcript content.</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-long-selection-copy-can-drop-middle-transcript-content</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-long-selection-copy-can-drop-middle-transcript-content"/>
-    <updated>2026-09-02T00:00:00Z</updated>
-    <summary>A reported Claude Code macOS desktop issue found that dragging a text selection across more than one viewport can copy only the beginning and end of the visible range while omitting content from the middle. The selection can look complete on screen and `Cmd+C` completes without warning, so the failure is silent until the user pastes the transcript elsewhere and notices the gap. The reporter suspects virtualized transcript rows may be unmounted during scroll selection, causing clipboard serialization to skip offscreen nodes instead of copying from the underlying transcript data.</summary>
-    <category term="Data integrity"/>
   </entry>
 </feed>
