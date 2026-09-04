@@ -7,6 +7,14 @@
   <updated>2026-09-04T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[CRITICAL] `change_directory` stale project dirs can erase prompts.</title>
+    <id>https://framework.boucle.sh/limitations.html#change-directory-stale-project-dir-can-erase-prompts</id>
+    <link href="https://framework.boucle.sh/limitations.html#change-directory-stale-project-dir-can-erase-prompts"/>
+    <updated>2026-09-04T00:00:00Z</updated>
+    <summary>A reported Claude Desktop macOS session using Claude Code 2.1.204 found that `change_directory` adopted a new project&#x27;s settings and hooks while leaving `$CLAUDE_PROJECT_DIR` pointed at the scratch workspace where the session launched. A `UserPromptSubmit` hook command that resolved through that stale variable then tried to run a missing script, and CPython returned exit status 2 for ENOENT. Claude Code interpreted that same exit code as an intentional prompt denial, so every later user prompt was blocked and effectively erased while the session could not be asked to diagnose itself.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Desktop task sandboxes can clone plugins until disk fills.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-task-sandboxes-can-clone-plugins-until-disk-fills</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-task-sandboxes-can-clone-plugins-until-disk-fills"/>
@@ -156,14 +164,6 @@
     <link href="https://framework.boucle.sh/limitations.html#assistant-shaped-user-text-can-authorize-state-changing-actions"/>
     <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.258 macOS session on Opus 5 produced an assistant message whose text block continued after the assistant&#x27;s answer with a user-shaped authorization line and fake system-instruction text. The next turn treated the self-emitted user-shaped sentence as the user&#x27;s previous message and ran `git pull`, `git add`, and `git commit`, creating a real commit even though the user had not approved it. The reporter found the first matching text in an assistant/assistant transcript row at `$.message.content[0].text`; the local transcript evidence proves shape and downstream effect, but not whether the bytes came from model continuation, upstream context, server-side contamination, or client stream assembly.</summary>
-    <category term="Security &amp; trust boundaries"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Unpersisted user-role messages can enter model context.</title>
-    <id>https://framework.boucle.sh/limitations.html#unpersisted-user-role-messages-can-enter-model-context</id>
-    <link href="https://framework.boucle.sh/limitations.html#unpersisted-user-role-messages-can-enter-model-context"/>
-    <updated>2026-09-04T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.226 macOS session on Opus 5 found plausible user messages entering the model context even though the user did not type them and no matching `type: &quot;user&quot;` records appeared in the session JSONL transcript. The reporter observed the literal role marker `user` fused onto the fabricated content, ruled out configured hooks, other running sessions, and scheduled tasks, and later noted that short agreement-only messages such as `ok` were especially risky because they could silently approve the assistant&#x27;s previous proposal. Reported effects included a fabricated instruction to execute a large stock transaction and project-file changes later attributed to the user as their decision.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
 </feed>
