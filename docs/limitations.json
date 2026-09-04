@@ -24167,11 +24167,12 @@
       "severity": "HIGH",
       "status": "open",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/89062"
+        "https://github.com/anthropics/claude-code/issues/89062",
+        "https://github.com/anthropics/claude-code/issues/92222"
       ],
       "date_added": "2026-08-24",
-      "description": "A reported macOS investigation collected 19 sample captures across Claude Code 2.1.231, 2.1.238, and 2.1.239 where sessions hung permanently with one core at 100 percent, no crash report, no syscalls, and a stable memory footprint. Instrumented freezes ended after hook-output processing, then the process ignored SIGTERM, SIGINT, and SIGHUP because the JavaScript event loop never resumed. The reporter also found the event-loop-stall heuristic could misclassify CPU-bound stalls as sleep or wake delay, reducing the chance of automatic detection.",
-      "workaround": "For long subagent-heavy work, run Claude Code under an external watchdog that samples sustained 100 percent CPU and captures debug logs or process samples before using SIGKILL. Do not rely on SIGTERM or SIGINT to flush telemetry from a frozen process. If a session becomes unresponsive, preserve the debug file, hook configuration, process sample, CLI version, and whether the last log lines followed hook output so the hang can be separated from model latency or memory pressure."
+      "description": "Reported macOS investigations found Claude Code sessions hanging permanently with one core at 100 percent CPU, no crash report, no syscalls, and a stable memory footprint. Earlier captures across Claude Code 2.1.231, 2.1.238, and 2.1.239 ended after hook-output processing, then ignored SIGTERM, SIGINT, and SIGHUP because the JavaScript event loop never resumed. A newer 2.1.261 report captured two independently hung interactive TUI sessions with identical main-thread stack paths while every other thread was parked; the same prompt completed in about two minutes through `claude -p` and wrote the expected file, narrowing that case to the interactive render path during or before a large `Write` block rather than model output or tool execution.",
+      "workaround": "For long subagent-heavy work or interactive sessions expected to produce large single-file writes, run Claude Code under an external watchdog that samples sustained 100 percent CPU and captures debug logs or process samples before using SIGKILL. Do not rely on SIGTERM or SIGINT to flush telemetry from a frozen process. If a TUI session becomes unresponsive, preserve the debug file, process sample, CLI version, TUI mode, hook and plugin configuration, last transcript write time, and whether the same prompt succeeds through `claude -p`, so the hang can be separated from model latency, memory pressure, hook output, or the file write itself."
     },
     {
       "id": "vscode-extension-can-load-all-session-histories-and-oom",
