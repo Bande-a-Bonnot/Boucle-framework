@@ -7,6 +7,14 @@
   <updated>2026-09-04T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[CRITICAL] macOS sandboxed `mktemp` can empty a cleanup target.</title>
+    <id>https://framework.boucle.sh/limitations.html#macos-sandbox-mktemp-can-empty-cleanup-target</id>
+    <link href="https://framework.boucle.sh/limitations.html#macos-sandbox-mktemp-can-empty-cleanup-target"/>
+    <updated>2026-09-04T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.255 macOS sandbox setup found that a template-less `mktemp -d` failed under the Bash tool because BSD `mktemp` chose the Darwin per-user temp directory instead of Claude Code&#x27;s sandboxed `$TMPDIR`. The failed command substitution left the scratch variable empty, `cd &quot;&quot; &amp;&amp; pwd -P` then resolved it to the working directory, and a later bare `rm -rf &quot;$T&quot;` ran against that directory without a recorded critical-path prompt. The reporter saw large local repo damage before the default Bash timeout stopped the tool result, while protected `.git` paths and deny rules limited part of the blast radius.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
     <title>[HIGH] OTLP telemetry can export tool arguments despite `OTEL_LOG_TOOL_*` flags.</title>
     <id>https://framework.boucle.sh/limitations.html#otel-tool-arguments-exported-despite-tool-content-flags</id>
     <link href="https://framework.boucle.sh/limitations.html#otel-tool-arguments-exported-despite-tool-content-flags"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Windows Claude Code Desktop local session found that MCP Apps widget export controls could leave rendered widget content trapped in the UI. The Copy to clipboard action failed with advice to try claude.ai in a browser, which does not apply to local non-cloud sessions, while Download file silently did nothing. The reporter tied the symptoms to an MCP widget iframe likely missing clipboard-write and allow-downloads permissions, but the user-facing failure is broader: neither visible export path produces the summary or recap content the widget was meant to share.</summary>
     <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Custom slash commands cannot dispatch nested `/goal` or slash-command invocations.</title>
-    <id>https://framework.boucle.sh/limitations.html#custom-slash-commands-cannot-dispatch-nested-goals</id>
-    <link href="https://framework.boucle.sh/limitations.html#custom-slash-commands-cannot-dispatch-nested-goals"/>
-    <updated>2026-09-04T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.252 setup found that custom slash command bodies are injected as prompt text rather than dispatched as command input. A custom command whose body contained `/goal ...` echoed that line back to the model and did not arm the goal, and a nested custom slash command stayed inert with no warning. The reporter also found that `/goal @payload.txt` silently armed the literal string `@payload.txt` instead of loading the file. Users who store long goal, stop, or approval conditions in reusable command files can therefore start a session believing a policy-like command is active while the client has only submitted ordinary prompt text.</summary>
-    <category term="Skills &amp; commands"/>
   </entry>
 </feed>
