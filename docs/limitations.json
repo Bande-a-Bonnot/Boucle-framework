@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1880,
+  "count": 1881,
   "categories": {
     "Hook behavior & events": 241,
     "Permission system": 171,
@@ -11,7 +11,7 @@
     "Security & trust boundaries": 48,
     "TUI & display": 39,
     "Cowork & remote": 38,
-    "Sandbox & permissions": 37,
+    "Sandbox & permissions": 38,
     "Configuration behavior": 36,
     "Platform & compatibility": 35,
     "CLI & terminal": 33,
@@ -196,12 +196,25 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 169,
+    "CRITICAL": 170,
     "HIGH": 1095,
     "LOW": 110,
     "MEDIUM": 506
   },
   "entries": [
+    {
+      "id": "macos-sandbox-mktemp-can-empty-cleanup-target",
+      "title": "macOS sandboxed `mktemp` can empty a cleanup target.",
+      "category": "Sandbox & permissions",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/91676"
+      ],
+      "date_added": "2026-09-04",
+      "description": "A reported Claude Code 2.1.255 macOS sandbox setup found that a template-less `mktemp -d` failed under the Bash tool because BSD `mktemp` chose the Darwin per-user temp directory instead of Claude Code's sandboxed `$TMPDIR`. The failed command substitution left the scratch variable empty, `cd \"\" && pwd -P` then resolved it to the working directory, and a later bare `rm -rf \"$T\"` ran against that directory without a recorded critical-path prompt. The reporter saw large local repo damage before the default Bash timeout stopped the tool result, while protected `.git` paths and deny rules limited part of the blast radius.",
+      "workaround": "On macOS, do not use bare `mktemp -d` in Claude Code sandboxed Bash cleanup paths. Use an explicit template under `$TMPDIR`, such as `mktemp -d \"$TMPDIR/tmp.XXXXXX\"`, check that the result is non-empty, and guard every recursive cleanup with a prefix check before `rm -rf`. Treat `set -euo pipefail` as insufficient protection inside the Bash tool, and add a Bash hook or wrapper rule that blocks bare `rm -rf \"$VAR\"` unless the command proves the variable was assigned to an approved scratch prefix. For high-value workspaces, run destructive probes only in disposable clones or OS-level sandboxes until critical-path handling is verified on the installed Claude Code version."
+    },
     {
       "id": "otel-tool-arguments-exported-despite-tool-content-flags",
       "title": "OTLP telemetry can export tool arguments despite `OTEL_LOG_TOOL_*` flags.",
@@ -25506,27 +25519,27 @@
     }
   ],
   "status_summary": {
-    "open": 1866,
+    "open": 1867,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 169,
+    "critical": 170,
     "high": 1095,
     "low": 110,
     "medium": 506
   },
   "lastUpdated": "2026-09-04",
   "stats": {
-    "total": 1880,
-    "critical": 169,
+    "total": 1881,
+    "critical": 170,
     "high": 1095,
     "medium": 506,
     "low": 110,
-    "open": 1866,
+    "open": 1867,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-04",
-  "total": 1880
+  "total": 1881
 }
