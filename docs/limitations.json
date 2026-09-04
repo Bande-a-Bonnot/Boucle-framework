@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1884,
+  "count": 1885,
   "categories": {
     "Hook behavior & events": 242,
     "Permission system": 171,
@@ -9,8 +9,8 @@
     "Subagent & spawned agents": 86,
     "Desktop & IDE integration": 63,
     "Security & trust boundaries": 48,
+    "TUI & display": 40,
     "Cowork & remote": 39,
-    "TUI & display": 39,
     "Sandbox & permissions": 38,
     "Configuration behavior": 36,
     "Platform & compatibility": 35,
@@ -199,7 +199,7 @@
     "CRITICAL": 171,
     "HIGH": 1097,
     "LOW": 110,
-    "MEDIUM": 506
+    "MEDIUM": 507
   },
   "entries": [
     {
@@ -713,10 +713,11 @@
       "severity": "HIGH",
       "status": "open",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/91284"
+        "https://github.com/anthropics/claude-code/issues/91284",
+        "https://github.com/anthropics/claude-code/issues/92209"
       ],
       "date_added": "2026-09-01",
-      "description": "A reported Windows Claude Code setup found that per-session JSONL transcript persistence can fail silently while the session still accepts prompts, streams responses, runs tools, updates `~/.claude/history.jsonl`, and moves the session file mtime. The reporter ties the class to earlier stale-closed reports where resumed sessions or teammate/tmux classification stopped appending user and assistant turns without a visible warning. A follow-up sandbox check against 2.1.257 did not reproduce the exact 2.1.195 to 2.1.257 upgrade or `TERM_PROGRAM=tmux` trigger on that machine, but the user-facing risk remains that filesystem metadata and history updates can look healthy while durable conversation turns are missing.",
+      "description": "Reported Windows Claude Code setups found that per-session JSONL transcript persistence can fail silently while the session still accepts prompts, streams responses, runs tools, updates `~/.claude/history.jsonl`, moves the session file mtime, or continues the same bridge session server-side. A newer 2.1.260 report tied one affected PowerShell session to a later git commit trailer with the same bridge session id even though the local transcript's last conversational row was nearly two weeks older, making local history look truncated while the server-side session still appeared to exist behind account access controls. Earlier reports tied the class to stale-closed sessions, resumes, and teammate/tmux classification that stopped appending user and assistant turns without a visible warning. A follow-up sandbox check against 2.1.257 did not reproduce the exact 2.1.195 to 2.1.257 upgrade or `TERM_PROGRAM=tmux` trigger on that machine, but the user-facing risk remains that filesystem metadata, history updates, or continued live usage can look healthy while durable local conversation turns are missing.",
       "workaround": "Do not use session JSONL mtime, `history.jsonl`, or an alive Claude Code process as proof that important turns were persisted. For long-running, resumed, ConPTY, tmux, psmux, teammate, or wrapper-launched sessions, add a content canary before important work: send a unique nonce, confirm recent user and assistant records containing that nonce appear in the expected `~/.claude/projects/.../<session>.jsonl`, then verify again after resume or upgrade. For valuable work, checkpoint conclusions to normal project files before exiting. If canaries stop landing, preserve the raw transcript and environment evidence, restart in a plain terminal or known-good version, and avoid relying on the affected session for recoverable audit history.",
       "source": "GitHub issue scan",
       "tags": [
@@ -25581,10 +25582,36 @@
         "data-integrity",
         "stale-ui"
       ]
+    },
+    {
+      "id": "completed-tui-turns-can-be-repainted-out-of-scrollback",
+      "title": "Completed TUI turns can be repainted out of terminal scrollback.",
+      "category": "TUI & display",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/92203"
+      ],
+      "date_added": "2026-09-04",
+      "description": "A reported Claude Code 2.1.260 Linux tmux session found that scrolling back in the terminal could show older output with a gap where the last several exchanges should have appeared. The reporter concluded that the TUI redraws completed conversation content in place instead of committing finished turns as ordinary scrollback lines, so recent answers can be overwritten by later repaints while older lines that genuinely scrolled off the top remain visible. The session JSONL was reported complete and written live, but native tmux copy-mode, `pipe-pane`, and `/resume` did not provide a discoverable stable transcript view for re-reading recent turns.",
+      "workaround": "Do not rely on terminal or tmux scrollback as the only copy of recent Claude Code turns. For important instructions, evidence, review comments, or summaries, ask Claude Code to write the result to a normal project file or external note before continuing. If recent visible turns disappear from scrollback, inspect the session JSONL under `~/.claude/projects/<project>/<session-id>.jsonl` after backing it up, and extract only the needed user and assistant text for recovery. When testing terminal capture, verify that copy-mode, `pipe-pane`, and any `tee` wrapper preserve completed turns after several subsequent renders before treating them as audit logs.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "linux",
+        "tui",
+        "tmux",
+        "scrollback",
+        "transcript",
+        "jsonl",
+        "copy-mode",
+        "terminal-capture",
+        "display",
+        "audit-history"
+      ]
     }
   ],
   "status_summary": {
-    "open": 1870,
+    "open": 1871,
     "fixed": 13,
     "mitigated": 1
   },
@@ -25592,19 +25619,19 @@
     "critical": 171,
     "high": 1097,
     "low": 110,
-    "medium": 506
+    "medium": 507
   },
   "lastUpdated": "2026-09-04",
   "stats": {
-    "total": 1884,
+    "total": 1885,
     "critical": 171,
     "high": 1097,
-    "medium": 506,
+    "medium": 507,
     "low": 110,
-    "open": 1870,
+    "open": 1871,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-04",
-  "total": 1884
+  "total": 1885
 }
