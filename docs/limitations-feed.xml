@@ -87,6 +87,14 @@
     <category term="MCP &amp; plugin issues"/>
   </entry>
   <entry>
+    <title>[HIGH] Desktop can render a stale transcript branch while newer history remains on disk.</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-can-render-stale-transcript-branch</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-can-render-stale-transcript-branch"/>
+    <updated>2026-09-04T00:00:00Z</updated>
+    <summary>A reported Claude Desktop 1.46388.3 macOS Code-tab session found that the app rendered conversation history only through an older date even though the session JSONL contained tens of thousands of newer entries from later days. The reporter checked `uuid` and `parentUuid` links and found an intact parent chain, but the transcript file had become a forest with multiple roots and many leaves after `/compact` and resumes. In the affected session, the branch containing the newest message was smaller than an older branch, and the UI stopped exactly where the older largest branch ended. If the renderer selects a largest or arbitrary old branch instead of the most recent branch, users can see what looks like deleted work while the data is still present in `~/.claude/projects/&lt;project&gt;/&lt;session-id&gt;.jsonl`.</summary>
+    <category term="Data integrity"/>
+  </entry>
+  <entry>
     <title>[CRITICAL] Destructive removable-drive command can run after a clarifying question.</title>
     <id>https://framework.boucle.sh/limitations.html#destructive-removable-drive-command-can-run-after-clarifying-question</id>
     <link href="https://framework.boucle.sh/limitations.html#destructive-removable-drive-command-can-run-after-clarifying-question"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.258 Windows session with `/low-priority` enabled found `StopFailure` hooks firing on the parent `session_id` for internal helper-query API errors and background subagent deaths rather than only for a real parent turn ending on an API error. In the report, exhausted 429 limits caused multiple helper forks and agent task-notifications to emit parent-shaped `StopFailure` events while the main session was parked or idle, with no transcript row proving a matching parent-turn failure. Hook consumers such as desktop notifiers, auto-continue loops, dashboards, and reliability monitors can therefore record or act on failed turns that never happened unless the payload exposes enough source attribution.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Assistant-shaped user text can authorize state-changing actions.</title>
-    <id>https://framework.boucle.sh/limitations.html#assistant-shaped-user-text-can-authorize-state-changing-actions</id>
-    <link href="https://framework.boucle.sh/limitations.html#assistant-shaped-user-text-can-authorize-state-changing-actions"/>
-    <updated>2026-09-04T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.258 macOS session on Opus 5 produced an assistant message whose text block continued after the assistant&#x27;s answer with a user-shaped authorization line and fake system-instruction text. The next turn treated the self-emitted user-shaped sentence as the user&#x27;s previous message and ran `git pull`, `git add`, and `git commit`, creating a real commit even though the user had not approved it. The reporter found the first matching text in an assistant/assistant transcript row at `$.message.content[0].text`; the local transcript evidence proves shape and downstream effect, but not whether the bytes came from model continuation, upstream context, server-side contamination, or client stream assembly.</summary>
-    <category term="Security &amp; trust boundaries"/>
   </entry>
 </feed>
