@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1874,
+  "count": 1875,
   "categories": {
     "Hook behavior & events": 241,
-    "Permission system": 170,
+    "Permission system": 171,
     "MCP & plugin issues": 116,
     "Hook bypass & evasion": 109,
     "Subagent & spawned agents": 86,
@@ -196,11 +196,37 @@
   },
   "severity_counts": {
     "CRITICAL": 166,
-    "HIGH": 1092,
+    "HIGH": 1093,
     "LOW": 110,
     "MEDIUM": 506
   },
   "entries": [
+    {
+      "id": "auto-mode-denials-can-compound-and-block-approved-repairs",
+      "title": "Auto mode denials can compound and block approved repair steps.",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/91953",
+        "https://github.com/anthropics/claude-code/issues/91754"
+      ],
+      "date_added": "2026-09-04",
+      "description": "Reported Claude Code auto-mode sessions show the classifier blocking later actions after an earlier denial in the same conversation, even when the later action was explicitly authorized by the user or was read-only inspection. One Linux aarch64 report describes an initially denied read-only production SQLite query over SSH, followed later by denial of the project's own deploy script after tests and backup, denial of the user's request to add a narrow Bash allow rule, and denial of reading `~/.claude/settings.json` to inspect the active permissions. A separate macOS report saw `gh pr merge` denied after an explicit merge instruction, then a read-only `gh search issues` command denied with the same generic classifier reason. The result is a recovery trap: the classifier blocks the operation, the suggested permission-rule repair, and sometimes the evidence-gathering step needed to diagnose it.",
+      "workaround": "When auto mode denies a privileged but owner-authorized repo, deploy, SSH, or settings operation, do not keep retrying in the same conversation as proof that the operation is unsafe. Start a fresh session after recording the exact denied command, active permission mode, and current settings source, then verify whether the same command is still denied. Pre-seed narrow allow rules for known deploy, merge, and read-only diagnostic commands before long unattended work, and keep an out-of-band settings-edit path available for repairing `.claude/settings.json` when Claude Code itself cannot read or modify it. For shared resources, keep the separate backup and rollback gate even if a fresh session allows the command.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "auto-mode",
+        "permissions",
+        "classifier",
+        "denials",
+        "settings",
+        "github",
+        "deploy",
+        "ssh",
+        "recovery"
+      ]
+    },
     {
       "id": "read-deny-grep-prompts-after-cd-regression",
       "title": "Read deny rules can force manual Bash search prompts after cd compounds.",
@@ -25401,27 +25427,27 @@
     }
   ],
   "status_summary": {
-    "open": 1860,
+    "open": 1861,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 166,
-    "high": 1092,
+    "high": 1093,
     "low": 110,
     "medium": 506
   },
   "lastUpdated": "2026-09-04",
   "stats": {
-    "total": 1874,
+    "total": 1875,
     "critical": 166,
-    "high": 1092,
+    "high": 1093,
     "medium": 506,
     "low": 110,
-    "open": 1860,
+    "open": 1861,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-04",
-  "total": 1874
+  "total": 1875
 }
