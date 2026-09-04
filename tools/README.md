@@ -308,7 +308,13 @@ bash tools/test-hook.sh "bash tools/bash-guard/hook.sh" --batch tools/test-hook-
 python3 tools/test-hook-verify.py
 ```
 
-See [test-hook-bash-guard-examples.jsonl](test-hook-bash-guard-examples.jsonl) for copy-pasteable bash-guard batch cases. The broader [test-hook-examples.jsonl](test-hook-examples.jsonl) fixture has 60 ready-made test cases covering bash-guard, git-safe, file-guard, and branch-guard for combined or hook-specific test harnesses.
+See the [test-hook guide](test-hook.md) for expected output, CI expectations,
+raw input shape, and batch file format.
+[test-hook-bash-guard-examples.jsonl](test-hook-bash-guard-examples.jsonl)
+has copy-pasteable bash-guard batch cases. The broader
+[test-hook-examples.jsonl](test-hook-examples.jsonl) fixture has 60 ready-made
+test cases covering bash-guard, git-safe, file-guard, and branch-guard for
+combined or hook-specific test harnesses.
 
 Boundary: `test-hook.sh` runs the hook command you pass directly. It verifies
 handler behavior for synthetic `PreToolUse` payloads, but it does not prove
