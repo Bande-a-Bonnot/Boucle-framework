@@ -7,6 +7,14 @@
   <updated>2026-09-04T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] OTLP telemetry can export tool arguments despite `OTEL_LOG_TOOL_*` flags.</title>
+    <id>https://framework.boucle.sh/limitations.html#otel-tool-arguments-exported-despite-tool-content-flags</id>
+    <link href="https://framework.boucle.sh/limitations.html#otel-tool-arguments-exported-despite-tool-content-flags"/>
+    <updated>2026-09-04T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.259 macOS setup, also observed on 2.1.252 and 2.1.258, found full Bash command text reaching an OTLP collector even when tool-content-looking flags were unset, set to `0`, or set to `false`. The reporter planted a canary in a Bash command and found it in `tool_decision` `tool_parameters`, `tool_result` `tool_parameters`, and `tool_result` `tool_input`, with `user.email` attached on the same events. The issue is not a model echo path: the canary appeared in tool telemetry attributes, so teams sending Claude Code telemetry directly to a vendor endpoint may export shell commands and user identifiers while believing `OTEL_LOG_TOOL_*` settings suppress tool content.</summary>
+    <category term="Telemetry &amp; privacy"/>
+  </entry>
+  <entry>
     <title>[CRITICAL] Broad write grants can let the agent edit `.claude/settings.json`.</title>
     <id>https://framework.boucle.sh/limitations.html#agent-can-edit-claude-settings-under-broad-write-grants</id>
     <link href="https://framework.boucle.sh/limitations.html#agent-can-edit-claude-settings-under-broad-write-grants"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-04T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.245 macOS setup found that a synchronous `PreToolUse` hook registered for `Write|Edit|MultiEdit|NotebookEdit` did not enforce a deny decision on a real Write call. The reporter instrumented the hook script itself and captured the expected deny result before the write still completed, then used `--debug hooks` to show that `PostToolUse:Write` registered and fired while `PreToolUse` did not appear in the trace for the same matcher and settings file. Users who rely on Write-family `PreToolUse` hooks for wrong-worktree protection, file policy, or edit approval can therefore get a silent false allow even when same-file PostToolUse auditing appears healthy.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] VS Code always-allow grants can land in tracked project settings.</title>
-    <id>https://framework.boucle.sh/limitations.html#vscode-always-allow-can-write-personal-grants-to-tracked-settings</id>
-    <link href="https://framework.boucle.sh/limitations.html#vscode-always-allow-can-write-personal-grants-to-tracked-settings"/>
-    <updated>2026-09-04T00:00:00Z</updated>
-    <summary>A reported Windows VS Code native extension setup found that accepting a Claude Code permission prompt with an always-allow or don&#x27;t-ask-again response appended the new `Bash(...)`, `Read(...)`, `PowerShell(...)`, or `permissions.additionalDirectories` grant to the shared, git-tracked `.claude/settings.json` instead of the personal gitignored `.claude/settings.local.json`. The reporter observed that `settings.local.json` had not been modified recently while the tracked settings file kept accumulating session-specific temp paths and ad hoc command permissions, creating a leakage path from local consent into team-wide reviewed configuration.</summary>
-    <category term="Permission system"/>
   </entry>
 </feed>
