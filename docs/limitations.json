@@ -14595,18 +14595,19 @@
     },
     {
       "id": "vscode-windows-pretooluse-hooks-can-be-skipped-entirely",
-      "title": "VS Code on Windows can skip configured `PreToolUse` hooks entirely",
+      "title": "VS Code on Windows can skip configured hook dispatch entirely",
       "category": "Hook bypass & evasion",
       "severity": "CRITICAL",
       "status": "open",
-      "description": "In the Claude Code VS Code extension host on Windows, configured `PreToolUse` hooks can fail to run for matching tool calls even when the same hook script blocks reliably when invoked directly with the same JSON payload. In the reported Windows 11 / Git Bash repro, a hook configured to block `git commit` was proven correct by direct `node script.cjs < payload.json` tests, but a live Claude Code session allowed 8 of 8 matching Bash commands to reach Git, including a bare `git commit -m ...` case with no compound shell parsing. Separate probe hooks also recorded zero invocations in repeated runs. This is distinct from hook script bugs, Windows stdin corruption, or slow hook startup: the narrower broken layer is dispatch from the VS Code extension host to matching `PreToolUse` hooks, so safety-critical guards may be silently absent while the user believes they are active.",
+      "description": "In the Claude Code VS Code extension host on Windows, configured hooks can fail to run for matching live tool calls even when the same hook scripts block reliably when invoked directly with the same JSON payload. One Windows 11 / Git Bash repro showed a `PreToolUse` hook configured to block `git commit` passing direct `node script.cjs < payload.json` tests while a live Claude Code session allowed 8 of 8 matching Bash commands to reach Git, including a bare `git commit -m ...` case with no compound shell parsing. A later Windows 10 / VS Code extension 2.1.259 report broadened the surface: `PreToolUse` hooks on `Read|Edit|Write`, `Task|Agent`, and `Bash|PowerShell`, plus a `UserPromptSubmit` state-writing hook, all failed to fire for real session events despite direct-invocation tests succeeding. Its cleanest repro staged a secret-shaped string and ran a real `git commit`; the secret-scan hook blocked the same payload directly but the live commit succeeded. This is distinct from hook script bugs, Windows stdin corruption, or slow hook startup: the narrower broken layer is dispatch from the VS Code extension host to configured hooks, so safety-critical guards may be silently absent while settings and direct hook tests look correct.",
       "issues": [
-        "https://github.com/anthropics/claude-code/issues/76413"
+        "https://github.com/anthropics/claude-code/issues/76413",
+        "https://github.com/anthropics/claude-code/issues/92074"
       ],
       "cc_issue": 76413,
-      "cc_version": "VS Code extension on Windows, reported 2026-07-10",
+      "cc_version": "VS Code extension on Windows, reported 2026-07-10 and 2026-09-04",
       "date_added": "2026-07-13",
-      "workaround": "Do not rely on a single VS Code-on-Windows `PreToolUse` hook as the only guard for destructive actions until hook dispatch is visibly verified in that exact host. Add a probe hook that logs every invocation, run `safety-check --verify` or equivalent live payload tests after startup and after extension updates, and keep independent controls such as Git hooks, branch protection, filesystem permissions, or WSL/macOS/Linux hook execution for high-risk workflows."
+      "workaround": "Do not rely on VS Code-on-Windows hooks as the only guard for destructive actions until hook dispatch is visibly verified in that exact host with real tool calls, not only direct stdin tests. Add probe hooks that log every `PreToolUse` and `UserPromptSubmit` invocation, run `safety-check --verify` or equivalent live payload tests after startup and after extension updates, and keep independent controls such as native `permissions.deny` rules, Git hooks, branch protection, filesystem permissions, or WSL/macOS/Linux hook execution for high-risk workflows."
     },
     {
       "id": "windows-hook-payload-redirection-can-create-or-clobber-files",
