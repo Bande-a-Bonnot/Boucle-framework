@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1890,
+  "count": 1891,
   "categories": {
     "Hook behavior & events": 242,
-    "Permission system": 171,
+    "Permission system": 172,
     "MCP & plugin issues": 117,
     "Hook bypass & evasion": 109,
     "Subagent & spawned agents": 87,
@@ -197,11 +197,35 @@
   },
   "severity_counts": {
     "CRITICAL": 171,
-    "HIGH": 1102,
+    "HIGH": 1103,
     "LOW": 110,
     "MEDIUM": 507
   },
   "entries": [
+    {
+      "id": "bash-allow-rules-do-not-normalize-in-project-absolute-paths",
+      "title": "Bash allow rules can miss in-project absolute script paths.",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/92120"
+      ],
+      "date_added": "2026-09-05",
+      "description": "A reported Claude Code 2.1.258 macOS VS Code setup found that a project-level permission rule such as `Bash(.claude/scripts/*)` allowed the project-relative script invocation but prompted again when the same script was invoked by its absolute path under the same project root. The PermissionRequest hook then suggested an absolute, machine-specific `Bash(/path/to/project/.claude/scripts/hello *)` rule with a local-settings destination, pushing a team-shareable rule into personal settings drift. Agents and subagents often choose absolute paths when uncertain about the current directory, so a committed allowlist can look correct while still generating prompts or local grants for equivalent in-project commands.",
+      "workaround": "Treat project-relative `Bash(...)` allow rules as spelling-sensitive until your installed Claude Code version proves in-project absolute paths are normalized before matching. For shared hook or script launchers, test both `.claude/scripts/name` and `$CLAUDE_PROJECT_DIR/.claude/scripts/name` forms during rollout. Avoid accepting machine-specific absolute suggestions into tracked settings, and inspect `.claude/settings.local.json` after prompts for cloned-home paths. Where available, add a `PreToolUse` hook or wrapper that rewrites absolute command prefixes under `$CLAUDE_PROJECT_DIR` to project-relative form before permission drift accumulates.",
+      "tags": [
+        "macos",
+        "vscode",
+        "permissions",
+        "bash",
+        "allowlist",
+        "absolute-paths",
+        "project-relative-paths",
+        "settings-local",
+        "permissionrequest"
+      ]
+    },
     {
       "id": "homebrew-bash-heredocs-can-deadlock-and-truncate-targets",
       "title": "Homebrew Bash heredocs can deadlock and truncate target files on macOS.",
@@ -25731,27 +25755,27 @@
     }
   ],
   "status_summary": {
-    "open": 1876,
+    "open": 1877,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 171,
-    "high": 1102,
+    "high": 1103,
     "low": 110,
     "medium": 507
   },
   "lastUpdated": "2026-09-05",
   "stats": {
-    "total": 1890,
+    "total": 1891,
     "critical": 171,
-    "high": 1102,
+    "high": 1103,
     "medium": 507,
     "low": 110,
-    "open": 1876,
+    "open": 1877,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-05",
-  "total": 1890
+  "total": 1891
 }
