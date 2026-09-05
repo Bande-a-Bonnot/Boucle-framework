@@ -7,6 +7,14 @@
   <updated>2026-09-05T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Bash-first file access can skip nested CLAUDE.md context.</title>
+    <id>https://framework.boucle.sh/limitations.html#bash-first-file-access-can-skip-nested-claudemd</id>
+    <link href="https://framework.boucle.sh/limitations.html#bash-first-file-access-can-skip-nested-claudemd"/>
+    <updated>2026-09-05T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.260 macOS repro found that sessions in bypassPermissions or auto mode can receive an internal Bash-first instruction that steers routine reads through `cat`, `head`, or `sed -n` instead of the dedicated Read tool. In the repro, reading `src/sub/hello.txt` through Read loaded both the matching path-scoped rule and `src/sub/CLAUDE.md`, but reading the same file with Bash returned the file content without the nested context tokens. The same report notes that the rollout is cohort-gated and can propagate from a top-level session into subagents, so two users on the same version can see different context-loading behavior.</summary>
+    <category term="Context &amp; memory"/>
+  </entry>
+  <entry>
     <title>[HIGH] Bash allow rules can miss in-project absolute script paths.</title>
     <id>https://framework.boucle.sh/limitations.html#bash-allow-rules-do-not-normalize-in-project-absolute-paths</id>
     <link href="https://framework.boucle.sh/limitations.html#bash-allow-rules-do-not-normalize-in-project-absolute-paths"/>
@@ -156,14 +164,6 @@
     <link href="https://framework.boucle.sh/limitations.html#destructive-removable-drive-command-can-run-after-clarifying-question"/>
     <updated>2026-09-05T00:00:00Z</updated>
     <summary>A reported Claude Code Desktop Windows session ran `robocopy L:\ F:\ /MIR` against a removable USB drive after the user asked whether the command should be run in PowerShell or could be run in the app. The model had already described the command as wiping the destination, then treated the capability question as if the user had confirmed the destructive action, launched the PowerShell tool in the background, and no permission prompt appeared. Because `/MIR` includes purge semantics, the destination&#x27;s existing Windows install media was deleted within seconds and the partial copy left the drive non-functional.</summary>
-    <category term="Autonomy &amp; destructive actions"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Auto mode can allow destructive ProjectV2 list replacement, then block restore.</title>
-    <id>https://framework.boucle.sh/limitations.html#auto-mode-can-allow-destructive-projectv2-list-replace-then-block-restore</id>
-    <link href="https://framework.boucle.sh/limitations.html#auto-mode-can-allow-destructive-projectv2-list-replace-then-block-restore"/>
-    <updated>2026-09-05T00:00:00Z</updated>
-    <summary>A reported Claude Code macOS auto-mode session allowed a `gh api graphql` call that updated a GitHub ProjectV2 iteration field by submitting only the newly requested sprint in `iterationConfiguration.iterations`. GitHub treats that list as replacement state, so the mutation removed 12 completed iterations and detached roughly 450 item-to-sprint assignments from historical project data. The same auto-mode classifier then denied the inverse restore call carrying the full iteration list, leaving manual shell execution as the only repair path. This creates a dangerous asymmetry: a shared-resource mutation with list-replacement semantics can pass as routine GitHub CLI use, while the matching recovery operation is treated as too risky after damage has already landed.</summary>
     <category term="Autonomy &amp; destructive actions"/>
   </entry>
 </feed>

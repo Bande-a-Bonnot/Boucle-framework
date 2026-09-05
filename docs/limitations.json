@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1891,
+  "count": 1892,
   "categories": {
     "Hook behavior & events": 242,
     "Permission system": 172,
@@ -14,8 +14,8 @@
     "Sandbox & permissions": 38,
     "Configuration behavior": 36,
     "Platform & compatibility": 35,
+    "Context & memory": 34,
     "CLI & terminal": 33,
-    "Context & memory": 33,
     "MCP & integrations": 31,
     "Data integrity": 30,
     "Performance & cost": 28,
@@ -197,11 +197,35 @@
   },
   "severity_counts": {
     "CRITICAL": 171,
-    "HIGH": 1103,
+    "HIGH": 1104,
     "LOW": 110,
     "MEDIUM": 507
   },
   "entries": [
+    {
+      "id": "bash-first-file-access-can-skip-nested-claudemd",
+      "title": "Bash-first file access can skip nested CLAUDE.md context.",
+      "category": "Context & memory",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/92271"
+      ],
+      "date_added": "2026-09-05",
+      "description": "A reported Claude Code 2.1.260 macOS repro found that sessions in bypassPermissions or auto mode can receive an internal Bash-first instruction that steers routine reads through `cat`, `head`, or `sed -n` instead of the dedicated Read tool. In the repro, reading `src/sub/hello.txt` through Read loaded both the matching path-scoped rule and `src/sub/CLAUDE.md`, but reading the same file with Bash returned the file content without the nested context tokens. The same report notes that the rollout is cohort-gated and can propagate from a top-level session into subagents, so two users on the same version can see different context-loading behavior.",
+      "workaround": "Do not treat nested `CLAUDE.md` files as automatically present when auto or bypass-permissions sessions are allowed to inspect files through Bash. For paths that depend on subdirectory instructions, run a cold-session canary that compares Read-tool and Bash reads, or require an explicit preliminary Read over representative files before edits and reviews. Where your installed version exposes the Bash-first rollout flag, test `CLAUDE_CODE_THRIFTY_SONIC=0` in settings and verify that neutral reads once again load the expected nested context. Keep critical policy in hooks, external validators, or unscoped top-level instructions when missing nested context would be unsafe.",
+      "tags": [
+        "macos",
+        "context",
+        "claudemd",
+        "nested-instructions",
+        "bash",
+        "bypass-permissions",
+        "auto-mode",
+        "subagents",
+        "thrifty-sonic"
+      ]
+    },
     {
       "id": "bash-allow-rules-do-not-normalize-in-project-absolute-paths",
       "title": "Bash allow rules can miss in-project absolute script paths.",
@@ -25755,27 +25779,27 @@
     }
   ],
   "status_summary": {
-    "open": 1877,
+    "open": 1878,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 171,
-    "high": 1103,
+    "high": 1104,
     "low": 110,
     "medium": 507
   },
   "lastUpdated": "2026-09-05",
   "stats": {
-    "total": 1891,
+    "total": 1892,
     "critical": 171,
-    "high": 1103,
+    "high": 1104,
     "medium": 507,
     "low": 110,
-    "open": 1877,
+    "open": 1878,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-05",
-  "total": 1891
+  "total": 1892
 }
