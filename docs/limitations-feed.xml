@@ -15,6 +15,14 @@
     <category term="MCP &amp; plugin issues"/>
   </entry>
   <entry>
+    <title>[MEDIUM] `--setting-sources` docs can hide what hooks, plugins, and memory are isolated.</title>
+    <id>https://framework.boucle.sh/limitations.html#setting-sources-documentation-hides-hook-plugin-isolation-scope</id>
+    <link href="https://framework.boucle.sh/limitations.html#setting-sources-documentation-hides-hook-plugin-isolation-scope"/>
+    <updated>2026-09-05T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.261 Windows headless repro found that the CLI docs&#x27; short `--setting-sources user,project,local` description does not explain the actual isolation boundary. Omitting `user` reportedly drops `~/.claude/CLAUDE.md`, user settings, plugins, plugin hooks, user skills, agents, and commands, while project `CLAUDE.md`, project settings, project hooks, `.mcp.json`, auto-memory, project commands, and an explicit `--settings` file can still load. A related macOS report found that `--setting-sources project` could still load user `CLAUDE.md` and rules when the project path sits under `$HOME`, and an older feature request shows users already expected source filtering to cover more than `settings.json`. Headless jobs that use the flag for clean repo-owned execution can therefore either lose expected user/plugin guardrails or inherit user memory in path-dependent ways without documentation making the boundary obvious.</summary>
+    <category term="Configuration &amp; settings"/>
+  </entry>
+  <entry>
     <title>[HIGH] Bash-first file access can skip nested CLAUDE.md context.</title>
     <id>https://framework.boucle.sh/limitations.html#bash-first-file-access-can-skip-nested-claudemd</id>
     <link href="https://framework.boucle.sh/limitations.html#bash-first-file-access-can-skip-nested-claudemd"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-05T00:00:00Z</updated>
     <summary>A reported Claude Desktop 1.46388.3 macOS Code-tab session found that the app rendered conversation history only through an older date even though the session JSONL contained tens of thousands of newer entries from later days. The reporter checked `uuid` and `parentUuid` links and found an intact parent chain, but the transcript file had become a forest with multiple roots and many leaves after `/compact` and resumes. In the affected session, the branch containing the newest message was smaller than an older branch, and the UI stopped exactly where the older largest branch ended. If the renderer selects a largest or arbitrary old branch instead of the most recent branch, users can see what looks like deleted work while the data is still present in `~/.claude/projects/&lt;project&gt;/&lt;session-id&gt;.jsonl`.</summary>
     <category term="Data integrity"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Completed TUI turns can be repainted out of terminal scrollback.</title>
-    <id>https://framework.boucle.sh/limitations.html#completed-tui-turns-can-be-repainted-out-of-scrollback</id>
-    <link href="https://framework.boucle.sh/limitations.html#completed-tui-turns-can-be-repainted-out-of-scrollback"/>
-    <updated>2026-09-05T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.260 Linux tmux session found that scrolling back in the terminal could show older output with a gap where the last several exchanges should have appeared. The reporter concluded that the TUI redraws completed conversation content in place instead of committing finished turns as ordinary scrollback lines, so recent answers can be overwritten by later repaints while older lines that genuinely scrolled off the top remain visible. The session JSONL was reported complete and written live, but native tmux copy-mode, `pipe-pane`, and `/resume` did not provide a discoverable stable transcript view for re-reading recent turns.</summary>
-    <category term="TUI &amp; display"/>
   </entry>
 </feed>
